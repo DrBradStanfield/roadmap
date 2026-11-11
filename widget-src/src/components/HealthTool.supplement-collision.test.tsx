@@ -5,7 +5,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, type RoadmapFile } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { flushRoadmapStore, initRoadmapStore, saveSupplement } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -26,12 +27,19 @@ useHealthToolLifecycle();
 
 async function page() {
   const view = render(<HealthTool />);
-  await waitFor(() => expect(view.container.querySelector('.supplement-add input')).not.toBeNull());
+  await waitFor(() => expect(view.getByRole('button', { name: '+ Add another supplement' })).toBeTruthy());
   return view;
 }
 
+/** The supplement search, opened from its "+ Add another supplement" row when shut (US-62 AC30c). */
+function search(container: HTMLElement): HTMLInputElement {
+  const open = [...container.querySelectorAll('.supplement-add button')].find(b => b.textContent?.includes('Add another supplement'));
+  if (open) fireEvent.click(open);
+  return container.querySelector<HTMLInputElement>('.supplement-add input')!;
+}
+
 function addCustom(container: HTMLElement, name: string): void {
-  fireEvent.change(container.querySelector('.supplement-add input')!, { target: { value: name } });
+  fireEvent.change(search(container), { target: { value: name } });
   fireEvent.click(container.querySelector('.supplement-custom')!);
 }
 
@@ -116,9 +124,9 @@ describe('US-06: collision-safe custom supplement additions', () => {
     const before = await persisted();
     const original = before.supplements[0];
     // An active name is not offered again, as an active preset is not (US-06 AC1a).
-    fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: ' taurine ' } });
+    fireEvent.change(search(view.container), { target: { value: ' taurine ' } });
     expect(view.container.querySelector('.supplement-custom')).toBeNull();
-    fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: '' } });
+    fireEvent.change(search(view.container), { target: { value: '' } });
     expect(view.container.querySelectorAll('.supplement-row')).toHaveLength(1);
     expect(row(view.container, 'Taurine').querySelector<HTMLInputElement>('.supplement-dose')!.value).toBe('1');
     dose(view.container, 'Taurine', 2, 'g');

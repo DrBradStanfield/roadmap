@@ -1,13 +1,28 @@
 // Test support: My health's settings (US-62 AC24) hold About you, the reminders,
-// the record and Delete all my data behind the person button. Imported by tests only.
+// the record and Delete all my data behind the person button on desktop, in the
+// Account tab on a phone (AC34). Imported by tests only.
 import { fireEvent } from '@testing-library/react';
 
-/** Opens the settings, unless they are open already. */
+/** True while the settings show; a phone keeps them mounted in its hidden Account panel. */
+export function settingsShown(root: ParentNode = document): boolean {
+  return [...root.querySelectorAll('.mh-settings')].some(s => !s.closest('[hidden]'));
+}
+
+/** Opens the settings (a phone's Account tab), unless they show already. */
 export function openSettings(root: ParentNode = document): void {
-  if (root.querySelector('.mh-settings')) return;
-  const person = root.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
-  if (!person) throw new Error('No Settings button on screen');
-  fireEvent.click(person);
+  if (settingsShown(root)) return;
+  const opener = root.querySelector<HTMLButtonElement>('button[aria-label="Settings"]')
+    ?? [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(t => t.textContent === 'Account');
+  if (!opener) throw new Error('No Settings button or Account tab on screen');
+  fireEvent.click(opener);
+}
+
+/** Closes the settings: Done on desktop, the My health tab on a phone (US-62 AC34). */
+export function closeSettings(root: ParentNode = document): void {
+  const done = [...root.querySelectorAll<HTMLButtonElement>('.mh-settings button')].find(b => b.textContent === 'Done')
+    ?? [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(t => t.textContent === 'My health');
+  if (!done) throw new Error('No Done button or My health tab on screen');
+  fireEvent.click(done);
 }
 
 /** Delete all my data, in the settings (opened first); throws while it is not there, so waitFor retries. */

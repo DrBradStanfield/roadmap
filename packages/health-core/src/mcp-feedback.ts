@@ -8,6 +8,7 @@ import { MAX_NAME_LENGTH } from './lab-extraction';
 import { oneLine, printable, REPO_PUBLIC } from './plan';
 import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
+import { EMAIL_SOURCE } from './sentry-scrub';
 import * as z from './zod';
 import {
   FEEDBACK_REPO,
@@ -29,9 +30,10 @@ const UNIT_TOKENS = [...new Set(
   Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
 )].filter((unit) => unit !== 'in').sort((a, b) => b.length - a.length);
 
-/** A number wearing one of those units — "2.1 mmol/L", "81 kg", "140 mmHg". */
+/** A number wearing one of those units — "2.1 mmol/L", "81 kg", "140 mmHg". It starts at the head of a digit run,
+ *  where the first match always starts anyway: same matches, linear on a long run (US-32 AC58). */
 const VALUE_WITH_UNIT = new RegExp(
-  `\\d+(?:[.,]\\d+)?\\s*(?:${UNIT_TOKENS.map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9])`,
+  `(?<!\\d)\\d+(?:[.,]\\d+)?\\s*(?:${UNIT_TOKENS.map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9])`,
   'i',
 );
 
@@ -98,10 +100,11 @@ function valueNearMetric(text: string): string | null {
   return null;
 }
 
-/** An email address, near enough to refuse one: something@something.tld. */
-const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
-/** A link carrying a query string — the shape that carries a token or an id. */
-const URL_WITH_QUERY = /https?:\/\/\S*\?\S/i;
+/** An email address, as the Sentry scrubber finds one. No `g` flag, so `.test` keeps no state (US-32 AC58). */
+const EMAIL = new RegExp(EMAIL_SOURCE);
+/** A link carrying a query string — the shape that carries a token or an id. The `?` comes within 2,048
+ *  characters of the scheme, as in any real link; the bound keeps it linear on a long run (US-32 AC58). */
+const URL_WITH_QUERY = /https?:\/\/\S{0,2048}\?\S/i;
 /**
  * A file name, which is a person as often as a document is: lab portals name
  * their downloads after the patient (`Jane Doe results.pdf`), and the issue is
@@ -109,7 +112,8 @@ const URL_WITH_QUERY = /https?:\/\/\S*\?\S/i;
  * scan arrives as is refused; what the file was called is never what the bug
  * report needed to say.
  */
-const FILENAME = /\S+\.(?:pdf|jpe?g|png|heic|zip|csv|txt|docx?)\b/i;
+// One character before the dot finds every name `\S+` did, and stays linear on a long run (US-32 AC58).
+const FILENAME = /\S\.(?:pdf|jpe?g|png|heic|zip|csv|txt|docx?)\b/i;
 
 /** Calendar days and timestamps: digits, but nobody's phone number. */
 const TIMESTAMP = /\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?/g;

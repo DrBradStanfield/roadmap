@@ -3,12 +3,14 @@
  *  duplicate records reconcile, duplicate chat files keep first-match discovery. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Blob as NodeBlob } from 'node:buffer';
-import {
-  ConflictError, buildErasedFile, createEmptyFile, createMeasurement, DriveAdapter, DRIVE_FOLDER_NAME,
-  driveFindFileId,
-  RecordSession, ROADMAP_DOC, ROADMAP_FILE_NAME, SchemaTooNewError, StorageError, SyncManager,
-  type RoadmapFile, type StorageAdapter,
-} from '@roadmap/health-core';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { buildErasedFile } from '@roadmap/health-core/erase';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { DriveAdapter, DRIVE_FOLDER_NAME, driveFindFileId } from '@roadmap/health-core/drive-rest';
+import { RecordSession } from '@roadmap/health-core/record-session';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { SchemaTooNewError } from '@roadmap/health-core/migrate';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
 import { GoogleDriveAdapter } from './drive';
 import { ChatHistoryStore } from './chat-history-store';
 import { webRecordHost } from './web-record-host';

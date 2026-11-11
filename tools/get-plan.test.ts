@@ -13,20 +13,13 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsS
 import { tmpdir } from 'node:os';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  calculateHealthResults,
-  createEmptyFile,
-  createMeasurement,
-  medicationsToInputs,
-  mergeFiles,
-  mergeLongitudinalInputs,
-  migrateFile,
-  screeningsToInputs,
-  toOldShape,
-  type FileLabValue,
-  type HealthInputs,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { createEmptyFile, createMeasurement, type FileLabValue, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs } from '@roadmap/health-core/mappings';
+import { mergeFiles } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
@@ -258,8 +251,10 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(html).toMatch(/^<!doctype html>/);
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/<link/i);
-    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21).
-    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int)/i);
+    // Reference links are allowed; www.who.int is the WHO 2026 dementia guideline (US-07 AC1, 2026-10-21);
+    // NHLBI, FDA and NICE are the BP crisis, statin pregnancy and salt substitute sources (US-07 AC12-AC14);
+    // DailyMed holds the lipid drug labels' pregnancy sections (US-06 AC20, 2026-11-09).
+    expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int|www\.nhlbi\.nih\.gov|www\.fda\.gov|www\.nice\.org\.uk|dailymed\.nlm\.nih\.gov)/i);
     expect(html).toContain('<style>');
     expect(html).toContain('Consider adding Ezetimibe');
   });
@@ -443,14 +438,17 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
 });
 
 describe('US-30 AC1 — nothing that could reach the network is imported', () => {
-  it('imports only health-core sources and node builtins', () => {
+  it('imports only health-core sources, node builtins and the import-free HTML escaper (US-64 AC30)', () => {
     const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'get-plan.ts'), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(5);
     for (const spec of specifiers) {
-      expect(spec).toMatch(/^(zod|node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+)$/);
+      expect(spec).toMatch(/^(zod|node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+|\.\/escape-html\.mjs)$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|https?:\/\/[^\s'"]*\/(api|v1))\b/);
+    // The escaper is allowed only while it imports nothing itself (US-64 AC30).
+    const escaper = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'escape-html.mjs'), 'utf8');
+    expect(escaper).not.toMatch(/\bimport\b|\brequire\s*\(|\bfrom\s+['"]/);
   });
 });
 
@@ -614,6 +612,13 @@ describe('US-30 AC7 — a plan from numbers, with no record file', () => {
     expect(text).toContain('from the values you gave.');
     expect(text.replace('the values you gave', 'your record file')).toBe((await captureRun([path])).stdout);
     rmSync(fileDir, { recursive: true, force: true });
+  });
+
+  it('US-21 AC26: refuses a blood test past its plausible range, as edit-record does, computing nothing', async () => {
+    const result = await captureRun(['--from-values', spec([{ test: 'Glucose', value: 5.5, unit: 'mg/dL', date: '2026-08-20' }])]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('values[0]: 5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake');
+    expect(result.stdout).toBe('');
   });
 
   it("converts a conventional unit by edit-record's rules (LDL 123.8 mg/dL is 3.2 mmol/L)", async () => {

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-9,"S7 web data layer, upload, standalone",Remove dead A/B client tracking,not started,"server-api.ts:96-128; calls at HealthTool.tsx:197, PlanPdf.tsx:240, useLongitudinalSave.ts:151",,,yes

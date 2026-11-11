@@ -2,7 +2,7 @@
 title: "Run your health plan from the command line"
 description: "Two commands in this repo read your health-roadmap.json and write to it: one prints your plan offline, one files a new value."
 slug: "command-line"
-updated: "2026-10-21"
+updated: "2026-11-09"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
@@ -26,7 +26,7 @@ Every command below uses that copy. Swap in your real path when you are ready.
 
 ## Install
 
-You need Node 20.10 or newer. Check with `node --version`. Then:
+You need Node 22 or newer. Check with `node --version`. Then:
 
 `git clone https://github.com/DrBradStanfield/roadmap.git`
 
@@ -50,7 +50,7 @@ For a page you can keep, print, or take to an appointment:
 
 The HTML is one self-contained file. It loads nothing from the internet, so it still reads years from now.
 
-The plan needs your height and sex to compute anything. Without them it stops and tells you.
+The plan needs your height to compute anything. Without it the command stops and tells you. Sex is optional: without it the plan still prints, but it leaves out the parts that depend on sex (the ideal weight and protein target, an eGFR worked out from creatinine, the low-HDL suggestion, and the sex-specific screening steps) and says which parts it left out.
 
 ## Start from numbers
 
@@ -62,7 +62,7 @@ echo '{"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.
 
 It prints the same plan as above (add `--json` or `--html <out>` as before). The record exists only in memory: nothing is written, nothing is sent, and the numbers are gone when the command ends.
 
-`sex` and `heightCm` are required. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
+`heightCm` is required. `sex` is optional: without it the plan leaves out the parts that depend on sex, as above. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
 
 ## Add a value
 
@@ -74,7 +74,7 @@ It answers with what it wrote and the id of the new row:
 
 `Added weight 67.8 kg on 2026-08-25 — new row e8ab7e79-a2b3-4d30-903f-1a4f0fc40901`
 
-Core metrics are stored in SI units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside the plausible range for that metric, with the range in the message.
+Core metrics are stored in SI units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside the plausible range for that metric, with the range in the message. A blood test given with `--test` meets its own plausible range where the app keeps one (glucose, ferritin, TSH and others): `--test glucose --value 5.5 --unit mg/dL` is refused, because 5.5 mg/dL is 0.31 mmol/L, almost certainly a typing or unit mistake. `get-plan.ts --from-values` refuses it the same way.
 
 ## When the day is already taken
 

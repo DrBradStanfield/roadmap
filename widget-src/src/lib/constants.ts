@@ -1,7 +1,7 @@
 /**
  * Shared UI constants for the health widget
  */
-import { recordedTime } from '@roadmap/health-core';
+import { recordedTime } from '@roadmap/health-core/medication-annotations';
 
 // Month arrays for date pickers
 export const MONTHS_FULL = [

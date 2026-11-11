@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+R1,record read,A remote change did not apply the record's unit system,bug,done,hooks/useHeldUnits.ts holds the change while anything typed is unsaved (US-34 AC7); every blood draft cell keeps its unit,1135;1147,no

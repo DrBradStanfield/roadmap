@@ -226,7 +226,7 @@ describe('US-15 AC7e: a failed guest creation logs only the error code and statu
     });
     db.profileUpsert = async () => ({ error: failure });
     await expect(create()).rejects.toThrow('Failed to create guest session');
-    expect(logged()).toEqual([['Failed to create guest profile:', { code: '23505' }]]);
+    expect(logged()).toEqual([['Failed to create guest profile:', { name: 'PostgrestError', code: '23505' }]]);
     const text = JSON.stringify(logged());
     for (const raw of ['guest-uuid', failure.message, failure.details, failure.hint]) expect(text).not.toContain(raw);
   });
@@ -235,13 +235,13 @@ describe('US-15 AC7e: a failed guest creation logs only the error code and statu
     const failure = new AuthApiError('A user with guest-uuid@guest.internal is already registered', 422, 'email_exists');
     db.createUser = async () => ({ data: { user: null }, error: failure });
     await expect(create()).rejects.toThrow('Failed to create guest session');
-    expect(logged()).toEqual([['Failed to create guest auth user:', { code: 'email_exists', status: 422 }]]);
+    expect(logged()).toEqual([['Failed to create guest auth user:', { name: 'AuthApiError', code: 'email_exists', status: 422 }]]);
   });
 
   it('a failed session row logs its code, and an error with no plain code logs unknown', async () => {
     db.sessionError = new PostgrestError({ message: 'm', details: 'Key (id)=(guest-uuid) already exists.', hint: '', code: '23505' });
     await expect(create()).rejects.toThrow('Failed to create guest session');
-    expect(logged()).toEqual([['Failed to create guest session:', { code: '23505' }]]);
+    expect(logged()).toEqual([['Failed to create guest session:', { name: 'PostgrestError', code: '23505' }]]);
     vi.mocked(console.error).mockClear();
     db.sessionError = { message: 'synthetic insert failure for guest-uuid' };
     await expect(create()).rejects.toThrow('Failed to create guest session');

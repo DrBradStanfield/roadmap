@@ -9,7 +9,7 @@
  * text nodes and the paragraph, row and cell boundaries matter.
  */
 import JSZip from 'jszip';
-import { inflateCapped } from '@roadmap/health-core';
+import { inflateCapped } from '@roadmap/health-core/lab-extraction';
 import { cutText } from './cut-text';
 
 /** XML inflated across every part read: a ZIP bomb stops here, not in memory. */

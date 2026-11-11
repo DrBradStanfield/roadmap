@@ -2,7 +2,7 @@
 title: "Track your blood tests over time with ChatGPT or Claude"
 description: "Keep every blood test in one file in your own Dropbox or Google Drive, connect ChatGPT or Claude to it, and ask how a result has changed."
 slug: "track-blood-tests-with-ai"
-updated: "2026-10-22"
+updated: "2026-11-09"
 stories: ["US-07", "US-09", "US-12", "US-32", "US-36", "US-38"]
 ---
 
@@ -26,7 +26,7 @@ It is free, and you do not create an account. The code is public under the MIT l
 
 ## Step 1: Start your record
 
-Open [the tool](https://drstanfield.com/pages/roadmap) and enter your sex, height and weight. A button then appears at the top of your plan, which on a phone is the Plan tab. It says "Where do you want to keep your health record?" Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
+Open [the tool](https://drstanfield.com/pages/roadmap) and answer its first questions: your height, weight and sex. Then find the button that says "Keep my record in Dropbox or Google Drive". On a phone it heads the Account tab. On a computer it sits at the foot of My health and in Settings, and the Sign in button beside the My health title opens the same choice. Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
 
 Until you connect a cloud, the tool keeps your record in your browser only, and no assistant can reach it. [Find your health record file](/blogs/guides/find-your-record) shows where the file lands in each cloud.
 
@@ -44,7 +44,7 @@ In claude.ai, open Settings, then Connectors, then Add custom connector. Name it
 
 ### ChatGPT
 
-You need a paid ChatGPT plan, on the web. OpenAI has not published our app yet, so today you add it in developer mode: switch on developer mode, create the app with the address above, and sign in with Dropbox or Google Drive. ChatGPT asks you to pick the app again in each new chat. The steps, and what to do when one goes wrong, are in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
+You need a paid ChatGPT plan, on the web. OpenAI does not list health apps in ChatGPT at present, so you add it in developer mode: switch on developer mode, create the app with the address above, and sign in with Dropbox or Google Drive. ChatGPT asks you to pick the app again in each new chat. The steps, and what to do when one goes wrong, are in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
 You authorize the connector once. After 90 days it asks again.
 
@@ -58,7 +58,7 @@ There are two main ways to get a lab report into your record.
 
 In the chat, drop in a PDF or a photo of the report and ask your assistant to file it. The assistant reads the file itself and sends our server only the values it read: the test name as printed, the number, the unit and the date. Our server checks each value against the record's list of tests, units and ranges. You see the candidate values first. Nothing is written until you confirm.
 
-On the website, upload the report under Blood Test Results. The tool shows what it read in a table, and you check it against the report before you press Save. The details, including file types and limits, are in [upload a lab report](/blogs/guides/upload-lab-report).
+On the website, press the + button beside Blood tests in My health and upload the report there. The tool shows what it read in a table, and you check it against the report before you press Save. The details, including file types and limits, are in [upload a lab report](/blogs/guides/upload-lab-report).
 
 With a Dropbox record, you can also put lab files in your Dropbox folder and ask the assistant to import them. Those files go through our server to Anthropic's API to be read. The [ChatGPT guide](/blogs/guides/connect-chatgpt#what-it-can-do) explains that path.
 

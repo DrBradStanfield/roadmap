@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-5,S5 clinical rules,Core-metric lists defined once,not started,"Lists at validation.ts:13, roadmap-file.ts:158, lab-extraction.ts:202",,,yes

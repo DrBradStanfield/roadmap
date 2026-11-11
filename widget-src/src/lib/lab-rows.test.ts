@@ -3,7 +3,7 @@
  * rows surfaced beneath the core blood-test matrix.
  */
 import { describe, it, expect } from 'vitest';
-import { groupLabValues } from '@roadmap/health-core';
+import { groupLabValues } from '@roadmap/health-core/lab-series';
 import { countLabValuePoints, labGroupMatrix, groupLabHistory } from './lab-rows';
 import type { ApiLabValue } from './api-types';
 

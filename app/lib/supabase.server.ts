@@ -15,7 +15,7 @@ export { hashClientIp, getOrCreateGuestSession, GuestRateLimitError } from './su
 export type { GuestSessionResult } from './supabase-guest.server';
 export { getProfile, addMessageCredits, updateSubscriptionPlan, recordUnprovenPaidOrder } from './supabase-account.server';
 export type { DbProfile } from './supabase-account.server';
-export { tryAcquireCronLock } from './supabase-cron-lock.server';
+export { tryAcquireCronLock, endCronLock, stillHoldsLock } from './supabase-cron-lock.server';
 export type { CronLockName } from './supabase-cron-lock.server';
 export {
   DASHBOARD_WINDOW_DAYS,

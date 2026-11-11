@@ -25,11 +25,14 @@
 #   product-health loop's weekly git-log review runs with the same identity.
 #
 # Residual (documented, accepted): a same-push-triggered malicious run may
-# execute for a few seconds before cancellation. Only the spend-capped
-# ANTHROPIC_API_KEY exists at repo level, but the 'production' environment has
-# had no wait timer or required reviewer since 2026-09-02 (deploy.yml), so a
-# run that names that environment can read the deploy secrets (Fly, Shopify,
-# Sentry) in those seconds. That is why the playbook below revokes them.
+# execute for a few seconds before cancellation. In those seconds it can read
+# the repo-level secret (CLAUDE_CODE_OAUTH_TOKEN; ANTHROPIC_API_KEY was deleted
+# 2026-11-09, unused). It can read an environment's secrets only
+# in a job that names that environment and passes its branch rules. The
+# 'production' environment has had no wait timer or required reviewer since
+# 2026-09-02 (deploy.yml), so a job naming it can read the deploy secrets (Fly,
+# Shopify, Sentry); 'engine-signing' holds ENGINE_SIGNING_KEY. That is why the playbook
+# below rotates all of them.
 #
 # Editing this file is Brad-only (constitution Guardrails).
 
@@ -100,7 +103,7 @@ jobs:
           Files: ${files}
           Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
           Playbook if it was not you: (1) disable the changed workflows in the Actions tab; (2) git revert on main;
-          (3) revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY."
+          (3) rotate all secrets: the repo-level one (CLAUDE_CODE_OAUTH_TOKEN), the production environment ones (the Fly, Shopify and Sentry tokens) and the engine-signing one (ENGINE_SIGNING_KEY)."
               exit 0
             fi
             # 1) Disable every workflow file this push added or modified.
@@ -126,7 +129,7 @@ jobs:
 
           Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
           Playbook: (1) review the diff; (2) if malicious: git revert on main,
-          revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY;
+          rotate all secrets: the repo-level one (CLAUDE_CODE_OAUTH_TOKEN), the production environment ones (the Fly, Shopify and Sentry tokens) and the engine-signing one (ENGINE_SIGNING_KEY);
           (3) re-enable legitimate workflows via Actions tab."
             exit 0
           fi

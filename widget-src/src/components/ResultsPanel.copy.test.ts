@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   LOCAL_FIRST_EMAIL_HELPER,
   GUEST_CAPTURE_BUTTON_LABEL,
-} from './ResultsPanel';
+} from './PlanPdf';
 
 // Brad locked this copy on 2026-06-15. On every LIVE (LOCAL_FIRST) surface the
 // guest plan-capture CTA opens the browser save-as-PDF window — the email field

@@ -25,6 +25,7 @@
  */
 import { chmodSync, existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { escapeHtml as esc } from './escape-html.mjs';
 import * as z from '../packages/health-core/src/zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
@@ -243,11 +244,6 @@ function wrap(text: string): string[] {
   }
   if (line) lines.push(pad + line);
   return lines;
-}
-
-/** Everything the file can contain is untrusted text — escape it, always. */
-function esc(value: unknown): string {
-  return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
 export function renderHtml(plan: Plan, from = 'your own record file', schemaVersion = BASE_SCHEMA_VERSION): string {

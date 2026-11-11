@@ -131,7 +131,8 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"status","text":"Reading your question"}"#), .status("Reading your question"))
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"text","text":"Hi"}"#), .text("Hi"))
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"sources","titles":["ApoB",3]}"#), .sources(["ApoB"]))
-        XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"thinking","text":"x"}"#), .other)
+        XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"thinking","text":"x"}"#), .thinking) // US-52 AC6g: its words are dropped
+        XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"newer","text":"x"}"#), .other)
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"done","success":true,"content":"All","isFallback":false}"#), .done(content: "All", isFallback: false, error: nil))
         XCTAssertEqual(ChatStreamEvent.parse(#"{"type":"done","success":false,"error":"Failed"}"#), .done(content: nil, isFallback: false, error: "Failed"))
         XCTAssertNil(ChatStreamEvent.parse("not json"))

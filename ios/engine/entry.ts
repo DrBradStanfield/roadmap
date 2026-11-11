@@ -18,6 +18,11 @@ import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
+import { NOT_OPEN, open } from './cloud';
+import { failed } from './cloud-adapters';
+import { StorageError } from '../../packages/health-core/src/adapter';
+import { documentShelf } from './documents';
+import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -114,7 +119,8 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
   } catch (error) {
     view = { error: String(error), planError: error instanceof PlanError };
   }
-  const data = myData(file, nowIso, choices, plan);
+  // The letters and scan results at My health's foot ride on myData (US-73 AC12, documents.ts).
+  const data = { ...myData(file, nowIso, choices, plan), documents: documentShelf(file) };
   if ('sections' in view) {
     try {
       view.topics = topicSections(view.usProducts ?? view.sections, data);
@@ -186,6 +192,45 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
  *  contract, so an app reaches it only through HealthEngine.optionalCall. */
 export function labSearchJson(text: string): string {
   return JSON.stringify(labSearch(text));
+}
+
+/** The upload's verdicts for one pick on the phone, as JSON (health-core upload-rules, US-52 AC7):
+ *  `request` {files: [{name, bytes}], zipMembers: [path]} answers {limits, files: [verdict],
+ *  zipMembers: [verdict]}, in order, each "keep", "tooLarge", "unsupported" or "hidden". An optional
+ *  door: an app reaches it only through HealthEngine.optionalCall and keeps its Swift rules without it. */
+export function uploadVerdictsJson(request: string): string {
+  const { files = [], zipMembers = [] } = JSON.parse(request) as { files?: Array<{ name: string; bytes: number }>; zipMembers?: string[] };
+  return JSON.stringify({
+    limits: UPLOAD_LIMITS.phone,
+    files: files.map(({ name, bytes }) => fileVerdict({ name, bytes, platform: 'phone' })),
+    zipMembers: zipMembers.map((path) => zipMemberVerdict(path, 'phone')),
+  });
+}
+
+/** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View
+ *  original file", US-14): the document page's door, optional like labSearchJson. By the document's
+ *  id, so only a file the record names is read. Rejects with the failure JSON Swift reads (review R6
+ *  of PR 972): kind "not-open" when no cloud is open, "no-original" when the record names none for
+ *  it, else the cloud's own failure, classed as a save's is (`failed`: sign-in, unreachable...). */
+export async function documentOriginal(id: string): Promise<ArrayBuffer> {
+  const at = open;
+  if (!at) throw new Error(JSON.stringify({ kind: 'not-open', detail: NOT_OPEN }));
+  const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
+  if (!doc?.fileRef) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document has no original in your cloud.' }));
+  try {
+    return await (await at.host.store.readDocument(doc.fileRef)).arrayBuffer();
+  } catch (error) {
+    if (originalGone(error)) throw new Error(JSON.stringify({ kind: 'no-original', detail: 'This document\'s original is not in your cloud.' }));
+    throw new Error(failed(at.provider, error));
+  }
+}
+
+/** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
+ *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  `driveDownloadDocument`, which sets no status but the reason not-found, #979). */
+function originalGone(error: unknown): boolean {
+  return error instanceof StorageError && (error.status === 404 || error.status === 409 || error.reason === 'not-found');
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';

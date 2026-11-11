@@ -193,5 +193,13 @@ function pair(sys: FileMeasurement | undefined, dia: FileMeasurement | undefined
   const diastolic = dia ? formatDisplayValue('diastolic_bp', dia.value, 'si') : null;
   // The pair as read: a half printed as a limit with its symbol, "< 125/78" (US-12 AC20).
   const shown = (row: FileMeasurement | undefined, metric: 'systolic_bp' | 'diastolic_bp') => row ? formatValue(metric, row.value, 'si', comparatorOf(row).comparator) : '–';
-  return { value: `${shown(sys, 'systolic_bp')}/${shown(dia, 'diastolic_bp')}`, systolic, diastolic, status, current: isCurrent };
+  // A half printed as a limit, as read ("< 125"): the chart draws it hollow, off its line (US-12 AC20a, #922).
+  const limit = (row: FileMeasurement | undefined, metric: 'systolic_bp' | 'diastolic_bp') =>
+    row && comparatorOf(row).comparator ? shown(row, metric) : undefined;
+  const systolicLimit = limit(sys, 'systolic_bp');
+  const diastolicLimit = limit(dia, 'diastolic_bp');
+  return {
+    value: `${shown(sys, 'systolic_bp')}/${shown(dia, 'diastolic_bp')}`, systolic, diastolic, status, current: isCurrent,
+    ...(systolicLimit ? { systolicLimit } : null), ...(diastolicLimit ? { diastolicLimit } : null),
+  };
 }

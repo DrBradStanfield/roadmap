@@ -1,7 +1,7 @@
 # Privacy policy addendum: the AI connector
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
-by `node scripts/build-privacy-page.mjs connector --publish` (last 30 October 2026). Republish after every edit here; the page is generated, never hand-edited.
+by `node scripts/build-privacy-page.mjs connector --publish` (last 11 November 2026). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`. Re-audited 2026-10-30 against `app/routes/api.chat.ts`,
@@ -270,11 +270,10 @@ health question, as "The copy we keep of health questions" below says. The match
 stays: the articles, the classification, the ids. A guest session row holds a hashed
 address, not an IP.
 
-If you are signed in to this store, each message also makes our server look up your
-email address and your first and last name from your store account. The first time, it
-creates an account row for you in our database with those details and your store
-customer id, and an audit entry saying it did. Later messages keep the names up to date.
-Neither the daily job nor the erase button removes the account row.
+If you are signed in to this store, the tool page's chat still runs as if you were not.
+Our server does not look up your name or email address, and it creates no account row.
+If you used this chat while signed in before 1 November 2026, an account row made then
+remains; neither the daily job nor the erase button removes it.
 
 The iPhone app's chat stores no question, no reply and no row of any kind; its own
 notice covers it.
@@ -300,8 +299,13 @@ Your question and the full reply are written to `chat_messages`, and the reply c
 the values it was sent. A title made from your first question is written to
 `chat_conversations`. Each question also writes a row like the tool page's, but with the
 question unmasked and with your earlier questions in that conversation beside it. If you
-are signed in to this store, these rows carry the id of your account row (your email
-address, first and last name and store customer id, as on the tool page); if not, a pseudonymous guest session id.
+are signed in to this store, each message also makes our server look up your email
+address and your first and last name from your store account. The first time, it creates
+an account row for you in our database with those details and your store customer id,
+and an audit entry saying it did. Our server updates your names from your store account
+from time to time. Neither the
+daily job nor the erase button removes the account row. If you are signed in, these rows
+carry the id of that account row; if not, a pseudonymous guest session id.
 
 Brad decided on 10 September 2026 to keep sending those cached values, because the
 answer is worse without them, and to put the transcripts under the same 30-day window

@@ -6,11 +6,12 @@
  * US-22 — a weight typed on My health jumps to the email box at its foot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import type { ProposedEdit } from '@roadmap/health-core';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements } from '../lib/roadmap-data';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -21,12 +22,13 @@ vi.mock('../lib/server-api', async original => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => {
-    chat.proposeEdit = onProposeEdit;
+  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: ChatEditTarget }) => {
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     return null;
   },
 }));
 import { HealthTool } from './HealthTool';
+import { settingsShown } from '../testing/settings';
 
 const stops: Array<() => void> = [];
 let scrolledIntoView: Element[] = [];
@@ -66,10 +68,10 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     const ldlRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('LDL'))!);
     fireEvent.click(ldlRow);
-    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    const page = view.container.querySelector<HTMLElement>('.mh-page-host .md-page')!;
     fireEvent.change(within(page).getByLabelText(/Value/), { target: { value: '2.2' } });
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'ldlC', displayValue: 3.2, unitSystem: 'si', date: null }]));
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     await waitFor(() => expect(view.container.querySelector('.md-panel-messages')!.textContent).toBe('Your typed value was not saved.'));
   });
 
@@ -86,12 +88,12 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     const ldlRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('LDL'))!);
     fireEvent.click(ldlRow);
-    expect(view.container.querySelector('.md-page')).not.toBeNull();
+    expect(view.container.querySelector('.mh-page-host .md-page')).not.toBeNull();
     if (phone) fireEvent.click(tab(view, 'Chat'));
 
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
 
-    await waitFor(() => expect(view.container.querySelector('.md-page')).toBeNull());
+    await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     if (phone) expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true');
     const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
     expect(waist.value).toBe('90');
@@ -111,13 +113,14 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
-    fireEvent.click(view.getByRole('button', { name: 'Settings' }));
-    expect(view.container.querySelector('.mh-settings')).not.toBeNull();
+    // A phone's Settings are its Account tab (US-62 AC34).
+    fireEvent.click(phone ? tab(view, 'Account') : view.getByRole('button', { name: 'Settings' }));
+    expect(settingsShown(view.container)).toBe(true);
     if (phone) fireEvent.click(tab(view, 'Chat'));
 
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
 
-    await waitFor(() => expect(view.container.querySelector('.mh-settings')).toBeNull());
+    await waitFor(() => expect(settingsShown(view.container)).toBe(false)); // a phone keeps them mounted in its hidden Account
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
     const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
     expect(waist.value).toBe('90');
@@ -210,8 +213,79 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
   });
 });
 
+// US-16 AC1a: the reveal's focus is the page's, not the user's, so it must not
+// arm the matrix's save on leave (US-03 AC5); the chat's value waits for Save.
+describe('US-16 AC1a on a phone: a chat weight revealed in the vitals matrix waits for the user to Save', () => {
+  const weights = async () => (await loadAllHistory()).filter(m => m.metricType === 'weight').map(m => m.value).sort();
+  const tapOutside = () => {
+    fireEvent.pointerDown(document.body, { pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerUp(document.body, { pointerId: 1, pointerType: 'touch' });
+  };
+  const settle = async () => { await act(async () => { await new Promise((r) => setTimeout(r, 400)); }); await flushRoadmapStore(); };
+  async function revealChatWeight() {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    await waitFor(() => expect(view.container.querySelector('.bt-timeline-title')).not.toBeNull());
+    fireEvent.click(tab(view, 'Chat'));
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 80, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(document.activeElement?.classList.contains('bt-input-active')).toBe(true));
+    const cell = document.activeElement as HTMLInputElement;
+    expect(cell.value).toBe('80');
+    return cell;
+  }
+
+  it('a tap outside saves nothing; the value stays in its highlighted cell', async () => {
+    const cell = await revealChatWeight();
+    tapOutside();
+    await settle();
+    expect(await weights()).toEqual([82]);
+    expect(cell.isConnected && cell.value).toBe('80');
+    expect(cell.classList.contains('bt-input-active')).toBe(true);
+  });
+
+  it('a key other than Tab released on the cell (Escape, Cmd) does not arm it: a tap outside saves nothing', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.keyUp(cell, { key: 'Escape' });
+    fireEvent.keyUp(cell, { key: 'Meta' });
+    tapOutside();
+    await settle();
+    expect(await weights()).toEqual([82]);
+    expect(cell.value).toBe('80');
+  });
+
+  it('Save (Enter in the cell) saves it', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.keyDown(cell, { key: 'Enter' });
+    await waitFor(async () => expect(await weights()).toEqual([80, 82]));
+  });
+
+  it('the user taps into the cell, edits it and taps outside: saved, as before', async () => {
+    const cell = await revealChatWeight();
+    fireEvent.pointerDown(cell, { pointerId: 2, pointerType: 'touch' });
+    fireEvent.pointerUp(cell, { pointerId: 2, pointerType: 'touch' });
+    fireEvent.change(cell, { target: { value: '79' } });
+    tapOutside();
+    await waitFor(async () => expect(await weights()).toEqual([79, 82]));
+  });
+
+  it('the user Tabs into the cell from outside, then taps outside: the chat value is saved, as before', async () => {
+    const cell = await revealChatWeight();
+    cell.blur();
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    cell.focus();
+    fireEvent.keyUp(cell, { key: 'Tab' });
+    tapOutside();
+    await waitFor(async () => expect(await weights()).toEqual([80, 82]));
+  });
+});
+
 describe('US-22 on a phone: a typed weight, the last answer, lands at the top of My health (US-62 AC25)', () => {
-  it('My health shows, its title takes the focus and is scrolled to; the email box stays at the foot', async () => {
+  it('My health shows, its title takes the focus and is scrolled to; the email box sits above the pills', async () => {
+    // A browser that already pressed "Your plan is ready."'s Got it (US-62 AC31): no card, so the title landing.
+    localStorage.setItem('hr_plan_ready_seen', '1');
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -227,6 +301,6 @@ describe('US-22 on a phone: a typed weight, the last answer, lands at the top of
     await waitFor(() => expect(document.activeElement).toBe(title), { timeout: 2000 });
     expect(scrolledIntoView).toContain(title);
     expect(title.closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(false);
-    expect(view.container.querySelector('#guestEmail')!.closest('.mh-foot')).not.toBeNull();
+    expect(view.container.querySelector('#guestEmail')!.closest('.mh-pdf')).not.toBeNull(); // above the pills (US-62 AC30d)
   });
 });

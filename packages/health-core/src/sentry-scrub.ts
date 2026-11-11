@@ -283,8 +283,10 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 export const SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 
 // Bounded parts keep it linear on a long run; a lookbehind would refuse the
-// second of two adjacent addresses (US-09 AC7f).
-const EMAIL_RE = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}/g;
+// second of two adjacent addresses (US-09 AC7f). The feedback guard builds its
+// own regex from this source, so both read one rule (US-32 AC58).
+export const EMAIL_SOURCE = String.raw`[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}`;
+const EMAIL_RE = new RegExp(EMAIL_SOURCE, 'g');
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it ("γ-GT" starts with no
@@ -333,6 +335,34 @@ export function scrubStrings(input: unknown, maxDepth = 10, currentDepth = 0): u
   return out;
 }
 
+// The SDK's trace and span ids, each in the one shape it takes (US-09 AC7h). A
+// hex lab name and digits ("e2" then "123") sit inside a random id, and the
+// name-then-value rule would put "[value]" inside it.
+const ID_SHAPE: Record<string, RegExp> = { trace_id: /^[0-9a-f]{32}$/, span_id: /^[0-9a-f]{16}$/, parent_span_id: /^[0-9a-f]{16}$/ };
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+
+/** Put back each id `raw` holds at `keys` in its exact shape; any other value stays scrubbed. */
+function keepIds(raw: unknown, out: unknown, keys: string[]): void {
+  if (!isObject(raw) || !isObject(out)) return;
+  for (const key of keys) {
+    const id = raw[key];
+    if (typeof id === 'string' && typeof out[key] === 'string' && ID_SHAPE[key].test(id)) out[key] = id;
+  }
+}
+
+/** `contexts` through the text scrub, keeping only `trace.trace_id`, `trace.span_id`,
+ *  `trace.parent_span_id` and each `trace.links[]` entry's `trace_id` and `span_id`. */
+function scrubContexts(contexts: unknown): unknown {
+  const out = scrubStrings(contexts);
+  const trace = isObject(contexts) ? contexts.trace : undefined;
+  const outTrace = isObject(out) ? out.trace : undefined;
+  keepIds(trace, outTrace, ['trace_id', 'span_id', 'parent_span_id']);
+  const links = isObject(trace) ? trace.links : undefined;
+  const outLinks = isObject(outTrace) ? outTrace.links : undefined;
+  if (Array.isArray(links) && Array.isArray(outLinks)) links.forEach((link, i) => keepIds(link, outLinks[i], ['trace_id', 'span_id']));
+  return out;
+}
+
 /** The free-text fields of a Sentry event, structurally (no SDK dependency). */
 export interface TextScrubbableEvent {
   message?: unknown;
@@ -353,7 +383,7 @@ export function scrubEventText(event: TextScrubbableEvent): void {
     if (typeof value.value === 'string') value.value = scrubText(value.value);
   }
   if (event.extra) event.extra = scrubStrings(event.extra);
-  if (event.contexts) event.contexts = scrubStrings(event.contexts);
+  if (event.contexts) event.contexts = scrubContexts(event.contexts);
   if (event.tags) event.tags = scrubStrings(event.tags);
   for (const crumb of event.breadcrumbs ?? []) {
     if (typeof crumb.message === 'string') crumb.message = scrubText(crumb.message);

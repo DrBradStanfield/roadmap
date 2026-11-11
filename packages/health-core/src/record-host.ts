@@ -7,6 +7,20 @@
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
 
+/** What `remoteChanged` tells the page: the erase a merge brought in, if any (US-16 AC2a). */
+export interface RemoteChange { erase: string | null }
+
+/** Two changes taken in before the page hears of them (a save loop's passes),
+ *  as one: a later change that brings no erase keeps the earlier one's. */
+export function laterChange(prior: RemoteChange | null, next: RemoteChange | null): RemoteChange | null {
+  return next ? { erase: next.erase ?? prior?.erase ?? null } : prior;
+}
+
+/** Tell the page of a change taken in, when there is one. */
+export function announce(host: RecordHost, change: RemoteChange | null): void {
+  if (change) host.remoteChanged(change);
+}
+
 /** A store that reads and writes synchronously (localStorage, a local file).
  *  Lets a page's last-ditch save land before the page goes (US-10 AC5), and a
  *  returning page skip a re-read when nothing moved (US-34 AC6). */
@@ -15,16 +29,33 @@ export interface SyncStorage {
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult;
   /** The file's stored revision; null when there is none. */
   revision(fileName: string): string | null;
+  /** Remove the file, only at `expectedVersion` (ConflictError otherwise), so
+   *  another page's write since stays (US-06 AC13). */
+  removeSync?(fileName: string, expectedVersion: string | null): void;
 }
 
 /** On a cloud: the copy on this device that holds a save the cloud refused,
  *  and the marker that says it is there (US-09 AC4). */
 export interface DeviceMirror {
   adapter: StorageAdapter;
+  /** The device copy's synchronous path, when it has one (localStorage on the
+   *  web): a page going away writes its unsaved changes there at once, since
+   *  it cannot wait for the cloud save (US-06 AC13). */
+  sync?: SyncStorage;
   pending: { get(): boolean; set(): void; clear(): void };
+  /** The device copy's revision a connect's lift uploaded ('' for none), kept
+   *  until the new cloud's first session opens (US-06 AC13, #974). Absent: no
+   *  lift is recorded (the iPhone). */
+  lifted?: { get(): string | null; set(revision: string): void; clear(): void };
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */
   writesStopped(): boolean;
+  /** True while this browser still uses this cloud, so the device copy is
+   *  still its mirror: false once another tab has switched to "This device"
+   *  or another cloud (US-09 AC2), and then a page going away writes nothing
+   *  there. Absent: never known, so an erase taken in removes no device copy,
+   *  and a page going away still writes it (US-06 AC13). */
+  stillChosen?(): boolean;
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */
   wipe(): Promise<void>;
@@ -59,8 +90,10 @@ interface HostBase {
   /** The engine's only timers (JavaScriptCore has none of its own). Called at
    *  each use, never captured, so a test's fake timers apply. */
   timers: { set(run: () => void, ms: number): unknown; clear(handle: unknown): void };
-  /** A re-read or a save brought in something a person would see (US-34). */
-  remoteChanged(): void;
+  /** A re-read or a save brought in something a person would see (US-34).
+   *  `erase`: the erase identity it moved the record to, when it carried
+   *  another writer's erase; null for any other change. */
+  remoteChanged(change: RemoteChange): void;
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;
@@ -93,3 +126,20 @@ export type RecordHost =
       eraseFence(): string | null;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
+
+/**
+ * At a session's open: a device copy written after the connect's lift read it
+ * (another tab's departure, US-06 AC13) is marked for this session to take in,
+ * whatever became of the shared marker meanwhile: an old-cloud tab's save may
+ * have cleared it (#974). Once the new cloud is remembered, no old-cloud tab
+ * clears the marker again (RecordSession.releaseMarker). Only a session on the
+ * remembered cloud reads the record, and then it goes.
+ */
+export function liftMissed(mirror: DeviceMirror, copyRevision: string | null | undefined): boolean {
+  const lifted = mirror.lifted?.get();
+  if (lifted == null || !mirror.stillChosen?.()) return false; // an old-cloud page leaves it
+  mirror.lifted!.clear();
+  if ((copyRevision ?? '') === lifted) return false;
+  mirror.pending.set();
+  return true;
+}

@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  ConflictError, createEmptyFile, LostUpdateError, MemoryAdapter, RecordShapeError, ROADMAP_FILE_NAME,
-  SchemaTooNewError, StorageError,
-} from '@roadmap/health-core';
+import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import { RecordShapeError, SchemaTooNewError } from '@roadmap/health-core/migrate';
 import { LocalStorageAdapter } from '../src/storage';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { liftLocalInto, migrateLocalInto, prepareSwitch, reportConnectFailure } from './connect';
@@ -163,8 +163,11 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
 
   it('app.tsx reports both OAuth returns through reportConnectFailure, never raw', () => {
     const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/Sentry\.captureException/);
-    expect(source).not.toMatch(/console\.\w+\([^)]*\berror\b/);
+    const boot = readFileSync(new URL('./boot.ts', import.meta.url), 'utf8'); // main()'s first part
+    for (const text of [source, boot]) {
+      expect(text).not.toMatch(/Sentry\.captureException/);
+      expect(text).not.toMatch(/console\.\w+\([^)]*\berror\b/);
+    }
     expect(source.match(/reportConnectFailure\(error, '(dropbox|google-drive)'\)/g)).toHaveLength(2);
   });
 });

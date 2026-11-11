@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-9,bug leads,Deploy skips the engine typecheck; HTML-escape copies differ,done,"deploy.yml:287 runs typecheck:engine; the escape copies are one helper, tools/escape-html.mjs (T-7)",1015;1199,tools/escape-html.test.ts for the escaper. For the typecheck none: a check that ci.yml and deploy.yml run the same typechecks is a Brad-only follow-up (workflows),yes

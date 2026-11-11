@@ -6,7 +6,8 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
-import { ReviewTable, type FileResult } from './ReviewTable';
+import { ReviewTable } from './ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 
 afterEach(cleanup);
 
@@ -89,6 +90,36 @@ describe('US-21 AC21: a row past its test\'s ceiling says so in the review, befo
   it('the same row printed in pmol/L shows no note', () => {
     const { container } = renderReview(freeT('pmol/L'));
     expect(container.querySelector('.bt-cell-refused')).toBeNull();
+  });
+});
+
+// US-21 AC26 (Codex R1, 2026-11-09): the review never previews a stored value Save would refuse.
+describe('US-21 AC26: a value past its plausible range is flagged in the review, before Save', () => {
+  const line = 'Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.';
+
+  it('glucose 3,000 mg/dL shows the upload line and no converted value; an edit back inside the bound clears it', () => {
+    const { container, getByRole } = renderReview(lab('Glucose', 3000, 'mg/dL'));
+    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
+    expect(getByRole('textbox', { name: 'Glucose value from 10 Mar 2026', description: line })).toBeTruthy();
+    expect(container.querySelector('.bt-cell-si')).toBeNull();
+    fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-review input')!, { target: { value: '99' } });
+    expect(container.querySelector('.bt-cell-refused')).toBeNull();
+    expect(container.querySelector('.bt-cell-si')?.textContent).toMatch(/^→ 5\.\d+ mmol\/L$/);
+  });
+
+  it('an untouched negative extraction (ferritin -1 µg/L) is flagged, judged on the number Save takes (Codex, 2026-11-09)', () => {
+    const { container } = renderReview(lab('Ferritin', -1, 'µg/L'));
+    expect(container.querySelector('.bt-cell-refused')?.textContent)
+      .toBe('Ferritin: a value below 0 µg/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
+  });
+
+  it('a count off its range\'s scale shows the scale note, as Save does, before any plausible-range line (adversary N1)', () => {
+    const { container } = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY, values: [],
+      additionalValues: [{ name: 'Platelets', value: 15000000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }],
+    }]);
+    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe('Platelets: the value and its printed range are on different scales, so the row was not stored.');
+    expect(container.querySelector('.bt-cell-si')).toBeNull();
   });
 });
 

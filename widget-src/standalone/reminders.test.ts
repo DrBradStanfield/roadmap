@@ -23,7 +23,7 @@
  * the real Drive adapter opens no popup.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { FileReminderOptIn } from '@roadmap/health-core';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>>;
 
@@ -134,6 +134,7 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
     await autoEnrolReminders('google-drive');
 
     expect(f).toHaveBeenCalledTimes(1);
+    expect(f.mock.calls[0][0]).toBe('https://health-tool-app.fly.dev/api/reminders-v2'); // Brad's server, fixed (W2-16)
     const body = postedBody(f);
     expect(body.op).toBe('optin');
     expect(body.provider).toBe('google-drive');

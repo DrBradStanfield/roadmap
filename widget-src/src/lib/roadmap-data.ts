@@ -1,30 +1,20 @@
 /** Local-first health records and client-side reports, on every widget surface. */
-import {
-  type AddLabValueRequest,
-  type AddLabValueResult,
-  type ApiMeasurement,
-  type LabUnitRefusal,
-  dayOf,
-  type MoveKeep,
-  type MoveRejection,
-  type FileReminderOptIn,
-  type HealthInputs,
-  type LpaUnit,
-  type MetricType,
-  type MovePlan,
-  labUnitForEvent,
-  labUnitTaken,
-  type ReminderScheduleItem,
-  knownMinorOf,
-  resolveLabCatalogEntry,
-} from '@roadmap/health-core';
-import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
+import type { AddLabValueRequest, AddLabValueResult, LabUnitRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import { dayOf } from '@roadmap/health-core/merge';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
+import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
+import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
-import type { StorageAdapter } from '@roadmap/health-core';
+import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
   ApiDocument,
@@ -90,6 +80,16 @@ export function getEraseIdentity(): string {
 export function getShownErase(): string {
   return store?.shownErase ?? '';
 }
+/** The erase a request is asked under: the one the page shows (US-16 AC2a). */
+export const askedUnder = getShownErase;
+/** Whether the record is still at the erase `asked` names, and the page still
+ *  shows it. Whole identities, never epochs: a merge can move the identity
+ *  within one epoch (US-16 AC2a). The record half refuses while an erase still
+ *  writes, since the erase swaps the copy before it flushes; the shown half
+ *  covers the gap between the record moving and the screen showing it. */
+export function stillShown(asked: string): boolean {
+  return asked === getEraseIdentity() && asked === getShownErase();
+}
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
@@ -129,8 +129,8 @@ export function holdsUnreadableMedication(key: string, answered = false): boolea
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(): boolean {
-  return store?.markReportEmailCaptured() ?? false;
+export function markReportEmailCaptured(erase?: string): boolean {
+  return store?.markReportEmailCaptured(erase) ?? false;
 }
 
 // --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
@@ -266,8 +266,8 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
   return result;
 }
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
-export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
-  const result = store ? store.addLabValue(input) : null;
+export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }

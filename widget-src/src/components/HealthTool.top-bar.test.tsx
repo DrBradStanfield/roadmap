@@ -2,8 +2,8 @@
 /**
  * Web redesign phase 1, as the person sees the whole widget:
  * US-09 AC30 — the storage button sits in the input column's header, where
- * "Supercharge this tool" was, on desktop; on a phone it moved to the top bar
- * above the tabs (US-20 AC7, HealthTool.tab-bar.test.tsx).
+ * "Supercharge this tool" was, on desktop; on a phone it sits in the Account
+ * tab (US-62 AC34, HealthTool.tab-bar.test.tsx).
  * US-38 AC1 — "Supercharge this tool" is one card at the foot of the plan.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,8 +52,9 @@ afterEach(async () => {
 describe.each([['desktop', false], ['phone', true]] as const)('on %s', (_, isPhone) => {
   beforeEach(() => { phone = isPhone; });
 
-  // US-62 AC16, AC24: My health's title line holds the storage and person buttons, phone and desktop.
-  it('US-09 AC30: the My health title line holds the storage and person buttons; no Supercharge there', async () => {
+  // US-62 AC16, AC24: My health's title line holds the storage and person buttons on desktop;
+  // a phone's are in the Account tab (AC34, HealthTool.tab-bar.test.tsx).
+  it.skipIf(isPhone)('US-09 AC30: the My health title line holds the storage and person buttons; no Supercharge there', async () => {
     const view = render(<HealthTool storageBar={<button type="button">Sign in</button>} />);
     const header = await waitFor(() => {
       const el = view.container.querySelector('.health-input-panel > .mh-header');

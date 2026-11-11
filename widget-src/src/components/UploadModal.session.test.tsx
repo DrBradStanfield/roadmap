@@ -30,13 +30,20 @@ const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.
 const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
 /** `archived`: what a completed save leaves in the reloaded history. */
-function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory }) {
+/** `refresh`: the page's re-read after a save; the history changes only once it ends. */
+/** `rereadThrows`: the page's re-read throws at once, before it returns a promise. */
+function Harness({ onStart, archived, completedHistory, initialHistory = emptyHistory, refresh, rereadThrows }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory; initialHistory?: UploadHistory; refresh?: Promise<void>; rereadThrows?: boolean }) {
   const [open, setOpen] = useState(true);
   const [history, setHistory] = useState(initialHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
     unitSystem="si" grading={{}} history={history} onStart={onStart}
-    onComplete={() => { onComplete(); if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
+    onComplete={() => {
+      onComplete();
+      if (rereadThrows) throw new Error('synthetic re-read throw');
+      if (refresh) return refresh.then(() => { if (completedHistory) setHistory(completedHistory); });
+      if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] });
+    }}
   /></>;
 }
 function selectFile() {
@@ -53,7 +60,9 @@ beforeEach(() => {
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 });
+  // Reset, not cleared: a test that fails early must not leave its queued answers to the next.
+  vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
+  vi.mocked(attachOriginals).mockReset().mockImplementation(async results => results);
   extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
@@ -81,7 +90,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await ready();
   });
   it('claims the session before quota resolves, so rapid selections launch once', async () => {
-    const quota = deferred<{ allowed: boolean; remaining: number }>();
+    const quota = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     vi.mocked(checkLabImportQuota).mockReturnValue(quota.promise);
     render(<Harness />);
     const picker = document.querySelector('input[type=file]')!;
@@ -93,7 +102,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).toHaveBeenCalledOnce();
   });
   it.each(['quota', 'draft flush'])('cancels while awaiting %s without later launching', async phase => {
-    const pending = deferred<{ allowed: boolean; remaining: number }>();
+    const pending = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     const flushing = deferred<void>();
     const onStart = vi.fn(() => flushing.promise);
     if (phase === 'quota') vi.mocked(checkLabImportQuota).mockReturnValue(pending.promise);
@@ -106,7 +115,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).toHaveBeenCalledOnce();
   });
   it('does not launch after unmount during quota', async () => {
-    const quota = deferred<{ allowed: boolean; remaining: number }>();
+    const quota = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     vi.mocked(checkLabImportQuota).mockReturnValue(quota.promise);
     const view = render(<Harness />); selectFile(); view.unmount();
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
@@ -231,6 +240,105 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
     expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
     expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual(vi.mocked(bulkSaveDocuments).mock.calls[0][0]);
+  });
+  // US-12 AC6c: the done screen counts every attempt, and a retry cannot start
+  // before the page has read back what the first one saved.
+  const savedLdl: UploadHistory = { ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] };
+  function originalFailsOnce() {
+    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 })
+      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
+  }
+  it('US-12 AC6c: the done screen after a retry names what the first Save saved too', async () => {
+    originalFailsOnce();
+    render(<Harness completedHistory={savedLdl} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 Original' }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 1 document/)).toBeTruthy();
+    expect(screen.queryByText(/not added/)).toBeNull();
+    expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 2 });
+  });
+  it('US-12 AC6c: an original filed again on the retry counts once', async () => {
+    // Attempt 1 files it metadata-only while the values throw; the retry refiles it.
+    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' };
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'meta' }], errorCount: 0 })
+      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'full' }], errorCount: 0 });
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 1 document$/)).toBeTruthy();
+  });
+  it('US-12 AC6c: two different originals that share a name count as two', async () => {
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [
+      { ...archivedLetter, id: 'a', contentHash: 'sha256-one' }, { ...archivedLetter, id: 'b', contentHash: 'sha256-two' },
+    ], errorCount: 0 });
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' }]);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value, 2 documents$/)).toBeTruthy();
+  });
+  it('US-12 AC6c: a failed re-read after a partial save is reported, tag only, and frees Save', async () => {
+    originalFailsOnce();
+    const failedReread = Promise.reject(new Error('synthetic re-read failure'));
+    failedReread.catch(() => {}); // handled from the start: the modal's catch is under test
+    render(<Harness completedHistory={savedLdl} refresh={failedReread} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / })); await screen.findByRole('button', { name: 'Done' });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(2); // the success path's re-read fails too
+  });
+  it('US-12 AC6c: a re-read that throws at once after a finished save is reported, tag only, and the save stays done', async () => {
+    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
+    vi.mocked(bulkSaveMeasurements).mockReturnValueOnce(saving.promise);
+    render(<Harness rereadThrows />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
+    fireEvent.click(await screen.findByRole('button', { name: /Health records saved/ }));
+    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
+    expect(screen.queryByText(/try again/)).toBeNull();
+    expect(Sentry.captureException).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+  });
+  it('US-12 AC6c: a re-read that throws at once after a partial save is reported, tag only, and keeps the thrown-branch retry message', async () => {
+    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file }]);
+    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'));
+    render(<Harness rereadThrows />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Some items could not be saved. Please try again.')).toBeTruthy();
+    expect(onComplete).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
+  });
+  it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
+    originalFailsOnce();
+    const reread = deferred<void>();
+    render(<Harness completedHistory={savedLdl} refresh={reread.promise} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+    // Before the re-read the review still offers the LDL: a retry now would send it again.
+    expect((screen.getByRole('button', { name: /^Sav/ }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => reread.resolve());
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
   });
   it('does not file a reviewed letter twice when a retry follows a partial save off-cloud (US-12 AC6)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
@@ -360,6 +468,22 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
     expect(line.textContent).not.toContain('whole number');
+  });
+
+  // US-21 AC26 (Brad 2026-11-09) · an uploaded value past its plausible range is refused like a
+  // typed one, and the summary names the end it passed, never the number.
+  it('US-21 AC26 — a value past its plausible range is named as not saved, with its bound', async () => {
+    vi.mocked(labImport).mockResolvedValue({
+      result: { ...extraction.result, additionalValues: [{ name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
+    } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveLabValues).mockResolvedValue({
+      saved: [], skippedDuplicates: 0, errorCount: 0,
+      refused: [{ key: 'glucose', unit: 'mg/dL', message: 'Glucose above 150 mmol/L', fault: 'implausible', bound: 'above' }],
+    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    const line = await screen.findByText('Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
+    expect(line.textContent).not.toContain('3000');
   });
 });
 

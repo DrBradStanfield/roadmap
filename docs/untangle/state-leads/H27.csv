@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H27,composition,"AppleHealthSync keeps its run state in booleans beside Status (running, again, started, asking) and the erase disconnect as memory.connected plus Status: one sync-state union with a pure transition would hold them (US-72 AC10 condition 1, not widened into PR 1218)",mode flags,not started,"ios/HealthRoadmap/Health/AppleHealthSync.swift: running/again/waiting/started/asking; disconnect() and followErase() set memory.connected and status together; EraseGate is already pure (HealthSyncMemory.swift)",,no

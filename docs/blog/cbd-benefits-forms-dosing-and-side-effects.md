@@ -286,7 +286,7 @@ There is no established dose of CBD as a supplement. The trials above used doses
 
 **Timing:** In two public-speaking studies, CBD was taken 90 minutes before the test [20][22].
 
-**Read labels carefully.** Over-the-counter products may contain more or less CBD than stated and may contain THC [2]. Independent testers such as consumerlab.com and Labdoor publish product test results.
+**Read labels carefully.** Over-the-counter products may contain more or less CBD than stated and may contain THC [2]. Independent testers such as Labdoor publish product test results.
 
 ## 5. Safety and Side Effects
 

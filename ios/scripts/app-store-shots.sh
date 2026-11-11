@@ -6,25 +6,29 @@
 # Last, app-store-compose.swift frames them with their headlines in
 # ios/build/app-store-assets/screenshots/ (Chat's capture comes from a real iPhone: see there;
 # "5 chat tab bar.png" gives it the current tab bar, app-store-drop-in.swift).
-# Uninstalls the app from that simulator first.
-#   ios/scripts/app-store-shots.sh ["iPhone 18 Pro"]  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
+# Runs on the shared simulator (an iPhone 18 Pro) under its lock (sim-run.sh, US-71 AC7),
+# and uninstalls the app there first.
+#   ios/scripts/app-store-shots.sh                  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
 #   ios/scripts/app-store-shots.sh --compose-only    (frames the captures already taken)
 set -eu
 cd "$(dirname "$0")/.."
 compose() { swift scripts/app-store-compose.swift build/app-store-shots build/app-store-assets/screenshots; }
 if [ "${1:-}" = "--compose-only" ]; then compose; exit; fi
-DEVICE="${1:-iPhone 18 Pro}"
+[ "${HR_SIM_INNER:-}" = "$$" ] || exec scripts/sim-run.sh -- scripts/app-store-shots.sh
 APP_ID=com.drstanfield.healthroadmap
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 OUT=build/app-store-shots
-ID=$(xcrun simctl list devices available | grep -F "    $DEVICE (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
-[ -n "$ID" ] || { echo "No simulator named $DEVICE"; exit 1; }
+ID=$SIM_UDID
 
 node scripts/build-engine.mjs >/dev/null
 xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
   -destination "id=$ID" -derivedDataPath "$DERIVED" -quiet
-xcrun simctl boot "$ID" 2>/dev/null || true
 xcrun simctl bootstatus "$ID" -b >/dev/null
+# Set before the first change to the shared device, so a failed run still undoes it: the skip settings
+# (outside the app, they survive an uninstall), the status bar, the listener. Photos has no remove:
+# the app icon picture added below stays until the device is erased.
+HOLD=
+trap 'kill ${HOLD:-} 2>/dev/null || true; xcrun simctl status_bar "$ID" clear; xcrun simctl spawn "$ID" defaults delete "$APP_ID" 2>/dev/null || true; scripts/clean-test-clones.sh' EXIT
 xcrun simctl uninstall "$ID" "$APP_ID" 2>/dev/null || true
 xcrun simctl install "$ID" "$DERIVED/Build/Products/Debug-iphonesimulator/HealthRoadmap.app"
 
@@ -59,8 +63,6 @@ xcrun simctl addmedia "$ID" HealthRoadmap/Assets.xcassets/AppIcon.appiconset/App
 HOLD_LOG="${TMPDIR:-/tmp}/app-store-shots-hold.log"
 node -e 'require("net").createServer((s) => s.resume()).listen(3101, "127.0.0.1", () => console.log("holding"))' > "$HOLD_LOG" 2>&1 &
 HOLD=$!
-# The skip settings live outside the app and survive an uninstall: take them away after.
-trap 'kill $HOLD 2>/dev/null || true; xcrun simctl status_bar "$ID" clear; xcrun simctl spawn "$ID" defaults delete "$APP_ID" 2>/dev/null || true; scripts/clean-test-clones.sh' EXIT
 # A taken port must stop the run: the upload would reach whatever holds it.
 for _ in 1 2 3 4 5; do grep -q holding "$HOLD_LOG" && break; sleep 1; done
 grep -q holding "$HOLD_LOG" || { echo "The hold listener could not take 127.0.0.1:3101:"; cat "$HOLD_LOG"; exit 1; }

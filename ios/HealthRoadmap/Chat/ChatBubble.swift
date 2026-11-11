@@ -25,3 +25,26 @@ struct ChatBubble: View {
         (try? AttributedString(markdown: line.text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(line.text)
     }
 }
+
+/// The answer in flight, under the conversation (US-52 AC6g): its words and a spinner, a still
+/// hourglass with Reduce Motion on. The web twin is widget-src/src/components/ChatPendingReply.tsx.
+struct ChatPendingLine: View {
+    let words: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if reduceMotion {
+                // Not "ellipsis": the words end in one, and it reads as the More button (design review).
+                Image(systemName: "hourglass")
+            } else {
+                ProgressView().controlSize(.small)
+            }
+            Text(words)
+        }
+        // The app's neutral status grey, not .secondary (3.4:1 on white): 6.0:1 light, 9.5:1 dark.
+        .foregroundStyle(Color.status(nil))
+        .font(.footnote)
+        .accessibilityElement(children: .combine)
+    }
+}

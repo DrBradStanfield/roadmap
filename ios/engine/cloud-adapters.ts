@@ -218,7 +218,7 @@ export class PhoneFileAdapter implements StorageAdapter {
   }
 }
 
-/** What went wrong, as one word Swift turns into plain words (SyncStatus.swift). */
+/** What went wrong, as one word Swift turns into plain words (SyncProblem.swift). */
 function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | 'unreachable' {
   if (error instanceof SignInError) return 'sign-in';
   if (error instanceof StorageError && error.status === 401) return 'sign-in';
@@ -230,8 +230,16 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
     if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
     return 'sign-in';
   }
+  if (dropboxFull(error)) return 'storage-full';
   if (error instanceof SchemaTooNewError) return 'too-new';
   return 'unreachable';
+}
+
+/** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38), by its typed reason (#979). The save
+ *  rewraps the error after an earlier write may have landed (sync-manager.ts), so its cause counts too. */
+function dropboxFull(error: unknown): boolean {
+  const full = (e: unknown) => e instanceof StorageError && e.reason === 'storage-full';
+  return full(error) || (error instanceof StorageError && full(error.cause));
 }
 
 /** A cloud failure as the JSON Swift reads: its kind, and health-core's words for it. */

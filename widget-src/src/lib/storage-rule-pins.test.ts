@@ -4,7 +4,7 @@
 // the rule it names is made in storage.ts, a change the existing tests that
 // use the module still pass with.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import {
   saveToLocalStorage, loadFromLocalStorage, clearOffFileHealthData,
   saveUnitPreference, loadUnitPreference, getJson, loadGuestInputs,

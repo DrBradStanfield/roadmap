@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H30,composition,"A pending cloudFlush that gets a 409 was suspected of throwing before cloudRefresh, skipping that sync's refresh (PR 1218 round 3). Closed, not real: a 409 never throws past cloud.ts:499-511; the conflict loop takes the erase in",lead,done,"The table test's failures were the 5 s re-read throttle (record-session.ts:31, :461-464), not the flush; see H31",,no

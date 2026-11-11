@@ -2,7 +2,7 @@
 title: "Connect Claude to your health record"
 description: "Point Claude Desktop or Claude Code at your health-roadmap.json and it can read your results, compute your plan, and file new ones."
 slug: "connect-claude"
-updated: "2026-10-21"
+updated: "2026-11-09"
 stories: ["US-32"]
 ---
 
@@ -14,7 +14,7 @@ This guide is for people who have the tool installed on a computer and are comfo
 
 A short, fixed list of tools, and nothing else:
 
-Read your record. Everything in the file: profile, measurements, blood tests, medications, supplements, screenings, documents. Claude can ask for one test or one date range instead of the lot.
+Read your record. Everything in the file: profile, measurements, blood tests, medications, supplements, screenings, documents. Claude can ask for one test, or only the results since a date, instead of the lot.
 
 Compute your plan. The same plan the web tool shows, worked out offline from your file, with the reason and the citations behind every suggestion.
 
@@ -26,9 +26,11 @@ Correct a value. Fix a number that went in wrong.
 
 Change four things about you. Your sex, your birth year, your birth month and your height, because your plan is worked out from those. Nothing else about you is writable.
 
-Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
+Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
-Import lab files. This one is hosted-only, over Dropbox: the local program you run here has no model and no network, so it lists the tool and refuses it, pointing you at the website's upload or the hosted connector instead.
+File results from a document. Give Claude a lab PDF or a photo of a result sheet and it reads the file itself, then hands the program the values it read. The program checks each one against the record's catalogue, units and ranges, shows you the candidates, and files only what you confirm. The candidates wait in the program's memory between the two steps, so a restart loses them and Claude reads the file again.
+
+Import lab files from your folder. This one is hosted-only, over Dropbox: the local program you run here has no model and no network, so it lists the tool and refuses it, pointing you at the website's upload or the hosted connector instead.
 
 The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your file, changes it, and writes it back.
 
@@ -38,7 +40,7 @@ One thing is held back on purpose. If you use email reminders, your record carri
 
 You need three things.
 
-Node.js 20.10 or newer, from [nodejs.org](https://nodejs.org). Check with `node --version`.
+Node.js 22 or newer, from [nodejs.org](https://nodejs.org). Check with `node --version`.
 
 This repo on your computer: `git clone https://github.com/DrBradStanfield/roadmap.git`. Then `cd roadmap && npm install`.
 
@@ -94,7 +96,7 @@ That is the design, not a fault. Two weights for one day and nothing downstream 
 
 A correction is its own step, and it never erases anything. Claude adds a new row with the corrected number and the original date, and marks the old row "entered-in-error". Both rows stay in the file for good. That is how a hospital record works, and it is why you can always see what you were told and when.
 
-There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements, screenings or documents: those are current state that a second device could overwrite, so for now only clinical values are writable this way.
+There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements or screenings: those are current state that a second device could overwrite, so for now only clinical values are writable this way. A document is filed only when you confirm results from it, as a record with a title, a date and at most a one-line summary, never the file itself.
 
 It can change four things about you: your sex, your birth year, your birth month and your height, because your plan is worked out from those. Unlike a blood test, they are not kept in history: the newest write is the one your record keeps, so the later of two changes made in the same minute is what you end up with. If Claude states what it believes the field holds and has that wrong, the change is refused. The program on your computer does not insist on that statement, because you are watching your own file; the hosted connector does. How the site displays units is not Claude's to change.
 
@@ -110,7 +112,7 @@ Worth being plain about the difference. On this route our server unseals the clo
 
 This works with Dropbox and Google Drive today. On Drive, Google offers no conditional write, so our server checks the file version before and after each save; two writers landing at the same instant can still race.
 
-1. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which opens that dialog with the name and the address already in it and waits for you to confirm.
+1. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20by%20Dr%20Brad&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which opens that dialog with the name and the address already in it and waits for you to confirm.
 
 2. Name it Health by Dr Brad, with this address:
 
@@ -126,7 +128,7 @@ The hosted version is append-only, like this one, with two extra limits: a corre
 
 It can also import lab files, two ways. Drop a PDF, a photo of a result sheet or a clinic letter into the conversation and Claude reads it itself, then sends our server only the values it read: the name as printed, the number, the unit, the date. The file never reaches our server; only those values do, in memory for one request, written to your own folder. Our server checks each one against the record's own catalogue, unit table and ranges, and files only what you confirm. This works on Dropbox and Google Drive alike. Or, on a connected Dropbox, ask it to import the lab files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and it reads the PDFs, JPEG or PNG images and ZIPs sitting there, five files at a time; those files go through our server to Anthropic's API for extraction. That happens as soon as it reads them, before you confirm anything. We keep none of them. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). Drop files in that folder and the next time you ask Claude anything about your record it offers them; nothing runs while you are away. Either way nothing is written to your record until you confirm; the candidates wait in a pending file in your own folder for an hour. A value already in your record is held rather than replaced.
 
-You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
+You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
 
 ChatGPT connects the same way, with one extra step: [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 

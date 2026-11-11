@@ -2,13 +2,13 @@
 title: "An open-source health record you can connect to your AI"
 description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-11-02"
+updated: "2026-11-09"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
 The code behind this tool is public, under the MIT licence, at [github.com/DrBradStanfield/roadmap](https://github.com/DrBradStanfield/roadmap). Anyone can read it and run it.
 
-Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. There is no account to create and no key to fetch, because there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
+Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. You do not sign up for anything, and there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
 
 We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI running on your own computer.
 
@@ -28,7 +28,7 @@ An AI on your own computer opens the file directly, with no server of ours in be
 
 [diagram:tools]
 
-There are nine tools, and none of them deletes anything from your record. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. There is no tenth tool that deletes.
+There are nine tools for your record, and none of them deletes anything from your record. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. No tool deletes a reading or your record. When the connector has them switched on, two more tools, `search_knowledge` and `get_article`, read Dr Brad's public articles. They never touch your record.
 
 ## Why nothing is ever deleted
 
@@ -69,7 +69,7 @@ Gemini is not on this list, because Google has not opened custom connectors to c
 
 Four steps, on any Claude plan. Nothing to install and no special mode to turn on.
 
-1. Open the add-connector dialog. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which Anthropic supports for exactly this: it opens the same dialog with the name and the address already in it, tells you the values came from an outside link, and waits for you to confirm. It adds nothing on its own and grants nothing on its own.
+1. Open the add-connector dialog. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20by%20Dr%20Brad&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which Anthropic supports for exactly this: it opens the same dialog with the name and the address already in it, tells you the values came from an outside link, and waits for you to confirm. It adds nothing on its own and grants nothing on its own.
 
 2. Fill it in and add it. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server address. Press Add.
 

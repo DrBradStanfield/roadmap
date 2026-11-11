@@ -3,7 +3,9 @@
 // choice (`profile.lpaUnit`), so it follows the user across devices.
 
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { isLpaUnit, recordLpaUnit, type ApiMeasurement, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import { isLpaUnit, recordLpaUnit } from '@roadmap/health-core/cell-unit';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import { getLpaUnit, setLpaUnit } from './roadmap-data';
 import { trackProductEvent } from './server-api';
 import { getJson, localHealthWritesStopped, LPA_CHECK_KEPT_KEY, safeGetItem, setJson } from './storage';
@@ -21,7 +23,7 @@ export function effectiveLpaUnit(saved: unknown, legacy: unknown, unitSystem: Un
   return recordLpaUnit(saved, unitSystem);
 }
 
-/** The old build's toggle for the Lp(a) field, in HealthTool's per-field overrides. */
+/** The old build's toggle for the Lp(a) field, in the per-field overrides (hooks/useUnits.ts, the same key). */
 function legacyToggle(): unknown {
   try {
     return JSON.parse(safeGetItem('health_roadmap_unit_overrides') ?? '{}')?.lpa;

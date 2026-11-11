@@ -8,12 +8,15 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
+import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import type { RecordHost, SyncStorage } from './record-host';
+import { announce, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
+
+export { eraseIdentityOf } from './erase-identity';
 
 /** How long a burst of edits waits before one save carries them all. */
 export const PERSIST_DEBOUNCE_MS = 800;
@@ -29,18 +32,6 @@ export const PERSIST_DEBOUNCE_MS = 800;
  */
 export const REMOTE_POLL_MS = 60_000;
 export const REMOTE_THROTTLE_MS = 5_000;
-
-/** Which erase the record is at. It lives in `meta` beside the clocks but is
- *  not one: an erase that leaves the record as empty as it was is still a
- *  change, and the page drops the chat's banners for it (US-16 AC2a). */
-function eraseOf(file: RoadmapFile): [number, string | null] {
-  return [file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null];
-}
-
-/** Which erase this copy is at, as one comparable string (US-16 AC2a). */
-export function eraseIdentityOf(file: RoadmapFile): string {
-  return JSON.stringify(eraseOf(file));
-}
 
 /** The record minus its own clocks — what a person would call a change. Keys
  *  are sorted, as everywhere else content is compared: a merge rebuilds the
@@ -117,6 +108,12 @@ export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx:
   await new SyncManager(target, ctx.deviceId, ROADMAP_DOC, { now: () => ctx.now }).save(ROADMAP_DOC.migrate(body, ctx));
 }
 
+/** The device copy's revision on a cloud whose copy has a synchronous path;
+ *  undefined on any other host (US-06 AC13). */
+function deviceCopyRevision(host: RecordHost): string | null | undefined {
+  return host.tier === 'cloud' ? host.mirror.sync?.revision(ROADMAP_FILE_NAME) : undefined;
+}
+
 /**
  * Model: edits change the working copy at once and schedule a debounced,
  * SERIALIZED save (one at a time; a burst becomes one write). The merge
@@ -147,6 +144,11 @@ export class RecordSession {
    *  a re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
   private revisionSeen: string | null = null;
+  /** On a cloud: the device copy's revision as this page last left it, at
+   *  open, at its departure write or at its failure mirror. An erase taken in
+   *  removes only that copy, never one another page wrote since (US-06 AC13).
+   *  Undefined on a host whose device copy has no synchronous path. */
+  private deviceCopySeen: string | null | undefined;
   /** The erase the page shows (`showErase`); null until a page says, and
    *  then no write is checked against it. */
   private shown: string | null = null;
@@ -172,14 +174,21 @@ export class RecordSession {
     const deviceId = host.deviceId();
     const sync = new SyncManager(host.store, deviceId, ROADMAP_DOC, { now: () => new Date(host.clock.now()).toISOString() });
     const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    const copySeen = deviceCopyRevision(host);
     const session = new RecordSession(host, deviceId, sync, await sync.load(), cloudUnreachable);
     session.revisionSeen = revision;
+    session.deviceCopySeen = copySeen;
     const mirror = host.tier === 'cloud' ? host.mirror : null;
-    mirror?.opened();
-    // A previous cloud session failed to save and mirrored its changes
-    // on-device (see saveLoop()'s catch). Merge them in now and schedule a
-    // save to lift them up; the marker clears only once a cloud save succeeds.
-    if (mirror?.pending.get()) {
+    if (mirror) {
+      mirror.opened();
+      // An erase this load took in leaves no pre-erase copy behind, under the
+      // same guards as one taken in later (US-06 AC13).
+      session.releaseErasedCopy(mirror, true);
+    }
+    // A previous cloud session failed to save and mirrored its changes on-device
+    // (saveLoop()'s catch), or a write missed the connect's lift: merge them in and
+    // schedule a save to lift them up; the marker clears once a cloud save does.
+    if (mirror && (liftMissed(mirror, copySeen) || mirror.pending.get())) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain
@@ -469,7 +478,7 @@ export class RecordSession {
     // The counting is the page's: it fires `remote_change_applied` when it
     // has actually re-rendered. A change of clocks alone is taken in and
     // announced to nobody: there is nothing new to show.
-    if (this.adopt(merged)) this.host.remoteChanged();
+    announce(this.host, this.adopt(merged));
     return true;
   }
 
@@ -479,7 +488,8 @@ export class RecordSession {
    * synchronous path merges into the one file every page shares, so the
    * write has landed when this returns, whatever the async save may come to
    * await; then it takes the merge in, as a save does. Any other store, and a
-   * refused synchronous write, fall back to the async save.
+   * refused synchronous write, fall back to the async save; on a cloud the
+   * device copy holds the changes meanwhile (mirrorNow).
    */
   flushSync(): void {
     if (!this.unsaved) return;
@@ -492,15 +502,41 @@ export class RecordSession {
         const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.revisionSeen = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.savedChanges = this.changes;
-        if (this.adopt(merged)) this.host.remoteChanged();
+        announce(this.host, this.adopt(merged));
         return;
       } catch {
         // Another page's write in between: the async save re-reads, merges
         // and lands it. A newer app's record, unreadable bytes or a full disk:
         // it meets the same refusal, and reports it (US-10 AC5).
       }
+    } else if (this.host.tier === 'cloud') {
+      this.mirrorNow(this.host.mirror);
     }
     void this.persist();
+  }
+
+  /**
+   * Cloud tier, page going away: the save below may never land, so the
+   * unsaved changes go to the device copy now, merged and marked pending as
+   * a failed save's are, and the next session lifts them up (US-06 AC13,
+   * US-09 AC4). The merge keeps a row only the device copy holds and drops
+   * one an erase listed. Nothing after log-off (US-09 AC2c), and nothing once
+   * another tab has moved this browser off this cloud: the device file is
+   * then that tab's record (US-09 AC2). Best-effort: an unreadable or full
+   * device copy leaves only the async save.
+   */
+  private mirrorNow(mirror: DeviceMirror): void {
+    if (!mirror.sync || mirror.writesStopped() || mirror.stillChosen?.() === false) return;
+    try {
+      // The device tier's merge above: the merge moves the clock, so no edit is rewound.
+      const ctx = this.ctx();
+      const { body, version } = mirror.sync.readSync(ROADMAP_FILE_NAME);
+      const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
+      mirror.pending.set();
+      this.deviceCopySeen = mirror.sync.writeSync(ROADMAP_FILE_NAME, merged, version).version;
+    } catch {
+      /* the async save below is all that is left */
+    }
   }
 
   /**
@@ -547,18 +583,75 @@ export class RecordSession {
     return { deviceId: this.deviceId, now: new Date(this.host.clock.now()).toISOString() };
   }
 
-  /** Take a merge in as the working copy, and answer whether it brought in
-   *  something a person would see, for the caller to announce. One that
+  /** Take a merge in as the working copy, and answer what it brought in that
+   *  a person would see, for the caller to announce (null: nothing). One that
    *  carries an erase made on another device clears this device's off-file
    *  health data, as the erase clears it where it is made (US-11 AC1, AC6;
    *  one clear for both, O5) — but never the original of a document the
    *  merge keeps (US-09 AC20, AC23). */
-  private adopt(merged: RoadmapFile): boolean {
+  private adopt(merged: RoadmapFile): RemoteChange | null {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
-    if (eraseIdentityOf(merged) !== this.eraseIdentity) this.clearOffFile(merged);
+    const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
+    if (erasedElsewhere) this.clearOffFile(merged);
     this.current = merged;
-    return visibleContentOf(merged) !== seen;
+    // Nor a full pre-erase copy of the record on this device (US-06 AC13).
+    if (erasedElsewhere && this.host.tier === 'cloud' && !this.unsaved) this.releaseErasedCopy(this.host.mirror);
+    return visibleContentOf(merged) === seen ? null : { erase: erasedElsewhere ? eraseIdentityOf(merged) : null };
+  }
+
+  /**
+   * After a cloud save: the marker a failed save or a page going away set
+   * (US-09 AC4, US-06 AC13) clears only once the device copy holds nothing
+   * the saved record lacks. A copy that holds more, such as another tab's
+   * departure written since this save began, keeps it for the next load to
+   * lift up, and so does one that cannot be read. The copy itself stays: a
+   * load that cannot reach the cloud starts from it (US-09 AC13). A copy with
+   * no synchronous path (the iPhone's, whose marker holds its own generation)
+   * clears as before. A browser moved to another provider never clears (#974).
+   */
+  private releaseMarker(mirror: DeviceMirror): void {
+    if (mirror.stillChosen?.() === false || (mirror.sync && (!mirror.pending.get() || !this.coveredCopy(mirror.sync)))) return;
+    mirror.pending.clear();
+  }
+
+  /**
+   * An erase taken in from another device (US-11): the device copy goes, with
+   * its marker, when the erased record holds all of it, this browser still
+   * uses this cloud (no other tab has moved it to "This device" or another
+   * cloud, US-09 AC2), and the copy is the one this page last read or wrote.
+   * Any other copy stays. The removal is checked at the revision read, best
+   * effort as writeSync is: localStorage has no cross-tab compare-and-swap.
+   * At a load (`loaded`), the copy must also be from before the erase the
+   * load took in: a copy written since stays for an offline start.
+   */
+  private releaseErasedCopy(mirror: DeviceMirror, loaded = false): void {
+    const sync = mirror.sync;
+    if (!sync?.removeSync || !mirror.stillChosen?.()) return;
+    const copy = this.coveredCopy(sync, loaded);
+    if (!copy || copy.version !== this.deviceCopySeen) return;
+    try {
+      sync.removeSync(ROADMAP_FILE_NAME, copy.version);
+    } catch {
+      return;
+    }
+    mirror.pending.clear();
+  }
+
+  /** The device copy's revision when the working copy holds all of it (no
+   *  copy at all reads as an empty record, which holds nothing more); null
+   *  when it holds more or cannot be read, or (`preErase`) when it is at the
+   *  working copy's erase. */
+  private coveredCopy(sync: SyncStorage, preErase = false): { version: string | null } | null {
+    try {
+      const { body, version } = sync.readSync(ROADMAP_FILE_NAME);
+      const ctx = this.ctx();
+      const copy = ROADMAP_DOC.migrate(body, ctx);
+      if (preErase && eraseIdentityOf(copy) === this.eraseIdentity) return null;
+      return contentOf(mergeFiles(this.current, copy, ctx)) === contentOf(this.current) ? { version } : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Mark dirty + schedule a debounced persist. */
@@ -604,7 +697,7 @@ export class RecordSession {
     // find: it stands aside while a write is pending, and the merge below has
     // already taken the change into the working copy (US-34 AC1). Announce it
     // here or the screen stays stale until a reload.
-    let remoteFolded = false;
+    let remoteFolded: RemoteChange | null = null;
     try {
       do {
         this.dirtyDuringPersist = false;
@@ -615,21 +708,21 @@ export class RecordSession {
         this.savedChanges = saving;
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
-        if (this.adopt(mergeFiles(this.current, result.file, this.ctx()))) remoteFolded = true;
+        remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
       } while (this.dirtyDuringPersist);
       // Ended before anyone hears of it: a listener that saves again starts a
       // new save, instead of joining this finished one.
       this.running = null;
-      if (remoteFolded) this.host.remoteChanged();
+      announce(this.host, remoteFolded);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
-      if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.host.mirror.pending.clear();
+      if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
       return true;
     } catch (error) {
       this.running = null; // as above: ended before the marker is announced
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
-      if (remoteFolded) this.host.remoteChanged();
+      announce(this.host, remoteFolded);
       // The background cloud save failed — this MUST be observable (unreported,
       // it's silent data-at-risk), and the changes must NOT stay memory-only:
       // mirror the working copy on-device so a page close can't lose it, and
@@ -639,8 +732,10 @@ export class RecordSession {
       // Most persist() call sites are fire-and-forget (`void this.persist()`),
       // so returning false (not rethrowing) keeps them from re-creating an
       // unhandled rejection; awaited callers (flush) check the result.
+      // Not once another tab moved this browser off this cloud: the device
+      // file is then that tab's record (US-06 AC13, Brad R1).
       const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
-      if (mirror && !mirror.writesStopped()) {
+      if (mirror && !mirror.writesStopped() && mirror.stillChosen?.() !== false) {
         mirror.pending.set();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // device file may hold guest-era data this session never loaded (no
@@ -653,6 +748,7 @@ export class RecordSession {
           const ctx = this.ctx();
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           await saveRecordInto(mirror.adapter, this.current, ctx);
+          this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
           /* device storage unavailable — memory-only is the best we have */
         }

@@ -6,10 +6,12 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
-import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
@@ -141,5 +143,18 @@ it('Delete all my data closes every opened reason', async () => {
   expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(1);
   fireEvent.click(view.getByRole('button', { name: 'Delete all my data' }));
   await waitFor(() => expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0));
+});
+
+// US-09 AC19: any erase the screen shows (another device's, once re-read, or one
+// whose write failed but still erased) closes them too, not only a successful Delete here.
+it('an erase the screen shows without a Delete here closes every opened reason', () => {
+  const results = calculateHealthResults(inputs)!;
+  const tiles = statTiles(results, { unitSystem: 'si' });
+  const view = render(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e1"/>);
+  fireEvent.click(view.getAllByRole('button', { name: /Why this suggestion\?/ })[0]);
+  view.rerender(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e1"/>);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(1);
+  view.rerender(<ResultsPanel results={results} isValid tiles={tiles} shownErase="e2"/>);
+  expect(view.container.querySelectorAll('.evidence-content')).toHaveLength(0);
 });
 

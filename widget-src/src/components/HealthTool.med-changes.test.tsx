@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
-import type { ProposedMedicationEdit } from '@roadmap/health-core';
+import type { ProposedEdit, ProposedMedicationEdit } from '@roadmap/health-core/chat-edits';
 import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -31,6 +31,8 @@ vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(nul
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const chat = vi.hoisted(() => ({ props: null as null | Record<string, any> }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: (props: Record<string, unknown>) => { chat.props = props; return null; } }));
+/** A reply asked and answered at once (US-16 AC2a: asked under the erase shown now). */
+const propose = (edits: ProposedEdit[]) => chat.props!.onProposeEdit.take(edits, chat.props!.onProposeEdit.ask(), true);
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
@@ -298,7 +300,7 @@ describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
 
   /** Apply one medication edit the chat proposed, then let the saves land. */
   async function chatProposes(medicationKey: ProposedMedicationEdit['medicationKey'], drugName: string, doseValue: number | null) {
-    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey, drugName, doseValue, doseUnit: doseValue === null ? null : 'mg' }]));
+    act(() => propose([{ kind: 'medication', medicationKey, drugName, doseValue, doseUnit: doseValue === null ? null : 'mg' }]));
     await settle();
   }
 
@@ -370,7 +372,7 @@ describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
   // plan skipped that step. Undo now writes the key's unanswered value.
   it('Undo of a reply that added an escalation answer where none was recorded restores "not yet"', async () => {
     await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['ezetimibe', 'ezetimibe', 10]], '#statin-name');
-    act(() => chat.props!.onProposeEdit(reply('switch first')));
+    act(() => propose(reply('switch first')));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40', statin_escalation: 'not_tolerated@null' });
     fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
@@ -390,7 +392,7 @@ describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
   it.each(['answer first', 'switch first'] as const)('a reply that also states the answer keeps it (%s), and Undo restores both edits', async (order) => {
     // An agent's "yes" on record: a reset would change it, so the test sees the rule.
     await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['statin_escalation', 'yes']], '#statin-name');
-    act(() => chat.props!.onProposeEdit(reply(order)));
+    act(() => propose(reply(order)));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40', statin_escalation: 'not_tolerated@null' });
 
@@ -423,7 +425,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
 
   it('an unreadable statin row changed by the chat saves, with no Undo and the fixed line', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20]], 'statin');
-    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    act(() => propose([atorvastatin20]));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20' });
     expect(document.querySelector('.chat-med-undo')).not.toBeNull();
@@ -433,7 +435,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
 
   it('one Undo covers the whole reply: a readable ezetimibe edit beside it gets no Undo either', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20]], 'statin');
-    act(() => chat.props!.onProposeEdit([
+    act(() => propose([
       { kind: 'medication', medicationKey: 'ezetimibe', drugName: 'ezetimibe', doseValue: 10, doseUnit: 'mg' }, atorvastatin20,
     ]));
     await settle();
@@ -445,7 +447,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
   // Control: an unreadable row the reply leaves alone keeps today's Undo.
   it('an unreadable row the reply leaves alone keeps Undo, and Undo restores', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
-    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    act(() => propose([atorvastatin20]));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20' });
     expect(document.body.textContent).not.toContain(NO_UNDO);
@@ -461,7 +463,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
   it('an unreadable escalation answer the form is saving, reset by a chat dose change: no Undo, the fixed line', async () => {
     const view = await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['ezetimibe', 'ezetimibe', 10], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
     fireEvent.change(view.container.querySelector('#statin-escalation')!, { target: { value: 'not_tolerated' } });
-    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, doseValue: 40 }]));
+    act(() => propose([{ ...atorvastatin20, doseValue: 40 }]));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40' });
     expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
@@ -474,7 +476,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
   // chat-edits.test.ts, "the same record as the web"), and offers no Undo.
   it('an unreadable escalation answer, reset by a chat statin dose change: not yet, the statin saves, no Undo, the fixed line', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['statin_escalation', 'not_tolerated']], 'statin_escalation');
-    act(() => chat.props!.onProposeEdit([{ ...atorvastatin20, drugName: 'rosuvastatin', doseValue: 40 }]));
+    act(() => propose([{ ...atorvastatin20, drugName: 'rosuvastatin', doseValue: 40 }]));
     await settle();
     expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@40', statin_escalation: 'not_yet@null' });
     await flushRoadmapStore();
@@ -488,10 +490,10 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
   // One banner at a time: the newest reply decides whether Undo shows.
   it('reply 1 readable then reply 2 replaces an unreadable row: the old Undo goes, the fixed line shows', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
-    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    act(() => propose([atorvastatin20]));
     await settle();
     expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
-    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    act(() => propose([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
     await settle();
     expect(await recorded()).toMatchObject({ glp1: 'semaglutide_injection@1' });
     expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
@@ -500,11 +502,11 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
 
   it('an unavailable banner then a readable reply: Undo is back, and restores the prior value', async () => {
     await pageWithUnreadable([['statin', 'rosuvastatin', 20], ['glp1', 'tirzepatide', 5]], 'glp1');
-    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
+    act(() => propose([{ kind: 'medication', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 1, doseUnit: 'mg' }]));
     await settle();
     expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
     expect(document.body.textContent).toContain(NO_UNDO);
-    act(() => chat.props!.onProposeEdit([atorvastatin20]));
+    act(() => propose([atorvastatin20]));
     await settle();
     expect(document.body.textContent).not.toContain(NO_UNDO);
     expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
@@ -517,7 +519,7 @@ describe('US-67 N3: no Undo after the chat replaces a medicine entry this build 
 describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () => {
   it('the "Medication updated from chat." banner goes on erase, so Undo cannot write the old medication back', async () => {
     await pageWith(LDL_3, [['statin', 'rosuvastatin', 20]], '#statin-name');
-    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
+    act(() => propose([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
     await settle();
     expect(document.body.textContent).toContain('Medication updated from chat.');
     expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();
@@ -538,7 +540,7 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
   // Another device erases the record; this tab re-reads it (US-34).
   it('a remote re-read of a record with no medications clears the banner, so Undo cannot write the old one back', async () => {
     await pageWith(LDL_3, [['statin', 'rosuvastatin', 20]], '#statin-name');
-    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
+    act(() => propose([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
     await settle();
     // A re-read of a record that still holds the medication keeps the banner.
     await act(async () => { await addMeasurement('weight', 81, '2026-09-02'); });

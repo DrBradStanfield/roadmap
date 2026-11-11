@@ -7,7 +7,10 @@
 
 import { useId } from 'react';
 import type React from 'react';
-import { commaQuestion, LIMIT_NOT_GRADED, limitUngraded, savedStatus, type Comparator, type MetricType } from '@roadmap/health-core';
+import { commaQuestion } from '@roadmap/health-core/parseNumber';
+import { LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import { limitUngraded, savedStatus } from '@roadmap/health-core/row-grade';
+import type { MetricType } from '@roadmap/health-core/units';
 import { describedBy } from '../lib/aria';
 import { useRangeWait } from '../lib/useRangeWait';
 import {

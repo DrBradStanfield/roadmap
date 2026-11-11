@@ -14,7 +14,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, localDay, MemoryAdapter, MemoryCloud, migrateFile, ROADMAP_FILE_NAME, rowRootIds } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
+import { localDay, rowRootIds } from '@roadmap/health-core/merge';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';

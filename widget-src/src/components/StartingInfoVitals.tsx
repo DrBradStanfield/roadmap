@@ -18,33 +18,14 @@
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import {
-  type ApiMeasurement,
-  type FormStage,
-  type HealthInputs,
-  type MetricType,
-  type UnitSystem,
-  toCanonicalValue,
-  fromCanonicalValue,
-  formatDisplayValue,
-  getDisplayLabel,
-  parseLocalisedNumber,
-  bpStatus,
-  comparatorOf,
-  limitText,
-  limitUngraded,
-  pressureStatus,
-  valueStatus,
-  LIMIT_NOT_GRADED,
-  type Comparator,
-  type GradeContext,
-  type PressureReading,
-  type GradeStatus,
-  bpTargetFor,
-  rowTarget,
-  PRESSURE_ORDER,
-  pressureInverted,
-} from '@roadmap/health-core';
+import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
+import type { HealthInputs } from '@roadmap/health-core/types';
+import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { bpStatus, limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading, type GradeStatus } from '@roadmap/health-core/row-grade';
+import { comparatorOf, limitText, LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import { rowTarget } from '@roadmap/health-core/row-target';
+import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
@@ -56,13 +37,16 @@ import {
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
+import { BP_DIA_MAX, BP_DIA_MIN, BP_SYS_MAX, BP_SYS_MIN, FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, BackfillCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
+import { BackfillCell } from './MatrixInputCells';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
@@ -95,15 +79,18 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** Called after the user types a valid weight: as the last onboarding
-   *  answer, the person lands at My health's top (US-62 AC25). */
-  onOnboardingDone?: () => boolean;
+  /** The weight cell's answer (`past`: a past day's, which never lands), its ref, and its rest: the landing (US-62 AC25b). */
+  onWeightAnswered?: (past?: boolean) => void;
+  weightRef?: (el: HTMLInputElement | null) => void;
+  rested?: () => void;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
   withoutWeight?: boolean;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
    *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  /** This device's unit for a field before the record's applied (useUnits): a kept cell with no unit was typed in it. */
+  startUnitOf?: (field: string) => UnitSystem;
   /** When provided, the matrix exposes an imperative `prefill(metric, value,
    *  fromUnit, date)` so the chatbot can inject a vitals value into the
    *  draft/backfill cell (highlighted, for the user to Save). Mirrors
@@ -129,15 +116,6 @@ export type VitalsPrefillFn = (
   date: string | null,
 ) => string | null;
 
-/** Decide where a chatbot vitals edit should land. When the vitals matrix is
- *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
- *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
- *  the plain form field (fresh users, no flash). Pure so HealthTool's routing
- *  is unit-testable without rendering. */
-export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
-  return matrixMounted ? 'matrix' : 'field';
-}
-
 // ── Row config ──────────────────────────────────────────────────────────
 
 type SimpleRowConfig = {
@@ -158,26 +136,6 @@ const ROWS: RowConfig[] = [
 // ── Date helpers ─────────────────────────────────────────────────────────
 
 function isoOnly(s: string): string { return s.slice(0, 10); }
-
-// ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
-// BP is a two-field value: a save must commit systolic AND diastolic together
-// or neither. These ranges gate both what each half lends the plan and the
-// chat (useDraftMirror) and the commit, so a mid-typed half (the "8" of
-// "120 / 80") never stands in, and a half-entered pair never lands.
-const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
-const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
-
-/** True only when both fields hold a valid, in-physiological-range number,
- *  the right way up (US-02 AC8) — the gate that stops a commit from saving a
- *  half-entered or swapped BP pair. */
-export function bpPairReady(sys: string, dia: string): boolean {
-  const s = parseLocalisedNumber(sys);
-  const d = parseLocalisedNumber(dia);
-  return (
-    s != null && s >= BP_SYS_MIN && s <= BP_SYS_MAX &&
-    d != null && d >= BP_DIA_MIN && d <= BP_DIA_MAX && s > d
-  );
-}
 
 // ── Per-date model ───────────────────────────────────────────────────────
 // One column per distinct date. Each column carries the SI value + row id for
@@ -221,42 +179,11 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** What is typed in a vitals cell: a weight, a waist, or one half of a
- *  blood pressure (sys and dia share one cell). */
-type VitalsKey = 'weight' | 'waist' | 'sys' | 'dia';
-/** The field each one lends (useDraftMirror). */
-const FIELD_OF = { weight: 'weightKg', waist: 'waistCm', sys: 'systolicBp', dia: 'diastolicBp' } as const;
-
-/** One column's typed vitals (the draft's, or a saved column's empty cells)
- *  as the cells a commit saves: a weight, a waist, a BP pair committed
- *  together (mmHg is stored as typed). `values` (SI, by metric) is null for a
- *  cell that cannot be saved as it stands: out of range, not a number, or
- *  half a pair. Exported for unit testing. */
-export function vitalsCellsOf(
-  typed: Partial<Record<VitalsKey, string>>,
-  unitFor: (metric: 'weight' | 'waist') => UnitSystem,
-): Array<{ keys: VitalsKey[]; values: Record<string, number> | null }> {
-  const cells: Array<{ keys: VitalsKey[]; values: Record<string, number> | null }> = [];
-  for (const metric of ['weight', 'waist'] as const) {
-    const text = typed[metric];
-    if (!text) continue;
-    const unit = unitFor(metric);
-    const ok = !validateTypedValue(metric, text, unit).error;
-    cells.push({ keys: [metric], values: ok ? { [metric]: toCanonicalValue(metric, readTypedValue(metric, text, unit)!, unit) } : null });
-  }
-  const { sys = '', dia = '' } = typed;
-  if (sys || dia) {
-    const ok = bpPairReady(sys, dia);
-    cells.push({ keys: ['sys', 'dia'], values: ok ? { systolic_bp: parseLocalisedNumber(sys)!, diastolic_bp: parseLocalisedNumber(dia)! } : null });
-  }
-  return cells;
-}
-
 // ── Component ───────────────────────────────────────────────────────────
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onOnboardingDone, withoutWeight, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -302,7 +229,8 @@ export function StartingInfoVitals({
   const {
     holdsText,
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
+  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key),
+    legacyUnit: key => (key === 'weight' || key === 'waist' ? startUnitOf?.(FIELD_OF[key]) : undefined) });
   // No weight typed here while its row is hidden (the weight shows beside the
   // height): a restored or earlier draft goes, so nothing unseen is lent to
   // the plan or saved (US-62 AC13).
@@ -369,24 +297,15 @@ export function StartingInfoVitals({
 
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([colCount]);
 
+  const advanceToRest = useAutoAdvance(true);
   const setSimpleDraft = (metric: 'weight' | 'waist', typed: string) => {
     type([null, metric], typed, unitFor(metric));
-    const n = parseLocalisedNumber(typed);
-
-    // Weight only: as the last answer, on to My health's top.
-    if (metric === 'weight' && onOnboardingDone && !landedRef.current && n != null && !validateTypedValue(metric, typed, unitFor(metric)).error) {
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-      if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
-        const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
-        // The once-only jump is spent only if it happened (not before the last answer).
-        const jump = () => { if (onOnboardingDone()) landedRef.current = true; };
-        if (!couldExtend) requestAnimationFrame(jump);
-        else focusTimerRef.current = setTimeout(jump, 800);
-      }
-    }
+    if (metric !== 'weight') return;
+    onWeightAnswered?.();
+    // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
+    const valid = (text: string) => !validateTypedValue(metric, text, unitFor(metric)).error;
+    if (rested) advanceToRest(/^\d{2,3}$/.test(typed) && valid(typed) ? { ambiguous: /^\d{2}$/.test(typed) && valid(`${typed}0`), advance: rested } : null);
   };
-  const landedRef = useRef(false);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);
 
@@ -564,7 +483,7 @@ export function StartingInfoVitals({
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={unmark(cellId)}
+                            onBlur={unmark(cellId)} inputRef={row.metric === 'weight' ? weightRef : undefined}
                             onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
                           />
                         );
@@ -587,7 +506,7 @@ export function StartingInfoVitals({
                             error={c.col.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.col.date, row.metric])}
                             pinned={isPinned}
                             active={activeCell === cellId}
-                            onChange={val => setBackfill(c.col.date, row.metric, val)}
+                            onChange={val => { setBackfill(c.col.date, row.metric, val); if (row.metric === 'weight') onWeightAnswered?.(true); }}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)}
                             onEnter={saveNow}

@@ -255,6 +255,15 @@ describe('US-72 AC3: the day', () => {
     expect(file.labValues[0].recordedAt).toBe('2026-10-21T00:00:00.000Z');
   });
 
+  it('US-21 AC26 (Brad 2026-11-09): a result past its plausible range is skipped and counted in notRead, as a core value out of range is', () => {
+    const { file, counts } = run(empty(), [
+      rec(lab('2276-4', 600000, 'ng/mL')),
+      rec(lab('3016-3', 2.3, 'm[IU]/L')),
+    ]);
+    expect(counts).toMatchObject({ added: 1, notRead: 1 });
+    expect(file.labValues.map((m) => m.metricName)).toEqual(['tsh']);
+  });
+
   it('AC3: a result later than now does not land; five minutes of clock skew is not later', () => {
     const { counts } = run(empty(), [
       rec(obs(R4_LDL, { effectiveDateTime: '2026-11-02T08:30:00Z' })),
@@ -292,15 +301,13 @@ describe('US-72 AC3: the day', () => {
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-19T00:00:00.000Z', '2026-10-18T00:00:00.000Z']);
   });
 
-  it('AC3, AC10: an `issued` later than now, unreadable, or before the erase does not land', () => {
-    const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
-    const { file, counts } = run(erased, [
+  it('AC3: an `issued` later than now or unreadable does not land', () => {
+    const { file, counts } = run(empty(), [
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'a', issued: '2026-11-02T09:30:00Z' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'b', issued: '2026-02-30T09:30:00Z' }, { fhirVersion: DSTU2 }),
-      rec({ ...APPLE_SAMPLE_DSTU2, id: 'c' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'd', issued: '2026-10-23T09:30:00Z' }, { fhirVersion: DSTU2 }),
     ]);
-    expect(counts).toMatchObject({ added: 1, notRead: 3 });
+    expect(counts).toMatchObject({ added: 1, notRead: 2 });
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-23T09:30:00.000Z']);
   });
 
@@ -947,12 +954,12 @@ describe('US-72 AC9: the import wins a conflict', () => {
   });
 });
 
-describe('US-72 AC10: erase', () => {
-  it('AC10: a result drawn before the record\'s erase does not land; one drawn after does', () => {
+describe('US-72 AC10: erase (Brad\'s yes, 2026-11-11)', () => {
+  it('US-25 AC13, US-72 AC10: a result drawn before the record\'s erase lands (a Connect after an erase reads everything)', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
     const { file, counts } = run(erased, [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })]);
-    expect(counts).toMatchObject({ added: 1, notRead: 1 });
-    expect(file.labValues.map((m) => m.metricName)).toEqual(['hdl']);
+    expect(counts).toMatchObject({ added: 2, notRead: 0 });
+    expect(file.labValues.map((m) => m.metricName).sort()).toEqual(['hdl', 'ldl']);
   });
 });
 
@@ -1176,5 +1183,284 @@ describe('US-72 AC5, AC6, AC7, AC8: replays, marked markers, moves and a lab\'s 
     const { file, counts } = run(rejected, [version(2, { status: 'corrected' })], at(2));
     expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 1, notRead: 0 });
     expect(shown(file)).toEqual([[4.6, 'entered-in-error', false], [4.6, 'entered-in-error', true]]);
+  });
+});
+
+// A US lab can send a panel as one DiagnosticReport whose results are contained
+// Observations (Argonaut DSTU2: `contained` plus `result: [{ reference: '#id' }]`), and
+// HealthKit files that report under `labResultRecord`. Synthetic panel, HL7 fixture values.
+function panel(results: Record<string, unknown>[], fields: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    resourceType: 'DiagnosticReport', id: 'panel-1', status: 'final',
+    meta: { lastUpdated: '2026-10-22T10:00:00Z' },
+    code: { coding: [{ system: 'http://loinc.org', code: '57698-3' }] },
+    effectiveDateTime: '2026-10-21T08:00:00-04:00', issued: '2026-10-22T09:00:00-04:00',
+    contained: results,
+    result: results.map((r) => ({ reference: `#${String(r.id)}` })),
+    ...fields,
+  };
+}
+
+/** A contained result as a lab sends one: its own date and status, no version meta of its own. */
+function inner(code: string, value: number, unit: string, id: string, fields: Record<string, unknown> = {}): Record<string, unknown> {
+  const { meta: _meta, ...rest } = lab(code, value, unit, { id, ...fields });
+  return rest;
+}
+
+describe('US-72: a DiagnosticReport panel of contained results', () => {
+  const report = (p: object, extra: Partial<ClinicalRecordInput> = {}) => rec(p, { resourceType: 'DiagnosticReport', fhirVersion: DSTU2, ...extra });
+
+  it('each referenced contained result lands as its own row', () => {
+    const { file, counts } = run(empty(), [report(panel([
+      inner('13457-7', 4.6, 'mmol/L', 'r1'), inner('2085-9', 1.3, 'mmol/L', 'r2'), inner('2160-0', 122, 'umol/L', 'r3'),
+    ]))]);
+    expect(counts).toEqual({ added: 3, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 });
+    expect(file.labValues.map((l) => [l.metricName, l.value, l.source, l.status])).toEqual([
+      ['ldl', 4.6, 'health_records', 'active'], ['hdl', 1.3, 'health_records', 'active'], ['creatinine', 122, 'health_records', 'active'],
+    ]);
+  });
+
+  it('the identity is the source, the report and the contained id; the version is the report\'s', () => {
+    const { file } = run(empty(), [report(panel([inner('13457-7', 4.6, 'mmol/L', 'r1')]))]);
+    expect(file.labValues[0].externalId).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||final|4.6||mmol/L`);
+  });
+
+  it('a result with no date of its own takes the report\'s draw', () => {
+    const { effectiveDateTime: _d, ...undated } = inner('13457-7', 4.6, 'mmol/L', 'r1');
+    const { file } = run(empty(), [report(panel([undated]))]);
+    expect(file.labValues[0].recordedAt).toBe('2026-10-21T08:00:00.000-04:00');
+  });
+
+  it('the same report read again lands nothing new; an amended report corrects the changed result only', () => {
+    const v1 = report(panel([inner('13457-7', 4.6, 'mmol/L', 'r1'), inner('2085-9', 1.3, 'mmol/L', 'r2')]));
+    const first = run(empty(), [v1]).file;
+    expect(run(first, [v1], LATER).counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 2, notRead: 0 });
+    const v2 = report(panel([inner('13457-7', 4.1, 'mmol/L', 'r1'), inner('2085-9', 1.3, 'mmol/L', 'r2')],
+      { status: 'amended', meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    const { file, counts } = run(first, [v2], LATER);
+    expect(counts.corrected).toBe(1);
+    expect(file.labValues.filter((l) => l.status === 'active' && l.metricName === 'ldl').map((l) => l.value)).toEqual([4.1]);
+  });
+
+  it('two reports holding the same contained id are two results', () => {
+    const a = report(panel([inner('13457-7', 4.6, 'mmol/L', 'r1')]));
+    const b = report(panel([inner('2085-9', 1.3, 'mmol/L', 'r1')], { id: 'panel-2' }));
+    expect(run(empty(), [a, b]).counts.added).toBe(2);
+  });
+
+  it('a report the lab withdrew withdraws its results', () => {
+    const v1 = report(panel([inner('13457-7', 4.6, 'mmol/L', 'r1')]));
+    const gone = report(panel([inner('13457-7', 4.6, 'mmol/L', 'r1')], { status: 'entered-in-error', meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    const { file, counts } = run(run(empty(), [v1]).file, [gone], LATER);
+    expect(counts.withdrawn).toBe(1);
+    expect(file.labValues.filter((l) => l.status === 'active')).toEqual([]);
+  });
+
+  it('not read, counted: an unreferenced or non-Observation contained resource, an unreadable result, and a report with no results', () => {
+    const p = panel([inner('13457-7', 4.6, 'mmol/L', 'r1'), inner('2085-9', 1.3, 'mmol/L', 'r2')], {
+      result: [{ reference: '#r1' }, { reference: '#missing' }, { reference: '#spec' }, { reference: 'Observation/elsewhere' }],
+    });
+    (p.contained as object[]).push({ resourceType: 'Specimen', id: 'spec' });
+    const { counts } = run(empty(), [report(p), report(panel([]))]);
+    // r1 lands; r2 is unreferenced and never read; #missing, #spec and the outside reference are not read; the empty report is one.
+    expect(counts).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 4 });
+  });
+
+  it('the wrapper\'s resource type must match the JSON\'s', () => {
+    expect(run(empty(), [report(obs(R4_LDL))]).counts.notRead).toBe(1);
+    expect(run(empty(), [rec(panel([inner('13457-7', 4.6, 'mmol/L', 'r1')]))]).counts.notRead).toBe(1);
+  });
+});
+
+describe('US-72 AC15: a DiagnosticReport panel, edges', () => {
+  const report = (p: object, extra: Partial<ClinicalRecordInput> = {}) => rec(p, { resourceType: 'DiagnosticReport', fhirVersion: DSTU2, ...extra });
+  const ldl = (id = 'r1', fields: Record<string, unknown> = {}) => inner('13457-7', 4.6, 'mmol/L', id, fields);
+  const NONE = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0 };
+
+  it('the version is always the report\'s (FHIR dom-4), so an amended report is seen even if a result kept a meta of its own', () => {
+    const own = (meta: object) => run(empty(), [report(panel([{ ...ldl(), meta }]))]).file.labValues[0].externalId;
+    expect(own({ versionId: '7' })).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||final|4.6||mmol/L`);
+    const v1 = report(panel([{ ...ldl(), meta: { versionId: '1' } }]));
+    const v2 = report(panel([{ ...inner('13457-7', 4.1, 'mmol/L', 'r1'), meta: { versionId: '1' } }],
+      { status: 'amended', meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    expect(run(run(empty(), [v1]).file, [v2], LATER).counts).toEqual({ ...NONE, corrected: 1, notRead: 0 });
+  });
+
+  it('a result keeps its own status unless the report was withdrawn or cancelled', () => {
+    const status = (rs: string, os: string) => run(empty(), [report(panel([ldl('r1', { status: os })], { status: rs }))]).file.labValues[0]?.externalId;
+    expect(status('final', 'amended')).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||amended|4.6||mmol/L`);
+    expect(status('preliminary', 'final')).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||final|4.6||mmol/L`);
+  });
+
+  it('a result with a draw of its own keeps it; one with none takes the report\'s draw before any release', () => {
+    const { effectiveDateTime: _d, ...undated } = ldl();
+    const day = (result: Record<string, unknown>, fields: Record<string, unknown> = {}) => {
+      const p = panel([result], fields);
+      for (const [k, v] of Object.entries(fields)) if (v === undefined) delete (p as Record<string, unknown>)[k];
+      return run(empty(), [report(p)]).file.labValues[0]?.recordedAt;
+    };
+    expect(day({ ...undated, effectivePeriod: { start: '2026-09-02T07:00:00Z' } })).toBe('2026-09-02T07:00:00.000Z');
+    // Its own release only: the report's draw still wins (AC3: the draw before the release).
+    expect(day({ ...undated, issued: '2026-09-01T07:00:00Z' })).toBe('2026-10-21T08:00:00.000-04:00');
+    expect(day(undated, { effectiveDateTime: undefined, effectivePeriod: { start: '2026-09-03T07:00:00Z' } })).toBe('2026-09-03T07:00:00.000Z');
+    // No draw anywhere: its own release, else the report's.
+    expect(day({ ...undated, issued: '2026-09-01T07:00:00Z' }, { effectiveDateTime: undefined })).toBe('2026-09-01T07:00:00.000Z');
+    expect(day(undated, { effectiveDateTime: undefined })).toBe('2026-10-22T09:00:00.000-04:00');
+  });
+
+  it('a result\'s own draw is its own; a start-less period is no draw, and an empty release is still its own', () => {
+    const { effectiveDateTime: _d, ...undated } = ldl();
+    const at = (p: Record<string, unknown>) => run(empty(), [report(p)]).file.labValues[0]?.recordedAt;
+    expect(at(panel([ldl('r1', { effectiveDateTime: '2026-09-05T07:00:00Z' })]))).toBe('2026-09-05T07:00:00.000Z');
+    const startless = panel([{ ...undated, effectivePeriod: {} }], { effectivePeriod: { start: '2026-09-03T07:00:00Z' } });
+    delete startless.effectiveDateTime;
+    expect(at(startless)).toBe('2026-09-03T07:00:00.000Z');
+    const emptyRelease = panel([{ ...undated, issued: '' }]);
+    delete emptyRelease.effectiveDateTime;
+    expect(at(emptyRelease)).toBeUndefined();
+  });
+
+  it('over 10,000 result entries is one not-read; over 10,000 contained entries leaves each reference unread', () => {
+    const many = panel([ldl()], { result: Array.from({ length: 10_001 }, () => ({ reference: '#r1' })) });
+    expect(run(empty(), [report(many)]).counts).toEqual({ ...NONE, notRead: 1 });
+    const crowded = panel([ldl(), ...Array.from({ length: 10_000 }, (_, i) => ({ resourceType: 'Specimen', id: `s${i}` }))],
+      { result: [{ reference: '#r1' }, { reference: '#s1' }, { reference: '#s2' }] });
+    expect(run(empty(), [report(crowded)]).counts).toEqual({ ...NONE, notRead: 3 });
+  });
+
+  it('a malformed report is not read: no status, a bad id, or a JSON that is not a DiagnosticReport', () => {
+    const noStatus = panel([ldl()]); delete noStatus.status;
+    expect(run(empty(), [report(noStatus)]).counts.notRead).toBe(1);
+    expect(run(empty(), [report(panel([ldl()], { id: 'bad id!' }))]).counts.notRead).toBe(1);
+    expect(run(empty(), [report(panel([ldl()], { resourceType: 'Composition' }))]).counts.notRead).toBe(1);
+  });
+
+  it('a wrapper of another resource type is not read, whatever its JSON holds', () => {
+    expect(run(empty(), [rec(lab('13457-7', 4.6, 'mmol/L'), { resourceType: 'Condition' as never })]).counts.notRead).toBe(1);
+  });
+
+  it('a report with no result list is one not-read, not a crash', () => {
+    const p = panel([ldl()]); delete p.result;
+    expect(run(empty(), [report(p)]).counts).toEqual({ ...NONE, notRead: 1 });
+  });
+
+  it('only a "#id" reference is followed; odd contained and result entries are skipped one by one', () => {
+    const p = panel([ldl()], { result: [{}, 'junk', { reference: 'r1' }, { reference: '#r1' }] });
+    (p.contained as unknown[]).unshift(null, 42);
+    // {} and 'junk' and the bare 'r1' (not a '#' reference) are not read; '#r1' lands.
+    expect(run(empty(), [report(p)]).counts).toEqual({ ...NONE, added: 1, notRead: 3 });
+    expect(run(empty(), [report(panel([ldl()], { result: [{ reference: 'r1' }] }))]).counts).toEqual({ ...NONE, notRead: 1 });
+  });
+
+  it('a contained list that is not a list leaves every reference unread, each counted', () => {
+    const p = panel([ldl('r1'), ldl('r2')], { contained: { r1: ldl() } });
+    expect(run(empty(), [report(p)]).counts.notRead).toBe(2);
+  });
+
+  it('two contained resources with one id: the first is read', () => {
+    const p = panel([ldl('r1'), inner('2085-9', 1.3, 'mmol/L', 'r1')], { result: [{ reference: '#r1' }] });
+    expect(run(empty(), [report(p)]).file.labValues.map((l) => [l.metricName, l.value])).toEqual([['ldl', 4.6]]);
+  });
+});
+
+describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 1253 follow-up)', () => {
+  const report = (p: object) => rec(p, { resourceType: 'DiagnosticReport', fhirVersion: DSTU2 });
+  const ldl = (id = 'r1', fields: Record<string, unknown> = {}) => inner('13457-7', 4.6, 'mmol/L', id, fields);
+  const NONE = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 };
+  const active = (f: RoadmapFile) => f.labValues.filter((l) => l.status === 'active').map((l) => [l.metricName, l.value]);
+
+  it('a malformed report-level period or meta is one not-read, never a result on the report\'s release', () => {
+    const { effectiveDateTime: _d, ...undated } = ldl();
+    for (const fields of [
+      { effectivePeriod: { start: 20261021 } },
+      { effectivePeriod: { start: `2026-10-21T08:00:00Z${'0'.repeat(60)}` } },
+      { meta: { lastUpdated: `2026-10-22T10:00:00Z${'0'.repeat(60)}` } },
+    ]) {
+      const p = panel([undated], fields);
+      delete p.effectiveDateTime;
+      const { file, counts } = run(empty(), [report(p)]);
+      expect(counts).toEqual({ ...NONE, notRead: 1 });
+      expect(file.labValues).toEqual([]);
+    }
+  });
+
+  // One row per report status, each report holding one `final` result, on an empty record.
+  it.each([
+    ['registered', { ...NONE, notRead: 1 }],
+    ['partial', { ...NONE, added: 1 }],
+    ['preliminary', { ...NONE, added: 1 }],
+    ['final', { ...NONE, added: 1 }],
+    ['amended', { ...NONE, added: 1 }],
+    ['corrected', { ...NONE, added: 1 }],
+    ['appended', { ...NONE, added: 1 }],
+    ['unknown', { ...NONE, added: 1 }],
+    ['cancelled', { ...NONE, notRead: 1 }],
+    // Nothing of it in the record, so nothing to withdraw (AC7).
+    ['entered-in-error', { ...NONE, notRead: 1 }],
+  ])('a %s report with a final result', (status, counts) => {
+    expect(run(empty(), [report(panel([ldl()], { status }))]).counts).toEqual(counts);
+  });
+
+  it('a cancelled report lands nothing and withdraws nothing, whatever its results say', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    const later = { meta: { lastUpdated: '2026-10-25T10:00:00Z' }, status: 'cancelled' };
+    for (const result of [ldl(), inner('13457-7', 4.1, 'mmol/L', 'r1'), ldl('r1', { status: 'entered-in-error' })]) {
+      const { file, counts } = run(v1, [report(panel([result], later))], LATER);
+      // Residual (AC15): a result imported as final keeps its row when the report is later cancelled.
+      expect(counts).toEqual({ ...NONE, notRead: 1 });
+      expect(active(file)).toEqual([['ldl', 4.6]]);
+    }
+  });
+
+  it('a cancelled or registered re-send whose stamp is not newer than the row\'s is already in the record (re-check N1)', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    for (const status of ['cancelled', 'registered']) {
+      // The row's own stamp (2026-10-22T10:00:00Z): the stale rule runs before the status rule.
+      const { file, counts } = run(v1, [report(panel([inner('13457-7', 4.1, 'mmol/L', 'r1')], { status }))], LATER);
+      expect(counts).toEqual({ ...NONE, alreadyInRecord: 1 });
+      expect(active(file)).toEqual([['ldl', 4.6]]);
+      expect(file.labValues).toHaveLength(1);
+    }
+  });
+
+  it('a registered report lands nothing; the same report later final, in a newer version, lands its result once', () => {
+    const registered = report(panel([ldl()], { status: 'registered' }));
+    const final = report(panel([ldl()], { meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    const first = run(empty(), [registered]);
+    expect(first.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(first.file.labValues).toEqual([]);
+    const second = run(first.file, [final], LATER);
+    expect(second.counts).toEqual({ ...NONE, added: 1 });
+    // Both again: the older registered copy is stale (AC5) and the final one known, so nothing lands twice.
+    expect(run(second.file, [registered, final], LATER).counts).toEqual({ ...NONE, alreadyInRecord: 2 });
+    expect(active(second.file)).toEqual([['ldl', 4.6]]);
+  });
+
+  it('a withdrawn report with no results withdraws nothing (re-check R5)', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    const gone = { status: 'entered-in-error', meta: { lastUpdated: '2026-10-25T10:00:00Z' } };
+    const noResults = run(v1, [report(panel([], gone))], LATER);
+    expect(noResults.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(active(noResults.file)).toEqual([['ldl', 4.6]]);
+    const emptied = run(v1, [report(panel([ldl()], { ...gone, contained: [] }))], LATER);
+    expect(emptied.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(active(emptied.file)).toEqual([['ldl', 4.6]]);
+  });
+
+  it('re-check R3: three re-sent copies of a 30-result panel write a marker only for each result the map reads', () => {
+    const mapped = [
+      inner('13457-7', 4.6, 'mmol/L', 'm1'), inner('2085-9', 1.3, 'mmol/L', 'm2'), inner('2160-0', 122, 'umol/L', 'm3'),
+      inner('2093-3', 5.2, 'mmol/L', 'm4'), inner('2571-8', 1.4, 'mmol/L', 'm5'), inner('1884-6', 0.9, 'g/L', 'm6'),
+      inner('4548-4', 5.5, '%', 'm7'), inner('2857-1', 1.2, 'ng/mL', 'm8'), inner('2276-4', 80, 'ug/L', 'm9'),
+      inner('3016-3', 2.1, 'mIU/L', 'm10'),
+    ];
+    const unmapped = Array.from({ length: 20 }, (_, i) => inner(`9999${i}-0`, 10 + i, 'g/L', `u${i}`));
+    const copy = (lastUpdated: string) => report(panel([...mapped, ...unmapped], { meta: { lastUpdated } }));
+    const first = run(empty(), [copy('2026-10-22T10:00:00Z')]);
+    expect(first.counts).toEqual({ ...NONE, added: 10, notRead: 20 });
+    const again = run(first.file, ['2026-10-23T10:00:00Z', '2026-10-24T10:00:00Z', '2026-10-25T10:00:00Z'].map(copy), LATER);
+    expect(again.counts).toEqual({ ...NONE, alreadyInRecord: 30, notRead: 60 });
+    expect(again.file.labValues.filter(isVersionMarker)).toHaveLength(30);
+    expect(again.file.labValues).toHaveLength(40);
   });
 });

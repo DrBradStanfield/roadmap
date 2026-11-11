@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M7,phone mirrors,"Number boxes cap every value at 5 whole digits and 3 decimals, a second copy of the engine's ranges",lead,not started,"ios/HealthRoadmap/TypedNumber.swift:16 vs engine ranges (lab-catalog.ts:358 ferritin max 500000); web AddLabTest.tsx:208 no cap. Small harm today (extreme ferritin, 4-decimal values). Derive from the engine, beside I-6. TypedNumberTests pins 10000 only. iPhone survey 2026-11-11 (main fcc4ed9b) L4",,no

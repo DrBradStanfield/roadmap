@@ -239,7 +239,7 @@ Key information to check:
 
 1. **Species of cinnamon:** many products do not state it [68]. Ceylon has much less coumarin than cassia [19].
 
-To check whether a product has been independently tested for quality, see ConsumerLab (consumerlab.com) or Labdoor (labdoor.com).
+To check whether a product has been independently tested for quality, see Labdoor (labdoor.com).
 
 ## 5. Safety and Side Effects
 

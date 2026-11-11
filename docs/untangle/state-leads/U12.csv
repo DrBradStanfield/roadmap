@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+U12,upload,"A units or Lp(a)-unit change mid-run is not a save-all stop cause; every later values report repeats the refusal",lead,not started,"ios/HealthRoadmap/LabUpload/LabReportSave.swift:203 stop() checks only the erase and an unreadable record; RecordStore.swift:449 (units changed) and :452 (Lp(a) unit) refuse each later save the same way. Adversary F3 on save all (US-52 AC8b), 2026-11-11",,no

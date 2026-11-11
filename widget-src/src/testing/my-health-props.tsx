@@ -12,9 +12,9 @@ export const NO_PLAN: PlanView = {
   cardIds: new Map(),
   evidence: { opened: new Set(), toggle: () => {} },
   supplementsRef: { current: null },
+  pdf: null,
   foot: null,
   attention: false,
-  onErased: () => {},
   report: null,
 };
 

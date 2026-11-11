@@ -4,7 +4,7 @@
  * plain reason, and each run sends one count-only `upload_outcome` event.
  * Same harness shape as UploadModal.session.test.tsx.
  */
-import { zipMemberName } from '@roadmap/health-core';
+import { zipMemberName } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS } from '@roadmap/health-core/product-events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -14,11 +14,11 @@ import { attachOriginals } from '../lib/archive-payloads';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
-import type { FileResult } from './ReviewTable';
+import type { FileResult } from '../lib/upload-pipeline';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
-vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -780,5 +780,156 @@ describe('US-12 AC5a: Cancel during a batch upload (20+ files) aborts the batch'
     expect(signal?.aborted).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(signal?.aborted).toBe(true);
+  });
+});
+
+// US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
+// count, and the files a pick past 200 left out without a word. Known gap: a
+// page unmounted mid-read sends nothing.
+describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 200 says what it left out', () => {
+  type Poll = Awaited<ReturnType<typeof pollBatchStatus>>;
+  const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
+
+  it('US-12 AC10 (U6): a refused quota fires one upload_outcome, each file counted under limitError', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(sent()).toEqual([{ picked: 3, tooLarge: 1, limitError: 2 }]);
+    expect(reasonFor('a.pdf')).toBe('Not read. The daily upload limit was reached.');
+    expect(extractFromPdf).not.toHaveBeenCalled();
+  });
+
+  // Review R1 (adversary F1): only the server's daily limit is a quota refusal.
+  it('US-12 AC10: a no-key refusal (Pages build) names no file and sends no upload_outcome', async () => {
+    build.shopify = false;
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'no-key', message: 'Synthetic connect-your-key message.' });
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
+    await screen.findByText('Synthetic connect-your-key message.');
+    expect(screen.queryByRole('list', { name: 'Files to check' })).toBeNull();
+    expect(sent()).toEqual([]);
+  });
+
+  // Review R2 (adversary, Codex): a failed preflight passes, as a network error does; the POST enforces the limit.
+  it('US-12 AC10: a 5xx quota check lets the upload proceed', async () => {
+    const real = await vi.importActual<typeof import('../lib/upload-api')>('../lib/upload-api');
+    vi.mocked(checkLabImportQuota).mockImplementationOnce(real.checkLabImportQuota);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
+    try {
+      render_(); pick(pdf('a.pdf'));
+      await screen.findByDisplayValue('3.9');
+    } finally { vi.unstubAllGlobals(); }
+    expect(screen.queryByText('Daily upload limit reached. You can upload more tomorrow.')).toBeNull();
+    expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
+  });
+
+  // Review R1 (Codex R1): an oversize file never stands in for a readable one of the same name.
+  it('US-12 AC9 (U6): a quota refusal names a readable file that shares its name with an oversize one', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
+    render_(); pick(pdf('report.pdf', 11 * 1024 * 1024), pdf('report.pdf'));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(reasonFor('report.pdf')).toMatch(/^Too large.* \| Not read\. The daily upload limit was reached\.$/);
+    expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1 }]);
+  });
+
+  it('US-12 AC9: a whole run that fails names a readable file that shares its name with an oversize one', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'x', errorCode: 'server_error' });
+    render_(); pick(pdf('r0.pdf', 11 * 1024 * 1024), ...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText('Something went wrong on the server. Please try again.');
+    expect(reasonFor('r0.pdf')).toMatch(/^Too large.* \| Our server could not read it\. Please try again\.$/);
+    expect(sent()).toEqual([{ picked: 21, tooLarge: 1, serverError: 20 }]);
+  });
+
+  it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
+    const finishReads: Array<(r: Import) => void> = [];
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(resolve => { finishReads.push(resolve); }));
+    docxToText.mockResolvedValue(docxText('synthetic'));
+    render_(); pick(pdf('a.pdf'), new File(['x'], 'b.docx'), pdf('huge.pdf', 11 * 1024 * 1024));
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 3, docx: 1, tooLarge: 1, cancelled: 1 });
+    for (const finish of finishReads) finish(withValues);
+    await new Promise(r => setTimeout(r, 0));
+    expect(sent()).toHaveLength(1);
+  });
+
+  // Review R1 (Codex R2, adversary F2): a cancelled run counts on the pick's basis.
+  it('US-12 AC10 (U9): Cancel counts an oversize .docx as docx and too large', async () => {
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
+    const huge = new File(['x'], 'huge.docx');
+    Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
+    render_(); pick(pdf('a.pdf'), huge);
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 2, docx: 1, tooLarge: 1, cancelled: 1 });
+  });
+
+  it('US-12 AC10 (U9): Cancel after a ZIP is listed counts it by its members', async () => {
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
+    zipBundle(async () => ['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })));
+    render_(); pick(zip('scans.zip'));
+    await waitFor(() => expect(labImport).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
+  });
+
+  // Review R2 (adversary, Codex): a ZIP counts by its members as soon as it is listed, not when every ZIP is.
+  it('US-12 AC10 (U9): Cancel while a second ZIP is still opening counts the first by its members and the second as one', async () => {
+    const getZipEntries = vi.fn((f: File) => f.name === 'first.zip'
+      ? Promise.resolve(['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })))
+      : new Promise<unknown[]>(() => {}));
+    zipBundle(getZipEntries);
+    render_(); pick(zip('first.zip'), zip('second.zip'));
+    await waitFor(() => expect(getZipEntries).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 4, cancelled: 1 });
+  });
+
+  it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
+    render_(); pick(pdf('a.pdf'));
+    await screen.findByDisplayValue('3.9');
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
+  });
+
+  it('US-12 AC9 (U8): a pick of 202 files reads 200 and says 2 were left out, on the review and done screens, counted under limitError', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockImplementation(async () => ({
+      status: 'ended', completed: 200, total: 200,
+      results: vi.mocked(labImportBatch).mock.calls[0]![0].map((_f, index) => ({ ...withValues.result!, index })),
+    }) as Poll);
+    vi.useFakeTimers();
+    try {
+      render_(); pick(...Array.from({ length: 202 }, (_, i) => pdf(`r${i}.pdf`)));
+      await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(5000);
+    } finally { vi.useRealTimers(); }
+    await screen.findAllByDisplayValue('3.9');
+    expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
+    expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
+  });
+
+  it('US-12 AC9 (U8): the error screen says it too', async () => {
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
+    render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
+    expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
+    expect(sent()).toEqual([{ picked: 201, limitError: 201 }]);
+  });
+
+  it('US-12 AC9 (U8): a pick of 201 oversize files names the extra one too, and starts no run', () => {
+    render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`big${i}.pdf`, 11 * 1024 * 1024)));
+    expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
+    expect(checkLabImportQuota).not.toHaveBeenCalled();
+    expect(sent()).toEqual([{ picked: 201, tooLarge: 200, limitError: 1 }]);
   });
 });

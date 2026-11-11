@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-4,"S1 tools, scripts, CI",One Anthropic Messages client for every paid tool,not started,tools/test-chatbot-matching.ts:300 has its own postMessages; tools/youtube-comment-dryrun.ts and tools/knowledge-lint-compare.ts call the API directly,,,no

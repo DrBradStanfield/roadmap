@@ -3,33 +3,17 @@
 // value with the previous one in brackets over its unit. A tap opens the
 // value's page (ValuePage). Phone and desktop alike.
 
-import { memo, useId } from 'react';
-import {
-  type ApiMeasurement,
-  type CellUnit,
-  type EgfrPoint,
-  type StatTile,
-  type WhtrPoint,
-  type Comparator,
-  type GradeStatus,
-  type Grading,
-  type MetricType,
-  type RowTargetPlan,
-  BLOOD_TEST_METRICS,
-  METRIC_LABELS,
-  METRIC_TO_FIELD,
-  cellLabel,
-  gradeWords,
-  labSeriesRows,
-  limitText,
-  limitUngraded,
-  pressureStatus,
-  recentTrend,
-  rowTarget,
-  valueStatus,
-  LIMIT_NOT_GRADED,
-  WHTR_TARGET,
-} from '@roadmap/health-core';
+import { memo, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ApiMeasurement, BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { type CellUnit, cellLabel } from '@roadmap/health-core/cell-unit';
+import type { EgfrPoint, WhtrPoint } from '@roadmap/health-core/plan';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { type Comparator, limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
+import { type GradeStatus, gradeWords, limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
+import { type Grading, type RowTargetPlan, rowTarget } from '@roadmap/health-core/row-target';
+import { type MetricType, WHTR_TARGET } from '@roadmap/health-core/units';
+import { labSeriesRows } from '@roadmap/health-core/lab-series';
+import { recentTrend } from '@roadmap/health-core/recent-trend';
 import { savedCellText, trendGeometry } from '../lib/blood-test-cell';
 import { monthYear, pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { SectionIcon, type SectionKey } from './icons';
@@ -152,20 +136,22 @@ export function labRows(labValues: ApiLabValue[]): RowModel[] {
  *  `Sparkline`): the metric's colour, a fading fill under it and a dot on the
  *  newest day. Nothing for fewer than two days. A day printed as a limit
  *  (`limits[i]`) is a hollow dot at its bound, off the line (US-12 AC20). */
-export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number }) {
+export function RowTrend({ points, limits, tint, width = TREND_WIDTH, height = 18, band }: { points: number[]; limits?: boolean[]; tint: string; width?: number; height?: number; band?: TrendBand }) {
   const fill = `md-fill${useId().replace(/:/g, '')}`; // one gradient per row
   if (points.length < 2) return <span className="md-row-trend" aria-hidden="true">{' '}</span>;
-  const { coords, exact, line, area } = trendGeometry(points, limits, width, height, height);
+  const { top = 0, height: drawn = height } = band ?? {};
+  const { coords, exact, line, area } = trendGeometry(points, limits, width, drawn, drawn);
   const [lastX, lastY] = coords[coords.length - 1];
   const lastLimit = !!limits?.[coords.length - 1];
   return (
     <svg className="md-row-trend" width={width} height={height} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={fill} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={tint} stopOpacity="0.25"/>
+          <stop offset="0" stopColor={tint} stopOpacity="0.125"/>
           <stop offset="1" stopColor={tint} stopOpacity="0"/>
         </linearGradient>
       </defs>
+      <g transform={`translate(0,${top})`}>
       {area && <path d={area} fill={`url(#${fill})`}/>}
       {area && <path d={line} fill="none" stroke={tint} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
       {exact.length === 1 && exact[0] !== coords[coords.length - 1] && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill={tint}/>}
@@ -173,21 +159,82 @@ export function RowTrend({ points, limits, tint, width = 44, height = 18 }: { po
         <circle key={i} className="md-trend-limit" cx={x} cy={y} r="1.75" fill="none" stroke={tint} strokeWidth="1"/>
       ))}
       <circle className={lastLimit ? 'md-trend-limit' : undefined} cx={lastX} cy={lastY} r="2" fill={lastLimit ? 'none' : tint} stroke={lastLimit ? tint : undefined} strokeWidth={lastLimit ? 1 : undefined}/>
+      </g>
     </svg>
   );
+}
+
+/** A row trend's width, the iPhone's too (ValueRow.swift `trendWidth`); 44 below 390px wide (styles.css). */
+const TREND_WIDTH = 56;
+/** Where a row's trend is drawn inside its box: from `top`, `height` tall. */
+type TrendBand = { top: number; height: number };
+/** The band between the title's cap height (`capTop`) and the date line's baseline, capped at
+ *  0.8 x the width and centred there, so a title wrapped at large text never draws a tall spike
+ *  (US-62 AC8a). None while the two are not yet a band wider than the line's 2px padding each
+ *  side (a measurement still settling): the trend then fills its box. The iPhone's twin is
+ *  ValueRow.trendBand. */
+export function trendBand(capTop: number, baseline: number, width = TREND_WIDTH): TrendBand | undefined {
+  if (!(baseline - capTop > 4)) return undefined;
+  const height = Math.min(baseline - capTop, 0.8 * width);
+  return { top: capTop + (baseline - capTop - height) / 2, height };
+}
+
+let pen: CanvasRenderingContext2D | null | undefined;
+/** Where `text`'s words are inked, in viewport px: its first line's cap height and its last
+ *  line's baseline, read from the text's line boxes and its font's metrics. Nothing is added to
+ *  the text, so nothing can wrap onto a line of its own. Null where the browser cannot say. */
+function inkOf(text: Element): { capTop: number; baseline: number } | null {
+  const range = document.createRange();
+  range.selectNodeContents(text);
+  const lines = [...(range.getClientRects?.() ?? [])].filter(line => line.width > 0);
+  if (!lines.length) return null;
+  pen ??= document.createElement('canvas').getContext('2d');
+  if (!pen) return null;
+  const font = getComputedStyle(text);
+  pen.font = `${font.fontStyle} ${font.fontWeight} ${font.fontSize} ${font.fontFamily}`;
+  const { fontBoundingBoxDescent: descent, actualBoundingBoxAscent: cap } = pen.measureText('H');
+  return { capTop: lines[0].bottom - descent - cap, baseline: lines[lines.length - 1].bottom - descent };
 }
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
 const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
   const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
+  // The trend is as tall as the name block and drawn over its ink, the title's cap height to the
+  // date line's baseline, as the iPhone's row (US-62 AC8a).
+  const name = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState<{ width: number; height: number; band?: TrendBand }>();
+  const measured = useRef<string>();
+  useLayoutEffect(() => {
+    const block = name.current;
+    if (!block || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const box = block.getBoundingClientRect();
+      const label = block.querySelector('.md-row-label'), meta = block.querySelector('.md-row-meta');
+      const top = label && inkOf(label), bottom = meta && inkOf(meta);
+      const width = block.parentElement?.querySelector('.md-row-trend')?.getBoundingClientRect().width || TREND_WIDTH; // the CSS column's
+      const band = top && bottom ? trendBand(top.capTop - box.top, bottom.baseline - box.top, width) : undefined;
+      const next = box.height ? { width, height: box.height, band } : undefined;
+      const key = JSON.stringify(next);
+      if (key === measured.current) return; // the same measurement renders nothing
+      measured.current = key;
+      setFit(next);
+    };
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(block);
+    // A web font swapping in moves the ink without always resizing the block (#1002 R2).
+    let live = true;
+    document.fonts?.ready.then(() => { if (live) measure(); });
+    return () => { live = false; watch.disconnect(); };
+  }, []);
   return (
     <li>
       <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
-        <span className="md-row-name">
+        <span className="md-row-name" ref={name}>
           <span className="md-row-label">{row.label}</span>
           {meta && <span className="md-row-meta">{meta}</span>}
         </span>
-        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint}/>
+        <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} width={fit?.width} height={fit?.height} band={fit?.band}/>
         <span className="md-row-reading">
           {row.latest ? (
             <>

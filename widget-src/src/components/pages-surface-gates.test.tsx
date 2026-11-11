@@ -9,15 +9,15 @@
  * the form used to render there and fail after submit.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { cleanup, render } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(),
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: () => false,
-  markReportEmailCaptured: vi.fn(),
+  markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({
   trackABConversion: vi.fn(),

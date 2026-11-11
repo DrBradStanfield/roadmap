@@ -13,7 +13,8 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
+import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
@@ -24,7 +25,6 @@ import { getAssistantName, getChatSurface } from '../lib/assistant-config';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
-import type { ProposedEdit } from '@roadmap/health-core';
 
 // US-15 AC12: the brand store has no plan, so its chat names products. The
 // brand title reads the metafield-set assistant name at render, not import.
@@ -53,7 +53,7 @@ interface ChatSectionProps {
   onExpand?: () => void;
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  onProposeEdit?: ChatEditTarget;
   /** Before the onboarding is done: the general wording, as ChatEmbed's. */
   muted?: boolean;
 }
@@ -62,7 +62,6 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
@@ -86,20 +85,8 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     }
   }, [startExpanded, actions.loadConversationsIfNeeded]);
 
-  // Auto-scroll to bottom when messages or any part of the pending reply change
-  useEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, state.pending, messagesContainerRef]);
-
-  const handleMessagesScroll = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const shouldShow = el.scrollHeight - el.scrollTop - el.clientHeight > 100;
-    setShowScrollBtn(prev => prev === shouldShow ? prev : shouldShow);
-  }, [messagesContainerRef]);
+  // Follow a new message or any pending-reply change while the reader is at the latest one
+  const { showScrollBtn, onScroll: handleMessagesScroll } = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
 
   const handleExpand = useCallback(() => {
     trackProductEvent('chat_opened');

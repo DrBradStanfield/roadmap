@@ -3,14 +3,16 @@
 // real usePlanView, its cards by topic, the tiles, the foot, and Settings' plan
 // parts (reminders, the record, Delete all my data) as HealthTool passes them.
 // Imported by tests only.
-import type { ReactNode } from 'react';
-import type { HealthResults, StatTile } from '@roadmap/health-core';
-import { OpenEvidenceContext, PlanCardList, QuickStats, usePlanView } from '../components/ResultsPanel';
+import { useState, type ReactNode } from 'react';
+import type { HealthResults } from '@roadmap/health-core/types';
+import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { OpenEvidenceContext, PlanCardList, QuickStats } from '../components/PlanCards';
+import { usePlanView } from '../components/ResultsPanel';
 import type { AlcoholQuestion } from '../components/AlcoholQuestion';
 
 const NO_FORMS = { medications: [], screenings: [] };
 
-export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formStage, syncControl, remindersSection, onDeleteData, isDeleting, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal }: {
+export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formStage, syncControl, remindersSection, onDeleteData, isDeleting, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal, shownErase = '', cardsShown = true }: {
   results: HealthResults | null;
   isValid: boolean;
   tiles?: StatTile[];
@@ -23,8 +25,14 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
   alcoholQuestion?: AlcoholQuestion;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
+  /** The erase the screen shows: a new one is another device's erase, re-read. */
+  shownErase?: string;
+  /** The cards are on screen (HealthTool: the whole form is open). */
+  cardsShown?: boolean;
 }) {
-  const plan = usePlanView({ results, isValid, tiles, forms: NO_FORMS, showEmailCapture, formStage, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal });
+  // A successful Delete here moves the erase, as useErase does.
+  const [erased, setErased] = useState(0);
+  const plan = usePlanView({ results, shownErase: `${shownErase}:${erased}`, isValid, tiles, forms: NO_FORMS, showEmailCapture, formStage, cardsShown, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal });
   const planned = isValid && !!results;
   return (
     <OpenEvidenceContext.Provider value={plan.evidence}>
@@ -37,13 +45,14 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
             {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </section>
         ))}
+        {plan.pdf}
         {plan.foot}
         <div className="mh-settings">
           {planned && !results.knownMinor && remindersSection}
           {syncControl?.({ hasData: planned, attention: plan.attention })}
           {planned && onDeleteData && (
             <button className="delete-data-link" disabled={isDeleting}
-                    onClick={async () => { if (await onDeleteData()) plan.onErased(); }}>Delete all my data</button>
+                    onClick={async () => { if (await onDeleteData()) setErased(n => n + 1); }}>Delete all my data</button>
           )}
         </div>
         {plan.report}

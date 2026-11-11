@@ -1,0 +1,219 @@
+/**
+ * US-11 AC · what "Delete all my data" promises.
+ *
+ * The old confirm said the data would be "permanently delete[d]" and the
+ * caveats arrived AFTER the click, in the post-erase alert — too late to be a
+ * decision. The caveats now live in the confirm itself, and both strings drive
+ * window.confirm/window.alert directly, so asserting them is equivalent to
+ * asserting what the user reads.
+ */
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD } from './erase-copy';
+
+/** The erase strings as one build shows them. */
+async function eraseCopyOn(shopify: boolean) {
+  vi.resetModules();
+  vi.doMock('./build-flags', () => ({ SHOPIFY_SURFACE: shopify, LOCAL_FIRST: true }));
+  return import('./erase-copy');
+}
+/** ERASE_CONFIRM as one build shows it. */
+async function eraseConfirmOn(shopify: boolean): Promise<string> {
+  return (await eraseCopyOn(shopify)).ERASE_CONFIRM;
+}
+afterEach(() => { vi.doUnmock('./build-flags'); vi.resetModules(); });
+
+describe('erase confirm copy (US-11)', () => {
+  it('names what is erased: the record and the chat history', () => {
+    expect(ERASE_CONFIRM).toMatch(/health record/i);
+    expect(ERASE_CONFIRM).toMatch(/chat history/i);
+  });
+
+  // US-09 AC23 (adversary R2): the erase lists the rows it can see, so the
+  // copy says what it does not reach: a value another device has not saved,
+  // or saves during the erase. A cloud connected after a guest erase loses
+  // the values this browser held and its profile and screening answers
+  // (Codex re-check R1, adversary re-check R1).
+  it('US-09 AC23: says the erase covers this browser and the connected cloud file, and what it keeps', async () => {
+    for (const shopify of [true, false]) {
+      const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending } = await eraseCopyOn(shopify);
+      expect(confirm).toContain('erased, in this browser and in your connected cloud file.');
+      expect(confirm).toContain('A value another device has not saved yet, or saves while the erase runs, is kept and arrives later.');
+      expect(confirm).toContain('With no cloud connected, the values in this browser are erased. If you later connect a cloud, the same values are erased there too and its profile and screening answers are reset; values this browser never held stay.');
+      expect(confirm).not.toMatch(/not a cloud you connect afterwards/);
+      for (const after of [done, pending]) {
+        expect(after).toContain('A value another device had not saved yet, or saved during the erase, is kept and arrives later.');
+        expect(after).not.toMatch(/—/);
+      }
+      expect(confirm).not.toMatch(/—/);
+    }
+  });
+
+  it('names, BEFORE the click, each copy an erase cannot reach', () => {
+    expect(ERASE_CONFIRM).toMatch(/documents you uploaded/i);   // already in their folder
+    expect(ERASE_CONFIRM).toMatch(/imports\/pending-\*\.json/); // connector candidates
+    expect(ERASE_CONFIRM).toMatch(/version history/i);
+    expect(ERASE_CONFIRM).toMatch(/GitHub/);
+    expect(ERASE_CONFIRM).toMatch(/backup/i);                   // command-line tool
+  });
+
+  // US-11: the erase cannot reach another device's browser storage. There the
+  // blog chat bubble and the chatbot embed read the widget's copy of the
+  // record, and keep sending it until the widget loads on that device and
+  // finds the record erased (HealthTool loadData writes the copy empty).
+  // Only the Shopify build has a bubble and an embed.
+  it('US-11: on the Shopify build, names the chat bubble and embed on another device, which keep the old record until the widget loads there', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toMatch(/Seven things this cannot reach/);
+    expect(copy).toMatch(/5\. On another device, the blog chat bubble and the chatbot embed/);
+    expect(copy).toMatch(/until the widget next loads there/i);
+  });
+
+  // US-15 AC7/AC8: the server keeps the widget chat's questions, and the blog
+  // bubble's and the embed's questions and replies, and no erase reaches them.
+  // Say so before the click. The purge blanks each row by its own created_at,
+  // but every bubble and embed row copies the chat's first question and its
+  // last 3 into router_context (app/routes/api.chat.ts), so a question there
+  // lasts until 30 days after the chat's LAST message. The widget's rows drop
+  // those copies (redactForWidget), so "up to" covers them. A 2026-10-30 draft
+  // said "30 days after it was sent", which the copies made false.
+  it('US-15 AC7/AC8: on the Shopify build, names every chat question and reply our server keeps, up to 30 days after the last message', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toContain(
+      "6. Your chat questions (the widget, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies. " +
+        "Our server keeps the text of each, and a chat's title, for up to 30 days after your last message in that chat.",
+    );
+    expect(copy).not.toMatch(/after it was sent/);
+    expect(copy).not.toMatch(/—/);
+  });
+
+  // US-15 AC44: just before the purge blanks a health question, it keeps a
+  // scrubbed copy with no end date. The erase never reaches our server, so a
+  // question asked before an erase is still copied; say so before the click.
+  // Never "anonymous" or "not linked" (AC44 "What we say").
+  it('US-15 AC44: on the Shopify build, item 6 names the kept question copy and how to have it deleted', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toContain(
+      'It also keeps a copy of each health question, with no end date, to improve the chatbot. ' +
+        'An automatic step tries to remove names and contact details first. Email us the wording to have a copy deleted.',
+    );
+    expect(copy).not.toMatch(/anonym|not linked/i);
+    expect(await eraseConfirmOn(false)).not.toMatch(/copy of each health question/);
+  });
+
+  // A signed-in chat writes a profiles row (email, name) the erase cannot reach
+  // (supabase.server.ts; privacy-connector-addendum.md). Re-check R2, 2026-10-30.
+  it('US-15 AC7: on the Shopify build, names the account row a signed-in chat leaves', async () => {
+    expect(await eraseConfirmOn(true)).toContain('If you were signed in, it also keeps an account row with your name and email address.');
+    expect(await eraseConfirmOn(false)).not.toContain('account row');
+  });
+
+  // The feedback box sends to our server (feedback_submissions, no purge) and
+  // emails Brad a copy (app/routes/api.feedback.ts). No erase reaches either.
+  it('US-11: on the Shopify build, names the feedback box as the seventh item, and no eighth', async () => {
+    const copy = await eraseConfirmOn(true);
+    expect(copy).toContain(
+      '7. What you sent through the feedback box. Our server keeps it with your email address, and a copy went to Brad by email.',
+    );
+    expect(copy).not.toMatch(/8\./);
+  });
+
+  it('US-11: on the Pages build, which has no bubble or embed, keeps four items', async () => {
+    const copy = await eraseConfirmOn(false);
+    expect(copy).toMatch(/Four things this cannot reach/);
+    expect(copy).toMatch(/4\. Backups made by the command-line tool/);
+    expect(copy).not.toMatch(/chat bubble|chatbot embed|feedback|30 days|5\.|6\.|7\./);
+  });
+
+  // The old sentence said the kept row means "a later re-enrolment does not
+  // restart them". It does not: enrolByEmail REFILLS a tombstone's schedule on
+  // the next optin (app/lib/reminder-v2.server.ts). The kept row only stops a
+  // second welcome email. Pin the corrected sentence, not just /address/.
+  it('says reminders stop, and says what the kept row actually does', () => {
+    expect(ERASE_CONFIRM).toMatch(/reminders are turned off/i);
+    expect(ERASE_CONFIRM).toContain(
+      'The row on our server keeps your address for 90 days, so a later enrolment of that address does not send a second welcome email',
+    );
+    expect(ERASE_CONFIRM).toContain(
+      'anyone who enrols the address again restarts the schedule, and each email carries the off link',
+    );
+    expect(ERASE_CONFIRM).toMatch(/Google/);
+  });
+
+  // The CLI's own backups do not last: an erase write keeps none, and every
+  // later write prunes the copies that predate the erase epoch
+  // (packages/health-core/src/file-adapter.ts). The confirm used to promise
+  // they "stay beside the file" full stop.
+  it('says the command-line backups last only until that tool next writes', () => {
+    expect(ERASE_CONFIRM).toContain(
+      'Backups made by the command-line tool stay beside the file until that tool next writes it.',
+    );
+    expect(ERASE_DONE).toContain('any command-line backups until that tool next writes the file');
+    expect(ERASE_DONE_CHAT_PENDING).toContain('until that tool next writes the file');
+  });
+
+  // US-11 AC2c: a history that could not be opened has no tombstone waiting,
+  // so this alert must not promise the next chat will erase it.
+  it('US-11 AC2c: an unread cloud chat history is named as still there, not erased later', () => {
+    expect(ERASE_DONE_CHAT_UNREAD).toContain('could not be read, so any chats you saved are still in your cloud folder, in chat-history.json');
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/next chat/i);
+    // No retry instruction: the button is gone after an erase, and the failure may be lasting.
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/again/i);
+    expect(ERASE_DONE_CHAT_UNREAD).toContain('until that tool next writes the file');
+    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/—/);
+  });
+
+  it('never claims the kept row stops reminders from restarting', () => {
+    expect(ERASE_CONFIRM).not.toMatch(/does not restart/i);
+  });
+
+  it('still says the erase itself cannot be undone', () => {
+    expect(ERASE_CONFIRM).toMatch(/cannot be undone/i);
+  });
+
+  it('is plain: no em dashes in either string', () => {
+    expect(ERASE_CONFIRM).not.toMatch(/—/);
+    expect(ERASE_DONE).not.toMatch(/—/);
+  });
+
+  it('the post-erase alert stays consistent with the confirm, and shorter', () => {
+    expect(ERASE_DONE).toMatch(/chat history/i);
+    expect(ERASE_DONE).toMatch(/version history/i);
+    expect(ERASE_DONE.length).toBeLessThan(ERASE_CONFIRM.length);
+  });
+
+  // US-11 AC5: the alert repeats the confirm, shorter. On the Shopify build
+  // that includes items 5 to 7: the bubble and embed on another device, the
+  // chat our server keeps on the confirm's own clock, and the feedback box.
+  it('US-11 AC5: on the Shopify build, the alert repeats items 5 to 7 on the same clock, shorter', async () => {
+    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(true);
+    const clock = 'for up to 30 days after your last message in that chat';
+    expect(confirm).toContain(clock);
+    for (const alert of [done, pending, unread]) {
+      expect(alert).toContain('On another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there.');
+      expect(alert).toContain(`Our server keeps your chat questions, and the bubble's and embed's replies, ${clock}, and a copy of each health question, with no end date, to improve the chatbot.`);
+      expect(alert).toContain('It keeps what you sent through the feedback box.');
+      expect(alert).not.toMatch(/—/);
+      expect(alert.length).toBeLessThan(confirm.length);
+    }
+  });
+
+  it('US-11 AC5: on the Pages build, the alert names no bubble, embed or server-kept chat', async () => {
+    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(false);
+    for (const alert of [done, pending, unread]) {
+      expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server|health question/i);
+      expect(alert).toMatch(/version history/i);
+      expect(alert.length).toBeLessThan(confirm.length);
+    }
+  });
+
+  // deleteUserData() swallows a failed chat erase so an unreachable cloud can
+  // never trap a user's data on their device. The alert must not then claim
+  // the chat history is gone: it reports the flag the caller was handed.
+  it('has a variant for the erase that could not reach the chat history', () => {
+    expect(ERASE_DONE_CHAT_PENDING).toMatch(/health record is deleted/i);
+    expect(ERASE_DONE_CHAT_PENDING).toMatch(/chat history could not be reached/i);
+    expect(ERASE_DONE_CHAT_PENDING).toMatch(/erased on your next chat/i);
+    expect(ERASE_DONE_CHAT_PENDING).not.toMatch(/chat history (?:and|are|is) deleted/i);
+    expect(ERASE_DONE_CHAT_PENDING).not.toMatch(/—/);
+  });
+});

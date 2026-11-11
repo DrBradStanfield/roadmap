@@ -7,7 +7,9 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue, createEmptyFile, labUnitRefusalLine, type FileLabValue } from '@roadmap/health-core';
+import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
+import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
 afterEach(cleanup);
 
@@ -18,6 +20,8 @@ const addLabValue = vi.fn();
 const trackProductEvent = vi.fn();
 vi.mock('../lib/roadmap-data', () => ({
   addLabValue: (...args: unknown[]) => addLabValue(...args),
+  getShownErase: () => 'erase-1',
+  getEraseIdentity: () => 'erase-1',
 }));
 const realAdd = (input: Parameters<typeof addRecordLabValue>[1]) =>
   addRecordLabValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, input, new Date().toISOString());
@@ -28,7 +32,8 @@ vi.mock('../lib/server-api', () => ({
 
 import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
-import { reportedToCanonical, type ApiMeasurement } from '@roadmap/health-core';
+import { reportedToCanonical } from '@roadmap/health-core/units';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { validateTypedValue } from '../lib/blood-test-cell';
 
 beforeEach(() => {
@@ -54,6 +59,17 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(queryByLabelText('Test')).toBeNull();
   });
 
+  it('US-16 AC2d: a save the record refuses with its erase unchanged keeps the form and the value, and asks for a retry', async () => {
+    addLabValue.mockResolvedValue(null);
+    const { getByLabelText, getByRole, findByText, onAdded } = openForm();
+    fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
+    fireEvent.click(getByRole('button', { name: /^save$/i }));
+    expect(await findByText('Could not save — please try again.')).toBeTruthy();
+    expect((getByLabelText('Value') as HTMLInputElement).value).toBe('30');
+    expect(onAdded).not.toHaveBeenCalled();
+  });
+
   it('a catalogued test fixes its canonical unit and saves under the stable key', async () => {
     const { getByLabelText, getByRole, onAdded, container } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'ggt' } });
@@ -62,7 +78,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
     expect(trackProductEvent).toHaveBeenCalledWith('lab_row_added');
   });
 
@@ -74,7 +90,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
@@ -112,7 +128,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       const { findByRole, getByText, onCorrect, queryByLabelText } = duplicate('54');
       fireEvent.click(await findByRole('button', { name: 'Replace 45 µg/L with 54' }));
       expect(getByText('That test already has 45 µg/L for that date.')).toBeTruthy();
-      await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54));
+      await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54, 'erase-1'));
       await waitFor(() => expect(queryByLabelText('Test')).toBeNull()); // the form closes
       expect(addLabValue).toHaveBeenCalledTimes(1); // no second row was tried
     });
@@ -167,7 +183,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Test name'), { target: { value: 'Folate' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 })));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Folate', value: 54 }), 'erase-1'));
       expect(onCorrect).not.toHaveBeenCalled();
     });
 
@@ -176,7 +192,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
       fireEvent.change(getByLabelText('Unit'), { target: { value: 'ng/mL' } });
       expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
       fireEvent.click(getByRole('button', { name: /^save$/i }));
-      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })));
+      await waitFor(() => expect(addLabValue).toHaveBeenLastCalledWith(expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' }), 'erase-1'));
       expect(onCorrect).not.toHaveBeenCalled();
     });
   });
@@ -198,7 +214,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
     fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
     fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
-    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held3', 54, 'erase-1'));
   });
 
   // US-21 AC15 · a refusal reads as the upload summary does: a person never
@@ -301,7 +317,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
   });
 
   it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
@@ -313,7 +329,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
   });
 
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
@@ -330,7 +346,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '1,05' } });
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }));
+    expect(addLabValue).toHaveBeenCalledWith(expect.objectContaining({ metricName: 'ferritin', value: 1.05 }), 'erase-1');
   });
 
   // Codex R2: no range checks grouped thousands here, so they are refused.
@@ -383,7 +399,7 @@ describe('US-66 AC6 — a core test typed under "Other"', () => {
     const { findByRole, getByText, onCorrect } = typeLdl('131');
     fireEvent.click(await findByRole('button', { name: 'Replace 116 mg/dL with 131' }));
     expect(getByText('That test already has 116 mg/dL for that date.')).toBeTruthy();
-    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('core1', reportedToCanonical('ldl', 131, 'mg/dL')!.valueSI, 'erase-1'));
   });
 
   it('US-21 AC13 — the core value typed again offers no Replace', async () => {
@@ -430,7 +446,7 @@ describe('US-25 AC25: a value page adds to its own series', () => {
     fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
     fireEvent.click(getByText(/^save$/i));
     await waitFor(() => expect(onAdded).toHaveBeenCalled());
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true });
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true }, 'erase-1');
   });
 
   it('adds to a kept-apart lab series named like a vital (Weight)', async () => {

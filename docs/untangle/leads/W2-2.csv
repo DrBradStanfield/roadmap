@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-2,"S1 tools, scripts, CI","Shared Vite prelude for release, alias, assets dir and flags",not started,No widget-src/vite.shared.ts; the alias and release prelude repeat in six vite configs,,,no

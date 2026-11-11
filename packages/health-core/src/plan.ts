@@ -20,7 +20,7 @@ import {
   withPsaMeasurement,
   type ApiMeasurement,
 } from './mappings';
-import { latestActivePerMetric, newestUsablePsa } from './measurement-history';
+import { compareReadings, latestActivePerMetric, newestUsablePsa } from './measurement-history';
 import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
@@ -135,7 +135,7 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
     ),
     unitSystem: unitSystemOf(file.profile),
     medications: medicationsToInputs(file.medications),
-    screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
+    screenings: screeningsToInputs(fileScreeningRows(file.screenings), now),
     currentRows,
   };
 }
@@ -217,7 +217,7 @@ export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' 
   const height = file.profile.heightCm;
   if (typeof height !== 'number' || height <= 0) return [];
   const days = new Map<string, WhtrPoint | null>();
-  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => compareReadings(b, a));
   for (const waist of waists) {
     const day = dayOf(waist.recordedAt);
     if (!days.has(day)) days.set(day, comparatorOf(waist).comparator ? null : { id: waist.id, day, ratio: waistToHeightRatio(waist.value, height) });

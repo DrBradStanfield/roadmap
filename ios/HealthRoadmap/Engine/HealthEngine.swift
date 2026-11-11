@@ -226,6 +226,13 @@ actor HealthEngine {
         return try JSONDecoder().decode([LabSearchMatch].self, from: Data(json.utf8))
     }
 
+    /// A listed document's original from the open cloud, by the document's id (US-73 AC12,
+    /// `documentOriginal`); nil from an engine without that door. Throws when no cloud is open,
+    /// the record names no original, or the cloud cannot give it.
+    func documentOriginal(id: String) async throws -> Data? {
+        try await optionalCall("documentOriginal", [id]) { EngineNatives.data($0) ?? Data() }
+    }
+
     /// Calls an optional door (bridge-optional.json `optionalDoors`, D3): one the hashed contract
     /// leaves out, so the bridge id stays. A door the engine lacks answers nil, the feature
     /// unavailable, never a crash. The app normally runs an engine at least as new as its bundled
@@ -235,6 +242,13 @@ actor HealthEngine {
         checkJSThread()
         guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else { return nil }
         return try call(name, arguments)
+    }
+
+    /// `optionalCall` for a door that answers a Promise: `read` makes the settled value Swift's.
+    func optionalCall<T: Sendable>(_ name: String, _ arguments: [Any], read: @escaping (JSValue) -> T) async throws -> T? {
+        checkJSThread()
+        guard let function = exports.objectForKeyedSubscript(name), !function.isUndefined else { return nil }
+        return try await callAsync(name, arguments, read: read)
     }
 
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's

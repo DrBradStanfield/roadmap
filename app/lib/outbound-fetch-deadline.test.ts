@@ -204,6 +204,18 @@ describe('US-09 AC31: a stalled provider is abandoned at the deadline', () => {
     expect(await res.json()).toEqual({ error: 'exchange_failed', errorDescription: '' });
   });
 
+  it.each([
+    ['no access token', { refresh_token: 'synthetic-refresh', expires_in: 3599 }],
+    ['an expiry that is not a number', { access_token: 'synthetic-access', expires_in: '3599' }],
+    ['no expiry', { access_token: 'synthetic-access' }],
+  ])('US-09 AC37 (issue #924): the Google token exchange answers 502, not 200, when a 200 has %s', async (_name, reply) => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(reply), { status: 200 }));
+    const { action } = await import('../routes/api.google-token');
+    const res = await action({ request: exchangeRequest() } as never);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'exchange_failed', errorDescription: 'incomplete_response' });
+  });
+
   it('the Google token exchange still passes a readable 200 through', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ access_token: 'synthetic-access', refresh_token: 'synthetic-refresh', expires_in: 3599 }), { status: 200 }));
     const { action } = await import('../routes/api.google-token');

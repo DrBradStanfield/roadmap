@@ -26,7 +26,6 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
   storageState: (backend: string, reconnect?: string) =>
     (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
-  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox', github: 'GitHub', 'self-host': 'your own server' },
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
@@ -80,9 +79,10 @@ describe('US-62 AC3: signin_opened from the top bar', () => {
     expect(signins()).toEqual([{ placement: 'top_bar' }]);
   });
 
-  it('a connected record\'s provider button opens the picker but sends nothing', () => {
+  it('a connected record\'s provider link (in the storage card: the title line is text) opens the picker but sends nothing', () => {
     mount('dropbox');
-    fireEvent.click(bar());
+    expect(bar()).toBeNull();
+    fireEvent.click(document.querySelector('.hr-sync-status-link')!);
     expect(dialog()).not.toBeNull();
     expect(signins()).toEqual([]);
   });

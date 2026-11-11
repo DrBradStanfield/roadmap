@@ -7,7 +7,8 @@
  */
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { REDUCE_ALCOHOL_ID, type AlcoholAnswer, type Suggestion } from '@roadmap/health-core';
+import { REDUCE_ALCOHOL_ID } from '@roadmap/health-core/suggestions';
+import type { AlcoholAnswer, Suggestion } from '@roadmap/health-core/types';
 
 /** The two answers, for About you's row and the card's first question. */
 export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [

@@ -8,7 +8,9 @@
  * a MemoryAdapter that refuses the way Drive did (StorageError, status 403).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryAdapter, ROADMAP_FILE_NAME, StorageError, createEmptyFile, type RoadmapFile, type StorageAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter, isSyncPending } from '../src/storage';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../src/storage/roadmap-store';
 import * as data from '../src/lib/roadmap-data';
@@ -89,7 +91,8 @@ describe('startOnBackend (US-09 AC13)', () => {
 
 describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   beforeEach(() => {
-    const backing = new Map<string, string>();
+    // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
     vi.stubGlobal('localStorage', {
       getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
       setItem: (k: string, v: string) => void backing.set(k, v),

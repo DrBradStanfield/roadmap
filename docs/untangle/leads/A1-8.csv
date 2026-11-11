@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A1-8,S3 cloud storage and sync,Drop DriveAdapter oldestFirst via the iPhone HTTP allow-list,not started,"drive-rest.ts:96,101 oldestFirst still present",,,yes

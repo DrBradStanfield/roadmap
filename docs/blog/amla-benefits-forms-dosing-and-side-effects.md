@@ -189,7 +189,7 @@ These dosing suggestions are based on small, short-term studies, many with signi
 
 Amla fruit is eaten as a food and used in Ayurveda [28]. In trials, amla extracts were well tolerated: no serious adverse effects occurred during a 90-day trial [8], laboratory safety tests did not change significantly for 12 weeks [19], and a 12-week trial in hypertension reported a good safety profile [21].
 
-Ayurvedic products carry a separate risk. In a 2004 Boston study, 14 of 70 Ayurvedic herbal medicine products from South Asia contained lead, mercury or arsenic, and each could give intakes above regulatory standards if taken as directed [23]. In a 2008 study, one-fifth of Ayurvedic medicines bought online, made in the US or India, contained detectable lead, mercury or arsenic [24]. These studies tested Ayurvedic medicines in general, not amla alone. Choose products tested for heavy metals; consumerlab.com and Labdoor list independent test results.
+Ayurvedic products carry a separate risk. In a 2004 Boston study, 14 of 70 Ayurvedic herbal medicine products from South Asia contained lead, mercury or arsenic, and each could give intakes above regulatory standards if taken as directed [23]. In a 2008 study, one-fifth of Ayurvedic medicines bought online, made in the US or India, contained detectable lead, mercury or arsenic [24]. These studies tested Ayurvedic medicines in general, not amla alone. Choose products tested for heavy metals; Labdoor lists independent test results.
 
 ### Known and Potential Side Effects
 

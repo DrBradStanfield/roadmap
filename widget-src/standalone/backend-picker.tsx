@@ -16,10 +16,11 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
+import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, useBusyRun, type Backend } from './connect';
+import { PROVIDERS } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
-import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
+import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
 const LOGOS: Record<string, React.ReactNode> = {
@@ -158,7 +159,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   const submitForm = (id: 'github' | 'self-host'): void => {
     void run(async () => {
       await prepareSwitch(current);
-      trackProductEvent('cloud_connect_started', { provider: id === 'self-host' ? 'webdav' : id });
+      trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
         id === 'github'
           ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() })
@@ -173,7 +174,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   return createPortal(
     <dialog
       className="hr-modal"
-      aria-label={PLAN_STORAGE_CTA}
+      aria-label={PICKER_TITLE}
       ref={dialogRef}
       onCancel={(e) => { e.preventDefault(); onCloseRef.current(); }}
       onClick={(e) => { if (e.target === e.currentTarget) onCloseRef.current(); }}
@@ -185,7 +186,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
 
         {step === 'list' && (
           <>
-            <h2 tabIndex={-1} data-initial-focus>{PLAN_STORAGE_CTA}</h2>
+            <h2 tabIndex={-1} data-initial-focus>{PICKER_TITLE}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
             {OPTIONS.map((o, i) => (
@@ -226,7 +227,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
             <h2>Log off this device?</h2>
             <p className="hr-modal-sub">
-              Your data stays safe in your {PROVIDER_LABELS[current]}. This just signs you out and
+              Your data stays safe in your {PROVIDERS[current].label}. This just signs you out and
               clears your health record from this browser. Sign back in with the same account to
               restore everything.
             </p>

@@ -9,7 +9,7 @@ primary_region = 'iad'
 [build]
   # Non-secret Sentry slugs for the server source-map upload during the Docker build.
   # (The release name is per-commit so it's passed at deploy time via --build-arg
-  # SENTRY_RELEASE=...; the auth token via --build-secret. See CLAUDE.md Deploy Workflow.)
+  # SENTRY_RELEASE=...; the auth token via --build-secret. See docs/deploy-runbook.md § Deploy Workflow.)
   [build.args]
     SENTRY_ORG = 'dr-brad-inc'
     SENTRY_PROJECT = 'javascript-remix'
@@ -17,6 +17,8 @@ primary_region = 'iad'
 [env]
   HOST = '0.0.0.0'
   PORT = '3000'
+  # Reminders and the chat purge share one cron_lock row with health-tool-edu: they run only here (US-28 AC8).
+  RUN_SHARED_CRONS = 'true'
 
 [processes]
   app = 'npm run start'

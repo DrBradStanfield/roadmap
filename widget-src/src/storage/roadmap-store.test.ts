@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createEmptyFile, localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { localDay } from '@roadmap/health-core/merge';
+import { measurementsToInputs } from '@roadmap/health-core/mappings';
 import { RoadmapStore } from './roadmap-store';
-import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
-import { ROADMAP_FILE_NAME, toOldShape } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { toOldShape } from '@roadmap/health-core/blood-tests';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {

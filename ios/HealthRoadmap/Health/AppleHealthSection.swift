@@ -14,6 +14,14 @@ struct AppleHealthSection: View {
                 if health.connected {
                     Label(Self.text(health.status), systemImage: "heart.text.square")
                         .foregroundStyle(.secondary)
+                    // US-72 AC14: Apple's sheet only, when HealthKit has results to ask about.
+                    if health.offersLabResults {
+                        Button {
+                            Task { await health.shareNewLabResults() }
+                        } label: {
+                            Label("Share new lab results", systemImage: "list.clipboard")
+                        }
+                    }
                 } else {
                     Button {
                         Task { await health.connect() }
@@ -25,6 +33,7 @@ struct AppleHealthSection: View {
                 SectionTitle.appleHealth()
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
+                    if health.offersLabResults { Text("Opens Apple Health when your provider has sent new results.") }
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }
                     if health.status == .notAllowed { Text(LiveFooter.access) }
                     Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")

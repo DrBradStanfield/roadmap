@@ -9,17 +9,15 @@ struct LabUploadSheet: View {
     let engine: HealthEngine
     let store: RecordStore
 
-    private enum Step {
-        case choose
-        case consent([LabFileReader.Document])
-        /// What is happening now, and how far through the reports the send is (nil before it starts).
-        case working(String, LabReadingDiagram.Progress? = nil)
-        case review([LabResult], index: Int)
-        case failed(String)
-    }
-
     @Environment(\.dismiss) private var dismiss
-    @State private var step = Step.choose
+    @Environment(\.analytics) private var analytics
+    /// The sheet's one named state, moved only by `send(_:)` (LabUploadFlow).
+    @State private var step = Self.firstStep
+    #if DEBUG
+    private static var firstStep: LabUploadFlow.Step { LabSaveAllDemo.step ?? .choose }
+    #else
+    private static let firstStep = LabUploadFlow.Step.choose
+    #endif
     @State private var importing = false
     @State private var scanning = false
     @State private var picking = false
@@ -28,8 +26,15 @@ struct LabUploadSheet: View {
     @State private var reviewSaving = false
     /// The read or send under way, cancelled when the sheet closes (review R1, Codex).
     @State private var work: Task<Void, Never>?
-    /// Where Cancel on the reading screen goes: the sources, or the review a Try again left (AC7a).
-    @State private var cancelTo = Step.choose
+    /// Each report's choices on its review, by report (US-52 AC8b): kept when the review goes,
+    /// so save all saves what the person chose; a Try again's new answer starts fresh.
+    @State private var held: [UUID: LabChoices] = [:]
+
+    /// Close and swipe-down wait for a save, or for save all (AC8b).
+    private var closeHeld: Bool {
+        if case .savingAll = step { return true }
+        return reviewSaving
+    }
 
     var body: some View {
         NavigationStack {
@@ -37,20 +42,20 @@ struct LabUploadSheet: View {
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { work?.cancel(); dismiss() }.disabled(reviewSaving) }
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { work?.cancel(); dismiss() }.disabled(closeHeld) }
                     if case .choose = step, AIConsent.labUpload.given {
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
                                 Button("Stop sharing", systemImage: "hand.raised", role: .destructive) {
                                     AIConsent.labUpload.withdraw()
-                                    step = .choose
+                                    send(.restart)
                                 }
                             } label: { Image(systemName: "ellipsis.circle") }
                         }
                     }
                 }
         }
-        .interactiveDismissDisabled(reviewSaving)
+        .interactiveDismissDisabled(closeHeld)
         .onDisappear { work?.cancel() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first { pick { await read(file: url) } }
@@ -78,29 +83,42 @@ struct LabUploadSheet: View {
             chooser
         case .consent(let documents):
             AIConsentView(consent: .labUpload) { start { await send(documents) } }
-        case .working(let what, let progress):
+        case .working(let what, let progress, _):
             VStack {
                 LabReadingDiagram(step: what, progress: progress)
                 // A way out of a wait that may run to the timeout (AC7a); Close stays too.
-                Button("Cancel") { work?.cancel(); step = cancelTo }.buttonStyle(.bordered)
+                Button("Cancel") { work?.cancel(); send(.cancel) }.buttonStyle(.bordered)
             }
-        case .review(let results, let index):
-            LabReviewView(engine: engine, store: store, result: results[index], position: (index + 1, results.count), saving: $reviewSaving,
-                          tryAgain: results[index].retry == nil ? nil : { retry(results, at: index) }) {
-                if index + 1 < results.count {
-                    step = .review(results, index: index + 1)
-                } else {
-                    dismiss()
-                }
+        case .review(let results, let index, let from):
+            let result = results[index]
+            let waiting = results.count - index
+            LabReviewView(engine: engine, store: store, result: result, position: (index + 1, results.count), saving: $reviewSaving,
+                          tryAgain: result.retry == nil ? nil : { retry(results, at: index) },
+                          held: Binding(get: { held[result.id] }, set: { held[result.id] = $0 }),
+                          saveAll: from == nil && waiting >= 2 ? ("Save all (\(waiting) reports)", { saveAll(results, from: index) }) : nil,
+                          leaveTitle: from == nil ? nil : "Back to summary") {
+                send(.next($0))
             }
-            .id(results[index].id)
+            .id(result.id)
+        case .savingAll(_, let progress):
+            SaveAllProgressView(progress: progress)
+        case .saveAllDone(let results, let summary):
+            SaveAllSummaryView(results: results, summary: summary, open: { send(.open($0)) }, done: { send(.done) })
         case .failed(let message):
             VStack(spacing: 16) {
                 Text(message).multilineTextAlignment(.center)
-                Button("Choose another file") { step = .choose }.buttonStyle(.bordered)
+                Button("Choose another file") { send(.restart) }.buttonStyle(.bordered)
             }
             .padding()
+        case .finished:
+            EmptyView()
         }
+    }
+
+    /// The one way the step moves; the last report done with closes the sheet.
+    private func send(_ event: LabUploadFlow.Event) {
+        step = LabUploadFlow.transition(step, event)
+        if case .finished = step { dismiss() }
     }
 
     // MARK: Where the report is (AC10)
@@ -147,8 +165,7 @@ struct LabUploadSheet: View {
     /// moves at the pick, so nothing can slip in before the read starts.
     private func pick(_ operation: @escaping @MainActor () async -> Void) {
         guard case .choose = step else { return }
-        cancelTo = .choose
-        step = .working("Reading the file on your iPhone")
+        send(.picked)
         start(operation)
     }
 
@@ -164,10 +181,10 @@ struct LabUploadSheet: View {
             if AIConsent.labUpload.given {
                 await send(read)
             } else {
-                step = .consent(read)
+                send(.needsConsent(read))
             }
         } catch {
-            if !Task.isCancelled { step = .failed(error.localizedDescription) }
+            if !Task.isCancelled { send(.failed(error.localizedDescription)) }
         }
     }
 
@@ -179,9 +196,9 @@ struct LabUploadSheet: View {
             do {
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                read = try await LabFileReader.decoded(picked: url) { done, total in
-                    step = .working("Reading report \(done + 1) of \(total)", .init(done: done, total: total, started: .now))
-                }
+                read = try await LabFileReader.decoded(picked: url, progress: { done, total in
+                    send(.readProgress(done: done, total: total, at: .now))
+                }, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) })
             }
             return await engine.named(read)
         }
@@ -197,12 +214,14 @@ struct LabUploadSheet: View {
     // MARK: Sending, with consent
 
     private func send(_ documents: [LabFileReader.Document]) async {
-        guard AIConsent.labUpload.given else { step = .consent(documents); return }
-        cancelTo = .choose
-        let results = await Self.extractEach(documents, extract: extract) { n, document in
-            step = .working("Reading the values in \(document.name)", .init(done: n, total: documents.count, started: .now))
+        guard AIConsent.labUpload.given else { send(.needsConsent(documents)); return }
+        let results = await Self.extractEach(documents, extract: extract) { n, _ in
+            send(.sending(n, of: documents, at: .now))
         }
-        if let results { step = .review(results, index: 0) }
+        if let results {
+            held = [:]
+            send(.extracted(results))
+        }
     }
 
     private func extract(_ document: LabFileReader.Document) async throws -> String {
@@ -213,9 +232,33 @@ struct LabUploadSheet: View {
     /// goes back to the review it came from. Tapped only: the app never retries on its own.
     /// The screen moves at the tap, so a same-instant Next or Done cannot be overridden later.
     private func retry(_ results: [LabResult], at index: Int) {
-        cancelTo = .review(results, index: index)
-        step = .working("Reading the values in \(results[index].name)")
-        start { if let again = await Self.retried(results, at: index, extract: extract) { step = .review(again, index: index) } }
+        send(.retrying(at: index))
+        start { if let again = await Self.retried(results, at: index, extract: extract) { send(.retried(again, at: index)) } }
+    }
+
+    /// Save all (US-52 AC8b): each waiting report saved in turn, in picked order, as its own
+    /// Save would, through the same calls. A refusal that would repeat for every report left
+    /// (the record the review showed is gone: erased, changed, or the cloud disconnected)
+    /// stops the run (`saveWaiting`). The record stays pinned to the one the review showed
+    /// until the run ends.
+    private func saveAll(_ results: [LabResult], from index: Int) {
+        store.pinScreen()
+        analytics?.event(.labSaveAll)  // AC8b's usage signal: once per run, nothing with it
+        send(.saveAll)
+        start {
+            defer { store.unpinScreen() }
+            for i in index..<results.count {
+                if Task.isCancelled { return }
+                send(.reportStarted(i))
+                switch await LabReportSave.saveWaiting(results[i], held: held[results[i].id], engine: engine, store: store) {
+                case .success(let outcome):
+                    send(.reportFinished(i, outcome))
+                case .failure(let stop):
+                    send(.stopped(i, stop))
+                    return
+                }
+            }
+        }
     }
 
     /// `results` with the report at `index` sent again; nil when it keeps no report or the
@@ -250,13 +293,14 @@ struct LabUploadSheet: View {
                                          original: document.original))
             } catch {
                 // Try again only for a failure that may mend: the network (a timeout, no
-                // connection, a dropped one) or the server's own trouble (5xx). A refused
+                // connection, a dropped one), the phone's App Attest (US-52 AC1c) or the
+                // server's own trouble (5xx). A refused
                 // attestation (401), a file too large (413), one the AI declined (422) and the
                 // daily limit (429) fail the same way again (review R5).
                 let (failure, mends): (String, Bool) = switch error {
                 case AppAttestClient.Failure.server(status: 422, message: _): ("The AI could not read this file.", false)
                 case AppAttestClient.Failure.server(status: let status, message: _): (words(for: error), status >= 500)
-                case is URLError: (words(for: error), true)
+                case is URLError, AppAttestClient.Failure.device: (words(for: error), true)
                 default: (words(for: error), false)
                 }
                 results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: failure, retry: mends ? document : nil))

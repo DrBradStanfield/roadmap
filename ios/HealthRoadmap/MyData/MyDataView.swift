@@ -92,7 +92,7 @@ struct MyDataView: View {
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
-            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
+            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }.labSaveAllDemo($addingLabs)
             .sheet(isPresented: $addingTest, onDismiss: {
                 if let pickedTest { entry = Self.entry(for: pickedTest, now: store.screen, data: store.myData) }
                 pickedTest = nil
@@ -121,7 +121,7 @@ struct MyDataView: View {
         if let data = store.myData {
             list(data)
         } else {
-            ContentUnavailableView("Your record could not be opened", systemImage: "exclamationmark.triangle", description: Text(store.problem ?? ""))
+            ContentUnavailableView(store.problem?.heading ?? "Your record did not load", systemImage: "exclamationmark.triangle", description: Text(store.problem?.words ?? ""))
         }
     }
 
@@ -184,6 +184,7 @@ struct MyDataView: View {
                 SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             })
             if !page[.other].isEmpty { topicSection(.other, page) }
+            if let documents = data.documents?.value { DocumentSections(store: store, documents: documents) }
             Section {
             } footer: {
                 VStack(spacing: 12) {
@@ -318,28 +319,9 @@ struct MyDataView: View {
     /// controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the largest
     /// sizes a one-word title shrinks to one line and any controls go under it, so no word
     /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
+    /// Tour tip 3 (US-57 AC7) rides on Blood tests' heading; its action is the lab upload.
     private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
-        Section {
-            let title = topic.title
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color(.label))
-                .lineLimit(topic.title.title.contains(" ") ? nil : 1)
-                .minimumScaleFactor(0.7)
-                .accessibilityAddTraits(.isHeader)
-            let buttons = HStack(spacing: 14) { controls() }
-                .buttonStyle(.borderless)
-                .labelStyle(.iconOnly)
-                .font(.title3)
-            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 14))
-            let row = layout { title; Spacer(minLength: 0); buttons }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
-            .id(topic.anchor)
-            // Tour tip 3 (US-57 AC7) on Blood tests; its action is the lab upload.
-            if topic == .bloodTests, bloodTestsTipReady { row.tourTip(BloodTestsTip(), action: { addingLabs = true }) } else { row }
-        }
-        .listSectionSpacing(.compact)
+        TopicHeading(topic.title, anchor: topic.anchor, tip: topic == .bloodTests && bloodTestsTipReady ? { addingLabs = true } : nil, controls: controls)
     }
 
     /// One topic as every section draws it: its heading, its urgent cards over its rows (Brad

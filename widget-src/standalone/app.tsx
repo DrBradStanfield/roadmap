@@ -12,29 +12,27 @@ import React from 'react';
 import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
+import { GuestContext } from '../src/lib/storage-notice';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { initSentry } from '../src/lib/sentry';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
-import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { StorageBar, SyncControl, RemindersSection } from './sync-control';
+import { LocalSaveAlert, StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
-import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
+import { EmailLandingNotice, emailLandingApplies } from './email-landing';
 import { HistoryLightboxHost } from './history-lightbox';
-import { showLoadFailure } from './load-failure';
+import { boot } from './boot';
 import {
   connectRefusal,
   liftLocalInto,
   rememberBackend,
   reportConnectFailure,
   resolveRemembered,
-  startOnBackend,
   storageState,
   type ResolvedBackend,
 } from './connect';
@@ -82,16 +80,9 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
 }
 
 async function main() {
-  initSentry();
-  // Before the first await (US-09 AC2h): another tab's log-off signal is set
-  // and removed at once, so note one heard during the OAuth code exchange or
-  // a Drive token refresh too. A cloud load that succeeds latches on it; a
-  // page that ends on the device copy never does.
-  noteOtherTabsLogOffWhileLoading();
-  // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
-  const fromEmail = takeEmailFlag();
-  const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore).catch(showLoadFailure);
+  // Nothing may run before boot(): its first line notes another tab's log-off
+  // (US-09 AC2h), and logout-latch-during-load.test.ts runs only boot().
+  const { backend, reconnect, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
   const state = storageState(backend, reconnect);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
@@ -121,11 +112,15 @@ async function main() {
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
         {emailLanding && <EmailLandingNotice />}
-        <HealthTool
-          syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
-          remindersSection={<RemindersSection backend={backend} />}
-          storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
-        />
+        <GuestContext.Provider value={state === 'guest'}>
+          <HealthTool
+            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+            remindersSection={<RemindersSection backend={backend} />}
+            storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+            saveAlert={<LocalSaveAlert backend={backend} />}
+            syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
+          />
+        </GuestContext.Provider>
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

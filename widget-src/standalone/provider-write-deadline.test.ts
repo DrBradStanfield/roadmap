@@ -2,7 +2,10 @@
  * Real adapters, store and sync manager; synthetic HTTP only, no live provider.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_DOC, ROADMAP_FILE_NAME, StorageError, SyncManager, createEmptyFile } from '@roadmap/health-core';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { SyncManager } from '@roadmap/health-core/sync-manager';
+import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { GitHubAdapter } from '../src/storage/github';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { LocalStorageAdapter, isSyncPending } from '../src/storage';
@@ -36,6 +39,8 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe.each(providers)('%s record save that never answers (US-09 AC13d)', (backend, make) => {
+  // The page's cloud, remembered as connect.ts does (a moved-off tab writes no device copy, US-06 AC13).
+  beforeEach(() => localStorage.setItem('health_roadmap_backend', backend));
   /** Reads answer at once; the stalled request hangs until its signal aborts,
    *  as a browser fetch does. With no signal it hangs for good. */
   function stall(stalled: (url: string, init: RequestInit) => boolean) {

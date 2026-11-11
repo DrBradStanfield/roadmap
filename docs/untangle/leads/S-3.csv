@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-3,S2 server,YouTube top-level and follow-up comments share one candidate path,partial,"Word floor with crisis exemption now shared (belowWordFloor, youtube-bot-pipeline.server.ts:65). Left: processFollowUps (youtube-bot.server.ts:180) is still a separate loop from the top-level path",1011,app/lib/youtube-bot-followup-crisis.test.ts (crisis floor only),yes

@@ -1,5 +1,37 @@
 [
   {
+    "title": "We Finally Know How To Remove Plaque From Arteries",
+    "handle": "we-finally-know-how-to-remove-plaque-from-arteries",
+    "url": "https://drstanfield.com/blogs/articles/we-finally-know-how-to-remove-plaque-from-arteries",
+    "tags": [
+      "Research",
+      "Preventative Care"
+    ],
+    "keywords": [
+      "blood pressure",
+      "blood sugar",
+      "cardiovascular",
+      "cholesterol",
+      "ct scan",
+      "exercise",
+      "ezetimibe",
+      "heart attack",
+      "hormone",
+      "inflammation",
+      "ldl",
+      "muscle",
+      "pcsk9",
+      "sleep",
+      "statin",
+      "stroke",
+      "ultrasound"
+    ],
+    "publishedAt": "2026-11-09T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/can-artery-plaque-shrink-flowpromote",
+    "youtube": "https://www.youtube.com/watch?v=jbVM_Lg7mI4",
+    "summary": "Can artery plaque shrink? FLOWPROMOTE: rosuvastatin + ezetimibe, LDL 42, plaque regression, calcium score up on statins"
+  },
+  {
     "title": "Mothers Took Choline. Their Kids Scored 8 IQ Points Higher",
     "handle": "mothers-took-choline-their-kids-scored-8-iq-points-higher",
     "url": "https://drstanfield.com/blogs/articles/mothers-took-choline-their-kids-scored-8-iq-points-higher",
@@ -2070,8 +2102,8 @@
     "publishedAt": "2025-12-15T01:17:08Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on vitamin K. Brad's view: high-dose K2 (360-720 mcg MK-7) slowed coronary calcium in trials, but no trial shows fewer heart attacks. Aim for the 90-120 mcg adequate intake; avoid megadoses. 180 mcg slowed bone density loss; fractures unproven. Warfarin: extreme caution.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on vitamin K. Brad's view: high-dose K2 (360-720 mcg MK-7) slowed coronary calcium in two trials, but no trial shows fewer heart attacks. Aim for the 90-120 mcg adequate intake; avoid megadoses. 180 mcg slowed bone density loss; fractures unproven. Warfarin: extreme caution.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Exercise Snacks Are a Longevity Cheat Code",
@@ -3389,7 +3421,8 @@
     "publishedAt": "2025-07-19T04:04:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/pqq-supplement-guide",
     "type": "reference",
-    "summary": "Reference on PQQ (pyrroloquinoline quinone): memory, brain health, energy, mood, sleep, muscle, cholesterol. Studied in middle-aged and older adults. Typical 20 mg/day. Evidence limited and mostly industry-funded. Always discuss with your doctor."
+    "summary": "PQQ topic master. Brad does not take it because the human evidence is unconvincing. Small, mostly industry-linked trials at about 20 mg a day report modest effects. Talk to your doctor first if pregnant, breastfeeding or with kidney disease.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Exercise is the Closest Thing We Have to the Fountain of Youth",
@@ -4163,7 +4196,8 @@
     "publishedAt": "2025-05-20T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/l-citrulline-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on L-citrulline: blood pressure, erectile dysfunction, exercise performance. Best evidence in adults with elevated BP and men with mild ED. Pure form preferred over citrulline malate. Doses 1.5-6 g/day. Always discuss with your doctor."
+    "summary": "L-citrulline: Brad does not recommend it or any nitric oxide supplement; he suggests rocket and other nitrate-rich vegetables. Trials show little exercise benefit and a small, inconsistent blood pressure effect. Talk to your doctor first if you take blood pressure drugs, nitrates or sildenafil.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "Maca: Benefits, Forms, Dosing, and Side Effects",
@@ -4530,8 +4564,8 @@
     "publishedAt": "2025-05-13T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-guide-evidence-dosing-forms",
     "type": "reference",
-    "summary": "Reference on taurine. Brad takes it for metabolic benefits: a 2025 meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. A later long-term study found levels do not fall with age. 1-3 g/day appears safe. Talk to your doctor first if you take blood-pressure medicines.",
-    "reviewed": "2026-10-20"
+    "summary": "Brad takes it as magnesium taurate: a meta-analysis of 34 trials found lower blood sugar, blood pressure and blood fats. A 2025 study found blood levels do not fall with age. 1 to 3 g a day appears safe. Talk to your doctor first if you take blood-pressure or diabetes medicines or have leukaemia.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Amla (Indian Gooseberry): Benefits, Forms, Dosing, and Side Effects",
@@ -4624,8 +4658,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/b-vitamins-forms-dosing-safety",
     "type": "reference",
-    "summary": "Reference on B vitamins. Brad: diet first, reach the recommended intake, skip megadoses; Australia warns on B6 over 10 mg a day. B vitamins may slow brain shrinkage with high omega-3. Avoid high-dose niacin and folic acid (outside pregnancy). Talk to your doctor first if pregnant or on medicines.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on B vitamins. Brad: reach the recommended intake, skip megadoses; Australia requires a nerve-damage warning on B6 above 10 mg a day. B vitamins slowed brain shrinkage only with high omega-3. Avoid high-dose niacin and folic acid outside pregnancy. Talk to your doctor first if pregnant or on medicines.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Beetroot: Benefits, Forms, Dosing, and Side Effects",
@@ -4662,7 +4696,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/beetroot-nitrate-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on beetroot (beet juice): blood pressure, exercise endurance. For hypertension or heart disease. Juice or concentrate, 300-600 mg nitrate/day, 2-3 hrs before exercise. Nitrate content varies by product. Always discuss with your doctor."
+    "summary": "Beetroot juice supplies nitrate, which lowered blood pressure in some trials and helped endurance in non-elite exercisers. Nitrate varies widely by product. Brad prefers rocket salad to beetroot supplements. Talk to your doctor first if you take blood pressure medicines or form kidney stones.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "Black Seed Oil: Benefits, Forms, Dosing, and Side Effects",
@@ -4753,7 +4788,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/bone-broth-collagen-guide",
     "type": "reference",
-    "summary": "Reference on bone broth: joint pain, skin wrinkles, muscle mass, sleep (glycine). Most evidence is for collagen peptides, not broth directly. Liquid/powder/capsule; 2-3 cups/day for joints. High sodium content; caution in kidney disease. Always discuss with your doctor."
+    "summary": "Bone broth reference. No trials test broth itself; claims rest on collagen trials (2.5 to 15 g a day) for joints, skin, bone and muscle. Broth gave significantly lower collagen amino acids than a 20 g dose. Poor calcium source; lead low. Ask your doctor first if you take spironolactone or levodopa.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Calcium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -4896,7 +4932,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/coconut-water-nutrition-hydration",
     "type": "reference",
-    "summary": "Reference on coconut water: natural electrolyte drink for hydration, blood pressure support, exercise recovery. High potassium (400-500 mg/cup); low calorie. Caution: hyperkalemia risk in kidney disease, diabetes, or on ACE inhibitors/potassium-sparing diuretics. Always discuss with your doctor."
+    "summary": "Coconut water is mostly water, rich in potassium and low in calories. Small trials found it rehydrates about as well as a sports drink after exercise, and one trial suggests it may help ulcerative colitis. Talk to your doctor first if you have kidney disease or take medicines that raise potassium.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "CoQ10 (Ubiquinol): Benefits, Best Forms, Dosing, and Side Effects",
@@ -4987,8 +5024,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-supplementation-evidence-based-guide-benefits-forms-dosage-safety",
     "type": "reference",
-    "summary": "Reference on creatine. Brad's view: worth considering for body and brain. With resistance training it raises strength and lean mass in older adults. Memory: clear to Brad, mixed in reviews, clearest in older adults. Take 5 g/day of monohydrate, no loading. Not advised with severe kidney problems.",
-    "reviewed": "2026-10-22"
+    "summary": "Creatine reference. Brad's view: with resistance training, the one supplement worth adding for muscle, including on a GLP-1 medicine. Memory: interesting signal, reviews mixed. Dose: 3 to 5 g/day of monohydrate; Brad takes 5 g, no loading. Kidney disease or bipolar disorder: ask your doctor first.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "DHEA: Benefits, Forms, Dosing, and Side Effects",
@@ -5493,8 +5530,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-supplements-evidence-dosing-forms-and-safety",
     "type": "reference",
-    "summary": "Reference on melatonin. Brad's view: it may shorten the time it takes to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 2 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Talk to your doctor first if pregnant, or on fluvoxamine, blood thinners, sedatives or diabetes medicines.",
-    "reviewed": "2026-10-22"
+    "summary": "Reference on melatonin. Brad's view: it may shorten the time it takes to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 3 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Talk to your doctor first if pregnant, or on fluvoxamine, blood thinners, sedatives or diabetes medicines.",
+    "reviewed": "2026-11-01"
   },
   {
     "title": "Milk Thistle: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6171,8 +6208,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-benefits-forms-dosing-and-side-effects",
     "type": "reference",
-    "summary": "Reference on collagen peptides. A 2026 meta-analysis found they may improve skin hydration and elasticity, but not wrinkles; trials used 0.5 to 10 g a day. Covers forms, joint, bone, muscle and wound evidence, safety, and Brad's current view. Always discuss with your doctor.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on collagen peptides. A 2026 meta-analysis found they may improve skin hydration and elasticity, not wrinkles; trials used 0.5 to 10 g a day. Joint trials are mixed. Covers forms, safety and Brad's view. Talk to your doctor first if you take diabetes medicines or have a fish allergy.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Cranberry: Benefits, Best Forms, Dosing, and Side Effects",
@@ -6411,7 +6448,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/manuka-honey-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on manuka honey: wound healing, acid reflux (GERD), antibacterial, dry eye, oral health. UMF 15+ for therapeutic use; 1-2 tsp/day general wellness, 5g three times daily for GERD. Avoid in infants. Always discuss with your doctor."
+    "summary": "Topic master on manuka honey: UMF grading, MGO, and trial evidence for burns, wounds, GERD, cough, dry mouth and dry eye. Brad's view covers ordinary honey for cold cough. Never give honey to a baby under 1. Talk to your doctor first if you have diabetes, a honey allergy or a weak immune system.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "NAD Boosters (NMN, NR, NADH): Benefits, Forms, Dosing, and Side Effects",
@@ -6456,8 +6494,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/nad-boosters-nmn-nr-nadh-evidence-guide",
     "type": "reference",
-    "summary": "Dr Brad's view on NAD boosters (NMN, NR, NADH): NMN and NR raise blood NAD+ but trials show no benefit you would notice, and gut bacteria turn both into cheap vitamin B3. He recommends exercise instead. Talk to your doctor first, especially if you have cancer or kidney disease or are pregnant.",
-    "reviewed": "2026-10-20"
+    "summary": "Dr Brad's view on NAD boosters (NMN, NR, NADH): he would not take NR or NMN. They raise blood NAD, but trials show no benefit you would notice, and in a big trial NR left people with Parkinson's worse off. Talk to your doctor first if you have Parkinson's, cancer or kidney disease, or are pregnant.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Olive Leaf Extract: Benefits, Forms, Dosing, and Side Effects",
@@ -6686,7 +6724,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/arginine-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on L-arginine: blood pressure, erectile dysfunction, heart failure, exercise endurance. Forms: L-arginine HCl (deduct 17% for free arginine), Nitrosigine. Doses 4-15 g/day; contraindicated post-heart attack. Always discuss with your doctor."
+    "summary": "Topic master on L-arginine. Brad does not recommend it or other nitric oxide supplements; he eats rocket. Trials show small blood pressure falls and mixed exercise and erectile results. Do not take it after a heart attack. Talk to your doctor first if you take blood pressure medicines.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Cholesterol-Lowering Supplements: Benefits, Evidence, Dosing, and Side Effects",
@@ -7155,8 +7194,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-c-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on vitamin C. Brad's view: adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C raised deaths in burns and sepsis trials. Big antioxidant doses around workouts blunt training gains in young people. Liposomal: no proven benefit at 10x the cost. Always discuss with your doctor.",
-    "reviewed": "2026-10-20"
+    "summary": "Vitamin C reference. Brad: most adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C did harm in burns and sepsis trials. Big antioxidant doses around workouts blunt gains in the young. It won't help once a cold starts. High doses can worsen hemochromatosis or raise kidney-stone risk.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Zinc: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7653,8 +7692,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d3-supplement-guide-dosing-forms-benefits-safety",
     "type": "reference",
-    "summary": "Brad: most adults gain little from extra vitamin D; follow the RDA (600 IU, 800 IU from 70); 4,000 IU a day or more lowered bone density. Supplements suit people low in D and four guideline groups. After a heart attack, TARGET-D hinted at more strokes. Talk to your doctor before exceeding the RDA.",
-    "reviewed": "2026-10-20"
+    "summary": "Brad: most adults gain little from vitamin D supplements. Follow the RDA (600 IU, 800 IU from 71) and avoid megadoses, which lowered bone density and raised falls and fractures. Supplements suit four guideline groups. Ask your doctor before exceeding the RDA, especially if pregnant or on thiazides.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Magnesium: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7829,8 +7868,8 @@
     "publishedAt": "2025-04-01T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/multivitamins-what-the-evidence-actually-shows",
     "type": "reference",
-    "summary": "Reference on multivitamins. Brad's view: COSMOS found a small benefit to memory and global cognition in older adults, but no effect on cancer, heart disease or lifespan. Megadoses can harm; he sees no role for vitamins A or E. Talk to your doctor first, especially if you take warfarin or smoke.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on multivitamins. Brad's view: in COSMOS a daily multivitamin gave a small benefit to memory and global cognition but did not prevent cancer or heart disease. WHO 2026 advises against them for dementia risk. Avoid megadoses. Talk to your doctor first if you take warfarin or smoke.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking",
@@ -10474,8 +10513,8 @@
     "publishedAt": "2024-06-06T08:34:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/choline-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Evidence summary on choline: most adults eat less than the Adequate Intake. Citicoline and alpha-GPC improved memory in some trials; choline bitartrate raised TMAO in a trial and alpha-GPC was linked to stroke. Talk to your doctor first if you take Alzheimer's medicines or have heart disease.",
-    "reviewed": "2026-10-25"
+    "summary": "Choline is an essential nutrient most people eat too little of. Brad thinks topping up to around the recommended amount is reasonable; in pregnancy he suggests eggs and probably a phosphatidylcholine supplement to reach 450 mg a day. Talk to your doctor first if pregnant or on Alzheimer's medicines.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Chia Seed: Benefits, Forms, Dosing, and Side Effects",
@@ -10685,8 +10724,8 @@
     "publishedAt": "2024-03-07T17:34:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/astaxanthin-benefits-dosing-safety",
     "type": "reference",
-    "summary": "Reference on astaxanthin, a red carotenoid from algae. Human trials are small and short; about 6 mg a day may help skin hydration and elasticity. A 2026 mouse study did not repeat an earlier lifespan gain, and Brad does not take it. Talk to your doctor first if you take blood thinners.",
-    "reviewed": "2026-10-23"
+    "summary": "Reference on astaxanthin, a red carotenoid from algae. Brad's October 2026 view: the skin trials are small, short and mostly company-funded, and not worth paying for. A 2026 mouse study did not repeat a lifespan gain. He does not take it. Talk to your doctor first if you take blood thinners.",
+    "reviewed": "2026-11-10"
   },
   {
     "title": "Apple Cider Vinegar: Benefits, Forms, Dosing, and Side Effects",
@@ -10785,7 +10824,8 @@
     "publishedAt": "2024-01-22T10:04:17Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/alginate-supplements-acid-reflux",
     "type": "reference",
-    "summary": "Reference on alginates (Gaviscon, sodium alginate): heartburn, acid reflux, GERD, throat reflux. Safe in pregnancy. Liquid, chewable, or capsule; 200–1000 mg after meals up to 4x daily. Separate from meds 2h. Always discuss with your doctor."
+    "summary": "Reference on alginates (Gaviscon, sodium alginate) for heartburn, GERD and throat reflux. Meta-analyses disagree on how much they beat placebo or antacids. Take 2 hours apart from other medicines. Talk to your doctor first if on a low-salt diet, with kidney disease or on regular medicines.",
+    "reviewed": "2026-11-09"
   },
   {
     "title": "African Mango: Benefits, Forms, Dosing, and Side Effects",
@@ -10881,8 +10921,129 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Anticoagulants and antiplatelets: warfarin, apixaban (Eliquis), rivaroxaban, dabigatran, aspirin and clopidogrel; who needs them, INR, bleeding risks, interactions with food, medicines and supplements, and procedures. Built from labels and guidelines.",
-    "reviewed": "2026-11-02",
+    "summary": "Warfarin, Eliquis and other blood thinners: who needs them, the INR, bleeding signs, interactions with food, medicines and supplements, and procedures.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Bone Health: Osteoporosis, Bone Density Scans and Fracture Prevention",
+    "handle": "bone-health",
+    "url": "https://drstanfield.com/blogs/articles/bone-health",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "osteoporosis",
+      "osteopenia",
+      "bone density",
+      "DEXA scan",
+      "DXA",
+      "T-score",
+      "FRAX",
+      "fracture risk",
+      "broken hip",
+      "brittle bones",
+      "calcium supplements",
+      "vitamin D",
+      "vitamin K2",
+      "weight training for bones",
+      "falls",
+      "alendronate",
+      "Fosamax",
+      "bisphosphonate",
+      "zoledronic acid",
+      "denosumab",
+      "Prolia",
+      "stopping Prolia",
+      "romosozumab",
+      "teriparatide",
+      "drug holiday",
+      "jaw osteonecrosis"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Weak bones and fracture risk: who needs a bone scan, T-scores and FRAX, calcium and vitamin D, strength training, falls, and bone medicines with their rare risks and how to stop denosumab safely.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Cancer Screening: Which Tests You Need, and What They Can and Cannot Do",
+    "handle": "cancer-screening",
+    "url": "https://drstanfield.com/blogs/articles/cancer-screening",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "cancer screening",
+      "which cancer tests do I need",
+      "bowel cancer screening",
+      "colonoscopy",
+      "FIT test",
+      "Cologuard",
+      "mammogram",
+      "dense breasts",
+      "pap smear",
+      "HPV self-test",
+      "PSA test",
+      "lung cancer screening",
+      "skin check",
+      "Galleri",
+      "full-body MRI",
+      "family history of cancer"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Which cancer screening tests adults need by age and sex, what screening can and cannot do, newer tests such as multi-cancer blood tests, and who is at higher risk.",
+    "reviewed": "2026-11-09",
+    "kind": "condition"
+  },
+  {
+    "title": "Dementia: Lowering Your Risk, Memory Problems and Alzheimer's Treatment",
+    "handle": "dementia",
+    "url": "https://drstanfield.com/blogs/articles/dementia",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dementia",
+      "Alzheimer's",
+      "memory loss",
+      "forgetfulness",
+      "mild cognitive impairment",
+      "MCI",
+      "memory test",
+      "cognitive decline",
+      "brain fog",
+      "prevent dementia",
+      "dementia risk",
+      "APOE e4",
+      "Alzheimer's blood test",
+      "p-tau217",
+      "lecanemab",
+      "Leqembi",
+      "donanemab",
+      "Kisunla",
+      "ARIA",
+      "donepezil",
+      "Aricept",
+      "memantine",
+      "rivastigmine",
+      "galantamine",
+      "vascular dementia",
+      "Lewy body dementia",
+      "delirium",
+      "sudden confusion",
+      "shingles vaccine dementia",
+      "hearing aids dementia",
+      "ginkgo",
+      "lion's mane",
+      "omega-3 memory",
+      "B vitamins memory"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "Memory problems and dementia: lowering your risk, getting assessed, mild cognitive impairment, Alzheimer's blood tests, the medicines including anti-amyloid antibodies, what supplement trials show, and sudden confusion as an emergency.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11045,8 +11206,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Heart attack and stroke risk: who to screen, risk scores, coronary calcium (CAC) scoring, ApoB and Lp(a), blood pressure, aspirin, and what to do at each risk level. Built from ESC and AHA/ACC prevention guidelines and primary studies, plus Brad's risk framework.",
-    "reviewed": "2026-11-02",
+    "summary": "Heart attack and stroke risk: who to screen, risk scores, coronary calcium (CAC) scoring, ApoB and Lp(a), blood pressure, aspirin, and what to do at each risk level.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11078,12 +11239,13 @@
       "amlodipine",
       "diuretic",
       "beta-blocker",
-      "resistant hypertension"
+      "resistant hypertension",
+      "spironolactone"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Hypertension: how to measure at home, targets, salt, potassium, weight, exercise and alcohol, when medicine is needed (ACE inhibitors, ARBs, amlodipine, diuretics), and supplements that move blood pressure. Built from ESC, ACC/AHA and NICE guidance plus Brad's view.",
-    "reviewed": "2026-11-02",
+    "summary": "Hypertension: how to measure at home, targets, salt, potassium, weight, exercise and alcohol, when medicine is needed (ACE inhibitors, ARBs, amlodipine, diuretics), and supplements that move blood pressure.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11095,15 +11257,12 @@
     ],
     "keywords": [
       "high cholesterol",
-      "cholesterol",
       "LDL",
-      "LDL-C",
       "HDL",
       "non-HDL",
       "ApoB",
       "triglycerides",
       "lipid panel",
-      "lipids",
       "familial hypercholesterolemia",
       "Lp(a)",
       "statin",
@@ -11122,12 +11281,15 @@
       "plant sterols",
       "LDL target",
       "statin side effects",
-      "statin muscle pain"
+      "statin muscle pain",
+      "high triglycerides",
+      "fish oil",
+      "icosapent ethyl"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "High cholesterol: what LDL, non-HDL and ApoB mean, targets by risk, lifestyle, statins, ezetimibe, bempedoic acid and PCSK9 drugs, supplements, and when to test Lp(a). Brad's divergence: treat to a low ApoB and LDL early. Built from ESC/EAS and AHA/ACC guidelines and primary trials.",
-    "reviewed": "2026-11-02",
+    "summary": "What LDL, non-HDL and ApoB mean, targets, lifestyle, cholesterol medicines, triglycerides, supplements and Lp(a). Brad's divergence: aim for a low ApoB and LDL early.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11171,8 +11333,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Kidney function: eGFR, creatinine, cystatin C and urine albumin (ACR), CKD stages, what protects the kidneys, kidney medicines (ACE inhibitors, ARBs, SGLT2 inhibitors), and which supplements and painkillers need care. Built from KDIGO and NICE guidance plus Brad's view.",
-    "reviewed": "2026-11-02",
+    "summary": "Kidney function: eGFR, creatinine, cystatin C and urine albumin (ACR), CKD stages, what protects the kidneys, kidney medicines (ACE inhibitors, ARBs, SGLT2 inhibitors), and which supplements and painkillers need care.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11200,17 +11362,14 @@
       "PRP",
       "NSAIDs",
       "paracetamol",
-      "exercise therapy",
       "weight loss",
       "knee replacement",
-      "hip replacement",
-      "arthroplasty",
-      "stiffness"
+      "hip replacement"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Joint wear: what osteoarthritis is, exercise and weight loss as first treatment, pain relief, supplements (glucosamine, collagen), injections, and when knee or hip replacement is worth it. Built from OARSI, NICE and ACR guidance and trials.",
-    "reviewed": "2026-11-02",
+    "summary": "Joint wear: what osteoarthritis is, exercise and weight loss as first treatment, pain relief, supplements (glucosamine, collagen), injections, and when knee or hip replacement is worth it.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11294,8 +11453,8 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Blood sugar, A1c and fasting glucose cut-offs, prediabetes and how to reverse it, insulin resistance (HOMA-IR), diet and exercise, and drugs: metformin, SGLT2 inhibitors, GLP-1 drugs. Built from ADA and NICE standards, trials and Brad's framework.",
-    "reviewed": "2026-11-02",
+    "summary": "Blood sugar, A1c and fasting glucose cut-offs, prediabetes and how to reverse it, insulin resistance (HOMA-IR), diet, exercise, supplements and drugs.",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   },
   {
@@ -11328,12 +11487,13 @@
       "fat loss",
       "bariatric",
       "protein target",
-      "ideal body weight"
+      "ideal body weight",
+      "metabolic syndrome"
     ],
     "publishedAt": "",
     "type": "guideline",
     "summary": "Weight and obesity: what BMI, waist and body fat tell you, a diet and exercise plan that keeps muscle, and when GLP-1 drugs (semaglutide, tirzepatide) help, with label doses, side effects and low-dose use. Built from obesity guidelines, drug labels and trials, plus Brad's framework.",
-    "reviewed": "2026-11-02",
+    "reviewed": "2026-11-09",
     "kind": "condition"
   }
 ]

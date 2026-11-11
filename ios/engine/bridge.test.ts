@@ -71,8 +71,16 @@ describe('bridge contract (US-25 AC18)', () => {
 
   // Append-only: a shipped app decodes each optional door's answer. A door or a field may be added
   // here; none is ever renamed, retyped or dropped, and a door's arguments never change.
-  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape: unknown }> = {
+  // `bytes`: a door answering a Promise of an ArrayBuffer, not JSON. With no cloud open here it
+  // rejects; its bytes answer is pinned in cloud.test.ts (US-73 AC12).
+  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true }> = {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
+    documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
+    uploadVerdictsJson: {
+      args: ['request'],
+      call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
+      shape: { limits: { fileBytes: 'number', zipBytes: 'number', zipMembers: 'number', folderBytes: 'number' }, files: ['string'], zipMembers: ['string'] },
+    },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
   function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {
@@ -86,12 +94,13 @@ describe('bridge contract (US-25 AC18)', () => {
       key in answer ? shapeFaults(inner, (answer as Record<string, unknown>)[key], `${at}.${key}`) : [`${at}.${key}: missing`]);
   }
 
-  it('every optional door is frozen, its arguments as they shipped and its answer holding the frozen shape', () => {
+  it('every optional door is frozen, its arguments as they shipped and its answer holding the frozen shape', async () => {
     expect(Object.keys(optional.optionalDoors).sort()).toEqual(Object.keys(FROZEN_OPTIONAL_DOORS).sort());
     for (const [name, frozen] of Object.entries(FROZEN_OPTIONAL_DOORS)) {
       expect(optional.optionalDoors[name].args, name).toEqual(frozen.args);
-      const door = (entry as unknown as Record<string, (...a: unknown[]) => string>)[name];
-      expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call))), name).toEqual([]);
+      const door = (entry as unknown as Record<string, (...a: unknown[]) => unknown>)[name];
+      if (frozen.bytes) await expect(door(...frozen.call), name).rejects.toThrow('not open');
+      else expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call) as string)), name).toEqual([]);
     }
   });
 

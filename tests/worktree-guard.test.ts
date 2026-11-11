@@ -79,6 +79,10 @@ beforeAll(() => {
   writeFileSync(join(BIN, 'cp'), `#!/bin/sh\n[ -n "$CP_FAIL" ] && exit 1\n`
     + `case "$*" in *"\${CP_FAIL_ON:-//none//}"*) exit 1;; esac\nexec ${spawnSync('sh', ['-c', 'command -v cp'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
   chmodSync(join(BIN, 'cp'), 0o755);
+  // rm passes through to the real one, unless RM_FAIL is set and the call names a package clone folder.
+  writeFileSync(join(BIN, 'rm'), `#!/bin/sh\ncase "$*" in *claude-worktree-packages/*) [ -n "$RM_FAIL" ] && exit 1;; esac\n`
+    + `exec ${spawnSync('sh', ['-c', 'command -v rm'], { encoding: 'utf8' }).stdout.trim()} "$@"\n`);
+  chmodSync(join(BIN, 'rm'), 0o755);
   ENV = {
     ...process.env,
     PATH: `${BIN}:${process.env.PATH}`,
@@ -225,6 +229,21 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(WT, {}, true)).toBeNull();
     expect(stop(WT, { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
   });
+  it('Stop skips uncommitted files while a background subagent of this session runs (US-64 AC25)', () => {
+    const tasks = (type: string, status: string) => hook({ hook_event_name: 'Stop', cwd: WT, stop_hook_active: false,
+      background_tasks: [{ id: 't1', type, status, description: 'x' }] });
+    expect(tasks('subagent', 'running')).toBeNull();
+    expect(tasks('teammate', 'pending')).toBeNull();
+    expect(tasks('workflow', 'running')).toBeNull();
+    expect(tasks('subagent', 'in_progress')).toBeNull(); // an unlisted status word still counts (re-check N1)
+    // A shell or monitor task edits nothing; a finished subagent no longer counts; an empty list is none.
+    expect(tasks('shell', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('monitor', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'completed')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'failed')?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [] })?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: 'junk' })?.reason).toMatch(/uncommitted/);
+  });
   it('worktree-done refuses uncommitted work', () => {
     const r = done('feat');
     expect(r.status).not.toBe(0);
@@ -233,6 +252,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   it('Stop blocks an unpushed commit', () => {
     sh(WT, 'git commit -q -am two');
     expect(stop(WT)?.reason).toMatch(/not pushed/);
+    // A running subagent hides only uncommitted files, never an unpushed commit (US-64 AC25).
+    writeFileSync(join(WT, 'wip.txt'), 'half\n');
+    const r = hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [{ id: 't', type: 'subagent', status: 'running' }] });
+    expect(r?.reason).toMatch(/not pushed/);
+    expect(r?.reason).not.toMatch(/uncommitted/);
+    rmSync(join(WT, 'wip.txt'));
   });
   it('worktree-done refuses an unpushed commit', () => {
     expect(done('feat').stdout).toMatch(/on no remote branch/);
@@ -330,6 +355,31 @@ describe('worktree-done.sh on a folder that is not a worktree (US-64 AC4)', () =
   });
 });
 
+describe('worktree-done.sh reads the package folders from the guard (US-64 AC4)', () => {
+  it('the guard prints its one list, and worktree-done holds no copy of it', () => {
+    const r = spawnSync('node', [GUARD, '--package-dirs'], { encoding: 'utf8', env: ENV });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('node_modules\nwidget-src/node_modules\npackages/health-core/node_modules\n');
+    expect(readFileSync(DONE, 'utf8')).not.toContain('widget-src/node_modules');
+  });
+  it('refuses, removing nothing, when the guard cannot give the list', () => {
+    const w = newWorktree('noguard').path;
+    for (const body of ['process.exit(3);\n', '']) { // a failing guard, and one that prints nothing
+      const tools = join(S, 'broken-guard');
+      mkdirSync(join(tools, 'tools'), { recursive: true });
+      mkdirSync(join(tools, '.claude/hooks'), { recursive: true });
+      copyFileSync(DONE, join(tools, 'tools/worktree-done.sh'));
+      writeFileSync(join(tools, '.claude/hooks/worktree-guard.cjs'), body);
+      const r = spawnSync('bash', [join(tools, 'tools/worktree-done.sh'), 'noguard'], { cwd: MAIN, encoding: 'utf8', env: ENV });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/REFUSED: could not read the package folder list/);
+      expect(existsSync(w)).toBe(true);
+      expect(readlinkSync(join(w, 'node_modules'))).toBe(join(cacheDir(w), 'node_modules'));
+    }
+    expect(done('noguard').status).toBe(0);
+  }, 60_000);
+});
+
 describe('package clones: new worktrees, failures, races and orphans (US-64 AC3, AC4)', () => {
   it('in an older worktree outside .claude/worktrees/, swaps a link into the main checkout and adds nothing', () => {
     const older = join(S, 'older');
@@ -377,6 +427,12 @@ describe('package clones: new worktrees, failures, races and orphans (US-64 AC3,
     sh(MAIN, `git worktree remove -f -f "${w}" && git branch -q -D claude/reuse`);
     w = newWorktree('reuse').path;
     expect(existsSync(join(cacheDir(w), 'node_modules/stale'))).toBe(false);
+  });
+  it('worktree-new still prints the path when it cannot delete an old clone (issue 936)', () => {
+    const r = newWorktree('rmfail', { RM_FAIL: '1' });
+    expect(r.status).toBe(0);
+    expect(r.path).toMatch(/\/rmfail$/);
+    expect(r.stderr).toMatch(/could not delete/);
   });
   it('a failed clone answers cleanly, links nothing and leaves no temp folder', () => {
     const w = newWorktree('noclone', { CP_FAIL: '1' }).path;
@@ -476,5 +532,16 @@ describe('SessionStart names merged worktrees ready to remove (US-64 AC21)', () 
     expect(ctx).toMatch(/- \.claude\/worktrees\/nudge-live \[claude\/nudge-live\]: merged, in use \(changed in the last day\); leave it/);
     expect(ctx).not.toMatch(/worktree-done\.sh nudge-live/);
     expect(done('nudge-live').status).toBe(0);
+  });
+  it('a merged worktree whose session ended a turn in the last day is in use, even with an old git dir (issue 937)', () => {
+    const w = newWorktree('nudge-idle').path;
+    mergeIn(w, 'nudge-idle');
+    sh(w, 'git status -s');
+    ageGitDir(w);
+    stop(w); // the Stop hook leaves its heartbeat in the git dir
+    ageGitDir(w); // its own git status touched the index; only the heartbeat is recent now
+    const ctx = hook({ hook_event_name: 'SessionStart', cwd: MAIN }).hookSpecificOutput.additionalContext as string;
+    expect(ctx).toMatch(/nudge-idle \[claude\/nudge-idle\]: merged, in use/);
+    expect(ctx).not.toMatch(/worktree-done\.sh nudge-idle/);
   });
 });

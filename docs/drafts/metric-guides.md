@@ -260,14 +260,14 @@ Source list: `MEDICATION_KEYS` in `validation.ts` without the two escalation key
 
 **What it is.** A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).
 
-**Why it matters.** In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can also be used alongside a statin for extra lowering.
+**Why it matters.** In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests it only to people who cannot take a statin.
 
 **How it works, and side effects to discuss with your doctor.**
 - It blocks an enzyme in the liver that sits earlier in the same cholesterol-making pathway statins act on.
 - It is activated in the liver but not in muscle, which may explain why muscle aches seem less common than with statins. *(new text)*
 - It can raise uric acid, so mention it if you have had gout. *(new text)*
 
-**Source.** evidence.ts: Nissen 2023, CLEAR Outcomes (`med-bempedoic-acid`). Not in roadmap_text.html; see notes.
+**Source.** evidence.ts: Nissen 2023, CLEAR Outcomes (`med-bempedoic-acid`); roadmap_text.html cites it too [153], in the cholesterol section's "If a statin is not tolerated" bullet.
 
 ### PCSK9 inhibitors (`pcsk9i`)
 
@@ -331,6 +331,6 @@ Source list: `MEDICATION_KEYS` in `validation.ts` without the two escalation key
 
 1. **Three-file rule.** This is clinical text a user reads. If it ships, the orchestrator decides whether health-core's guides join the algorithm, evidence.ts and roadmap_text.html sync, or stay a fourth file that may only restate them. Every "new text" item above would need its own entry in all three, or a decision that guides may hold standard prescribing facts the others do not.
 2. **roadmap_text.html disagrees with the algorithm on two targets.** Its "Screening Blood Tests" section says "Ideal level: LDL-c <70mg/dL" and ApoB "<60mg/dL". The algorithm's on-treatment targets are LDL <55 mg/dL and ApoB <50 mg/dL, and the cholesterol section of the same page says so. The guides avoid both numbers. **Resolved by 02893a41 (2026-10-25):** the screening section now reads <55 mg/dL (1.4 mmol/L) and <50 mg/dL (0.5 g/L).
-3. **Citation gaps.** SGLT2 inhibitors (Zinman 2015, McMurray 2019) and bempedoic acid (Nissen 2023) are cited in evidence.ts but not in roadmap_text.html, which also never mentions bempedoic acid. PCSK9 inhibitors have no outcome trial cited anywhere.
+3. **Citation gaps.** SGLT2 inhibitors (Zinman 2015, McMurray 2019) are cited in evidence.ts but not in roadmap_text.html. Bempedoic acid (Nissen 2023) is cited in both since 2026-11-02 (roadmap_text.html [153]). PCSK9 inhibitors have no outcome trial cited anywhere.
 4. **Metformin citation.** evidence.ts `weight-med-metformin` cites Lee 2021 for "metformin reduced diabetes progression". Lee 2021 is the DPP Outcomes Study mortality paper, which roadmap_text.html [79] cites for "no benefit" on deaths. The guide states both findings; the evidence.ts reason may want a look.
-5. **Not copied.** All wording is original. No text was taken from Apple Health, UpToDate, pathway publishers or ConsumerLab.
+5. **Not copied.** All wording is original. No text was taken from Apple Health or any licensed clinical source.

@@ -12,8 +12,13 @@
  * real `trackProductEvent` runs, so the event tests read the POSTs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, localDay, migrateFile, ROADMAP_FILE_NAME, rowRootIds, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { localDay, rowRootIds } from '@roadmap/health-core/merge';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
@@ -34,7 +39,7 @@ vi.mock('../lib/chat-api', async original => ({
 // The chat column: what it was told about muting.
 const chat = vi.hoisted(() => ({ muted: [] as boolean[], proposeEdit: null as null | ((edits: unknown[]) => void) }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: (edits: unknown[]) => void }) => { chat.muted.push(!!muted); chat.proposeEdit = onProposeEdit; return null; },
+  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: ChatEditTarget }) => { chat.muted.push(!!muted); chat.proposeEdit = (edits) => onProposeEdit.take(edits as ProposedEdit[], onProposeEdit.ask(), true); return null; },
 }));
 // The desktop floating chat's panel: whether it is open and muted.
 const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));
@@ -42,7 +47,7 @@ vi.mock('./ChatSection', () => ({
   ChatSection: ({ muted }: { muted?: boolean }) => { floating.muted.push(!!muted); return <div className="floating-chat-panel"/>; },
 }));
 import { HealthTool } from './HealthTool';
-import { deleteButton, openSettings } from '../testing/settings';
+import { closeSettings, deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());
 const WHY_SEX = 'Used to calculate ideal body weight, kidney function, and screening programs.';
@@ -183,6 +188,61 @@ describe('US-62 AC13: each step reveals the next', () => {
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birth(view);
     await waitFor(() => expect(fullForm(view)).toBe(true));
+  });
+
+  // US-01 AC6: iOS Safari opens the keyboard only for a focus() made inside the user's own
+  // event. So the year must hold the focus when the change event returns, with no frame waited.
+  it('US-01 AC6: choosing a birth month focuses the empty birth year inside the change event itself', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame(); // the sex click's own focus move to the month (a frame later)
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.pointerDown(month); // a tap opens the picker
+    fireEvent.change(month, { target: { value: '5' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear')); // synchronous: no await before this line
+    // A year already typed: changing the month leaves the focus where it is.
+    type(q(view, '#birthYear'), '197');
+    act(() => { month.focus(); });
+    fireEvent.pointerDown(month);
+    fireEvent.change(month, { target: { value: '6' } });
+    expect(document.activeElement).toBe(month);
+  });
+
+  // Adversary R1 on PR 964 (WCAG 3.2.2): arrowing a closed select fires change on Windows browsers.
+  it('US-01 AC6: a key\'s change, with a fine pointer, keeps the focus on the month', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width') || q.includes('pointer: fine'), media: q, addEventListener() {}, removeEventListener() {} }));
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame();
+    const month = q(view, '#birthMonth') as HTMLSelectElement;
+    act(() => { month.focus(); });
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '1' } });
+    expect(document.activeElement).toBe(month);
+    fireEvent.keyDown(month, { key: 'ArrowDown' });
+    fireEvent.change(month, { target: { value: '2' } });
+    expect(document.activeElement).toBe(month);
+    // A mouse press after the keys moves on again.
+    fireEvent.pointerDown(month);
+    fireEvent.change(month, { target: { value: '3' } });
+    expect(document.activeElement).toBe(q(view, '#birthYear'));
+  });
+
+  // Adversary R7 on PR 964: one PDF box, its typing kept when it moves above the pills.
+  it('US-62 AC30d: a half-typed email survives the full form opening', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    const email = await waitFor(() => { const el = q(view, '#guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(email.closest('.mh-topics')).toBeNull(); // at the foot, before the full form
+    fireEvent.change(email, { target: { value: 'reader@exam' } });
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const moved = await waitFor(() => { const el = q(view, '.mh-topics #guestEmail') as HTMLInputElement | null; expect(el).not.toBeNull(); return el!; });
+    expect(moved.value).toBe('reader@exam');
   });
 
   it('the why-texts are no longer tooltips', async () => {
@@ -593,8 +653,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '170');
-    // The last answer lands at My health's title (US-62 AC25), not the email box.
-    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    // The last answer lands on "Your plan is ready." (US-62 AC31), not the email box.
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
   });
 });
 
@@ -751,12 +811,85 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
 });
 
 // Since US-62 AC24 "low" is Settings: the card leaves the page for the sheet behind the person button.
+describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
+  const BODY = 'Each section below shows where you stand and one next step to discuss with your doctor. Add more numbers, like blood pressure or blood tests, and the suggestions get more specific.';
+  async function finish(view: RenderResult) {
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await nextFrame(); // the sex answer's reveal focuses the month first, as it does before anyone can type a year
+    birth(view);
+  }
+
+  it('shows in Starting info\'s place with the focus on its heading, no scroll, and Got it hides it for good', async () => {
+    const scrolled: Element[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) { scrolled.push(this); });
+    const view = await open();
+    await finish(view);
+    const heading = await waitFor(() => view.getByRole('heading', { name: 'Your plan is ready.' }));
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    const card = heading.closest('.mh-ready') as HTMLElement;
+    expect(card.textContent).toContain(BODY);
+    await waitFor(() => expect(q(view, '.about-card')).toBeNull()); // Starting info has gone
+    // The card is first in the page after the header, where Starting info stood.
+    expect(card.compareDocumentPosition(q(view, '.mh-sections')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scrolled.some((el) => el.classList.contains('mh-title') || el.closest('.mh-topic'))).toBe(false); // no jump
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1)); // jsdom has no IntersectionObserver: shown at once
+    expect(named('plan_ready_shown')[0].metadata).toBeUndefined();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBeNull();
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Got it' }));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(localStorage.getItem('hr_plan_ready_seen')).toBe('1');
+    expect(document.activeElement?.classList.contains('mh-title')).toBe(true); // the focus is not lost
+    await waitFor(() => expect(named('plan_ready_dismissed')).toHaveLength(1));
+    expect(named('plan_ready_dismissed')[0].metadata).toBeUndefined();
+  });
+
+  it('plan_ready_shown waits until the card is on screen (adversary R2 on PR 964)', async () => {
+    const watched: Array<{ el: Element; cb: IntersectionObserverCallback }> = [];
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) { watched.push({ el, cb: this.cb }); }
+      disconnect() {} unobserve() {} takeRecords() { return []; }
+    });
+    const view = await open();
+    await finish(view);
+    const card = await waitFor(() => { const el = q(view, '.mh-ready'); expect(el).not.toBeNull(); return el!; });
+    const mine = () => watched.filter((w) => w.el === card);
+    await waitFor(() => expect(mine().length).toBeGreaterThan(0));
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: false, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(named('plan_ready_shown')).toEqual([]); // hidden or off screen: not counted
+    act(() => { for (const w of mine()) w.cb([{ isIntersecting: true, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
+    await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
+  });
+
+  it('a browser that pressed Got it before never sees it: the last answer lands on the title', async () => {
+    localStorage.setItem('hr_plan_ready_seen', '1');
+    const view = await open();
+    await finish(view);
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+
+  it('a returning user with all four answers never sees it', async () => {
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await addMeasurement('weight', 70, TODAY);
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
+    expect(q(view, '.mh-ready')).toBeNull();
+    expect(named('plan_ready_shown')).toEqual([]);
+  });
+});
+
 describe('US-62 AC12: About you goes low once the onboarding is done and its card is left', () => {
   const cards = (view: RenderResult) => Array.from(view.container.querySelectorAll('.health-input-panel > .section-card'));
   /** About you has left the page for Settings: the topics show and its card is gone. */
-  const aboutLow = (view: RenderResult) => (q(view, '.about-card') ? null : q(view, '.mh-sections'));
+  const aboutLow = (view: RenderResult) => (q(view, '.mh-page .about-card') ? null : q(view, '.mh-sections')); // a phone keeps Settings mounted in Account
 
-  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands at My health\'s title and About you goes, as rows, to Settings', async (_, onPhone) => {
+  it.each([['desktop', false], ['phone', true]])('on %s: "199" moves nothing; "1990" lands on "Your plan is ready." and About you goes, as rows, to Settings', async (_, onPhone) => {
     phone = onPhone;
     const view = await open();
     await measurements(view);
@@ -772,8 +905,8 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
 
     type(year, '1990'); // complete, in range, the month set: the last answer
     await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    // Phone and desktop land at My health's title (US-62 AC25).
-    await waitFor(() => expect(document.activeElement?.classList.contains('mh-title')).toBe(true));
+    // Phone and desktop land on "Your plan is ready." in Starting info's place (US-62 AC31).
+    await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
     if (onPhone) expect(view.getByRole('tab', { name: 'My health' }).getAttribute('aria-selected')).toBe('true');
     expect(weightPlaces(view)).toHaveLength(1); // the weight joins the vitals, shown once
     // The returning layout: the vitals as rows in their topics, the grids hidden but mounted.
@@ -786,9 +919,9 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     const about = q(view, '.mh-settings .md-about-you')!;
     expect(Array.from(about.querySelectorAll('.about-row-label')).map((l) => l.textContent)).toEqual(['Height', 'Sex', 'Birth', 'Alcohol']);
     expect(about.querySelector('h3')?.textContent).toContain('About you');
-    fireEvent.click(view.getByRole('button', { name: 'Done' }));
+    closeSettings(view.container);
     fireEvent.click(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row')).find((r) => r.textContent?.startsWith('Waist'))!);
-    await waitFor(() => expect(within(q(view, '.md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+    await waitFor(() => expect(within(q(view, '.mh-page-host .md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
   });
 
   it('the focus going from the birth year into the waist field keeps that field until the vitals card is left', async () => {

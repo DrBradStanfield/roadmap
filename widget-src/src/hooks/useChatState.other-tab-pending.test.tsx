@@ -8,6 +8,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { render, renderHook, cleanup } from '@testing-library/react';
+import { sendMessage } from '../lib/chat-api';
+import { postSync } from '../lib/chat-sync';
+import { Sentry } from '../lib/sentry';
 import type { SyncMessage } from '../lib/chat-sync';
 
 const sync = vi.hoisted(() => ({ handler: undefined as undefined | ((m: SyncMessage) => void) }));
@@ -23,18 +26,21 @@ vi.mock('../lib/chat-api', () => ({
   loadConversation: vi.fn(), deleteConversation: vi.fn(),
 }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureMessage: vi.fn(), captureException: vi.fn() } }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: () => () => {} }));
 vi.mock('../components/FeedbackForm', () => ({ FeedbackForm: () => null }));
 vi.mock('../components/ChatKeyGate', () => ({ ChatKeyGate: () => null }));
 
-import { useChatState, REMOTE_PENDING_MS } from './useChatState';
+import { useChatState } from './useChatState';
+import { REMOTE_PENDING_MS } from './useChatBusy';
 import { ChatEmbed } from '../components/ChatEmbed';
 
 const question = { id: 'temp-1', role: 'user' as const, content: 'What about ApoB?', createdAt: 'x' };
-function fromOtherTab(isLoading: boolean) {
+/** A state message from another tab. With no `sending`, it is an older bundle's (US-15 AC17c). */
+function fromOtherTab(isLoading: boolean, sending?: boolean, instanceId = 'other-tab') {
   act(() => sync.handler!({
-    instanceId: 'other-tab', type: 'state', ts: 0,
-    payload: { conversations: [], activeConversationId: null, messages: [question], isLoading, error: null },
+    instanceId, type: 'state', ts: 0,
+    payload: { conversations: [], activeConversationId: null, messages: [question], isLoading, error: null, ...(sending === undefined ? {} : { sending }) },
   }));
 }
 
@@ -46,7 +52,7 @@ async function replyLandsHere() {
   await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'LDL too.' }, error: null }); });
 }
 
-beforeEach(() => { vi.useFakeTimers(); });
+beforeEach(() => { vi.useFakeTimers(); vi.mocked(sendMessage).mockClear(); vi.mocked(postSync).mockClear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('US-15 AC17a — another tab\'s pending reply expires', () => {
@@ -104,13 +110,15 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     expect(view.container.querySelector('.chat-thinking-dots')).toBeNull();
   });
 
-  it('US-15 AC17a: a wait left over from the other tab does not end this tab\'s own later send', async () => {
+  it('US-15 AC17a, AC17c: a wait left over from the other tab does not end this tab\'s own later send', async () => {
     const hook = renderHook(() => useChatState({ isLoggedIn: false }));
     await sendHere(hook);
-    fromOtherTab(true); // the other tab sent too, then closed before its reply
+    fromOtherTab(true, true); // the other tab sent too, then closed before its reply
     await replyLandsHere();
+    // AC17c: the other tab's send is still counted until its wait ends.
+    expect(hook.result.current.state.isLoading).toBe(true);
+    act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
     expect(hook.result.current.state.isLoading).toBe(false);
-    act(() => { vi.advanceTimersByTime(60_000); });
     await sendHere(hook);
     act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
     expect(hook.result.current.state.isLoading).toBe(true);
@@ -134,5 +142,113 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     fromOtherTab(true);
     act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
     expect(hook.result.current.state.isLoading).toBe(false);
+  });
+});
+
+describe('US-15 AC17b: this tab\'s own send ends only with its own reply', () => {
+  it('US-15 AC17b: another tab saying its reply ended does not unlock this tab\'s send, so no second send starts', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    fromOtherTab(false); // the other tab's own send, started at the same moment, ended
+    expect(hook.result.current.state.isLoading).toBe(true);
+    await sendHere(hook);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    await replyLandsHere();
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17b: a send that throws before the request frees the chat and puts the question back', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, guestInputs: () => { throw new Error('synthetic context failure'); } }));
+    await sendHere(hook);
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(hook.result.current.state.inputText).toBe('And LDL?');
+    expect(hook.result.current.state.error).toBeTruthy();
+    expect(hook.result.current.state.messages).toEqual([]);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat context read failed', { tags: { feature: 'chat' } });
+  });
+});
+
+describe('US-15 AC17c: the chat is busy while any tab\'s send is in flight, each tracked on its own', () => {
+  it('US-15 AC17c: this tab\'s reply landing first leaves the chat locked until the other tab\'s reply ends', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    fromOtherTab(true, true); // the other tab sent at the same moment
+    await replyLandsHere();
+    expect(hook.result.current.state.isLoading).toBe(true);
+    expect(hook.result.current.state.isLocalSender).toBe(false);
+    await sendHere(hook);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    fromOtherTab(false, false);
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('US-15 AC17c: a tab that only mirrors a reply in flight (it opened a thread meanwhile) is not counted as sending', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, false);
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('US-15 AC17c: with two other tabs sending, one ending leaves the chat locked for the other', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true, 'tab-a');
+    fromOtherTab(true, true, 'tab-b');
+    fromOtherTab(false, false, 'tab-a');
+    expect(hook.result.current.state.isLoading).toBe(true);
+    fromOtherTab(false, false, 'tab-b');
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17c: each tab\'s wait expires on its own clock', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true, 'tab-a');
+    act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS - 1000); });
+    fromOtherTab(true, true, 'tab-b');
+    act(() => { vi.advanceTimersByTime(1000); }); // tab-a's wait ends
+    expect(hook.result.current.state.isLoading).toBe(true);
+    act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS); });
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17c (adversary R1): an older bundle\'s tab that only mirrors this tab\'s reply frees as this tab\'s reply lands', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    fromOtherTab(true, undefined, 'old-bundle-tab'); // it opened a thread mid-reply; no `sending`
+    await replyLandsHere();
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('US-15 AC17c (adversary R1): an older bundle\'s mirroring tab frees at another tab\'s word that its send ended', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true, 'new-sender');
+    fromOtherTab(true, undefined, 'old-bundle-tab');
+    fromOtherTab(false, false, 'new-sender');
+    expect(hook.result.current.state.isLoading).toBe(false);
+  });
+
+  it('US-15 AC17c (re-check N1): a newer tab that only mirrors an older bundle\'s send does not free it', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, undefined, 'old-bundle-sender');
+    fromOtherTab(true, false, 'new-mirror'); // it opened a thread mid-reply
+    expect(hook.result.current.state.isLoading).toBe(true);
+  });
+
+  it('US-15 AC17c: two presses of Send before the re-render send once', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('And LDL?'));
+    const { handleSend } = hook.result.current.actions;
+    await act(async () => { void handleSend(); void handleSend(); });
+    expect(sendMessage).toHaveBeenCalledOnce();
+  });
+
+  it('US-15 AC17c: this tab says whether its own send is in flight, apart from what it shows', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    await sendHere(hook);
+    await replyLandsHere();
+    const said = vi.mocked(postSync).mock.calls.map(([m]) => m.type === 'state' ? m.payload.sending : undefined);
+    expect(said).toEqual([true, false]);
   });
 });

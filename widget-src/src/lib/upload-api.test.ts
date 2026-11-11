@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as z from '../../../packages/health-core/src/zod';
-import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './upload-api';
 import { batchImportRequestSchema, labImportPageSchema, labImportRequestSchema } from '../../../packages/health-core/src/validation';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image' as const, content: 'AAAA', mimeType: 'image/png' }] }];
@@ -179,5 +179,23 @@ describe('a file the server says stopped short', () => {
     expect((await labImport(FILES[0].pages, 'si')).errorCode).toBe('server_error');
     stubFetch(() => new Response('<html>proxy error</html>', { status: 422 }));
     expect((await labImport(FILES[0].pages, 'si')).errorCode).toBe('server_error');
+  });
+});
+
+// US-12 AC10 (review R1, adversary F1): only the server's own "no" is the daily
+// limit. A failed preflight is not, so it is never named or counted as one.
+describe('US-12 AC10: the quota preflight says why it refused', () => {
+  it('a 200 that says allowed:false is the daily limit', async () => {
+    stubFetch(() => jsonResponse({ allowed: false, remaining: 0 }));
+    expect(await checkLabImportQuota()).toEqual({ allowed: false, remaining: 0, reason: 'quota' });
+  });
+  // Review R2 (adversary, Codex): a failed preflight is not the limit, so it passes, as a network error does; the POST enforces.
+  it('a 5xx lets the upload proceed: the POST enforces the limit', async () => {
+    stubFetch(() => jsonResponse({ error: 'x' }, 503));
+    expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 0 });
+  });
+  it('a 200 that allows passes the remaining count through', async () => {
+    stubFetch(() => jsonResponse({ allowed: true, remaining: 12 }));
+    expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 12 });
   });
 });

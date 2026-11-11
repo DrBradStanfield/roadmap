@@ -49,8 +49,8 @@ final class OnboardingUITests: XCTestCase {
         return XCTWaiter.wait(for: [shown], timeout: 5) == .completed
     }
 
-    /// Welcome, Apple Health ("Not now"), then sex and birth, leaving the height screen
-    /// up. With `reachable`, every button tapped must be on screen (AC8).
+    /// Welcome, Apple Health (Continue, then Don't Allow in Apple's sheet), then sex and birth,
+    /// leaving the height screen up. With `reachable`, every button tapped must be on screen (AC8).
     @MainActor
     private func answerUpToHeight(_ app: XCUIApplication, reachable: Bool = false, shots prefix: String = "") throws {
         let start = app.buttons["welcome.start"]
@@ -60,12 +60,8 @@ final class OnboardingUITests: XCTestCase {
         snap(app, prefix + "1 welcome")
         press(start, "Get started", reachable)
 
-        // Apple Health: go on without it, so no system sheet is needed.
-        let notNow = app.buttons["onboarding.notNow"]
-        XCTAssertTrue(notNow.waitForExistence(timeout: 5))
         snap(app, prefix + "2 apple health")
-        if reachable { XCTAssertTrue(app.buttons["onboarding.allow"].isHittable, "Allow is reachable") }
-        press(notNow, "Not now", reachable)
+        continueDecliningHealth(app, reachable: reachable)
 
         // Sex: a tap is the answer and moves on, so there is no Continue (AC4).
         let female = app.buttons["onboarding.female"]
@@ -128,6 +124,93 @@ final class OnboardingUITests: XCTestCase {
     private func press(_ button: XCUIElement, _ what: String, _ reachable: Bool) {
         if reachable { XCTAssertTrue(button.isHittable, "\(what) is reachable") }
         button.tap()
+    }
+
+    /// The Apple Health page's one button, Continue, then Don't Allow in Apple's sheet, as a
+    /// person who does not want to share does (US-54 AC3, App Review 5.1.1(iv)). iOS shows the
+    /// sheet once per install: on a later run (`answered`) Continue goes straight on. A sheet
+    /// that never shows on a first run is a failure, never a silent pass.
+    @MainActor
+    private func continueDecliningHealth(_ app: XCUIApplication, reachable: Bool = false, answered: Bool = false) {
+        let next = app.buttons["onboarding.allow"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "the Apple Health page")
+        XCTAssertEqual(next.label, "Continue", "the button before Apple's sheet says Continue (5.1.1(iv))")
+        XCTAssertFalse(app.buttons["Not now"].exists, "no way past the page without Apple's sheet")
+        press(next, "Continue", reachable)
+        let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
+        // Under load the sheet has taken over 10 seconds to show.
+        if answered { return }
+        guard sheet.cells["UIA.Health.AuthSheet.AllCategoryButton"].waitForExistence(timeout: 40) else {
+            return XCTFail("Apple's Health sheet never appeared after Continue")
+        }
+        if let failure = declineInSheet(sheet) { XCTFail(failure) }
+        app.activate()
+    }
+
+    /// Taps Don't Allow in Apple's Health sheet, then the OK Apple shows after it, if it shows.
+    /// Nil once the sheet has closed; else what went wrong (#1032: a miss names its own cause).
+    @MainActor
+    private func declineInSheet(_ sheet: XCUIApplication) -> String? {
+        // On iOS 27.2 Don't Allow ends the long sheet, and asking whether it is hittable throws
+        // ("Activation point invalid"): scroll until its frame is on screen, then tap that point.
+        // On a loaded Mac the button drops out of the tree for a moment while the sheet settles: an
+        // element's `frame` then fails the test outright ("No matches found", #999), even straight
+        // after `exists` said yes. So its frame is read from a snapshot, which throws instead; it
+        // is found afresh before each tap, and tapped once more if the first tap did not take.
+        // A snapshot's frame is not in screen points (iOS 27.0: the button read 766 by snapshot, 828
+        // by `frame`, the window 62 pt down; ios/architecture.md), so a button's place is read against
+        // the window's own snapshot, at each look, as the sheet may still be sliding up. Scrolled off
+        // (at large text the sheet is long) the button reads an infinite frame and `exists` says no.
+        // An element's own `tap` fails in Apple's sheet, so a button is tapped at the point it reports.
+        let window = sheet.windows.firstMatch
+        guard window.exists else { return "Apple's Health sheet had no window to decline in" }
+        // One read that the sheet is gone is no proof (#999): its windows must stay gone.
+        let closed = { (cause: String) -> String? in window.waitForNonExistence(timeout: 15) ? nil : cause }
+        let dontAllow = sheet.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "UIA.Health.DoNotAllow.Button", "Don’t Allow")).firstMatch
+        /// Where `button` is on screen, when it is in `window`'s view: its snapshot moved by the
+        /// window's screen frame less the window's own snapshot (62 pt on iOS 27.0, measured).
+        /// Both snapshots come first, as they throw rather than fail; the live frame is read once,
+        /// only after both have (#1032: a window that closes can fail that read, #999).
+        let onScreen = { (button: XCUIElement, window: XCUIElement) -> CGRect? in
+            guard let box = try? window.snapshot().frame, let frame = try? button.snapshot().frame, !frame.isEmpty,
+                  box.contains(frame) else { return nil }
+            let screen = window.frame
+            return frame.offsetBy(dx: screen.minX - box.minX, dy: screen.minY - box.minY)
+        }
+        // From the sheet's own origin, the screen's: a window can close under the tap (Apple's OK).
+        let tap = { (spot: CGRect) in
+            sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: spot.midX, dy: spot.midY)).tap()
+        }
+        // Apple then says access can be turned on later; its OK, in a window of its own, closes the sheet.
+        let ok = sheet.buttons["OK"].firstMatch
+        let okWindow = sheet.windows.containing(.button, identifier: "OK").firstMatch
+        // A missing button is no sign the tap took (#999), so only Apple's OK ends the tries; a sheet
+        // that closed without one leaves no window to search.
+        for attempt in 1...2 where !ok.exists && window.exists {
+            var spot = onScreen(dontAllow, window)
+            for _ in 0..<12 where spot == nil && window.exists {
+                sheet.swipeUp()
+                spot = onScreen(dontAllow, window)
+            }
+            guard let spot else {
+                if attempt == 2 && window.exists { return "Apple's Health sheet has no Don't Allow" }
+                continue
+            }
+            tap(spot)
+            _ = ok.waitForExistence(timeout: 30)
+        }
+        // A sheet that closed without Apple's OK is done; one still up with no OK stayed up.
+        guard ok.exists else { return closed("Apple's Health sheet stayed up after Don't Allow") }
+        // OK can be in the tree a moment before its snapshot reads (#1032): wait for its place.
+        var okSpot = onScreen(ok, okWindow)
+        for _ in 0..<20 where okSpot == nil && ok.exists {
+            RunLoop.current.run(until: .now + 0.5)
+            okSpot = onScreen(ok, okWindow)
+        }
+        guard let okSpot else { return closed("Apple's OK showed but never had a place on screen") }
+        tap(okSpot)
+        // The tap is not the proof: the sheet's windows must go.
+        return closed("Apple's Health sheet stayed up after Don't Allow and OK")
     }
 
     @MainActor
@@ -484,23 +567,25 @@ final class OnboardingUITests: XCTestCase {
     /// rate since its card went (US-73).
     private let everything = ["BloodPressure", "CardioFitness", "DateofBirth", "Height", "RestingHeartRate", "Sex", "Sleep", "Steps", "WaistCircumference", "Weight"]
 
-    /// "Connect Apple Health" shows Apple's Health sheet once, asking for everything the app
+    /// The Apple Health page's Continue shows Apple's Health sheet once, asking for everything the app
     /// reads: onboarding's record types and US-56's five (AC3, US-56 AC4). The sheet runs in
     /// Apple's own process; Allow is checked by hand. On iOS 27 the sheet goes on with its own
     /// Continue and a choice of how much history to share. Don't Allow is tapped at its screen
     /// point in `testAfterDontAllowTheRowSaysOpenSettings_US56_AC5c`.
     @MainActor
-    func testAllowShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
+    func testContinueShowsOneSheetAskingForEverything_AC3_US56_AC4() throws {
         let app = launch()
         let start = app.buttons["welcome.start"]
         XCTAssertTrue(start.waitForExistence(timeout: 10))
         start.tap()
         let allow = app.buttons["onboarding.allow"]
         XCTAssertTrue(allow.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks for access. Turn everything on, then tap Allow.")).firstMatch.exists,
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Next, Apple asks which data to share.")).firstMatch.exists,
                       "the hint above the button says what Apple's sheet asks (Brad 2026-10-25)")
         XCTAssertTrue(app.staticTexts["It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."].exists,
                       "the page names US-56's five too (adversary R5)")
+        XCTAssertEqual(allow.label, "Continue", "the button before Apple's sheet says Continue (5.1.1(iv))")
+        XCTAssertFalse(app.buttons["Not now"].exists, "no way past the page without Apple's sheet")
         snap(app, "health hint")
         allow.tap()
         let sheet = XCUIApplication(bundleIdentifier: "com.apple.HealthPrivacyService")
@@ -509,15 +594,17 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertEqual(readSwitches(sheet), everything, "one sheet: the record's types and the five live ones")
     }
 
-    /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. After onboarding's
-    /// "Not now", My health shows no Turn On row; Settings' own "Connect Apple Health" row runs
-    /// the same one request, for everything.
+    /// US-56 AC4, AC5 (2026-10-26): no access card and no second way in. A person past
+    /// onboarding who never connected (an "I already use Health Roadmap" run asks no Health
+    /// page; an older build had "Not now") sees no Turn On row on My health; Settings' own
+    /// "Connect Apple Health" row runs the same one request, for everything. Run it on a fresh
+    /// install: once answered, iOS never shows the sheet again.
     @MainActor
-    func testAfterNotNowMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
-        let app = launch()
-        try answerUpToWeight(app)
-        answerWeight(app)
-        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 10))
+    func testUnconnectedMyDataConnectAsksForEverythingInOneSheet_US56_AC4_AC5() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["My health"].waitForExistence(timeout: 60))
         XCTAssertFalse(app.buttons["Turn On"].exists, "no Turn On row while not connected")
         openSettings(app)
         let connect = app.buttons["Connect Apple Health"]
@@ -552,13 +639,7 @@ final class OnboardingUITests: XCTestCase {
             _ = all.waitForExistence(timeout: 40)
         }
         XCTAssertTrue(all.exists, "Apple's Health sheet appears")
-        let dontAllow = sheet.buttons["Don’t Allow"].firstMatch
-        for _ in 0..<8 where !dontAllow.isHittable { sheet.swipeUp() }
-        tap(dontAllow, in: sheet)
-        // Apple then says access can be turned on later; its OK closes the sheet.
-        let ok = sheet.buttons["OK"].firstMatch
-        XCTAssertTrue(ok.waitForExistence(timeout: 30), "Apple's note after Don't Allow")
-        tap(ok, in: sheet)
+        XCTAssertNil(declineInSheet(sheet), "Apple's sheet closes after Don't Allow")
         app.activate()
         app.buttons["Done"].firstMatch.tap()
 
@@ -580,13 +661,6 @@ final class OnboardingUITests: XCTestCase {
             _ = settings.wait(for: .runningForeground, timeout: 90)
         }
         XCTAssertEqual(settings.state, .runningForeground, "Settings opens")
-    }
-
-    /// Taps a button of Apple's sheet at the screen point it reports: its own `tap` fails there.
-    @MainActor
-    private func tap(_ button: XCUIElement, in sheet: XCUIApplication) {
-        let frame = button.frame
-        sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
     }
 
     /// "Delete all my data" brings the questions back, not the welcome screen (AC7).
@@ -614,12 +688,14 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(app.alerts.buttons["OK"].waitForExistence(timeout: 10))
         app.alerts.buttons["OK"].tap()
 
-        XCTAssertTrue(app.buttons["onboarding.notNow"].waitForExistence(timeout: 10), "the questions again")
+        XCTAssertTrue(app.buttons["onboarding.allow"].waitForExistence(timeout: 10), "the questions again")
         XCTAssertFalse(app.buttons["welcome.start"].exists, "not the welcome screen")
         snap(app, "after delete")
 
         // On to height, which shows the kept units: feet and inches, or one centimetre box.
-        app.buttons["onboarding.notNow"].tap()
+        // The first run answered Apple's sheet, so iOS does not show it again.
+        continueDecliningHealth(app, answered: true)
+        XCTAssertTrue(app.buttons["onboarding.female"].waitForExistence(timeout: 10))
         app.buttons["onboarding.female"].tap()
         XCTAssertTrue(app.pickerWheels.element(boundBy: 1).waitForExistence(timeout: 5))
         app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "1980")

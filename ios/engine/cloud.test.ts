@@ -62,6 +62,8 @@ class FakeDropbox {
       this.documents.set(arg.path, body!);
       return { status: 200, headers: {}, body: '{}' };
     }
+    // An original the app filed, read back for My health's document page (US-73 AC12).
+    if (url.endsWith('/files/download') && this.documents.has(arg.path)) return { status: 200, headers: {}, body: this.documents.get(arg.path)! };
     expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
     const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
     const now = this[slot];
@@ -99,6 +101,7 @@ interface Engine {
   cloudClose(copyDown: boolean): Promise<string>;
   cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
   documentSave(record: string, extraction: string, choice: string, original: ArrayBuffer | null, erase: string, now: string, device: string): Promise<string>;
+  documentOriginal(id: string): Promise<ArrayBuffer>;
 }
 
 const opened: Engine[] = [];
@@ -848,6 +851,53 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
   });
 
+  // US-09 AC38: health-core reads a 409 path/insufficient_space upload as
+  // StorageError('Dropbox is full', status 409) (US-09 AC35); the phone names it
+  // as a full store, as it does Drive's quota. Other 409 refusals stay unreachable.
+  it.each([
+    ['path/insufficient_space/...', 'storage-full'],
+    ['path/disallowed_name/...', 'unreachable'],
+  ])('US-09 AC38: a Dropbox save refused with 409 %s is %s', async (summary, kind) => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const real = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => url.endsWith('/files/upload')
+      ? { status: 409, headers: {}, body: JSON.stringify({ error_summary: summary }) }
+      : real(url, headers, body);
+    engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind });
+    expect(state.pending).toBe(true);
+  });
+
+  it('US-09 AC38: a full Dropbox after an earlier write may have landed is still storage-full', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const other = await recordWith(['2026-09-01'], 'web');
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const real = dropbox.answer.bind(dropbox);
+    let uploads = 0;
+    // The first upload lands, then another device overwrites it before the
+    // read-back (a lost update, retried); the retry finds the Dropbox full.
+    dropbox.answer = (url, headers, body) => {
+      if (!url.endsWith('/files/upload')) return real(url, headers, body);
+      uploads += 1;
+      if (uploads > 1) return { status: 409, headers: {}, body: JSON.stringify({ error_summary: 'path/insufficient_space/..' }) };
+      const landed = real(url, headers, body);
+      dropbox.put(other);
+      return landed;
+    };
+    engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(uploads).toBe(2);
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind: 'storage-full' });
+  });
+
 });
 
 // US-25 AC16 (US-11 on the iPhone): "Delete all my data" with a cloud open.
@@ -1018,6 +1068,8 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
 class FakeDrive implements Server {
   online = true;
   folderMade = false;
+  /** A file name every search finds nothing for: a document deleted from Drive. */
+  missing: string | null = null;
   file: { text: string; version: number } | null = null;
   /** Runs at the version read that comes right before an upload. */
   beforeVersionCheck: (() => void) | null = null;
@@ -1042,6 +1094,7 @@ class FakeDrive implements Server {
     if (method === 'GET' && u.pathname === '/drive/v3/files' && q.includes('application/vnd.google-apps.folder')) {
       return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
     }
+    if (method === 'GET' && u.pathname === '/drive/v3/files' && this.missing && q.includes(this.missing)) return ok({ files: [] });
     if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
     if (method === 'POST' && u.pathname === '/drive/v3/files') {
       this.folderMade = true;
@@ -1216,6 +1269,80 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     // An empty title keeps the model's, as the web's `docTitles[fi] || title`; a future day is unknown.
     const plain = JSON.parse(await engine.documentSave(record, letter, choice({ title: '', documentDate: '2099-01-01' }), null, '', NOW, 'ios-1')) as Answer;
     expect((JSON.parse(plain.record) as RoadmapFile).documents[0]).toMatchObject({ title: 'Cardiology follow-up', date: null });
+  });
+
+  it('US-73 AC12: a listed document\'s original reads back from the cloud by its id; none for a text-only row, an unknown id or no cloud', async () => {
+    const { engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const original = await engine.documentOriginal(row.id);
+    expect(Buffer.from(new Uint8Array(original)).toString('utf8')).toBe('%PDF letter');
+    await expect(engine.documentOriginal('no-such-id')).rejects.toThrow('no original');
+    const textOnly = JSON.parse(await engine.documentSave('', letter, choice({ sourceFileName: 'Typed.pdf' }, 'typed'), null, erase, NOW, 'ios-1')) as Answer;
+    const typed = (JSON.parse(textOnly.record) as RoadmapFile).documents.find((d) => d.sourceFileName === 'Typed.pdf')!;
+    expect(typed.fileRef).toBe('');
+    await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
+    await engine.cloudClose(false);
+    await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
+  });
+
+  it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {
+    const { dropbox, engine, state, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const kindOf = async (read: Promise<ArrayBuffer>) => {
+      const error = await read.then(() => null, (e: Error) => e);
+      return (JSON.parse(error!.message) as { kind: string }).kind;
+    };
+    expect(await kindOf(engine.documentOriginal('no-such-id'))).toBe('no-original');
+    const answerOf = dropbox.answer.bind(dropbox);
+    dropbox.answer = () => ({ status: 500, headers: {}, body: 'internal_error' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('unreachable');
+    state.signedOut = true;
+    dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('sign-in');
+    state.signedOut = false;
+    dropbox.answer = answerOf;
+    await engine.cloudClose(false);
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('not-open');
+  });
+
+  it('US-73 AC12 (PR 1051 review R1): an original deleted from the cloud is no-original, not unreachable', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    const kindOf = async (read: Promise<ArrayBuffer>) => {
+      const error = await read.then(() => null, (e: Error) => e);
+      return (JSON.parse(error!.message) as { kind: string }).kind;
+    };
+    // Deleted in Dropbox: its download answers 409 path/not_found, as Dropbox does.
+    const answerOf = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => url.endsWith('/files/download') && headers['dropbox-api-arg'].includes(row.fileRef.split('/').pop()!)
+      ? { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' } : answerOf(url, headers, body);
+    expect(await kindOf(engine.documentOriginal(row.id))).toBe('no-original');
+    await engine.cloudClose(false);
+
+    const drive = new FakeDrive();
+    const withRow = await recordWith([], 'web');
+    withRow.documents = [{ ...row, fileRef: row.fileRef }];
+    drive.put(withRow);
+    drive.folderMade = true;
+    drive.missing = row.fileRef.split('/').pop()!;
+    const onDrive = await phone(drive);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false);
+    expect(await kindOf(onDrive.engine.documentOriginal(row.id))).toBe('no-original');
+  });
+
+  it('US-73 AC12 (review R5): a document deleted on another device no longer reads its original', async () => {
+    const { dropbox, engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    expect(await engine.cloudFlush()).toBe('saved');
+    const elsewhere = dropbox.record;
+    elsewhere.documents[0].deleted = true;
+    dropbox.put(elsewhere);
+    expect(await engine.cloudRefresh()).toBe('changed');
+    await expect(engine.documentOriginal(row.id)).rejects.toThrow('no original');
   });
 
   it('refuses a document save for a lab report, and a cloud save with no session open', async () => {

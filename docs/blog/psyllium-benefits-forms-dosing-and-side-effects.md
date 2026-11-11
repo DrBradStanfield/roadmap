@@ -211,7 +211,7 @@ With kidney disease, and especially on dialysis, talk to your doctor before taki
 
 ### Contaminants
 
-Brad advises checking the lead content when choosing a psyllium brand ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)). Independent testers such as consumerlab.com and Labdoor publish product test results.
+Brad advises checking the lead content when choosing a psyllium brand ([Brad, 19 Nov 2024](https://drstanfield.com/blogs/articles/only-supplements-work-2025)). Independent testers such as Labdoor publish product test results.
 
 ### Long-Term Safety
 

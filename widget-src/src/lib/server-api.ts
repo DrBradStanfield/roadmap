@@ -1,6 +1,7 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, MeasurementRefusal, MetricType, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
-import { PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, type REMOTE_CHANGE_BACKENDS, PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
+import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';

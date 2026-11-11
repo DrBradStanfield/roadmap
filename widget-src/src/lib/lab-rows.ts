@@ -4,7 +4,8 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { labSlotKey, resolveLabCatalogEntry, displayLabUnit, labValueLabel, type LabValueGroup, type LabSeriesPoint, type LabValueRow } from '@roadmap/health-core';
+import { labSlotKey, resolveLabCatalogEntry, displayLabUnit } from '@roadmap/health-core/lab-catalog';
+import { labValueLabel, type LabValueGroup, type LabSeriesPoint, type LabValueRow } from '@roadmap/health-core/lab-series';
 
 /** Column dates (yyyy-mm-dd, ascending) + per-series point lookup for
  *  rendering a group as a date-column matrix (US-21 AC1 — same layout as the

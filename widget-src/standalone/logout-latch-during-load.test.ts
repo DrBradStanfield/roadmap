@@ -12,18 +12,17 @@
  * Same harness as logout-persistence.test.ts (second module graph standing in
  * for another tab, simulated `storage` events, in-memory provider only).
  */
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryAdapter } from '@roadmap/health-core';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 
-vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 const FILE_KEY = 'health_roadmap_file_v2';
 const REV_KEY = `${FILE_KEY}_rev`;
 const PENDING_KEY = 'health_roadmap_pending_cloud_sync';
 const UNRELATED_KEY = 'another_app_preference';
+const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
 
 function deferred() {
   let resolve!: () => void;
@@ -142,7 +141,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       storage: await import('../src/storage/roadmap-store'),
       local: await import('../src/storage/local-storage-adapter'),
       connect: await import('./connect'),
-      core: await import('@roadmap/health-core'), // its own StorageError class
+      core: await import('@roadmap/health-core/adapter'), // its own StorageError class
     };
     const cloud = new SlowFirstReadCloud();
     cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
@@ -202,32 +201,20 @@ async function otherTab() {
     storage: await import('../src/storage/roadmap-store'),
     local: await import('../src/storage/local-storage-adapter'),
     connect: await import('./connect'),
+    boot: await import('./boot'),
   };
 }
 type OtherTab = Awaited<ReturnType<typeof otherTab>>;
 type Resolved = import('./connect').ResolvedBackend;
 
-/** app.tsx's main() from its first line through the first record load: the
- *  real source, run with the other tab's modules. `resolveBackend` stands in
+/** The standalone boot (app.tsx main() starts with boot()) through the first
+ *  record load, in the other tab's module graph. `resolveBackend` stands in
  *  for the wait before any cloud host exists (an OAuth code exchange, or a
- *  remembered Drive's token refresh). Same slice-and-run approach as
- *  logout-persistence.test.ts's installLifecycle. */
+ *  remembered Drive's token refresh). */
 async function runMainUntilLoaded(other: OtherTab, resolveBackend: () => Promise<{ resolved: Resolved }>) {
-  const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
-  const start = source.indexOf('async function main() {');
-  const load = source.indexOf('await startOnBackend(', start);
-  expect(start).toBeGreaterThan(0);
-  expect(load).toBeGreaterThan(start);
-  const body = source.slice(source.indexOf('{', start) + 1, source.indexOf('\n', load));
   let store!: Awaited<ReturnType<OtherTab['storage']['RoadmapStore']['create']>>;
-  const backend: string = await runInNewContext(`(async () => {${body}\n  return backend;\n})()`, {
-    initSentry: () => {},
-    takeEmailFlag: () => false,
-    resolveBackend,
-    startOnBackend: other.connect.startOnBackend,
-    showLoadFailure: (error: unknown) => { throw error; }, // US-65 AC7's page message; these loads succeed
-    initRoadmapStore: async (adapter: Resolved['adapter']) => { store = await other.storage.RoadmapStore.create(adapter); },
-    noteOtherTabsLogOffWhileLoading: other.local.noteOtherTabsLogOffWhileLoading,
+  const { backend } = await other.boot.boot(resolveBackend, async (adapter) => {
+    store = await other.storage.RoadmapStore.create(adapter);
   });
   return { backend, store };
 }
@@ -264,6 +251,26 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
     expect(localStorage.getItem(UNRELATED_KEY)).toBe('keep');
+  });
+
+  it('notes a log-off sent in the same task as boot(), before anything is awaited', async () => {
+    // boot() must register the note synchronously, as its first step: an
+    // await before it would let this signal slip past unheard. Only the
+    // log-off signal is sent (another tab's stopRoadmapLocalWrites), so the
+    // note is the one thing that can latch this tab.
+    const other = await otherTab();
+    const cloud = new SlowFirstReadCloud();
+    cloud.firstRead.resolve();
+    const running = runMainUntilLoaded(other, async () => ({ resolved: { adapter: cloud, backend: 'google-drive' } }));
+    localStorage.setItem(LOG_OFF_SIGNAL_KEY, '1'); // no await since boot() was called
+    localStorage.removeItem(LOG_OFF_SIGNAL_KEY);
+
+    const { store } = await running;
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
+    store.addMeasurement('weight', 81, '2026-01-01');
+    cloud.fail = true;
+    await expect(store.flush()).rejects.toThrow();
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
   });
 
   it('does not latch when that wait ends on the device copy (Drive refresh failed)', async () => {

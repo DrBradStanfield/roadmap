@@ -1,4 +1,5 @@
 import type { InputLimits } from './lab-limits';
+import { LUNG_PACK_YEARS, screeningMinAge } from './screening-rules';
 
 /**
  * Health input data from user.
@@ -437,19 +438,12 @@ export const SCREENING_INTERVALS: Record<string, number> = {
  * DEXA gates at age 50 to allow saving a one-off male scan (e.g. doctor-
  * ordered for non-routine reasons); the algorithm only suggests DEXA for
  * males at 70+, but blocking save would be hostile.
+ * The values are the screening table's rows (screening-rules.ts uploadMinAge, uploadSex).
  */
-export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
-  colorectal: { age: 35 },
-  breast:     { age: 40, sex: 'female' },
-  cervical:   { age: 25, sex: 'female' },
-  lung:       { age: 50 },
-  prostate:   { age: 45, sex: 'male' },
-  dexa:       { age: 50 },
-};
+export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = screeningMinAge();
 
-/** Lung screening's smoking history, ACS 2023: 20 pack-years or more. The plan, the
- *  reminders and both forms read it, so they cannot disagree again (#285). */
-export const LUNG_PACK_YEARS = 20;
+/** Lung screening's pack-years threshold lives with the screening table; re-exported for its readers. */
+export { LUNG_PACK_YEARS };
 
 export function isScreeningEligible(
   screeningType: string,

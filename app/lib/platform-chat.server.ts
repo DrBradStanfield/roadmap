@@ -15,6 +15,7 @@ import {
   DOCTOR_POSTURE,
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
+import { DISCORD_SAVED_CHAT, savedChatBlock } from './chat-save-answers';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
@@ -109,7 +110,7 @@ export async function platformChatCompletion(params: {
   const blogArticles = matched?.content ?? null;
 
   // Discord is a doctor-family surface (Brad's community) → strict doctor posture.
-  const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, blogArticles });
+  const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(DISCORD_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
   // No form here to apply an edit to, so no tools (US-15 AC19).
   const completion = await getChatCompletion(systemBlocks, conversationMessages, false);

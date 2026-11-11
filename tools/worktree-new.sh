@@ -26,7 +26,7 @@ git -C "$MAIN" worktree add -q --no-track --lock --reason "session worktree, cre
 # A new worktree starts with fresh package clones: drop any left by an earlier worktree at this same path.
 GUARD="$MAIN/.claude/hooks/worktree-guard.cjs"   # the main checkout's hook, as merge-batch.mjs runs it
 CLONES="$(node "$GUARD" --pkg-cache-dir "$WT" </dev/null 2>/dev/null)" || CLONES=""
-case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES";; esac
+case "$CLONES" in */claude-worktree-packages/?*) rm -rf "$CLONES" || echo "note: could not delete old clones at $CLONES" >&2;; esac
 # Then make them now, through the hook's own linkPackages (fed the Bash event it answers): a subagent using
 # this worktree by absolute path runs with the main checkout as its cwd, so the hook never fires for it.
 # Never fatal: the worktree exists and is locked by now, so the path must print, or a rerun refuses the name.

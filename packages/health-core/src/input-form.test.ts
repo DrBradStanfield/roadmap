@@ -224,6 +224,50 @@ describe('screeningWrites', () => {
   });
 });
 
+// Behaviours the screening golden does not pin, kept by A2-1 step 3 (US-06 AC5: the screening and
+// bone-density sections; US-06 AC15: the PSA question). Each was proven to bite by breaking the code.
+describe('screening gates the golden misses', () => {
+  const ids = (scr: ScreeningInputs, age: number, sex: string) => keys(screeningForm(age, sex, scr));
+
+  it('US-06 AC5: DEXA\'s follow-up shows on osteoporosis before the scan has a date', () => {
+    const scr = { dexaScreening: 'dexa_scan', dexaResult: 'osteoporosis' } as ScreeningInputs;
+    expect(ids(scr, 60, 'female').filter((k) => k.startsWith('dexa_'))).toEqual(['dexa_screening', 'dexa_last_date', 'dexa_followup_status']);
+    expect(ids({ ...scr, dexaFollowupStatus: 'scheduled' }, 60, 'female')).toContain('dexa_followup_date');
+  });
+
+  it('US-06 AC5: each row opens its date question on its own rule', () => {
+    const opens = (scr: ScreeningInputs, age: number, sex: string, dateKey: string) => ids(scr, age, sex).includes(dateKey);
+    const smoker = { lungSmokingHistory: 'former_smoker', lungPackYears: 25 } as ScreeningInputs;
+    // Lung and DEXA open only on their one method: an out-of-list value keeps the date shut.
+    const lung = (v: string) => opens({ ...smoker, lungScreening: v } as ScreeningInputs, 60, 'male', 'lung_last_date');
+    expect([lung('annual_ldct'), lung('not_yet_started'), lung('something_else'), lung('')]).toEqual([true, false, false, false]);
+    const dexa = (v: string) => opens({ dexaScreening: v } as ScreeningInputs, 60, 'female', 'dexa_last_date');
+    expect([dexa('dexa_scan'), dexa('not_yet_started'), dexa('something_else'), dexa('')]).toEqual([true, false, false, false]);
+    // Colorectal, breast and cervical open on any answer but "Not yet started": an out-of-list value opens it.
+    const rows: Array<[string, string, string, string]> = [
+      ['colorectalMethod', 'fit_annual', 'male', 'colorectal_last_date'],
+      ['breastFrequency', 'annual', 'female', 'breast_last_date'],
+      ['cervicalMethod', 'hpv_every_5yr', 'female', 'cervical_last_date'],
+    ];
+    for (const [prop, listed, sex, dateKey] of rows) {
+      const row = (v: string) => opens({ [prop]: v } as ScreeningInputs, 50, sex, dateKey);
+      expect([row(listed), row('not_yet_started'), row('something_else'), row('')], prop).toEqual([true, false, true, false]);
+    }
+  });
+
+  it('US-06 AC5: the writes follow the same rule: DEXA closes on any answer but its scan, a cancer row only on "Not yet started"', () => {
+    const dexa = { dexaScreening: 'dexa_scan', dexaLastDate: '2025-03' } as ScreeningInputs;
+    expect(screeningWrites(dexa, 'dexa_screening', 'something_else')).toEqual([['dexa_screening', 'something_else'], ['dexa_last_date', '']]);
+    const colorectal = { colorectalMethod: 'fit_annual', colorectalLastDate: '2025-03' } as ScreeningInputs;
+    expect(screeningWrites(colorectal, 'colorectal_method', 'something_else')).toEqual([['colorectal_method', 'something_else']]);
+  });
+
+  it('US-06 AC15: the PSA question opens on "will screen" only', () => {
+    const psa = (v: string) => ids({ prostateDiscussion: v } as ScreeningInputs, 55, 'male').includes('psa');
+    expect(['will_screen', 'not_yet', 'elected_not_to', 'something_else', ''].map(psa)).toEqual([true, false, false, false, false]);
+  });
+});
+
 describe('screeningMonths', () => {
   it('past: the last ten years up to this month; future: this month to five years on', () => {
     const past = screeningMonths('past', '2026-10-21');
@@ -255,6 +299,25 @@ describe('medicationForm', () => {
     const onStatin: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
     expect(keys(medicationForm(onStatin, elevated))).toEqual(['statin', 'statin_dose', 'ezetimibe', 'glp1']);
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);
+  });
+
+  // US-06 AC20 (Brad, 2026-11-02): with the statin not tolerated the form steps through the
+  // plan's order, PCSK9 inhibitor, then ezetimibe, then bempedoic acid; on a statin it never
+  // opens bempedoic acid.
+  it('statin not tolerated: the PCSK9 inhibitor first, then ezetimibe, then bempedoic acid (US-06 AC20)', () => {
+    const intolerant = { drug: 'not_tolerated', dose: null };
+    const lipidKeys = (meds: MedicationInputs) => keys(medicationForm(meds, elevated)).filter((k) => k !== 'glp1');
+    expect(lipidKeys({ statin: intolerant })).toEqual(['statin', 'pcsk9i']);
+    // Interim default, pending Brad: a PCSK9 inhibitor not tolerated still moves on to ezetimibe.
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'not_tolerated' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe']);
+    expect(lipidKeys({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' })).toEqual(['statin', 'pcsk9i', 'ezetimibe', 'bempedoic_acid']);
+    expect(field(medicationForm({ statin: intolerant, pcsk9i: 'yes', ezetimibe: 'yes' }, elevated), 'bempedoic_acid').hint)
+      .toBe('Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.');
+    // On a statin, every step answered: no bempedoic acid question, unless one is already recorded.
+    const allAnswered: MedicationInputs = { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes', pcsk9i: 'yes' };
+    expect(lipidKeys(allAnswered)).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i']);
+    expect(lipidKeys({ ...allAnswered, bempedoicAcid: 'bempedoic_acid' })).toEqual(['statin', 'statin_dose', 'ezetimibe', 'pcsk9i', 'bempedoic_acid']);
   });
 
   it('US-73 AC6: the cholesterol medicines intro is the target, then Brad\'s medicines sentence, no food list (Brad 2026-11-05)', () => {

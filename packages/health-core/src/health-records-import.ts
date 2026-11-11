@@ -7,7 +7,8 @@
  * Device-import's rule (a later reading the same day replaces) would block
  * every amendment, which keeps its draw time, so this one keys on two things:
  *  - identity: the HealthKit source, the resource type and the FHIR id (AC5).
- *    Apple: the id is unique only within one type and source;
+ *    Apple: the id is unique only within one type and source. A result contained
+ *    in a DiagnosticReport adds the report's id before its own;
  *  - version: `meta.lastUpdated`, `meta.versionId`, the status, value,
  *    comparator and unit together, so a changed result is a new version even
  *    when the server keeps its meta. The row's `externalId` is `identity#version`;
@@ -37,8 +38,7 @@
  *    other-source row holding its (metric, day) when the value, unit or limit
  *    differs, and appends nothing when they match (AC9, Brad 2026-11-02); a
  *    result whose day another row won in a merge, a row that does not correct
- *    its newest landed version, is such a conflict, not the person's call (AC9, R2, R1);
- *  - a result drawn before the record's erase does not land (AC10, D6).
+ *    its newest landed version, is such a conflict, not the person's call (AC9, R2, R1).
  * A result the app cannot read (AC4) is counted, never guessed.
  */
 import * as z from './zod';
@@ -50,6 +50,7 @@ import { dayOf, latestDayOnEarth } from './merge';
 import { coreStored, createCoreRow, isActive, isBloodTestKey, labRowSlot } from './blood-tests';
 import { measurementValueFault, newId, sameValue, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, type FileLabValue, type RoadmapFile } from './roadmap-file';
+import { recordResults, type Observation, type quantity } from './health-records-fhir';
 
 export interface ClinicalRecordInput { sourceId: string; resourceType: string; fhirVersion: string; json: string }
 export interface HealthRecordsCounts { added: number; corrected: number; withdrawn: number; alreadyInRecord: number; notRead: number }
@@ -97,53 +98,6 @@ const LANDS = new Set(['final', 'amended', 'corrected']);
 const MARKER = 'm';
 /** Codes read in one unit only: the IFCC-standardized HbA1c is a substance fraction, so a % under it is mislabelled (AC4). */
 const ONLY_UNIT: Readonly<Record<string, string>> = { '59261-8': 'mmol/mol' };
-/** DSTU2 (1.0.x) and R4 (4.0.x): the two `HKFHIRVersion`s Apple sends. */
-const FHIR_VERSIONS = /^(1\.0|4\.0)\.\d+$/;
-/** FHIR's id type: no `#`, so the first `#` in an `externalId` ends the identity. */
-const FHIR_ID = /^[A-Za-z0-9\-.]{1,64}$/;
-/** A provider's JSON is external text: bounded before it is parsed. */
-const MAX_JSON = 1_000_000;
-
-const input = z.object({
-  sourceId: z.string().min(1).max(512).refine((s) => !s.includes('#')),
-  resourceType: z.literal('Observation'),
-  fhirVersion: z.string().regex(FHIR_VERSIONS),
-  json: z.string().max(MAX_JSON),
-});
-
-/** The parts of a Quantity this reads; DSTU2 and R4 spell it the same way. */
-const quantity = z.object({
-  value: z.number().finite().optional(),
-  unit: z.string().max(100).optional(),
-  code: z.string().max(100).optional(),
-  system: z.string().max(500).optional(),
-  // DSTU2: < <= >= >. R4 adds 'ad' (sufficient to achieve), which is no bound.
-  comparator: z.string().max(4).optional(),
-});
-
-/**
- * An Observation, DSTU2 or R4: the two differ in fields this does not read
- * (R4's `interpretation` is a list, DSTU2's one concept; R4 adds the status
- * `corrected` and the comparator `ad`), so one shape reads both. Every field
- * not listed is dropped; a reference range in a shape this cannot read is
- * dropped too, never the result.
- */
-const observation = z.object({
-  resourceType: z.literal('Observation'),
-  id: z.string().regex(FHIR_ID),
-  meta: z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() }).optional().catch(undefined),
-  status: z.string().max(32),
-  code: z.object({ coding: z.array(z.object({ system: z.string().optional(), code: z.string().optional() })).optional() }),
-  valueQuantity: quantity.optional(),
-  effectiveDateTime: z.string().max(64).optional(),
-  // effective[x] as a period: its start is the draw (the collection began then).
-  effectivePeriod: z.object({ start: z.string().max(64).optional() }).optional().catch(undefined),
-  // The release, close to the draw: Apple's sample DSTU2 results carry only this (AC3).
-  issued: z.string().max(64).optional(),
-  referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
-});
-type Observation = z.infer<typeof observation>;
-
 /** The unit a Quantity states, as printed: its UCUM code when it has one, else the printed unit.
  *  The version key reads it so, so a stored `externalId` never changes. */
 function statedUnit(q: z.infer<typeof quantity> | undefined): string | undefined {
@@ -316,7 +270,6 @@ export function importHealthRecords(
 ): { file: RoadmapFile; counts: HealthRecordsCounts } {
   const { now } = opts;
   const counts: HealthRecordsCounts = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 };
-  const erasedAt = file.meta.erasedAt ? Date.parse(file.meta.erasedAt) : null;
   // Every result is a lab row (US-66, one blood-test table): copied once and edited in
   // place, since a first import can carry years of results.
   const rows = [...file.labValues];
@@ -392,8 +345,6 @@ export function importHealthRecords(
 
     const reading = readingOf(obs, now);
     if (!reading) { counts.notRead++; continue; }
-    // AC10 (D6): the erase removed the rows that would have deduplicated it.
-    if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
 
     let slot = slotAt(reading, reading.recordedAt);
     // AC3: `issued` is this version's release, so a version dated by it alone keeps the
@@ -461,22 +412,13 @@ function correctsRow(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): 
 }
 
 /**
- * Each record read once (null when it is not an Observation this reads), in
- * the order the app gave, except that two versions of one result in one batch
- * are taken oldest first by `meta.lastUpdated` when both carry it, so the
- * newer one ends up active.
+ * Each result read once (null when it is not one this reads), in the order the
+ * app gave, a report's results in its `result` order, except that two versions
+ * of one result in one batch are taken oldest first by `meta.lastUpdated` when
+ * both carry it, so the newer one ends up active (`reportResults` for a report).
  */
 function parsedInOrder(records: ClinicalRecordInput[]): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
-  const parsed = records.map((raw) => {
-    const unread = { identity: null, obs: null } as const;
-    const record = input.safeParse(raw);
-    if (!record.success) return unread;
-    let json: unknown;
-    try { json = JSON.parse(record.data.json); } catch { return unread; }
-    const obs = observation.safeParse(json);
-    if (!obs.success) return unread;
-    return { identity: `${record.data.sourceId}|${record.data.resourceType}|${obs.data.id}`, obs: obs.data };
-  });
+  const parsed = records.flatMap(recordResults);
   const groups = new Map<string, number[]>();
   parsed.forEach(({ identity }, i) => {
     if (!identity) return;

@@ -151,7 +151,7 @@ describe('US-32 AC38 — minting the reviewer token', () => {
         expect((init.headers as Record<string, string>).Authorization).toBe('Bearer new-access');
         return account instanceof Response ? account : Response.json(account);
       }
-      if (String(url).endsWith('/2/files/download')) return record === null ? new Response('', { status: 409 }) : new Response(record);
+      if (String(url).endsWith('/2/files/download')) return record === null ? new Response('{"error_summary":"path/not_found/"}', { status: 409 }) : new Response(record);
       if (String(url).endsWith('/2/auth/token/revoke')) {
         expect((init.headers as Record<string, string>).Authorization).toBe('Bearer new-access');
         return revokeOk ? new Response('null') : new Response('', { status: 500 });

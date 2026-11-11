@@ -24,34 +24,10 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import {
-  ConflictError,
-  driveCreateFile,
-  driveCreateFolder,
-  driveDownloadDocument,
-  driveDownloadJson,
-  driveEnsureSubfolder,
-  driveFileIsLive,
-  driveFileVersion,
-  driveFindFileId,
-  driveFindFolder,
-  driveUpdateIfVersion,
-  driveUploadDocument,
-  readDriveRecord,
-  splitDocumentRef,
-  DRIVE_API,
-  DRIVE_FOLDER_NAME,
-  ROADMAP_FILE_NAME,
-  sleepUntilAborted,
-  catchUpAfterFailure,
-  StorageError,
-  jsonBody,
-  timeoutDeadline,
-  type ReadResult,
-  type StorageAdapter,
-  type WriteResult,
-  writeDriveRecord,
-} from '@roadmap/health-core';
+import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
+import { splitDocumentRef } from '@roadmap/health-core/document-path';
+import { codeGrantReply } from './drive-token-reply';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
@@ -345,8 +321,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
-    // OPTIONS). The endpoint parses JSON regardless of content type.
-    const res = await fetch(config.exchangeUrl, {
+    // OPTIONS). The endpoint parses JSON regardless of content type. Bounded
+    // (US-09 AC37), as Dropbox's is: the page waits on this before it draws.
+    const res = await fetchOrFail('Google Drive', config.exchangeUrl, {
       method: 'POST',
       body: JSON.stringify({
         grantType: 'code',
@@ -354,11 +331,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
         codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
+      timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
-    if (!res.ok) {
-      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
-    }
-    const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number; idToken?: string };
+    const json = await codeGrantReply(res);
     setJson(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
@@ -674,17 +649,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /**
    * Self-heal the folder's display name after a brand rename — covers folders
    * whose id was cached before the rename (the find/create paths can't see
-   * them). At most one PATCH per device per rename; cosmetic, never blocks.
+   * them). Marked done once Drive accepts one PATCH per device per rename;
+   * cosmetic, never blocks.
    */
   private async ensureFolderName(folderId: string, knownName?: string): Promise<void> {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
         });
+        if (this.stored?.folderId !== folderId || (!res.ok && res.status !== 404)) return; // replaced, or refused: retried; a gone folder is done (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
       setJson(CONFIG_KEY, this.stored);

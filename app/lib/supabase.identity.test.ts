@@ -292,6 +292,14 @@ describe('identity failure logs', () => {
     expect(error.mock.calls).toEqual([['Failed to create profile:', { code: '23505' }]]);
     error.mockRestore();
   });
+  it('US-15 AC7e (issue #926): a failed profile write throws a fixed message, never the database one', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const customer = identity(); state.create.mockResolvedValueOnce({ data: { user: { id: 'new' } }, error: null });
+    upsertFails = { code: '22P02', message: `invalid input syntax for type uuid: "${customer}"` };
+    const failure = await mapUser(customer, email).catch((error: unknown) => error);
+    expect((failure as Error).message).toBe('Failed to create profile');
+    vi.mocked(console.error).mockRestore();
+  });
   it('a failed audit write logs its code, never its message', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     auditInsertFails = true; auditError = { code: '22P02', message: 'invalid input syntax for type uuid: "synthetic-id-7"' };

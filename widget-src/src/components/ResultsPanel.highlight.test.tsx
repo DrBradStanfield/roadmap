@@ -8,17 +8,19 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
-import { calculateHealthResults, statTiles, type HealthInputs } from '@roadmap/health-core';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost } from '../testing/plan-host';
-import { RowSuggestions } from './ResultsPanel';
+import { RowSuggestions } from './PlanCards';
 
 const TEAL = 'rgba(0, 163, 139, 0.08)';
 beforeAll(() => {
@@ -72,4 +74,18 @@ it('US-07 AC3: a suggestion on a row glows teal too, then fades', () => {
   expect(getComputedStyle(line).animation).toContain('mh-glow-out');
   view.rerender(<div className="health-tool"><RowSuggestions suggestions={[s]} highlights={{ highlighted: new Set(), fadingOut: new Set() }}/></div>);
   expect(line.classList.contains('suggestion-highlight')).toBe(false);
+});
+
+it.each([['glows', 1000, '.suggestion-highlight:not(.suggestion-fade-out)'], ['fades', 3200, '.suggestion-fade-out']])('US-07 AC3: a change undone while its card %s ends the glow', (_, undoAt, phase) => {
+  vi.useFakeTimers();
+  const view = render(host(BEFORE));
+  act(() => { vi.advanceTimersByTime(3100); }); // the plan has settled
+  view.rerender(host(AFTER));
+  expect(view.container.querySelector('.suggestion-highlight')).not.toBeNull();
+  act(() => { vi.advanceTimersByTime(undoAt); });
+  expect(view.container.querySelector(phase)).not.toBeNull(); // the phase this case undoes in
+  view.rerender(host(BEFORE)); // undone: nothing is new against the settled plan
+  expect(view.container.querySelector('.suggestion-highlight, .suggestion-fade-out')).toBeNull(); // at once
+  act(() => { vi.advanceTimersByTime(10_000); });
+  expect(view.container.querySelector('.suggestion-highlight, .suggestion-fade-out')).toBeNull();
 });

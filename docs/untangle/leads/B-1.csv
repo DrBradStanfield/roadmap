@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-1,bug leads,YouTube follow-up replies miss the crisis exemption of the thread filter,done,youtube-bot-pipeline.server.ts belowWordFloor (crisis exemption) used by followUpHygiene; US-15 AC56,1011,app/lib/youtube-bot-followup-crisis.test.ts,yes

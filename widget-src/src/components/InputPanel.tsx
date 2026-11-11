@@ -3,106 +3,45 @@
 // state. My health (MyHealth.tsx, US-62 phase 5) lays its parts out by topic,
 // through the slots this hands its `children`.
 import { SectionIcon } from './icons';
-import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { InfoTooltip } from './InfoTooltip';
-import { openHistoryLightbox } from '../lib/roadmap-data';
-import { SEXES } from '@roadmap/health-core';
+import { type HealthInputs, type HealthResults, type ScreeningInputs, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
-import { DRAFTS_CLEARED_EVENT, loadFromLocalStorage } from '../lib/storage';
+import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
+import { loadFromLocalStorage } from '../lib/storage';
+import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-/** Every surface opens metric history in the local lightbox. */
-const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-  if (openHistoryLightbox(metric)) e.preventDefault();
-};
-import type { FormStage, HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
-import {
-  type UnitSystem,
-  fromCanonicalValue,
-  toCanonicalValue,
-  getDisplayLabel,
-  getDisplayRange,
-  identityFieldRange,
-  UNIT_DEFS,
-  hasUnitChoice,
-  FIELD_METRIC_MAP,
-  medicationsToInputs,
-  screeningsToInputs,
-  type ApiMeasurement,
-  formatValue,
-  formatGradedOrLimit,
-  type ApiMedication,
-  type ApiScreening,
-  STATIN_NAMES,
-  STATIN_DRUGS,
-  EZETIMIBE_OPTIONS,
-  PCSK9I_OPTIONS,
-  BEMPEDOIC_ACID_OPTIONS,
-  SUPPLEMENT_OPTIONS,
-  cmToFeetInches,
-  feetInchesToCm,
-  formatHeightDisplay,
-  GLP1_NAMES,
-  GLP1_DRUGS,
-  weightCascade,
-  lipidCascade,
-  LIPID_MEDS_IN_STEPS,
-  lipidTargetSentence,
-  weightMedIntro,
-  bpTargetFor,
-  METRIC_TO_FIELD,
-  VITAL_METRICS,
-  SGLT2I_NAMES,
-  SGLT2I_DRUGS,
-  METFORMIN_OPTIONS,
-  isBirthYearClearlyInvalid,
-  parseLocalisedNumber,
-  dayOf,
-  newestUsablePsa,
-  localDay,
-  MEDICATION_TEXT,
-  SCREENING_TEXT,
-  SCREENING_OPTIONS,
-  SCREENING_LABELS,
-  SUPPLEMENT_TEXT,
-  SUPPLEMENT_DOSE_UNITS,
-  optionsShowing,
-  escalationOptions,
-  doseOptions,
-  medicationWrites,
-  screeningWrites,
-  readScreening,
-  followupName,
-  followupDateLabel,
-  anyScreeningEligible,
-  dexaEligible,
-  lungGroupShown,
-  lungScreeningAsked,
-  customSupplementAdd,
-  customSupplementMatch,
-  type FormOption,
-  type MedicationInputs,
-} from '@roadmap/health-core';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
+import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, bpTargetFor } from '@roadmap/health-core/units';
+import { identityFieldRange } from '@roadmap/health-core/validation';
+import { formatValue } from '@roadmap/health-core/lab-limits';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { dayOf, localDay } from '@roadmap/health-core/merge';
+import { anyScreeningEligible, medicationWrites, screeningWrites, readScreening, dexaEligible } from '@roadmap/health-core/input-form';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { BloodTestTimeline, useLiveRegion, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
-import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { useLpaUnit } from '../lib/lpa-unit';
-import { type RowContext, type ValueSubject } from './MyDataRows';
+import { useValuePage, type RevealCell } from '../lib/useValuePage';
+import { type RowContext } from './MyDataRows';
 import { ValuePage } from './ValuePage';
 import { AddLabTest } from './AddLabTest';
+import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-
-/** The history-state key a phone value page's entry carries (US-62 AC10). */
-const VALUE_PAGE_STATE = 'hrValuePage';
-const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
-/** Said when a chat edit closes a page that held typed input. */
-const TYPED_NOT_SAVED = 'Your typed value was not saved.';
+import { focusById, interceptHistory, type FormKit } from './form-kit';
+import { ScreeningQuestions } from './ScreeningQuestions';
+import { LipidMedications } from './LipidMedications';
+import { WeightMedications } from './WeightMedications';
+import { BoneDensity } from './BoneDensity';
+import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightPair } from './AboutYou';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -114,16 +53,10 @@ interface FieldConfig {
 }
 
 const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
-/** About you's rows (US-62 AC12). */
-type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
 const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
-
-/** Option data (health-core's input-form) as <option> elements. */
-const optionElements = (options: FormOption[]) =>
-  options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
 
 /** What a screening's month and year pickers show: a date still being picked
  *  (year or month blank, but not both, so nothing is saved yet) as picked,
@@ -159,9 +92,10 @@ interface InputPanelProps {
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
-  onUnitSystemChange: (system: UnitSystem) => void;
+  onUnitSwitch: UnitSwitchSource; // this tab's unit switch (useUnits): the blood-test matrix re-reads its typed cells
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
+  startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
@@ -213,18 +147,7 @@ interface InputPanelProps {
   // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
   // mounted; HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
-  /** The first answer the record lacks (US-62 AC13): 1 height and weight,
-   *  2 sex, 3 birth date, 4 none. */
-  formStage: FormStage;
-  /** The highest stage reached on this record: what is unlocked stays (US-62 AC13). */
-  reached: FormStage;
-  /** The whole form shows: the onboarding was done, or the record holds more than its answers. */
-  fullForm: boolean;
-  /** About you is its own card of rows at the column's foot (US-62 AC12): a
-   *  returning user's, or once the onboarding's answers are in and left. */
-  aboutYouLow: boolean;
-  /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
-  onProfileLeft?: () => void;
+  onboarding: PanelOnboarding;
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -233,40 +156,14 @@ interface InputPanelProps {
    *  by the validated birth info, plan or no plan: the form withholds its
    *  adult targets, hints and colours (US-07 AC6). */
   grading: Grading;
-  /** The last onboarding answer is in: land at My health's top. Says whether it did (US-62 AC13, AC25). */
-  onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
-  revealCell?: { field: string; grid: boolean } | null;
-}
-
-/** A height for the feet and inches boxes to show: one there is, and not the
- *  one they just wrote themselves (US-02 AC11). */
-function showsOtherHeight(heightCm: number | undefined, typed: number | undefined): heightCm is number {
-  return heightCm !== undefined && heightCm !== typed;
-}
-
-/**
- * Auto-advance focus once a typed value is complete: fires immediately, or
- * after a short wait when the current digits could still extend to another
- * valid value (weight "25" might become "250"; inches "1" might become "11").
- * Owns the timer: each call cancels the previous pending advance, and unmount
- * cleans up. The field-specific "could this extend?" predicate stays at the
- * call site.
- */
-function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) => void {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  return ({ ambiguous, advance }) => {
-    if (timer.current) clearTimeout(timer.current);
-    if (ambiguous) timer.current = setTimeout(advance, 800);
-    else advance();
-  };
+  revealCell?: RevealCell;
 }
 
 export function InputPanel({
-  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
-  unitOverrides, onToggleFieldUnit,
+  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSwitch,
+  unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
@@ -275,10 +172,9 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage, reached, fullForm, aboutYouLow, onProfileLeft,
-  setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null,
+  onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
+  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, answered, rested, left } = onboarding;
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -289,15 +185,12 @@ export function InputPanel({
     setUnreadable(prev => ({ ...prev, [field]: bad }));
     return !bad;
   };
-  const hasLandedOnMyHealth = useRef(false);
-  // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
-  const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
-  const advanceToMyHealth = useAutoAdvance();
+  const advanceToMyHealth = useAutoAdvance(true);
+  const weightRef = useLeaveField(left); // the weight's box or matrix cell (one shows): leaving it ends a landing (US-62 AC25b)
   const advanceToDiastolic = useAutoAdvance();
-  const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
   const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
@@ -324,10 +217,8 @@ export function InputPanel({
     focusFieldRef.current = null;
     requestAnimationFrame(() => {
       const input = document.getElementById(field);
-      if (input) {
-        input.focus();
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      input?.focus();
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, [expandedVitals, bpExpanded]);
 
@@ -364,93 +255,9 @@ export function InputPanel({
     plan: planBasis,
     unitOf: m => (m === 'lpa' ? lpaUnit : unitOverrides[METRIC_TO_FIELD[m]] ?? unitSystem),
   }), [grading, planBasis, lpaUnit, unitOverrides, unitSystem]);
-  const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
-  const [tableOpen, setTableOpen] = useState(false);
-  const [seenReveal, setSeenReveal] = useState<{ field: string; grid: boolean } | null>(null);
-  // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
-  const revealing = !!revealCell && revealCell !== seenReveal;
-  const tableShown = tableOpen || (revealing && revealCell.grid);
-  const pageShown = !revealing ? valuePage : null;
-  // A page is a history entry (a state marker, no URL change), so the phone's
-  // back gesture closes it, and "‹ My data" goes back. Typed, unsaved Add
-  // input is never dropped silently: leaving asks first. Back returns to the
-  // row it opened from, scrolled and focused as it was.
-  const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
-  const pageDirty = useRef(false);
-  const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
-  const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
-  // `from` is the row pressed: WebKit does not focus a button on a tap, so the active element is stale.
-  const openPage = (subject: ValueSubject, from?: Element) => {
-    cameFrom.current = { el: from ?? document.activeElement, y: window.scrollY };
-    setSeenReveal(revealCell);
-    setValuePage(subject);
-    if (!onPageEntry()) window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-  };
-  const finishClose = () => {
-    pageDirty.current = false;
-    setValuePage(null);
-    requestAnimationFrame(() => {
-      const { el, y } = cameFrom.current;
-      if (el instanceof HTMLElement && el.isConnected) {
-        el.scrollIntoView({ behavior: 'instant', block: 'center' });
-        el.focus({ preventScroll: true });
-      } else window.scrollTo?.({ top: y, behavior: 'instant' });
-    });
-  };
-  const closePage = () => {
-    if (!mayLeave()) return;
-    pageDirty.current = false;
-    if (onPageEntry()) window.history.back(); // its popstate closes the page
-    else finishClose();
-  };
-  // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
-  useEffect(() => {
-    if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
-  }, []);
-  useEffect(() => {
-    if (!valuePage) return;
-    const onPop = () => {
-      // A page left open on My data while another tab shows does not answer Back.
-      if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
-      // Settings cover the page: Back closes them (HealthTool), and the page keeps its entry.
-      if (panelRef.current?.querySelector('.mh-page-host[hidden]')) {
-        window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
-        return;
-      }
-      // Back from a page holding typed input, declined: stay, and keep the entry.
-      if (!mayLeave()) { window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, ''); return; }
-      finishClose();
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [valuePage]);
-  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
-  useEffect(() => {
-    const drop = () => {
-      if (!valuePageRef.current) return;
-      setValuePage(null);
-      pageDirty.current = false;
-      if (onPageEntry()) window.history.back();
-    };
-    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
-    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
-  }, []);
-  const valuePageRef = useRef(valuePage);
-  valuePageRef.current = valuePage;
-  // A chat edit closes any open page, so the field it filled shows (US-16 AC2):
-  // the table opens only for a grid cell (adversary R6).
-  const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
-  // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
-  const revealDropsTyping = useRef(false);
-  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
-  useEffect(() => {
-    if (!revealing || !valuePage) return;
-    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
-    revealDropsTyping.current = false;
-    setValuePage(null);
-    pageDirty.current = false;
-    if (onPageEntry()) window.history.back();
-  }, [revealing]);
+  // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read the valid part, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
@@ -460,13 +267,6 @@ export function InputPanel({
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
-  const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
-  const panelRef = useRef<HTMLDivElement>(null);
-  // A grid mounted hidden never scrolled to its newest column: do it on showing.
-  useEffect(() => {
-    if (!tableShown) return;
-    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
-  }, [tableShown]);
   // About you sits low, as on the iPhone, phone and desktop (US-62 AC12): for
   // a record complete when first shown, and once the onboarding's four answers
   // hold and the focus leaves its card, never mid-typing. The card travels to
@@ -483,7 +283,6 @@ export function InputPanel({
   useEffect(() => {
     // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-    if (!aboutYouLow) { yearJumped.current = false; setAboutOpen(new Set()); }
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -496,9 +295,9 @@ export function InputPanel({
   const leavePending = useRef(false);
   const leaveCard = () => {
     leavePending.current = false;
-    if (formStage !== 4) return; // the move needs all four answers: measure only for it
+    // Measured only for a move (HealthTool's call), still before it: React commits the move after this handler returns.
+    if (!onProfileLeft?.()) return;
     flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
-    onProfileLeft?.();
   };
   const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -545,11 +344,6 @@ export function InputPanel({
   const weightInProfile = !aboutYouLow && (!fullForm || weightTyped.current);
   weightShown.current = weightInProfile;
   const sexInRow = fullForm && !weightInProfile;
-  // Low, About you is rows, as on the iPhone (US-62 AC12): label left, value
-  // right, a tap opens the field itself in the row's place. The onboarding's
-  // boxes never turn into rows under someone typing. A missing or refused
-  // answer opens its field, which stays open while it is typed in, until Done.
-  const [aboutOpen, setAboutOpen] = useState<ReadonlySet<AboutKey>>(new Set());
   // The birth year's field, once shown, stays while the birth question does:
   // a year cleared to retype keeps its field, whatever the stage. The
   // question going (an erase) starts it again.
@@ -557,26 +351,7 @@ export function InputPanel({
   const yearShown = useRef(false);
   yearShown.current = birthShown && (yearShown.current || !!(inputs.birthMonth || inputs.birthYear));
 
-  // Feet/inches state for US height input
-  const [heightFeet, setHeightFeet] = useState<string>('');
-  const [heightInches, setHeightInches] = useState<string>('');
-  // The height the feet and inches boxes last wrote (US-02 AC11).
-  const typedHeightCm = useRef<number | undefined>(undefined);
-
-  // Sync heightCm → feet/inches display when loading data or switching units,
-  // never from the boxes' own edit, which keeps what was typed (US-02 AC11).
-  useEffect(() => {
-    if (unitSystem === 'conventional' && showsOtherHeight(inputs.heightCm, typedHeightCm.current)) {
-      const { feet, inches } = cmToFeetInches(inputs.heightCm);
-      setHeightFeet(String(feet));
-      setHeightInches(String(inches));
-    } else if (unitSystem === 'si') {
-      // Clear feet/inches when switching to SI
-      typedHeightCm.current = undefined;
-      setHeightFeet('');
-      setHeightInches('');
-    }
-  }, [inputs.heightCm, unitSystem]);
+  const heightPair = useHeightPair(inputs.heightCm, unitSystem);
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseLocalisedNumber(value);
@@ -615,16 +390,11 @@ export function InputPanel({
     : rawInputs[field] ?? String(inputs[field as keyof HealthInputs] ?? '');
   const errors = Object.fromEntries(Object.entries(allErrors).filter(([field]) => !rangeWait.waits(field, shownText(field))));
   const typeIn = (field: string, raw: string) => rangeWait.typed(field, raw, mayStillFit(raw, range(field).min, range(field).max));
-  // Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
-  // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
-  const leaveHeightPair = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (!['heightFeet', 'heightInches'].includes((e.relatedTarget as HTMLElement | null)?.id ?? '')) rangeWait.settle();
+  /** Send one medication answer's writes, in order (health-core's rules). */
+  const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
+    for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
   };
-  const heightMayFit = (feet: string, inches: string, inFeet: boolean) => {
-    const { min, max } = getDisplayRange(FIELD_METRIC_MAP.heightCm!, 'si');
-    const choices = inFeet || inches === '' ? [...Array(12).keys()] : inches === '1' ? [1, 10, 11] : [parseInt(inches, 10) || 0];
-    return choices.some(i => { const cm = feetInchesToCm(parseInt(feet, 10) || 0, i); return cm >= min && cm <= max; });
-  };
+  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait };
 
   /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
   const savedText = (field: string, m: ApiMeasurement): string => {
@@ -782,7 +552,7 @@ export function InputPanel({
           {hasUnitToggle(field) ? (
             <button
               type="button"
-              className="unit-toggle-pill"
+              className="unit-toggle-pill" data-unit-control
               onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
               title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
             >
@@ -798,28 +568,24 @@ export function InputPanel({
         <div className="longitudinal-input-row">
           <input
             type="number"
-            id={field}
+            id={field} ref={field === 'weightKg' ? weightRef : undefined}
             onWheel={blurOnWheel}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
               const raw = e.target.value;
               typeIn(field, raw);
               setRawInputs(prev => ({ ...prev, [field]: raw }));
+              // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
+              const n = parseLocalisedNumber(raw);
+              const complete = n !== undefined && /^\d{2,3}$/.test(raw) && n >= r.min && n <= r.max;
+              if (field === 'weightKg' && rested) advanceToMyHealth(complete ? { ambiguous: /^\d{2}$/.test(raw) && n * 10 <= r.max, advance: rested } : null);
               if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg' && !hasLandedOnMyHealth.current && onOnboardingDone) {
-                const weightNum = parseLocalisedNumber(raw);
-                if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  advanceToMyHealth({
-                    ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (onOnboardingDone()) hasLandedOnMyHealth.current = true; }),
-                  });
-                }
-              }
+              if (field === 'weightKg') answered?.('weightKg');
             }}
             onBlur={() => {
               rangeWait.settle();
@@ -914,14 +680,14 @@ export function InputPanel({
           </a>
           {/* Whole value column expands the row — Clarity showed users dead-clicking
               the value/unit text expecting exactly that (the 28px + button was the
-              only target). Unit pill stops propagation so toggling stays a toggle. */}
-          <span className="collapsed-field-value" onClick={onExpand} title="Add new value">
+              only target). A press on the unit pill stays a toggle; it reaches the page's unit listeners (hooks/useUnits). */}
+          <span className="collapsed-field-value" onClick={(e) => { if (!(e.target as Element).closest('[data-unit-control]')) onExpand(); }} title="Add new value">
             {displayValue}{' '}
             {hasUnitToggle(field) ? (
               <button
                 type="button"
-                className="unit-toggle-pill"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFieldUnit(field); }}
+                className="unit-toggle-pill" data-unit-control
+                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
                 title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
               >
                 {unitLabel}
@@ -999,239 +765,29 @@ export function InputPanel({
     );
   };
 
+  // About you's fields: the onboarding's boxes and, low, the rows' editors (AboutYou.tsx).
+  const heightField = (
+    <HeightField form={form} pair={heightPair} unitSystem={unitSystem}
+      toDisplay={toDisplay} parseAndConvert={parseAndConvert}
+      mayAdvanceToWeight={inputs.weightKg === undefined && !hasPreviousValue('weightKg')} advanceToWeight={advanceToWeight}/>
+  );
+  const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
+  const birthFields = (
+    <BirthFields form={form} yearShown={yearShown.current}
+      // The year's answer, leaving and rest, for the landing (Brad 2026-11-02, US-62 AC25b).
+      onYearAnswered={answered && (() => answered('birthYear'))} onYearLeft={left}
+      onYearComplete={rested && (() => requestAnimationFrame(rested))}/>
+  );
+
   // ── Section render functions (shared closure state, not separate components) ──
 
-  const renderSex = () => (
-    <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
-      <label>Sex</label>
-      <div className="sex-toggle" role="radiogroup" aria-label="Sex">
-        {SEXES.map(sex => (
-          <button
-            key={sex}
-            type="button"
-            role="radio"
-            aria-checked={inputs.sex === sex}
-            className={`sex-toggle-btn${inputs.sex === sex ? ' sex-toggle-btn--active' : ''}`}
-            onClick={() => { updateField('sex', sex); if (!inputs.birthMonth) focusById('birthMonth'); }}
-          >
-            {sex === 'male' ? 'Male' : 'Female'}
-          </button>
-        ))}
-      </div>
-      {/* Brad 2026-11-02: the why-line asks; once answered it goes. About you's
-          Sex row keeps it: someone opening it is reconsidering. */}
-      {(!inputs.sex || aboutYouLow) && <p className="field-why">Used to calculate ideal body weight, kidney function, and screening programs.</p>}
-      {errors.sex && <span className="error-message">{errors.sex}</span>}
-    </div>
-  );
-
-  const renderHeight = () => (
-    <div className={`health-field${!inputs.heightCm ? ' field-attention' : ''}`}>
-      <label htmlFor="heightCm">
-        Height{' '}
-        <button
-          type="button"
-          className="unit-toggle-pill"
-          data-unit-control="all"
-          onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
-          title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
-        >
-          {unitSystem === 'si' ? 'cm' : 'ft/in'}
-        </button>
-      </label>
-      {unitSystem === 'si' ? (
-        <input
-          type="number"
-          id="heightCm"
-          onKeyDown={e => { blockBadNumericKeys(e); settleOnEnter(e); }}
-          onWheel={blurOnWheel}
-          value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
-          onChange={(e) => {
-            const raw = e.target.value;
-            setRawInputs(prev => ({ ...prev, heightCm: raw }));
-            if (!readable('heightCm', e)) return;
-            typeIn('heightCm', raw);
-            updateField('heightCm', parseAndConvert('heightCm', raw));
-            const heightNum = parseLocalisedNumber(raw);
-            const heightRange = range('heightCm');
-            // Plausible height → move on to weight.
-            if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined && !hasPreviousValue('weightKg')) {
-              advanceToWeight({
-                ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
-                advance: () => focusById('weightKg'),
-              });
-            }
-          }}
-          onBlur={() => { rangeWait.settle(); if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
-          placeholder=""
-          min={range('heightCm').min}
-          max={range('heightCm').max}
-          className={errors.heightCm ? 'error' : ''}
-        />
-      ) : (
-        <div className="height-fieldset">
-          <input
-            type="text"
-            id="heightFeet"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={heightFeet}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              setHeightFeet(val);
-              rangeWait.typed('heightCm', `${val}/${heightInches}`, heightMayFit(val, heightInches, true));
-              const feet = parseInt(val, 10) || 0;
-              const inches = parseInt(heightInches, 10) || 0;
-              if (val !== '' || heightInches !== '') {
-                typedHeightCm.current = feetInchesToCm(feet, inches);
-                updateField('heightCm', typedHeightCm.current);
-              } else {
-                updateField('heightCm', undefined);
-              }
-              if (val.length === 1) {
-                focusById('heightInches');
-              }
-            }}
-            placeholder=""
-            maxLength={1}
-            onBlur={leaveHeightPair}
-            onKeyDown={settleOnEnter}
-            className={errors.heightCm ? 'error' : ''}
-          />
-          <span className="height-unit">ft</span>
-          <input
-            type="text"
-            id="heightInches"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={heightInches}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              setHeightInches(val);
-              rangeWait.typed('heightCm', `${heightFeet}/${val}`, heightMayFit(heightFeet, val, false));
-              const feet = parseInt(heightFeet, 10) || 0;
-              const inches = parseInt(val, 10) || 0;
-              if (heightFeet !== '' || val !== '') {
-                typedHeightCm.current = feetInchesToCm(feet, inches);
-                updateField('heightCm', typedHeightCm.current);
-              } else {
-                updateField('heightCm', undefined);
-              }
-              // Height complete → move on to weight (mirrors the cm
-              // path). A lone '1' might still become 10/11 — wait it out.
-              if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined && !hasPreviousValue('weightKg')) {
-                advanceToWeight({
-                  ambiguous: val === '1',
-                  advance: () => focusById('weightKg'),
-                });
-              }
-            }}
-            placeholder=""
-            maxLength={2}
-            onBlur={leaveHeightPair}
-            onKeyDown={settleOnEnter}
-            className={errors.heightCm ? 'error' : ''}
-          />
-          <span className="height-unit">in</span>
-        </div>
-      )}
-      {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
-        <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
-      )}
-    </div>
-  );
-
-  // US-60 AC4: the answer the plan's "Reduce alcohol intake" Dismiss asks for,
-  // in About you's rows only, never during onboarding (Brad 2026-11-02). Tapping
-  // the chosen answer clears it (M2: the card comes back), so these are pressed
-  // toggle buttons, not radios (a checked radio cannot uncheck).
-  const renderAlcohol = () => (
-    <div className="health-field">
-      <label>Alcohol</label>
-      <div id="alcohol" className="sex-toggle" role="group" aria-label="Alcohol">
-        {ALCOHOL_OPTIONS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={inputs.alcohol === value}
-            className={`sex-toggle-btn${inputs.alcohol === value ? ' sex-toggle-btn--active' : ''}`}
-            onClick={() => updateField('alcohol', inputs.alcohol === value ? undefined : value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="field-why">Used to decide whether advice on alcohol applies to you.</p>
-    </div>
-  );
-
-  /** About you's rows (US-62 AC12); each row's editor is the field itself, with its why-line. */
-  const renderAboutRows = () => {
-    const month = inputs.birthMonth ? MONTHS_FULL[inputs.birthMonth - 1]?.label : undefined;
-    const rows: Array<{ key: AboutKey; label: string; value: string | null; missing: boolean; editor: () => ReactNode }> = [
-      { key: 'height', label: 'Height', editor: renderHeight,
-        value: inputs.heightCm != null ? formatHeightDisplay(inputs.heightCm, unitSystem) : null,
-        missing: inputs.heightCm == null || !!allErrors.heightCm || !!unreadable.heightCm },
-      { key: 'sex', label: 'Sex', editor: renderSex,
-        value: inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
-        missing: !inputs.sex || !!allErrors.sex },
-      { key: 'birth', label: 'Birth', editor: renderBirthInfo,
-        // The plan's age beside it, as the old collapsed summary said it (US-06 AC5): none when the plan sets the year aside.
-        value: inputs.birthYear ? `${[month, inputs.birthYear].filter(Boolean).join(' ')}${planBasis?.age !== undefined ? ` (Age ${planBasis.age})` : ''}` : null,
-        missing: !inputs.birthYear || !!allErrors.birthMonth || !!allErrors.birthYear },
-      // US-60 AC4: unanswered is an answer here, so it never opens itself.
-      { key: 'alcohol', label: 'Alcohol', editor: renderAlcohol, missing: false,
-        value: ALCOHOL_OPTIONS.find(o => o.value === inputs.alcohol)?.label ?? 'Not answered' },
-    ];
-    const open = (key: AboutKey) => {
-      setAboutOpen(prev => new Set(prev).add(key));
-      // The row's own field, never the unit pill beside its label (adversary R5).
-      requestAnimationFrame(() => {
-        const row = document.querySelector(`[data-about="${key}"]`);
-        (row?.querySelector<HTMLElement>('input, select, [role="radio"]') ?? row?.querySelector<HTMLElement>('button'))?.focus();
-      });
-    };
-    const done = (key: AboutKey) => {
-      setAboutOpen(prev => { const next = new Set(prev); next.delete(key); return next; });
-      focusById(`about-${key}`);
-    };
-    // A missing or refused answer's row opens and stays open while it is
-    // typed in, until Done (one set, updated as it renders).
-    // The render-phase setAboutOpen is safe only because renderAboutRows is a
-    // plain function in InputPanel's own render, not a child component.
-    const opened = rows.filter(row => row.missing && !aboutOpen.has(row.key)).map(row => row.key);
-    if (opened.length > 0) setAboutOpen(prev => new Set([...prev, ...opened]));
-    return (
-      <ul className="md-rows about-rows">
-        {rows.map(row => {
-          return (
-            <li key={row.key}>
-              {aboutOpen.has(row.key) || row.missing ? (
-                <div className="about-editor" data-about={row.key}>
-                  {row.editor()}
-                  <button type="button" className="md-back about-done" onClick={() => done(row.key)}>Done</button>
-                </div>
-              ) : (
-                <button type="button" id={`about-${row.key}`} className="about-row" onClick={() => open(row.key)}>
-                  <span className="about-row-label">{row.label}</span>
-                  {row.value ? <span className="about-row-value">{row.value}</span> : <span className="md-row-add">Add</span>}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
-
   // data-unit-control="all": a press here closes every open saved-value editor
-  // unsaved (US-05 AC2, US-04 AC1).
+  // unsaved (US-05 AC2, US-04 AC1). Its click switches the units (hooks/useUnits).
   const unitPill = (
     <button
       type="button"
       className="unit-toggle-pill"
       data-unit-control="all"
-      onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
       title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
       aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
     >
@@ -1257,15 +813,18 @@ export function InputPanel({
               weight, then sex, then the birth date. Each answer saves. Every
               slot keeps its place as the form opens, so a field being typed
               in is never remounted under the cursor. */}
-          {aboutYouLow ? renderAboutRows() : (
+          {aboutYouLow ? (
+            <AboutRows form={form} allErrors={allErrors} unitSystem={unitSystem} planAge={planBasis?.age}
+              editors={{ height: heightField, sex: sexField, birth: birthFields, alcohol: <AlcoholField form={form}/> }}/>
+          ) : (
             <>
               <div className="sex-height-row">
-                {renderHeight()}
+                {heightField}
                 {weightInProfile && renderLongitudinalField(WEIGHT_FIELD, true)}
-                {sexInRow && renderSex()}
+                {sexInRow && sexField}
               </div>
-              {!sexInRow && valueShown && <div className="stage-reveal profile-step">{renderSex()}</div>}
-              {birthShown && <div className="stage-reveal profile-step">{renderBirthInfo()}</div>}
+              {!sexInRow && valueShown && <div className="stage-reveal profile-step">{sexField}</div>}
+              {birthShown && <div className="stage-reveal profile-step">{birthFields}</div>}
             </>
           )}
           {!fullForm && (
@@ -1290,10 +849,10 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onOnboardingDone={onOnboardingDone}
+        onWeightAnswered={answered && (past => answered(past ? null : 'weightKg'))} weightRef={weightRef} rested={rested}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
-        onToggleFieldUnit={onToggleFieldUnit}
+        onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
         prefillRef={vitalsPrefillRef}
         flushRef={vitalsFlushRef}
       />
@@ -1400,66 +959,6 @@ export function InputPanel({
     );
   };
 
-  const renderBirthInfo = () => (
-    <>
-      <div className="health-field-group">
-        <div className={`health-field${!inputs.birthMonth && !inputs.birthYear ? ' field-attention' : ''}`}>
-          <label htmlFor="birthMonth">Birth Month</label>
-          <select
-            id="birthMonth"
-            value={inputs.birthMonth || ''}
-            onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
-          >
-            <option value="">Month...</option>
-            {MONTHS_FULL.map((m, i) => (
-              <option key={i + 1} value={i + 1}>{m.label}</option>
-            ))}
-          </select>
-          {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
-          {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
-          {/* US-02 AC5: a year out of range stays, saying why; the store refuses it. */}
-          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message">{errors.birthYear}</span>}
-        </div>
-
-        {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
-        {yearShown.current && (
-          <div className={`health-field stage-reveal${!inputs.birthYear ? ' field-attention' : ''}`}>
-            <label htmlFor="birthYear">Birth Year</label>
-            <input
-              type="number"
-              id="birthYear"
-              onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
-              onWheel={blurOnWheel}
-              value={inputs.birthYear || ''}
-              onChange={(e) => {
-                const num = parseLocalisedNumber(e.target.value);
-                if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
-                typeIn('birthYear', e.target.value);
-                updateField('birthYear', num);
-                // Brad 2026-11-02: a complete year in range, the month set, is the
-                // last answer: on to My health's top, out of the card, so About
-                // you moves without waiting for a blur. "199" never does, nor a
-                // returning user's edit in About you's Birth row (Codex R3).
-                const years = identityFieldRange('birthYear')!;
-                if (onOnboardingDone && !yearJumped.current && !aboutYouLow && reached < 4 && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
-                  yearJumped.current = true;
-                  requestAnimationFrame(() => onOnboardingDone(true));
-                }
-              }}
-              onBlur={rangeWait.settle}
-              placeholder=""
-              min="1900"
-              max={new Date().getFullYear()}
-            />
-          </div>
-        )}
-
-      </div>
-      <p className="field-why">Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.</p>
-    </>
-  );
-
-
   // One move for both blood-test matrices: their headers pick it, the panel sits between them (US-04 AC5).
   const move = useMoveTest({ api: moveTest, unitSystem, unitOverrides, bloodTestHistory, labValues });
 
@@ -1468,7 +967,7 @@ export function InputPanel({
       bloodTestHistory={bloodTestHistory}
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit}
+      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf} onUnitSwitch={onUnitSwitch}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
@@ -1483,10 +982,6 @@ export function InputPanel({
     />
   );
 
-  /** Send one medication answer's writes, in order (health-core's rules). */
-  const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
-    for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
-  };
   /** Send one screening answer and the clears it implies, in order (health-core's rules). */
   const writeScreening = (scr: ScreeningInputs, key: string, value: string) => {
     for (const [k, v] of screeningWrites(scr, key, value)) onScreeningChange(k, v);
@@ -1507,167 +1002,7 @@ export function InputPanel({
 
     if (!cascadeMode && !hasAnyLipidInput) return null;
 
-    const medInputs = medicationsToInputs(medications);
-    const cascade = lipidCascade(medInputs);
-    const statin = medInputs.statin;
-    const statinDrug = statin?.drug ?? 'none';
-    const statinDose = statin?.dose ?? null;
-
-    // Get available doses for current statin
-    const availableDoses = STATIN_DRUGS[statinDrug]?.doses ?? [];
-
-    // ── Shared medication dropdowns ──
-
-    const statinDropdown = (
-      <div className="health-field">
-        <label htmlFor="statin-name">{MEDICATION_TEXT.statinLabel}</label>
-        {cascadeMode && <p className="med-step-hint">{cascade.suggest.includes('statin-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.statinHint}</p>}
-        <div className="statin-selection-row">
-          <select
-            id="statin-name"
-            value={statinDrug}
-            onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin', e.target.value)}
-          >
-            {optionElements(optionsShowing(STATIN_NAMES, statinDrug))}
-          </select>
-          {availableDoses.length > 0 && (
-            <select
-              id="statin-dose"
-              value={statinDose ?? ''}
-              onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin_dose', e.target.value)}
-            >
-              {optionElements(optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Add dose'))}
-            </select>
-          )}
-        </div>
-        {place.on('statin', 'statin_dose')}
-      </div>
-    );
-
-    const ezetimibeDropdown = (
-      <div className="health-field">
-        <label htmlFor="ezetimibe">{MEDICATION_TEXT.ezetimibeLabel}</label>
-        <select
-          id="ezetimibe"
-          value={medInputs.ezetimibe || 'not_yet'}
-          onChange={e => writeMedication(medInputs, cascadeMode, 'ezetimibe', e.target.value)}
-        >
-          {optionElements(optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet'))}
-        </select>
-        {place.on('ezetimibe')}
-      </div>
-    );
-
-    const pcsk9iDropdown = (
-      <div className="health-field">
-        <label htmlFor="pcsk9i">{MEDICATION_TEXT.pcsk9iLabel}</label>
-        <select
-          id="pcsk9i"
-          value={medInputs.pcsk9i || 'not_yet'}
-          onChange={e => writeMedication(medInputs, cascadeMode, 'pcsk9i', e.target.value)}
-        >
-          {optionElements(optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet'))}
-        </select>
-        {place.on('pcsk9i')}
-      </div>
-    );
-
-    const bempedoicAcidDropdown = (
-      <div className="health-field">
-        <label htmlFor="bempedoic-acid">{MEDICATION_TEXT.bempedoicAcidLabel}</label>
-        <select
-          id="bempedoic-acid"
-          value={medInputs.bempedoicAcid || 'not_yet'}
-          onChange={e => writeMedication(medInputs, cascadeMode, 'bempedoic_acid', e.target.value)}
-        >
-          {optionElements(optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet'))}
-        </select>
-        {place.on('bempedoic_acid')}
-      </div>
-    );
-
-    const neutral = MEDICATION_TEXT.lipidNeutral;
-
-    // ── Flat mode: all fields visible independently (no cascade gating) ──
-    if (!cascadeMode) {
-      return (
-        <div className="section-card">
-          <section className="health-section">
-            <h4 className="mh-group-label">{MEDICATION_TEXT.lipidTitle}</h4>
-            <p className="health-section-desc">{neutral}</p>
-            {statinDropdown}
-            {ezetimibeDropdown}
-            {bempedoicAcidDropdown}
-            {pcsk9iDropdown}
-          </section>
-        </div>
-      );
-    }
-
-    // ── Cascade mode: progressive disclosure, the plan's own steps ──
-    // Progressive disclosure opens the plan's next step; a step that
-    // holds a recorded value always shows (US-06 AC7).
-    const lipidName = lipidMarker.label;
-    const step = cascade.escalation;
-    const showEscalation = !!step || medInputs.statinEscalation !== undefined;
-    const introText = lipidTargetSentence(lipidMarker, (metric) => fieldUnit(METRIC_TO_FIELD[metric]));
-
-    return (
-      <div className="section-card">
-      <section className="health-section medication-cascade">
-        <h4 className="mh-group-label">{MEDICATION_TEXT.lipidTitle}</h4>
-        <p className="health-section-desc">
-          {/* It recommends only while the plan shows a step's card: with every
-              step answered the marker stays elevated and the plan shows none. */}
-          {cascade.suggest.length === 0 ? neutral : `${introText} ${LIPID_MEDS_IN_STEPS}`}
-        </p>
-
-        {statinDropdown}
-
-        {(cascade.ezetimibeReached || medInputs.ezetimibe !== undefined) && (
-          <div className="med-step-enter">
-            <p className="med-step-hint">{MEDICATION_TEXT.ezetimibeHint(lipidName)}</p>
-            {ezetimibeDropdown}
-          </div>
-        )}
-
-        {(cascade.bempedoicAcidReached || medInputs.bempedoicAcid !== undefined) && (
-          <div className="med-step-enter">
-            <p className="med-step-hint">{MEDICATION_TEXT.bempedoicAcidHint}</p>
-            {bempedoicAcidDropdown}
-          </div>
-        )}
-
-        {showEscalation && (
-          <div className="health-field med-step-enter">
-            <label htmlFor="statin-escalation">
-              {step ? MEDICATION_TEXT.statinEscalationLabel[step] : MEDICATION_TEXT.escalationRecorded}
-            </label>
-            {step && (
-              <p className="med-step-hint">
-                {MEDICATION_TEXT.statinEscalationHint[step](lipidName)}
-              </p>
-            )}
-            <select
-              id="statin-escalation"
-              value={medInputs.statinEscalation || 'not_yet'}
-              onChange={e => writeMedication(medInputs, cascadeMode, 'statin_escalation', e.target.value)}
-            >
-              {optionElements(optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet'))}
-            </select>
-            {place.on('statin_escalation')}
-          </div>
-        )}
-
-        {(cascade.pcsk9iReached || medInputs.pcsk9i !== undefined) && (
-          <div className="med-step-enter">
-            <p className="med-step-hint">{MEDICATION_TEXT.pcsk9iHint(lipidName)}</p>
-            {pcsk9iDropdown}
-          </div>
-        )}
-      </section>
-      </div>
-    );
+    return <LipidMedications place={place} writeMedication={writeMedication} medications={medications} lipidMarker={lipidMarker} fieldUnit={fieldUnit}/>;
   };
 
   // Weight and diabetes medications: they recommend only when the plan's trigger is on (US-06 AC5).
@@ -1687,527 +1022,16 @@ export function InputPanel({
 
     if (!weightCascadeMode && !hasAnyWeightInput) return null;
 
-    const medInputs = medicationsToInputs(medications);
-    const cascade = weightCascade(medInputs);
-
-    const glp1Drug = medInputs.glp1?.drug ?? 'none';
-    const glp1Dose = medInputs.glp1?.dose ?? null;
-    const availableGlp1Doses = GLP1_DRUGS[glp1Drug]?.doses ?? [];
-    const sglt2iDrug = medInputs.sglt2i?.drug ?? 'none';
-    const sglt2iDose = medInputs.sglt2i?.dose ?? null;
-    const availableSglt2iDoses = SGLT2I_DRUGS[sglt2iDrug]?.doses ?? [];
-
-    // ── Shared medication dropdowns ──
-
-    const glp1Dropdown = (
-      <div className="health-field">
-        <label htmlFor="glp1-name">{MEDICATION_TEXT.glp1Label}</label>
-        {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.glp1Hint}</p>}
-        <div className="statin-selection-row">
-          <select
-            id="glp1-name"
-            value={glp1Drug}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1', e.target.value)}
-          >
-            {optionElements(optionsShowing(GLP1_NAMES, glp1Drug))}
-          </select>
-          {availableGlp1Doses.length > 0 && (
-            <select
-              id="glp1-dose"
-              value={glp1Dose ?? ''}
-              onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', e.target.value)}
-            >
-              {optionElements(optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose'))}
-            </select>
-          )}
-        </div>
-        {place.on('glp1', 'glp1_dose')}
-      </div>
-    );
-
-    const sglt2iDropdown = (
-      <div className="health-field">
-        <label htmlFor="sglt2i-name">{MEDICATION_TEXT.sglt2iLabel}</label>
-        {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.sglt2iHint}</p>}
-        <div className="statin-selection-row">
-          <select
-            id="sglt2i-name"
-            value={sglt2iDrug}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i', e.target.value)}
-          >
-            {optionElements(optionsShowing(SGLT2I_NAMES, sglt2iDrug))}
-          </select>
-          {availableSglt2iDoses.length > 0 && (
-            <select
-              id="sglt2i-dose"
-              value={sglt2iDose ?? ''}
-              onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', e.target.value)}
-            >
-              {optionElements(optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose'))}
-            </select>
-          )}
-        </div>
-        {place.on('sglt2i', 'sglt2i_dose')}
-      </div>
-    );
-
-    const metforminDropdown = (
-      <div className="health-field">
-        <label htmlFor="metformin">{MEDICATION_TEXT.metforminLabel}</label>
-        {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.metforminHint}</p>}
-        <select
-          id="metformin"
-          value={medInputs.metformin || 'none'}
-          onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'metformin', e.target.value)}
-        >
-          {optionElements(optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none'))}
-        </select>
-        {place.on('metformin')}
-      </div>
-    );
-
-    const neutral = MEDICATION_TEXT.weightNeutral;
-
-    // ── Flat mode: all fields visible independently ──
-    if (!weightCascadeMode) {
-      return (
-        <div className="section-card">
-          <section className="health-section">
-            <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
-            <p className="health-section-desc">{neutral}</p>
-            {glp1Dropdown}
-            {sglt2iDropdown}
-            {metforminDropdown}
-          </section>
-        </div>
-      );
-    }
-
-    // ── Cascade mode: progressive disclosure, the plan's own steps and words ──
-    // Progressive disclosure opens the plan's next step; a step that
-    // holds a recorded value always shows (US-06 AC7).
-    const step = cascade.escalation;
-    const showEscalation = !!step || medInputs.glp1Escalation !== undefined;
-
-    return (
-      <div className="section-card">
-      <section className="health-section medication-cascade">
-        <h4 className="mh-group-label">{MEDICATION_TEXT.weightTitle}</h4>
-        <p className="health-section-desc">
-          {/* It recommends only while the plan shows a step's card: with every
-              step answered the trigger stays on and the plan shows none. */}
-          {cascade.suggest.length === 0 ? neutral : weightMedIntro(planBasis!.bmi!, weightMedTrigger.reasons)}
-        </p>
-
-        {glp1Dropdown}
-
-        {showEscalation && (
-          <div className="health-field med-step-enter">
-            <label htmlFor="glp1-escalation">
-              {step ? MEDICATION_TEXT.glp1EscalationLabel[step] : MEDICATION_TEXT.escalationRecorded}
-            </label>
-            {step && (
-              <p className="med-step-hint">
-                {MEDICATION_TEXT.glp1EscalationHint[step]}
-              </p>
-            )}
-            <select
-              id="glp1-escalation"
-              value={medInputs.glp1Escalation || 'not_yet'}
-              onChange={e => writeMedication(medInputs, weightCascadeMode, 'glp1_escalation', e.target.value)}
-            >
-              {optionElements(optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet'))}
-            </select>
-            {place.on('glp1_escalation')}
-          </div>
-        )}
-
-        {(cascade.sglt2iReached || medInputs.sglt2i !== undefined) && (
-          <div className="med-step-enter">
-            {sglt2iDropdown}
-          </div>
-        )}
-
-        {(cascade.metforminReached || medInputs.metformin !== undefined) && (
-          <div className="med-step-enter">
-            {metforminDropdown}
-          </div>
-        )}
-      </section>
-      </div>
-    );
+    return <WeightMedications place={place} writeMedication={writeMedication} medications={medications} planBasis={planBasis}/>;
   };
 
-  // Cancer screening: shown when the plan has an age.
+  // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
-    // The plan's age, from the validated birth year (January when no month)
     const age = planBasis?.age;
-    if (age === undefined) return null;
-
-    const sex = inputs.sex;
-    const scr = screeningsToInputs(screenings);
-
-    /** Render result dropdown + follow-up status + follow-up date for a screening type. */
-    const renderResultFollowup = (type: string, method: string | undefined) => {
-      if (!readScreening(scr, `${type}_last_date`)) return null;
-
-      const result = readScreening(scr, `${type}_result`);
-      const followupStatus = readScreening(scr, `${type}_followup_status`);
-      const name = followupName(type, method);
-      const followupLabel = name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up';
-
-      return (
-        <>
-          <div className="health-field">
-            <label htmlFor={`${type}-result`}>{SCREENING_LABELS.result}</label>
-            <select
-              id={`${type}-result`}
-              value={result}
-              onChange={(e) => writeScreening(scr, `${type}_result`, e.target.value)}
-            >
-              {optionElements(SCREENING_OPTIONS.result)}
-            </select>
-          </div>
-
-          {result === 'abnormal' && (
-            <div className="health-field">
-              <label htmlFor={`${type}-followup-status`}>{followupLabel} status</label>
-              <select
-                id={`${type}-followup-status`}
-                value={followupStatus}
-                onChange={(e) => writeScreening(scr, `${type}_followup_status`, e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.followup_status)}
-              </select>
-            </div>
-          )}
-
-          {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-            renderScreeningDateInput(scr,
-              `${type}_followup_date`,
-              followupDateLabel(name, followupStatus),
-              { futureOnly: followupStatus === 'scheduled' }
-            )
-          )}
-        </>
-      );
-    };
-
-    if (!anyScreeningEligible(age, sex)) return null;
-
-    return (
-      <div className="section-card">
-      <section className="health-section screening-cascade">
-        <p className="health-section-desc">
-          {SCREENING_TEXT.intro}
-        </p>
-
-        {/* Colorectal (age 35-85, all genders) */}
-        {age >= 35 && age <= 85 && (
-          <div className="screening-group">
-            <h4>Colorectal</h4>
-            {place.in('colorectal')}
-            {age < 45 && (
-              <div className="screening-notice">
-                {SCREENING_TEXT.colorectalEarly}
-              </div>
-            )}
-
-            {age <= 75 ? (
-              <>
-                <div className="health-field">
-                  <label htmlFor="colorectal-method">{SCREENING_LABELS.method}</label>
-                  <select
-                    id="colorectal-method"
-                    value={readScreening(scr, 'colorectal_method')}
-                    onChange={(e) => writeScreening(scr, 'colorectal_method', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.colorectal_method)}
-                  </select>
-                </div>
-
-                {readScreening(scr, 'colorectal_method') && readScreening(scr, 'colorectal_method') !== 'not_yet_started' && (
-                  <>
-                    {renderScreeningDateInput(scr, 'colorectal_last_date', SCREENING_LABELS.lastScreening)}
-                    {renderResultFollowup('colorectal', readScreening(scr, 'colorectal_method'))}
-                  </>
-                )}
-              </>
-            ) : (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.colorectalIndividual}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Breast (female, age 40+) */}
-        {sex === 'female' && age >= 40 && (
-          <div className="screening-group">
-            <h4>Breast</h4>
-            {place.in('breast')}
-            {place.noteShown('breast', SCREENING_TEXT.breastByAge(age)) && (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.breastByAge(age)}
-              </p>
-            )}
-
-            <div className="health-field">
-              <label htmlFor="breast-frequency">{SCREENING_LABELS.frequency}</label>
-              <select
-                id="breast-frequency"
-                value={readScreening(scr, 'breast_frequency')}
-                onChange={(e) => writeScreening(scr, 'breast_frequency', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.breast_frequency)}
-              </select>
-            </div>
-
-            {readScreening(scr, 'breast_frequency') && readScreening(scr, 'breast_frequency') !== 'not_yet_started' && (
-              <>
-                {renderScreeningDateInput(scr, 'breast_last_date', SCREENING_LABELS.lastMammogram)}
-                {renderResultFollowup('breast', readScreening(scr, 'breast_frequency'))}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Cervical (female, age 25+) */}
-        {sex === 'female' && age >= 25 && (
-          <div className="screening-group">
-            <h4>Cervical</h4>
-            {place.in('cervical')}
-            {age <= 65 ? (
-              <>
-                <div className="health-field">
-                  <label htmlFor="cervical-method">{SCREENING_LABELS.method}</label>
-                  <select
-                    id="cervical-method"
-                    value={readScreening(scr, 'cervical_method')}
-                    onChange={(e) => writeScreening(scr, 'cervical_method', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.cervical_method)}
-                  </select>
-                </div>
-
-                {readScreening(scr, 'cervical_method') && readScreening(scr, 'cervical_method') !== 'not_yet_started' && (
-                  <>
-                    {renderScreeningDateInput(scr, 'cervical_last_date', SCREENING_LABELS.lastScreening)}
-                    {renderResultFollowup('cervical', readScreening(scr, 'cervical_method'))}
-                  </>
-                )}
-              </>
-            ) : (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.cervicalStop}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Lung (age 50-80, all genders; past 80 for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
-        {lungGroupShown(age, scr) && (
-          <div className="screening-group">
-            <h4>Lung</h4>
-            {place.in('lung')}
-
-            <div className="health-field">
-              <label htmlFor="lung-smoking-history">{SCREENING_LABELS.smokingHistory}</label>
-              <select
-                id="lung-smoking-history"
-                value={readScreening(scr, 'lung_smoking_history')}
-                onChange={(e) => writeScreening(scr, 'lung_smoking_history', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.lung_smoking_history)}
-              </select>
-            </div>
-
-            {(readScreening(scr, 'lung_smoking_history') === 'former_smoker' || readScreening(scr, 'lung_smoking_history') === 'current_smoker') && (
-              <>
-                <div className="health-field">
-                  <label htmlFor="lung-pack-years">{SCREENING_TEXT.packYearsLabel}</label>
-                  <input
-                    type="number"
-                    id="lung-pack-years"
-                    onKeyDown={blockNonIntegerKeys}
-                    onWheel={blurOnWheel}
-                    value={scr.lungPackYears ?? ''}
-                    onChange={(e) => { if (readable('lung_pack_years', e)) onScreeningChange('lung_pack_years', e.target.value); }}
-                    placeholder=""
-                    min="0"
-                    max="200"
-                    step="1"
-                  />
-                  {unreadable.lung_pack_years && <span className="field-error">Enter a number</span>}
-                  <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
-                </div>
-
-                {lungScreeningAsked(scr) && (
-                  <>
-                    <div className="health-field">
-                      <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
-                      <select
-                        id="lung-screening"
-                        value={readScreening(scr, 'lung_screening')}
-                        onChange={(e) => writeScreening(scr, 'lung_screening', e.target.value)}
-                      >
-                        {optionElements(SCREENING_OPTIONS.lung_screening)}
-                      </select>
-                    </div>
-
-                    {readScreening(scr, 'lung_screening') === 'annual_ldct' && (
-                      <>
-                        {renderScreeningDateInput(scr, 'lung_last_date', SCREENING_LABELS.lastLdct)}
-                        {renderResultFollowup('lung', readScreening(scr, 'lung_screening'))}
-                      </>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Prostate (male, age 45+) — shared decision */}
-        {sex === 'male' && age >= 45 && (
-          <div className="screening-group">
-            <h4>Prostate</h4>
-            {place.in('prostate')}
-            {place.noteShown('prostate', SCREENING_TEXT.prostateByAge(age)) && (
-              <p className="screening-age-message">
-                {SCREENING_TEXT.prostateByAge(age)}
-              </p>
-            )}
-
-            <div className="health-field">
-              <label htmlFor="prostate-discussion">{SCREENING_LABELS.prostateDiscussion}</label>
-              <select
-                id="prostate-discussion"
-                value={readScreening(scr, 'prostate_discussion')}
-                onChange={(e) => writeScreening(scr, 'prostate_discussion', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.prostate_discussion)}
-              </select>
-            </div>
-
-            {readScreening(scr, 'prostate_discussion') === 'will_screen' && (
-              <>
-                {/* PSA input with inline date picker */}
-                {(() => {
-                  const today = localDay(new Date());
-                  const psaDay = psaDate ?? today;
-                  const psaDayError = !psaDay || psaDay > today ? 'Choose a day up to today.' : null;
-                  // One PSA per day: a value typed for a day that holds one corrects it, so say so,
-                  // while a value is typed (US-06 AC15).
-                  const psaHeld = inputs.psa === undefined ? undefined
-                    : bloodTestHistory.find(m => m.metricType === 'psa' && dayOf(m.recordedAt) === psaDay);
-                  const psaMeasurement = newestUsablePsa(bloodTestHistory, new Date()); // the PSA the plan reads (US-06 AC14)
-                  const psaPreviousLabel = psaHeld
-                    ? `Replaces ${formatGradedOrLimit('psa', psaHeld.value, 'si', psaHeld.comparator)} ng/mL`
-                    : psaMeasurement
-                    ? `${formatGradedOrLimit('psa', psaMeasurement.value, 'si', psaMeasurement.comparator)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
-                    : null;
-
-                  return (
-                    <div className="health-field">
-                      <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
-                      {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
-                      <div className="psa-inline-row" onBlur={(e) => {
-                        if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
-                      }}>
-                        <input
-                          type="number"
-                          id="psa-input"
-                          onWheel={blurOnWheel}
-                          value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            typeIn('psa', val);
-                            setRawInputs(prev => ({ ...prev, psa: val }));
-                            if (!readable('psa', e)) return;
-                            if (val === '') {
-                              updateField('psa', undefined);
-                            } else {
-                              const num = parseLocalisedNumber(val);
-                              if (num !== undefined) updateField('psa', num);
-                            }
-                          }}
-                          onBlur={() => {
-                            if (unreadable.psa) return;
-                            rangeWait.settle();
-                            setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
-                          }}
-                          onKeyDown={(e) => {
-                            blockBadNumericKeys(e); settleOnEnter(e);
-                            if (e.key !== 'Enter') return;
-                            e.preventDefault();
-                            if (autoSaveGate && !unreadable.psa) onPsaCommit(true);
-                          }}
-                          placeholder=""
-                          step="0.1"
-                          min={range('psa').min}
-                          max={range('psa').max}
-                          className={errors.psa ? 'error' : ''}
-                        />
-                        <input type="date" aria-label="PSA test date" value={psaDay} max={today}
-                               onChange={(e) => onPsaDateChange(e.target.value)} />
-                        {autoSaveGate && inputs.psa !== undefined && (
-                          <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
-                        )}
-                      </div>
-                      {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
-                      <div className="field-meta">
-                        <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
-                        {psaPreviousLabel && (
-                          <a
-                            className="previous-value"
-                            href="#health-history"
-                            onClick={interceptHistory('psa')}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >{psaPreviousLabel}</a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Endometrial (female, age 45+) — awareness */}
-        {sex === 'female' && age >= 45 && (
-          <div className="screening-group">
-            <h4>Endometrial</h4>
-            {place.in('endometrial')}
-
-            <div className="health-field">
-              <label htmlFor="endometrial-discussion">{SCREENING_LABELS.endometrialDiscussion}</label>
-              <select
-                id="endometrial-discussion"
-                value={readScreening(scr, 'endometrial_discussion')}
-                onChange={(e) => writeScreening(scr, 'endometrial_discussion', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.endometrial_discussion)}
-              </select>
-            </div>
-
-            <div className="health-field">
-              <label htmlFor="endometrial-bleeding">{SCREENING_LABELS.endometrialBleeding}</label>
-              <select
-                id="endometrial-bleeding"
-                value={readScreening(scr, 'endometrial_abnormal_bleeding')}
-                onChange={(e) => writeScreening(scr, 'endometrial_abnormal_bleeding', e.target.value)}
-              >
-                {optionElements(SCREENING_OPTIONS.endometrial_abnormal_bleeding)}
-              </select>
-            </div>
-          </div>
-        )}
-      </section>
-      </div>
-    );
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
+                               psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
+                               age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
   };
 
   const renderBoneDensity = (place: Placement) => {
@@ -2217,223 +1041,7 @@ export function InputPanel({
     const sex = inputs.sex;
     if (!dexaEligible(age, sex)) return null;
 
-    const scr = screeningsToInputs(screenings);
-
-    const dexaScreening = readScreening(scr, 'dexa_screening');
-    const dexaResult = readScreening(scr, 'dexa_result');
-    const followupStatus = readScreening(scr, 'dexa_followup_status');
-
-    return (
-      <div className="section-card">
-      <section className="health-section screening-cascade">
-        <h4 className="mh-group-label">{SCREENING_TEXT.boneTitle}</h4>
-        <p className="health-section-desc">
-          {SCREENING_TEXT.boneIntro}
-        </p>
-
-        <div className="screening-group">
-          <div className="health-field">
-            <label htmlFor="dexa-screening">{SCREENING_LABELS.dexaScreening}</label>
-            <select
-              id="dexa-screening"
-              value={dexaScreening}
-              onChange={(e) => writeScreening(scr, 'dexa_screening', e.target.value)}
-            >
-              {optionElements(SCREENING_OPTIONS.dexa_screening)}
-            </select>
-            {place.in('dexa')}
-          </div>
-
-          {dexaScreening === 'dexa_scan' && (
-            <>
-              {renderScreeningDateInput(scr, 'dexa_last_date', SCREENING_LABELS.lastDexa)}
-
-              {readScreening(scr, 'dexa_last_date') && (
-                <div className="health-field">
-                  <label htmlFor="dexa-result">{SCREENING_LABELS.result}</label>
-                  <select
-                    id="dexa-result"
-                    value={dexaResult}
-                    onChange={(e) => writeScreening(scr, 'dexa_result', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.dexa_result)}
-                  </select>
-                </div>
-              )}
-
-              {dexaResult === 'osteoporosis' && (
-                <div className="health-field">
-                  <label htmlFor="dexa-followup-status">{SCREENING_LABELS.dexaFollowupStatus}</label>
-                  <select
-                    id="dexa-followup-status"
-                    value={followupStatus}
-                    onChange={(e) => writeScreening(scr, 'dexa_followup_status', e.target.value)}
-                  >
-                    {optionElements(SCREENING_OPTIONS.followup_status)}
-                  </select>
-                </div>
-              )}
-
-              {dexaResult === 'osteoporosis' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-                renderScreeningDateInput(scr,
-                  'dexa_followup_date',
-                  followupDateLabel('treatment review', followupStatus),
-                  { futureOnly: followupStatus === 'scheduled' }
-                )
-              )}
-            </>
-          )}
-        </div>
-      </section>
-      </div>
-    );
-  };
-
-  // ── Supplements section (logged-in only) ��─
-  const [supplementSearch, setSupplementSearch] = useState('');
-  const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
-  const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
-  const supplementDropdownRef = useRef<HTMLDivElement>(null);
-
-  // An erase clears off-file drafts too, including one under a later reused key.
-  useEffect(() => {
-    const drop = () => setSupplementDoseDrafts({});
-    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
-    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
-  }, []);
-
-  useEffect(() => {
-    if (!showSupplementDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
-        setShowSupplementDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSupplementDropdown]);
-
-  const renderSupplements = () => {
-
-    const activeSupplements = supplements.filter(s => s.status === 'active');
-    const allOptions = SUPPLEMENT_OPTIONS.filter(
-      opt => !activeSupplements.some(s => s.supplementKey === opt.key),
-    );
-    const filteredOptions = supplementSearch
-      ? allOptions.filter(opt => opt.name.toLowerCase().includes(supplementSearch.toLowerCase()))
-      : allOptions;
-    const trimmedSearch = supplementSearch.trim();
-    // A typed name with no exact preset match can always be added as a custom
-    // supplement — this must NOT be gated on filteredOptions having matches, or
-    // a supplement matching no preset can never be added.
-    // A name already taken is hidden too, as a preset is: re-adding it would clear its dose (US-06 AC1a).
-    const canAddCustomSupplement = !!trimmedSearch
-      && !allOptions.some(o => o.name.toLowerCase() === trimmedSearch.toLowerCase())
-      && customSupplementMatch(trimmedSearch, supplements)?.status !== 'active';
-
-    const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
-      setSupplementDoseDrafts(prev => ({ ...prev, [key]: undefined }));
-      onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
-      setSupplementSearch('');
-      setShowSupplementDropdown(false);
-    };
-
-    return (
-      <div className="section-card">
-        <section className="health-section" aria-label={SUPPLEMENT_TEXT.title}>
-          {/* Active supplements list */}
-          {activeSupplements.map(s => (
-            <Fragment key={s.supplementKey}>
-              <div className="supplement-row">
-                <span className="supplement-name">{s.supplementName}</span>
-                <input
-                  type="number"
-                  className="supplement-dose"
-                  placeholder="Dose"
-                  min={Number.MIN_VALUE}
-                  max={99999}
-                  step="any"
-                  onKeyDown={blockBadNumericKeys}
-                  value={supplementDoseDrafts[s.supplementKey] ?? s.doseValue ?? ''}
-                  aria-invalid={supplementDoseDrafts[s.supplementKey] !== undefined || undefined}
-                  aria-describedby={supplementDoseDrafts[s.supplementKey] !== undefined ? `supplement-dose-error-${s.supplementKey}` : undefined}
-                  onChange={e => {
-                    const raw = e.target.value;
-                    const val = raw ? parseLocalisedNumber(raw) ?? null : null;
-                    // Autosave bypasses native form validation. Keep invalid drafts
-                    // out of the accepted row, including badInput's empty value.
-                    const invalid = e.target.validity.badInput || (raw !== '' && (val === null || val <= 0 || val > 99999));
-                    setSupplementDoseDrafts(prev => ({ ...prev, [s.supplementKey]: invalid ? raw : undefined }));
-                    if (invalid) return;
-                    onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
-                  }}
-                />
-                <select
-                  className="supplement-unit"
-                  value={s.doseUnit ?? ''}
-                  onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
-                >
-                  <option value="">Unit</option>
-                  {SUPPLEMENT_DOSE_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
-                </select>
-                <button
-                  type="button"
-                  className="supplement-remove"
-                  onClick={() => onSupplementDelete(s.supplementKey)}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-              {supplementDoseDrafts[s.supplementKey] !== undefined && (
-                <span className="error-message" id={`supplement-dose-error-${s.supplementKey}`} role="alert">Enter a dose greater than 0 and no more than 99999. This dose was not saved.</span>
-              )}
-            </Fragment>
-          ))}
-
-          {/* Add other supplement */}
-          <div className="supplement-add" ref={supplementDropdownRef}>
-            <input
-              type="text"
-              placeholder={SUPPLEMENT_TEXT.addPlaceholder}
-              value={supplementSearch}
-              maxLength={100}
-              onFocus={() => setShowSupplementDropdown(true)}
-              onChange={e => {
-                setSupplementSearch(e.target.value);
-                setShowSupplementDropdown(true);
-              }}
-            />
-            {showSupplementDropdown && (filteredOptions.length > 0 || canAddCustomSupplement) && (
-              <div className="supplement-dropdown">
-                {filteredOptions.slice(0, 8).map(opt => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    className="supplement-dropdown-item"
-                    onClick={() => addSupplement(opt.key, opt.name, opt.defaultDose, opt.defaultUnit)}
-                  >
-                    {opt.name}
-                  </button>
-                ))}
-                {canAddCustomSupplement && (
-                  <button
-                    type="button"
-                    className="supplement-dropdown-item supplement-custom"
-                    onClick={() => {
-                      const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
-                      addSupplement(supplementKey, supplementName);
-                    }}
-                  >
-                    + Add "{trimmedSearch}"
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-    );
+    return <BoneDensity place={place} screenings={screenings} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
   };
 
   const aboutCard = (
@@ -2456,7 +1064,7 @@ export function InputPanel({
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={subject => mayLeave() && openPage(subject)} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty}/>
     ),
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, vitalsAsRows: vitalsRows, withoutWeight: weightInProfile },
     legacyVitals: !vitalsRows && (
@@ -2485,7 +1093,7 @@ export function InputPanel({
     lipidMedications: renderLipidMedications,
     screening: renderScreening,
     boneDensity: renderBoneDensity,
-    supplements: renderSupplements,
+    supplements: () => <SupplementsSection supplements={supplements} onSupplementChange={onSupplementChange} onSupplementDelete={onSupplementDelete}/>,
   });
 }
 

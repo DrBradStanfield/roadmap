@@ -4,7 +4,12 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, MemoryAdapter, MemoryCloud, migrateFile, ROADMAP_FILE_NAME, rowRootIds, upsertSupplement, type RoadmapFile } from '@roadmap/health-core';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { migrateFile } from '@roadmap/health-core/migrate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { rowRootIds } from '@roadmap/health-core/merge';
+import { upsertSupplement } from '@roadmap/health-core/state-edits';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveSupplement } from '../lib/roadmap-data';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
@@ -173,6 +178,7 @@ describe('US-06 AC1b: supplement dose autosave', () => {
     await settle();
     expect((await persisted()).supplements[0]).toMatchObject({ doseValue: 25, status: 'stopped' });
     expect(view.container.querySelector('.supplement-dose')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: '+ Add another supplement' })); // its search (US-62 AC30c)
     fireEvent.change(view.container.querySelector('.supplement-add input')!, { target: { value: 'Test supplement' } });
     fireEvent.click(view.container.querySelector('.supplement-custom')!);
     expect(dose(view.container).value).toBe('');

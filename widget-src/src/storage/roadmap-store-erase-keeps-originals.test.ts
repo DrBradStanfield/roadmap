@@ -9,7 +9,9 @@
  * (Codex + adversary, 2026-10-21) of the blanket clear O5 first brought in.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { liftDeviceCopy, MemoryAdapter, MemoryCloud, type RecordHost } from '@roadmap/health-core';
+import { liftDeviceCopy } from '@roadmap/health-core/record-transfer';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import { RoadmapStore } from './roadmap-store';
 import { webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';

@@ -7,19 +7,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const computeAndWriteTrending = vi.fn(async () => [{ slug: 'a' }]);
-const runYouTubeBotSummaryOnce = vi.fn(async () => undefined);
 const adminAuth = vi.fn(async () => ({ session: { shop: 'drstanfield.myshopify.com' } }));
 
 vi.mock('../shopify.server', () => ({ authenticate: { admin: (r: Request) => adminAuth(r) } }));
 vi.mock('../lib/trending-cron.server', () => ({ computeAndWriteTrending: () => computeAndWriteTrending() }));
-vi.mock('../lib/youtube-bot-summary-cron.server', () => ({ runYouTubeBotSummaryOnce: () => runYouTubeBotSummaryOnce() }));
 
 const trending = await import('./app.trending-test');
-const youtube = await import('./app.youtube-bot-summary-test');
 
 const PAGES = [
   { name: 'trending-test', mod: trending, sideEffect: computeAndWriteTrending },
-  { name: 'youtube-bot-summary-test', mod: youtube, sideEffect: runYouTubeBotSummaryOnce },
 ];
 
 const get = (name: string) => new Request(`https://health-tool-app.fly.dev/app/${name}`);

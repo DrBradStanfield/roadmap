@@ -2,7 +2,7 @@ import Foundation
 
 /// What "Delete all my data" says, before and after (US-25 AC16, US-11 AC5: the
 /// caveats belong in the confirmation, where they are still a decision). The web's
-/// words are HealthTool.tsx `ERASE_CONFIRM`; the app has fewer copies to name: no
+/// words are lib/erase-copy.ts `ERASE_CONFIRM`; the app has fewer copies to name: no
 /// documents, no command-line backups, and Dr Brad's server keeps no app chat (D8).
 enum EraseText {
     static let title = "Delete all my data"
@@ -23,10 +23,11 @@ enum EraseText {
     static func confirm(provider: CloudProvider?, earlier: CloudProvider?, appleHealth: Bool = false) -> String {
         var text = "This deletes your health record, your chat history and your reminders on this iPhone."
         if appleHealth {
-            text += " It also deletes the readings this app wrote to Apple Health. Readings from other apps and devices stay in Apple Health."
+            text += " It also deletes the readings this app wrote to Apple Health and disconnects Apple Health, so nothing more comes in from it. Readings from other apps and devices stay in Apple Health. If you connect it again, the app reads everything in Apple Health again, older readings included."
         }
         if let provider {
             text += " It also erases your record in \(provider.label), and the website's chat history there when the app can reach it. The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
+            text += " Another iPhone using this record disconnects Apple Health and deletes the readings this app wrote there when it next syncs."
             text += "\n\nA value another device has not synced yet is kept, and arrives later."
         } else if let earlier {
             // A later connect lifts this erase up: its higher epoch and its list of rows win
@@ -82,6 +83,9 @@ enum EraseText {
         if cloudChatErased { text += " Any website chat history in \(provider.label) was deleted." }
         return text
     }
+
+    /// Apple Health was connected: the erase disconnected it (US-72 AC10).
+    static let healthDisconnected = " Apple Health is disconnected. Connect it again in Settings to bring your readings back in."
 
     /// Apple Health refused to delete the app's samples: the record erase still stands.
     static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. You can delete them in the Health app."

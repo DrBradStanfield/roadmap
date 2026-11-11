@@ -95,11 +95,11 @@ The three right-hand boxes are arrays in the user's own `health-roadmap.json`, n
 <a id="perf"></a>
 ## 2 · Performance: parallel extraction + LLM workers
 
-The widget runs a producer/consumer pipeline (`processPipeline()` in `UploadModal.tsx`). **3 parallel pdf.js extractors** feed a queue; **5 LLM workers** drain it. Wall-clock for a 12-file ZIP drops from \~50s (concurrency 1) to \~12s (the longest-LLM-call + queue drain). Verified live in Chrome DevTools: max 5 concurrent `/api/lab-import-v2` calls in flight.
+The widget runs a producer/consumer pipeline (`processPipeline()` in `lib/upload-pipeline.ts`). **3 parallel pdf.js extractors** feed a queue; **5 LLM workers** drain it. Wall-clock for a 12-file ZIP drops from \~50s (concurrency 1) to \~12s (the longest-LLM-call + queue drain). Verified live in Chrome DevTools: max 5 concurrent `/api/lab-import-v2` calls in flight.
 
 **Shipped: 3 extractors + 5 LLM workers in parallel**
 
-EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in UploadModal.tsx. Extractors keep the queue feeding 5 LLM workers without UI jank.
+EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in lib/upload-pipeline.ts. Extractors keep the queue feeding 5 LLM workers without UI jank.
 
 *Drawn as a timeline chart on an axis marked 0s · 5s · 10s · 15s · 20s · 25s (0s at x=80, 25s at x=900). Each file has an "extract" bar and an "LLM call" bar; the bars are drawn one after another — each file's LLM call starts where the previous file's ends. Raw bar x-ranges below. The bars date from the earlier "pipelined, concurrency 1" version of this chart (commit 60ed42c2); only the title and subtitle were updated for the shipped 5-worker design, so the bars show the old serial schedule, not the shipped one.*
 
@@ -112,7 +112,7 @@ EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in UploadModal.tsx. Extractors keep the
 
 Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s for 4 files**
 
-`LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `UploadModal.tsx`. The producer is a worker pool over a shared `extractIndex` (safe on single-threaded JS); the consumer is `tryStartWorker()` draining the queue with up to 5 LLM calls in flight.
+`LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `lib/upload-pipeline.ts`. The producer is a worker pool over a shared `extractIndex` (safe on single-threaded JS); the consumer is `tryStartWorker()` draining the queue with up to 5 LLM calls in flight.
 
 ### Why 5 + 3
 
@@ -123,7 +123,7 @@ Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s
 
 ### A separate path: Anthropic Batch API for 20+ files
 
-The widget routes uploads of `≥ BATCH_THRESHOLD` files through `processBatch()` → Anthropic Batch API instead of the interactive pipeline. This is **50% cheaper per call** but **async with up to 24h SLA** (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports), not the common 1–5 file case. Polled via `/api/lab-import-v2?batchId=<id>`; poll state is per Fly machine, a miss 404s and the client falls back.
+The widget routes uploads of `≥ BATCH_THRESHOLD` files through `processBatch()` (`lib/upload-pipeline.ts`) → Anthropic Batch API instead of the interactive pipeline. This is **50% cheaper per call** but **async with up to 24h SLA** (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports), not the common 1–5 file case. Polled via `/api/lab-import-v2?batchId=<id>`; poll state is per Fly machine, a miss 404s and the client falls back.
 
 <a id="states"></a>
 ## 3 · Upload modal state machine
@@ -256,7 +256,7 @@ Two surfaces let the user fix a wrong value, intervening at different moments:
 
 ### ① Edit at review time
 
-In `ReviewTable.tsx`, each value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). User types over the LLM's extraction before clicking **Save**.
+In `ReviewMatrix.tsx` (the review's grid view), each value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). User types over the LLM's extraction before clicking **Save**.
 
 - Edited rows save with `source: 'lab_import_edited'`.
 - Unedited rows save with `source: 'lab_import'`.
@@ -281,7 +281,7 @@ A slot that already holds an active row with the *same displayed value* is alrea
 
 An upload can land on a `(metric, day)` slot that an active row already holds. The usual author of that row is a **connected AI assistant writing through the MCP connector**, which slots one value per metric per day the same way. v1 dropped the document's number and showed an "Already saved" badge; v2 shows the disagreement and lets the person settle it (**US-32 AC24**).
 
-The review table is a date × metric matrix (`buildMatrixModel()` in `ReviewTable.tsx`). Each upload value meets whatever holds its cell:
+The review table is a date × metric matrix (`buildMatrixModel()` in `lib/review-matrix.ts`). Each upload value meets whatever holds its cell:
 
 | Slot state | What the reviewer sees | What saves |
 |---|---|---|
@@ -415,4 +415,4 @@ Load-bearing choices that future work should preserve unless deliberately overtu
 
 ---
 
-Canonical sources: `docs/lab-upload.md`, `docs/user-stories.md` (US-32 AC24, the upload conflict), `app/routes/api.lab-import-v2.ts` (the only endpoint an upload calls), `app/lib/anthropic.server.ts` + `packages/health-core/src/lab-extraction.ts` (extraction + unit resolution), `widget-src/src/storage/roadmap-store.ts` (bulk saves, supersede, document archive), `packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts`, `widget-src/src/components/UploadModal.tsx` (pipeline + done-screen), `widget-src/src/components/ReviewTable.tsx` (matrix, inline-edit, conflict cell), `widget-src/src/lib/archive-payloads.ts` (archive policy, the Original path), `packages/health-core/src/record-edits.ts` (slot rule, `bulkAppendValues`), `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts` (the connector route).
+Canonical sources: `docs/lab-upload.md`, `docs/user-stories.md` (US-32 AC24, the upload conflict), `app/routes/api.lab-import-v2.ts` (the only endpoint an upload calls), `app/lib/anthropic.server.ts` + `packages/health-core/src/lab-extraction.ts` (extraction + unit resolution), `widget-src/src/storage/roadmap-store.ts` (bulk saves, supersede, document archive), `packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts`, `widget-src/src/components/UploadModal.tsx` (pipeline + done-screen), `widget-src/src/components/ReviewTable.tsx` (review state, dedup, save) and `ReviewMatrix.tsx` (matrix, inline-edit, conflict cell), `widget-src/src/lib/archive-payloads.ts` (archive policy, the Original path), `packages/health-core/src/record-edits.ts` (slot rule, `bulkAppendValues`), `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts` (the connector route).

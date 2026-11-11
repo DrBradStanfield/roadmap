@@ -17,7 +17,9 @@
 //   - one write per (day, metric), the later cell's. A safety net only: a
 //     matrix never sends two values for one slot, it shows them as an error.
 
-import { pressureInverted, type ApiMeasurement, type MetricType } from '@roadmap/health-core';
+import { pressureInverted } from '@roadmap/health-core/validation';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MetricType } from '@roadmap/health-core/units';
 import { cellFromSI, cellText, sameAsSaved, type CellUnit } from './blood-test-cell';
 import type { CorrectStatus } from '../storage/roadmap-store';
 
@@ -33,7 +35,7 @@ export interface SaveTask {
 }
 
 /** Correct one saved value, core or lab; `newValue` is in the unit it is stored in. */
-export type CorrectFn = (id: string, newValue: number) => Promise<CorrectStatus>;
+export type CorrectFn = (id: string, newValue: number, erase?: string) => Promise<CorrectStatus>;
 
 /** The values a save refused, by slot (`slotOf`), and why. Empty: every
  *  value landed or changed nothing. */

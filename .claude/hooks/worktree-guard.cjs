@@ -7,7 +7,9 @@
 //                                 happens in the session's own worktree. Untracked gitignored outputs are allowed.
 //                                 Bash writes (sed -i, >, cp) are NOT covered.
 //   Stop                          in a linked worktree, block ending the turn (once) while work is uncommitted,
-//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main.
+//                                 unpushed, or pushed with neither an open PR nor a merge into origin/main. While
+//                                 a background subagent, teammate or workflow of this session runs, uncommitted
+//                                 files are skipped.
 //   SessionStart                  report local worktrees holding unlanded work, uncommitted files in the main
 //                                 checkout, and merged worktrees not yet removed (with their worktree-done line,
 //                                 or "in use" when used in the last day).
@@ -15,9 +17,8 @@
 // landing check) and when CLAUDE_MAIN_CHECKOUT_WRITES=1 (an unattended local job that commits to main itself; none
 // in this repo today). Fails open on any git or gh error: the GitHub watches (stranded-branch-watch,
 // stale-pr-watch) are the backstop. CommonJS (.cjs): the root package.json sets "type": "module" (see
-// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js; edit both. Roadmap-only, so
-// far: the main checkout found from this file's place, .claude/ never writable there, a random temp suffix and the
-// dropped self-links in a clone, and a non-macOS cache path and copy.
+// tests/git-push-guard.test.ts). Ported from claude_business's worktree-guard.js,
+// which that repo deleted on 2026-11-04 (its commit 4e374249: main-only rule back), so this is the only copy.
 // Workflow: docs/git-workflow.md.
 const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
@@ -31,6 +32,13 @@ const PKG_CACHE = path.join(process.platform === 'darwin' ? path.join(process.en
   : (process.env.XDG_CACHE_HOME || path.join(process.env.HOME || '/tmp', '.cache')), 'claude-worktree-packages');
 const pkgCacheDir = (wt) => path.join(PKG_CACHE, `${path.basename(wt)}-${require('crypto').createHash('sha1')
   .update(wt.toLowerCase()).digest('hex').slice(0, 12)}`);
+// The package folders linkPackages clones. tools/worktree-done.sh reads them from `--package-dirs`;
+// tools/merge-batch.mjs and tools/worktree-new.sh still keep a copy.
+const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
+if (process.argv[2] === '--package-dirs') {
+  process.stdout.write(PACKAGE_DIRS.join('\n') + '\n');
+  process.exit(0);
+}
 if (process.argv[2] === '--pkg-cache-dir') {
   if (!process.argv[3]) process.exit(1);
   process.stdout.write(pkgCacheDir(fs.realpathSync.native(process.argv[3])) + '\n');
@@ -99,8 +107,7 @@ const landing = (dir) => ({
 // (no trailing slash) matches a link too, so it never shows as untracked, and nothing shared (like
 // .git/info/exclude) is written. Other gitignored inputs (.env, health-roadmap.json) are NOT mirrored: read them
 // from the main checkout (docs/git-workflow.md). tools/worktree-done.sh deletes the worktree's clones.
-// Same design as claude_business's worktree-guard.js (its PR 33).
-const PACKAGE_DIRS = ['node_modules', 'widget-src/node_modules', 'packages/health-core/node_modules'];
+// Same design as claude_business's worktree-guard.js (its PR 33). The folders: PACKAGE_DIRS, above.
 // A clone's links, fixed after the copy. Each is read as it resolved in the main checkout: one into the copied
 // folder itself is kept when relative (`.bin` entries) and dropped when absolute (main's stray
 // `node_modules/node_modules` self-links, left by an old `ln -s`, would load a second React from the main
@@ -185,14 +192,29 @@ if (event === 'PreToolUse') {
     + `edit there, not under ${main}. Workflow: docs/git-workflow.md.` } });
 }
 
+// A background subagent, teammate or workflow of this session is still running (Claude Code's own `background_tasks`
+// list in the Stop input, scoped to the session). An orchestrator's worker edits the same worktree, so its files
+// are uncommitted when the main session ends a turn, and committing them would land half-written work (US-64
+// AC25). Claude wakes the session when the task ends, and the next Stop checks again. No list (an older Claude
+// Code, or the task registry unreachable) means none running: the check stays as before.
+const WORKER_TYPES = new Set(['subagent', 'teammate', 'workflow']);
+// The list holds in-flight tasks only, and the docs fix no status values, so any status counts except a plainly
+// finished one (re-check N1: matching only "running" would silently bring the nag back on a new word).
+const DONE_STATUS = new Set(['completed', 'failed', 'killed', 'cancelled', 'canceled', 'stopped', 'error']);
+const workerRunning = () => Array.isArray(input.background_tasks) && input.background_tasks.some((t) =>
+  t && WORKER_TYPES.has(t.type) && !DONE_STATUS.has(t.status));
+
 if (event === 'Stop') {
   if (!inWorktree || input.stop_hook_active) process.exit(0);
+  // Heartbeat: a session that ended a turn here is alive; SessionStart reads this file's mtime (a session idle
+  // for a day writes no index, so the git dir alone would offer its worktree for removal).
+  try { fs.writeFileSync(path.join(git(top, ['rev-parse', '--absolute-git-dir']), 'session-heartbeat'), ''); } catch { /* best effort */ }
   const problems = [];
   let branch = '';
   try {
     branch = git(top, ['rev-parse', '--abbrev-ref', 'HEAD']);
     const s = landing(top);
-    if (s.dirty) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
+    if (s.dirty && !workerRunning()) problems.push(`uncommitted changes:\n${s.dirty.split('\n').slice(0, 15).join('\n')}`);
     if (s.localOnly !== '0') problems.push(`${s.localOnly} commit(s) on ${branch} are not pushed`);
     // Nothing ahead of the last-fetched origin/main means nothing to land; otherwise fetch (a GitHub-side merge).
     if (!problems.length && s.ahead() !== '0') {
@@ -225,10 +247,10 @@ if (event === 'SessionStart') {
       const w = real(wt);
       if (same(w, main) || same(w, top)) continue;
       const br = ((block.match(/^branch refs\/heads\/(.+)$/m) || [])[1]) || '(detached)';
-      // Used in the last day: index or HEAD in its git dir changed, worktree-done.sh's own test. Read before
+      // Used in the last day: index, HEAD or the Stop hook's heartbeat in its git dir changed, worktree-done.sh's own test. Read before
       // landing(), whose `git status` may rewrite the index.
       const gd = git(w, ['rev-parse', '--absolute-git-dir']);
-      const recent = ['index', 'HEAD'].some((f) => { try { return Date.now() - fs.statSync(path.join(gd, f)).mtimeMs < 864e5; } catch { return false; } });
+      const recent = ['index', 'HEAD', 'session-heartbeat'].some((f) => { try { return Date.now() - fs.statSync(path.join(gd, f)).mtimeMs < 864e5; } catch { return false; } });
       const s = landing(w);
       const dirty = s.dirty ? s.dirty.split('\n').length : 0;
       const ahead = s.ahead();

@@ -3,12 +3,14 @@
  * Uses the same Shopify app proxy path as all other API calls.
  */
 import * as Sentry from '@sentry/react';
-import { MAX_HISTORY_MESSAGES, type ProposedEdit } from '@roadmap/health-core';
+import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
+import { readChatStream } from './chat-stream';
 
 // On local-first builds sendMessage tells the server to trust the
 // client-supplied context instead of looking for a DB record.
@@ -82,7 +84,7 @@ export interface ChatListResult {
  * fields are the server's contract. The guest session token is stored and
  * sent back, so it is checked rather than trusted (US-15 AC6b).
  */
-interface ChatReply {
+export interface ChatReply {
   success?: boolean;
   error?: string;
   isGuest?: boolean;
@@ -288,51 +290,6 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
     console.warn('Error loading conversation:', error);
     Sentry.captureException(error);
     return [];
-  }
-}
-
-/**
- * Read an NDJSON answer (US-15 AC16): hand each delta to `onDelta` and return
- * the `done` line, which is the JSON the non-streamed reply would have been.
- * The body decides, not the header (a proxy can rewrite it): a first line
- * that is not `{"type":…` returns null, as a non-JSON reply always has.
- * A stream that ends without `done` throws, so the caller reports a network error.
- */
-async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<ChatReply | null> {
-  if (!response.body) return null;
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let first = true;
-  for (;;) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done }) + (done ? '\n' : '');
-    let newline: number;
-    while ((newline = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, newline).trim();
-      buffer = buffer.slice(newline + 1);
-      if (!line) continue;
-      if (first && !/^\{\s*"type"\s*:/.test(line)) {
-        await reader.cancel().catch(() => {});
-        return null;
-      }
-      first = false;
-      // A fixed message: V8 quotes the offending input in its SyntaxError, and
-      // a corrupted line can hold answer or thinking text, which must not
-      // reach the Sentry capture below (the server scrubs the same case).
-      let event;
-      try { event = JSON.parse(line); } catch { throw new Error('Chat stream line was not JSON'); }
-      if (event.type === 'done') {
-        await reader.cancel().catch(() => {});
-        const { type: _type, ...reply } = event;
-        return reply;
-      }
-      if (event.type === 'thinking' || event.type === 'text' || event.type === 'status') onDelta({ type: event.type, text: String(event.text) });
-      if (event.type === 'sources') {
-        onDelta({ type: 'sources', titles: Array.isArray(event.titles) ? event.titles.filter((t: unknown) => typeof t === 'string') : [] });
-      }
-    }
-    if (done) throw new Error('Chat stream ended without an answer');
   }
 }
 

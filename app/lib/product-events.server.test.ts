@@ -252,6 +252,15 @@ describe('the email-arrival counters', () => {
     }
   });
 
+  it('US-62 AC31: takes plan_ready_shown and plan_ready_dismissed from a browser by name alone', () => {
+    for (const eventName of ['plan_ready_shown', 'plan_ready_dismissed']) {
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
+      for (const metadata of [{ step: 'birth' }, { device: 'phone' }, { count: 1 }, { placement: 'header' }]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
+    }
+  });
+
   it('US-61 AC8: takes the two US product events with a product word, and nothing else', () => {
     for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
       for (const product of ['microvitamin_plus', 'sleep']) {
@@ -977,6 +986,16 @@ describe('the upload outcome counter (US-12 AC10)', () => {
         JSON.stringify(metadata),
       ).toBeNull();
     }
+  });
+
+  // US-12 AC10 (U9, 2026-11-11): a run Cancel stopped mid-read, a count like the rest.
+  it('US-12 AC10: takes cancelled as a count, and refuses it as anything else or on another event', () => {
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: { picked: 2, cancelled: 1 } }))
+      .toMatchObject({ metadata: { picked: 2, cancelled: 1 } });
+    for (const metadata of [{ cancelled: true }, { cancelled: 'yes' }, { cancelled: 0.5 }, { cancelled: -1 }, { cancelled: 1001 }]) {
+      expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'chat_opened', visitorId: VISITOR, metadata: { cancelled: 1 } })).toBeNull();
   });
 
   it('refuses every other metadata key, even one another event may carry', () => {

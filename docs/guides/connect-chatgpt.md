@@ -2,7 +2,7 @@
 title: "Connect ChatGPT to your health record"
 description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
-updated: "2026-11-02"
+updated: "2026-11-09"
 stories: ["US-32"]
 ---
 
@@ -42,13 +42,13 @@ When we add a tool, ChatGPT does not see it straight away: it keeps the connecto
 
 ## Why developer mode
 
-OpenAI keeps a connector it has not listed behind developer mode. Ours is not listed: OpenAI does not list health apps in ChatGPT at present, so developer mode is where it lives. Developer mode is a setting on your own account. It does not change how ChatGPT answers you, and it does not give this connector anything beyond what you approve in Dropbox.
+OpenAI keeps a connector it has not listed behind developer mode. Ours is not listed: OpenAI does not list health apps in ChatGPT at present, so developer mode is where it lives. Developer mode is a setting on your own account. It does not change how ChatGPT answers you, and it does not give this connector anything beyond what you approve in Dropbox or Google Drive.
 
 Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/guides/ai-health-record#connect-claude-on-the-web) is shorter.
 
 ## What it can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
+It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.
 
 It can import lab files, too. Two ways in. Drop a file straight into the conversation,
 from a computer or a phone: a PDF, a JPEG or PNG photo, or a clinic letter. ChatGPT reads
@@ -65,7 +65,7 @@ it as a JPEG, or take a screenshot. Whatever it cannot read, it tells you why an
 do. Either way it shows you candidate values, in the units your record uses, and writes nothing
 to your record until you confirm: the candidates wait in a pending file in your own folder for
 an hour. Accept the ones that look right and it writes them, filing the document itself as
-a record with no text or image kept, just its name and date. If you connected before
+a record with a title, a date and at most a one-line summary, never the file itself. If you connected before
 7 September 2026, refresh the connector once in ChatGPT's settings (open the connector and
 choose Refresh) so ChatGPT reads dropped files itself instead of handing them to our server. A report with no printed date is not
 lost: it asks you when the test was taken and files it on that day. A value your record
@@ -99,7 +99,7 @@ It cannot see the token that runs your email reminders, if you use them. That to
 
 ## What we can see
 
-Your record still lives only in your Dropbox or Google Drive. To answer one call, our server unseals the sealed credential ChatGPT holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. We store nothing about you: no account, no row, no session. What ChatGPT holds is a credential only we can open, and what we hold is the key and no credential of yours. The one exception is an invented account for OpenAI's app reviewers: while a review is pending, our server holds that account's Dropbox credential, so a reviewer can sign in without a Dropbox login. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](/blogs/guides/connect-claude).
+Your record still lives only in your Dropbox or Google Drive. To answer one call, our server unseals the sealed credential ChatGPT holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. We store nothing about you: no account, no row, no session. What ChatGPT holds is a credential only we can open, and what we hold is the key and no credential of yours. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](/blogs/guides/connect-claude).
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
@@ -123,4 +123,4 @@ ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com
 
 Something looks wrong in your data: open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
 
-Anything else: ask ChatGPT to report the problem and it files a bug report for you, as a public issue on the project's GitHub carrying its description and nothing about you. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.
+Anything else: ask ChatGPT to report the problem and it files a bug report for you, as a public issue on the project's GitHub carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.

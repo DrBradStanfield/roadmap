@@ -374,7 +374,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W43,remote_change_applied,8,4,100,supabase,local 7 / cloud 1
 2026-W43,guide_opened,26,53,-51,supabase,header 26 / footer 0; 4.9% of results_viewed (W42 8.4%)
 2026-W43,chat_messages,175,128,37,supabase,"94 user / 81 assistant, all claude-sonnet-5-5, 0 fallback"
-2026-W43,chat_match_events,115,110,5,supabase,"youtube 59 / shopify 30 / widget 21 / discord 5; true misses 27/80 ROUTE = 34% (W42 20%): widget 6/15 (uploaded calcium score x3, a weight statement, HealthPathways x2), youtube 19/46 (10 promo comments for one peptide vendor 10-21), shopify 2/14, discord 0/5; router_error 1 (non-JSON prose at the 200-token cap, sentry-fix 6Z)"
+2026-W43,chat_match_events,115,110,5,supabase,"youtube 59 / shopify 30 / widget 21 / discord 5; true misses 27/80 ROUTE = 34% (W42 20%): widget 6/15 (uploaded calcium score x3, a weight statement, pathway-publisher x2), youtube 19/46 (10 promo comments for one peptide vendor 10-21), shopify 2/14, discord 0/5; router_error 1 (non-JSON prose at the 200-token cap, sentry-fix 6Z)"
 2026-W43,sentry_new_issues,6,2,200,sentry,"71 (AbortError /pages/roadmap, triaged-ours), 72 + 76 (scanners, wontfix), 73 (fixed 65a3b64d), 74 (fixed), 75 (wontfix); 19 unresolved, userCount 0 on all (eleventh week); movers 4E 257 (not-ours), 6X 152 (wontfix), 14 33 (not-ours); all ledgered; counts soft"
 2026-W43,clarity_roadmap_visits_3d,140,124,13,clarity,"drstanfield 5,494 sessions/3d (+46%), bot-flagged 20.9% (W42 89.8%); google 1,963 referrals; /pages/start 214 (rank 3), /pages/roadmap 140 (rank 6); script errors 11.16% (W42 0.69%), untraced; dead clicks 4.84%; microvitamin 2,280 (+8%), bot 23.5%, script errors 8.2% (11.24%)"
 2026-W43,feedback_organic,2,6,-67,gmail+supabase+github,"1 feedback_submissions row 10-23 (a medication note, no question; unanswered) + 1 reply 10-21 from the W42 urine-creatinine user to Brad's 10-20 answer (three clinical questions; unanswered ~3 days); 0 from-connector issues"
@@ -436,3 +436,68 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W44,mutation_score_suggestions,81.6,81.2,0,stryker,"1374 killed, 309 open (baseline 311 open)"
 2026-W44,mutation_score_units,90.9,90.1,1,stryker,"380 killed, 38 open (baseline 37); 1 NEW survivor: getDisplayRange units.ts:434 StringLiteral 'min' -> \"\""
 2026-W44,mutation_score_merge,88.9,87.7,1,stryker,"593 killed, 74 open (baseline 82)"
+2026-W45,product_events_total,3345,1517,121,supabase,"4862 rows paged = count=exact across both windows; W44 reproduces at 1517 (review R1 fixed a wrong split)"
+2026-W45,results_viewed,272,823,-67,supabase,"220 visitors; DO NOT TREND: plan-on-screen from 10-31 12:40Z (US-62 AC5), and on phones it waits for the topics on screen from 0d34294 (deployed by e79d7039 11-06T05:31Z); daily 11-01 46, 11-02 38, 11-03 27, 11-04 20, 11-05 28, 11-06 63, 11-07 42"
+2026-W45,tool_opened,1595,80,1894,supabase,"FIRST FULL WEEK; 1289 distinct visitors (phone only 510, desktop only 777, both 2); rows desktop 910 / phone 685"
+2026-W45,tool_to_plan_phone_pct,12.9,7.1,82,supabase,NEW SERIES (US-62 primary): 66 of 512 phone tool_opened visitors fired results_viewed after their first tool_opened; prior = day one 2 of 28
+2026-W45,tool_to_plan_desktop_pct,17.2,13.3,,supabase,"NEW SERIES: 134 of 779 desktop visitors fired results_viewed after their first tool_opened; prior = day one 6 of 45 by this rule (W44 published 8 of 45 by any-order rule)"
+2026-W45,onboarding_step,664,0,,supabase,237 visitors; birth 213 / sex 221 / measurements 230; LIVE from 11-01T02:46Z (HealthTool.tsx:616); W44 zero was dead instrumentation
+2026-W45,onboarding_done,213,0,,supabase,213 visitors; live from 11-01T02:46Z (HealthTool.tsx:617)
+2026-W45,signin_opened,33,0,,supabase,"30 visitors; top_bar 24 / plan_panel 9; live from 11-03T04:12Z (widget-src/src/lib/storage-notice.tsx:42, 1aa0853)"
+2026-W45,measurement_added,77,0,,supabase,NEW SERIES: 59 visitors; waist 47 / blood_pressure 30; first 11-02T04:14Z
+2026-W45,blood_tests_unified,14,0,,supabase,"NEW SERIES (US-66 migration): 14 visitors, moved 84 / folded 1 / keptApart 1; first 11-02T11:14Z"
+2026-W45,us_product_shown,100,4,2400,supabase,NEW SERIES: 49 visitors; microvitamin_plus 50 / sleep 50
+2026-W45,us_product_link_clicked,2,0,,supabase,NEW SERIES: microvitamin_plus 2; first 11-01T05:55Z
+2026-W45,alcohol_question_answered,4,0,,supabase,NEW SERIES: first 11-03T21:23Z
+2026-W45,chat_question_archived,18,3,500,supabase,"server event, null visitor id (no person count); eligible 19 / kept 17 / skipped 2"
+2026-W45,upload_started,6,12,-50,supabase,per tab; 6 visitors
+2026-W45,upload_saved,6,9,-33,supabase,per tab
+2026-W45,upload_extract_failed,0,0,,supabase,"true zero (UploadModal.tsx:553, emit exists)"
+2026-W45,upload_outcome_runs,6,33,-82,supabase,"6 visitors (W44 11); picked 7 = withValues 7; truncated 1; valuesDropped 13 (one visitor 11); lowest since W41 (W42 18, W43 35)"
+2026-W45,cloud_connect_started,22,31,-29,supabase,google-drive 19 / dropbox 3 / github 0
+2026-W45,cloud_connect_success,11,14,-21,supabase,google-drive 9 / dropbox 2
+2026-W45,cloud_connect_refused,9,12,-25,supabase,"all google-drive; 9 of 19 Drive visitors (47%; W44 52%, W43 33%); 4 refused and never connected (W44 10); no reason key"
+2026-W45,cloud_connect_cancelled,1,1,0,supabase,google-drive (second ever)
+2026-W45,chat_opened,41,24,71,supabase,40 visitors
+2026-W45,correction_made,19,76,-75,supabase,18 visitors; lowest since W41
+2026-W45,lab_rows_viewed,32,57,-44,supabase,"15 visitors; NOT trendable: US-66 (7a21681c, 11-02) folds core-named rows out of the additional lab rows (AC5, AC8), so fewer records fire it"
+2026-W45,lab_row_added,4,11,-64,supabase,
+2026-W45,lab_unit_refused,18,50,-64,supabase,4 visitors; % 14 (white-cell differentials) / absent 2 / mg/dl 1 / ug/L 1 / (blank) 0; no metric field
+2026-W45,measurement_refused,0,0,,supabase,"true zero, never fired (emit roadmap-data.ts:255-257)"
+2026-W45,medication_history_viewed,1,0,,supabase,"FIRST ROW EVER 11-02T00:26Z: emit live, suspect flag dropped"
+2026-W45,reminder_optin_events,33,66,-50,supabase,"typed 24 / google-drive 9 / dropbox 0; = table delta 395 -> 428; same server pair as report_email_sent"
+2026-W45,reminder_optout_events,0,1,-100,supabase,true zero (reminders-v2.unsubscribe.tsx:60)
+2026-W45,reminder_optin_total,428,395,8,supabase,"typed 360 / google-drive 58 / dropbox 10; 422 live, 6 tombstoned"
+2026-W45,reminder_sent,3,2,50,supabase,"3 events carrying 4 sends (11-01 x2, 11-05 count 2) = 4 nested last_sent dates (4 = 4); no item due 11-07..11-21"
+2026-W45,report_email_sent,33,66,-50,supabase,
+2026-W45,report_email_clicked,20,43,-53,supabase,61% click:send EVENT ratio (uncohorted)
+2026-W45,report_email_bounced,0,1,-100,supabase,true zero (api.resend-webhook.ts:89)
+2026-W45,reminder_email_clicked,1,0,,supabase,"FIRST ROW EVER 11-05T08:41Z, 38 min after the 11-05 send"
+2026-W45,email_landing_empty,8,10,-20,supabase,8 visitors; recovery 0 of 8 (W44 2 of 10)
+2026-W45,email_landing_link_copied,0,0,,supabase,"true zero, emit exists (widget-src/standalone/email-landing.tsx:83); 0 ever"
+2026-W45,pdf_window_blocked,0,3,-100,supabase,true zero (ResultsPanel.tsx:790)
+2026-W45,chat_thinking_opened,0,0,,supabase,"true zero, emit exists (ChatMessageBubble.tsx:25); 1 row ever"
+2026-W45,lpa_unit_selected,2,22,-91,supabase,mg/L 1 / mg/dL 1; 0.7% of results_viewed (W44 2.7%)
+2026-W45,lpa_check_answered,0,0,,supabase,"true zero, emit exists (BloodTestTimeline.tsx:666); never fired"
+2026-W45,chat_run_roadmap,1,0,,supabase,"FIRST ROW EVER 11-07T08:31Z: count 2, rejected 2"
+2026-W45,chat_profile_edit,0,0,,supabase,"true zero, emit exists (HealthTool.tsx:1376, :1417); 0 ever"
+2026-W45,subscription_action_confirmed,0,0,,supabase,by design while CHAT_SUBSCRIPTION_ACTIONS is off (api.subscription-action.ts:61)
+2026-W45,mcp_authorize_shown,3,4,-25,supabase,"other 11-03T12:20:07Z and :08Z (1.3 s apart, no consent; refused 9.7 h later); claude 11-06T22:45Z"
+2026-W45,mcp_authorize_refused,1,2,-50,supabase,unknown-client cimd-redirect-refused 11-03T22:00Z
+2026-W45,mcp_consent_posted,1,0,,supabase,claude/google-drive 11-06T22:46Z
+2026-W45,mcp_connect,1,0,,supabase,non-reviewer 1 (claude/google-drive 11-06T22:46Z); via=reviewer 0
+2026-W45,mcp_connect_failed,0,1,-100,supabase,true zero (mcp.$.tsx:87)
+2026-W45,mcp_tool_call,39,1,3800,supabase,"all claude; server events carry the null visitor id; 11-03 x4, 11-06 x35 (20:05-23:36Z); ok 33 / refused 6; likely Brad's test by timing (follows the 11-06T22:46Z connect), unproven"
+2026-W45,mcp_import,15,0,,supabase,"route=assistant; null visitor id; 11-03 x1, 11-06 x14"
+2026-W45,remote_change_applied,7,12,-42,supabase,"6 visitors, all backend=local"
+2026-W45,guide_opened,9,40,-78,supabase,"plan_footer 9 / header 0: the header guide button was removed by design (US-38 AC1, 5a649e1 11-02); NOT trendable across it; 3.3% of results_viewed"
+2026-W45,chat_messages,507,370,37,supabase,"304 user / 203 assistant, all claude-sonnet-5-5; 1 fallback (11-05T19:36Z, 'No text in Anthropic response', sentry-fix 78)"
+2026-W45,chat_match_events,320,316,1,supabase,"youtube 273 / shopify 31 / widget 16; router_error 0; ROUTE 195 (router v5 from 11-02T08:45Z); true misses 55/195 (28%): widget 3/13, shopify 13/17, youtube 39/165; SPAM label 34 (first ever)"
+2026-W45,sentry_new_issues,3,8,-62,sentry,"7F (scanner, wontfix), 7G (YouTube 400, wontfix), 7H (chat stream cut, triaged-ours); all triaged by sentry-fix; 23 unresolved, userCount 0 on all"
+2026-W45,clarity_roadmap_visits_3d,154,155,-1,clarity,"drstanfield 3,945 sessions/3d, bot 14.1%, script errors 2.56%; /pages/roadmap rank 3; microvitamin 2,049, bot 28.6%, script errors 1.95%"
+2026-W45,feedback_organic,0,3,-100,gmail+supabase+github,"0 feedback_submissions, 0 form emails, 0 replies to our mail, 0 from-connector"
+2026-W45,ci_main_red,3,33,-91,github,10-31T22:12Z and 22:36Z app-routes 429 vs 401 flake; 11-05T21:33Z signing-key-guard release-folder test; green at f5e82cf 11-07T17:15Z
+2026-W45,mutation_score_calculations,92.2,93.2,-1,stryker,"vs baseline 02ae5f5 (prior column = baseline %); 333 killed, 28 open (baseline 21); 9 NEW survivors, mostly abdc3c1 (US-12 AC20); W44 93.2"
+2026-W45,mutation_score_suggestions,86.5,81.2,7,stryker,"1562 killed, 243 open (baseline 311); 40 NEW survivors, mostly abdc3c1 marker keys and message templates; W44 81.6"
+2026-W45,mutation_score_units,93.2,90.1,3,stryker,"426 killed, 31 open (baseline 37); 3 NEW: getDisplayRange 441 (W44's equivalent, moved), WHTR_TARGET 714 (9dc14005), formatGradedReading 754 (98dca42c); W44 90.9"
+2026-W45,mutation_score_merge,90.5,87.7,3,stryker,"619 killed, 65 open (baseline 82); 8 NEW: rootIdOf/rootBeforeMoveOf regexes (PR #551), mergeFiles 777 (b971926f), mergeSlotted 285 (key shift); W44 88.9"

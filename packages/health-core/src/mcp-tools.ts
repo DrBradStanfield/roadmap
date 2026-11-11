@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { isCoreRow, labRowSlot } from './blood-tests';
-import { dayOf } from './merge';
+import { dayOf, localDay } from './merge';
 import { stampProfile } from './state-edits';
 import { labSlotKey } from './lab-catalog';
 import { latestActivePerMetric } from './measurement-history';
@@ -246,7 +246,8 @@ function rejection(result: EditRejection): ToolOutcome {
         'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
     };
   }
-  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message)}. Nothing was written.` };
+  // One full stop, though a person's words (a typed correction's, US-21 AC26) already end in one.
+  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message).replace(/\.$/, '')}. Nothing was written.` };
 }
 
 /**
@@ -473,7 +474,7 @@ async function runImport(
   const deadline = Date.now() + surface.budgetMs;
   const signal = deadlineSignal(deadline);
   const file = await sync.load(signal);
-  const latestDay = options.latestDay ?? dayOf(now);
+  const latestDay = options.latestDay ?? localDay(now);
 
   if (request.commit) {
     const opened = await surface.open(request.commit, file, now, deadline);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ensureIsoDatetime } from './recordedAt';
-import { BLOOD_TEST_METRICS } from '@roadmap/health-core';
+import { BLOOD_TEST_METRICS } from '@roadmap/health-core/mappings';
 
 // Regression: BloodTestTimeline's matrix passed the draft batch date to the
 // /api/measurements POST as `yyyy-mm-dd`, but the server's Zod schema

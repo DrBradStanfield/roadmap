@@ -12,11 +12,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
 import type { MutableRefObject } from 'react';
-import type { ApiMeasurement, MetricType, UnitSystem } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { BloodTestTimeline, SAVE_ERRORS, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { formatShortDate } from '../lib/constants';
 import { slotOf } from '../lib/matrix-save';
-import { press } from '../testing/matrix-gestures';
+import { press, turnFrom } from '../testing/matrix-gestures';
 
 const { trackProductEvent } = vi.hoisted(() => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/server-api', async (original) => ({ ...(await original<typeof import('../lib/server-api')>()), trackProductEvent }));
@@ -63,7 +64,7 @@ function matrix(rows: ApiMeasurement[] = [typedRow()], unitSystem: UnitSystem = 
   const onCorrectValue: Mock = vi.fn().mockResolvedValue('ok');
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
   const page = (recorded: ApiMeasurement[]) => (
-    <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}}
+    <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={turnFrom(unitSystem)}
       onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={() => {}}
       isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
   );

@@ -11,7 +11,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render } from '@testing-library/react';
-import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));

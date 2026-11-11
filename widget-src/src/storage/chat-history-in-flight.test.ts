@@ -6,7 +6,8 @@
  * brought the conversation back on screen until a reload.
  */
 import { describe, expect, it } from 'vitest';
-import { MemoryAdapter, MemoryCloud, type WriteResult } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import type { WriteResult } from '@roadmap/health-core/adapter';
 import { ChatHistoryStore } from './chat-history-store';
 
 /** A cloud whose first write lands at once but answers only when released. */

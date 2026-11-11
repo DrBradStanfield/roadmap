@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
-import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
+import { PICKER_TITLE, PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class {},
@@ -31,7 +31,6 @@ vi.mock('./connect', () => ({
   // Real behaviour (connect.test.ts pins it); the rest of the module is stubbed.
   storageState: (backend: string, reconnect?: string) =>
     (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
-  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox', github: 'GitHub', 'self-host': 'your own server' },
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
@@ -102,10 +101,10 @@ describe('US-09 AC5 — the picker', () => {
 
   it('asks about the record, and says our server never stores your health record', () => {
     const dialog = open();
-    expect(dialog.querySelector('h2')?.textContent).toBe(PLAN_STORAGE_CTA);
+    expect(dialog.querySelector('h2')?.textContent).toBe(PICKER_TITLE);
     expect(dialog.textContent).toContain(PLAN_STORAGE_NOTICE);
     expect(dialog.textContent).toContain('Our server never stores your health record.');
-    expect(dialog.getAttribute('aria-label')).toBe(PLAN_STORAGE_CTA);
+    expect(dialog.getAttribute('aria-label')).toBe(PICKER_TITLE);
   });
 
   it('warns before Google that the Drive box must be ticked (US-09 AC21)', () => {

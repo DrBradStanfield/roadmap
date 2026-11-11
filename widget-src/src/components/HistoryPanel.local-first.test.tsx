@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
-import type { ApiMeasurement } from '@roadmap/health-core';
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 
 const mocks = vi.hoisted(() => ({ loadAllHistory: vi.fn(), chart: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({

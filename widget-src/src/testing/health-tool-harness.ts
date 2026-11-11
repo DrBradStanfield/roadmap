@@ -6,7 +6,7 @@
 import { beforeEach, afterEach, vi } from 'vitest';
 import { cleanup, fireEvent } from '@testing-library/react';
 import { openSettings } from './settings';
-import type { HealthInputs } from '@roadmap/health-core';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,
@@ -32,11 +32,14 @@ export function useHealthToolLifecycle(): void {
   });
   afterEach(async () => {
     cleanup();
+    // Spies come off before the flush: a test that throws past its release leaves
+    // the flush hung until the hook times out, and a spy left on would be wrapped
+    // again by the next test's spyOn (Maximum call stack size exceeded).
+    vi.restoreAllMocks();
     await flushRoadmapStore();
     // Vitest 4's restoreAllMocks only undoes vi.spyOn; resetAllMocks also drops
     // each vi.fn's calls and unused mock*Once values, as restoreAllMocks did in 1.x.
     vi.resetAllMocks();
-    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 }
@@ -69,6 +72,6 @@ export function showTables(root: ParentNode = document): void {
 /** US-62 AC12: a returning record's About you is rows; this opens each, so its field shows. */
 export function openAboutYou(root: ParentNode = document): void {
   // Since US-62 AC24 a returning record's About you sits in Settings: open them first.
-  if (!root.querySelector('.about-card') && root.querySelector('button[aria-label="Settings"]')) openSettings(root);
+  if (!root.querySelector('.about-card') && root.querySelector('button[aria-label="Settings"], [role="tab"]')) openSettings(root);
   root.querySelectorAll<HTMLButtonElement>('.about-row').forEach(b => fireEvent.click(b));
 }

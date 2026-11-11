@@ -62,13 +62,14 @@ final class TextSizeLayoutTests: XCTestCase {
 
     /// How `view`'s texts were drawn, once settled, in a window of `screen` at `category`:
     /// the draws, those cut short with "…" (SwiftUI's own `Text.Layout.isTruncated`), and the
-    /// most lines one text took.
+    /// most lines one text took. `weight`, when set, overrides the system's Bold Text.
     @available(iOS 18.0, *)
-    private func drawnTexts(in view: some View, at category: UIContentSizeCategory, screen: CGSize) throws -> TruncationProbe.Log {
+    private func drawnTexts(in view: some View, at category: UIContentSizeCategory, screen: CGSize, weight: UILegibilityWeight? = nil) throws -> TruncationProbe.Log {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(origin: .zero, size: screen)
         window.traitOverrides.preferredContentSizeCategory = category
+        if let weight { window.traitOverrides.legibilityWeight = weight }
         let probe = TruncationProbe()
         window.rootViewController = UIHostingController(rootView: view.textRenderer(probe))
         window.makeKeyAndVisible()
@@ -92,7 +93,7 @@ final class TextSizeLayoutTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
         let edits = ChatEdits(store: store)
         let proposals = #"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"},{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null},{"kind":"profile","sex":null,"heightCm":181}]"#
-        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.chatMark, today: "2026-11-02")
+        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.mark, today: "2026-11-02")
         XCTAssertNotNil(edits.saved)
         XCTAssertNotNil(edits.review)
         let chat = ScrollView { ChatEditBanners(edits: edits).padding() }
@@ -106,11 +107,12 @@ final class TextSizeLayoutTests: XCTestCase {
     /// on an SE and a 17e, from the default size to accessibility XL; the page scrolls instead.
     func testTheAppleHealthPageNeverCutsItsWords_US54_AC8b() throws {
         guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
-        let page = NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) }
+        let page = NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}) }
         for screen in screens {
             for category in sizes {
                 let texts = try drawnTexts(in: page, at: category, screen: screen.size)
-                XCTAssertGreaterThan(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
+                // A guard that the page drew: five texts at the largest sizes since "Not now" went (2026-11-09).
+                XCTAssertGreaterThanOrEqual(texts.drawn, 5, "\(screen.name) \(category.rawValue): the page drew its words")
                 XCTAssertEqual(texts.cut, 0, "\(screen.name) \(category.rawValue): no words end in …")
             }
         }
@@ -119,7 +121,7 @@ final class TextSizeLayoutTests: XCTestCase {
     /// US-54 AC8: at accessibility sizes the real Apple Health page keeps its buttons on
     /// screen and at least 120 pt for its scrolling words, on an SE and a 17e. The scroll
     /// region gets only what the buttons leave, so a block of buttons too tall for the
-    /// screen squeezes it to nothing and pushes "Not now" off the bottom.
+    /// screen squeezes it to nothing and pushes them off the bottom.
     func testTheAppleHealthPageKeepsRoomToScrollAboveItsButtons_US54_AC8() throws {
         for screen in screens {
             let room = CGSize(width: screen.size.width, height: screen.size.height - screen.insets)
@@ -128,7 +130,7 @@ final class TextSizeLayoutTests: XCTestCase {
                 let window = UIWindow(windowScene: scene)
                 window.frame = CGRect(origin: .zero, size: room)
                 window.traitOverrides.preferredContentSizeCategory = category
-                let host = UIHostingController(rootView: NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}, notNow: {}) })
+                let host = UIHostingController(rootView: NavigationStack { OnboardingView.healthPage(connecting: false, allow: {}) })
                 host.safeAreaRegions = []
                 window.rootViewController = host
                 window.makeKeyAndVisible()
@@ -227,6 +229,130 @@ final class TextSizeLayoutTests: XCTestCase {
                     XCTAssertLessThanOrEqual(width * scale, row, "\(screen.name): \(topic.rawValue)'s \(word) fits its heading")
                 }
             }
+        }
+    }
+
+    /// US-62 AC8a (Brad 2026-11-09): a My health row's trend is drawn over its label block's ink,
+    /// the title's cap height to the date line's baseline, its end dot never past either; at the
+    /// largest size before the row stacks, where the title wraps, it is capped at 0.8 x its width
+    /// and centred on that ink. Read from the drawn pixels: the trend's red line against the
+    /// words' grey and black ink.
+    func testARowsTrendIsDrawnOverItsTitleAndDateLine_US62_AC8a() throws {
+        for category in [UIContentSizeCategory.large, .extraExtraExtraLarge] {
+            let row = ValueRow(label: "Waist-to-height", value: "0.53", unit: "", day: "2025-02-01",
+                               target: "Normal <0.5", previous: "0.50", trend: [1, 3, 2], tint: .red)
+            let drawn = try inkAndRed(row.frame(width: 362), at: category)
+            let red = try XCTUnwrap(drawn.red, "\(category.rawValue): the trend is drawn")
+            let ink = try XCTUnwrap(drawn.ink, "\(category.rawValue): the words are drawn")
+            let redWidth = try XCTUnwrap(drawn.redWidth)
+            let (span, inkSpan) = (red.upperBound - red.lowerBound, ink.upperBound - ink.lowerBound)
+            let say = "\(category.rawValue): trend \(red), words \(ink)"
+            XCTAssertGreaterThanOrEqual(red.lowerBound, ink.lowerBound - 0.5, "\(say): nothing above the title's top")
+            XCTAssertLessThanOrEqual(red.upperBound, ink.upperBound + 0.5, "\(say): nothing below the date line")
+            XCTAssertEqual((red.lowerBound + red.upperBound) / 2, (ink.lowerBound + ink.upperBound) / 2, accuracy: 2, "\(say): centred on the words")
+            XCTAssertLessThanOrEqual(span, 0.8 * redWidth + 3, "\(say): never taller than 0.8 x its width")
+            if category == .large { XCTAssertGreaterThanOrEqual(span, inkSpan - 5, "\(say): it spans the title and date line") }
+        }
+    }
+
+    /// The rows (in points) holding `view`'s words (grey or black) and its red, and the red's
+    /// width, drawn in light mode at the window's top left at `category`; `weight`, when set, overrides the system's Bold Text.
+    private func inkAndRed(_ view: some View, at category: UIContentSizeCategory, weight: UILegibilityWeight? = nil) throws -> (ink: ClosedRange<CGFloat>?, red: ClosedRange<CGFloat>?, redWidth: CGFloat?) {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: CGSize(width: phone.width, height: 300))
+        window.overrideUserInterfaceStyle = .light
+        window.traitOverrides.preferredContentSizeCategory = category
+        if let weight { window.traitOverrides.legibilityWeight = weight }
+        let host = UIHostingController(rootView: view.fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.white))
+        host.safeAreaRegions = []
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5)) // the label block is measured after the first layout
+        // Eight bits a channel: on a wide-colour screen the default is 16-bit extended range.
+        let format = UIGraphicsImageRendererFormat(for: window.traitCollection)
+        format.preferredRange = .standard
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let cg = try XCTUnwrap(image.cgImage)
+        XCTAssertEqual(cg.bitsPerComponent, 8, "read as one byte a channel")
+        let bytes = try XCTUnwrap(CFDataGetBytePtr(cg.dataProvider?.data))
+        let (stride, step) = (cg.bytesPerRow, cg.bitsPerPixel / 8)
+        let r = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0 // BGRA or RGBA
+        var ink: ClosedRange<Int>?, red: ClosedRange<Int>?, redX: ClosedRange<Int>?
+        let widen = { (range: ClosedRange<Int>?, at: Int) in range.map { min($0.lowerBound, at)...max($0.upperBound, at) } ?? at...at }
+        for y in 0..<cg.height {
+            for x in 0..<cg.width {
+                let p = (0..<3).map { Int(bytes[y * stride + x * step + $0]) }
+                let (rr, g, b) = (p[r], p[1], p[2 - r])
+                if rr - max(g, b) > 80 { (red, redX) = (widen(red, y), widen(redX, x)) } else if max(rr, g, b) - min(rr, g, b) < 30, rr < 200 { ink = widen(ink, y) }
+            }
+        }
+        let points = { (range: ClosedRange<Int>?) in range.map { CGFloat($0.lowerBound) / image.scale...CGFloat($0.upperBound + 1) / image.scale } }
+        return (points(ink), points(red), points(redX).map { $0.upperBound - $0.lowerBound })
+    }
+
+    /// US-62 AC8a (review F2, option A): at the largest size before the row stacks, on an SE, a
+    /// row whose label's longest word would not fit beside the trend drops the trend, so the word
+    /// keeps its line (Androstenedione); a short label keeps its trend (Weight). In an inset list,
+    /// as My health lays its rows; the trend is the red, the words are probed as drawn.
+    func testALongWordDropsTheTrendRatherThanBreak_US62_AC8a() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let se = screens[0].size
+        let list = { (label: String, value: String, previous: String, unit: String) in
+            List { ValueRow(label: label, value: value, unit: unit, day: "2026-07-14", previous: previous, trend: [1, 2, 3], tint: .red) }
+                .listStyle(.insetGrouped)
+        }
+        let long = list("Androstenedione", "4.2", "3.9", "nmol/L"), short = list("Weight", "92.4", "94.1", "kg")
+        let texts = try drawnTexts(in: long, at: .extraExtraExtraLarge, screen: se, weight: .regular)
+        XCTAssertEqual(texts.cut, 0, "no words end in …")
+        XCTAssertEqual(texts.lines, 1, "Androstenedione keeps its line")
+        XCTAssertNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "Androstenedione's trend gives way")
+        XCTAssertNotNil(try inkAndRed(short.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "Weight keeps its trend")
+        XCTAssertNotNil(try inkAndRed(long.frame(width: se.width, height: 240), at: .large, weight: .regular).red, "at the default size the trend stays")
+    }
+
+    /// US-62 AC8a, #1002 R1: under Bold Text (the window's legibility trait, as the setting sets it)
+    /// the label is measured bold. On an SE at XXXL, Thyroglobulin fits beside the trend in regular but
+    /// not in bold: bold drops the trend and keeps the word on one line. Measured regular, the trend
+    /// stayed with less room than the bold word asks for. Testosterone, near the limit in bold, keeps
+    /// its trend and its line. (In this test window the trait makes the value heavier but leaves the
+    /// label's plain body text regular, so here the bold measurement errs wide, never short.)
+    func testBoldTextMeasuresTheLabelBoldBeforeKeepingTheTrend_US62_AC8a() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let se = screens[0].size
+        let row = { (label: String) in
+            List { ValueRow(label: label, value: "4.2", unit: "ng/mL", day: "2026-07-14", previous: "3.9", trend: [1, 2, 3], tint: .red) }
+                .listStyle(.insetGrouped)
+        }
+        for label in ["Thyroglobulin", "Testosterone"] {
+            let texts = try drawnTexts(in: row(label), at: .extraExtraExtraLarge, screen: se, weight: .bold)
+            XCTAssertEqual(texts.cut, 0, "\(label): no words end in …")
+            XCTAssertEqual(texts.lines, 1, "bold \(label) keeps its line")
+        }
+        XCTAssertNil(try inkAndRed(row("Thyroglobulin").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .bold).red, "bold: the trend gives way")
+        XCTAssertNotNil(try inkAndRed(row("Testosterone").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .bold).red, "bold Testosterone keeps its trend")
+        XCTAssertNotNil(try inkAndRed(row("Thyroglobulin").frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "regular: the trend fits")
+    }
+
+    /// US-62 AC8a: a word that only just fits beside the trend keeps both. On an SE at XXXL, regular
+    /// Thyroglobulin is about 4 pt inside the limit; with and without a target line, it keeps its
+    /// trend and stays on one line. (A "Thyroglobu-lin" seen once came from a simulator whose system
+    /// Bold Text was on under a window forced to regular: drawn bold, measured regular. A real
+    /// phone's trait follows the setting.)
+    func testAWordThatOnlyJustFitsKeepsItsTrendAndItsLine_US62_AC8a() throws {
+        guard #available(iOS 18, *) else { throw XCTSkip("Text.Layout.isTruncated needs iOS 18") }
+        let se = screens[0].size
+        for target in [nil, "Normal <35"] {
+            let list = List { ValueRow(label: "Thyroglobulin", value: "4.2", unit: "ng/mL", day: "2026-07-14", target: target, previous: "3.9", trend: [1, 2, 3], tint: .red) }
+                .listStyle(.insetGrouped)
+            let texts = try drawnTexts(in: list, at: .extraExtraExtraLarge, screen: se, weight: .regular)
+            XCTAssertEqual(texts.cut, 0, "no words end in …")
+            XCTAssertEqual(texts.lines, 1, "Thyroglobulin keeps its line (target \(target ?? "none"))")
+            XCTAssertNotNil(try inkAndRed(list.frame(width: se.width, height: 240), at: .extraExtraExtraLarge, weight: .regular).red, "and its trend")
         }
     }
 

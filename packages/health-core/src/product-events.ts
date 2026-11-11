@@ -137,6 +137,10 @@ export const PRODUCT_EVENT_NAMES = [
   'onboarding_step',
   'onboarding_done',
   'signin_opened',
+  // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
+  // its Got it was pressed. The names alone, never what the plan holds.
+  'plan_ready_shown',
+  'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
@@ -255,8 +259,8 @@ export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
  *  US-12 AC20 they are saved, so no longer part of `valuesDropped` (AC19 counted
  *  them there). `valuesLimitUngraded` is how many of them the grading rule
  *  leaves undecided. Counts only; the tests behind that count ride in their own
- *  closed list, `limitUngradedTests` (AC20, product-events.server.ts). */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded'] as const;
+ *  closed list, `limitUngradedTests` (AC20). `cancelled`: 1 for a run Cancel stopped mid-read. */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded', 'cancelled'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;

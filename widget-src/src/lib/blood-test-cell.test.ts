@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
-import { formatDisplayValue, formatLabValue, fromCanonicalValue, parseLocalisedNumber, statusOf, toCanonicalValue } from '@roadmap/health-core';
+import { formatDisplayValue, fromCanonicalValue, toCanonicalValue } from '@roadmap/health-core/units';
+import { formatLabValue } from '@roadmap/health-core/lab-series';
+import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { statusOf } from '@roadmap/health-core/row-grade';
 import { previewStatus, readTypedValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------

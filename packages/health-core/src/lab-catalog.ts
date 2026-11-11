@@ -26,7 +26,7 @@
  */
 
 import { METRIC_LABELS } from './mappings';
-import { UNIT_DEFS, type ValidationRange } from './units';
+import { rangeFault, UNIT_DEFS, type ValidationRange } from './units';
 
 export type LabGroupId =
   | 'renal'
@@ -333,8 +333,9 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
 /**
  * Typing-mistake bounds (US-21 AC26), in each test's canonical unit: wide physiologic limits that
  * no real result passes, so a value typed past one is a slip of the number or the unit (glucose
- * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked only where
- * a person types a value (`addLabValue`, `correctValue`); a min of 0 checks the top end alone. Every bound approved by Brad 2026-11-06.
+ * 5.5 with mg/dL picked is 0.31 mmol/L). Not reference ranges and not grading. Checked on every
+ * write door (`toStoredLab`), so a typed add, a correction, an agent's add, an upload and a Health
+ * Records result all refuse it (Brad 2026-11-09); a min of 0 refuses only a negative value and otherwise checks the top end. Every bound approved by Brad 2026-11-06.
  */
 export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   glucose: { min: 0.5, max: 150 }, // 9–2,700 mg/dL; the max clears a survived hyperosmolar 2,656 mg/dL (147 mmol/L) cited in review; the min is Brad's (2026-11-06: "people would be dead at 0.5 mmol/L")
@@ -357,6 +358,15 @@ export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
   iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
 };
+
+/** The end of its plausible range a value passes once stored in its test's canonical unit (US-21
+ *  AC26), or null inside it, with no bound, or in a unit the test does not take. The one check the
+ *  write (`toStoredLab`) and the web's review preview share. */
+export function labPlausibleBound(entry: LabCatalogEntry, value: number, unit: string): 'above' | 'below' | null {
+  const converted = canonicalLabValue(entry, value, unit);
+  const range = converted && LAB_PLAUSIBLE_RANGES[entry.key];
+  return range ? rangeFault(range, converted.value) : null;
+}
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
@@ -524,8 +534,9 @@ function factorOf(entry: LabCatalogEntry, spelling: string): number | undefined 
 }
 
 /** Why a row in a spelling its test takes was refused for its numbers: a count
- *  per µL (US-21 AC15), or a value past the test's ceiling (US-21 AC21). */
-export type CountFault = 'decimal' | 'scale' | 'ceiling';
+ *  per µL (US-21 AC15), a value past the test's ceiling (US-21 AC21), or past
+ *  its plausible range (`LAB_PLAUSIBLE_RANGES`, US-21 AC26). */
+export type CountFault = 'decimal' | 'scale' | 'ceiling' | 'implausible';
 
 /**
  * Cells are counted, so under a per-µL label a row must read as one count

@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadMatchedContent, contentHeader, MAX_BLOG_CHARS } from './matched-content';
 import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { stripFrontmatter } from './frontmatter';
 
 const index = loadBlogIndex();
 const video = index.find(e => e.youtube && e.commerceUrl)!;
@@ -84,10 +85,10 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const POTASSIUM = 'potassium-benefits-forms-dosing-and-side-effects';
   const realRead = fs.readFileSync;
   afterEach(() => { vi.restoreAllMocks(); });
-  // A real page grown to `size` chars, measured on the raw file with its
-  // frontmatter, by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
+  // A real page grown to `size` chars, measured on the body the loader sees
+  // (frontmatter off: the masters rebuild grew `sources:` lines past 20k), by a section its reduced forms leave out, so a test pins the cap's behaviour, not today's page sizes: the masters keep
   // growing (omega-3 passed the old 120,000 cap on 2026-10-22).
-  const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - raw.length))}\n`;
+  const grown = (raw: string, size: number) => `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, size - stripFrontmatter(raw).length))}\n`;
   const grow = (sizes: Record<string, number>) => (handle: string, raw: string) => (handle in sizes ? grown(raw, sizes[handle]) : raw);
   // loadMatchedContent from a fresh module (loadBlogArticle caches), reading
   // each .md file through `edit`.
@@ -131,14 +132,14 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
   const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
-  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too, so beetroot (about 63K, held from the masters plan) stands in.
-  const BIG_POST = 'beetroot-benefits-forms-dosing-and-side-effects';
+  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too; masters-resource-1 (2026-11-10): beetroot did too, so the largest non-master post (about 36K) stands in.
+  const BIG_POST = 'breaking-reduce-dementia-risk-45-percent';
   const warfarin = (content: string | null) => {
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
     expect(content).toContain('Vitamin K can have a serious and potentially dangerous interaction with warfarin');
   };
 
-  it('[lithium, beetroot post, vitamin K]: vitamin K loads with its warfarin lines', () => {
+  it('[lithium, big post, vitamin K]: vitamin K loads with its warfarin lines', () => {
     const { content, skipped } = loadMatchedContent([LITHIUM, BIG_POST, K]);
     expect(skipped).not.toContain(K);
     expect(skipped).not.toContain(LITHIUM);
@@ -146,7 +147,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     warfarin(content);
   });
 
-  it('[beetroot post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
+  it('[big post, vitamin C, B vitamins]: a non-master first leaves both masters their room', () => {
     const C = 'vitamin-c-benefits-forms-dosing-and-side-effects';
     const B = 'b-vitamins-benefits-forms-dosing-and-side-effects';
     const { content, skipped } = loadMatchedContent([BIG_POST, C, B]);
@@ -160,16 +161,16 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   it('a non-master that fits alongside the later masters\' reserve still loads', () => {
     const { content, skipped } = loadMatchedContent([BIG_POST, LITHIUM]);
     expect(skipped).toEqual([]);
-    expect(content).toContain('title: Beetroot: Benefits');
+    expect(content).toContain('title: BREAKING! Reduce Dementia Risk By 45%');
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
-  // US-50 masters-new-1 (2026-10-23): vitamin A became a master; masters-new-17 (2026-10-26): mangosteen did too, so l-citrulline (about 60K, held from the masters plan) stands in.
-  it('[vitamin K, l-citrulline post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
-    const A = 'l-citrulline-benefits-forms-dosing-and-side-effects';
+  // US-50 masters-new-1 (2026-10-23): vitamin A became a master; masters-new-17 (2026-10-26): mangosteen did too; masters-resource-1 (2026-11-10): l-citrulline did too, so the big post stands in.
+  it('[vitamin K, big post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
+    const A = BIG_POST;
     expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
     // Vitamin K grown so the three do not fit whole together.
-    const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 40_000 })))([K, A, LITHIUM]);
+    const { content, skipped } = (await loaderWith(grow({ [K]: MAX_BLOG_CHARS - 20_000 })))([K, A, LITHIUM]);
     expect(skipped).toEqual([]);
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
     expect(content!.split('\n\n---\n\n')[0]).toContain('Internal note, do not quote');
@@ -197,14 +198,15 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   const lastPart = (content: string) => content.slice(content.lastIndexOf('\n\n---\n\n'));
   const parts = (content: string) => content.split('\n\n---\n\n');
 
-  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [26] (Codex R1)', async () => {
+  // masters-rebuild-1 renumbered taurine's references: Sharma 2025 (PMID 40369079) moved from [26] to [31].
+  it('every citation in a reduced master keeps its reference line: taurine\'s view cites [31] (Codex R1)', async () => {
     const PROTEIN = 'protein-powders-benefits-types-dosing-and-side-effects';
     const { content, skipped } = (await loaderWith(grow({ [PROTEIN]: MAX_BLOG_CHARS - 20_000 })))([PROTEIN, 'taurine-benefits-forms-dosing-and-side-effects']);
     expect(skipped).toEqual([]);
     const tail = lastPart(content!);
     expect(tail).toContain('Internal note, do not quote');
-    expect(tail).toMatch(/^#+ Current view[\s\S]*\[26\]/m);
-    expect(tail).toMatch(/^\[26\] Sharma S/m);
+    expect(tail).toMatch(/^#+ Current view[\s\S]*\[31\]/m);
+    expect(tail).toMatch(/^\[31\] Sharma S/m);
   });
 
   it('a large first master yields so the next master loads at least reduced (adversary R1)', () => {

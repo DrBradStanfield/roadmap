@@ -268,7 +268,7 @@ The following concerns come from the limited data and from how the supplement ma
 
 **Liver injury (one case report):** Some weight-loss supplements have been linked to liver injury. A 2014 case report on African mango, titled "innocent magic formula?", is indexed on PubMed under drug-induced liver injury [22]. A single case cannot show that African mango caused the injury. Stop taking it and see your doctor the same day if you notice yellow skin or eyes or dark urine.
 
-**Quality and contamination:** Bush mango seeds sold as a soup thickener in Nigeria carried aflatoxins (mould toxins): every sample exceeded the 2 μg/kg limit for aflatoxin B1, and 55% exceeded the 4 μg/kg EU limit for total aflatoxins [21]. Discoloured seeds had higher levels of most mycotoxins [21]. Supplement extracts were not tested in that study. Independent testing services such as consumerlab.com can help you check product quality.
+**Quality and contamination:** Bush mango seeds sold as a soup thickener in Nigeria carried aflatoxins (mould toxins): every sample exceeded the 2 μg/kg limit for aflatoxin B1, and 55% exceeded the 4 μg/kg EU limit for total aflatoxins [21]. Discoloured seeds had higher levels of most mycotoxins [21]. Supplement extracts were not tested in that study. Independent testing services can help you check product quality.
 
 ### Special Populations
 

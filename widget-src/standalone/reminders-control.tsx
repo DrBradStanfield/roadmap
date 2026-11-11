@@ -105,8 +105,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
           <span className="hr-reminders-disclosure">
             We’ll email you when a check-up or blood test comes due. What reaches Dr Brad’s server:
             the NAME and due date of each check-up (for example “Colonoscopy — due May 2027”), plus
-            your cloud account’s email address. Your measurements, results and plan never leave
-            your device.
+            your email address (the one on your cloud account, or the one you typed).
           </span>
         </>
       ) : confirming ? (

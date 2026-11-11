@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { addLabValue, appendLabValue, bulkAppendValues, correctValue } from './record-edits';
 import { LAB_CATALOG, LAB_PLAUSIBLE_RANGES } from './lab-catalog';
-import { groupLabValues } from './lab-series';
+import { groupLabValues, labUnitRefusalLine } from './lab-series';
 import { createEmptyFile, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import { createCoreRow } from './blood-tests';
 import { reportedToCanonical } from './units';
@@ -198,8 +198,25 @@ describe('addLabValue — plausible range (US-21 AC26)', () => {
     expect(add('glucose', 'mmol/L', 5.4, file).ok).toBe(true);
   });
 
-  it('the agent and import doors are unchanged for now: appendLabValue still files it (not in AC26)', () => {
-    expect(appendLabValue(record([]), { metricName: 'glucose', value: 5.5, unit: 'mg/dL', recordedAt: '2026-10-01', now: NOW }).ok).toBe(true);
+  it('the agent doors refuse it too, in the same words without the full stop (Brad 2026-11-09)', () => {
+    expect(appendLabValue(record([]), { metricName: 'glucose', value: 5.5, unit: 'mg/dL', recordedAt: '2026-10-01', now: NOW })).toEqual({
+      ok: false, reason: 'invalid-value', fault: 'implausible', bound: 'below',
+      message: '5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit',
+    });
+    expect(appendLabValue(record([]), { metricName: 'glucose', value: 99, unit: 'mg/dL', recordedAt: '2026-10-01', now: NOW }).ok).toBe(true);
+  });
+
+  it('an upload through bulkAppendValues refuses the row, saves the rest, and names the bound (Brad 2026-11-09)', () => {
+    const result = bulkAppendValues(record([]), [
+      { kind: 'lab', metricName: 'Glucose', value: 3000, unit: 'mg/dL', recordedAt: '2026-10-01', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Ferritin', value: 90, unit: 'µg/L', recordedAt: '2026-10-01', source: 'lab_import' },
+    ], NOW);
+    expect(result.saved.map((row) => (row as FileLabValue).metricName)).toEqual(['Ferritin']);
+    expect(result.refused).toEqual([{ key: 'glucose', unit: 'mg/dL', fault: 'implausible', bound: 'above', message: expect.stringMatching(/^3,000 mg\/dL is [\d.]+ mmol\/L\. Glucose above 150 mmol\/L/) }]);
+    expect(labUnitRefusalLine('glucose', 'mg/dL', 'implausible', 'above'))
+      .toBe('Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
+    expect(labUnitRefusalLine('haemoglobin', 'g/dL', 'implausible', 'below'))
+      .toBe('Haemoglobin: a value below 5 g/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
   });
 });
 

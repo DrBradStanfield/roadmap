@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from './supabase-client.server';
+import { safeErrorFields } from './safe-error-fields.server';
 
 // ---------------------------------------------------------------------------
 // Type definitions
@@ -38,7 +39,7 @@ export async function getProfile(
     .single();
 
   if (error) {
-    console.error('Error fetching profile:', error);
+    console.error('Error fetching profile:', safeErrorFields(error));
     return null;
   }
 

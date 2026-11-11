@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-4,bug leads,Onboarding weight path uses a 30-400 range against the 20-300 kg limit,done,StartingInfoVitals.tsx setSimpleDraft: the onboarding jump now gates only on validateTypedValue (the 20-300 kg limit); the 30/400 bounds were deleted in fdb4867f (US-62 AC25b),1175,none: HealthTool.onboarding-pins.test.tsx case c pins that 250 kg lands; no pin at the 20 and 300 edges,no

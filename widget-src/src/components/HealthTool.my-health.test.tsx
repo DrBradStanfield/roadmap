@@ -6,17 +6,21 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, waitFor, fireEvent, within, type RenderResult } from '@testing-library/react';
-import type { Suggestion } from '@roadmap/health-core';
+import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
+  bulkSaveDocuments,
   bulkSaveLabValues,
+  deleteUserData,
   flushRoadmapStore,
+  saveChangedMeasurements,
   saveMedication,
   saveScreening,
   saveSupplement,
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
-import { openSettings } from '../testing/settings';
+import { deleteButton, openSettings } from '../testing/settings';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -126,6 +130,24 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
       expect(section.querySelector('.md-row, .suggestion-card, .health-field, .supplement-add'), t).not.toBeNull();
     }
     expect(view.container.querySelector('h2.mh-title')?.textContent).toBe('My health');
+  });
+
+  it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: new Date().getFullYear() - 25, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(topics(view)).not.toContain('screening');
+  });
+
+  it('with no lipid value and nothing elevated, no cholesterol medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#statin-name')).toBeNull();
+  });
+
+  it('with no weight, HbA1c or triglycerides and the trigger off, no weight or diabetes medicine questions (US-06 AC5 hidden mode)', async () => {
+    const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['ldl', 2.8]], [], DAY));
+    expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
+    expect(view.container.querySelector('#glp1-name')).toBeNull();
   });
 });
 
@@ -288,8 +310,94 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     const card = section.querySelector('.mh-card');
     const mine = section.querySelector('.supplement-row');
     expect(card && mine && card.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(section).getByPlaceholderText('Add another supplement...')).toBeTruthy();
     expect(view.container.querySelector('.supplement-chip')).toBeNull();
+  });
+
+  it('AC30c: "+ Add another supplement" is the same row as "+ Add a blood test", opening its search focused', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const bloodTests = view.container.querySelector<HTMLElement>('[data-topic="bloodTests"]')!;
+    const add = within(supplements).getByRole('button', { name: '+ Add another supplement' });
+    const test = within(bloodTests).getByRole('button', { name: '+ Add a blood test' });
+    expect(add.className).toBe(test.className);
+    expect(add.parentElement!.classList.contains('mh-add-test')).toBe(true);
+    expect(test.parentElement!.classList.contains('mh-add-test')).toBe(true);
+    fireEvent.click(add);
+    // Focused inside the tap itself (US-01 AC6), so a phone opens its keyboard.
+    expect(document.activeElement).toBe(within(supplements).getByPlaceholderText('Add another supplement...'));
+  });
+
+  it('AC30c: the search goes back to its row when left empty, on Escape, and once a supplement is added', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    // Left empty: a tap on nothing focusable takes the focus out with no relatedTarget, as browsers do.
+    fireEvent.click(row()!);
+    fireEvent.blur(search()!, { relatedTarget: null });
+    expect(search()).toBeNull();
+    expect(row()).not.toBeNull();
+    // Something typed stays open when left.
+    fireEvent.click(row()!);
+    fireEvent.change(search()!, { target: { value: 'Tau' } });
+    fireEvent.blur(search()!, { relatedTarget: null });
+    expect(search()!.value).toBe('Tau');
+    // Escape: back to the row, the focus on it.
+    fireEvent.keyDown(search()!, { key: 'Escape' });
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    // A supplement added: back to the row, the focus on it, the supplement listed. A press in the
+    // list is default-prevented, so the search keeps the focus and its blur never closes it first.
+    fireEvent.click(row()!);
+    fireEvent.change(search()!, { target: { value: 'Taurine test' } });
+    const custom = supplements.querySelector('.supplement-custom')!;
+    expect(fireEvent.mouseDown(custom)).toBe(false);
+    fireEvent.click(custom);
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain('Taurine test');
+  });
+
+  it('AC30c (#985): Tab from the empty search through its list and out past the last option: back to the row', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    const options = () => [...supplements.querySelectorAll<HTMLButtonElement>('.supplement-dropdown-item')];
+    fireEvent.click(row()!);
+    expect(document.activeElement).toBe(search());
+    // Empty, the list shows every option. Focus moves into it, then down it: the search stays open.
+    expect(options().length).toBeGreaterThan(1);
+    act(() => options()[0].focus());
+    act(() => options().at(-1)!.focus());
+    expect(search()).not.toBeNull();
+    expect(document.activeElement).toBe(options().at(-1));
+    // Out past the last option, onto a supplement's remove button: the row is back.
+    act(() => supplements.querySelector<HTMLButtonElement>('.supplement-remove')!.focus());
+    expect(search()).toBeNull();
+    expect(row()).not.toBeNull();
+  });
+
+  it('AC30c: by keyboard, Escape on an option closes to the row, and Enter on one adds it, the focus on the row', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const supplements = view.container.querySelector<HTMLElement>('[data-topic="supplements"]')!;
+    const row = () => within(supplements).queryByRole('button', { name: '+ Add another supplement' });
+    const search = () => within(supplements).queryByPlaceholderText('Add another supplement...') as HTMLInputElement | null;
+    const options = () => [...supplements.querySelectorAll<HTMLButtonElement>('.supplement-dropdown-item')];
+    // Escape on a focused option.
+    fireEvent.click(row()!);
+    act(() => options()[0].focus());
+    fireEvent.keyDown(options()[0], { key: 'Escape' });
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    // Enter on a focused option: a browser turns it into the button's click.
+    fireEvent.click(row()!);
+    act(() => options()[0].focus());
+    const name = options()[0].textContent!;
+    fireEvent.click(options()[0]);
+    expect(search()).toBeNull();
+    expect(document.activeElement).toBe(row());
+    expect([...supplements.querySelectorAll('.supplement-name')].map(n => n.textContent)).toContain(name);
   });
 });
 
@@ -297,7 +405,7 @@ describe('US-62 AC24: a guest\'s storage card, at the foot and in Settings', () 
   it('shows at the foot of My health for a record on this device; in Settings when they open, one at a time', async () => {
     await RECORDS['a known minor']();
     await flushRoadmapStore();
-    const storage = ({ hasData }: { hasData: boolean }) => <div className="hr-sync">Where do you want to keep your health record? {String(hasData)}</div>;
+    const storage = ({ hasData }: { hasData: boolean }) => <div className="hr-sync">Keep my record in Dropbox or Google Drive {String(hasData)}</div>;
     const view = render(<HealthTool syncControl={storage}/>);
     await waitFor(() => expect(view.container.querySelector('.mh-sections')).not.toBeNull());
     const cards = () => [...view.container.querySelectorAll('.hr-sync')];
@@ -408,6 +516,14 @@ describe('US-62 AC25, AC26: the onboarding first, the foot last', () => {
     expect(view.container.querySelector('.mh-banner')).toBeNull();
   });
 
+  it('AC30d: the PDF box sits above the pills, out of the foot', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const pdf = view.container.querySelector('.mh-topics > .mh-pdf')!;
+    expect(pdf.textContent).toMatch(/PDF/);
+    expect(pdf.nextElementSibling!.classList.contains('mh-pills')).toBe(true);
+    expect(view.container.querySelector('.mh-foot .mh-pdf, .mh-foot .email-capture, .mh-foot .report-actions')).toBeNull();
+  });
+
   it('the foot: the disclaimer, Supercharge and the privacy link, after the topics', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const foot = view.container.querySelector('.mh-foot')!;
@@ -452,6 +568,61 @@ describe('US-62 AC28: Save as PDF prints the plan as it always has', () => {
     expect(doc.querySelector('.health-disclaimer')!.textContent).toMatch(/^Disclaimer: This tool is for educational purposes only/);
     expect(doc.querySelector('.privacy-notice-link a')!.getAttribute('href')).toBe('https://drstanfield.com/pages/connector-privacy');
     expect(doc.querySelectorAll('button, input, select, textarea, .hr-guide-card, .feedback-form, .reminders-section')).toHaveLength(0);
+  });
+});
+
+// US-09 AC19, US-62 AC28: the erase HealthTool shows reaches the plan. The
+// ResultsPanel tests make up their own erase id, so only a whole-page test
+// fails if HealthTool stops handing usePlanView its shownErase.
+describe('US-09 AC19, US-62 AC28: any erase the screen shows closes the reasons opened on screen', () => {
+  const record = { sex: 'male' as const, heightCm: 175, unitSystem: 'si' as const };
+  const values: Array<[string, number]> = [['weight', 115], ['waist', 115], ['ldl', 4.9]];
+  /** The same record again, written after the erase and re-read as from another device. */
+  async function refill(view: RenderResult) {
+    await act(async () => {
+      await saveChangedMeasurements(record, {});
+      for (const [metric, value] of values) await addMeasurement(metric, value, DAY);
+      await flushRoadmapStore();
+      window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
+    });
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).not.toBeNull(), { timeout: 3000 });
+  }
+  /** A reason opened on the first card that has one; its title. */
+  function openReason(view: RenderResult): string {
+    const card = [...view.container.querySelectorAll('.mh-card')].find(c => c.querySelector('.evidence-toggle'))!;
+    fireEvent.click(card.querySelector('.evidence-toggle')!);
+    expect(card.querySelector('.evidence-content')).not.toBeNull();
+    return card.querySelector('.suggestion-title')!.textContent!;
+  }
+  const cardTitled = (view: RenderResult, title: string) =>
+    [...view.container.querySelectorAll('.mh-card')].find(c => c.querySelector('.suggestion-title')?.textContent === title);
+
+  it("this tab's Delete all my data: the same plan comes back with its reason closed", async () => {
+    const view = await show(() => seedGuest(record, values, [], DAY));
+    const title = openReason(view);
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).toBeNull(), { timeout: 3000 });
+    await refill(view);
+    const card = cardTitled(view, title)!;
+    expect(card.querySelector('.evidence-toggle')!.getAttribute('aria-expanded')).toBe('false');
+    expect(view.container.querySelector('.evidence-content')).toBeNull();
+  });
+
+  it("another device's erase, once re-read: the same plan comes back with its reason closed", async () => {
+    const view = await show(() => seedGuest(record, values, [], DAY));
+    const title = openReason(view);
+    vi.stubGlobal('alert', () => {});
+    // deleteUserData is the erase as another writer of this record makes it;
+    // the page learns of it through its re-read.
+    await act(async () => { await deleteUserData(); });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).toBeNull(), { timeout: 3000 });
+    await refill(view);
+    const card = cardTitled(view, title)!;
+    expect(card.querySelector('.evidence-toggle')!.getAttribute('aria-expanded')).toBe('false');
+    expect(view.container.querySelector('.evidence-content')).toBeNull();
   });
 });
 
@@ -552,5 +723,46 @@ describe('US-62 AC27: the desktop section list', () => {
     fireEvent.click(cholesterol);
     expect(scrolled.at(-1)).toBe(view.container.querySelector('#mh-topic-cholesterol'));
     expect(cholesterol.getAttribute('aria-current')).toBe('location');
+  });
+
+  // US-62 AC33 (Brad 2026-11-09): Documents in the desktop list, only when the area shows; never on a phone.
+  const withLetter = async () => {
+    await RECORDS['urgent results, both cascades, a supplement']();
+    await bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
+  };
+  const navTitles = (view: RenderResult) => [...view.container.querySelectorAll('.mh-nav .mh-nav-title')].map(t => t.textContent);
+
+  it('AC33: with a letter on record, "Documents" ends the list and jumps to the documents area', async () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this); };
+    const view = await show(withLetter);
+    const area = await waitFor(() => { const h = view.container.querySelector<HTMLElement>('#mh-topic-documents'); expect(h).not.toBeNull(); return h!; });
+    expect(area.textContent).toBe('Documents');
+    expect(navTitles(view).at(-1)).toBe('Documents');
+    const link = within(view.getByRole('navigation', { name: 'My health sections' })).getByRole('link', { name: 'Documents' });
+    expect(link.getAttribute('href')).toBe('#mh-topic-documents');
+    fireEvent.click(link);
+    expect(scrolled.at(-1)).toBe(area);
+    expect(document.activeElement).toBe(area);
+    // The pills stay the three (no room on a phone).
+    expect([...view.container.querySelectorAll('.mh-pill')].map(p => p.textContent)).toEqual(['Blood tests', 'Cholesterol', 'Supplements']);
+  });
+
+  it('AC33: with no documents (a blood-test report alone is not one), no entry and no area', async () => {
+    const view = await show(async () => {
+      await RECORDS['urgent results, both cascades, a supplement']();
+      await bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
+    });
+    expect(navTitles(view).length).toBeGreaterThan(0);
+    expect(navTitles(view)).not.toContain('Documents');
+    expect(view.container.querySelector('#mh-topic-documents')).toBeNull();
+  });
+
+  it('AC33: on a phone the list is not drawn, so no Documents entry; the area still shows', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
+    const view = await show(withLetter);
+    await waitFor(() => expect(view.container.querySelector('#mh-topic-documents')).not.toBeNull());
+    expect(view.queryByRole('navigation', { name: 'My health sections' })).toBeNull();
+    expect(view.queryByRole('link', { name: 'Documents' })).toBeNull();
   });
 });

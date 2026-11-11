@@ -8,9 +8,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { statTiles } from '@roadmap/health-core';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { calculateHealthResults } from '@roadmap/health-core';
+import { statTiles } from '@roadmap/health-core/stat-tiles';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 
 const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),
@@ -27,14 +27,17 @@ vi.mock('../lib/roadmap-data', () => ({
   sendGuestReport: mocks.sendGuestReport,
   getReportEmailCaptured: mocks.getReportEmailCaptured,
   markReportEmailCaptured: mocks.markReportEmailCaptured,
+  getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
-import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
+import { REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './PlanPdf';
 import { deleteButton } from '../testing/settings';
+import { ColumnHeader } from './ColumnHeader';
+import { cascaded, nest } from '../testing/css-cascade';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
@@ -77,6 +80,18 @@ describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persist
     await waitFor(() => expect(print).toHaveBeenCalledOnce());
     expect(mocks.sendGuestReport).not.toHaveBeenCalled();
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+  });
+});
+
+// Brad 2026-11-10 ("drop the wait"): the window opens inside the click, so a slow
+// save cannot let a popup blocker refuse it. The fields are still saved (US-03 AC3).
+describe('US-08 — Save as PDF saves the typed values without waiting for the save', () => {
+  it('a save that never resolves: the print window still opens, and the save was called once', async () => {
+    const onSaveLongitudinal = vi.fn(() => new Promise<unknown>(() => {}));
+    const view = showPlan({ hasUnsavedLongitudinal: true, onSaveLongitudinal });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(onSaveLongitudinal).toHaveBeenCalledOnce();
   });
 });
 
@@ -309,32 +324,45 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
 });
 
 describe('US-44 AC6 — Save as PDF shows on a phone', () => {
-  // US-62 AC26: it sits in My health's foot, in the page's flow on phone and desktop alike,
-  // so no column header has to keep it visible.
-  it('Save as PDF sits in the foot, captured or gate skipped', () => {
+  // US-62 AC26, AC30d: it sits in My health's PDF box, in the page's flow on phone and desktop
+  // alike, so no column header has to keep it visible.
+  it('Save as PDF sits in the PDF box, captured or gate skipped', () => {
     const view = showPlan();
-    expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull();
+    expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')).not.toBeNull();
   });
 
-  it('gated and not yet captured, no Save as PDF until the capture, then it shows in the foot', async () => {
+  it('gated and not yet captured, no Save as PDF until the capture, then it shows in the PDF box', async () => {
     mocks.skip.value = false;
     const view = showPlan();
     expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
     fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
     fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
-    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-foot')).not.toBeNull());
+    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')).not.toBeNull());
   });
 
   // The chat column's header still hides on a phone; the plan header's actions rule went with the plan column.
   it('styles.css: at 768px the column header hides', () => {
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.hr-col-header { display: none; }');
+    const header = render(<ColumnHeader title="Ask about your plan"/>).container.querySelector('.hr-col-header')!;
+    for (const phone of [390, 768]) expect(cascaded(header, 'display', phone)).toBe('none');
+    expect(cascaded(header, 'display', 769)).toBe('flex');
+    // Text, as an absence: no rule for the plan header's actions survives.
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
     expect(css).not.toContain('hr-col-header--actions');
   });
 
-  it('styles.css: on a phone the cards keep their 10px side gutter (live 2026-11-01: Sign in sat flush on the screen edge)', () => {
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
-    expect(css).toContain('.section-card { padding: 12px !important; margin-left: 10px; margin-right: 10px; }');
+  it('styles.css: a phone card sets no side margin; the tab panel gives its 16px inset (US-62 AC36)', () => {
+    const card = nest('section-card');
+    for (const side of ['margin-left', 'margin-right']) {
+      for (const width of [390, 768, 769]) expect(cascaded(card, side, width)).toBeUndefined();
+    }
+    for (const side of ['padding-top', 'padding-right', 'padding-bottom', 'padding-left']) {
+      for (const phone of [390, 768]) {
+        expect(cascaded(card, side, phone)).toBe('12px');
+        // !important: the later .section-card--bt { padding: 0 } does not take a phone card's padding.
+        expect(cascaded(nest('section-card section-card--bt'), side, phone)).toBe('12px');
+      }
+      expect(cascaded(card, side, 769)).toBe('24px'); // a desktop card keeps its 24px
+    }
   });
 });
 
@@ -432,6 +460,152 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     expect(attention(view)).toBe('true');
     fireEvent.click(deleteButton());
     await waitFor(() => expect(attention(view)).toBe('false'));
+  });
+
+  // Another device's erase once re-read, or this tab's erase whose write failed
+  // but still moved the erase (useErase.test.tsx): the screen shows a new erase
+  // without a successful Delete here. Before, the pulse outlived it.
+  it('skip-gate: any erase the screen shows forgets the opened window, not only a successful Delete here', async () => {
+    const view = showPlan({ syncControl, shownErase: 'e1' });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+    view.rerender(plan({ syncControl, shownErase: 'e1' }));
+    expect(attention(view)).toBe('true');
+    view.rerender(plan({ syncControl, shownErase: 'e2' }));
+    expect(attention(view)).toBe('false');
+  });
+
+  // Brad 2026-11-10 (P3): the capture belongs to the erased record, so an erase resets it.
+  describe('an erase resets the email capture', () => {
+    // The record is captured once marked; a successful Delete erases it.
+    let eraseRecord: ReturnType<typeof vi.fn<() => Promise<boolean>>>;
+    beforeEach(() => {
+      mocks.markReportEmailCaptured.mockImplementation(() => { mocks.getReportEmailCaptured.mockReturnValue(true); });
+      eraseRecord = vi.fn<() => Promise<boolean>>(async () => { mocks.getReportEmailCaptured.mockReturnValue(false); return true; });
+    });
+
+    it('gated captured: a Delete brings the gate box back and stops the pulse', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      expect(view.container.querySelector('#guestEmail')).toBeNull();
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeTruthy());
+      expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy();
+      expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+      expect(attention(view)).toBe('false');
+    });
+
+    it('gated captured: another device\'s erase, re-read, does the same', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, shownErase: 'e1' });
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      mocks.getReportEmailCaptured.mockReturnValue(false);
+      view.rerender(plan({ syncControl, shownErase: 'e2' }));
+      expect(view.container.querySelector('#guestEmail')).toBeTruthy();
+      expect(attention(view)).toBe('false');
+    });
+
+    it('skip-gate reminded: a Delete brings the reminders box back', async () => {
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fireEvent.change(view.getByLabelText(REMINDER_SIGNUP_LABEL), { target: { value: 'reader@example.com' } });
+      fireEvent.click(view.getByRole('button', { name: 'Remind me' }));
+      await waitFor(() => expect(view.getByText(REMINDER_SIGNUP_DONE)).toBeTruthy());
+      expect(attention(view)).toBe('true');
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(view.getByLabelText(REMINDER_SIGNUP_LABEL)).toBeTruthy());
+      expect(view.queryByText(REMINDER_SIGNUP_DONE)).toBeNull();
+      expect((view.getByLabelText(REMINDER_SIGNUP_LABEL) as HTMLInputElement).value).toBe('');
+      expect(attention(view)).toBe('false');
+    });
+
+    it('an erase empties a typed, unsent address and its error', async () => {
+      mocks.skip.value = false;
+      const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+      fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'not-an-email' } });
+      fireEvent.click(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }));
+      expect(view.getByText('Please enter a valid email address')).toBeTruthy();
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(eraseRecord).toHaveBeenCalledOnce());
+      await waitFor(() => expect((view.container.querySelector('#guestEmail') as HTMLInputElement).value).toBe(''));
+      expect(view.queryByText('Please enter a valid email address')).toBeNull();
+    });
+
+    // US-09 AC19 + US-18 AC7: a send still pending at the erase belongs to the erased
+    // record. The fresh box sends at once, and the old send's answer changes nothing in the box
+    // on screen (the file's captured mark is H13's, a separate PR).
+    describe('a send pending at the erase', () => {
+      let settles: ((r: { success: boolean; error?: string }) => void)[];
+      beforeEach(() => {
+        mocks.skip.value = false;
+        settles = [];
+        mocks.sendGuestReport.mockImplementation(() => new Promise((r) => { settles.push(r); }));
+      });
+      const freshEnter = (view: ReturnType<typeof showPlan>, address: string) => {
+        const input = view.container.querySelector('#guestEmail')!;
+        fireEvent.change(input, { target: { value: address } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+      };
+
+      it('pending send, then a Delete: the fresh box\'s Enter sends, and its window opens', async () => {
+        const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        expect(print).toHaveBeenCalledOnce();
+        fireEvent.click(deleteButton());
+        await waitFor(() => expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy());
+        freshEnter(view, 'next@example.com');
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(2));
+        expect(mocks.sendGuestReport).toHaveBeenLastCalledWith('next@example.com');
+        expect(print).toHaveBeenCalledTimes(2);
+      });
+
+      it('pending send, then another device\'s erase: the old send succeeding leaves the new box and no pulse', async () => {
+        const view = showPlan({ syncControl, shownErase: 'e1' });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        view.rerender(plan({ syncControl, shownErase: 'e2' }));
+        await act(async () => { settles[0]({ success: true }); });
+        expect(view.container.querySelector('#guestEmail')).toBeTruthy();
+        expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy();
+        expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+        expect(attention(view)).toBe('false');
+      });
+
+      it('pending send, Delete, a new send: the old send failing shows no error and keeps the new send', async () => {
+        const view = showPlan({ syncControl, onDeleteData: eraseRecord });
+        fillAndCapture(view);
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(1));
+        fireEvent.click(deleteButton());
+        await waitFor(() => expect(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeTruthy());
+        freshEnter(view, 'next@example.com');
+        await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledTimes(2));
+        await act(async () => { settles[0]({ success: false, error: 'Old send failed' }); });
+        expect(view.queryByText('Old send failed')).toBeNull();
+        expect(view.getByRole('button', { name: 'Sending...' })).toBeTruthy();
+        await act(async () => { settles[1]({ success: true }); });
+        expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeTruthy();
+        expect(attention(view)).toBe('true');
+      });
+    });
+
+    it('a cancelled erase keeps the captured view, the pulse and a typed address', async () => {
+      mocks.skip.value = false;
+      const cancel = vi.fn().mockResolvedValue(false);
+      const view = showPlan({ syncControl, onDeleteData: cancel });
+      fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'half-typed' } });
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+      expect((view.container.querySelector('#guestEmail') as HTMLInputElement).value).toBe('half-typed');
+      fillAndCapture(view);
+      await waitFor(() => expect(attention(view)).toBe('true'));
+      fireEvent.click(deleteButton());
+      await waitFor(() => expect(cancel).toHaveBeenCalledTimes(2));
+      expect(view.container.querySelector('#guestEmail')).toBeNull();
+      expect(attention(view)).toBe('true');
+    });
   });
 
   it('skip-gate: a plan that goes blank mid-edit (height cleared) keeps it on', async () => {
