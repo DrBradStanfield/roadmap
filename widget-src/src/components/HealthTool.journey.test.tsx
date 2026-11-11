@@ -69,7 +69,7 @@ vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(nul
 vi.mock('./ChatEmbed', () => ({
   ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: () => Record<string, unknown> | null; onProposeEdit: ChatEditTarget }) => {
     chat.context = guestInputs(); // what a message sent now would carry
-    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask()); // asked and answered at once
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     return null;
   },
 }));

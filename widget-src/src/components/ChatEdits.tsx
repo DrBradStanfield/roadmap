@@ -128,13 +128,17 @@ export function useChatEdits({
     setProfileProposal(null);
   };
 
-  const handleProposeEdit = useCallback((edits: ProposedEdit[], asked: string) => {
+  const handleProposeEdit = useCallback((edits: ProposedEdit[], asked: string, stayed: boolean) => {
     // The record moved since the question, or the store holds an erase the
     // screen does not show: the reply comes from the conversation the erase
     // tombstones. None of it applies, and the chat says so, as the iPhone's
     // does (US-16 AC2a, US-67 AC5); its words may claim a change.
-    // An earlier reply's Undo goes too: "Not saved" never shows beside it.
-    if (!stillShown(asked)) { setMedUndo(null); setNotSavedAt(getEraseIdentity()); return; }
+    // An earlier reply's Undo goes too: "Not saved" never shows beside it. A
+    // reply for a thread no longer on screen says nothing in the new one.
+    if (!stillShown(asked)) {
+      if (stayed) { setMedUndo(null); setNotSavedAt(getEraseIdentity()); }
+      return;
+    }
     setNotSavedAt(null);
     let editedField: string | null = null;
     let inGrid = false;

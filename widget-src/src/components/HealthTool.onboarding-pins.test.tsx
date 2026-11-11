@@ -61,7 +61,7 @@ vi.mock('./ChatEmbed', async () => {
   const { useEffect } = await import('react');
   return {
     ChatEmbed: ({ onProposeEdit, muted }: { onProposeEdit: ChatEditTarget; muted: boolean }) => {
-      chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask()); // asked and answered at once
+      chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
       useEffect(() => { if (!muted) chat.unmuted?.(); }, [muted]);
       return null;
     },

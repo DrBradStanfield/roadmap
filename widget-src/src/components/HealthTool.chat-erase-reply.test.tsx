@@ -32,16 +32,19 @@ const chatCall = vi.hoisted(() => ({
 }));
 vi.mock('../lib/chat-api', () => ({
   getChatGate: () => null,
-  listConversations: async () => null,
-  loadConversation: async () => [],
+  listConversations: async () => ({ conversations: [{ id: 'saved-1', title: 'Saved chat', updatedAt: 'x', createdAt: 'x' }] }),
+  loadConversation: async () => [{ id: 'saved-q', role: 'user', content: 'An older question', createdAt: 'x' }],
   deleteConversation: async () => true,
   sendMessage: () => {
     chatCall.sent += 1;
     return new Promise((resolve) => { chatCall.answer = resolve; });
   },
 }));
+/** Another tab's chat messages, as this tab's BroadcastChannel hears them. */
+const sync = vi.hoisted(() => ({ hear: null as null | ((msg: unknown) => void) }));
 vi.mock('../lib/chat-sync', () => ({
-  postSync: vi.fn(), postInputSync: vi.fn(), subscribeSync: () => () => {}, generateInstanceId: () => 'test',
+  postSync: vi.fn(), postInputSync: vi.fn(), generateInstanceId: () => 'test',
+  subscribeSync: (hear: (msg: unknown) => void) => { sync.hear = hear; return () => {}; },
 }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: (_el: Element, onChange: (v: boolean) => void) => { onChange(true); return () => {}; } }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
@@ -200,6 +203,71 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
     await ask(view);
     expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  /** The notice on screen: a question, this tab's erase, then the reply refused. */
+  async function noticeShown(view: RenderResult) {
+    await ask(view);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    await replyLands();
+    expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
+  }
+  const chatPanel = (view: RenderResult) => view.container.querySelector('.health-tool-chat') as HTMLElement;
+  async function openSavedChat(view: RenderResult) {
+    fireEvent.click(chatPanel(view).querySelector('[aria-label="Show conversations"]')!);
+    const row = await waitFor(() => {
+      const r = Array.from(chatPanel(view).querySelectorAll('.chat-thread-title')).find((t) => t.textContent === 'Saved chat');
+      expect(r).toBeTruthy();
+      return r as HTMLElement;
+    });
+    await act(async () => { fireEvent.click(row); });
+    await wait(100);
+  }
+
+  it('the notice goes at New chat', async () => {
+    const view = await userOnStatin(new HeldCloud(new MemoryCloud()));
+    await noticeShown(view);
+    fireEvent.click(chatPanel(view).querySelector('[aria-label="Show conversations"]')!);
+    fireEvent.click(chatPanel(view).querySelector('.chat-new-btn')!);
+    await wait(100);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('the notice goes when a saved chat is opened', async () => {
+    const view = await userOnStatin(new HeldCloud(new MemoryCloud()));
+    await noticeShown(view);
+    await openSavedChat(view);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('the notice goes when another tab starts a new chat', async () => {
+    const view = await userOnStatin(new HeldCloud(new MemoryCloud()));
+    await noticeShown(view);
+    act(() => sync.hear!({ instanceId: 'other-tab', type: 'thread-new', payload: {}, ts: Date.now() }));
+    await wait(100);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('a refused reply for a thread no longer on screen says nothing in the new one, and applies nothing', async () => {
+    const cloud = new MemoryCloud();
+    const view = await userOnStatin(new HeldCloud(cloud));
+    await ask(view);
+    await openSavedChat(view);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    await replyLands();
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+    expect(await cloudMedications(cloud)).not.toContain('atorvastatin');
+    expect(profileBanner()).toBeNull();
   });
 
   it('a refused reply takes an earlier reply\'s Undo with it: "Not saved" and Undo never show together', async () => {

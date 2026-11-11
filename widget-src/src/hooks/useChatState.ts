@@ -57,7 +57,8 @@ interface UseChatStateOptions {
  *  switched (New chat, or a saved chat opened). */
 export interface ChatEditTarget {
   ask: () => string;
-  take: (edits: ProposedEdit[], asked: string) => void;
+  /** `stayed`: the thread the question was sent from is still on screen. */
+  take: (edits: ProposedEdit[], asked: string, stayed: boolean) => void;
   leave: () => void;
 }
 
@@ -177,6 +178,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         const { payload } = msg;
         if (payload.activeConversationId !== activeConversationIdRef.current) {
           onRemoteConversationSelected?.();
+          onProposeEditRef.current?.leave();
         }
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
@@ -192,6 +194,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(null);
         setMessages([]);
         setError(null);
+        onProposeEditRef.current?.leave();
         return;
       }
 
@@ -201,6 +204,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         if (activeConversationIdRef.current === id) {
           setActiveConversationId(null);
           setMessages([]);
+          onProposeEditRef.current?.leave();
         }
         return;
       }
@@ -213,6 +217,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (activeConversationIdRef.current === id) {
       setActiveConversationId(null);
       setMessages([]);
+      onProposeEditRef.current?.leave();
     }
   }, []);
 
@@ -372,6 +377,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
       if (stayed) loadGenRef.current++; // a load started before the reply would replace it
+      if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -381,7 +387,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.take(result.proposedEdits, asked);
+        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
       }
       if (result.subscriptionCard) {
         const card = result.subscriptionCard;

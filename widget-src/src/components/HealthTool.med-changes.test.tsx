@@ -32,7 +32,7 @@ vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(nul
 const chat = vi.hoisted(() => ({ props: null as null | Record<string, any> }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: (props: Record<string, unknown>) => { chat.props = props; return null; } }));
 /** A reply asked and answered at once (US-16 AC2a: asked under the erase shown now). */
-const propose = (edits: ProposedEdit[]) => chat.props!.onProposeEdit.take(edits, chat.props!.onProposeEdit.ask());
+const propose = (edits: ProposedEdit[]) => chat.props!.onProposeEdit.take(edits, chat.props!.onProposeEdit.ask(), true);
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 

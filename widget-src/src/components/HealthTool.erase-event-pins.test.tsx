@@ -66,7 +66,7 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
   ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: ChatEditTarget; guestInputs: () => unknown }) => {
-    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask()); // asked and answered at once
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     chat.context = guestInputs;
     return null;
   },

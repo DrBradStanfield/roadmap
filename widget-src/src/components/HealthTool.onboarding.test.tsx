@@ -39,7 +39,7 @@ vi.mock('../lib/chat-api', async original => ({
 // The chat column: what it was told about muting.
 const chat = vi.hoisted(() => ({ muted: [] as boolean[], proposeEdit: null as null | ((edits: unknown[]) => void) }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: ChatEditTarget }) => { chat.muted.push(!!muted); chat.proposeEdit = (edits) => onProposeEdit.take(edits as ProposedEdit[], onProposeEdit.ask()); return null; },
+  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: ChatEditTarget }) => { chat.muted.push(!!muted); chat.proposeEdit = (edits) => onProposeEdit.take(edits as ProposedEdit[], onProposeEdit.ask(), true); return null; },
 }));
 // The desktop floating chat's panel: whether it is open and muted.
 const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));
