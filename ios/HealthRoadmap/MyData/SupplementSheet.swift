@@ -82,12 +82,7 @@ struct SupplementSheet: View {
     }
 
     private func submit(_ edit: FormEdit) {
-        guard SheetSave.send(&state, .tapped) else { return }
-        Task {
-            let result = await save(edit)
-            SheetSave.send(&state, .landed(result, closes: true, asks: .never))
-            if state == .done { dismiss() }
-        }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(edit) }
     }
 
     /// "5" for a whole dose, "2.5" otherwise. `Int(_:)` traps past its range, and the
@@ -159,11 +154,6 @@ struct AddSupplementSheet: View {
     }
 
     private func submit(_ edit: FormEdit) {
-        guard SheetSave.send(&state, .tapped) else { return }
-        Task {
-            let result = await save(edit)
-            SheetSave.send(&state, .landed(result, closes: true, asks: .never))
-            if state == .done { dismiss() }
-        }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(edit) }
     }
 }

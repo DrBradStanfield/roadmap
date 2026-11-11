@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -19,6 +20,28 @@ final class SheetSaveTests: XCTestCase {
         SheetSave.send(&state, .landed(.saved(), closes: true, asks: .never))
         XCTAssertEqual(state, .done, "the sheet closes once")
         XCTAssertFalse(state.busy, "Cancel works again")
+    }
+
+    /// The no-question sheets' door: a second submit while the first save is landing makes
+    /// no second save call, and the result lands once (the sheet closes once).
+    func testASecondSubmitWhileSavingSavesOnce_US25_AC21d() async {
+        final class Box { var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil); var saves = 0; var closes = 0 }
+        let box = Box()
+        let state = Binding(get: { box.state }, set: { box.state = $0 })
+        let closed = expectation(description: "the sheet closes")
+        let save: () async -> RecordStore.ApplyResult = {
+            box.saves += 1
+            try? await Task.sleep(for: .milliseconds(100))
+            return .saved()
+        }
+        SheetSave.submit(state, dismiss: { box.closes += 1; closed.fulfill() }, save)
+        XCTAssertTrue(box.state.busy, "the tap claims the save at once")
+        SheetSave.submit(state, dismiss: { box.closes += 1 }, save)
+        await fulfillment(of: [closed], timeout: 5)
+        try? await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(box.saves, 1, "the second tap wrote nothing")
+        XCTAssertEqual(box.closes, 1, "the sheet closes once")
+        XCTAssertEqual(box.state, .done)
     }
 
     // The events, every one the sheets send, with each kind of landing.
@@ -168,6 +191,11 @@ final class SheetSaveTests: XCTestCase {
 
         (state, claims) = outcome([.declined, .wordsStale, .confirmed(shown)])
         XCTAssertEqual(state, .editing(message: nil), "declined, typed, late confirmed")
+        XCTAssertEqual(claims, [], "no save")
+
+        // A Day picker change sends wordsStale, as typing does.
+        (state, claims) = outcome([.declined, .wordsStale, .confirmed(shown)])
+        XCTAssertEqual(state, .editing(message: nil), "declined, day changed, late confirmed")
         XCTAssertEqual(claims, [], "no save")
 
         (state, claims) = outcome([.declined, .confirmed(["row-b"])])

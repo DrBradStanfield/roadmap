@@ -108,6 +108,17 @@ enum SheetSave {
         state = transition(was, event)
         return state == .saving && was != .saving
     }
+
+    /// A sheet that never asks: the tap claims the save, a save closes the sheet through
+    /// `dismiss`, a refusal leaves the engine's words in `state`.
+    static func submit(_ state: Binding<State<NoHeld>>, dismiss: @escaping () -> Void, _ save: @escaping () async -> RecordStore.ApplyResult) {
+        guard send(&state.wrappedValue, .tapped) else { return }
+        Task {
+            let result = await save()
+            send(&state.wrappedValue, .landed(result, closes: true, asks: .never))
+            if state.wrappedValue == .done { dismiss() }
+        }
+    }
 }
 
 extension View {

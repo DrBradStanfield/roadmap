@@ -52,12 +52,7 @@ struct FeetInchesSheet: View {
 
     private func submit() {
         let height = MyData.FeetInches(feet: feet, inches: inches)
-        guard SheetSave.send(&state, .tapped) else { return }
-        Task {
-            let result = await save(height)
-            SheetSave.send(&state, .landed(result, closes: true, asks: .never))
-            if state == .done { dismiss() }
-        }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(height) }
     }
 
     private func wheel(_ label: String, selection: Binding<Int>, values: ClosedRange<Int>, unit: String) -> some View {

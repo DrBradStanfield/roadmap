@@ -73,6 +73,7 @@ struct ValueEntrySheet: View {
                 }
                 if asksForDay {
                     DatePicker("Day", selection: $day, in: ...Date.now, displayedComponents: .date)
+                        .onChange(of: day) { SheetSave.send(&state, .wordsStale) }
                 }
             }
             .navigationTitle(title)

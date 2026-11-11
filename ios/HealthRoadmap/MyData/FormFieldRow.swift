@@ -239,11 +239,6 @@ struct MonthPickerSheet: View {
     private var ordered: [String] { future ? months : months.reversed() }
 
     private func submit(_ month: String) {
-        guard SheetSave.send(&state, .tapped) else { return }
-        Task {
-            let result = await save(month)
-            SheetSave.send(&state, .landed(result, closes: true, asks: .never))
-            if state == .done { dismiss() }
-        }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(month) }
     }
 }
