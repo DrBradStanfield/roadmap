@@ -918,6 +918,7 @@ export function ValueCell({
     : readNumericCell(text) === undefined;
 
   const submit = async () => {
+    clearBlurTimer(); // a click-away save still armed would ask a second time
     const opened = openedOn.current;
     if (!opened || !onCorrect || typed === null) return;
     // The unit changed since the editor opened: the text is in the old one.
