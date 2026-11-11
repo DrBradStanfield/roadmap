@@ -229,7 +229,7 @@ describe('US-15 AC19 — only the chat that applies edits asks for the tools', (
   }
 
   it('with onProposeEdit (the widget\'s own chat): canApplyEdits is true', async () => {
-    expect(await sendWith({ ask: () => '', take: () => {} })).toBe(true);
+    expect(await sendWith({ ask: () => '', take: () => {}, leave: () => {} })).toBe(true);
   });
 
   it('without it (the blog bubble, the chatbot embed): false', async () => {

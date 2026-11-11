@@ -53,10 +53,12 @@ interface UseChatStateOptions {
 
 /** A reply's form edits (US-16): `ask` reads the erase the question is asked
  *  under as it is sent; `take` gets the reply's edits with it, so they never
- *  land on a record erased since (US-16 AC2a). */
+ *  land on a record erased since (US-16 AC2a). `leave`: the conversation
+ *  switched (New chat, or a saved chat opened). */
 export interface ChatEditTarget {
   ask: () => string;
   take: (edits: ProposedEdit[], asked: string) => void;
+  leave: () => void;
 }
 
 /** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
@@ -241,6 +243,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = id;
     setActiveConversationId(id);
     setError(null);
+    onProposeEditRef.current?.leave();
     const gen = ++loadGenRef.current;
     const msgs = await loadConversation(id);
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
@@ -262,6 +265,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setActiveConversationId(null);
     setMessages([]);
     setError(null);
+    onProposeEditRef.current?.leave();
     inputRef.current?.focus();
     postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
   }, [instanceId]);

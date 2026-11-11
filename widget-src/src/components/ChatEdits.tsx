@@ -64,6 +64,7 @@ export function useChatEdits({
   const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
   // A reply's edits refused because the record moved since the question: the
   // erase it was refused at, so the line outlasts that erase and no later one.
+  // It goes at the next send or conversation switch too, as the iPhone's does.
   const [notSavedAt, setNotSavedAt] = useState<string | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
@@ -132,7 +133,8 @@ export function useChatEdits({
     // screen does not show: the reply comes from the conversation the erase
     // tombstones. None of it applies, and the chat says so, as the iPhone's
     // does (US-16 AC2a, US-67 AC5); its words may claim a change.
-    if (!stillShown(asked)) { setNotSavedAt(getEraseIdentity()); return; }
+    // An earlier reply's Undo goes too: "Not saved" never shows beside it.
+    if (!stillShown(asked)) { setMedUndo(null); setNotSavedAt(getEraseIdentity()); return; }
     setNotSavedAt(null);
     let editedField: string | null = null;
     let inGrid = false;
@@ -176,7 +178,11 @@ export function useChatEdits({
     }
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, inputsRef, showForm, reveal]);
   /** The chat's turn asks under the erase shown as it sends (US-16 AC2a). */
-  const chatEditTarget: ChatEditTarget = useMemo(() => ({ ask: askedUnder, take: handleProposeEdit }), [handleProposeEdit]);
+  const chatEditTarget: ChatEditTarget = useMemo(() => ({
+    ask: () => { setNotSavedAt(null); return askedUnder(); },
+    take: handleProposeEdit,
+    leave: () => setNotSavedAt(null),
+  }), [handleProposeEdit]);
 
   const undoMedEdit = useCallback(() => {
     if (!Array.isArray(medUndo)) return;

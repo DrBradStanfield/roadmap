@@ -96,10 +96,11 @@ async function userOnStatin(adapter: HeldCloud): Promise<RenderResult> {
 
 /** The user asks a question in the real chat panel; the reply is held. */
 async function ask(view: RenderResult) {
+  const before = chatCall.sent;
   const box = view.container.querySelector('.health-tool-chat textarea')!;
   fireEvent.change(box, { target: { value: 'I switched to atorvastatin 20 mg, my LDL was 3.2, and I am female' } });
   fireEvent.click(view.container.querySelector('.health-tool-chat [aria-label="Send"]')!);
-  await waitFor(() => expect(chatCall.sent).toBe(1));
+  await waitFor(() => expect(chatCall.sent).toBe(before + 1));
 }
 
 /** The reply lands, with a medication, a blood-test value and a profile edit. */
@@ -121,6 +122,7 @@ const cloudMedications = async (cloud: MemoryCloud) => {
 };
 const bodyText = () => document.body.textContent ?? '';
 const profileBanner = () => document.body.querySelector('.chat-profile-proposal');
+const undoButton = () => Array.from(document.body.querySelectorAll('.chat-banners button')).find((b) => b.textContent === 'Undo');
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -183,6 +185,44 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(bodyText()).not.toContain('Medication updated from chat.');
     // The words outlast the erase they report.
     expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('the notice goes at the next question', async () => {
+    const view = await userOnStatin(new HeldCloud(new MemoryCloud()));
+    await ask(view);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    await replyLands();
+    expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
+    await ask(view);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('a refused reply takes an earlier reply\'s Undo with it: "Not saved" and Undo never show together', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter);
+    await ask(view);
+    await replyLands();
+    expect(bodyText()).toContain('Medication updated from chat.');
+    expect(undoButton()).toBeTruthy();
+    await ask(view);
+    const erase = adapter.hold();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await erase.reached;
+    await replyLands();
+    const shown = { notice: bodyText().includes(RECORD_CHANGED_SINCE_ASKED), undo: !!undoButton(), medLine: bodyText().includes('Medication updated from chat.') };
+    erase.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(shown).toEqual({ notice: true, undo: false, medLine: false });
   });
 
   it('control: with no erase, the reply\'s edits apply as before', async () => {
