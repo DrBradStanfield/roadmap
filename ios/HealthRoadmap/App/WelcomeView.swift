@@ -73,6 +73,10 @@ struct WelcomeView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: phase) { apply(.phaseChanged) }
         .onChange(of: connectMessage) { old, new in if old != nil, new == nil { apply(.alertDismissed) } }
+        // A connect error that lands after the person left the sheet never shows later, out of
+        // context: cleared as the sheet opens or closes. With the sheet closed its alertDismissed
+        // decides nothing; on opening the record is not open yet (US-25 AC11j).
+        .onChange(of: choosingCloud) { connectMessage = nil }
         .sheet(isPresented: $choosingCloud) {
             if let sync { cloudChooser(sync) }
         }
@@ -140,11 +144,13 @@ struct WelcomeView: View {
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("Opening your record")
                     }
-                case .failed:
-                    Section {
-                        Text("Signed in, but your record could not be opened yet. Check your connection, then try again.")
-                            .foregroundStyle(.secondary)
-                        Button("Try again") { apply(.tryAgain) }
+                case .failed(let problem):
+                    if let provider = sync.provider {
+                        let failure = WelcomeConnect.failure(problem, provider: provider)
+                        Section {
+                            Text(failure.words).foregroundStyle(.secondary)
+                            if failure.offersTryAgain { Button("Try again") { apply(.tryAgain) } }
+                        }
                     }
                 case .choosing, .opened:
                     EmptyView()
