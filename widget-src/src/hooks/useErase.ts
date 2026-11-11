@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { askedUnder, deleteUserData, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
+import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
+import { trackProductEvent } from '../lib/server-api';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
 
@@ -9,13 +10,16 @@ import { createEraseStore, refusal, type EraseState, type EraseStore } from '../
  *
  * One EraseStore per page holds the state; every event reaches it from one of
  * its call sites: useRecordApply `apply` and the page's first read (`read`),
- * `eraseAll` here (`own-start`, then `own-end` or `own-failed`), and
- * `writeRefused` here (`refused`). Its effects run through the doors below,
- * built from the latest committed props:
- * - clearDrafts, forget, reread: the page's;
- * - read: a whole re-read (`reread('left')`);
- * - countRemoteChange: nothing yet; the relay still counts (PR 2b-3);
- * - sayOutcome: an alert.
+ * useRecordApply's REMOTE_CHANGED listener (`arrived`), its loaded effect and
+ * `firstReadFailed` (`loaded`), `eraseAll` here (`own-start`, then `own-end`
+ * or `own-failed`), and `writeRefused` here (`refused`). Its effects run
+ * through the doors below, built from the latest committed props:
+ * - clearDrafts, forget: the page's;
+ * - read: the page's `shows` (useRecordApply: it ends a hold, clears the
+ *   answer mark, and counts nothing);
+ * - countRemoteChange: remote_change_applied, the one count of another
+ *   writer's erase (the relay counts other changes only);
+ * - alertRefused, sayOutcome: alerts.
  *
  * `eraseUnshown` stays a store query: true while the store holds an erase the
  * screen does not show yet (this tab's erase writing or failed to write, or
@@ -30,15 +34,19 @@ import { createEraseStore, refusal, type EraseState, type EraseStore } from '../
  * would move the store's mark to the new erase while the old record is still
  * on screen, so a save asked from it would land (US-16 AC2d). Set from the
  * listener, the state commits with the record set in the same turn
- * (`a=0 b=0`, `a=1 b=1`). The AC2d pin in useErase.test.tsx guards it. `shownErase` keys
+ * (`a=0 b=0`, `a=1 b=1`). The AC2d pins in useErase.test.tsx guard it, one rendered outside act(). `shownErase` keys
  * the upload modal, so an erase ends a review read before it (US-16 AC2c).
  */
 export interface EraseDoorProps {
   clearDrafts: () => void;
   /** This tab's erase moved the record: the page forgets the old one, on the device and on screen. */
   forget: () => void;
-  /** A whole re-read of the record, through the page's read policy. */
+  /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard. */
   reread: (reason: 'refused' | 'left') => void;
+  /** The machine's read: another writer's erase shows (useRecordApply `shows`). */
+  shows: () => void;
+  /** The machine read for a refusal of the record shown: the answer mark is spent, as a 'refused' re-read spends it (US-62 AC25b). */
+  spend: () => void;
 }
 
 export interface Erase {
@@ -60,8 +68,9 @@ export function useErase(props: EraseDoorProps): Erase {
   const [store] = useState(() => createEraseStore(getShownErase(), {
     clearDrafts: () => doors.current.clearDrafts(),
     forget: () => doors.current.forget(),
-    read: () => doors.current.reread('left'),
-    countRemoteChange: () => {},
+    read: () => doors.current.shows(),
+    countRemoteChange: () => trackProductEvent('remote_change_applied', { backend: getBackendKind() }),
+    alertRefused: () => window.alert(WRITE_REFUSED),
     sayOutcome: message => window.alert(message),
   }));
   const [state, setState] = useState<EraseState>(store.getSnapshot);
@@ -73,20 +82,20 @@ export function useErase(props: EraseDoorProps): Erase {
   // The store's mark moves only once the screen shows the erase: until React
   // commits the new tree, the old one is on screen, and a save asked from it
   // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
-  // run before this one, so none may write; none does (2026-11-10).
-  useLayoutEffect(() => { markEraseShown(state.shown); }, [state.shown]);
+  // run before this one, so none may write; none does (2026-11-10). The same
+  // moment counts another writer's erase now on screen (`committed`, Codex R1).
+  useLayoutEffect(() => { markEraseShown(state.shown); store.dispatch({ type: 'committed', identity: state.shown }); }, [state.shown, store]);
 
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
 
   const writeRefused = useCallback((erase?: string) => {
-    // F4c: the erase the save was asked under; the supplement stop names none, so the mark's (PR 3).
-    const { news, reads } = refusal(store, erase ?? askedUnder());
-    if (!news) return;
-    window.alert(WRITE_REFUSED);
-    // A heard erase the machine re-read itself (Q3): one read, never two.
-    if (reads) return;
     // A save asked of a record the screen has left spends no landing of the one it shows (US-16 AC2d, US-62 AC25b).
-    doors.current.reread(erase === undefined || erase === store.getSnapshot().shown ? 'refused' : 'left');
+    const spends = erase === undefined || erase === store.getSnapshot().shown;
+    // F4c: the erase the save was asked under; the supplement stop names none, so the mark's (PR 3).
+    // The machine says WRITE_REFUSED when it is news, then reads a heard erase itself (Q3): the alert comes first.
+    const { news, reads } = refusal(store, erase ?? askedUnder());
+    if (reads) { if (news && spends) doors.current.spend(); return; } // one read, never two; a repeat spends nothing (R2)
+    if (news) doors.current.reread(spends ? 'refused' : 'left');
   }, [store]);
 
   const eraseAll = useCallback(async () => {

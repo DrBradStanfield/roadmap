@@ -74,30 +74,63 @@ struct HealthSyncMemory {
     }
 
     /// The delete still owed (US-72 AC10), by sync id and version: what an erase found written
-    /// (`oweWritten`) and any save that landed after it. Never a live sample: a Connect that
-    /// comes before the delete succeeds starts a new written list beside it (edge 1).
-    /// A pass never writes an owed id; it is written again once its delete is paid.
-    var owed: [String: Int64] { versions("appleHealth.owed") }
+    /// (`oweWritten`) and any save that landed after it, with the pays in a row that deleted none
+    /// of it (AC16). Never a live sample: a Connect that comes before the delete succeeds starts a
+    /// new written list beside it (edge 1). A pass never writes an owed id; it is written again
+    /// once its delete is paid. One JSON value; a build before AC16 kept the ids alone, as a
+    /// dictionary, read as no failed pays. A value neither can read is `owedUnreadable`.
+    var owed: Owed {
+        switch defaults.object(forKey: Self.owedKey) {
+        case let data as Data: (try? JSONDecoder().decode(Owed.self, from: data)) ?? Owed()
+        case let old as [String: Any]: Owed(ids: old.mapValues { ($0 as? NSNumber)?.int64Value ?? 0 })
+        default: Owed()
+        }
+    }
 
-    /// An erase disconnected Apple Health: every value written is owed.
+    /// The owed value could not be read (US-72 AC16), so what it held is not known. It is kept
+    /// aside, never taken as nothing owed, until an erase deletes this app's samples by source.
+    var owedUnreadable: Bool {
+        defaults.object(forKey: Self.owedAside) != nil || Self.unreadable(defaults.object(forKey: Self.owedKey))
+    }
+
+    /// An erase deleted this app's samples by source: what the unreadable value held is gone.
+    func forgetUnreadableOwed() {
+        defaults.removeObject(forKey: Self.owedAside)
+    }
+
+    /// An erase disconnected Apple Health: every value written is owed, and the count starts again.
     func oweWritten() {
-        for (syncId, version) in versions("appleHealth.written") { owe(version, for: syncId) }
+        setOwed(owed.owingWritten(versions("appleHealth.written")))
         set([:], "appleHealth.written")
     }
 
     /// A save that landed after an erase disconnected Health; the newer version is kept.
     func owe(_ version: Int64, for syncId: String) {
-        var owed = owed
-        owed[syncId] = max(owed[syncId] ?? 0, version)
-        set(owed, "appleHealth.owed")
+        setOwed(owed.owing(version, for: syncId))
     }
 
-    /// After a delete of `deleted`: each entry leaves unless a newer version of it was saved
-    /// meanwhile, which stays owed (Codex C-R1: a correction keeps its sync id).
+    /// After a delete of `deleted` (`Owed.paying`).
     func paid(_ deleted: [String: Int64]) {
-        var owed = owed
-        for (syncId, version) in deleted where owed[syncId] == version { owed[syncId] = nil }
-        set(owed, "appleHealth.owed")
+        setOwed(owed.paying(deleted))
+    }
+
+    private static let owedKey = "appleHealth.owed"
+    private static let owedAside = "appleHealth.owedUnreadable"
+
+    private static func unreadable(_ stored: Any?) -> Bool {
+        switch stored {
+        case nil, is [String: Any]: false
+        case let data as Data: (try? JSONDecoder().decode(Owed.self, from: data)) == nil
+        default: true
+        }
+    }
+
+    /// The one write: nothing owed removes the key. An unreadable value is moved aside first,
+    /// never over an older one kept there (review F3).
+    private func setOwed(_ owed: Owed) {
+        let stored = defaults.object(forKey: Self.owedKey)
+        if Self.unreadable(stored), defaults.object(forKey: Self.owedAside) == nil { defaults.set(stored, forKey: Self.owedAside) }
+        defaults.set(owed.ids.isEmpty ? nil : try? JSONEncoder().encode(owed), forKey: Self.owedKey)
     }
 
     /// The kind of each value the record lists for Health, and of each id still owed (lead H29):
@@ -111,7 +144,7 @@ struct HealthSyncMemory {
     /// (a row gone from the record still has its sample in Health).
     func learnKinds(_ writes: [HealthWrite]) {
         let stored = defaults.dictionary(forKey: "appleHealth.kinds") as? [String: String] ?? [:]
-        let held = Set(owed.keys).union(versions("appleHealth.written").keys)
+        let held = Set(owed.ids.keys).union(versions("appleHealth.written").keys)
         let kinds = stored.filter { held.contains($0.key) }.merging(writes.compactMap { write in write.kind.map { (write.syncId, $0.rawValue) } }) { $1 }
         guard kinds != stored else { return }
         defaults.set(kinds.isEmpty ? nil : kinds, forKey: "appleHealth.kinds")
@@ -124,6 +157,46 @@ struct HealthSyncMemory {
     /// The last entry gone removes the key.
     private func set(_ versions: [String: Int64], _ key: String) {
         defaults.set(versions.isEmpty ? nil : versions.mapValues { NSNumber(value: $0) }, forKey: key)
+    }
+}
+
+/// The delete an erase still owes Apple Health (US-72 AC10), by sync id and version, and how many
+/// pays in a row left every id owed (AC16). Every value comes through `init`, which holds the one
+/// rule: nothing owed, no failed pays.
+struct Owed: Codable, Equatable {
+    let ids: [String: Int64]
+    let failedPays: Int
+
+    init(ids: [String: Int64] = [:], failedPays: Int = 0) {
+        self.ids = ids
+        self.failedPays = ids.isEmpty ? 0 : failedPays
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(ids: try values.decode([String: Int64].self, forKey: .ids), failedPays: try values.decodeIfPresent(Int.self, forKey: .failedPays) ?? 0)
+    }
+
+    /// Settings' Apple Health footer says the delete is stuck (AC16): from the second pay in a row
+    /// that deleted none of it, while anything is owed.
+    var showsFooter: Bool { !ids.isEmpty && failedPays >= 2 }
+
+    /// A new erase: every value written is owed, the newer version kept, and the count starts again.
+    func owingWritten(_ written: [String: Int64]) -> Owed {
+        Owed(ids: ids.merging(written, uniquingKeysWith: max), failedPays: 0)
+    }
+
+    /// A save that landed after an erase: the newer version is kept, and the count.
+    func owing(_ version: Int64, for syncId: String) -> Owed {
+        Owed(ids: ids.merging([syncId: version], uniquingKeysWith: max), failedPays: failedPays)
+    }
+
+    /// After a pay that deleted `deleted`: each id leaves unless a newer version of it was saved
+    /// meanwhile, which stays owed (Codex C-R1: a correction keeps its sync id). A pay that took
+    /// any id off the list starts the count again; one that left every id owed adds one.
+    func paying(_ deleted: [String: Int64]) -> Owed {
+        let left = ids.filter { deleted[$0.key] != $0.value }
+        return Owed(ids: left, failedPays: left.count < ids.count ? 0 : failedPays + 1)
     }
 }
 
