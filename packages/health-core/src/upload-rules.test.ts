@@ -27,7 +27,7 @@ describe('UPLOAD_LIMITS', () => {
 });
 
 describe('fileVerdict against the pins', () => {
-  const zipKind = (name: string) => (name.toLowerCase().endsWith('.zip') ? 'zip' : 'file') as const;
+  const zipKind = (name: string): 'zip' | 'file' => (name.toLowerCase().endsWith('.zip') ? 'zip' : 'file');
 
   it.each(table.fileSizes.rows)('$name of $bytes bytes: web $web, phone $phone (D8)', ({ name, bytes, web, phone }) => {
     expect(fileVerdict({ name, bytes, kind: zipKind(name), platform: 'web' })).toBe(web === 'read' ? 'keep' : 'tooLarge');
