@@ -179,6 +179,15 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     expect(lock).toHaveBeenCalledTimes(1);
     expect(work).toHaveBeenCalledTimes(1);
   });
+  it("a run still going at the next day's eligible hour blocks that tick (US-28 AC7)", async () => {
+    const { lock } = await boot(c, c.beforeTarget, true);
+    lock.mockResolvedValue(true);
+    work.mockImplementation(c.hang);
+    await tick();                              // the day's run starts and never ends
+    await vi.advanceTimersByTimeAsync(DAY_MS); // every tick through the next day's eligible hour
+    expect(lock).toHaveBeenCalledTimes(1);
+    expect(work).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('trending cron lock per store', () => {
