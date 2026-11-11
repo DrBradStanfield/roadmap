@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scrubSensitiveData, scrubUrl, scrubBreadcrumbData, scrubText, scrubEventText, dropLongStrings } from './sentry-scrub';
+import { type TextScrubbableEvent, scrubSensitiveData, scrubUrl, scrubBreadcrumbData, scrubText, scrubEventText, dropLongStrings } from './sentry-scrub';
 
 describe('scrubSensitiveData', () => {
   describe('health measurement fields', () => {
@@ -495,7 +495,7 @@ describe('US-09 AC7h — trace and span ids at their exact paths', () => {
   const TRACE_ID = 'e2123456789abcdef0123456789abcde';
   const SPAN_ID = 'e212345678abcdef';
   const PARENT_ID = 'e1987654321fedcb';
-  const idEvent = (trace: unknown, rest: Record<string, unknown> = {}) => ({
+  const idEvent = (trace: unknown, rest: Pick<TextScrubbableEvent, 'message' | 'extra' | 'tags' | 'breadcrumbs'> = {}) => ({
     event_id: TRACE_ID,
     contexts: { trace },
     spans: [{ span_id: SPAN_ID, parent_span_id: PARENT_ID, trace_id: TRACE_ID }],
