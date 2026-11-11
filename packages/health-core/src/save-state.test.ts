@@ -1,5 +1,5 @@
 // Lead A1 (b): the record session's save mode as one union (US-10 AC5, AC5a;
-// US-11 AC7; US-16 AC2a; US-34). The table covers every state x event pair.
+// US-11 AC7; US-16 AC2a; US-34). The table covers every sample state x event pair.
 import { describe, expect, it } from 'vitest';
 import {
   debounceArmed, saveStatus, transition, unsaved, writePending,
@@ -89,7 +89,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     failed: [erasing(failed(7, 4)), []],
     synced: [erasing(saving(7, 7, 6)), []], hold: same(erasing(saving(7, 4, 6))),
     eraseStarted: [erasing(saving(8, 4, 6)), []],
-    eraseEnded: [saving(7, 4, 6), []], // a synchronous erase write beside a pass still running
+    eraseEnded: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
   },
   erasingHeld: {
     edited: same(erasing(held(7, 6))), save: [erasing(saving(7, 6, 7)), [pass(7)]],
@@ -124,7 +124,7 @@ const run = (start: SaveState, events: SaveEvent[]) => {
 };
 
 describe('save-state transition table (A1)', () => {
-  it('covers every state x event pair', () => {
+  it('covers every sample state x event pair', () => {
     for (const name of Object.keys(STATES)) expect(Object.keys(TABLE[name]).sort()).toEqual(Object.keys(EVENTS).sort());
   });
   for (const [name, state] of Object.entries(STATES)) {
@@ -144,6 +144,17 @@ describe('save-state transition table (A1)', () => {
     // a pass landing under an armed debounce leaves it armed, over nothing unsaved
     expect(transition(saving(6, 4, 6, true), EVENTS.landed)).toEqual({ state: waiting(6, 6), effects: [] });
   });
+
+  it('erasing over waiting, or over an armed pass, is unreachable by eraseStarted or hold', () => {
+    for (const state of Object.values(STATES)) {
+      for (const event of [EVENTS.eraseStarted, EVENTS.hold]) {
+        const next = transition(state, event).state;
+        if (next.mode !== 'erasing') continue;
+        expect(next.under.mode).not.toBe('waiting');
+        expect(next.under.mode === 'saving' && next.under.armed).toBe(false);
+      }
+    }
+  });
 });
 
 describe('derived answers', () => {
@@ -156,7 +167,7 @@ describe('derived answers', () => {
     ['saving armed', saving(7, 4, 6, true), true, true, true, 'saving'],
     // US-34: a failed save never stops the re-read.
     ['failed', failed(6, 4), true, false, false, 'not-saved'],
-    ['held', held(6, 4), true, false, false, 'not-saved'],
+    ['held: an erase is in progress', held(6, 4), true, false, false, 'saving'],
     ['erasing over saving', erasing(saving(7, 4, 6)), true, true, false, 'saving'],
     ['erasing over clean', erasing(clean(7)), false, false, false, 'saved'],
     ['erasing over failed', erasing(failed(7, 4)), true, false, false, 'not-saved'],

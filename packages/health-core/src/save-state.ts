@@ -25,6 +25,12 @@
  * - erasing: the erase's swap to the end of its write, over the save state
  *   `under` it. Erasing while a pass runs is erasing over saving. An edit is
  *   refused here; RecordSession.refuses() gives the caller that answer.
+ *
+ * Where step (c) dispatches, in saveLoop:
+ * - `passFailed` where its catch sets `running = null`, before the awaited mirror write.
+ * - `passLanded` where it sets `savedChanges = saving`, before `adopt()`; run
+ *   the pass effect it returns after `adopt()`.
+ * - read `debounceArmed(state)` before dispatching `hold`.
  */
 
 export type SaveBase =
@@ -78,7 +84,7 @@ export type SaveStatus = 'saved' | 'saving' | 'not-saved';
 /** What a status line shows. Step (d) words it. */
 export function saveStatus(s: SaveState): SaveStatus {
   if (s.mode === 'erasing') return saveStatus(s.under);
-  if (s.mode === 'saving') return 'saving';
+  if (s.mode === 'saving' || s.mode === 'held') return 'saving'; // held: an erase is in progress
   if (!unsaved(s)) return 'saved';
   return s.mode === 'waiting' ? 'saving' : 'not-saved';
 }
