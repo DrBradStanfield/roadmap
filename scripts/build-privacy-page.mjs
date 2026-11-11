@@ -7,7 +7,9 @@
 // header paragraph, the internal blockquote and "Items to verify"; refuses em
 // dashes, [VERIFY] markers and relative links, so nothing internal reaches the page.
 // The page opens with "Last updated <date>", the UTC day it is built; --date sets
-// that clock for tests and is refused with --publish.
+// that clock for tests and is refused with --publish. The Last updated date is the
+// publish day, so publish only when the notice text changed; republishing unchanged
+// text would claim an update that did not happen.
 //   node scripts/build-privacy-page.mjs [connector|app] [--out file] [--publish] [--date iso]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { requireMergedCode } from '../tools/write-gate.mjs';
