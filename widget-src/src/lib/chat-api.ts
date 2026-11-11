@@ -4,7 +4,7 @@
  */
 import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
@@ -296,11 +296,6 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
 /** Same window as the server's chat-dedup.server.ts. */
 const DEDUP_WINDOW_MS = 60_000;
 
-/** The server's proposed edits of a kind this build applies; any other is dropped, never applied as something else. */
-const EDIT_KINDS: readonly unknown[] = ['field', 'medication', 'profile'] satisfies ProposedEdit['kind'][];
-const knownEdits = (edits: unknown): ProposedEdit[] =>
-  Array.isArray(edits) ? edits.filter((e): e is ProposedEdit => EDIT_KINDS.includes(e?.kind)) : [];
-
 /**
  * `history` is the conversation so far, from the widget's own file. On
  * local-first builds the server keeps no transcript of the widget's chat, only
@@ -412,6 +407,9 @@ export async function sendMessage(
         Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
       });
 
+    // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind or a
+    // known kind that is not its shape is dropped, never applied as something else.
+    const { edits } = readProposedEdits(data.proposedEdits);
     return {
       result: {
         conversationId: data.conversationId,
@@ -420,7 +418,7 @@ export async function sendMessage(
         sessionToken: newToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
-        ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
+        ...(edits.length > 0 ? { proposedEdits: edits } : {}),
         ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,

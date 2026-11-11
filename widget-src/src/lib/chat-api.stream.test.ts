@@ -133,6 +133,20 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     expect((await sendMessage('r', null, null, [], () => {}, true)).result).not.toHaveProperty('proposedEdits');
   });
 
+  // US-67 AC2: the web reads a reply's edits once, through health-core's readProposedEdits,
+  // as the phone does; an entry of a known kind that is not its shape never reaches ChatEdits.
+  it('US-67 AC2: drops malformed and wrong-typed edits of a known kind, keeps the valid ones', async () => {
+    const field = { kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null };
+    const med = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' };
+    const badMed = { kind: 'medication', medicationKey: 'statin', drugName: 42, doseValue: null, doseUnit: null };
+    const wrongTypedValue = { kind: 'field', field: 'ldlC', displayValue: '4.1', unitSystem: 'si', date: null };
+    const unknownField = { kind: 'field', field: 'notAMetric', displayValue: 1, unitSystem: 'si', date: null };
+    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [badMed, field, wrongTypedValue, { kind: 'goal', target: 5 }, unknownField, med] }]));
+    expect((await sendMessage('q', null, null, [], () => {}, true)).result?.proposedEdits).toEqual([field, med]);
+    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [badMed, wrongTypedValue, { kind: 'goal' }] }]));
+    expect((await sendMessage('r', null, null, [], () => {}, true)).result).not.toHaveProperty('proposedEdits');
+  });
+
   it('a refusal or fallback done line carries isFallback and replaces the streamed text', async () => {
     fetchMock.mockResolvedValue(ndjson([
       { type: 'text', text: 'Partial the model began' },
