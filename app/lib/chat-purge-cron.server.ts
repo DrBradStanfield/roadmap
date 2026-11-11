@@ -410,9 +410,15 @@ export function startChatPurgeCron(): void {
       const todayStr = now.toISOString().slice(0, 10);
       if (lastRunDate === todayStr) return;
 
-      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
-      await purgeWithLock(todayStr, now);
+      // Marked while the run goes, so a purge that outlasts the hour is not
+      // started twice on this machine; released on a throw (a lock error
+      // included, US-28 AC2), so the next tick retries. A held lock (null)
+      // keeps the day marked (US-28 AC7).
       lastRunDate = todayStr;
+      await purgeWithLock(todayStr, now).catch((runError: unknown) => {
+        lastRunDate = null;
+        throw runError;
+      });
     } catch (error) {
       console.error('Chat text purge cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'chat_text_purge_cron' } });
