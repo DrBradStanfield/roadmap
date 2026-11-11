@@ -267,20 +267,19 @@ function castEnum<T extends string>(value: string, valid: readonly T[]): T | und
 
 /** A screening date as stored (YYYY-MM, or YYYY-MM-DD), or undefined unless it
  *  is a real calendar date: `Date` would roll '2020-99' forward into the future
- *  and call the screening up to date. A `lastDone` date must also fall in the
- *  current month or before it (the form offers only past months); a follow-up
- *  date may be future, since the form asks when one is scheduled. "Current
- *  month" is the one at UTC+14, the earliest time zone, so the widget (local
- *  time) and the chat server (UTC) agree for every user. */
-function screeningDate(value: string, lastDone = false): string | undefined {
+ *  and call the screening up to date. A "last done" date must also fall in the month of
+ *  `lastDoneBy` (now) or before it, as the form offers only past months; a follow-up date
+ *  may be future. That month is the one at UTC+14, the earliest time zone, so the widget
+ *  (local time) and the chat server (UTC) agree for every user. */
+function screeningDate(value: string, lastDoneBy?: Date): string | undefined {
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(value);
   if (!m) return undefined;
   const [year, month, day] = [Number(m[1]), Number(m[2]), m[3] === undefined ? 1 : Number(m[3])];
   const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
   if (days === undefined || day < 1 || day > days) return undefined;
-  const now = new Date(Date.now() + 14 * 3600_000);
-  return lastDone && year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth() + 1 ? undefined : value;
+  const now = lastDoneBy && new Date(lastDoneBy.getTime() + 14 * 3600_000);
+  return now && year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth() + 1 ? undefined : value;
 }
 
 // Valid values for each screening enum field (derived from ScreeningInputs in types.ts)
@@ -315,6 +314,7 @@ export function screeningRange(key: string): { min: number; max: number } | unde
  */
 export function screeningsToInputs(
   screenings: ReadonlyArray<Pick<ApiScreening, 'screeningKey' | 'value'>>,
+  now: Date = new Date(),
 ): import('./types').ScreeningInputs {
   const inputs: import('./types').ScreeningInputs = {};
   for (const s of screenings) {
@@ -323,7 +323,7 @@ export function screeningsToInputs(
         inputs.colorectalMethod = castEnum(s.value, COLORECTAL_METHODS);
         break;
       case 'colorectal_last_date':
-        inputs.colorectalLastDate = screeningDate(s.value, true);
+        inputs.colorectalLastDate = screeningDate(s.value, now);
         break;
       case 'colorectal_result':
         inputs.colorectalResult = castEnum(s.value, SCREENING_RESULTS);
@@ -338,7 +338,7 @@ export function screeningsToInputs(
         inputs.breastFrequency = castEnum(s.value, BREAST_FREQUENCIES);
         break;
       case 'breast_last_date':
-        inputs.breastLastDate = screeningDate(s.value, true);
+        inputs.breastLastDate = screeningDate(s.value, now);
         break;
       case 'breast_result':
         inputs.breastResult = castEnum(s.value, SCREENING_RESULTS);
@@ -353,7 +353,7 @@ export function screeningsToInputs(
         inputs.cervicalMethod = castEnum(s.value, CERVICAL_METHODS);
         break;
       case 'cervical_last_date':
-        inputs.cervicalLastDate = screeningDate(s.value, true);
+        inputs.cervicalLastDate = screeningDate(s.value, now);
         break;
       case 'cervical_result':
         inputs.cervicalResult = castEnum(s.value, SCREENING_RESULTS);
@@ -374,7 +374,7 @@ export function screeningsToInputs(
         inputs.lungScreening = castEnum(s.value, LUNG_SCREENINGS);
         break;
       case 'lung_last_date':
-        inputs.lungLastDate = screeningDate(s.value, true);
+        inputs.lungLastDate = screeningDate(s.value, now);
         break;
       case 'lung_result':
         inputs.lungResult = castEnum(s.value, SCREENING_RESULTS);
@@ -392,7 +392,7 @@ export function screeningsToInputs(
         inputs.prostatePsaValue = parseLocalisedNumber(s.value, SCREENING_RANGES.prostate_psa_value);
         break;
       case 'prostate_last_date':
-        inputs.prostateLastDate = screeningDate(s.value, true);
+        inputs.prostateLastDate = screeningDate(s.value, now);
         break;
       case 'endometrial_discussion':
         inputs.endometrialDiscussion = castEnum(s.value, ENDOMETRIAL_DISCUSSIONS);
@@ -404,7 +404,7 @@ export function screeningsToInputs(
         inputs.dexaScreening = castEnum(s.value, DEXA_SCREENINGS);
         break;
       case 'dexa_last_date':
-        inputs.dexaLastDate = screeningDate(s.value, true);
+        inputs.dexaLastDate = screeningDate(s.value, now);
         break;
       case 'dexa_result':
         inputs.dexaResult = castEnum(s.value, DEXA_RESULTS);

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M1,phone mirrors,"The lab results rules version is a hand-kept Swift constant, not the engine's",lead,not started,"ios/HealthRoadmap/Health/HealthSyncMemory.swift:40 labResultsRulesVersion = 2, read at AppleHealthSync.swift:241; bumped by hand when the engine's lab-result rules change (US-72). Should come from the engine. Found during shared upload PR 1, 2026-11-11",,no

@@ -23,6 +23,14 @@ export function cancelListSave(timers: ListSaves, key: string): void {
   timers.delete(key);
 }
 
+/** Drop every waiting list save without running it (an erase, an unmount). */
+export function dropListSaves(all: ListSaves[]): void {
+  for (const timers of all) {
+    for (const { timer } of timers.values()) clearTimeout(timer);
+    timers.clear();
+  }
+}
+
 /** Run every waiting list save now, as the page goes away (US-06 AC13). */
 export function flushListSaves(all: ListSaves[]): void {
   for (const timers of all) {

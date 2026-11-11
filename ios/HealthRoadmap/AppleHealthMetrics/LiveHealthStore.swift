@@ -38,6 +38,43 @@ struct LiveChanges: Sendable {
     var more = false
 }
 
+/// One read's view of Health (`LiveHealth.reader`, US-72 AC10): each call runs only while the
+/// read's ticket holds, checked before it starts and after it returns, else it throws
+/// `CancellationError`, which every reader takes as a cancelled read: nothing kept or drawn.
+struct GatedLiveStore: LiveHealthStore {
+    let base: any LiveHealthStore
+    let holds: @Sendable () async -> Bool
+
+    var isAvailable: Bool { base.isAvailable }
+
+    private func gated<T: Sendable>(_ read: @Sendable () async throws -> T) async throws -> T {
+        guard await holds() else { throw CancellationError() }
+        let value = try await read()
+        guard await holds() else { throw CancellationError() }
+        return value
+    }
+
+    func needsRequest() async throws -> Bool { try await gated { try await base.needsRequest() } }
+
+    func points(_ metric: LiveMetric, from start: Date, to end: Date, every component: Calendar.Component) async throws -> [LivePoint] {
+        try await gated { try await base.points(metric, from: start, to: end, every: component) }
+    }
+
+    func latest(_ metric: LiveMetric) async throws -> (value: Double?, date: Date)? {
+        try await gated { try await base.latest(metric) }
+    }
+
+    func sleep(from start: Date, to end: Date) async throws -> [SleepSegment] {
+        try await gated { try await base.sleep(from: start, to: end) }
+    }
+
+    func earliest(_ metric: LiveMetric) async throws -> Date? { try await gated { try await base.earliest(metric) } }
+
+    func changes(_ metric: LiveMetric, after anchor: Data?, from start: Date?) async throws -> LiveChanges {
+        try await gated { try await base.changes(metric, after: anchor, from: start) }
+    }
+}
+
 /// The real `LiveHealthStore`, on the app's one `HKHealthStore.app`, read off the main thread. Its calendar
 /// anchors the statistics' days and hours: the same one `LiveHealth` buckets and labels
 /// with, following the phone's zone as it travels (adversary R2).

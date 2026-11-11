@@ -8,7 +8,7 @@ import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest
 import fs from 'fs';
 import path from 'path';
 import * as units from '../../packages/health-core/src/units';
-import { parseFrontmatter } from './frontmatter';
+import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadMatchedContent, MAX_BLOG_CHARS } from './matched-content';
 
@@ -137,7 +137,8 @@ describe('US-70 AC7: a condition guide loads first, beside two large whole-only 
 
   it('guide + master + master: all three load, the masters at least reduced with their safety sections', async () => {
     // Both masters grown, by a section their reduced forms leave out, so neither fits whole beside the guide.
-    const grown = (h: string, raw: string) => ([BV, CBD].includes(h) ? `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, 100_000 - raw.length))}\n` : raw);
+    // Pad by the body the loader sees: the masters rebuild grew frontmatter `sources:` lines past 20k (US-70 AC7).
+    const grown = (h: string, raw: string) => ([BV, CBD].includes(h) ? `${raw}\n\n## Grown for the test\n\n${'z'.repeat(Math.max(0, 100_000 - stripFrontmatter(raw).length))}\n` : raw);
     const { content, skipped, reduced, titles } = (await freshLoader(grown))([BV, CBD, GUIDE]);
     expect(skipped).toEqual([]);
     expect(titles[0]).toBe('Test condition');

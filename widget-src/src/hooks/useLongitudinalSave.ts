@@ -30,17 +30,20 @@ interface LongitudinalSaveDeps {
   history: ApiMeasurement[];
   unitOverrides: Record<string, UnitSystem>;
   unitSystem: UnitSystem;
-  reloadValues: () => Promise<unknown>;
+  reread: () => Promise<unknown>;
   flushPendingProfileSave: (erase?: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
   typedIn: MutableRefObject<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>;
-  isFirstSaveRef: MutableRefObject<boolean>;
+  /** The record held no measurement as the page loaded: read once (US-01 AC7). */
+  firstSave: boolean;
 }
 
 export function useLongitudinalSave({
-  inputs, setInputs, history, unitOverrides, unitSystem, reloadValues,
-  flushPendingProfileSave, typedIn, isFirstSaveRef,
+  inputs, setInputs, history, unitOverrides, unitSystem, reread,
+  flushPendingProfileSave, typedIn, firstSave,
 }: LongitudinalSaveDeps) {
+  // The measurement-save conversion is sent once per page load (US-01 AC7).
+  const isFirstSaveRef = useRef(firstSave);
   // How many saves are running: "Saving…" holds until the last one ends (US-03 AC9).
   // A departure's save runs beside a queued one, so a single flag ended early.
   const [savesRunning, setSavesRunning] = useState(0);
@@ -118,7 +121,7 @@ export function useLongitudinalSave({
       setSavesRunning(n => n + 1);
       try {
         const refused = await staged;
-        await reloadValues();
+        await reread();
 
         // What the fields saved leaves the form, in one update. A copy left in
         // `inputs` outranked the saved row in the plan and the chat, and the
@@ -168,7 +171,7 @@ export function useLongitudinalSave({
     savesRef.current = run.catch(() => {});
     return run;
     // setInputs and the refs are stable; flushPendingProfileSave is read from the render that last rebuilt this, as before the move.
-  }, [inputs, history, unitOverrides, unitSystem, psaDate, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, psaDate, reread]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one

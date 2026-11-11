@@ -94,3 +94,6 @@ reports/mutation/
 
 # Browser copy of docs/user-stories.md: built by pages.yml, never tracked (US-64 AC11)
 docs/user-stories.html
+
+# Files the agent-channel tool downloads from Discord: private, never tracked (US-63 AC19)
+agent-channel-downloads/

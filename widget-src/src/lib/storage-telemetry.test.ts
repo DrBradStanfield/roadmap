@@ -10,6 +10,7 @@ import { LocalStorageAdapter } from '../storage';
 import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -277,7 +278,7 @@ describe('cloud-storage telemetry boundary', () => {
     await Sentry.flush();
     expect(JSON.stringify(envelopes)).not.toContain(marker);
     expect(JSON.stringify(envelopes)).toContain('api.github.com');
-    expect(JSON.stringify(envelopes)).toContain('503');
+    expect(numberPaths(envelopes, 503)).not.toEqual([]);
   });
 
   it.each(['Dropbox did not answer', 'Failed to fetch', 'Load failed', 'The operation was aborted'])('keeps %s suppressed after constructing a safe exception', async message => {

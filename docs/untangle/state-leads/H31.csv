@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H31,composition,"CloudSync.syncNow discards cloudRefresh's 'same'. A Sync now inside the 5 s throttle reads nothing and still shows Synced (record-session.ts:452-455, CloudSync.swift:134). Product call for Brad",lead,not started,"packages/health-core/src/record-session.ts:34 REMOTE_THROTTLE_MS, :452-455; ios/HealthRoadmap/Sync/CloudSync.swift:134 drops the result. Found by the PR 1218 table test (AppleHealthEraseRaceTests)",,yes

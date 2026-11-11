@@ -11,10 +11,11 @@ import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, ty
 import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
+import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { loadFromLocalStorage } from '../lib/storage';
-import { getShownErase } from '../lib/roadmap-data';
+import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-import { type FormStage, FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, bpTargetFor } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
@@ -91,9 +92,10 @@ interface InputPanelProps {
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
-  onUnitSystemChange: (system: UnitSystem) => void;
+  onUnitSwitch: UnitSwitchSource; // this tab's unit switch (useUnits): the blood-test matrix re-reads its typed cells
   unitOverrides: Record<string, UnitSystem>;
-  onToggleFieldUnit: (field: string) => void;
+  onToggleFieldUnit: FieldUnitToggle;
+  startUnitOf: (field: string) => UnitSystem; // this device's units before the record's (useUnits), for kept drafts with no unit
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
@@ -145,18 +147,7 @@ interface InputPanelProps {
   // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
   // mounted; HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
-  /** The first answer the record lacks (US-62 AC13): 1 height and weight,
-   *  2 sex, 3 birth date, 4 none. */
-  formStage: FormStage;
-  /** The highest stage reached on this record: what is unlocked stays (US-62 AC13). */
-  reached: FormStage;
-  /** The whole form shows: the onboarding was done, or the record holds more than its answers. */
-  fullForm: boolean;
-  /** About you is its own card of rows at the column's foot (US-62 AC12): a
-   *  returning user's, or once the onboarding's answers are in and left. */
-  aboutYouLow: boolean;
-  /** The focus left the Starting Info card: HealthTool moves About you low if all four answers hold. */
-  onProfileLeft?: () => void;
+  onboarding: PanelOnboarding;
   setShowUploadModal?: (show: boolean) => void;
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
@@ -165,16 +156,14 @@ interface InputPanelProps {
    *  by the validated birth info, plan or no plan: the form withholds its
    *  adult targets, hints and colours (US-07 AC6). */
   grading: Grading;
-  /** The last onboarding answer is in: land at My health's top. Says whether it did (US-62 AC13, AC25). */
-  onOnboardingDone?: (fromBirth?: boolean) => boolean;
   /** A chat edit that filled a grid cell (US-16 AC2): the table opens so the
    *  filled cell shows, phone and desktop. Each new edit is a new object. */
   revealCell?: RevealCell;
 }
 
 export function InputPanel({
-  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSystemChange,
-  unitOverrides, onToggleFieldUnit,
+  children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSwitch,
+  unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, moveTest, onDraftValue,
   medications, onMedicationChange,
@@ -183,10 +172,9 @@ export function InputPanel({
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
-  formStage, reached, fullForm, aboutYouLow, onProfileLeft,
-  setShowUploadModal, planBasis, grading,
-  onOnboardingDone, revealCell = null,
+  onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
+  const { stage: formStage, reached, fullForm, aboutYouLow, profileLeft: onProfileLeft, answered, rested, left } = onboarding;
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   // Number boxes holding text the browser could not read ("175,500" gives "" with
   // validity.badInput): not a clear, so nothing is written or saved (US-02 AC7).
@@ -197,15 +185,11 @@ export function InputPanel({
     setUnreadable(prev => ({ ...prev, [field]: bad }));
     return !bad;
   };
-  // The weight's jump to My health, once per record (US-62 AC25): the erase
-  // whose record it landed on, so an erase in this tab frees it (D1).
-  const landedFor = useRef<string | null>(null);
-  // The birth year's jump (Brad 2026-11-02): once per record, as the weight's is once.
-  const yearJumped = useRef(false);
   // One auto-advance instance per TARGET, so a new keystroke on any source
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
-  const advanceToMyHealth = useAutoAdvance();
+  const advanceToMyHealth = useAutoAdvance(true);
+  const weightRef = useLeaveField(left); // the weight's box or matrix cell (one shows): leaving it ends a landing (US-62 AC25b)
   const advanceToDiastolic = useAutoAdvance();
   // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
@@ -233,10 +217,8 @@ export function InputPanel({
     focusFieldRef.current = null;
     requestAnimationFrame(() => {
       const input = document.getElementById(field);
-      if (input) {
-        input.focus();
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      input?.focus();
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, [expandedVitals, bpExpanded]);
 
@@ -301,8 +283,6 @@ export function InputPanel({
   useEffect(() => {
     // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
     setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-    // About you's rows unmount as it leaves, which closes every open row.
-    if (!aboutYouLow) yearJumped.current = false;
   }, [aboutYouLow]);
   const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
   const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
@@ -315,9 +295,9 @@ export function InputPanel({
   const leavePending = useRef(false);
   const leaveCard = () => {
     leavePending.current = false;
-    if (formStage !== 4) return; // the move needs all four answers: measure only for it
+    // Measured only for a move (HealthTool's call), still before it: React commits the move after this handler returns.
+    if (!onProfileLeft?.()) return;
     flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
-    onProfileLeft?.();
   };
   const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -572,7 +552,7 @@ export function InputPanel({
           {hasUnitToggle(field) ? (
             <button
               type="button"
-              className="unit-toggle-pill"
+              className="unit-toggle-pill" data-unit-control
               onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
               title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
             >
@@ -588,29 +568,24 @@ export function InputPanel({
         <div className="longitudinal-input-row">
           <input
             type="number"
-            id={field}
+            id={field} ref={field === 'weightKg' ? weightRef : undefined}
             onWheel={blurOnWheel}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
               const raw = e.target.value;
               typeIn(field, raw);
               setRawInputs(prev => ({ ...prev, [field]: raw }));
+              // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
+              const n = parseLocalisedNumber(raw);
+              const complete = n !== undefined && /^\d{2,3}$/.test(raw) && n >= r.min && n <= r.max;
+              if (field === 'weightKg' && rested) advanceToMyHealth(complete ? { ambiguous: /^\d{2}$/.test(raw) && n * 10 <= r.max, advance: rested } : null);
               if (!readable(field, e)) return;
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
               }
               updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              const erase = getShownErase(); // the record as the weight was typed, not as the jump fires
-              if (field === 'weightKg' && landedFor.current !== erase && onOnboardingDone) {
-                const weightNum = parseLocalisedNumber(raw);
-                if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  advanceToMyHealth({
-                    ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
-                    advance: () => requestAnimationFrame(() => { if (getShownErase() === erase && onOnboardingDone()) landedFor.current = erase; }),
-                  });
-                }
-              }
+              if (field === 'weightKg') answered?.('weightKg');
             }}
             onBlur={() => {
               rangeWait.settle();
@@ -705,14 +680,14 @@ export function InputPanel({
           </a>
           {/* Whole value column expands the row — Clarity showed users dead-clicking
               the value/unit text expecting exactly that (the 28px + button was the
-              only target). Unit pill stops propagation so toggling stays a toggle. */}
-          <span className="collapsed-field-value" onClick={onExpand} title="Add new value">
+              only target). A press on the unit pill stays a toggle; it reaches the page's unit listeners (hooks/useUnits). */}
+          <span className="collapsed-field-value" onClick={(e) => { if (!(e.target as Element).closest('[data-unit-control]')) onExpand(); }} title="Add new value">
             {displayValue}{' '}
             {hasUnitToggle(field) ? (
               <button
                 type="button"
-                className="unit-toggle-pill"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFieldUnit(field); }}
+                className="unit-toggle-pill" data-unit-control
+                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
                 title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
               >
                 {unitLabel}
@@ -792,31 +767,27 @@ export function InputPanel({
 
   // About you's fields: the onboarding's boxes and, low, the rows' editors (AboutYou.tsx).
   const heightField = (
-    <HeightField form={form} pair={heightPair} unitSystem={unitSystem} onUnitSystemChange={onUnitSystemChange}
+    <HeightField form={form} pair={heightPair} unitSystem={unitSystem}
       toDisplay={toDisplay} parseAndConvert={parseAndConvert}
       mayAdvanceToWeight={inputs.weightKg === undefined && !hasPreviousValue('weightKg')} advanceToWeight={advanceToWeight}/>
   );
   const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
   const birthFields = (
     <BirthFields form={form} yearShown={yearShown.current}
-      // The year's jump, once per record, never a returning user's edit in About you's Birth row (Codex R3).
-      onYearComplete={onOnboardingDone && !aboutYouLow && reached < 4 ? () => {
-        if (yearJumped.current) return;
-        yearJumped.current = true;
-        requestAnimationFrame(() => onOnboardingDone(true));
-      } : undefined}/>
+      // The year's answer, leaving and rest, for the landing (Brad 2026-11-02, US-62 AC25b).
+      onYearAnswered={answered && (() => answered('birthYear'))} onYearLeft={left}
+      onYearComplete={rested && (() => requestAnimationFrame(rested))}/>
   );
 
   // ── Section render functions (shared closure state, not separate components) ──
 
   // data-unit-control="all": a press here closes every open saved-value editor
-  // unsaved (US-05 AC2, US-04 AC1).
+  // unsaved (US-05 AC2, US-04 AC1). Its click switches the units (hooks/useUnits).
   const unitPill = (
     <button
       type="button"
       className="unit-toggle-pill"
       data-unit-control="all"
-      onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
       title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
       aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
     >
@@ -878,10 +849,10 @@ export function InputPanel({
         formStage={formStage}
         plan={planBasis}
         knownMinor={knownMinor}
-        onOnboardingDone={onOnboardingDone}
+        onWeightAnswered={answered && (past => answered(past ? null : 'weightKg'))} weightRef={weightRef} rested={rested}
         withoutWeight={weightInProfile}
         unitOverrides={unitOverrides}
-        onToggleFieldUnit={onToggleFieldUnit}
+        onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
         prefillRef={vitalsPrefillRef}
         flushRef={vitalsFlushRef}
       />
@@ -996,7 +967,7 @@ export function InputPanel({
       bloodTestHistory={bloodTestHistory}
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit}
+      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf} onUnitSwitch={onUnitSwitch}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}

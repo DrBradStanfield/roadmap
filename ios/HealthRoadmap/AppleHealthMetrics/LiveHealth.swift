@@ -12,17 +12,19 @@ import UIKit
 final class LiveHealth {
     /// Health exists on this device. False on an iPad without Health: no card shows (AC13).
     let available: Bool
-    /// Apple's sheet would still show for the four types: My data shows the Turn On row
-    /// (AC4, AC5). Nil until the first check.
-    private(set) var needsAccess: Bool?
-    /// Each metric's latest reading; a metric with none is left out (AC6).
-    private(set) var cards: [LiveMetric: LiveCard] = [:]
-    /// The cards have been read at least once since access.
-    private(set) var hasRead = false
+    /// Whether the sheet is due, access granted, or the cards read (AC4, AC5, AC5d); changed
+    /// only through `LiveAccess.transition`.
+    private(set) var access: LiveAccess = .unknown
+    /// Each metric's latest reading; a metric with none is left out (AC6). Kept while the views
+    /// read it; lead S15 removes it once they switch on `access`.
+    var cards: [LiveMetric: LiveCard] { access.cards }
     /// Counts returns to the app and unlocks: an open page reads again on each (Codex R1).
     private(set) var wakes = 0
     /// A metric page is on screen, for Clarity's fixed screen name "Apple Health metric" (usage signal).
     var pagesOpen = 0
+    /// The connection generation a read may start under, nil while an erase has Apple Health
+    /// disconnected (US-72 AC10, AppleHealthSync's one rule). AppleHealthSync sets it.
+    @ObservationIgnored var connection: @MainActor () -> Int? = { 0 }
 
     @ObservationIgnored let store: any LiveHealthStore
     @ObservationIgnored let now: @Sendable () -> Date
@@ -30,7 +32,8 @@ final class LiveHealth {
     @ObservationIgnored let calendar: Calendar
     /// When the running read began; nil when none runs.
     @ObservationIgnored private var started: ContinuousClock.Instant?
-    @ObservationIgnored private var again = false
+    /// The refresh asked for during the running one, with the ticket it was asked under (Codex C-R2).
+    @ObservationIgnored private var queued: Ticket?
     @ObservationIgnored private var lastWake: ContinuousClock.Instant?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     /// The cards' last readings (AC2); nil keeps none.
@@ -61,11 +64,7 @@ final class LiveHealth {
             // A metric no longer shown (heart rate, US-73) is left out, and the file kept without it.
             let shown = file.shown
             if shown.count < file.cards.count { keep(shown) }
-            if !shown.isEmpty {
-                cards = shown
-                needsAccess = false
-                hasRead = true
-            }
+            access = LiveAccess.launch(shown)
         }
         // A locked phone's read keeps what was drawn; the unlock reads again (AC13). A new day or
         // a new time zone reads again too, so "Today" and the days move (N5).
@@ -91,51 +90,70 @@ final class LiveHealth {
     /// Checks whether the sheet is still due, then reads the cards, each time My data shows
     /// (AC2). A refresh asked for during one runs once more after it, unless the running
     /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
-    /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1).
+    /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1). The one asked
+    /// for during it keeps its own ticket: it runs if that still holds, so a request from
+    /// before an erase is dropped and one made after a reconnect is not (Codex C-R2).
     func refresh(force: Bool = false) async {
-        guard available else { return }
+        guard available, let asked = ticket() else { return }
         if let started {
-            if force || ContinuousClock.now - started >= .seconds(2) { again = true }
+            if force || ContinuousClock.now - started >= .seconds(2) { queued = asked }
             return
         }
         started = .now
-        defer { started = nil }
-        let begun = generation
-        repeat {
-            again = false
-            // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
-            let due = (try? await store.needsRequest()) ?? needsAccess
-            // Erased meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
-            guard !Task.isCancelled, begun == generation else { return }
-            if needsAccess != due { needsAccess = due }
-            // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
-            if due == true {
-                keep([:])
-                await history.removeAll()
-                removed(LiveMetric.allCases)
+        defer {
+            started = nil
+            queued = nil
+        }
+        var next: Ticket? = asked
+        while let begun = next {
+            queued = nil
+            await readOnce(begun)
+            next = queued.flatMap { holds($0) ? $0 : nil }
+        }
+    }
+
+    /// One refresh under `begun`; it stops, keeping nothing, once that no longer holds.
+    private func readOnce(_ begun: Ticket) async {
+        let store = reader(begun)
+        // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
+        let due = try? await store.needsRequest()
+        // Erased or disconnected meanwhile: this refresh keeps nothing (Codex R1).
+        guard holds(begun) else { return }
+        send(.checked(due))
+        // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
+        if due == true {
+            keep([:])
+            await history.removeAll()
+            removed(LiveMetric.allCases)
+        }
+        switch access {
+        case .granted, .read: break
+        case .unknown, .needsAccess: return
+        }
+        do {
+            let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
+            guard holds(begun) else { return }
+            // Unchanged readings are not written, so nothing redraws (E5). An empty read always
+            // removes the file, even one the launch could not read (adversary R3).
+            if cards != read || read.isEmpty { keep(read) }
+            // Drawn before the history awaits below, so an erase during them clears it.
+            send(.cardsRead(read))
+            // Health answered that it holds none of a metric (its access off in Settings, or
+            // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
+            for metric in absent {
+                await history.remove(metric)
+                removed([metric])
             }
-            guard due == false else { continue }
-            do {
-                let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
-                guard !Task.isCancelled, begun == generation else { return }
-                // Unchanged readings are not written, so nothing redraws (E5). An empty read always
-                // removes the file, even one the launch could not read (adversary R3).
-                if cards != read || read.isEmpty { keep(read) }
-                // Health answered that it holds none of a metric (its access off in Settings, or
-                // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
-                for metric in absent {
-                    await history.remove(metric)
-                    removed([metric])
-                }
-                if !hasRead { hasRead = true }
-            } catch HealthStoreError.locked {
-                // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
-                lastWake = nil
-            } catch {
-                // Cancelled: keep what was drawn and mark nothing read (N1).
-                return
-            }
-        } while again
+        } catch HealthStoreError.locked {
+            // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
+            lastWake = nil
+            send(.readFailed)
+        } catch {
+            // Cancelled: keep what was drawn and mark nothing read (N1). `optional()` turns every
+            // other error into no data, so only CancellationError reaches here.
+            assert(error is CancellationError, "only locked or cancelled reach a refresh's catch")
+            send(.readFailed)
+        }
     }
 
     /// "Delete all my data" (AC2): the kept readings and histories go, and nothing shows until
@@ -143,19 +161,46 @@ final class LiveHealth {
     func forget() async {
         generation += 1
         keep([:])
-        if hasRead { hasRead = false }
+        send(.forgot)
         await history.removeAll()
         removed(LiveMetric.allCases)
+    }
+
+    /// What a read began under: the connection generation and the `forget()`s so far.
+    struct Ticket: Equatable {
+        let connection: Int
+        let forgets: Int
+    }
+
+    /// The ticket a read starts under now; nil while an erase has Apple Health disconnected.
+    func ticket() -> Ticket? {
+        connection().map { Ticket(connection: $0, forgets: generation) }
+    }
+
+    /// The read may go on and land: not cancelled, not forgotten, still on its connection.
+    func holds(_ ticket: Ticket) -> Bool {
+        !Task.isCancelled && self.ticket() == ticket
+    }
+
+    /// Health as one read sees it (the cards, a page): each call checks `ticket` before it
+    /// starts and after it returns, and throws `CancellationError` once it no longer holds.
+    func reader(_ ticket: Ticket) -> any LiveHealthStore {
+        GatedLiveStore(base: store) { [weak self] in await self?.holds(ticket) ?? false }
+    }
+
+    /// The one way `access` changes; an unchanged state writes nothing, so nothing redraws (E5).
+    private func send(_ event: LiveAccess.Event) {
+        let next = LiveAccess.transition(access, event)
+        if next != access { access = next }
     }
 
     private func removed(_ metrics: [LiveMetric]) {
         for metric in metrics { removals[metric, default: 0] += 1 }
     }
 
-    /// Draws the cards and keeps them for the next launch; none removes the file (AC2).
-    /// Atomic, readable after the first unlock (a launch reads it), in a folder backups skip.
+    /// Keeps the cards for the next launch; none removes the file (AC2). Atomic, readable
+    /// after the first unlock (a launch reads it), in a folder backups skip.
     private func keep(_ read: [LiveMetric: LiveCard]) {
-        if cards != read { cards = read }
         guard let kept else { return }
         if read.isEmpty {
             try? FileManager.default.removeItem(at: kept)
@@ -269,9 +314,11 @@ final class LiveHealth {
 
     /// What a page draws before its history is brought up to date (AC7a): the kept days, else
     /// (a first visit) 400 days read now.
-    func firstDays(_ metric: LiveMetric, reaching reading: Date?) async -> [LivePoint]? {
-        if let kept = await history.keptDays(metric) { return kept }
-        return try? await Self.readDays(store, metric, reaching: reading, now: now(), calendar: calendar)
+    /// Under `ticket` (nil: one taken now); nothing while disconnected or once it no longer holds.
+    func firstDays(_ metric: LiveMetric, reaching reading: Date?, under ticket: Ticket? = nil) async -> [LivePoint]? {
+        guard let ticket = ticket ?? self.ticket() else { return nil }
+        if let kept = await history.keptDays(metric) { return holds(ticket) ? kept : nil }
+        return try? await Self.readDays(reader(ticket), metric, reaching: reading, now: now(), calendar: calendar)
     }
 
     /// A metric page's first visit (AC7, AC7a): 400 days to now, back further to the card's

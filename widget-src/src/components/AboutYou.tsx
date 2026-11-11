@@ -10,6 +10,7 @@ import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { type UnitSystem, getDisplayRange, cmToFeetInches, feetInchesToCm, formatHeightDisplay } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { useLeaveField } from '../hooks/useOnboarding';
 
 /** About you's rows (US-62 AC12). */
 type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
@@ -87,7 +88,6 @@ interface HeightFieldProps {
   form: FormKit;
   pair: HeightPair;
   unitSystem: UnitSystem;
-  onUnitSystemChange: (system: UnitSystem) => void;
   toDisplay: (field: string, siValue: number | undefined) => string;
   parseAndConvert: (field: string, value: string) => number | undefined;
   /** No weight typed or saved yet: a complete height moves on to the weight. */
@@ -96,7 +96,7 @@ interface HeightFieldProps {
 }
 
 export function HeightField(props: HeightFieldProps) {
-  const { form, pair, unitSystem, onUnitSystemChange, toDisplay, parseAndConvert, mayAdvanceToWeight, advanceToWeight } = props;
+  const { form, pair, unitSystem, toDisplay, parseAndConvert, mayAdvanceToWeight, advanceToWeight } = props;
   const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
   const { heightFeet, setHeightFeet, heightInches, setHeightInches, typedHeightCm } = pair;
   // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
@@ -111,7 +111,7 @@ export function HeightField(props: HeightFieldProps) {
           type="button"
           className="unit-toggle-pill"
           data-unit-control="all"
-          onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
+          onClick={(e) => e.preventDefault()} // the label's own click would focus the box; the switch is hooks/useUnits'
           title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
         >
           {unitSystem === 'si' ? 'cm' : 'ft/in'}
@@ -251,12 +251,15 @@ interface BirthFieldsProps {
   form: FormKit;
   /** The year's field, once shown, stays while the birth question does (InputPanel keeps it across remounts). */
   yearShown: boolean;
-  /** The onboarding's last answer: on to My health. Given only while the onboarding may still jump (once per record). */
+  /** The year typed, left, and complete (the month set): the onboarding's landing (US-62 AC25b). */
+  onYearAnswered?: () => void;
+  onYearLeft?: () => void;
   onYearComplete?: () => void;
 }
 
 export function BirthFields(props: BirthFieldsProps) {
-  const { form, yearShown, onYearComplete } = props;
+  const { form, yearShown, onYearAnswered, onYearLeft, onYearComplete } = props;
+  const yearRef = useLeaveField(onYearLeft);
   /** The birth month was last pressed by a pointer, not a key (US-01 AC6). Set fresh by every gesture. */
   const monthByPointer = useRef(false);
   const { inputs, errors, updateField, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
@@ -299,6 +302,7 @@ export function BirthFields(props: BirthFieldsProps) {
             <input
               type="number"
               id="birthYear"
+              ref={yearRef}
               onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}
@@ -307,10 +311,10 @@ export function BirthFields(props: BirthFieldsProps) {
                 if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
                 typeIn('birthYear', e.target.value);
                 updateField('birthYear', num);
-                // Brad 2026-11-02: a complete year in range, the month set, is the
-                // last answer: on to My health's top, out of the card, so About
-                // you moves without waiting for a blur. "199" never does, nor a
-                // returning user's edit in About you's Birth row (Codex R3).
+                onYearAnswered?.();
+                // Brad 2026-11-02: a complete year in range, the month set, may be the
+                // last answer: on to My health's top, out of the card, so About you
+                // moves without waiting for a blur (US-62 AC25b). "199" never does.
                 const years = identityFieldRange('birthYear')!;
                 if (onYearComplete && inputs.birthMonth && num !== undefined && /^\d{4}$/.test(e.target.value) && num >= years.min && num <= years.max) {
                   onYearComplete();

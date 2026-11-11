@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-12,S2 server,App gate reads caps through envCap and the shared file cap,not started,app-gate.server.ts:87-89 parses caps with its own num() and re-reads AI_DAILY_FILE_CAP (unchanged since baseline),,,no

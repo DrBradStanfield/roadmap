@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-11,S3 cloud storage and sync,Shared watch-loop backoff and document timeout for adapters,not started,Watch loops duplicated in widget-src/src/storage/drive.ts:529-549 and dropbox.ts:217-236; DOCUMENT_TIMEOUT_MS copied at github.ts:28 and webdav.ts:28,,,yes

@@ -44,6 +44,31 @@ the floor, so no phone runs anything older (use it to kill a bad release);
 highest version each phone accepted also live in its Keychain, so a damaged state
 file on the phone cannot lower them.
 
+**Required floor: PR 1218 (US-72 AC10).** The first engine release built from a `main` that
+holds PR 1218 MUST pass `--min-app-build 11`: build 11 is the first app build with PR 1218's
+Apple Health disconnect (build 10, commit 305725de, is the highest uploaded). That engine
+drops the importers' `erasedAt` checks: the app now disconnects Apple Health on an erase
+instead. An older build running it would read pre-erase Health readings back into an
+erased record. `ios/engine-floor.json` holds the floor, and the build refuses a manifest
+whose `minAppBuild` is below it, so the automatic release after a Deploy (below), which
+passes no `--min-app-build`, fails until you release once from your Mac with
+`--min-app-build 11`; `--min-app-build` then carries over to later releases (the last
+manifest's value). **From that release on, builds below 11 get no engine updates until
+they install the next app build.** Raise the floor file, never lower it. Brad confirmed on
+2026-11-11 that the highest uploaded build is 10, so the floor of 11 stands.
+
+Cutting build 11:
+
+- [ ] Build 11 is cut from a commit that contains PR 1218 (the floor assumes it).
+- [ ] The owed-delete kind fix (lead H29) is on main. A false 'Health not erased' on every erase must not ship.
+- [ ] The PR 1253 follow-up is merged (the panel fix: report-level dates strict, cancelled reports not read). '1253 merged' alone is not the signal.
+- [ ] The contributor confirms on build 11 that his own labs import.
+- [ ] Leads H33 and H34 are fixed on main: a remote erase that joins a pay already running must also pay the ids it just owed, and an erase waits on at most one 2 s drain.
+
+Build 12:
+
+- [ ] U14 (build 12): replace the Swift upload-rule copy (UploadRules.swift `Rules.swift`, swiftVerdict, swiftMemberVerdict, lastComponent, pathExtension, and the LabFileReader limit constants it alone reads) with a fail-closed refusal with words. No floor bump is needed: the engine bundled with build 11 and later carries uploadVerdictsJson, and an OTA engine must beat the bundled one. Its own PR, on hold for the owner.
+
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.

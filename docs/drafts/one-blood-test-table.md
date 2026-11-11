@@ -73,7 +73,7 @@ Two read-only sweeps (2026-11-02) are summarised below, with line numbers at `ea
 | `app/lib/mcp.server.ts` `findRow`, `INSTRUCTIONS` | searches both arrays; frozen text | `findRow` works; text frozen (§9) |
 | `app/lib/product-events.server.ts` | `metric` is `z.enum(METRIC_TYPES)` | keep the enum; add the new event (§12) |
 | `tools/edit-record.ts` (`--metric` vs `--test`), `tools/get-plan.ts` (HELP: lab values "not used") | split | both flags write lab rows; HELP corrected |
-| `tools/webkit-verify*.mjs` | seed blood rows in `measurements` | fixtures |
+| `tools/webkit-verify.mjs` | seed blood rows in `measurements` | fixtures |
 
 ### iPhone (`ios/`)
 Swift never parses blood-test rows. All of it goes through `ios/engine` (health-core in JavaScriptCore).

@@ -10,6 +10,7 @@
 // Read at module load: a test that factory-mocks '../src/storage' must mock
 // this module too (storage-copy / reminders tests do), or the import throws.
 import { DRIVE_FILE_SCOPE } from '../src/storage';
+import { BRAD_SERVER_ORIGIN } from './server-origin';
 
 const GOOGLE_DRIVE_CLIENT_ID =
   '687809032623-dh4f91ravotu2cdactok13i2eirfadcs.apps.googleusercontent.com';
@@ -30,7 +31,7 @@ const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
  * token lives in the user's browser. If unreachable, the adapter falls back to
  * the GIS popup path, so this is a soft dependency.
  */
-const GOOGLE_EXCHANGE_URL = 'https://health-tool-app.fly.dev/api/google-token';
+const GOOGLE_EXCHANGE_URL = `${BRAD_SERVER_ORIGIN}/api/google-token`;
 
 export function googleDriveConfig(): import('../src/storage').GoogleDriveConfig {
   return {

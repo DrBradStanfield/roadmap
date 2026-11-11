@@ -1,10 +1,17 @@
+// @vitest-environment jsdom
 /**
- * US-62 AC30: My health's style rules jsdom cannot compute, read from styles.css.
+ * US-62 AC30: My health's style rules jsdom cannot compute, resolved from styles.css
+ * (testing/css-cascade.ts) on synthetic elements, or read as text where the check is a rule's absence.
  * The screenshots in the PR check the picture; these keep the two causes from returning.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { cascaded, nest } from '../testing/css-cascade';
+
+const PHONE = 390;
+const DESKTOP = 1280;
+afterEach(() => { document.body.replaceChildren(); });
 
 const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
 /** Every declaration block whose selector list names `selector`. */
@@ -17,17 +24,20 @@ describe('US-62 AC30: My health styles', () => {
 
   it('(b) a rows card\'s 4px top and bottom beat the phone\'s forced 12px card padding', () => {
     // The phone rule is `.section-card { padding: 12px !important }`; a plain 4px loses to it.
-    expect(blocks(/(^|,)\s*\.section-card\s*$/m).join('')).toMatch(/padding:\s*12px\s*!important/);
-    const rows = blocks(/\.mh-rows-card\.section-card\s*$/).join('');
-    expect(rows).toMatch(/padding-top:\s*4px\s*!important/);
-    expect(rows).toMatch(/padding-bottom:\s*4px\s*!important/);
+    const plain = nest('section-card');
+    expect(cascaded(plain, 'padding-top', PHONE)).toBe('12px');
+    expect(cascaded(plain, 'padding-bottom', PHONE)).toBe('12px');
+    const rows = nest('section-card mh-rows-card');
+    expect(cascaded(rows, 'padding-top', PHONE)).toBe('4px');
+    expect(cascaded(rows, 'padding-bottom', PHONE)).toBe('4px');
   });
 
   it('AC30e: the supplement search is 16px, so iOS does not zoom on focus, and beats the old 13px rule', () => {
-    expect(blocks(/^\s*\.supplement-add input\s*$/).join('')).toMatch(/font-size:\s*13px/); // the base rule, one class
-    const add = blocks(/\.supplement-add\.mh-add-test input/).join(''); // two classes: wins on specificity
-    expect(add).toMatch(/font-size:\s*16px/);
-    expect(blocks(/\.mh-add-test \.supplement-dropdown-item/).join('')).toMatch(/min-height:\s*44px/);
+    expect(cascaded(nest('supplement-add', 'input|'), 'font-size', DESKTOP)).toBe('13px'); // the base rule, one class
+    const add = nest('supplement-add mh-add-test', 'input|'); // two classes: wins on specificity
+    expect(cascaded(add, 'font-size', DESKTOP)).toBe('16px');
+    expect(cascaded(add, 'font-size', PHONE)).toBe('16px');
+    expect(cascaded(nest('mh-add-test', 'supplement-dropdown-item'), 'min-height', PHONE)).toBe('44px');
   });
 
   it('AC30f: the supplement list sits in the page, never floating over the card below', () => {
@@ -39,17 +49,16 @@ describe('US-62 AC30: My health styles', () => {
   });
 
   it('AC32, AC34: a phone draws no title, still there for screen readers, and no header row; desktop keeps it', () => {
-    const phone = css.slice(css.lastIndexOf('@media (max-width: 768px)'));
-    const title = /\.mh-title\s*\{([^}]*)\}/.exec(phone)![1];
-    expect(title).toMatch(/position:\s*absolute/);
-    expect(title).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
-    expect(title).not.toMatch(/display:\s*none/); // still read, still focusable
+    const title = nest('mh-header', 'h2|mh-title');
+    const header = title.parentElement!;
+    expect(cascaded(title, 'position', PHONE)).toBe('absolute');
+    expect(cascaded(title, 'clip', PHONE)).toMatch(/^rect\(0,\s*0,\s*0,\s*0\)$/);
+    expect(cascaded(title, 'display', PHONE)).not.toBe('none'); // still read, still focusable
     // AC34 (option A): Sign in and Settings live in the Account tab, so the row draws no box at all.
-    expect(/\.mh-header\s*\{\s*display:\s*contents;\s*\}/.test(phone)).toBe(true);
-    // The base rule (desktop) draws it.
-    const base = blocks(/^\s*\.mh-title\s*$/)[0]; // the first, outside any media query
-    expect(base).toMatch(/font-size:\s*28px/);
-    expect(base).not.toMatch(/clip:/);
+    expect(cascaded(header, 'display', PHONE)).toBe('contents');
+    // Desktop draws it.
+    expect(cascaded(title, 'font-size', DESKTOP)).toBe('28px');
+    expect(cascaded(title, 'clip', DESKTOP)).toBeUndefined();
   });
 });
 
@@ -60,20 +69,20 @@ describe('US-62 AC35: the Account tab design', () => {
     for (const [sel, body] of [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]) {
       if (/\.mh-settings[^,]*\.hr-sync-btn/.test(sel)) expect(body, sel).not.toMatch(/background:\s*none/);
     }
-    const desktop = blocks(/^\s*\.mh-settings \.hr-sync \.hr-sync-btn-full\s*$/m).join('');
-    expect(desktop).toMatch(/min-height:\s*44px/);
-    expect(desktop).toMatch(/width:\s*auto/); // a control hugs its words on desktop
+    const desktop = nest('mh-settings', 'hr-sync', 'button|hr-sync-btn hr-sync-btn-full');
+    expect(cascaded(desktop, 'min-height', DESKTOP)).toBe('44px');
+    expect(cascaded(desktop, 'width', DESKTOP)).toBe('auto'); // a control hugs its words on desktop
     // The base style is the filled teal button.
     expect(/\.hr-sync-btn\s*\{[^}]*background:\s*var\(--color-brand-text\)/.test(standalone)).toBe(true);
   });
 
   it('(b) a phone\'s Account is grouped cards on the page grey: no outer card, white 12px groups, one heading style', () => {
-    const sheet = blocks(/^\s*\.mh-account \.mh-settings\s*$/m).join('');
-    expect(sheet).toMatch(/background:\s*none/);
-    expect(sheet).toMatch(/box-shadow:\s*none/);
-    const group = blocks(/\.mh-account \.mh-settings > \.hr-sync\b/).join('');
-    expect(group).toMatch(/background:\s*#fff/);
-    expect(group).toMatch(/border-radius:\s*12px/);
+    const group = nest('mh-account', 'mh-settings', 'hr-sync');
+    const sheet = group.parentElement!;
+    expect(cascaded(sheet, 'background', PHONE)).toBe('none');
+    expect(cascaded(sheet, 'box-shadow', PHONE)).toBe('none');
+    expect(cascaded(group, 'background', PHONE)).toBe('#fff');
+    expect(cascaded(group, 'border-radius', PHONE)).toBe('12px');
     // The group list names every kind of part: the storage card, units, About you's rows, reminders, delete.
     const groupSel = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].find(([sel]) => /\.mh-account \.mh-settings > \.hr-sync\b/.test(sel))![1];
     for (const part of ['> .section-card > .basic-info-units', '.prefill-fields-wrapper', '.hr-reminders-section > .hr-sync', '> .delete-data-section']) {
@@ -84,12 +93,37 @@ describe('US-62 AC35: the Account tab design', () => {
     expect(headingSel?.[1]).toMatch(/\.mh-account \.about-card \.hr-section-card-header/);
     expect(headingSel?.[2]).toMatch(/padding:\s*0 16px/);
     // Delete all my data is the iPhone's destructive row: centred red words, 44px, no underline.
-    const del = blocks(/\.mh-account \.delete-data-link/).join('');
-    expect(del).toMatch(/min-height:\s*44px/);
-    expect(del).toMatch(/text-decoration:\s*none/);
+    const del = nest('mh-account', 'mh-settings', 'delete-data-section', 'button|delete-data-link');
+    expect(cascaded(del, 'min-height', PHONE)).toBe('44px');
+    expect(cascaded(del, 'text-decoration', PHONE)).toBe('none');
   });
 
   it('(c) the hero hides while a phone shows Chat or Account (the tab bar marks the page)', () => {
     expect(standalone.replace(/\s+/g, ' ')).toContain('html[data-hr-tab="chat"] .hr-hero, html[data-hr-tab="account"] .hr-hero { display: none; }');
+  });
+});
+
+describe('US-62 AC36: one card inset on every phone tab', () => {
+  const sides = (el: Element, prop: 'padding' | 'margin', width: number) =>
+    [cascaded(el, `${prop}-left`, width), cascaded(el, `${prop}-right`, width)];
+
+  it('the tab panel\'s 16px sides are the inset; no card on any tab adds a side margin', () => {
+    expect(sides(nest('hr-tabpanel'), 'padding', PHONE)).toEqual(['16px', '16px']);
+    // My health (a plain card, a topic's card, the value page), Chat, Account (Settings is an .md-page).
+    const cards = [
+      nest('hr-tabpanel', 'health-input-panel', 'section-card'),
+      nest('hr-tabpanel', 'mh-page', 'mh-topics', 'section|mh-topic', 'section-card'),
+      nest('hr-tabpanel', 'section|md-page'),
+      nest('hr-tabpanel', 'health-tool-chat', 'chat-embed-root', 'chat-embed'),
+      nest('hr-tabpanel', 'mh-account', 'section|md-page mh-settings'),
+    ];
+    for (const card of cards) expect(sides(card, 'margin', PHONE).map(v => v ?? '0'), card.className).toEqual(['0', '0']);
+  });
+
+  it('desktop keeps its layout, and the chatbot embed (no tab panel) keeps its own 10px', () => {
+    expect(cascaded(nest('section|md-page'), 'margin-left', DESKTOP)).toBe('0');
+    const embed = nest('chat-embed-root', 'chat-embed');
+    embed.parentElement!.id = 'health-chatbot-embed-root';
+    expect(sides(embed, 'margin', PHONE)).toEqual(['10px', '10px']);
   });
 });

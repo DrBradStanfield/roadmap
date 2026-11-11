@@ -5,7 +5,7 @@ import { UNIT_DEFS, reportedToCanonical, type UnitSystem } from '@roadmap/health
 import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
-import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
@@ -97,7 +97,7 @@ export const KEY_ERROR_MESSAGES = {
   no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
 };
 
-export const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
+export const BATCH_THRESHOLD = UPLOAD_LIMITS.web.batchFrom; // Use batch API for 20+ files; pipeline for fewer
 const POLL_INTERVAL = 5000;
 const FAKE_TICK_INTERVAL = 500;
 const EXTRACT_TIMEOUT = 30_000;
@@ -120,10 +120,11 @@ const PROGRESS_MESSAGES = [
   'Reviewing scan results...',
 ];
 
-export const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
+/** The size cap readPages applies through fileVerdict; kept by name for the golden pins (upload-decisions.pins.test.tsx). */
+export const MAX_FILE_SIZE = UPLOAD_LIMITS.web.fileBytes;
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded'>;
+export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
  *  `count` is how many the notice stands for (values dropped), `unread` the ones that
  *  name their test (US-12 AC19); `text` overrides the reason's. */
@@ -152,7 +153,7 @@ export interface ReadInput { fileName: string; getFile: () => Promise<File> }
 async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
   try {
     const file = await getFile();
-    if (file.size > MAX_FILE_SIZE) {
+    if (fileVerdict({ name, bytes: file.size, kind: 'file', platform: 'web' }) === 'tooLarge') {
       notices.push({ name, reason: 'tooLarge' });
       return { pages: [] };
     }
@@ -161,7 +162,7 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
       if (truncated) notices.push({ name, reason: 'truncated' });
       if (pages.length > 0) return { pages, file };
     } else if (upload.isImage(file)) {
-      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
+      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, UPLOAD_LIMITS.web.photoPx)), mimeType: 'image/jpeg' }], file };
     } else if (isDocx(file)) {
       const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
       if (truncated) notices.push({ name, reason: 'truncated' });
@@ -209,8 +210,10 @@ export async function processPipeline(
   notices: FileNotice[],
 ): Promise<FileResult[]> {
   const totalFiles = allInputs.length;
-  const queue: Array<{ fileName: string; pages: PageContent[]; file?: File }> = [];
-  const allResults: FileResult[] = [];
+  const queue: Array<{ index: number; fileName: string; pages: PageContent[]; file?: File }> = [];
+  // By picked position, so the review and its notices list files as picked, whatever order they finish in (US-12 AC23).
+  const allResults: Array<FileResult | undefined> = [];
+  const fileNotices: FileNotice[][] = allInputs.map(() => []);
   let completedCount = 0;
   let activeWorkers = 0;
   let feedingDone = false;
@@ -233,11 +236,11 @@ export async function processPipeline(
 
       // Send to LLM
       labImport(item.pages, us).then(({ result, error: importError, errorCode }) => {
-        allResults.push(result
-          ? { ...readResult(item.fileName, result, notices), file: item.file }
-          : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', notices));
+        allResults[item.index] = result
+          ? { ...readResult(item.fileName, result, fileNotices[item.index]), file: item.file }
+          : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', fileNotices[item.index]);
       }).catch(() => {
-        allResults.push(unreadResult(item.fileName, undefined, 'Processing failed', notices));
+        allResults[item.index] = unreadResult(item.fileName, undefined, 'Processing failed', fileNotices[item.index]);
       }).finally(() => {
         completedCount++;
         activeWorkers--;
@@ -259,11 +262,12 @@ export async function processPipeline(
   async function extractWorker() {
     while (extractIndex < allInputs.length) {
       if (abort.signal.aborted) break;
-      const input = allInputs[extractIndex++];
-      const { pages, file } = await readPages(upload, input, notices);
+      const index = extractIndex++;
+      const input = allInputs[index];
+      const { pages, file } = await readPages(upload, input, fileNotices[index]);
       if (abort.signal.aborted) return;
       if (pages.length > 0) {
-        queue.push({ fileName: input.fileName, pages, file });
+        queue.push({ index, fileName: input.fileName, pages, file });
         tryStartWorker();
       }
     }
@@ -277,10 +281,12 @@ export async function processPipeline(
   checkDone();
 
   await allDone;
-  if (allResults.length === 0 && !abort.signal.aborted) {
+  notices.push(...fileNotices.flat());
+  const results = allResults.filter((r): r is FileResult => r !== undefined);
+  if (results.length === 0 && !abort.signal.aborted) {
     throw new UploadError('No readable files found.', 'no_files');
   }
-  return allResults;
+  return results;
 }
 
 /** Batch: send all files in one request, poll for results. For 20+ files. */

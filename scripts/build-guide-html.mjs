@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 const argv = process.argv.slice(2);
 const noScript = argv.includes('--no-script');
@@ -26,8 +27,6 @@ if (!mdPath) {
 
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
-
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const fm = md.match(/^---\n([\s\S]*?)\n---\n/);
 if (!fm) {
@@ -122,10 +121,11 @@ body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
 // Smart quotes FIRST: running them after tag generation turns href="..." into
 // href=“...”, an unquoted attribute that swallows the curly quotes into the URL.
 // Code spans come out first, for the same reason: a quote inside `--out "x"`
-// is a literal, not prose, and the smart-quote pass would curl it.
+// is a literal, not prose, and the smart-quote pass would curl it. The pass runs
+// on escaped text, so a straight quote reads &quot; there.
 const inline = (s) =>
   esc(s.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`)))
-    .replace(/"([^"]+)"/g, '“$1”')
+    .replace(/&quot;((?:(?!&quot;)[\s\S])+)&quot;/g, '“$1”')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 

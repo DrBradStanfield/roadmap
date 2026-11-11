@@ -99,7 +99,7 @@ describe('write-gate.mjs (US-64 AC6)', () => {
   it('publish-guides and build-privacy-page --publish stop at the gate: no request leaves, exit 1 (review R9)', () => {
     const copy = join(S, 'toolcopy');
     for (const f of ['scripts/publish-guides.mjs', 'scripts/build-privacy-page.mjs', 'tools/write-gate.mjs',
-      'docs/privacy-connector-addendum.md']) {
+      'tools/escape-html.mjs', 'scripts/guide-compare.mjs', 'docs/privacy-connector-addendum.md']) {
       mkdirSync(dirname(join(copy, f)), { recursive: true });
       copyFileSync(join(ROOT, f), join(copy, f));
     }

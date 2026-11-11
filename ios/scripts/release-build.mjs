@@ -13,7 +13,8 @@
 //
 // Options: --key daily|cold|ci (the key that will sign: the manifest's keyId),
 // --if-changed, --min-app-build N, --min-version N, --allow-dirty, and for tests
-// --out DIR, --keys FILE, --now ISO.
+// --out DIR, --keys FILE, --floor FILE, --now ISO. It refuses a minAppBuild below the floor
+// in ios/engine-floor.json.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -33,6 +34,7 @@ const { values: opts } = parseArgs({
   options: {
     out: { type: 'string', default: join(ios, 'engine-release') },
     keys: { type: 'string', default: join(ios, 'engine/signing-keys.json') },
+    floor: { type: 'string', default: join(ios, 'engine-floor.json') },
     key: { type: 'string', default: 'daily' },
     now: { type: 'string' },
     'min-app-build': { type: 'string' },
@@ -99,6 +101,10 @@ async function release(work) {
   if (last && minVersion < last.minVersion) throw new Error(`The floor only rises: the last release set minVersion ${last.minVersion}.`);
   const minAppBuild = Number(opts['min-app-build'] ?? last?.minAppBuild ?? 1);
   if (!Number.isSafeInteger(minAppBuild) || minAppBuild < 1) throw new Error('--min-app-build must be a whole number of at least 1.');
+  // The committed floor (ios/engine-floor.json): an app build below it must never run this engine.
+  const floor = JSON.parse(readFileSync(opts.floor, 'utf8')).minAppBuild;
+  if (!Number.isSafeInteger(floor) || floor < 1) throw new Error(`${opts.floor} must hold minAppBuild as a whole number of at least 1.`);
+  if (minAppBuild < floor) throw new Error(`--min-app-build ${minAppBuild} is below the floor ${floor} in ${opts.floor}: pass --min-app-build ${floor} or higher.`);
 
   const issuedAt = new Date(Math.floor(now.getTime() / 60000) * 60000);
   const manifest = canonicalManifest({

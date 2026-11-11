@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-7,"S7 web data layer, upload, standalone",Review matrix model and upload pipeline move to lib modules,done,lib/review-matrix.ts and lib/review-dates.ts (1034); lib/upload-pipeline.ts (1049),1034;1049,none (file-size ratchet only stops regrowth),no

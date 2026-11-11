@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-1,S8 web big components,Medicine and screening cards drawn from health-core form descriptors,not started,"ScreeningQuestions.tsx:96-370 hand-codes age gates; medicationForm/screeningForm feed only plan placement (HealthTool.tsx:579-588), as at baseline; parity held by InputPanel.input-form-parity.test.tsx",,,no

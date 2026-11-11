@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+D4,onboarding,The landing gate was split over two files and three flags,implicit state,done,"useOnboarding owns Landing (open, awaiting, spent) with a pure transition and a table test",1175,no

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H18,composition,"The upload review's bulk value saves carry no erase: they ride on the store's erase mark",hidden link,not started,"storage/roadmap-store.ts:463 and :471 refuses() with no erase, :488 bulkSave edits with none; caller hooks/useUploadFlow.ts:355-357. Fix 4 PR 3 end state: every writer's erase argument is required by the type, then the store mark goes",,no

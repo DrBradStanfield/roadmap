@@ -988,6 +988,16 @@ describe('the upload outcome counter (US-12 AC10)', () => {
     }
   });
 
+  // US-12 AC10 (U9, 2026-11-11): a run Cancel stopped mid-read, a count like the rest.
+  it('US-12 AC10: takes cancelled as a count, and refuses it as anything else or on another event', () => {
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: { picked: 2, cancelled: 1 } }))
+      .toMatchObject({ metadata: { picked: 2, cancelled: 1 } });
+    for (const metadata of [{ cancelled: true }, { cancelled: 'yes' }, { cancelled: 0.5 }, { cancelled: -1 }, { cancelled: 1001 }]) {
+      expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'chat_opened', visitorId: VISITOR, metadata: { cancelled: 1 } })).toBeNull();
+  });
+
   it('refuses every other metadata key, even one another event may carry', () => {
     for (const metadata of [
       { picked: 1, provider: 'google-drive' }, { picked: 1, count: 1 }, { picked: 1, outcome: 'ok' },

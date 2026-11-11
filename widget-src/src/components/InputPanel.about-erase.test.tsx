@@ -18,12 +18,12 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'),
 const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1 };
 const props = (aboutYouLow: boolean) => ({
   ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
-  inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+  inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
   onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-  fieldsSaved: 0, hasApiResponse: true, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: false, aboutYouLow, planBasis: { age: 66 }, grading: {},
+  fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow }, planBasis: { age: 66 }, grading: {},
 }) as unknown as Parameters<typeof InputPanel>[0];
 
 it('US-62 AC12: a row opened before an erase is closed when About you next goes low', () => {

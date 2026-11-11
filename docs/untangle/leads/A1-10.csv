@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A1-10,S9 health-core entry points,Replace the health-core index barrel; one import style,done,packages/health-core/src/index.ts deleted; package.json exports ./* maps each module; imports name their module (done without per-concern entry points or a compat barrel),1031,tests/health-core-manifest.test.ts:45-52 (US-64 AC24),yes

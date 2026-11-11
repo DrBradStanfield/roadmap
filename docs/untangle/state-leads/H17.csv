@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H17,composition,"Cloud stale screen after an edit: RecordStore.shown() ignores draw() returning false",bug,not started,"ios/HealthRoadmap/MyData/RecordStore.swift ~488-498 (shown); draw ~215-232; no known trigger, no seam to test (HealthEngine is a concrete class)",,no

@@ -6,7 +6,7 @@
  * from there.
  */
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
-import type { RecordHost } from '@roadmap/health-core/record-host';
+import type { RecordHost, RemoteChange } from '@roadmap/health-core/record-host';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
@@ -47,15 +47,17 @@ export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
  * device, or an AI connector writing to the same file (US-34). HealthTool
  * listens and re-runs its own load path, so an open page shows the change
  * without a reload. The counting is HealthTool's: it fires
- * `remote_change_applied` when it has actually re-rendered. The store cannot
+ * `remote_change_applied` when it has actually re-rendered. Its detail is the
+ * engine's RemoteChange: `{ erase }`, the erase identity a merge moved the
+ * record to, or null for any other change (US-16 AC2a). The store cannot
  * import the API layer — the v2 builds alias `lib/api` to `lib/roadmap-data`,
  * which imports the store, and the cycle would be real.
  */
 export const REMOTE_CHANGED_EVENT = 'hr:remote-changed';
 
-export function notify(name: string): void {
+export function notify(name: string, detail?: unknown): void {
   try {
-    window.dispatchEvent(new Event(name));
+    window.dispatchEvent(new CustomEvent(name, { detail }));
   } catch {
     /* non-browser environment (tests) */
   }
@@ -113,7 +115,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       set: (run: () => void, ms: number) => setTimeout(run, ms),
       clear: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
     },
-    remoteChanged: () => notify(REMOTE_CHANGED_EVENT),
+    remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }) {
       // The erase's best-effort steps: an orphaned server row or chat history

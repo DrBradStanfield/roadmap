@@ -13,7 +13,8 @@
 import React, { useEffect, useState } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABELS, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
+import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -76,7 +77,7 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
   if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
   // Status, not a call to action (Brad 2026-11-09).
-  return pendingSync ? 'Saving…' : `Synced to ${PROVIDER_LABELS[backend]}`;
+  return pendingSync ? 'Saving…' : `Synced to ${PROVIDERS[backend].label}`;
 }
 
 /** One reconnect at a time across the bar and the panel (both mount the hook). */
@@ -187,7 +188,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     });
 
   const state = storageState(backend, reconnect);
-  const provider = backend === 'local' ? '' : PROVIDER_LABELS[backend];
+  const provider = backend === 'local' ? '' : PROVIDERS[backend].label;
   let content: React.ReactNode;
   if (reconnect) {
     // The remembered provider could not be read this session (US-09 AC13). Name
@@ -195,7 +196,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     // this user HAS chosen, and their record is sitting in that provider. Drive
     // can re-auth in place (the GIS popup), so it gets that button; for the
     // others the only cure is to try the read again.
-    const label = PROVIDER_LABELS[reconnect];
+    const label = PROVIDERS[reconnect].label;
     const drive = reconnect === 'google-drive';
     content = (
       <div className="hr-sync hr-sync-local">

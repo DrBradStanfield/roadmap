@@ -28,7 +28,7 @@ const renderPanel = () => {
   const scheduleLongitudinalSave = vi.fn();
   const props = {
     ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
-    inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const,
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
     onMedicationChange: vi.fn(), onScreeningChange, supplements: [], onSupplementChange: vi.fn(),
@@ -38,10 +38,10 @@ const renderPanel = () => {
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: { age: 66 }, grading: {},
+    fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
-  openAboutYou(view.container); // wasDone: About you is rows; open each, so the height box shows (US-62 AC12)
+  openAboutYou(view.container); // About you is low, as rows; open each, so the height box shows (US-62 AC12)
   const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
   return { ...view, box, onChange, onScreeningChange, scheduleLongitudinalSave };
 };

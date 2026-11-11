@@ -44,6 +44,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { escapeHtml as esc } from './escape-html.mjs';
 
 const MARKED = 'https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js';
 const MERMAID = 'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js';
@@ -176,7 +177,6 @@ const mdJson = JSON.stringify(mdBody).replace(/</g, '\\u003c');
 // Embedded as a JSON string and parsed on the page, so every key (even "__proto__")
 // stays an own property of the map; an object literal would not keep that one.
 const linksJson = JSON.stringify(JSON.stringify(links)).replace(/</g, '\\u003c');
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const built = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 
 const html = `<meta charset="utf-8">

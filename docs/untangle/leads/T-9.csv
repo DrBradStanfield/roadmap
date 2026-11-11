@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-9,"S1 tools, scripts, CI",Drop the health-core source aliases,not started,"Aliases remain in widget-src/vite.config.*.ts (e.g. shopify-prod :41), vitest.config.ts:26, widget-src/tsconfig.json:19, tsconfig.server.json:7",,,no

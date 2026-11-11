@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C1,chat prompt,"The saved-chat answer is not surface-aware: one scripted answer serves every chat surface",bug,not started,"app/lib/chat-system-prompt.md:44 holds one answer to ""can I save this chat?"" for all surfaces. Its own PR is next in the privacy queue",,yes

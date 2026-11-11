@@ -1,19 +1,17 @@
 import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
-import { type DocumentType, healthInputSchema } from '@roadmap/health-core/validation';
+import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
-import { isScreeningEligible } from '@roadmap/health-core/types';
 import { sameLabQuantity } from '@roadmap/health-core/record-edits';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
-import type { ApiDocument, UploadHistory } from '../lib/api-types';
-import { pendingRowsFor } from '@roadmap/health-core/document-save';
-import { unarchivedOriginals } from '../lib/archive-payloads';
+import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
-import { DraftDateCell } from './DraftDateCell';
 import { ReviewMatrix } from './ReviewMatrix';
-import { type FullDate, parseReportDate, longDate, columnDay, pastDay, readDocumentDate, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
+import { ReviewFileSections } from './ReviewFileSections';
+import { useReviewDocuments } from '../hooks/useReviewDocuments';
+import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
 import type { FileResult, DocumentToSave, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
 import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, normaliseLabName, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
 
@@ -46,50 +44,6 @@ interface ReviewTableProps {
   refusals?: ReactNode;
 }
 
-/** Dedup on sourceFileName: stable across LLM re-extractions (titles drift,
- *  the source filename doesn't). The user can manually re-check the box if
- *  they want to save a same-filename second copy. */
-function buildDocHistoryIndex(history: ApiDocument[]): Set<string> {
-  const idx = new Set<string>();
-  for (const d of history) {
-    if (!d.sourceFileName) continue;
-    idx.add(d.sourceFileName);
-  }
-  return idx;
-}
-
-function isDocDuplicate(sourceFileName: string | null, idx: Set<string>): boolean {
-  if (!sourceFileName) return false;
-  return idx.has(sourceFileName);
-}
-
-/** The names under which `after` holds a document `before` did not: filed
- *  since (US-12 AC6). A reload that filed nothing names none (US-12 AC6b). */
-function newlyFiledNames(before: ApiDocument[], after: ApiDocument[]): Set<string> {
-  const held = new Set(before.map(d => d.id));
-  return new Set(after.flatMap(d => (d.sourceFileName && !held.has(d.id) ? [d.sourceFileName] : [])));
-}
-
-/** `checked` with every document filed under one of `filed` unticked. */
-function uncheckFiled(checked: Record<number, boolean>, results: FileResult[], filed: Set<string>): Record<number, boolean> {
-  const next = { ...checked };
-  results.forEach((r, fi) => { if (r.document && filed.has(r.fileName)) next[fi] = false; });
-  return next;
-}
-
-/** Order in which document type sections render: scans, then letters,
- *  then other admin docs. Exhaustive over DocumentType so a typo (or a
- *  new enum value added without ordering) is a compile error, not a
- *  silent fall-through to the bottom of the list. */
-const DOC_TYPE_ORDER: Record<DocumentType, number> = {
-  scan_result: 0,
-  clinic_letter: 1,
-  discharge_summary: 2,
-  pathology_report: 3,
-  vaccination_record: 4,
-  other: 99,
-};
-
 export function ReviewTable({
   results,
   history,
@@ -105,7 +59,8 @@ export function ReviewTable({
   error,
   refusals,
 }: ReviewTableProps) {
-  const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
+  const docs = useReviewDocuments(results, history, userAge, sex);
+  const { selectedDocCount, archiveCount } = docs;
   // Lp(a) has its own three units, kept in the record, as in the blood-test
   // matrix (US-05 AC2); a two-way override for it drives nothing.
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
@@ -119,75 +74,6 @@ export function ReviewTable({
     return dates;
   });
 
-  // Render order: value-only files first, then document-bearing files
-  // grouped by type (scans → letters → other) and within type by date desc.
-  // Errored files go last. Each entry keeps its original index so all the
-  // per-row state (`checked`, `fileDates`, …) keys stay stable.
-  const sortedResults = useMemo(() =>
-    results.map((r, fi) => ({ r, fi })).sort((a, b) => {
-      const aErr = a.r.error ? 2 : 0;
-      const bErr = b.r.error ? 2 : 0;
-      if (aErr !== bErr) return aErr - bErr;
-      const aDoc = a.r.document ? DOC_TYPE_ORDER[a.r.document.classification] : -1;
-      const bDoc = b.r.document ? DOC_TYPE_ORDER[b.r.document.classification] : -1;
-      if (aDoc !== bDoc) return aDoc - bDoc;
-      const aDate = a.r.document?.documentDate ?? '';
-      const bDate = b.r.document?.documentDate ?? '';
-      return bDate.localeCompare(aDate);
-    }),
-    [results],
-  );
-
-  // Default: checked for new docs, unchecked for already-saved ones.
-  const [docChecked, setDocChecked] = useState<Record<number, boolean>>(() => {
-    const map: Record<number, boolean> = {};
-    results.forEach((r, fi) => {
-      if (!r.document) return;
-      map[fi] = !isDocDuplicate(r.fileName, docHistoryIndex);
-    });
-    return map;
-  });
-  // A document the record now holds (a partial save reloaded history) unchecks
-  // itself, so a retry cannot file it twice. The user can still re-tick it,
-  // and a reload that filed nothing under its name keeps that tick (US-12 AC6b).
-  const shownDocuments = useRef(history.documents);
-  useEffect(() => {
-    const filed = newlyFiledNames(shownDocuments.current, history.documents);
-    shownDocuments.current = history.documents;
-    setDocChecked(prev => uncheckFiled(prev, results, filed));
-  }, [history.documents, results]);
-
-  // A document whose bytes metadata-only shown-document rows hold (a failed
-  // upload, or the connector's) replaces them, so its card starts from the
-  // newest: the user sees the earlier title and date, a missing date included,
-  // and can change them (US-14 AC4).
-  const [heldRows] = useState(() => results.map(r => (r.document ? pendingRowsFor(history.documents, r.contentHash, false)[0] : undefined)));
-  // A document's date is its own, never the blood-test column's: the day it
-  // saves, null until known or picked. A month alone still dates its
-  // screening update until the user picks a day or clears it (US-13 AC6).
-  const [documentDates, setDocumentDates] = useState<Record<number, { day: string | null; month: string | null }>>(() =>
-    Object.fromEntries(results.map((r, fi) => [fi, readDocumentDate(heldRows[fi] ? heldRows[fi].documentDate : r.document?.documentDate)])));
-  const screeningDateFor = (fi: number) => documentDates[fi]?.day ?? documentDates[fi]?.month ?? null;
-
-  // Per-document: editable title
-  const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
-    const map: Record<number, string> = {};
-    results.forEach((r, fi) => { if (r.document) map[fi] = heldRows[fi]?.title ?? r.document.title; });
-    return map;
-  });
-
-  // Per-document: whether to update screening date (when screeningType is present AND user is old enough).
-  // No age (no plan) starts unticked: eligibility is unknown (US-06 AC5). The user can still tick it.
-  const [screeningChecked, setScreeningChecked] = useState<Record<number, boolean>>(() => {
-    const map: Record<number, boolean> = {};
-    results.forEach((r, fi) => {
-      const st = r.document?.metadata?.screeningType as string | undefined;
-      if (st && userAge !== undefined && isScreeningEligible(st, userAge, sex)) {
-        map[fi] = true;
-      }
-    });
-    return map;
-  });
 
   // The matrix model is the source of truth for what's rendered + what's
   // saveable. Cells in `context` state come from history (greyed, no edit);
@@ -413,13 +299,6 @@ export function ReviewTable({
     for (const cell of matrix.cells.values()) if (cell.state === 'editable') n++;
     return n;
   }, [matrix]);
-  const selectedDocCount = useMemo(() => Object.values(docChecked).filter(Boolean).length, [docChecked]);
-  // Original lab PDFs remain retryable after saved values become context.
-  // Connector metadata-only letters also carry archive-only work (US-35 AC8).
-  const archiveCount = useMemo(() => {
-    const selectedDocs = new Set(results.filter((r, fi) => r.document && docChecked[fi]).map((r) => r.fileName));
-    return unarchivedOriginals(results, history.documents, selectedDocs).length;
-  }, [results, history.documents, docChecked]);
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
   /** The new columns Save may write on: a calendar day that has happened
@@ -529,31 +408,7 @@ export function ReviewTable({
       }
     }
 
-    // Every result as reviewed. The report date is the column's past day or
-    // unknown, never the extracted string (US-13 AC8).
-    const reviewed: FileResult[] = results.map((r, fi) => ({
-      ...r,
-      reportDate: columnDay(fileDates[fi]),
-      ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi]?.day ?? null } } : {}),
-    }));
-    const documents: DocumentToSave[] = [];
-    reviewed.forEach(({ document: doc, fileName, file }, fi) => {
-      if (!doc || !docChecked[fi]) return;
-      const screeningType = doc.metadata?.screeningType as string | undefined;
-      const screeningDate = screeningDateFor(fi);
-      documents.push({
-        documentType: doc.classification,
-        title: doc.title,
-        documentDate: doc.documentDate,
-        contentMd: doc.contentMarkdown,
-        metadata: doc.metadata,
-        sourceFileName: fileName,
-        screeningUpdate: screeningType && screeningChecked[fi] && screeningDate
-          ? { key: `${screeningType}_last_date`, date: screeningDate }
-          : undefined,
-        file,
-      });
-    });
+    const { reviewed, documents } = docs.documentsToSave(fileDates);
 
     onSave({ values: selected, documents, labValues: selectedLabValues, reviewed });
   };
@@ -596,98 +451,7 @@ export function ReviewTable({
         />
       )}
 
-      {sortedResults.map(({ r, fi }) => {
-        // After the matrix, the per-file section only renders for:
-        //   - documents (scan results, clinic letters, …)
-        //   - error rows (file failed to parse)
-        //   - value-only files with NOTHING shown by the matrix (rare, e.g.
-        //     LLM returned `values:[]` and `additionalValues:[]` — show
-        //     "No values found" so the upload doesn't appear ignored).
-        const hasNothingForMatrix = !r.error && !r.document && r.values.length === 0 && r.additionalValues.length === 0;
-        if (!r.error && !r.document && !hasNothingForMatrix) return null;
-
-        const documentDate = documentDates[fi]?.day ?? null;
-        const month = documentDates[fi]?.month;
-        const screeningDate = screeningDateFor(fi);
-        const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
-
-        return (
-          <div key={fi} className="review-file-section">
-            <div className="review-file-header">
-              <span className="review-file-name">{r.fileName}</span>
-            </div>
-
-            {r.error ? (
-              <p className="review-file-error">Could not read this file: {r.error}</p>
-            ) : r.document ? (
-              <div className="review-document-card">
-                <div className="review-document-header">
-                  <label className="review-row-check">
-                    <input
-                      type="checkbox"
-                      checked={docChecked[fi] ?? false}
-                      onChange={(e) => setDocChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
-                    />
-                  </label>
-                  <span className={`review-doc-type-badge review-doc-type--${r.document.classification}`}>
-                    {r.document.classification.replace(/_/g, ' ')}
-                  </span>
-                  {isDocDup && <span className="review-row-dup">Already saved</span>}
-                </div>
-
-                <div className="review-document-title">
-                  <input
-                    type="text"
-                    value={docTitles[fi] || ''}
-                    onChange={(e) => setDocTitles(prev => ({ ...prev, [fi]: e.target.value }))}
-                    className="review-title-input"
-                    placeholder="Document title"
-                  />
-                </div>
-
-                <div className="review-file-date">
-                  <span>Date:</span>
-                  {/* No day: an empty picker, "— Jun '24" for a month alone
-                      or "Date unknown", so any day picked sets it (US-13 AC6). */}
-                  <DraftDateCell
-                    date={documentDate ?? (month ? `${month}-01` : fullDateToIso(fileDates[fi]))}
-                    needsDay={!documentDate}
-                    placeholder={documentDate || month ? undefined : 'Date unknown'}
-                    ariaLabel="Document date"
-                    onChange={picked => {
-                      // Cleared is unknown, its month too; a day not yet happened is refused, never written.
-                      const day = pastDay(picked);
-                      if (!picked || day) setDocumentDates(prev => ({ ...prev, [fi]: { day, month: null } }));
-                    }}
-                  />
-                </div>
-
-                <div className="review-document-preview">
-                  {r.document.contentMarkdown.slice(0, 300)}
-                  {r.document.contentMarkdown.length > 300 && '...'}
-                </div>
-
-                {!!r.document.metadata?.screeningType && isScreeningEligible(String(r.document.metadata.screeningType), userAge, sex) && (
-                  <label className="review-screening-update">
-                    <input
-                      type="checkbox"
-                      checked={!!screeningDate && (screeningChecked[fi] ?? false)}
-                      disabled={!screeningDate}
-                      onChange={(e) => setScreeningChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
-                    />
-                    <span>
-                      Update <strong>{String(r.document.metadata.screeningType)}</strong> screening date
-                      {screeningDate ? ` to ${screeningDate}` : ' (pick the document date first)'}
-                    </span>
-                  </label>
-                )}
-              </div>
-            ) : (
-              <p className="review-no-values">No blood test values or document found in this file</p>
-            )}
-          </div>
-        );
-      })}
+      <ReviewFileSections docs={docs} age={userAge} sex={sex} />
 
       {!allDatesSet && (
         <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>

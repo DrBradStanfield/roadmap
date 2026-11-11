@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: vi.fn(),
   markReportEmailCaptured: vi.fn(),
+  getShownErase: vi.fn(),
   trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/roadmap-data', () => mocks);

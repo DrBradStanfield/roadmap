@@ -229,6 +229,21 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(WT, {}, true)).toBeNull();
     expect(stop(WT, { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
   });
+  it('Stop skips uncommitted files while a background subagent of this session runs (US-64 AC25)', () => {
+    const tasks = (type: string, status: string) => hook({ hook_event_name: 'Stop', cwd: WT, stop_hook_active: false,
+      background_tasks: [{ id: 't1', type, status, description: 'x' }] });
+    expect(tasks('subagent', 'running')).toBeNull();
+    expect(tasks('teammate', 'pending')).toBeNull();
+    expect(tasks('workflow', 'running')).toBeNull();
+    expect(tasks('subagent', 'in_progress')).toBeNull(); // an unlisted status word still counts (re-check N1)
+    // A shell or monitor task edits nothing; a finished subagent no longer counts; an empty list is none.
+    expect(tasks('shell', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('monitor', 'running')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'completed')?.reason).toMatch(/uncommitted/);
+    expect(tasks('subagent', 'failed')?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [] })?.reason).toMatch(/uncommitted/);
+    expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: 'junk' })?.reason).toMatch(/uncommitted/);
+  });
   it('worktree-done refuses uncommitted work', () => {
     const r = done('feat');
     expect(r.status).not.toBe(0);
@@ -237,6 +252,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
   it('Stop blocks an unpushed commit', () => {
     sh(WT, 'git commit -q -am two');
     expect(stop(WT)?.reason).toMatch(/not pushed/);
+    // A running subagent hides only uncommitted files, never an unpushed commit (US-64 AC25).
+    writeFileSync(join(WT, 'wip.txt'), 'half\n');
+    const r = hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: [{ id: 't', type: 'subagent', status: 'running' }] });
+    expect(r?.reason).toMatch(/not pushed/);
+    expect(r?.reason).not.toMatch(/uncommitted/);
+    rmSync(join(WT, 'wip.txt'));
   });
   it('worktree-done refuses an unpushed commit', () => {
     expect(done('feat').stdout).toMatch(/on no remote branch/);
@@ -332,6 +353,31 @@ describe('worktree-done.sh on a folder that is not a worktree (US-64 AC4)', () =
     expect(existsSync(join(MAIN, 'tracked.txt'))).toBe(true);
     expect(sh(MAIN, 'git rev-parse --abbrev-ref HEAD')).toBe('main');
   });
+});
+
+describe('worktree-done.sh reads the package folders from the guard (US-64 AC4)', () => {
+  it('the guard prints its one list, and worktree-done holds no copy of it', () => {
+    const r = spawnSync('node', [GUARD, '--package-dirs'], { encoding: 'utf8', env: ENV });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('node_modules\nwidget-src/node_modules\npackages/health-core/node_modules\n');
+    expect(readFileSync(DONE, 'utf8')).not.toContain('widget-src/node_modules');
+  });
+  it('refuses, removing nothing, when the guard cannot give the list', () => {
+    const w = newWorktree('noguard').path;
+    for (const body of ['process.exit(3);\n', '']) { // a failing guard, and one that prints nothing
+      const tools = join(S, 'broken-guard');
+      mkdirSync(join(tools, 'tools'), { recursive: true });
+      mkdirSync(join(tools, '.claude/hooks'), { recursive: true });
+      copyFileSync(DONE, join(tools, 'tools/worktree-done.sh'));
+      writeFileSync(join(tools, '.claude/hooks/worktree-guard.cjs'), body);
+      const r = spawnSync('bash', [join(tools, 'tools/worktree-done.sh'), 'noguard'], { cwd: MAIN, encoding: 'utf8', env: ENV });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/REFUSED: could not read the package folder list/);
+      expect(existsSync(w)).toBe(true);
+      expect(readlinkSync(join(w, 'node_modules'))).toBe(join(cacheDir(w), 'node_modules'));
+    }
+    expect(done('noguard').status).toBe(0);
+  }, 60_000);
 });
 
 describe('package clones: new worktrees, failures, races and orphans (US-64 AC3, AC4)', () => {

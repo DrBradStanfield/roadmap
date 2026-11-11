@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-15,S2 server,One old-widget adapter and one lab-extraction error report,not started,lab-extract-one.server.ts:49 withDaysItReads and :71 withRefusalsItReads are still two adapters,,,no

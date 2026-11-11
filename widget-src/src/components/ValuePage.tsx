@@ -27,7 +27,7 @@ import { useIsMobile } from '../lib/useIsMobile';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
-import { PlanTile } from './ResultsPanel';
+import { PlanTile } from './PlanCards';
 import type { ApiLabValue } from '../lib/api-types';
 
 // The chart library loads with the chart, never with the form (as the history lightbox loads it).

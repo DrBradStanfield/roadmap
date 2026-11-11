@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-2,"S1 tools, scripts, CI",Pages smoke check moves from a deploy heredoc into webkit-verify,not started,deploy.yml:230 still writes pages-smoke.tmp.mjs from a heredoc,,,yes

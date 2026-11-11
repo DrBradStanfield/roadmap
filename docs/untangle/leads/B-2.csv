@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-2,bug leads,Summary cron env guard; daily crons mark the day done before running,done,"Summary cron deleted (US-28 AC5). Trending: daily-cron.server.ts dailyCron sends failed to the day state (cron-day.ts), which reopens the day when computeAndWriteTrending throws, so the next hourly tick retries (US-28 AC6)",1080;1188,"app/routes/admin-proxy-guard.test.ts:129 (summary cron stays gone); app/lib/trending-cron.server.test.ts:285 ""US-28 AC6"" (failed run retried next tick)",no

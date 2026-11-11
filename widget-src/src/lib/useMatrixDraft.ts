@@ -23,8 +23,8 @@ type Expected = SaveTask['expected'];
 const PAGE = Math.random().toString(36).slice(2);
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
- *  typed in, where a unit switch keeps the quantity (the vitals and Lp(a),
- *  US-05; an Lp(a) cell keeps its unit's label, AC2); the
+ *  typed in, so a unit system the record brings never re-reads it (US-04
+ *  AC1; an Lp(a) cell keeps its unit's label, US-05 AC2); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
  *  the load of the page it was typed on, by the user or the chat; the load
@@ -46,6 +46,7 @@ export type CellRef<K extends string> = [column: string | null, key: K];
 
 const EMPTY = { draft: { values: {} }, backfills: {}, meta: {} };
 const holdsAny = (cells: object) => Object.values(cells).some(Boolean);
+const holdsText = (state: MatrixDraft<string>) => holdsAny(state.draft.values) || holdsAny(state.backfills);
 const isDay = (day: unknown): day is string => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
 const isObject = (v: unknown): v is object => !!v && typeof v === 'object';
 const dayOf = (state: MatrixDraft<string>) => state.draft.date ?? localDay(new Date());
@@ -96,19 +97,37 @@ function withCell<K extends string>(
  * cell's slots on that day, by metric (null: empty). `latestDay(key)`: the
  * last day the page shows a value for it. `cellOf(key)`: the cell a key is
  * typed into, when one cell takes two (a blood pressure's halves); its keys
- * share one expectation.
+ * share one expectation. `legacyUnit(key)`: the unit a restored cell kept
+ * before cells carried their unit is stamped with as it is restored: this
+ * device's units as the page started, before the record's applied
+ * (useUnits' `startUnitOf`). A best guess: the units its last visit showed,
+ * unless another tab changed this device's since the cell was typed, or a
+ * load since applied the record's units without mounting the matrix.
  */
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
   rowsUnder: (day: string, key: K) => Expected;
   latestDay: (key: K) => string | undefined;
   cellOf?: (key: K) => string;
+  legacyUnit?: (key: K) => CellUnit | undefined;
 }) {
-  const [state, setState] = useState<MatrixDraft<K>>(() => loadDraft<K>(storageKey) ?? EMPTY);
-  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key } = record;
+  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, legacyUnit } = record;
+  const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
+  const [state, setState] = useState<MatrixDraft<K>>(() => {
+    const kept = loadDraft<K>(storageKey);
+    if (!kept) return EMPTY;
+    const meta = { ...kept.meta };
+    for (const [column, cells] of [[null, kept.draft.values] as const, ...Object.entries(kept.backfills)]) {
+      for (const [key, typed] of Object.entries(isObject(cells) ? cells : {}) as Array<[K, unknown]>) {
+        const id = idOf([column, key]);
+        const unit = legacyUnit?.(key);
+        if (typed && unit && !meta[id]?.unit) meta[id] = { ...meta[id], unit };
+      }
+    }
+    return { ...kept, meta };
+  });
   const date = dayOf(state);
   const { values } = state.draft;
-  const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const metaOf = (cell: CellRef<K>): CellMeta | undefined => state.meta[idOf(cell)];
   /** A draft cell whose slots hold other rows on the page than it expects
    *  (US-03 AC2): shown as the clash, and never standing in for the record.
@@ -124,7 +143,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     // health values back on a device the user meant to leave clean (US-09 AC2e).
     // Removing a draft is always safe, so a stale one does not stay behind.
     if (localHealthWritesStopped()) { safeRemoveItem(storageKey); return; }
-    if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
+    if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);
 
@@ -147,7 +166,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     backfills: state.backfills,
     /** Any typed text kept, valid or not, restored or displaced: what the
      *  phone's "Unsaved values" cue reports (US-62 AC11). */
-    holdsText: holdsAny(state.draft.values) || holdsAny(state.backfills),
+    holdsText: holdsText(state),
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. `byHand` false: the chat filled
      *  it, and the user has not typed into it since. */

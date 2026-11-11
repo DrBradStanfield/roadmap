@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-8,S5 clinical rules,Split lab-extraction.ts along its section banners,not started,"packages/health-core/src/lab-extraction.ts is one 1,166-line module",,,yes

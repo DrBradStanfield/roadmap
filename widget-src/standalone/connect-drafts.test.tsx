@@ -10,6 +10,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 let LocalStorageAdapter: typeof import('../src/storage').LocalStorageAdapter;
 import { BloodTestTimeline } from '../src/components/BloodTestTimeline';
 import { StartingInfoVitals } from '../src/components/StartingInfoVitals';
+import { turnFrom } from '../src/testing/matrix-gestures';
 import {
   BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY, DOC_KEY_PREFIX,
   MIRROR_KEY, DRAFTS_CLEARED_EVENT,
@@ -56,7 +57,7 @@ const save = vi.fn(async () => new Map());
 function matrices() {
   return render(<>
     <BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} onSaveBatch={save} onDraftValue={noop}
+      onToggleFieldUnit={turnFrom('si')} onSaveBatch={save} onDraftValue={noop}
       isSaving={false} grading={null} hasApiResponse={true}/>
     <StartingInfoVitals vitalsHistory={[]} unitSystem="si" unitOverrides={{}}
       onToggleFieldUnit={noop} onSave={save} onDraftValue={noop} formStage={3}

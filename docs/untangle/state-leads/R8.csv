@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+R8,record read,A refused re-read bypassed the relay,bug,done,The apply goes through the relay hook,1155,no

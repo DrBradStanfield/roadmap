@@ -4,9 +4,10 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./byok-chat', () => ({ getAnthropicKey: () => 'sk-ant-synthetic' }));
+const key = vi.hoisted(() => ({ value: 'sk-ant-synthetic' as string | null }));
+vi.mock('./byok-chat', () => ({ getAnthropicKey: () => key.value }));
 
-import { labImport, labImportBatch, pollBatchStatus } from './byok-upload';
+import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './byok-upload';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 
 const PAGES = [{ type: 'text' as const, content: 'doc' }];
@@ -234,5 +235,18 @@ describe('US-12 AC5a: a cancelled BYOK batch sends no more files', () => {
       expect((await pollBatchStatus(batchId!)).results).toHaveLength(6);
     });
     expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+});
+
+// US-12 AC10 (review R1, adversary F1): no key is not a rate limit, so the
+// upload names no file and counts nothing for it.
+describe('US-12 AC10: the BYOK preflight says why it refused', () => {
+  afterEach(() => { key.value = 'sk-ant-synthetic'; });
+  it('no key is a no-key refusal with the connect message', async () => {
+    key.value = null;
+    expect(await checkLabImportQuota()).toEqual({ allowed: false, remaining: 0, reason: 'no-key', message: expect.stringMatching(/^Connect your Anthropic API key/) });
+  });
+  it('a key is allowed', async () => {
+    expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: Number.MAX_SAFE_INTEGER });
   });
 });

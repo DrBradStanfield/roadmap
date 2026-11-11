@@ -89,7 +89,7 @@ struct LiveMetricPage: View {
         let inView = geometry.inView(range.isShort ? points : days, by: \.start, from: scrolledTo)
         let wanted = Wanted(wakes: live.wakes, removals: live.removals[metric] ?? 0, range: range, days: range == .day ? geometry.daysInView(from: scrolledTo) : [])
         LivePageFrame(metric: metric, ranges: LiveRange.allCases, range: $range, empty: isEmpty, key: wanted, guide: guide) { shows in
-            await load(wanted, shows: shows)
+            if let ticket = live.ticket() { await load(wanted, shows: shows, under: ticket) }
         } reset: {
             selected = nil
             rebuild()
@@ -125,10 +125,10 @@ struct LiveMetricPage: View {
         (range == .day ? !hoursRead.isEmpty : daysRead) && points.isEmpty
     }
 
-    /// D reads the hours of each day in view it has not read; the other ranges read the days,
-    /// once the page leaves D (E4). A wake reads again; a locked phone keeps what was drawn.
-    private func load(_ wanted: Wanted, shows: Int) async {
-        let (store, now, calendar) = (live.store, live.now(), live.calendar)
+    /// D reads the hours of each day in view it has not read; the other ranges read the days, once the
+    /// page leaves D (E4). A wake reads again; a locked phone keeps what was drawn; `ticket`: US-72 AC10.
+    private func load(_ wanted: Wanted, shows: Int, under ticket: LiveHealth.Ticket) async {
+        let (store, now, calendar) = (live.reader(ticket), live.now(), live.calendar)
         let fresh = ReadFor(wakes: wanted.wakes, shows: shows, removals: wanted.removals)
         if fresh != readFor {
             // The history was removed (access off, Health emptied): nothing old stays drawn (Codex R2).
@@ -149,12 +149,12 @@ struct LiveMetricPage: View {
         if wanted.day {
             // The kept week of hours draws at once, then each day in view is read (and kept while
             // within the last week, AC7a).
-            if hours.isEmpty, let kept = await live.history.keptHours(metric, calendar: calendar), !Task.isCancelled {
+            if hours.isEmpty, let kept = await live.history.keptHours(metric, calendar: calendar), live.holds(ticket) {
                 hours = kept
                 rebuild()
             }
             for day in wanted.days where !hoursRead.contains(day) {
-                guard let read = try? await live.history.refreshHours(store, metric, day: day, now: now, calendar: calendar), !Task.isCancelled else { return }
+                guard let read = try? await live.history.refreshHours(store, metric, day: day, now: now, calendar: calendar), live.holds(ticket) else { return }
                 let merged = (hours.filter { calendar.startOfDay(for: $0.start) != day } + read).sorted { $0.start < $1.start }
                 if merged != hours { hours = merged }
                 hoursRead.insert(day)
@@ -162,20 +162,20 @@ struct LiveMetricPage: View {
         } else if !daysRead {
             // The kept history draws at once (a first visit: 400 days), then what changed in Health
             // is read and kept (AC7a). Reading, merging and grouping run off the main thread.
-            if days.isEmpty, let first = await live.firstDays(metric, reaching: reading), !Task.isCancelled {
-                await show(first, calendar: calendar)
+            if days.isEmpty, let first = await live.firstDays(metric, reaching: reading, under: ticket), live.holds(ticket) {
+                await show(first, calendar: calendar, under: ticket)
             }
-            guard let read = try? await live.history.refreshDays(store, metric, now: now, calendar: calendar), !Task.isCancelled else { return }
-            if read != days { await show(read, calendar: calendar) }
+            guard let read = try? await live.history.refreshDays(store, metric, now: now, calendar: calendar), live.holds(ticket) else { return }
+            if read != days { await show(read, calendar: calendar, under: ticket) }
             daysRead = true
         }
         rebuild()
     }
 
     /// New days, with their weeks and months grouped on `LiveHistory`, then drawn.
-    private func show(_ read: [LivePoint], calendar: Calendar) async {
+    private func show(_ read: [LivePoint], calendar: Calendar, under ticket: LiveHealth.Ticket) async {
         let groups = await live.history.grouped(read, calendar: calendar)
-        guard !Task.isCancelled else { return }
+        guard live.holds(ticket) else { return }
         days = read
         grouped = groups
         rebuild()

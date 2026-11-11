@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-1,"S1 tools, scripts, CI",One typecheck/build script shared by ci.yml and deploy.yml,not started,No typecheck or build:all script in package.json; ci.yml:97-102 and deploy.yml:284-287 list the tsc steps inline,,,yes

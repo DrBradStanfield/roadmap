@@ -99,6 +99,36 @@ describe('scrubEvent — free-text scrub', () => {
   });
 });
 
+// US-09 AC7h: the trace context's ids leave the browser whole; any other value
+// at those paths, and an id-shaped value anywhere else, is scrubbed as before.
+describe('scrubEvent — trace and span ids (US-09 AC7h)', () => {
+  const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+  const SPAN_ID = 'e212345678abcdef';
+  const run = (trace: Record<string, unknown>) => scrubEvent(makeEvent({
+    event_id: TRACE_ID,
+    contexts: { trace: trace as never, other: { trace_id: TRACE_ID } },
+    extra: { span_id: SPAN_ID },
+  }))!;
+
+  it('keeps an id that starts with a hex lab name and digits', () => {
+    const out = run({ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID });
+    expect(out.event_id).toBe(TRACE_ID);
+    expect(out.contexts!.trace).toEqual({ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID });
+    expect(out.contexts!.other).toEqual({ trace_id: 'e2[value]abcdef0123456789abcde' });
+    expect(out.extra).toEqual({ span_id: 'e2[value]abcdef' });
+  });
+
+  it('scrubs text, upper-case hex and wrong-length hex at the id paths', () => {
+    const out = run({ trace_id: 'LDL 3.2 mmol/L', span_id: SPAN_ID.toUpperCase(), parent_span_id: `${SPAN_ID}0` });
+    expect(out.contexts!.trace).toEqual({
+      trace_id: 'LDL [value]', span_id: 'E2[value]ABCDEF', parent_span_id: 'e2[value]abcdef0',
+    });
+    expect(run({ trace_id: 'e2 45', span_id: TRACE_ID, parent_span_id: SPAN_ID.slice(1) }).contexts!.trace).toEqual({
+      trace_id: 'e2 [value]', span_id: 'e2[value]abcdef0123456789abcde', parent_span_id: SPAN_ID.slice(1),
+    });
+  });
+});
+
 // The OAuth return lands on `/roadmap/?code=…&state=…`, and dropbox.ts /
 // drive.ts call history.replaceState to clear it. The SDK records a navigation
 // breadcrumb first, with the live authorization code in `data.from`/`data.to`.

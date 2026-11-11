@@ -6,34 +6,40 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin c", "ascorbic acid", "calcium ascorbate", "sodium ascorbate", "ascorbyl palmitate", "liposomal vitamin c", "ester-c", "antioxidant", "immune", "collagen", "skin", "iron", "blood pressure", "hypertension", "blood sugar", "diabetes", "insulin resistance", "gout", "uric acid", "kidney", "cardiovascular", "heart health", "stroke", "cancer", "cataracts", "inflammation", "depression", "exercise", "aging", "longevity", "scurvy", "copper"]
-summary: "Reference on vitamin C. Brad's view: adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C raised deaths in burns and sepsis trials. Big antioxidant doses around workouts blunt training gains in young people. Liposomal: no proven benefit at 10x the cost. Always discuss with your doctor."
-reviewed: "2026-10-20"
-sources: [{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/","checked":"2026-09-29","fingerprint":"sha256:c90bdbe5335f77121d0603a4cc602e844987bad2ba22430bb33a7b09bd374f3d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial","checked":"2026-10-20","fingerprint":"publishedAt:2026-07-08T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-20T19:11:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects","checked":"2026-10-20","fingerprint":"publishedAt:2025-02-24T21:22:36Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth","checked":"2026-10-20","fingerprint":"publishedAt:2024-12-09T15:30:08Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-10-20","fingerprint":"publishedAt:2024-08-11T19:43:34Z"}]
+summary: "Vitamin C reference. Brad: most adults need 75-90 mg a day; don't megadose. High-dose IV vitamin C did harm in burns and sepsis trials. Big antioxidant doses around workouts blunt gains in the young. It won't help once a cold starts. High doses can worsen hemochromatosis or raise kidney-stone risk."
+reviewed: "2026-11-10"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17884994/","checked":"2026-11-10","fingerprint":"sha256:1f6432b8f5873aa727a056ae7cc1b2be5193f10f2a036361c1252efd21abf93d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10357726/","checked":"2026-11-10","fingerprint":"sha256:91daf570fd15c7e3483835109987a77c0ba55474cb652c2a0cc9e3084458b11d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/2762330/","checked":"2026-11-10","fingerprint":"sha256:8279f6ec941e148af22e1359f97bed2bf42520bc3c115bb192d023ef1970d6fc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12134712/","checked":"2026-11-10","fingerprint":"sha256:437f330299ded4d0cf90b196ec4f8ae461533a7341699670d858ad30d90d866d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8108031/","checked":"2026-11-10","fingerprint":"sha256:cb8b7dd8a7943bb54ee1b9719c35b68b84420b7b1fbc05fb0c0b15b086f8f731"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15068981/","checked":"2026-11-10","fingerprint":"sha256:481d951995d963255efbcb11effdae12ea1626175b0465d6f4c77deb253573a4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16567755/","checked":"2026-11-10","fingerprint":"sha256:f87004d419989f827f4a243d05b56d6ffe8bf4f93ffb20ff1ba48418e225b30f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25077263/","checked":"2026-11-10","fingerprint":"sha256:1b76eea8fa5ffc4db80f5c173ed9b7f574c299c1c5bec80860aed86235625ed2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11533373/","checked":"2026-11-10","fingerprint":"sha256:768aa6ab1a6e7acbbffe33eb13f548ded47932181fbf151696b853a7c2ea5e50"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17644699/","checked":"2026-11-10","fingerprint":"sha256:519ff98afec5086637526426be79ca08af22b831794cded746478777721ef5f3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12771534/","checked":"2026-11-10","fingerprint":"sha256:7b5893049e417e895dba965c35037959dfbe6282989730a9b2a7c28a58f6c305"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33517432/","checked":"2026-11-10","fingerprint":"sha256:c9d7b677d239cb4ae4f94994bbbdc308e2bffcb8bb9b9722a565bcd646e5011b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31843213/","checked":"2026-11-10","fingerprint":"sha256:92771e99153dd5e8b485752896a50c11d606da1e200c3515a3699dd6c8aeafba"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32033656/","checked":"2026-11-10","fingerprint":"sha256:37b520dd317ea604d14f0898679e881034e9fb310a574ed89ca20fb7ed45a351"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8505665/","checked":"2026-11-10","fingerprint":"sha256:80d83b9a9b87e8ad970a9b8035c339c25ecc73039206b42da3e2628a2a5dd5a2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8021423/","checked":"2026-11-10","fingerprint":"sha256:acecbc243d73982e0bc66be1504be73c4319cf7f4e7379a2f69b91c278d14a42"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18836692/","checked":"2026-11-10","fingerprint":"sha256:57227758df6eea12d0a785dc36e35fb5e5bf137e3c8e6dbbb8d3a700b6bd38f7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39237620/","checked":"2026-11-10","fingerprint":"sha256:28f23e62c2abe8e9e0b7a63a38b998ac8864c2de386a24179941e6d086469dc0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35498071/","checked":"2026-11-10","fingerprint":"sha256:684e9bebc4a80e031e41a60970f09e5a72fdda34da85debce90c4ab7ce646f20"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18971870/","checked":"2026-11-10","fingerprint":"sha256:724005412c474e4ce491037cc2a50c8dbaa13f2dde16700d79051a1d3ee6ffa7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/3414575/","checked":"2026-11-10","fingerprint":"sha256:33734a6fc6be66922b27899334a5b3831f5aff398875f5790114f459149a873c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28805671/","checked":"2026-11-10","fingerprint":"sha256:12a53662fe485407625d2472c49c82b2f547e5f3725ed8f1950badbfa1b76542"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11710935/","checked":"2026-11-10","fingerprint":"sha256:e72edfe325e8bab7d29c43c9a52f716ccbe16e5b6e12da101dd80dca0bd2574d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11207686/","checked":"2026-11-10","fingerprint":"sha256:e7ce6c24bc8a95ebb6da5a09fcb9281a3631bf856c74ec8f7d9de4f630eac889"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8623000/","checked":"2026-11-10","fingerprint":"sha256:8b364abea2268ad4394aba0cebf322f9ea521329d39fa669710d8d85e9c65679"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12789176/","checked":"2026-11-10","fingerprint":"sha256:523fcbb5cfdc0ffe9a0e5fb51cac1241667d79838f0681367dfcb2b7f7ad8a86"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16185284/","checked":"2026-11-10","fingerprint":"sha256:96c61a253682a32ee9aadf238258d8409c1ffebec6801bcbc36a8b2c0c6e0d7b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12823436/","checked":"2026-11-10","fingerprint":"sha256:989f5aacc1050aa292216084f4e0da7b0a9cb2bb6cbc947073e03e271e8bd2ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8869680/","checked":"2026-11-10","fingerprint":"sha256:06a38ba58853f7dcac49c91a81987677a7c848d56a057ad5e83462d5f1795089"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18603326/","checked":"2026-11-10","fingerprint":"sha256:81344adccd19de4c1213c5cd04ad5b3ed3d2b19862aa2b7cd2a3471d656ea908"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9767255/","checked":"2026-11-10","fingerprint":"sha256:60f757aa7cc20bf77e155c9e753913cd99586d0a494bd97ada094638f7f99c8d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/4941984/","checked":"2026-11-10","fingerprint":"sha256:ded51f45635c633c62cdd7c2bc1cf04876f77381c0f6b7fe8bfceb560d3b5479"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23440782/","checked":"2026-11-10","fingerprint":"sha256:5df22f60b4780158e977d50af4828793798eea61f89bbc65bf32f7ee21654ae2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25010554/","checked":"2026-11-10","fingerprint":"sha256:77bcd79653eff12d550c89c7069c6aec1635c6b34b07f9a7721e0a86fc93906d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30069463/","checked":"2026-11-10","fingerprint":"sha256:ae028ed7203959a6661d94b3066b183c73808ca2bb8685da7e459b99b40dc850"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33576820/","checked":"2026-11-10","fingerprint":"sha256:14d1e685c29e1bd6be70e9756985ebb686fbb2b92dcf1ba4953f4ef37e720569"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35896462/","checked":"2026-11-10","fingerprint":"sha256:b68a7a62d091ae2f3578d917bcbb4fc1d43291b8253df031f34f6feb1b2bf81f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37877585/","checked":"2026-11-10","fingerprint":"sha256:645f2534debab999f8ae16cc54e3d343d8a1c0d781e99073a07ca6d3f45be2f3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33420963/","checked":"2026-11-10","fingerprint":"sha256:8894472312ac5b28d54e6e9b8ca35c7f2596402a5c9a4e9cbde543c1a3cc4ae9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32047636/","checked":"2026-11-10","fingerprint":"sha256:e648daefadc27f3f11de7a6cabd2b07779ac354e6b349873b585d0269f618903"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36120391/","checked":"2026-11-10","fingerprint":"sha256:5d8b5eb7b06ed30468a480548d5b8244f2843722a592658fb313104b2d7e36d1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22492364/","checked":"2026-11-10","fingerprint":"sha256:9518cbcc4081f0854d84b257b29f1a4825194364e2c532824d137c8510d028d6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30394006/","checked":"2026-11-10","fingerprint":"sha256:d51fff2d7311e7991613dad03c19baca7bb144a3a43a8e33aa65670f70ee8e34"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18277182/","checked":"2026-11-10","fingerprint":"sha256:56890c9466ca0d8ed2b4812db5230512c1e68de038f7e642190e39845424edf4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18474278/","checked":"2026-11-10","fingerprint":"sha256:0310d9fb43919d840f39f730338438d7d31b0ef3550375bcdce916a4ed545521"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18826726/","checked":"2026-11-10","fingerprint":"sha256:3ac264568d992ed2560a25c9104f1d871331cc473f7c4ce8d47cb4c41bca56ca"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12875759/","checked":"2026-11-10","fingerprint":"sha256:1c90a01edb91411994730d5d7e617488a1b0a4bc2a2feb7fa034675c872002ca"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18175738/","checked":"2026-11-10","fingerprint":"sha256:8321866483ebaca19471365bfdc55984cec09acf1616dfbc6358a8fdcef05081"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15585762/","checked":"2026-11-10","fingerprint":"sha256:1b7a967bba58c5c62e2e0ffae9e4c82e9cc83b726ba07104cd499ee88db4dfa3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12090883/","checked":"2026-11-10","fingerprint":"sha256:2920cbe184e9f58db034717d5e6d30eade1094ff858930b45d92f19720381f22"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17698683/","checked":"2026-11-10","fingerprint":"sha256:ea08011758e70fa05e34e8336fdfafe02a1ac2404ee9ba1e592993df09fcc3d0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18997197/","checked":"2026-11-10","fingerprint":"sha256:5d75cc4553fe87649d97da32157b6f622d6e3cedcff572a9cd470257be486091"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15557412/","checked":"2026-11-10","fingerprint":"sha256:73e7150e256a3a88f4d7df3c6823ad198e0a6bfc03821a7b2390d3ed3e7bafc5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12435256/","checked":"2026-11-10","fingerprint":"sha256:42f232c817682b51581aec7772f666ac2d4e1b07af59d6adc83dd7c966269af2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17023716/","checked":"2026-11-10","fingerprint":"sha256:29110d69f620fbec6ecfcb38defcbdf34b21c544857ee8b2a798efd18be00685"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19318634/","checked":"2026-11-10","fingerprint":"sha256:e52753ba88f79718d210b1734f946a96c4cbad986eda6ebcc8e1a88c5ae21fa9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23897583/","checked":"2026-11-10","fingerprint":"sha256:1779aba530bc8c55269f8504c545aa29a3edfc5de4698c78a6c60347c8ce13e5"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35660506/","checked":"2026-11-10","fingerprint":"sha256:70210029596ac9ec38865796d232fa595be8ab695188021ce3ff0ebb0b02cc61"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15531665/","checked":"2026-11-10","fingerprint":"sha256:1e9618a212bbdac641804c6fa63ca7a53779cb8b3214f50ac447f4592f341621"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10088626/","checked":"2026-11-10","fingerprint":"sha256:f2b058f4fb6846f046bd9bc5e71d2969ce936dd140c33a77a8c65a0c928ed869"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8678048/","checked":"2026-11-10","fingerprint":"sha256:28c57cef8d4ea18a5a842722516bc51befd67e462db7ff0c230f612bda6b844b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19066368/","checked":"2026-11-10","fingerprint":"sha256:bfb22c216f0a7de598ac85b66e051675d8d4da7f895c8d2c0e7aac3cf892a3cf"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19116389/","checked":"2026-11-10","fingerprint":"sha256:98e5faba58e1e583a35ff49a53b07f8ca698533bf2b48d4330c44d164ccedf53"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16115341/","checked":"2026-11-10","fingerprint":"sha256:295d3355eeb7a7f7578e5a9b6f0df2833edd36d6456ce6395076aa372f54af48"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8137333/","checked":"2026-11-10","fingerprint":"sha256:50b8b54aa21808bb05128eca8f888e4e4fca8afcb2103105c8c1efd430c61383"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18677777/","checked":"2026-11-10","fingerprint":"sha256:92f476bae89f8c736c7f625bfafe5024de61fefbdda7594b6cba16a85657c44f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30233396/","checked":"2026-11-10","fingerprint":"sha256:2854d0941bb2eed08c0603d08ed2fea2f30034b1fb64c03cbf583ecb79ed25bc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27194303/","checked":"2026-11-10","fingerprint":"sha256:a17fa926eb1968c256adc4f968e8e6861f3609e72773c71bfc70445c088795f9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/4430016/","checked":"2026-11-10","fingerprint":"sha256:9d7f5bdad7fb959a1e2ae85801dbfeb2176234c7bc80cad4bd8fa7a23f854877"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1068480/","checked":"2026-11-10","fingerprint":"sha256:8df1c450e9467d52d963d6453795f1072f13a36082ec7bdcfbe54464f97febc9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/3880867/","checked":"2026-11-10","fingerprint":"sha256:e775c6aca486be9071d622224cb9e8af7c3cf2529a2e30100b1991d6f7333eef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15523748/","checked":"2026-11-10","fingerprint":"sha256:a08c36113df8b21a287a00934ebdccf49bd9cddc44288a41e8c2c754b74dd36b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18678913/","checked":"2026-11-10","fingerprint":"sha256:5287557b96975a95c02e0ba6232d2aacbddf5a47072b061682ba03aab64fc13b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16157892/","checked":"2026-11-10","fingerprint":"sha256:7d80c2df8b4664662ae23c5b94a422e872ad86b48528324a55f1856d072f6b7b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17502596/","checked":"2026-11-10","fingerprint":"sha256:31472143e3d0a57a4663090f9d9fa220c121a62d2d126363430deae06ae9ea78"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19361554/","checked":"2026-11-10","fingerprint":"sha256:1057266754375df1254d544e81e5129cfff4567a0d5712801bce9a09d4c3443c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18505970/","checked":"2026-11-10","fingerprint":"sha256:9e49f016949cd0daaf5fce281fe13e29a47b43376a469098ec8b543dcc824642"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15514289/","checked":"2026-11-10","fingerprint":"sha256:289463e30876505146d5fa8e073c6d8edda2185b53eca91a3a4816a16bf025f8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18829561/","checked":"2026-11-10","fingerprint":"sha256:7d0b763ac118bff5bc2e11470f294effbbe508e0f9913fbca66f7aa85c458622"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/14752075/","checked":"2026-11-10","fingerprint":"sha256:5c4b261fede0683d9fa127bfc637c09a28b02ab99ddf643038a24cc1aa43103d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17367938/","checked":"2026-11-10","fingerprint":"sha256:31f419a92456835086cb06e84cfa1073d50c602e060d67c2f2bf718af51ca016"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27016950/","checked":"2026-11-10","fingerprint":"sha256:5eea74741dedb1b35d0ef25b882045a5563ad4757954a1fcc3f3cbc754bf2e24"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9322567/","checked":"2026-11-10","fingerprint":"sha256:e3e02785a964f7f880ddc91451c73d7280d498c2485c770aaaf961e443ab9939"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17265171/","checked":"2026-11-10","fingerprint":"sha256:eab37e4ad7ab5069f3c236ad0731ec4dff163c45964fffbb7d0de474647cca1e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19923367/","checked":"2026-11-10","fingerprint":"sha256:ca9e7dd8b71f6af5a5a4233b13ace8c35f511155c707377e5205b58f89079e5b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11594943/","checked":"2026-11-10","fingerprint":"sha256:e12739039b98ce3555aa3f0d129802cd7f2ead262d1b5b9dd1b52f05a645a512"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17923720/","checked":"2026-11-10","fingerprint":"sha256:8cce5563650f09ba5ac7547d4705a8808bae8534087dc10ef8c8e44a1c558e3b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16380590/","checked":"2026-11-10","fingerprint":"sha256:72c6ac535cf62c25bed06cf22a52048b4e093399828967aab29aa1d4279ed84e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17923719/","checked":"2026-11-10","fingerprint":"sha256:e02701e0b2257aad71781ca90b3336296d8b0cb7d52ab91673cbcbf1ee85f9a0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11594942/","checked":"2026-11-10","fingerprint":"sha256:e167f38e5302c1801aab9b6a0fc81272be058d4935b946272798ac98675bd485"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23644932/","checked":"2026-11-10","fingerprint":"sha256:592943629116c7ddd9f097e4142fe5560c5ab39afe1e8b3391067eabae55510a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19273781/","checked":"2026-11-10","fingerprint":"sha256:502746d4da699efba9ee6bb4d2af6191b41c3c0aff1b9b5ac7fe83a6ee579e32"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18464304/","checked":"2026-11-10","fingerprint":"sha256:5307750dcd7643675188eb49bf35828be294dbd8e81bc0a35cfdc98a17e5289a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41739218/","checked":"2026-11-10","fingerprint":"sha256:ea5f6d588073612f279a0c0d825e19e2433509ca31b80de0110523dde4e809bb"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26824361/","checked":"2026-11-10","fingerprint":"sha256:8b65040eef0c24716f48d7ff752a5718341abed8e0e30b5a5af86bb341ae6964"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34595203/","checked":"2026-11-10","fingerprint":"sha256:a3337db90ffe4a23395ded2e81cf89662c8a475ef7162a880164a4c0f3509a84"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19162177/","checked":"2026-11-10","fingerprint":"sha256:39b03366c784af4d0c6f0a6aaf46c6f328428919b162523ed8cc1f326483222c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21750623/","checked":"2026-11-10","fingerprint":"sha256:6307176976fb94175420d5c9b46bc398fd7bdf008fab931a7b52b9cdfdc45680"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34943087/","checked":"2026-11-10","fingerprint":"sha256:c38a7a76123ba948ff17a967c12748522b9a0d77bf97f9374916d9b3d12cdd47"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34476568/","checked":"2026-11-10","fingerprint":"sha256:760208dac8ed791997b74270a35f7d86b3583ec43f9cfccec2a09fbefb162a2b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32971991/","checked":"2026-11-10","fingerprint":"sha256:9e976f52425e52f7b724ee74fadffb4d48fa4ee2e02f6b4f0510e19392f6bf1d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/21473799/","checked":"2026-11-10","fingerprint":"sha256:0b01b7456630b77e9e3c39da5073998e3dbda4787126d0620eca67f406d639fa"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28410599/","checked":"2026-11-10","fingerprint":"sha256:d77c987b6b0e223299739de4489e1fb1550ce82d0b1bf2ee4922ca786710b6ac"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27904265/","checked":"2026-11-10","fingerprint":"sha256:45c61686bec2608e44211adcd6c8a92e711a0279acf89accce0f5af619406144"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32981536/","checked":"2026-11-10","fingerprint":"sha256:8e2719974acd305d6afbf7d133f8f134613f5417f6a9080ee96d4b637d7921c8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30899342/","checked":"2026-11-10","fingerprint":"sha256:e8d9e09f45e63aaeecd900b5c3f76e448700f0d29ed912d8faaad63b95f30545"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24492839/","checked":"2026-11-10","fingerprint":"sha256:2d4ac8c9aff60c2b6bd678da3984e007fb6124ca776cef2d8985794de3d5c651"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28382551/","checked":"2026-11-10","fingerprint":"sha256:4e313e38578269f11a0fb5636d68261397b692825a4e0613a1be8f7caa871f2e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37424529/","checked":"2026-11-10","fingerprint":"sha256:60e9e6590487d9610355fdcef8019e79f9afb205532be5441f1f03d4c5c64c7b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20620759/","checked":"2026-11-10","fingerprint":"sha256:31649cd1b64624115466238400df7ad28766ff00bde95803cfc2bd23a049f2e9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/17763607/","checked":"2026-11-10","fingerprint":"sha256:c6e3dc99ad5c4efd4c6370bb49cf7a15b1b7b68880689b3deeb35b8d95d1da07"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15987848/","checked":"2026-11-10","fingerprint":"sha256:fefa7e3eadcc8d704fc38d27635cbdbd2e8bb1c1468f5f11d04fadbb31b71aac"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15579526/","checked":"2026-11-10","fingerprint":"sha256:c9b9abfc702dda50c501871d2083ab3870d04402a1705beabc1b803e22c3e071"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26463139/","checked":"2026-11-10","fingerprint":"sha256:40e6a1532fdf3f611260175b02b326932f80f7bed19fb488577257b047e8e87d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31748360/","checked":"2026-11-10","fingerprint":"sha256:2ae1f3e644be88253493e41343b773049601b554868ec3d86ef8a392787fdb56"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30276648/","checked":"2026-11-10","fingerprint":"sha256:8b92d8233a68aedbb6f9e1613162c3bdc60fd31c3a6d1e50aaa1976d3a0f6139"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39391374/","checked":"2026-11-10","fingerprint":"sha256:d5ca6d35dc1ef5a1c590621f42bdede5896519ed04ed1adda9e60e4798bdbd1e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/6837490/","checked":"2026-11-10","fingerprint":"sha256:89b1648f982fa608540ed85a2ef9b791ce562b07065377d7cedd62d6bba6344e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/3694287/","checked":"2026-11-10","fingerprint":"sha256:8876ee1918066b4cb9e0ad5126dbb8f5c0bb798fc215ac66866265ad10fa8672"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11408659/","checked":"2026-11-10","fingerprint":"sha256:51b6e92c704c6db53708bf44f381ea9adc5243d238a3b71f62ee7d2227ce858a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9560150/","checked":"2026-11-10","fingerprint":"sha256:ac93d0fe98f7a5a6351815ed77713e03b48cea97863187db95a1ec1e9fd6d839"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10336883/","checked":"2026-11-10","fingerprint":"sha256:c59b52fb4b310b1245ead557e91bf7d0be29386238a26cc515f74dde27014631"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19240699/","checked":"2026-11-10","fingerprint":"sha256:45e6edc07931c8e7df17b757166bb15b1a0ba2eb84ed060e220cd52cbc7456ec"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27775178/","checked":"2026-11-10","fingerprint":"sha256:d65cb650dd0584facdece66764b7ded2e0b16d89685380ff01cda6015d555e83"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29479748/","checked":"2026-11-10","fingerprint":"sha256:33ff3dd7a1adfe99bf33ac229d4741201fa03e60b40b0878015fa820172839e7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31569954/","checked":"2026-11-10","fingerprint":"sha256:6b5bfef9ac764754928809bda6e55ddbbff640e10da3a654db7eb190214c74d6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39550214/","checked":"2026-11-10","fingerprint":"sha256:dfa879b0c8887627d2b2c21bf527f47259f6e4184df48d5db6450bd7237abace"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22233286/","checked":"2026-11-10","fingerprint":"sha256:dd4570c3a0ea2ae99fd4d00e104d8d8323c930972637fbf81d31d0b9b54ad687"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/5107696/","checked":"2026-11-10","fingerprint":"sha256:b9643b93c66a334e11cbcbb575abea44d94baa74d74bfae8bab36e4f7b1da530"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1145638/","checked":"2026-11-10","fingerprint":"sha256:5046e423497cb3fcf2cb37131c661ad9991db1672f758513f00d0f0d3cb4d42f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11053614/","checked":"2026-11-10","fingerprint":"sha256:ceef437a0e5a11e3df712fb7acace1d0cde36f80dc6300abc4f36a7f02659d9e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/15767232/","checked":"2026-11-10","fingerprint":"sha256:4c479d3bb285e20372398b7e5f561261baccf2a6336e4048b823f5e494141df9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11498460/","checked":"2026-11-10","fingerprint":"sha256:8adfe373242736392be69ba57984c88655ceef9c468c96f338cbad6188409ce3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37078007/","checked":"2026-11-10","fingerprint":"sha256:d59b27aa8c2d2c261e0311636479d2c291eae4c71e12fafdfefeb7c894044e90"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24601693/","checked":"2026-11-10","fingerprint":"sha256:f6726dd6d94a826d48d02bfaf75ad9c0815beefbfb95b594eeabe3e4cecbe3cd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19262546/","checked":"2026-11-10","fingerprint":"sha256:6db99ce6ea18fb286313196876f4371c706313f5b4d0304dd44bf610006246af"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/978441/","checked":"2026-11-10","fingerprint":"sha256:628a3c5bed103c5139134510d2a51b33b0c82b5229f18c300a0369e48f30a253"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33554542/","checked":"2026-11-10","fingerprint":"sha256:d1600a2903aec94c7b73da8734e521c8ee3738fbc02018a5227f758eac4cf0f0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38045598/","checked":"2026-11-10","fingerprint":"sha256:e5938685cf1a02d985e014ab7aaeb781f8044ede1773cbed226044877a24b582"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35712748/","checked":"2026-11-10","fingerprint":"sha256:f543ac80ba13a4d560b43729df6663b10c1de8d8bf476402c80315c41821ecf3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11124756/","checked":"2026-11-10","fingerprint":"sha256:5529f7d1dd8ec536c5554b12bc6bbf946bf78b093eba77a9d16033a409d78647"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/1200528/","checked":"2026-11-10","fingerprint":"sha256:0d73be813e6c57d77294da194bce12092f92d7e0892df6f9a90abfc0f20cb4c2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38082300/","checked":"2026-11-10","fingerprint":"sha256:c8107081452ec056c1e4a7ef3d7dcc632bd4dc33841ce0e6555c19c263118850"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42267875/","checked":"2026-11-10","fingerprint":"sha256:172bf274b1729cc28d63d65b65ea8987f8915b140b62af1b8729fe800339ed6e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35704292/","checked":"2026-11-10","fingerprint":"sha256:7a6a33bfad9f1587bb4f0c7a801735a87f75ddcfd09841172bba729edd190256"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42925834/","checked":"2026-11-10","fingerprint":"sha256:860bd2dd102ccc8559cbefdc41a56d77b4fc5980dfa07c8775c0116592eb5cba"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41210509/","checked":"2026-11-10","fingerprint":"sha256:803b9b5620fc88bccaacd7ed8d4f0bf54ed0aa3ea90570845c1d49a62da93056"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27512620/","checked":"2026-11-10","fingerprint":"sha256:2f7c2a0c63134f48922804e6496c690ba38a502203dda34e7cf12dac40147bd9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26415762/","checked":"2026-11-10","fingerprint":"sha256:fff863a4f5b3ac661d9e80607c813ed625c953e44739d4bde98179cb9c4cb6dc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41038909/","checked":"2026-11-10","fingerprint":"sha256:e18f89a8bad17768bf89d5a7654363a2d521d0cea7af06e73634833402a706a9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19675106/","checked":"2026-11-10","fingerprint":"sha256:570a21f89d523077a612977a33018c7ede6f70c66bed54cf1cea425523ee4b51"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42764731/","checked":"2026-11-10","fingerprint":"sha256:906bb7be3aeb0d7503cfc963632d55ba39583cae1346ae28bd5d9195a31406a6"},{"name":"nih-ods","url":"https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/","checked":"2026-11-10","fingerprint":"sha256:3a2b2ea481a16b40c197b03ef1fc2499241adef5002ca26caa05ee3581890580"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial","checked":"2026-11-10","fingerprint":"publishedAt:2026-07-08T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine","checked":"2026-11-10","fingerprint":"publishedAt:2026-04-16T12:00:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read","checked":"2026-11-10","fingerprint":"publishedAt:2026-02-03T00:32:28Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick","checked":"2026-11-10","fingerprint":"publishedAt:2025-11-20T19:11:54Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects","checked":"2026-11-10","fingerprint":"publishedAt:2025-02-24T21:22:36Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/supplement-gummies-compared-capsules","checked":"2026-11-10","fingerprint":"publishedAt:2025-01-29T16:30:07Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth","checked":"2026-11-10","fingerprint":"publishedAt:2024-12-09T15:30:08Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/mobile-iv-vitamin-therapy","checked":"2026-11-10","fingerprint":"publishedAt:2024-10-22T02:07:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/popular-supplements-try-avoid","checked":"2026-11-10","fingerprint":"publishedAt:2024-08-11T19:43:34Z"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/3468598/","checked":"2026-11-10","fingerprint":"sha256:55bdaf2e15bff102b9bafee96de52f7de26474cf8e839c07a3712c6bf8adf661"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25165584/","checked":"2026-11-10","fingerprint":"sha256:9c088b860f38f6434e77125e71d4a46d182c4db07967d45486109ace37f9083f"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects)*
 
-## Current view (reviewed 20 October 2026)
+## Current view (reviewed 10 November 2026)
 
-Most adults need 75 to 90 mg of vitamin C a day, and Brad advises against megadosing by default, because taking a lot of one antioxidant has, again and again, done nothing useful and sometimes done real harm ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). In a 2026 trial in people with severe burns, high-dose intravenous vitamin C (50 mg per kg every six hours for four days, roughly 14 to 16 g a day) was stopped early because deaths roughly doubled, though the exact size is uncertain; the same dose had already raised death or lasting organ failure in sepsis, 44.5% versus 38.5% ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). If you are young, healthy and training, big doses of antioxidant vitamins around workouts are a mistake, because they blunt the signal exercise uses to adapt; in older adults, antioxidants with exercise did slightly better than exercise alone, but the effects were small and their real-world significance is unclear ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). Brad advises avoiding IV drip clinics: the evidence is too weak to recommend IV vitamin C for cancer or fatigue, and people with a history of kidney disease have developed kidney failure after it ([Brad, 20 Nov 2025](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick)). Liposomal vitamin C is absorbed somewhat better, but it has no proven benefit over regular vitamin C and costs about 10 times as much ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)). Very high doses, in the thousands of milligrams, can cause nausea, diarrhea and stomach cramps and can contribute to kidney stones, and in people with hemochromatosis excess vitamin C can make iron overload worse ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)).
+Most adults need 75 to 90 mg of vitamin C a day, and Brad's advice is not to megadose by default, because taking a lot of one antioxidant has, again and again, done nothing useful and sometimes done real harm ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). In a 2026 trial in people with severe burns, high-dose intravenous vitamin C (50 mg per kg every six hours for four days, roughly 14 to 16 g a day) was stopped early: the main result, death or lasting organ failure, went the wrong way, and deaths roughly doubled, though the trial stopped with relatively few deaths, so the exact size is uncertain ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). The same dose had been tested four years earlier in people with sepsis and did the same thing, a higher rate of death or organ failure, 44.5% versus 38.5% ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). If you are young and healthy and you train, Brad says big doses of antioxidant vitamins around workouts are a mistake, because they blunt the signal your body reads to adapt; in older adults, antioxidants paired with exercise beat exercise alone, but the effects were small and the real-world significance is still not clear ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). Brad treats a label offering several thousand percent of the daily value of vitamin C as a warning sign, not a selling point, and suggests checking the dose and form against an independent testing resource before trusting it ([Brad, 8 Jul 2026](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial)). For colds, Brad says high-dose vitamin C has been tested in human clinical trials and does not work once a cold strikes ([Brad, 16 Apr 2026](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine)).
+
+Brad notes that excess vitamin C can make iron overload worse in people with hemochromatosis, and that high doses can contribute to kidney stones ([Brad, 9 Dec 2024](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth)).
 
 ## Key safety points
 
-- Vitamin C may increase levothyroxine absorption (one trial gave 500 mg with each dose to people with gastritis), so if you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C [155]. High doses may reduce the effect of the HIV drug indinavir [148].
-- Current evidence does not support a clinically significant interaction with warfarin, but if you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C [146][147].
-- If you are having chemotherapy or radiation, ask your oncologist before taking vitamin C [87].
-- People with hemochromatosis should avoid high-dose vitamin C, because it could make iron overload worse [4][9][12].
-- High-dose supplements have been linked to kidney stones in men but not women, and to oxalate kidney damage, so men and people who have had kidney stones may be wise to stay close to the RDA [128][125][50].
-- High-dose intravenous vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial. It has caused kidney failure in people with kidney disease [151][152]. High doses, by mouth or intravenously, have caused hemolysis in people with G6PD deficiency [161].
-- Vitamin C can make guaiac stool tests falsely negative, and intravenous doses can make some glucose meters read falsely high, so tell your doctor before testing [163][159][160].
-- Large doses can cause diarrhea, nausea and stomach cramps [4][9][12].
+- If you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C: in two small trials, taking it with levothyroxine was linked to lower TSH [155][169]. High doses may lower levels of the HIV drug indinavir [148].
+- Studies have not found a clinically important interaction with warfarin, but if you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C [146][147].
+- If you are having chemotherapy or radiation, ask your oncologist before taking vitamin C [12].
+- People with hemochromatosis should avoid high-dose vitamin C, because it could make iron overload worse [12][168].
+- With kidney disease, ask your doctor before high doses: IV vitamin C has caused kidney failure, and kidney dysfunction raises the risk of oxalate damage [168][167]. Men and people who have had kidney stones may be wise to keep supplemental vitamin C close to the RDA [128][153].
+- High doses, by mouth or IV, have caused hemolysis, mostly in people with G6PD deficiency [161]. High-dose IV vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial [165][166].
+- Vitamin C can make guaiac stool tests and urine dipsticks falsely negative, and IV doses can make some glucose meters read falsely high, so tell your doctor before testing [163][138][160].
+- Large doses can cause diarrhea, nausea and stomach cramps [12].
 
 ## Brad's videos on this topic
 
-- 8 Jul 2026, [They Had to Stop This Vitamin C Trial Early](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial): high-dose IV vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial; megadosing antioxidants keeps backfiring, and big doses around workouts blunt training gains in young people.
+- 8 Jul 2026, [They Had to Stop This Vitamin C Trial Early](https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial): high-dose IV vitamin C raised deaths in a burns trial and death or organ failure in a sepsis trial; don't megadose by default, and young people who train should skip big antioxidant doses around workouts.
+- 16 Apr 2026, [This $2 Remedy Beats Every Cold Medicine](https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine): high-dose vitamin C has been tested in trials and does not work once a cold strikes; the video is about zinc lozenges, saline rinses and honey.
+- 3 Feb 2026, [The Most Important Antioxidant Study I’ve Ever Read](https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read): vitamin C and E supplements can blunt the gains from endurance training, while in older adults antioxidants combined with exercise improved strength and function.
 - 20 Nov 2025, [Popular Longevity Treatment Makes You Sick](https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick): avoid IV drip clinics; IV vitamin C has too little evidence for cancer or fatigue and known harms, including kidney failure in people with kidney disease.
-- 24 Feb 2025, [Stop These Longevity Supplements (Dangerous Side Effects)](https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects): avoid high-dose vitamin C; 1,000 mg with another antioxidant blunted gains from exercise, so aim to reach the 90 mg recommended intake, mostly from food, rather than exceed it.
-- 9 Dec 2024, [Is Liposomal Vitamin C Worth the Money or a Useless Fad?](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth): liposomal vitamin C is absorbed somewhat better but has no proven benefit over regular vitamin C and costs about 10 times as much.
+- 24 Feb 2025, [Stop These Longevity Supplements (Dangerous Side Effects)](https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects): avoid high-dose vitamin C; 1,000 mg with another antioxidant blunted gains from exercise, so aim to reach the 90 mg recommended intake, mostly from food, rather than exceed it. Superseded on the amount in Brad's multivitamin: the video says half the recommended intake, and the current formula has 90 mg.
+- 29 Jan 2025, [Are Supplement Gummies Effective Compared to Capsules?](https://drstanfield.com/blogs/articles/supplement-gummies-compared-capsules): a trial in 30 people found vitamin C gummies and caplets were absorbed alike.
+- 9 Dec 2024, [Is Liposomal Vitamin C Worth the Money or a Useless Fad?](https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth): liposomal vitamin C is absorbed somewhat better but has no proven benefit over regular vitamin C and costs about 10 times as much. Superseded on the amount in Brad's multivitamin: the video says 45 mg, and the current formula has 90 mg.
+- 22 Oct 2024, [Mobile Vitamin IV Therapy: Does It Work and Should You Try It?](https://drstanfield.com/blogs/articles/mobile-iv-vitamin-therapy): no clinical trials show benefits from mobile IV vitamin drips; a typical drip holds 1,000 mg of vitamin C, half the upper limit.
 - 11 Aug 2024, [Which Popular Supplements Should You Actually Try to Avoid?](https://drstanfield.com/blogs/articles/popular-supplements-try-avoid): direct antioxidants, including high-dose vitamin C, can blunt the benefits of exercise, especially when taken after a workout.
 
 ## 1. Overview
@@ -52,18 +58,17 @@ Vitamin C serves several critical physiological functions [1][2][3]:
 
 ### Absorption and Pharmacokinetics
 
-The intestinal absorption of vitamin C is regulated by at least one specific dose-dependent, active transporter — the sodium-dependent vitamin C transporter (SVCT1) [4]. Absorption efficiency is approximately 70-90% at moderate intakes of 30-180 mg/day. However, at doses above 1 g/day, absorption falls to less than 50%, and absorbed, unmetabolized ascorbic acid is excreted in the urine [4][7].
+The intestinal absorption of vitamin C is regulated by at least one specific, dose-dependent, active transporter [4]. Absorption efficiency is approximately 70-90% at moderate intakes of 30-180 mg/day. However, at doses above 1 g/day, absorption falls to less than 50%, and absorbed, unmetabolized ascorbic acid is excreted in the urine [4][7].
 
 Pharmacokinetic studies show that the relationship between dose and plasma concentration is nonlinear and tightly controlled [4][7]:
 
-- At 200-300 mg/day from vitamin C-rich foods, mean peak plasma concentrations reach approximately 60-70 micromoles/L.
-- Oral doses of 1.25 g/day produce mean peak plasma concentrations of approximately 135 micromoles/L — only about twice the level achieved at 200-300 mg/day [7].
+- Oral doses of 1.25 g/day produce mean peak plasma concentrations of approximately 135 micromoles/L, only about twice the level produced by 200-300 mg/day from vitamin C-rich foods [7].
 - Pharmacokinetic modeling predicts that even 3 g taken every 4 hours would produce peak plasma concentrations of only 220 micromoles/L [7].
-- By contrast, intravenous administration can produce plasma concentrations as high as 26,000 micromoles/L — more than 100-fold higher than achievable orally [7][8].
+- By contrast, intravenous administration can produce plasma concentrations as high as 26,000 micromoles/L, more than 100-fold higher than achievable orally [7][8].
 
 The total body content of vitamin C ranges from approximately 300 mg (at near-scurvy levels) to about 2 g [4]. Cells appear to become saturated at daily intakes of approximately 100 mg, and plasma concentrations plateau at intakes of 200 mg or more [4][7]. The highest concentrations are maintained in leukocytes, adrenal glands, the pituitary gland, the eyes, and the brain [4].
 
-Vitamin C status is typically assessed by measuring plasma vitamin C levels [4][9]. A plasma level below 11.4 micromoles/L (0.2 mg/dL) indicates deficiency (scurvy risk). Levels of 23-49 micromoles/L indicate hypovitaminosis C (suboptimal status). Levels of 50-70 micromoles/L are considered adequate, and levels above 70 micromoles/L indicate saturation.
+Vitamin C status is typically assessed by measuring plasma vitamin C levels [4][9].
 
 ### Deficiency: Scurvy and Beyond
 
@@ -78,11 +83,11 @@ Scurvy is rare in developed countries today, but several populations remain at r
 - People with severe intestinal malabsorption or cachexia
 - Patients with end-stage renal disease on chronic hemodialysis [13]
 
-Even subclinical vitamin C insufficiency has clinical consequences. A review of 15 clinical trials concluded that in people with plasma vitamin C levels of 27 micromoles/L or below, vitamin C supplementation (average dose 222 mg for 41 days) reduces gingival (gum) bleeding. The researchers suggested that about 110 mg daily would be sufficient for this purpose — more than the current RDAs for most adults. In those with normal plasma levels (48-70 micromoles/L), supplementation did not reduce gum bleeding [14].
+Deficiency is usually defined as a serum vitamin C level below 11.4 micromol/L. In a US national survey, smokers and people on low incomes were among those most at risk [176].
 
-Vitamin C deficiency can also mimic inflammatory conditions such as juvenile arthritis. A report described 10 patients aged 3 to 20 with restrictive eating habits who presented with muscle and joint pain initially thought to be rheumatic disease but were ultimately found to have low vitamin C levels. Supplementation at 250-1,000 mg/day resolved symptoms in all patients [15].
+Low intakes short of scurvy may still matter. A review of 15 clinical trials with 1,140 mostly healthy people found that vitamin C supplementation reduced gingival (gum) bleeding when blood levels were below 28 µmol/L [14]. It did not clearly reduce gum bleeding when blood levels were above 48 µmol/L [14]. The authors concluded that intakes set to prevent scurvy may leave blood levels too low to prevent a greater bleeding tendency [14].
 
-Severe vitamin C deficiency has also been linked to pulmonary arterial hypertension (PAH), possibly through less nitric oxide in the lining of blood vessels. In one report, a man in his 60s with profound deficiency developed PAH that resolved after vitamin C supplementation [16].
+Scurvy can be mistaken for other illnesses. In a case series of patients with scurvy seen by rheumatologists, all had raised inflammatory markers, and their findings could pass for arthritis or vasculitis; most had developmental delay or autism [15]. In a single case report, severe deficiency was linked to pulmonary arterial hypertension (high blood pressure in the arteries of the lungs), which resolved once the man took vitamin C [16].
 
 ## 2. Forms and Bioavailability
 
@@ -92,13 +97,13 @@ Vitamin C supplements are available in several chemical forms. The key differenc
 
 | Form | Description | Bioavailability | GI Tolerance | Key Notes |
 |------|-------------|:-:|:-:|------|
-| Ascorbic acid | Standard form; the chemical name for vitamin C. Both natural and synthetic forms are the same "L" isomer and are equally used by the body [17]. | Reference standard (~70-90% at moderate doses) | Acidic; may cause heartburn or stomach upset at high doses | Lowest cost. |
-| Calcium ascorbate (Ester-C) | Non-acidic form; vitamin C combined with calcium. A patented form that also contains metabolites (dehydroascorbate, calcium threonate, xylonate, lyxonate) [18]. | Plasma absorption similar to ascorbic acid; one sponsored study found leukocyte levels remained elevated for 24 hours [19]. | Better for acid-sensitive stomachs; non-acidic | May not reduce diarrhea risk, since diarrhea comes from the osmotic effect of unabsorbed vitamin C [12]. The claim of superior absorption is not supported by reliable independent evidence [18]. |
-| Sodium ascorbate | Non-acidic form; vitamin C combined with sodium. Sometimes marketed as "buffered vitamin C" when combined with ascorbic acid. | Similar to ascorbic acid [17][18] | Non-acidic; gentler on the stomach | Contains sodium, which may matter for people restricting sodium. |
-| Ascorbyl palmitate | Fat-soluble form; often found in softgel capsules. | Not established. | Good | Useful for oil-based formulations. |
-| Liposomal vitamin C | Vitamin C encapsulated in a phospholipid (fat) layer, designed to enhance absorption through cell membranes. | One manufacturer-conducted study found that a single 500 mg liposomal dose raised total vitamin C exposure by 21% in plasma and by 8% in white blood cells, compared with standard vitamin C [20]. | Good | Costs more than regular vitamin C, with no proven benefit over it [157]. |
-| Liposomal hydrogel vitamin C | Liposomal calcium ascorbate set in a hydrogel of fenugreek galactomannan. | One manufacturer-conducted crossover study in healthy volunteers reported more than 7-fold higher bioavailability than the same dose of unformulated calcium ascorbate [22]. | Good | Evidence comes from one study [22]. |
-| PureWay-C (ascorbic acid + fatty acids) | Vitamin C combined with lipid metabolites. | One study reported the highest absolute serum vitamin C levels of the forms tested [23]. | Good | Evidence comes from one study [23]. |
+| Ascorbic acid | Plain vitamin C. Synthetic ascorbic acid was absorbed as well as the vitamin C in oranges, orange juice and cooked broccoli [17]. | The reference form (~70-90% at moderate doses) | Acidic; large doses can upset the stomach or cause heartburn | Cheapest. |
+| Calcium ascorbate (Ester-C) | Vitamin C bound to calcium, so it is not acidic. The Ester-C brand also contains vitamin C breakdown products (dehydroascorbate, calcium threonate, xylonate, lyxonate) [18]. | Plasma levels similar to ascorbic acid in two small trials (15 men; 36 adults), with higher white-cell levels at 24 hours [19][170]. | Gentler for people prone to heartburn | May not cut the risk of diarrhea, which comes from unabsorbed vitamin C pulling water into the gut [12]. A comparison of three forms found no difference in plasma levels or urinary excretion [12][18]. |
+| Sodium ascorbate | Vitamin C bound to sodium; also not acidic. Products that mix it with ascorbic acid are often sold as "buffered" vitamin C. | Similar to ascorbic acid [17][18] | Gentler for people prone to heartburn | Adds sodium, which counts if you limit salt. |
+| Liposomal vitamin C | Vitamin C wrapped in tiny fat bubbles (liposomes), meant to improve uptake. | One small trial in 27 adults found that a single 500 mg liposomal dose raised total vitamin C exposure by 21% in plasma and by 8% in white blood cells, compared with standard vitamin C [20]. | Good | Costs more than regular vitamin C, with no proven benefit over it [157]. |
+| Ascorbyl palmitate | Vitamin C joined to a fatty acid, so it dissolves in fat; common in softgels. | Not established. | Good | Useful for oil-based formulations. |
+
+Two branded forms rest on one small study each. A liposomal calcium ascorbate set in a fenugreek gel was tested by its developers in 14 healthy volunteers, who reported more than 7-fold higher bioavailability than plain calcium ascorbate [22]. PureWay-C, ascorbic acid combined with lipid metabolites, gave the highest serum vitamin C levels of the forms tested in one study [23].
 
 ### Key Principles for Form Selection
 
@@ -114,54 +119,72 @@ Vitamin C supplements are available in several chemical forms. The key differenc
 
 ### Topical Vitamin C for Skin
 
-Skin normally holds high levels of vitamin C, which supports collagen production and, as an antioxidant, may help protect skin from UV damage [26]. Aged and sun-damaged skin has been found to hold less vitamin C [27], which has fuelled interest in applying it to the skin.
+Skin normally holds high levels of vitamin C, which helps it make collagen and may help shield it from UV damage [26]. Older and sun-damaged skin holds less [27]. Whether a cream adds anything beyond a good diet is poorly understood [26].
 
-However, the evidence for topical vitamin C is limited:
+The human evidence is small:
 
-- Getting vitamin C into the skin depends heavily on how the product is formulated [28], and whether applying it works better than a good dietary intake is poorly understood [26].
-- In pig skin, vitamin C entered the skin only when formulated at a pH less than 3.5, and absorption peaked at a 20% concentration [28]. Products containing vitamin E and ferulic acid may help increase formulation stability [30][31].
 - In a 6-month double-blind trial in women with photo-aged skin, a 5% vitamin C cream used daily improved the global skin score more than the cream base alone [32].
-- In pig skin, vitamin C alone or with vitamin E added to the protection a sunscreen gave against UV damage [33]. A study of a vitamin C, E and ferulic acid solution compared it with its vehicle rather than with sunscreen, and found significant photoprotection [34]. A human study found a modest protective effect of vitamins C and E applied alone before UV exposure, and more protection from combinations [36].
-- In pig skin, the derivatives magnesium ascorbyl phosphate, ascorbyl palmitate and dehydroascorbic acid did not raise skin levels of vitamin C [28].
+- A human study found a modest protective effect of vitamins C and E applied alone before UV exposure, and more protection from combinations [36].
+- In a small human study, a solution of vitamins C and E with ferulic acid protected skin from UV damage better than the solution without them [34].
 
-Dr Brad Stanfield's MicroVitamin includes 45 mg of vitamin C in the form of calcium ascorbate — a non-acidic form chosen for gentle absorption alongside the other 25 ingredients in the daily serving ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)).
+Most of the rest comes from pig skin:
+
+- Vitamin C got into the skin only at a pH below 3.5, with the best uptake at a 20% concentration, so the product's make-up matters [28]. The derivatives magnesium ascorbyl phosphate, ascorbyl palmitate and dehydroascorbic acid did not raise skin vitamin C [28].
+- Adding vitamin E improved protection, and adding ferulic acid made the vitamin C and E solution more stable and doubled its protection [30][31].
+- Vitamin C, alone or with vitamin E, added to the protection a sunscreen gave against UV damage [33].
+
+Dr Brad Stanfield's MicroVitamin includes 90 mg of vitamin C in the form of calcium ascorbate, a non-acidic form chosen for gentle absorption, as one of the 25 ingredients in the daily serving ([shop MicroVitamin](https://drstanfield.com/products/microvitamin)).
 
 ## 3. Evidence for Health Benefits
 
 ### Common Colds and Immune Function
 
-The relationship between vitamin C and the common cold has been studied extensively since Linus Pauling's 1970 proposal that high-dose vitamin C could prevent and treat colds [37].
+The relationship between vitamin C and the common cold has been studied extensively since Linus Pauling suggested in the 1970s that vitamin C could prevent and treat colds [12][37].
 
-**Prevention (prophylactic use):** A Cochrane meta-analysis of 44 placebo-controlled studies examined vitamin C at doses of at least 200 mg/day taken continuously [38]:
+**Treatment (after symptom onset):** Trials that started vitamin C once cold symptoms had begun found no consistent effect on how long colds lasted or how bad they were [38]. This matches Brad's view that high-dose vitamin C does not work once a cold strikes [173]. A 2018 analysis (Ran, Biomed Res Int 2018) claimed that high-dose vitamin C might shorten cold duration in regular supplementers [40], but this review was retracted in 2023 [154].
 
-- **General population:** Prophylactic vitamin C did NOT significantly reduce the risk of developing a cold.
-- **People under severe physical stress:** In trials involving marathon runners, skiers, and soldiers exposed to extreme physical exercise and/or cold environments, prophylactic vitamin C (250 mg/day to 1 g/day) reduced cold incidence by 50%.
-- **Duration and severity:** Regular vitamin C shortened colds by 8% in adults and by 14% in children, and colds were also less severe.
+**Regular daily use:** A 2013 Cochrane review pooled placebo-controlled trials of vitamin C taken every day [38]:
 
-A small study of men aged 18-35 with low to adequate vitamin C levels found that 1 g/day (500 mg twice daily) for 2 months during winter reduced reported colds compared to placebo (7 vs. 11 men reported a cold) [39].
+- **General population:** In community trials of 10,708 people, regular vitamin C did not reduce the risk of catching a cold (risk ratio 0.97) [38].
+- **People under heavy physical stress:** In five trials of 598 marathon runners, skiers and soldiers on subarctic exercises, regular vitamin C roughly halved the risk of a cold (risk ratio 0.48) [38]. NIH describes these trials as using 250 mg/day to 1 g/day [12].
+- **Duration and severity:** Regular vitamin C shortened colds by 8% in adults and by 14% in children, and colds were also less severe [38].
 
-**Treatment (after symptom onset):** Trials that started vitamin C once cold symptoms had begun found no consistent effect on how long colds lasted or how bad they were [38]. A 2018 analysis (Ran, Biomed Res Int 2018) claimed that high-dose vitamin C might shorten cold duration in regular supplementers [40], but this review was retracted in 2023 because of a calculation error (the placebo group was double-counted) [154].
+NIH, describing an earlier version of this review, gives the trial doses as at least 200 mg/day [12].
 
-**Practical recommendation:** For cold prevention, regular daily supplementation of 200 mg to 1 g may modestly reduce cold duration and severity, particularly in those with suboptimal vitamin C status, people exposed to extreme physical stress, smokers, and older adults [38][41][42]. Starting vitamin C after symptoms have already begun does not appear helpful. The modest antihistamine effect of high-dose vitamin C may contribute to symptom amelioration [43].
+A 2023 meta-analysis of 10 trials that used at least 1 g/day found that vitamin C reduced the severity of colds by 15% [164].
+
+In an eight-week trial at the peak of the cold season, non-smoking men aged 18-35 with plasma vitamin C below 45 µmol/L took 1,000 mg/day of vitamin C or placebo. Fewer reported a cold on vitamin C: 7 men, against 11 on placebo [39].
+
+NIH notes that regular intake might help people exposed to heavy physical exercise or cold environments and people with marginal vitamin C status, such as older adults and people who smoke [12]. These are trial findings, not Brad's advice; his view is in the Current view.
 
 ### COVID-19
 
-Vitamin C's role in immune function led to widespread promotion for COVID-19 prevention and treatment. However, clinical evidence has been largely negative:
+Vitamin C's role in immune function led to widespread promotion for COVID-19 prevention and treatment. However, clinical evidence has been largely negative.
+
+**Outpatients:**
 
 - In an open-label trial in 214 adult outpatients with COVID-19, 8,000 mg/day of vitamin C, 50 mg/day of zinc, or both did not shorten symptoms compared with usual care [44].
 - A study of 98 adults (average age 52) with mild to moderate COVID-19 found that 1,000 mg/day of vitamin C for 14 days did not reduce symptom number, duration, severity, or quality of life versus placebo [45].
-- In two linked trials in people hospitalized with COVID-19, a dose of intravenous vitamin C every 6 hours, up to 16 doses over 96 hours, gave no gain in days alive without organ support. In critically ill patients, the vitamin C group had fewer such days and slightly lower survival to discharge, and the trials stopped once their rules for harm and futility were met [46].
-- In a trial of 56 critically ill patients with COVID-19 in China, very high-dose IV vitamin C (24,000 mg/day for 7 days) showed a possible benefit for blood oxygenation, but it did not increase ventilator-free days or lower deaths over 28 days [47].
-- A retrospective study of 15 critically ill COVID-19 patients in shock found 80% mortality despite treatment with 3,000 mg/day vitamin C [48].
-- A review of pre-COVID studies found that 1,000-6,000 mg of vitamin C (IV or oral) shortened ventilation time by about 25% for patients requiring ventilation for over 10 hours, but was less helpful for shorter ventilation periods [49].
 
-Vitamin C supplements can cause oxalate nephropathy, a form of kidney damage; the Oxalate Nephropathy part of Section 6 gives the doses involved and who is most at risk. At one academic center, supplement-linked cases made up a far larger share of biopsy-proven oxalate nephropathy during the COVID-19 pandemic, when vitamin C sales rose sharply, than in the two years before [50].
+**In hospital:**
+
+- In two linked trials in people hospitalized with COVID-19, a dose of intravenous vitamin C every 6 hours, up to 16 doses over 96 hours, gave no gain in days alive without organ support. In critically ill patients, the vitamin C group had fewer such days and slightly lower survival to discharge, and the trials stopped once their rules for harm and futility were met [46].
+- In a trial of 56 critically ill patients with COVID-19 in China, very high-dose IV vitamin C (12 g every 12 hours for 7 days) showed a possible benefit for blood oxygenation, but it did not increase ventilator-free days or lower deaths over 28 days [47].
+- A review of pre-COVID studies found that 1-6 g/day of vitamin C shortened ventilation time by about 25% for patients requiring ventilation for over 10 hours; it helped most in the patients ventilated longest [49].
+
+### Sepsis and Severe Burns (Intravenous)
+
+Two large trials tested the same intravenous dose, 50 mg/kg every 6 hours for up to 96 hours [165][166].
+
+In the LOVIT trial in 872 adults with sepsis in intensive care, this dose raised the rate of death or persistent organ dysfunction at 28 days: 44.5% versus 38.5% with placebo [166].
+
+In the VICTORY trial in 238 adults with severe burns, the same dose was stopped early after the first planned interim analysis for futility or harm [165]. Death or persistent organ dysfunction at 28 days occurred in 40.8% of the vitamin C group and 29.7% of the placebo group; this primary result was not statistically significant (risk ratio 1.28, 95% CI 0.99 to 1.65) [165]. Deaths at 28 days were 15.0% versus 7.6% [165]. The authors concluded that high-dose intravenous vitamin C did not help and is possibly harmful in severe burns [165].
 
 ### Blood Pressure
 
-Vitamin C supplements appear to lower blood pressure a little, at least in short-term trials [51].
+Short-term trials suggest vitamin C supplements may lower blood pressure slightly [51].
 
-A meta-analysis of 29 short-term studies, most using 500-1,000 mg/day, found average decreases of 3.84 mmHg systolic and 1.48 mmHg diastolic [51]. In patients with hypertension, the reductions were somewhat larger: 4.85 mmHg systolic and 1.67 mmHg diastolic. The blood pressure reduction is minor compared to pharmaceutical treatments (ACE inhibitors and diuretics reduce pressures by approximately 10 mmHg), and the studies were short (2 weeks to 6 months), so effects on cardiovascular events were not assessed [51].
+A meta-analysis of 29 short-term trials (median dose 500 mg/day, median length 8 weeks) found average decreases of 3.84 mmHg systolic and 1.48 mmHg diastolic [51]. In trials in people with hypertension, systolic pressure fell by 4.85 mmHg; the 1.67 mmHg fall in diastolic pressure was not statistically significant [51]. The authors call for long-term trials of blood pressure and clinical events [51].
 
 ### Blood Sugar and Type 2 Diabetes
 
@@ -175,7 +198,7 @@ The evidence for vitamin C in cardiovascular disease prevention is mixed, with o
 
 **Prospective cohort studies provide conflicting results:**
 
-- In the Nurses' Health Study (85,118 women, 16-year follow-up), total vitamin C intake from both dietary and supplemental sources was inversely associated with coronary heart disease risk, but dietary vitamin C alone showed no significant association — suggesting that supplement users might be at lower risk [57].
+- In the Nurses' Health Study (85,118 women, 16-year follow-up), total vitamin C intake from both dietary and supplemental sources was inversely associated with coronary heart disease risk, but dietary vitamin C alone showed no significant association, suggesting that supplement users might be at lower risk [57].
 - A study of 20,649 British adults found those in the top quartile of baseline plasma vitamin C had a 42% lower risk of stroke than those in the bottom quartile [58].
 - A pooled analysis of 9 prospective studies (293,172 subjects) found that supplemental vitamin C at 700 mg/day or more was associated with a 25% lower risk of coronary heart disease compared to no supplemental vitamin C [59].
 - A 2008 meta-analysis of 14 prospective cohort studies (median 10 years follow-up) concluded that dietary, but not supplemental, vitamin C intake was inversely associated with coronary heart disease risk [54].
@@ -190,10 +213,10 @@ The evidence for vitamin C in cardiovascular disease prevention is mixed, with o
 - A 2006 meta-analysis of RCTs concluded that antioxidant supplements (vitamins C and E, beta-carotene, or selenium) do not affect the progression of atherosclerosis [65].
 - However, the Linxian, China population trial found that daily vitamin C (120 mg) plus molybdenum (30 mcg) for 5-6 years significantly reduced cerebrovascular death risk by 8% during 10 years of follow-up after the intervention ended [66].
 
-**Mortality data — conflicting findings at higher blood levels:**
+**Mortality data: findings conflict at higher blood levels.**
 
 - A long-term US study (median follow-up 14.2 years) found a dose-response decrease in cancer and overall mortality with higher blood vitamin C levels [67].
-- However, in nearly 10,000 US adults followed for about 10 years, serum levels above a threshold of 1.06 mg/dL (about 60 micromoles/L) were associated with a 33% higher risk of death from any cause and a 60% higher risk of cardiovascular death [68]. This level is at the upper end of the adequate range and near saturation.
+- However, in nearly 10,000 US adults followed for about 10 years, serum levels above a threshold of 1.06 mg/dL (about 60 micromoles/L) were associated with a 33% higher risk of death from any cause and a 60% higher risk of cardiovascular death [68].
 - One study found that postmenopausal women with diabetes who took at least 300 mg/day of supplemental vitamin C were more likely to die from CVD [69]. No such association has been reported in other studies.
 
 **Synthesis:** Current evidence does not support vitamin C supplementation specifically for cardiovascular disease prevention. However, maintaining adequate vitamin C status through diet and/or modest supplementation is reasonable given consistent observational associations and known biological mechanisms. A fundamental limitation of the clinical trials is that most participants likely had vitamin C levels near tissue saturation at baseline, so supplementation would have had little additional effect [2][7].
@@ -206,7 +229,7 @@ The evidence for vitamin C in cancer prevention is inconsistent and does not sup
 
 - In the Nurses' Health Study (82,234 women, ages 33-60), consuming approximately 205 mg/day of vitamin C from food (highest quintile) was associated with a 63% lower risk of breast cancer among premenopausal women with a family history [70].
 - However, Kushi and colleagues did not observe significantly lower breast cancer risk among postmenopausal women consuming at least 198 mg/day (highest quintile) versus less than 87 mg/day (lowest quintile) [71].
-- A review by Carr and Frei noted that studies reporting no association typically enrolled subjects with relatively high vitamin C intakes (above 86 mg/day in the lowest quintiles), whereas studies finding protective effects identified them at intakes of 80-110 mg/day — a range near tissue saturation [2].
+- A review by Carr and Frei noted that studies reporting no association typically enrolled subjects with relatively high vitamin C intakes (above 86 mg/day in the lowest quintiles), whereas studies finding protective effects identified them at intakes of 80-110 mg/day, a range near tissue saturation [2].
 
 **Clinical trials have been negative:**
 
@@ -220,7 +243,7 @@ The evidence for vitamin C in cancer prevention is inconsistent and does not sup
 
 **Breast cancer concern:** In a French cohort of 57,403 postmenopausal women, vitamin C supplement use was linked to higher breast cancer risk only in women whose food already supplied the most vitamin C (the top quarter of intake) [78].
 
-**In vitro concern:** Test-tube work suggests vitamin C may help turn lipid hydroperoxides into compounds that damage DNA, which has been raised as an argument against high-dose vitamin C for cancer prevention [9][134].
+**In vitro concern:** In test-tube work, vitamin C broke lipid hydroperoxides down into compounds that can damage DNA, and the authors suggested this may help explain why vitamin C has failed to prevent cancer in trials [9][134].
 
 ### Cancer Treatment
 
@@ -230,11 +253,13 @@ The role of vitamin C in cancer treatment remains controversial and under active
 
 **The IV vs. oral distinction:** The discrepancy between the early positive findings and the Mayo Clinic result may be explained by route of administration. Cameron and colleagues used both IV and oral vitamin C, while Moertel's Mayo Clinic trial used only oral. Oral vitamin C can produce plasma concentrations of at most 220 micromoles/L, whereas intravenous administration can achieve 26,000 micromoles/L [7][8]. At these pharmacologic concentrations, vitamin C is selectively cytotoxic to tumor cells in vitro, acting as a pro-oxidant that generates hydrogen peroxide with selective toxicity toward cancer cells [83][84][85]. Based on this rationale, several case reports of remarkably long survival in patients with advanced cancers treated with high-dose IV vitamin C, and promising animal data, some researchers advocate for reassessment of IV vitamin C as a cancer treatment [3][8][86]. Brad's view is more cautious: the IV vitamin C studies so far are small, the evidence is not strong enough to recommend it for cancer treatment or prevention, and it has known harms, including kidney failure in people with a history of kidney disease [152].
 
+**A 2026 oral trial in blood-cancer precursors:** In the EVITA trial, 109 adults with clonal cytopenia of undetermined significance or lower-risk myeloid cancers, not on cancer treatment, took 1,000 mg/day of vitamin C or placebo for 12 months. Vitamin C did not slow the main outcome, the growth rate of the abnormal blood-cell clone. Fewer people on vitamin C had serious adverse events, and survival was longer in an exploratory analysis (hazard ratio 0.35); the authors call for a phase 3 trial [177].
+
 **Safety concern during treatment:** Whether vitamin C (and other antioxidants) interacts with chemotherapy or radiation therapy is unresolved. Some data suggest antioxidants might protect tumor cells from treatment [87][88][89]. Other data suggest they protect normal tissues from treatment-induced damage and/or enhance treatment effectiveness [90][91]. Due to this uncertainty, individuals undergoing chemotherapy or radiation should consult their oncologist before taking vitamin C, especially at high doses [87].
 
 ### Cataracts and Age-Related Macular Degeneration (AMD)
 
-**Cataracts — evidence for moderate-dose benefit, high-dose risk:**
+**Cataracts: possible benefit from food, possible risk from high doses.**
 
 - In a UK study of female twins, higher dietary vitamin C was linked to less nuclear cataract at the start and to less progression about 10 years later. Use of micronutrient supplements was linked to less cataract at the start but not to slower progression [92].
 - In a sample of women from the Nurses' Health Study, those who had used vitamin C supplements for 10 years or more had a 77% lower prevalence of early lens opacities than non-users; women with shorter use showed no such benefit [93].
@@ -243,7 +268,7 @@ The role of vitamin C in cancer treatment remains controversial and under active
 - However, an 8-year Swedish study of 24,593 women linked vitamin C supplements (about 1,000 mg) to a 25% higher rate of cataract removal than no supplements. For use longer than 10 years the estimate was 46% higher, but this result was not statistically significant [95].
 - In the AREDS trial, high-dose supplementation (500 mg vitamin C, 400 IU vitamin E, 15 mg beta-carotene) did not significantly reduce cataract risk or progression [96].
 
-**Synthesis for cataracts:** Over the long term, vitamin C from food, and in one study long-term supplement use, appears to help prevent cataracts, while high-dose supplementation (approximately 1,000 mg/day) does not and may increase risk.
+**Synthesis for cataracts:** Vitamin C from food, and long-term supplement use in one study, has been linked to fewer cataracts. High-dose supplements of about 1,000 mg/day have not shown a benefit, and in one Swedish cohort they may have raised the rate of cataract surgery [95].
 
 **Age-Related Macular Degeneration (AMD):**
 
@@ -251,17 +276,26 @@ The role of vitamin C in cancer treatment remains controversial and under active
 - A population-based cohort study in the Netherlands found that older adults (55+) with high dietary intakes of vitamin C, beta-carotene, zinc, and vitamin E had reduced AMD risk [99], but most other prospective studies have not supported this finding [100].
 - However, the AREDS trial (3,597 older adults, average 6.3-year follow-up) found that high-dose antioxidant supplementation (500 mg vitamin C, 400 IU vitamin E, 15 mg beta-carotene, 80 mg zinc, 2 mg copper) reduced the risk of progressing to advanced AMD by 28% in high-risk individuals (those with intermediate AMD or advanced AMD in one eye) [101]. The AREDS2 study confirmed these findings over a median 5-year follow-up [102].
 
-Note that high-dose vitamin C (452-500 mg/day) is part of the AREDS formula, but its individual contribution cannot be isolated from the multi-nutrient combination. Despite this, the AREDS formula is a standard clinical recommendation for patients at high risk of advanced AMD progression.
+Note that high-dose vitamin C (500 mg/day) is part of the AREDS formula, but its individual contribution cannot be isolated from the multi-nutrient combination. NIH notes that the AREDS formulations might slow AMD progression in people at high risk of advanced AMD [12].
+
+### Exercise Performance
+
+The relationship between vitamin C supplementation and exercise is complex. High-dose vitamin C may impair training adaptations by blunting the beneficial oxidative stress signals that drive physiological adaptation:
+
+- In a 10-week strength-training study in young women, only the placebo group gained fat-free mass (muscle) and lost fat; the group taking vitamin C (1 g/day) and vitamin E (400 IU/day) did not. The authors concluded that these supplements can blunt the body-composition gains from training [117].
+- In an 11-week trial in young men and women doing endurance training, mostly running, 1,000 mg vitamin C and 235 mg vitamin E a day blocked the rise in muscle markers of mitochondrial growth seen with placebo. VO2max and running performance improved equally in both groups. The authors concluded that the supplements hampered cellular adaptation to training [118].
+- In a 12-week strength-training trial in healthy older men, 1,000 mg vitamin C plus 235 mg vitamin E daily held back bone gains: total hip bone density rose 1.0% with placebo, and lower-spine density rose more with placebo than with the vitamins [119].
+- However, in a trial in adolescent male players doing 8 weeks of high-intensity interval training (HIIT), vitamin C (1,000 mg/day), vitamin E (400 IU/day) or both did not stop gains in maximal oxygen consumption or losses in body weight, and the authors reported better explosive leg strength with supplementation [120].
+
+- In adults aged 55 and over, a 2025 meta-analysis of 39 trials (1,714 people) found that antioxidants combined with exercise improved handgrip strength, leg-press strength and 6-minute walking distance more than exercise alone [172]. The trials pooled different antioxidants, not vitamin C alone, and Brad notes the effects were small, with unclear real-world significance [151].
+
+**Synthesis:** High-dose vitamin C supplementation (1,000 mg/day in these trials), particularly in combination with vitamin E, may interfere with beneficial exercise adaptations including mitochondrial biogenesis, muscle growth, and bone density improvements in healthy individuals. Brad's view is that young, healthy people who train should avoid big antioxidant doses around workouts [151].
 
 ### Gout and Uric Acid
 
-In men, supplemental vitamin C intake is inversely associated with gout risk. Men taking 1,000-1,499 mg a day of supplemental vitamin C had a 34% lower risk of gout than men taking none, and men taking 1,500 mg or more had a 45% lower risk [103]. This may result from lower serum uric acid levels, which decrease with vitamin C intakes up to 400-500 mg/day, with no further reduction at higher doses [104].
+In a two-week crossover trial in 40 adults aged 21 to 78 with high serum uric acid, a daily drink with 600 mg of vitamin C lowered uric acid in the blood without changing how much was passed in urine. The more blood vitamin C rose, the more uric acid fell, and the effect was larger in people whose uric acid started higher [105].
 
-A cross-over trial in 40 adults aged 21 to 78 with high serum uric acid found that a drink containing 600 mg vitamin C daily for two weeks lowered serum uric acid without changing uric acid excretion. The larger the rise in blood vitamin C, the bigger the fall in uric acid, with larger effects in those whose uric acid started higher [105].
-
-### Nonalcoholic Fatty Liver Disease (NAFLD)
-
-In a cross-sectional study of middle-aged and older adults in China, people in the top quarter of dietary vitamin C intake (146.07 mg/day or more) had 29% lower odds of NAFLD than those in the bottom quarter (74.80 mg/day or less) [106]. In a trial in China, 84 adults with NAFLD took 250, 1,000 or 2,000 mg a day of vitamin C for 12 weeks; the liver enzymes AST and ALT fell most in the 1,000 mg/day group [107]. The trial had no placebo group, so it compared doses rather than testing vitamin C against none.
+In a large cohort of US men, those taking 1,000-1,499 mg a day of supplemental vitamin C had a 34% lower risk of gout than men taking none, and those taking 1,500 mg or more had a 45% lower risk [103]. In another group of men, blood uric acid fell as total vitamin C intake rose to about 400-500 mg a day and then levelled off [104].
 
 ### Mood and Depressive Symptoms
 
@@ -273,24 +307,17 @@ Vitamin C helps the body make norepinephrine, and low norepinephrine has been li
 
 **Synthesis:** Observational data link adequate vitamin C intake with lower depression risk. In trials, supplementation has not consistently been shown to improve mood in people who are not vitamin C deficient: one trial found better attention but no change in mood [111], and another found better well-being, with better mood and fatigue only in those whose vitamin C levels stayed low before the trial [112]. Ensuring adequate intake (meeting the RDA) is reasonable, but supplementation beyond this for mood benefits is not well supported.
 
-### Shingles (Herpes Zoster)
-
-Low blood vitamin C (45 micromoles/L or below) has been associated with a higher risk of post-herpetic neuralgia, the nerve pain that can last after shingles heals [113]. In a randomized trial, three doses of 5 g of intravenous vitamin C given every other day, alongside standard care, did not relieve acute shingles pain but lowered the rate of post-herpetic neuralgia [115]. A review also reports less herpetic and post-herpetic pain with high-dose vitamin C [114].
-
 ### Wound Healing and Foot Ulcers
 
 Vitamin C is essential for collagen synthesis, making it critical for wound healing. In a small Australian trial in 16 people with chronic foot ulcers, 500 mg of slow-release vitamin C a day improved healing at 8 weeks compared with placebo; half the participants were vitamin C deficient at the start. Every patient in the vitamin C group healed without amputation, while 44% of those on placebo had not healed by the end of the study [116].
 
-### Exercise Performance
+### Shingles (Herpes Zoster)
 
-The relationship between vitamin C supplementation and exercise is complex. High-dose vitamin C may impair training adaptations by blunting the beneficial oxidative stress signals that drive physiological adaptation:
+Shingles can leave lasting nerve pain, called post-herpetic neuralgia. In a Taiwanese study, people with this pain more often had low blood vitamin C, and a level of 45 micromoles/L or below was linked to a higher risk [113]. In a randomized trial, three doses of 5 g of intravenous vitamin C given every other day, alongside standard care, did not relieve acute shingles pain but lowered the rate of post-herpetic neuralgia [115]. A review also reports less herpetic and post-herpetic pain with high-dose vitamin C [114]. This trial evidence is for vitamin C given intravenously; we found no trials of vitamin C by mouth for shingles.
 
-- In a 10-week strength-training study in young women, only the placebo group gained fat-free mass (muscle) and lost fat; the group taking vitamin C (1 g/day) and vitamin E (400 IU/day) did not. The authors concluded that these supplements can blunt the body-composition gains from training [117].
-- In an 11-week trial in young men and women doing endurance training, mostly running, 1,000 mg vitamin C and 235 mg vitamin E a day blocked the rise in muscle markers of mitochondrial growth seen with placebo. VO2max and running performance improved equally in both groups. The authors concluded that the supplements hampered cellular adaptation to training [118].
-- A 12-week study in healthy elderly men found that high-dose vitamin C/E during strength training constrained bone density benefits compared to placebo. Lower back bone density increased more in the placebo group, and hip bone density increased only in the placebo group [119].
-- However, in a trial in adolescent male players doing 8 weeks of high-intensity interval training (HIIT), vitamin C (1,000 mg/day), vitamin E (400 IU/day) or both did not stop gains in maximal oxygen consumption or losses in body weight, and the authors reported better explosive leg strength with supplementation [120].
+### Nonalcoholic Fatty Liver Disease (NAFLD)
 
-**Synthesis:** High-dose vitamin C supplementation (500-1,000 mg/day), particularly in combination with vitamin E, may interfere with beneficial exercise adaptations including mitochondrial biogenesis, muscle growth, and bone density improvements in healthy individuals. Athletes and those engaged in regular training should be cautious about high-dose antioxidant supplementation during training periods.
+In a cross-sectional study of middle-aged and older adults in China, people in the top quarter of dietary vitamin C intake (146.07 mg/day or more) had 29% lower odds of NAFLD than those in the bottom quarter (74.80 mg/day or less) [106]. In a trial in China, 84 adults with NAFLD took 250, 1,000 or 2,000 mg a day of vitamin C for 12 weeks; the liver enzymes AST and ALT fell most in the 1,000 mg/day group [107]. The trial had no placebo group, so it compared doses rather than testing vitamin C against none.
 
 ### Nail Health
 
@@ -321,7 +348,7 @@ The RDAs are based on the known physiological and antioxidant functions of vitam
 
 ### Tolerable Upper Intake Level (UL)
 
-The UL for vitamin C from food, beverages, and supplements combined is **2,000 mg/day** for adults [9][12]. This is based primarily on the risk of gastrointestinal disturbances. ULs for other age groups:
+The UL for vitamin C from food, beverages, and supplements combined is **2,000 mg/day** for adults [9][12]. The ULs do not apply to people receiving vitamin C for medical treatment, who should be under a doctor's care [12]. ULs for other age groups:
 
 | Age | UL (mg/day) |
 |-----|:-:|
@@ -339,27 +366,27 @@ Brad's view is to reach the RDA, mostly from food, and not to exceed it by defau
 
 **General:** The RDA is 75-90 mg; food usually supplies it. Most people eating 5 varied servings of fruits and vegetables daily will obtain more than 200 mg from diet alone [9][12].
 
-**Colds:** Trials used 200-1,000 mg/day for cold prevention. Regular daily use during cold season has the best evidence. Starting after symptoms begin is not effective [38][39].
+**Colds:** Prevention trials used at least 200 mg/day every day [12]. Trials of cold severity used at least 1 g/day [164]. Vitamin C started after symptoms began did not help [38].
 
-**Blood pressure:** Trials used 500-1,000 mg/day for blood pressure; the meta-analysis showed modest reductions. Effects are small relative to pharmaceutical treatment [51].
+**Blood pressure:** The trials in the meta-analysis used a median of 500 mg/day, and the reductions were modest [51].
 
-**Gout and uric acid:** Trials used 500 mg/day to lower uric acid. The uric acid-lowering effect plateaus around 400-500 mg/day with no further benefit at higher doses [104].
+**Gout and uric acid:** A two-week trial used drinks containing 600 mg vitamin C [105]. In men, serum uric acid fell as vitamin C intake rose to 400-500 mg/day and then reached a plateau [104].
 
-**AREDS formula (AMD progression):** The AREDS trials used 500 mg/day as part of the AREDS combination supplement, which is recommended only for people with intermediate or advanced AMD in one eye [101][102].
+**AREDS formula (AMD progression):** The AREDS trials used 500 mg/day as part of the AREDS combination supplement, tested in people at high risk of advanced AMD (intermediate AMD, or advanced AMD in one eye) [101][102].
 
 **Smokers:** The RDA for smokers is 35 mg/day higher (125 mg for men, 110 mg for women), because smoking increases oxidative stress, which depletes vitamin C stores [12].
 
 ### How to Read a Supplement Label
 
-When checking a vitamin C dose, remember that 1 mg (milligram) equals 1,000 mcg (micrograms), and 1 gram equals 1,000 mg:
+On the label:
 
 - "500 mg vitamin C as calcium ascorbate" means 500 mg of actual vitamin C, plus additional calcium weight.
-- Check the "% Daily Value" on the Supplement Facts label. The DV for vitamin C is 90 mg for adults and children aged 4+ [123].
+- Check the "% Daily Value" on the Supplement Facts label. The DV for vitamin C is 90 mg for adults and children aged 4+ [12].
 
 ### Timing and Absorption Tips
 
-- **Take with food** to slow gastrointestinal transit and reduce stomach upset from acidic forms.
-- **Divide doses** when taking more than 200 mg/day. In one study a single 200 mg dose was fully absorbed, but absorption fell at single doses of 500 mg and higher, so several small doses a day work better than one large dose [7][29].
+- **Divide doses** when taking more than 200 mg/day. In one study a single 200 mg dose was fully absorbed, but absorption fell at single doses of 500 mg and higher, so several small doses a day may work better than one large dose [7][29].
+
 ## 5. Dietary Sources
 
 Fruits and vegetables are the best sources of vitamin C. Consuming 5 varied servings of fruits and vegetables per day typically provides more than 200 mg [9][12].
@@ -393,7 +420,7 @@ Source: USDA FoodData Central [124].
 - **Cooking reduces vitamin C content** because ascorbic acid is water-soluble and destroyed by heat. Prolonged storage also reduces levels. Steaming or microwaving causes less loss than boiling [9][10][12].
 - **Raw consumption preserves vitamin C.** Many of the best food sources (bell peppers, citrus, strawberries, kiwi) are commonly eaten raw.
 - **Citrus fruits, potatoes, and tomato juice** are the major contributors of vitamin C to the American diet [12].
-- **Food-first approach:** Meeting the RDA through diet is readily achievable with consistent intake of fruits and vegetables. However, vitamin C content varies with storage and cooking, so supplementation can serve as insurance.
+- **Food-first approach:** Meeting the RDA through diet is readily achievable with consistent intake of fruits and vegetables.
 - **Vitamin C is added to some fortified breakfast cereals** [12].
 - **Most Americans have sufficient intake:** According to NHANES data, mean intakes from food and beverages are 105.2 mg/day for adult males and 83.6 mg/day for adult females, meeting the RDA for most nonsmoking adults [12].
 
@@ -404,34 +431,36 @@ Source: USDA FoodData Central [124].
 The primary side effects of oral vitamin C supplementation are gastrointestinal disturbances, typically at higher doses [4][9][12]:
 
 - **Diarrhea:** Caused by the osmotic effect of unabsorbed vitamin C drawing water into the intestinal lumen [12]. It is more common at higher doses. Non-acidic forms (calcium ascorbate, sodium ascorbate) may ease heartburn but may not prevent diarrhea.
-- **Nausea, abdominal cramps, and heartburn:** More common at higher doses, particularly with acidic ascorbic acid. Taking with food and dividing doses throughout the day reduces these effects.
-- **Dental enamel erosion:** Erosion of dental enamel has been reported with high vitamin C intakes [9][12]. Ascorbic acid is acidic, so it may be wise not to hold chewable tablets or vitamin C drinks in the mouth for long.
+- **Nausea, abdominal cramps, and heartburn:** More common at higher doses, particularly with acidic ascorbic acid. Taking it with food and splitting the dose through the day may ease these effects.
+- **Dental enamel erosion:** Erosion of dental enamel has been reported with high vitamin C intakes [9][12]. Ascorbic acid is acidic, so it may be wise not to hold chewable tablets or vitamin C drinks in the mouth for long [174][175].
 
-The UL of 2,000 mg/day is based on these gastrointestinal effects, not on systemic toxicity. In general, vitamin C has low toxicity and is not believed to cause serious adverse effects at high intakes in healthy individuals [9][12].
+The UL of 2,000 mg/day is based on these gastrointestinal effects, not on systemic toxicity [4]. In general, vitamin C has low toxicity and is not believed to cause serious adverse effects at high intakes in healthy individuals [9][12].
 
 ### Kidney Stones
 
-This is the most significant safety concern for men taking high-dose vitamin C supplements. Vitamin C is partly metabolized to oxalate, and excess oxalate can form calcium oxalate stones. Vitamin C may also increase how much oxalate is absorbed from food [125].
+Kidney stones are the main concern for men taking high-dose vitamin C supplements. Vitamin C is partly metabolized to oxalate, and excess oxalate can form calcium oxalate stones. Vitamin C may also increase how much oxalate is absorbed from food [125].
 
 - In a controlled feeding study, 1,000 mg of vitamin C twice a day raised urinary oxalate and a calcium oxalate stone-risk index in 40% of participants, whether or not they had formed stones before [125].
 - In a US study of 45,619 men, a total vitamin C intake of 1,000 mg/day or more, compared with less than the RDA of 90 mg/day, was linked to a higher risk of kidney stones (relative risk 1.41) [127].
-- Pooled data from three large US cohorts found that supplements of 1,000 mg/day or more were linked to a 19% higher risk of kidney stones in men than no supplement use. Women showed no such link, and vitamin C from food was not linked to stones in either sex [128].
+- Pooled data from three large US cohorts found that supplements of 1,000 mg/day or more were linked to a 19% higher risk of kidney stones in men than no supplement use. Women showed no such link, and vitamin C from food was not linked to stones in either sex [128]. In men, a total intake of 500-999 mg/day was also linked to more stones than an intake below the RDA (hazard ratio 1.29) [128].
 
-**Kidney stone risk is primarily a concern for men.** Women do not appear to face increased risk from vitamin C supplementation based on available data [128]. The best evidence for increased stone risk is in patients with pre-existing hyperoxaluria [9].
+**Kidney stone risk is primarily a concern for men.** Women do not appear to face increased risk from vitamin C supplementation based on available data [128]. NIH notes that studies of vitamin C and urinary oxalate have had conflicting results, so it is not clear whether vitamin C actually causes kidney stones; the best evidence for increased stone risk is in patients with pre-existing hyperoxaluria [12].
 
 ### Oxalate Nephropathy
 
-Vitamin C supplements have been linked to oxalate nephropathy, in which oxalate crystals build up in kidney tissue and impair kidney function; in one series of biopsy-proven cases, many patients had pre-existing chronic kidney disease [50]. It may be more likely in people with:
+A 2026 scoping review of 45 papers on vitamin C and oxalate kidney damage (21 oral and 24 intravenous case reports) found that the oral cases occurred in people with kidney disease or gut surgery or disorders, often with other causes such as dehydration or high-oxalate diets; it named pre-existing kidney dysfunction as a key risk factor and advised checking kidney function before and during high-dose vitamin C [167].
 
-- Pre-existing kidney disease
-- Pancreatic insufficiency (which, due to fat malabsorption, allows increased oxalate absorption in the colon; a man in his early 80s with pancreatic insufficiency who took high doses of vitamin C developed oxalate nephropathy and needed dialysis [129])
-- Bowel inflammation or celiac disease
+Vitamin C supplements have been linked to oxalate nephropathy, in which oxalate crystals build up in kidney tissue and impair kidney function; in one series of biopsy-proven cases, many patients had pre-existing chronic kidney disease [50]. At one academic center, supplement-linked cases made up a far larger share of biopsy-proven oxalate nephropathy during the COVID-19 pandemic, when vitamin C sales rose sharply, than in the two years before [50]. It may be more likely in people with:
+
+- Pre-existing kidney disease [167]
+- Exocrine pancreatic insufficiency (a man in his early 80s with this condition who took high doses of vitamin C developed oxalate nephropathy and needed renal replacement therapy [129])
+- Crohn disease or past stomach or bowel surgery [130]
 - Enlarged prostate (benign prostatic hyperplasia) [130]
-- High concurrent intake of oxalate-rich foods (nuts, spinach)
+- High intake of oxalate-rich foods, such as nuts [131]
 
-In one case report, 2 g of vitamin C a day, together with a past small-bowel resection and an enlarged prostate, led to acute kidney injury from oxalate nephropathy [130]. Another man, in his 80s and with stage 4 chronic kidney disease, had acute kidney injury from oxalate nephropathy while taking 2 g of vitamin C a day and eating large amounts of oxalate-rich foods, including nuts; his kidney function returned close to baseline after he changed his diet and stopped the vitamin C [131].
+In one case report, a man in his 80s with stage 4 chronic kidney disease had acute kidney injury from oxalate nephropathy while taking 2 g of vitamin C a day and eating large amounts of oxalate-rich foods, including nuts; his kidney function returned close to baseline after he changed his diet and stopped the vitamin C [131].
 
-**Men and people who have had kidney stones may be wise to keep supplemental vitamin C close to the RDA (75-90 mg). Supplements of 1,000 mg/day or more were linked to more kidney stones in men but not in women [128], and 1,000 mg twice a day raised urinary oxalate in people with and without a history of stones [125].**
+Men and people who have had kidney stones may be wise to keep supplemental vitamin C close to the RDA [128][153]. Supplements of 1,000 mg/day or more were linked to more kidney stones in men but not in women [128], and 1,000 mg twice a day raised urinary oxalate in people with and without a history of stones [125]. If you have kidney disease, ask your doctor before taking high-dose vitamin C; NCI advises that people likely to develop kidney stones should not be treated with intravenous vitamin C [168]. Brad's general advice is to reach the RDA, mostly from food, rather than exceed it [153].
 
 ### Cataract Risk
 
@@ -439,11 +468,11 @@ In Swedish women, vitamin C supplements of about 1,000 mg/day were associated wi
 
 ### Iron Overload Risk
 
-Vitamin C enhances nonheme iron absorption. In healthy individuals, this does not appear to be a concern [9][12]. However, in individuals with hereditary hemochromatosis, chronic high-dose vitamin C consumption could exacerbate iron overload and result in tissue damage [4][9][12].
+Vitamin C enhances nonheme iron absorption. In healthy individuals, this does not appear to be a concern [9][12]. However, in individuals with hereditary hemochromatosis, chronic high-dose vitamin C consumption could exacerbate iron overload and result in tissue damage [4][9][12]. NCI advises that high doses are not recommended for people with hemochromatosis [168].
 
 ### Copper Depletion
 
-Vitamin C in high doses may slightly lower copper status. Young healthy men who took 1,500 mg/day (500 mg three times daily) for 2 months experienced significantly reduced ceruloplasmin activity (the protein that stores and transports copper). Blood copper levels also decreased but not significantly [132]. A separate study found that 605 mg/day for 3 weeks decreased ceruloplasmin activity, while doses from 5 to 605 mg/day did not decrease blood copper levels [133].
+High doses of vitamin C may slightly lower copper status. In young men who took 500 mg with each meal (1,500 mg a day) for 64 days, the activity of ceruloplasmin, a copper-carrying protein in the blood, fell at every check; serum copper drifted the same way without reaching significance and rose after they stopped. All values stayed within normal ranges [132]. In a live-in study, 605 mg a day for 3 weeks cut ceruloplasmin activity by 21% on average but did not change copper absorption or serum copper [133].
 
 ### Pro-oxidant Activity
 
@@ -454,7 +483,7 @@ Under certain conditions, vitamin C can act as a pro-oxidant, potentially contri
 Vitamin C supplements can interfere with several diagnostic tests:
 
 - **Fecal occult blood tests (gFOBT):** Vitamin C can block guaiac-based stool blood tests and give a false-negative result; in one patient, the tests turned strongly positive each time she stopped taking it [163]. If you are doing a guaiac test, ask whether to stop vitamin C first. The fecal immunochemical test (FIT) is the stool test the American College of Gastroenterology recommends for cancer detection [137].
-- **Urine tests:** Vitamin C may interfere with dipstick and biochemical urine tests measuring bilirubin, glucose, leukocyte esterase, hemoglobin, nitrite, calcium, chloride, and magnesium. Reported at doses ranging from 350-1,000 mg/day [138][139][140][141].
+- **Urine tests:** Vitamin C may interfere with dipstick and biochemical urine tests measuring bilirubin, glucose, leukocyte esterase, hemoglobin, nitrite, calcium, chloride, and magnesium [138][139][140][141]. In one multicentre study, when vitamin C was found in urine samples, 42.3% of glucose, 10.6% of hemoglobin and 8.2% of leukocyte esterase dipstick results were falsely negative [138].
 - **Blood glucose meters:** High-dose intravenous vitamin C can interfere with some fingerstick (point-of-care) glucose meters [159]. In one study, vitamin C in the blood pushed meter readings up, so a reading can be falsely high, especially in people with kidney impairment; laboratory glucose tests are then the safer choice [160].
 - **Blood tests:** If you take high-dose vitamin C, tell your doctor before a blood test, as it may affect some results.
 
@@ -472,9 +501,13 @@ Other reported effects of high vitamin C intake include reduced vitamin B12 leve
 
 **G6PD deficiency:** High doses of vitamin C, given by mouth or intravenously, have caused hemolysis (breakdown of red blood cells), sometimes with acute kidney injury. In a review of published cases, most patients had G6PD deficiency, and the authors urge caution with high doses in this group [161].
 
-**End-stage renal disease:** Low vitamin C concentrations occur in patients on chronic hemodialysis [13], but supplementation requires caution due to oxalate accumulation risk.
+**Kidney disease:** Low vitamin C concentrations occur in patients on chronic hemodialysis [13], but supplementation requires caution: pre-existing kidney dysfunction is a key risk factor for oxalate kidney damage from large doses [167], and kidney failure has been reported after intravenous vitamin C in people with kidney disease [168].
 
-**Interstitial cystitis:** Some patients report that vitamin C and citrus products cause irritation [142].
+**Pregnancy:** The RDA in pregnancy is 85 mg (80 mg at 14-18 years) [12]. A Cochrane review of 29 trials (24,300 women) found no clear difference in stillbirth or newborn deaths between women given vitamin C supplements and those given placebo or no supplement [171].
+
+The review's authors concluded that the data do not support routine vitamin C supplementation, alone or with other supplements, to prevent fetal or neonatal death, poor fetal growth, preterm birth or pre-eclampsia [171]. Vitamin C alone was linked to a lower risk of the waters breaking early, both before term (risk ratio 0.66) and at term (risk ratio 0.55, one trial) [171]. In one trial, women taking vitamin C reported more abdominal pain (risk ratio 1.66), and supplements combining vitamins C and E raised the risk of the waters breaking before labour at term (risk ratio 1.73) [171].
+
+**Interstitial cystitis:** In questionnaire studies, people with interstitial cystitis (bladder pain syndrome) often report that vitamin C and citrus fruits worsen their symptoms [142].
 
 ## 7. Drug Interactions
 
@@ -484,16 +517,16 @@ Vitamin C supplements can interact with several medications. The most clinically
 
 | Drug | Interaction | Clinical Recommendation |
 |------|------------|------------------------|
-| **Levothyroxine (Synthroid)** | Vitamin C may increase how much levothyroxine is absorbed, possibly by increasing stomach acid [155]. In one trial in people with gastritis, taking 500 mg of vitamin C with levothyroxine improved thyroid hormone levels [155]. This matters most with high-dose supplements, but lower doses have not been ruled out. | If you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C supplements, as your thyroid levels may need checking. |
-| **Warfarin** | An early 1971 case report suggested interference [144], but subsequent research has not confirmed this. A later study reported no clinically important interaction between warfarin and vitamin C [146]. A crossover trial of 2 g a day in 18 healthy men measured clotting and platelet markers, not bleeding, and found no striking effects [147]. | Current evidence does not support a clinically significant interaction. If you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C. |
-| **Indinavir (HIV drug)** | High-dose vitamin C may reduce effectiveness [148]. | Discuss with prescriber. |
+| **Levothyroxine (Synthroid)** | Vitamin C may increase how much levothyroxine is absorbed, possibly by increasing stomach acid [155]. In one trial in 31 people with gastritis, taking 500 mg of vitamin C with levothyroxine lowered TSH in all of them and normalized it in 17 [155]. A 2025 pilot trial in 11 people needing high levothyroxine doses (1 g of vitamin C a day) also suggested better control, though the groups differed at the start [169]. This matters most with high-dose supplements, but lower doses have not been ruled out. | If you take levothyroxine, talk to your prescriber before starting, stopping or changing vitamin C supplements, as your thyroid levels may need checking. |
+| **Warfarin** | A 1971 case report raised the possibility of an interaction [144], but later studies have not confirmed it. One found no clinically important interaction between warfarin and vitamin C [146]. A crossover trial of 2 g a day in 18 healthy men measured clotting and platelet markers, not bleeding, and found no striking effects [147]. | Current evidence does not support a clinically significant interaction. If you take warfarin, check with your doctor or pharmacist before starting high-dose vitamin C. |
+| **Indinavir (HIV drug)** | In seven healthy volunteers, 1,000 mg/day of vitamin C for 7 days lowered peak indinavir levels by 20% [148]. | Discuss with prescriber. |
 | **Acetaminophen (Tylenol)** | In five healthy adults, 3 g of vitamin C taken 1.5 hours after 1 g of acetaminophen cut the share of the drug cleared by sulfation and lengthened its half-life from 2.3 to 3.1 hours [158]. Whether this matters in practice is not known. | Check with your doctor or pharmacist before combining high doses of both. |
 
 If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Vitamin C and Statins
 
-In a trial in people with coronary artery disease and low HDL cholesterol, an antioxidant mix (vitamins E and C, beta-carotene and selenium) blunted the rise in HDL ("good") cholesterol from simvastatin plus niacin, though falls in LDL cholesterol and triglycerides were similar [149]. However, it is unclear whether vitamin C alone was responsible, whether this would occur with other statins, or without high-dose niacin. If you take a statin, check with your doctor or pharmacist before starting high-dose antioxidant supplements.
+In a trial in people with coronary artery disease and low HDL cholesterol, an antioxidant mix (vitamins E and C, beta-carotene and selenium) blunted the rise in HDL ("good") cholesterol from simvastatin plus niacin, though falls in LDL cholesterol and triglycerides were similar [149]. Because the trial tested a mix of antioxidants with simvastatin and niacin together, it cannot show what vitamin C alone, or other statins taken without niacin, would do. If you take a statin, check with your doctor or pharmacist before starting high-dose antioxidant supplements.
 
 ### Chemotherapy and Radiation
 
@@ -503,12 +536,12 @@ The safety and efficacy of vitamin C during cancer treatment is controversial. S
 
 | Drug | Effect | Notes |
 |------|--------|-------|
-| **Aspirin (high-dose, 12+ tablets/day)** | May lower vitamin C levels | Supplementing with vitamin C normalizes levels [150]. |
+| **Aspirin (high-dose)** | May lower vitamin C levels | A 1971 report studied this in people with rheumatoid arthritis; the effect is not well established [150]. |
 | **Proton pump inhibitors (long-term)** | May lower vitamin C | These drugs lower vitamin C in gastric juice, and there is some evidence they may reduce how well ingested vitamin C is absorbed [156]. |
 
 ### Pycnogenol Interaction
 
-If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine bark extract), check with your doctor or pharmacist first.
+A small human trial found that Pycnogenol (pine bark extract) did not change vitamin C status in healthy young adults [178].
 
 ## 8. References
 
@@ -536,7 +569,7 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [13] Deicher R, Horl WH. "Vitamin C in chronic kidney disease and hemodialysis patients." *Kidney Blood Press Res*. 2003;26:100-6. [https://pubmed.ncbi.nlm.nih.gov/12771534/](https://pubmed.ncbi.nlm.nih.gov/12771534/)
 
-[14] Hujoel PP, et al. "Bleeding tendency and ascorbic acid requirements." *Nutr Rev*. 2021. doi: 10.1093/nutrit/nuaa115
+[14] Hujoel PP, Kato T, Hujoel IA, Hujoel MLA. "Bleeding tendency and ascorbic acid requirements: systematic review and meta-analysis of clinical trials." *Nutr Rev*. 2021;79:964-75. doi: 10.1093/nutrit/nuaa115. [https://pubmed.ncbi.nlm.nih.gov/33517432/](https://pubmed.ncbi.nlm.nih.gov/33517432/)
 
 [15] Perkins A, Sontheimer C, Otjen JP, Shenoi S. "Scurvy masquerading as juvenile idiopathic arthritis or vasculitis with elevated inflammatory markers: a case series." *J Pediatr*. 2020;218:234-237.e2. [https://pubmed.ncbi.nlm.nih.gov/31843213/](https://pubmed.ncbi.nlm.nih.gov/31843213/)
 
@@ -570,7 +603,7 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [32] Humbert PG, Haftek M, Creidi P, et al. "Topical ascorbic acid on photoaged skin. Clinical, topographical and ultrastructural evaluation: double-blind study vs. placebo." *Exp Dermatol*. 2003;12:237-44. [https://pubmed.ncbi.nlm.nih.gov/12823436/](https://pubmed.ncbi.nlm.nih.gov/12823436/)
 
-[33] Darr D, et al. "Effectiveness of antioxidants (vitamins C and E) with and without sunscreens as topical photoprotectants." *Acta Derm Venereol*. 1996.
+[33] Darr D, Dunston S, Faust H, Pinnell S. "Effectiveness of antioxidants (vitamins C and E) with and without sunscreens as topical photoprotectants." *Acta Derm Venereol*. 1996;76:264-8. [https://pubmed.ncbi.nlm.nih.gov/8869680/](https://pubmed.ncbi.nlm.nih.gov/8869680/)
 
 [34] Murray JC, Burch JA, Streilein RD, Iannacchione MA, et al. "A topical antioxidant solution containing vitamins C and E stabilized by ferulic acid provides protection for human skin against damage caused by ultraviolet irradiation." *J Am Acad Dermatol*. 2008;59:418-25. [https://pubmed.ncbi.nlm.nih.gov/18603326/](https://pubmed.ncbi.nlm.nih.gov/18603326/)
 
@@ -584,11 +617,8 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [40] Ran L, Zhao W, Wang J, Wang H, et al. "Extra dose of vitamin C based on a daily supplementation shortens the common cold: a meta-analysis of 9 randomized controlled trials." *Biomed Res Int*. 2018;2018:1837634. Retracted 2023. [https://pubmed.ncbi.nlm.nih.gov/30069463/](https://pubmed.ncbi.nlm.nih.gov/30069463/)
 
-[41] Wintergerst ES, Maggini S, Hornig DH. "Immune-enhancing role of vitamin C and zinc and effect on clinical conditions." *Ann Nutr Metab*. 2006;50:85-94. [https://pubmed.ncbi.nlm.nih.gov/16373990/](https://pubmed.ncbi.nlm.nih.gov/16373990/)
 
-[42] Hemila H. "The role of vitamin C in the treatment of the common cold." *Am Fam Physician*. 2007;76:1111. [https://pubmed.ncbi.nlm.nih.gov/17992770/](https://pubmed.ncbi.nlm.nih.gov/17992770/)
 
-[43] Johnston CS. "The antihistamine action of ascorbic acid." *Subcell Biochem*. 1996;25:189-213. [https://pubmed.ncbi.nlm.nih.gov/8821975/](https://pubmed.ncbi.nlm.nih.gov/8821975/)
 
 [44] Thomas S, Patel D, Bittel B, Wolski K, et al. "Effect of high-dose zinc and ascorbic acid supplementation vs usual care on symptom length and reduction among ambulatory patients with SARS-CoV-2 infection: the COVID A to Z randomized clinical trial." *JAMA Netw Open*. 2021;4:e210369. [https://pubmed.ncbi.nlm.nih.gov/33576820/](https://pubmed.ncbi.nlm.nih.gov/33576820/)
 
@@ -598,7 +628,6 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [47] Zhang J, Rao X, Li Y, Zhu Y, et al. "Pilot trial of high-dose vitamin C in critically ill COVID-19 patients." *Ann Intensive Care*. 2021;11:5. doi: 10.1186/s13613-020-00792-3. [https://pubmed.ncbi.nlm.nih.gov/33420963/](https://pubmed.ncbi.nlm.nih.gov/33420963/)
 
-[48] Chaudhary SMD, Wright RM, Patarroyo-Aponte G. "Role of vitamin C in critically ill patients with COVID-19: is it effective?" *Acute Crit Care*. 2020;35:307-8. [https://pubmed.ncbi.nlm.nih.gov/33081436/](https://pubmed.ncbi.nlm.nih.gov/33081436/)
 
 [49] Hemilä H, Chalker E. "Vitamin C may reduce the duration of mechanical ventilation in critically ill patients: a meta-regression analysis." *J Intensive Care*. 2020;8:15. [https://pubmed.ncbi.nlm.nih.gov/32047636/](https://pubmed.ncbi.nlm.nih.gov/32047636/)
 
@@ -744,7 +773,6 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [122] Scheinfeld N, Dahdah MJ, Scher R. "Vitamins and minerals: their role in nail health and disease." *J Drugs Dermatol*. 2007;6:782-7. [https://pubmed.ncbi.nlm.nih.gov/17763607/](https://pubmed.ncbi.nlm.nih.gov/17763607/)
 
-[123] U.S. Food and Drug Administration. "Food Labeling: Revision of the Nutrition and Supplement Facts Labels." 2016.
 
 [124] U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
@@ -782,13 +810,13 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 
 [142] Friedlander JI, Shorter B, Moldwin RM. "Diet and its role in interstitial cystitis/bladder pain syndrome (IC/BPS) and comorbid conditions." *BJU Int*. 2012;109:1584-91. [https://pubmed.ncbi.nlm.nih.gov/22233286/](https://pubmed.ncbi.nlm.nih.gov/22233286/)
 
-[144] Rosenthal G. "Interaction of ascorbic acid and warfarin." *JAMA*. 1971.
+[144] Rosenthal G. "Interaction of ascorbic acid and warfarin." *JAMA*. 1971;215:1671. [https://pubmed.ncbi.nlm.nih.gov/5107696/](https://pubmed.ncbi.nlm.nih.gov/5107696/)
 
 [146] Feetam CL, Leach RH, Meynell MJ. "Lack of a clinically important interaction between warfarin and ascorbic acid." *Toxicol Appl Pharmacol*. 1975;31:544-7. [https://pubmed.ncbi.nlm.nih.gov/1145638/](https://pubmed.ncbi.nlm.nih.gov/1145638/)
 
 [147] Tofler GH, Stec JJ, Stubbe I, Beadle J, et al. "The effect of vitamin C supplementation on coagulability and lipid levels in healthy male subjects." *Thromb Res*. 2000;100:35-41. [https://pubmed.ncbi.nlm.nih.gov/11053614/](https://pubmed.ncbi.nlm.nih.gov/11053614/)
 
-[148] Slain D, et al. "Effect of high-dose vitamin C on steady-state pharmacokinetics of indinavir." *Pharmacotherapy*. 2005.
+[148] Slain D, Amsden JR, Khakoo RA, Fisher MA, et al. "Effect of high-dose vitamin C on the steady-state pharmacokinetics of the protease inhibitor indinavir in healthy volunteers." *Pharmacotherapy*. 2005;25:165-70. [https://pubmed.ncbi.nlm.nih.gov/15767232/](https://pubmed.ncbi.nlm.nih.gov/15767232/)
 
 [149] Cheung MC, Zhao XQ, Chait A, et al. "Antioxidant supplements block the response of HDL to simvastatin-niacin therapy." *Arterioscler Thromb Vasc Biol*. 2001;21:1320-6. [https://pubmed.ncbi.nlm.nih.gov/11498460/](https://pubmed.ncbi.nlm.nih.gov/11498460/)
 
@@ -819,3 +847,33 @@ If you have high blood pressure and plan to take vitamin C with Pycnogenol (pine
 [162] Cook JD, Reddy MB. "Effect of ascorbic acid intake on nonheme-iron absorption from a complete diet." *Am J Clin Nutr*. 2001;73:93-8. doi: 10.1093/ajcn/73.1.93. [https://pubmed.ncbi.nlm.nih.gov/11124756/](https://pubmed.ncbi.nlm.nih.gov/11124756/)
 
 [163] Jaffe RM, Kasten B, Young DS, MacLowry JD. "False-negative stool occult blood tests caused by ingestion of ascorbic acid (vitamin C)." *Ann Intern Med*. 1975;83:824-6. doi: 10.7326/0003-4819-83-6-824. [https://pubmed.ncbi.nlm.nih.gov/1200528/](https://pubmed.ncbi.nlm.nih.gov/1200528/)
+
+[164] Hemilä H, Chalker E. Vitamin C reduces the severity of common colds: a meta-analysis. BMC Public Health. 2023. PMID: 38082300. https://pubmed.ncbi.nlm.nih.gov/38082300/
+
+[165] Stoppe C et al. High-dose intravenous vitamin C and mortality and organ dysfunction in severe burn injury: the VICTORY randomized clinical trial. JAMA. 2026. PMID: 42267875. https://pubmed.ncbi.nlm.nih.gov/42267875/
+
+[166] Lamontagne F et al. Intravenous vitamin C in adults with sepsis in the intensive care unit. N Engl J Med. 2022. PMID: 35704292. https://pubmed.ncbi.nlm.nih.gov/35704292/
+
+[167] Carr AC, Gupta S. Are oral and intravenous vitamin C implicated in oxalate-associated renal failure? Exploring the role of pre-existing renal dysfunction. Nutr Res. 2026. PMID: 42925834. https://pubmed.ncbi.nlm.nih.gov/42925834/
+
+[168] National Cancer Institute. Intravenous Vitamin C (PDQ), patient version. https://www.cancer.gov/about-cancer/treatment/cam/patient/vitamin-c-pdq
+
+[169] Agha A et al. Vitamin C supplementation in patients with hypothyroidism requiring high-dose levothyroxine: a proof-of-concept pilot study. Front Endocrinol (Lausanne). 2025. PMID: 41210509. https://pubmed.ncbi.nlm.nih.gov/41210509/
+
+[170] Mitmesser SH et al. Determination of plasma and leukocyte vitamin C concentrations in a randomized, double-blind, placebo-controlled trial with Ester-C. SpringerPlus. 2016. PMID: 27512620. https://pubmed.ncbi.nlm.nih.gov/27512620/
+
+[171] Rumbold A et al. Vitamin C supplementation in pregnancy. Cochrane Database Syst Rev. 2015. PMID: 26415762. https://pubmed.ncbi.nlm.nih.gov/26415762/
+
+[172] Wang Y et al. Systematic review and meta-analysis of antioxidants with or without exercise training improving muscle condition in older adults. Sci Rep. 2025. PMID: 41038909. https://pubmed.ncbi.nlm.nih.gov/41038909/
+
+[173] Stanfield B. This $2 Remedy Beats Every Cold Medicine. drstanfield.com. 16 April 2026. https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine
+
+[174] Meurman JH, Murtomaa H. Effect of effervescent vitamin C preparations on bovine teeth and on some clinical and salivary parameters in man. Scand J Dent Res. 1986. PMID: 3468598. https://pubmed.ncbi.nlm.nih.gov/3468598/
+
+[175] Bahal P, Djemal S. Dental erosion from an excess of vitamin C. Case Rep Dent. 2014. PMID: 25165584. https://pubmed.ncbi.nlm.nih.gov/25165584/
+
+[176] Schleicher RL et al. Serum vitamin C and the prevalence of vitamin C deficiency in the United States: 2003-2004 National Health and Nutrition Examination Survey (NHANES). Am J Clin Nutr. 2009. PMID: 19675106. https://pubmed.ncbi.nlm.nih.gov/19675106/
+
+[177] Mikkelsen SU et al. Oral vitamin C supplementation in patients with clonal cytopenia of undetermined significance or lower-risk myeloid malignancies: results from EVITA, a phase 2 randomized, placebo-controlled trial. Cancer. 2026. PMID: 42764731. https://pubmed.ncbi.nlm.nih.gov/42764731/
+
+[178] Silliman K et al. Pycnogenol does not impact the antioxidant or vitamin C status of healthy young adults. J Am Diet Assoc. 2003. PMID: 12525796. https://pubmed.ncbi.nlm.nih.gov/12525796/

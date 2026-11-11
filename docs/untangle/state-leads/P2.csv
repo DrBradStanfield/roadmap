@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P2,plan view,Per-record PDF state outlived an erase from elsewhere,bug,done,usePlanView is keyed on shownErase (US-09 AC19),1161,no
