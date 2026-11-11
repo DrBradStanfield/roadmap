@@ -23,6 +23,9 @@
  * - held: an erase put the debounce aside while it reads, or swapped the
  *   erased copy in before its write starts. Moves as failed does, and never
  *   outlives the erase: eraseEnded settles it to failed, or clean.
+ *   Held exists only because of lead A6 (an erase accepts edits while it
+ *   reads); it folds into erasing if A6 moves the refusal to the erase's
+ *   first line.
  * - erasing: the erase's swap to the end of its write, over the save state
  *   `under` it. Erasing while a pass runs is erasing over saving. An edit is
  *   refused here; RecordSession.refuses() gives the caller that answer.
