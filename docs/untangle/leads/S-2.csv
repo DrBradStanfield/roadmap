@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-2,S2 server,One persist function for chat turns,not started,"discord-bot-persist.server.ts:50 persistConversation, youtube-bot-store.server.ts:196 persistYouTubeTurn, api.chat.ts:247/449/586 write directly; chat-persist.server.ts holds column helpers only",,,no

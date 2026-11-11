@@ -1,11 +1,32 @@
 # Untangle ledger
 
-Two files track the untangle work (method: `.claude/skills/untangle`).
+Two ledgers track the untangle work (method: `.claude/skills/untangle`).
 
-- `leads.csv`: where each item of the November 2026 structural audit stands on `main`.
-- `state-leads.csv`: the leads from our own surveys of implicit state in the web widget.
+- `leads/`: where each item of the November 2026 structural audit stands on `main`.
+- `state-leads/`: the leads from our own surveys of implicit state in the web widget.
 
-## leads.csv
+## One file per lead
+
+Each lead is its own file, `<ledger>/<id>.csv`: the header line, then that
+lead's row. Several sessions edit the ledgers at once. In one shared CSV,
+two PRs that each append a row conflicted on GitHub, and a conflicting PR
+gets no CI run (PRs 1225 and 1250 each lost about 90 minutes). Now two
+sessions collide only when they touch the same id, which is a real conflict.
+
+- **Add a lead:** add one file named by its id, say `state-leads/C7.csv`,
+  with that ledger's header line and your row.
+- **Change a lead:** edit only its file.
+- **Never** recreate a single `leads.csv` or `state-leads.csv`.
+  `tools/untangle-ledger.test.ts` fails if one comes back, or if a file
+  holds more than one row, a different header, or an id unlike its name.
+
+Print a whole ledger as one table:
+
+```bash
+d=docs/untangle/state-leads; { head -1 "$(ls $d/*.csv | head -1)"; tail -q -n +2 $d/*.csv; }
+```
+
+## leads/
 
 The audit is a private report by an outside contributor, taken at commit
 `263053b` on 2026-11-06. Bug leads are
@@ -37,7 +58,7 @@ Status vocabulary:
 
 ### Some rows are added later
 
-This repo is public, and the audit is not. The file keeps our own columns
+This repo is public, and the audit is not. The ledger keeps our own columns
 only, and a row may be added after its work ships. Brad holds the full list.
 
 ### When a fix lands
@@ -50,22 +71,23 @@ only, and a row may be added after its work ships. Brad holds the full list.
 
 ### Counts
 
-Count from the file; no copy is kept here, since every fix PR would have to
+Count from the files; no copy is kept here, since every fix PR would have to
 edit it and two PRs would collide:
 
 ```bash
-python3 -c "import csv,collections;print(collections.Counter(r['status'] for r in csv.DictReader(open('docs/untangle/leads.csv'))))"
+python3 -c "import csv,glob,collections;print(collections.Counter(r['status'] for f in glob.glob('docs/untangle/leads/*.csv') for r in csv.DictReader(open(f))))"
 ```
 
-## state-leads.csv
+## state-leads/
 
 Since 2026-11-08 the refactor has split `HealthTool`, `ResultsPanel` and
 the upload flow into state hooks. The audit has no id for that work. Each
 area was surveyed first for modes held in flags, refs and timers; the
 leads are `D` (onboarding), `R` (record read), `P` (plan view), `U`
-(upload), `H` (composition, the machines meeting in `HealthTool`) and
-`C` (chat prompt).
-This file has no `durability_check` column: a done row names its check in
+(upload), `H` (composition, the machines meeting in `HealthTool`), `M`
+(phone mirrors: values the iPhone keeps beside the engine's) and `C` (the
+server: chat prompt `C1`, chat purge `C2`-`C4`, crons and reminders from `C5`).
+This ledger has no `durability_check` column: a done row names its check in
 `evidence`.
 
 Status here comes from the survey sessions' notes and the merged PR list

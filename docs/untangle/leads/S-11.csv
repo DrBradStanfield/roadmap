@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-11,S2 server,MCP HTML views move out of the route file,not started,app/routes/mcp.$.tsx:112 keeps its own escapeHtml and the page views; no mcp-pages.server.ts,,,yes

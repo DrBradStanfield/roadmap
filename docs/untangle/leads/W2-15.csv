@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-15,"S7 web data layer, upload, standalone",TS default owns the assistant name,not started,"Liquid defaults remain: blocks/chatbot-embed.liquid:4, chat-embed.liquid:9, app-block.liquid:43",,,no

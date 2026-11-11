@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-6,S2 server,One shared test harness instead of repeated chat.server mocks,not started,17 test files under app/ still vi.mock chat.server by hand,,,no

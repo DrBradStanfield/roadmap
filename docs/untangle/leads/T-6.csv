@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-6,"S1 tools, scripts, CI",Knowledge search core moves out of tools/ into app/lib,not started,app/lib/mcp-knowledge.server.ts:18 imports the ranker from tools/search-knowledge.ts,,,no

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+I-1,S6 record edits and iPhone engine,Phone-file edits go through the engine edit guards,not started,Brad approved: phone-file edits go through the engine (2026-11-11); master/austin builds it. No phoneEdit door in ios/engine; cloud.ts:235 editSession serves cloud records only; RecordStore.swift keeps the phone path,,,no

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-8,"S7 web data layer, upload, standalone",byok-chat imports shared types from chat-api,done,"byok-chat.ts imports ChatMessage, SendMessageResult, ChatListResult, ChatError and ChatGate with `import type` from chat-api.ts; its copies are gone (its ChatMessage and SendMessageResult lacked chat-api's optional isFallback and subscriptionCard). Pages JS bundle byte-identical before and after",1205,"none: tsc accepts a redeclared copy; a lint banning interface declarations in byok-chat.ts would close it",no

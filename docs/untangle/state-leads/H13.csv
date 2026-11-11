@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H13,composition,The shown erase moves when the new record is on screen,bug,done,"useErase marks the store in a layout effect on shownErase (US-16 AC2d); checked by the HealthTool.erase-commit.test.tsx writer table",1194,no

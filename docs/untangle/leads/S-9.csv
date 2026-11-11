@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-9,S4 privacy scrub and vocabularies,Each product event described once in health-core,not started,Event names in product-events.ts; per-event key rules separately in app/lib/product-events.server.ts:136-213,,,yes

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A1-6,S3 cloud storage and sync,One document-transfer deadline for every upload and download,not started,"Separate deadlines: dropbox-rest.ts:159, drive-rest.ts:195, widget-src/src/storage/github.ts:28, webdav.ts:28",,,no

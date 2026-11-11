@@ -33,6 +33,10 @@ case "$*" in
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
     [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
+    # MERGE_SEQ: one mergeability per poll, '|'-separated; the last repeats.
+    if [ -n "\${MERGE_SEQ:-}" ]; then rest=$MERGE_SEQ; i=$((n+1))
+      while [ $i -gt 1 ]; do case $rest in *'|'*) rest=\${rest#*|} ;; esac; i=$((i-1)); done; MERGE=\${rest%%|*}; fi
+    [ -n "\${MERGE:-}" ] && { poll_n; json "{$MERGE,\\"statusCheckRollup\\":$pend}"; exit; }
     if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
     else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
   *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
@@ -220,6 +224,44 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(pollsTwice(['pr', '42'], { ROLLUP: status('PENDING') })).toBe(true);
     expect(pollsTwice(['pr', '42'], { ROLLUP: status('EXPECTED') })).toBe(true);
     for (const s of ['SUCCESS', 'ERROR', 'FAILURE']) expect(pollsTwice(['pr', '42'], { ROLLUP: status(s) })).toBe(false);
+  });
+  const CONFLICT_LINE = 'PR conflicts with main; merge main in (no new CI runs on a conflicting head)\n';
+  const C = '"mergeable":"CONFLICTING","mergeStateStatus":"DIRTY"';
+  const M = '"mergeable":"MERGEABLE","mergeStateStatus":"CLEAN"';
+  it('US-64 AC26: a PR in conflict with main on two polls in a row says so and exits 1, without waiting out the limit', () => {
+    for (const merge of [C, '"mergeable":"UNKNOWN","mergeStateStatus":"DIRTY"',
+      '"mergeable":"CONFLICTING","mergeStateStatus":"UNKNOWN"']) {
+      const r = run(['pr', '42'], { MERGE: merge, ROLLUP: '[]' });
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe(CONFLICT_LINE);
+      expect(r.sleeps).toEqual([60]);
+    }
+    // Mergeable, or not yet known: keep waiting as before.
+    const r = run(['pr', '42'], { MERGE: '"mergeable":"UNKNOWN","mergeStateStatus":"UNKNOWN"', ROLLUP: '[]', WAIT_RUN_MAX_MIN: '2' });
+    expect(r.status).toBe(3);
+    expect(r.stdout).not.toContain('conflicts');
+  });
+  it('US-64 AC26: one stale conflict read right after a push keeps waiting; a non-conflict read resets the count', () => {
+    const once = run(['pr', '42'], { MERGE_SEQ: `${C}|${M}`, ROLLUP: '[]', WAIT_RUN_MAX_MIN: '3' });
+    expect(once.status).toBe(3);
+    expect(once.stdout).not.toContain('conflicts');
+    expect(once.sleeps.length).toBeGreaterThan(1);
+    const reset = run(['pr', '42'], { MERGE_SEQ: `${C}|${M}|${C}|${C}`, ROLLUP: '[]' });
+    expect(reset.status).toBe(1);
+    expect(reset.stdout).toBe(CONFLICT_LINE);
+    expect(reset.sleeps).toEqual([60, 60, 60]);
+    const polls = reset.calls.filter((c) => c.includes('statusCheckRollup'));
+    expect(polls.length).toBe(4); // one gh call per poll
+  });
+  it('US-64 AC26: finished checks on a PR that now conflicts still print counts, head and mergeability', () => {
+    const done = JSON.stringify([{ __typename: 'CheckRun', name: 't', workflowName: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS' }]);
+    const r = run(['pr', '42'], { MERGE: C, ROLLUP: done, DONE_AT: '1' });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('pass=3 fail=0');
+    expect(r.stdout).toContain('head=abc123');
+    expect(r.stdout).toContain('mergeable=');
+    expect(r.stdout).not.toContain('conflicts with main');
+    expect(r.sleeps).toEqual([]);
   });
   it('pr: an empty or null rollup (no checks yet) is pending', () => {
     expect(pollsTwice(['pr', '42'], { ROLLUP: '[]' })).toBe(true);

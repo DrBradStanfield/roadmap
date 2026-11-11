@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C2,chat purge,"A database key against a repeated archive copy",behaviour,decided: leave,"Fable 2026-11-11: leave, for two reasons. A key would link a kept copy back to its source. And the repeat within one run is handled by its own fix. The run mark (US-28 AC7) removes the repeat across runs on one machine",,no
