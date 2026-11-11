@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A3,cloud tokens,"Drive and Dropbox token refresh has no single flight: a save, the watch loop and a document read can each refresh at once; the watch loops never tell the page a grant is dead",implicit state,not started,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: second wave, auth review. widget-src/src/storage/drive.ts refresh and getToken; storage/dropbox.ts accessToken and refresh. Copy: iPhone OAuthClient (M8)",,yes
