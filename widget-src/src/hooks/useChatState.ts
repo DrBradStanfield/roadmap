@@ -18,7 +18,7 @@ import {
 import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
 import { useOffline } from './useOffline';
-import { useShownChat } from './useShownChat';
+import { useShownChat, type Asked, type EraseCheck } from './useShownChat';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -50,7 +50,8 @@ interface UseChatStateOptions {
   erase?: ChatErase | null;
 }
 
-export interface ChatErase {
+/** With the erase half of every async step's identity (hooks/useShownChat). */
+export interface ChatErase extends EraseCheck {
   shown: string;
   erasing: boolean;
 }
@@ -82,14 +83,12 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit, erase }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
-  // The erase the conversation belongs to, the thread on screen when the last
-  // erase cleared it, and whether this tab's erase has run since the last move:
+  // The erase the conversation belongs to, and whether this tab's erase has run since the last move:
   // a move it made is its own, said by its alert (US-15 AC62). `ownRun` and the
   // page's erasing copy are a hidden mode owed by PR 1311 (lead C21): not a pattern to copy.
   const shown = erase?.shown;
   const erasing = erase?.erasing ?? false;
   const eraseRef = useRef(shown);
-  const clearedFrom = useRef<string | null>(null);
   const ownRun = useRef(false);
   const erasingRef = useRef(erasing);
   erasingRef.current = erasing;
@@ -99,8 +98,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   noticeRef.current = notice;
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
-  // The chat on screen and its turns, each with its one writer (hooks/useShownChat).
-  const { shownChat, shownChatRef, messages, messagesRef, showMessages, openChat } = useShownChat(prefetchedData);
+  // The chat on screen and its turns, each with its one writer, and the asked-under test (hooks/useShownChat).
+  const { shownChat, shownChatRef, messages, messagesRef, showMessages, openChat, askNow, where, stands } = useShownChat(prefetchedData, erase);
   const activeConversationId = shownChat.id;
   const [inputText, setInputText] = useState('');
   // isLocalSender: true only on the instance that triggered the send — controls animation
@@ -109,8 +108,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const hasLoadedRef = useRef(!!prefetchedData);
   // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending instance only (hooks/useChatStream).
   const { pending, handleDelta, endStream } = useChatStream();
-  // The chat the reply in flight was sent from (its key): the stream shows only there (US-15 AC7a).
-  const [sendingChat, setSendingChat] = useState<string | null>(null);
+  // What the reply in flight was asked under: the stream shows only while it stands (US-15 AC7a, AC62).
+  const [sendingAsked, setSendingAsked] = useState<Asked | null>(null);
   // A landed answer's thinking summary and articles read, by message id, for
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
@@ -130,12 +129,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // Refs for current values needed inside async callbacks and subscriptions
   const conversationsRef = useRef(conversations);
   const inputTextRef = useRef(inputText);
-  const isLoadingConvsRef = useRef(false);
   // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
   const { isLoading, busyNow, ownSending, startOwnSend, endOwnSend, onRemote } = useChatBusy();
-  // Bumped by each thread load and by a reply landing on screen: a load that
-  // started before either is stale (US-15 AC7a).
-  const loadGenRef = useRef(0);
   useEffect(() => {
     conversationsRef.current = conversations;
     inputTextRef.current = inputText;
@@ -207,26 +202,28 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     }
   }, [openChat]);
 
-  const loadConversationsIfNeeded = useCallback(async () => {
-    if (hasLoadedRef.current || isLoadingConvsRef.current) return;
+  const loadConversationsIfNeeded = useCallback(async function readList(): Promise<void> {
+    if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    isLoadingConvsRef.current = true;
+    const asked = askNow();
     const result = await listConversations();
-    isLoadingConvsRef.current = false;
+    // The chat or the erase moved meanwhile: this list may name erased threads, so it is
+    // dropped and the list read again for what is shown now (US-15 AC62).
+    if (!stands(asked)) { hasLoadedRef.current = false; return readList(); }
     if (result) {
       setConversations(result.conversations);
       if (!isLoggedIn && result.conversations.length > 0) {
         const latest = result.conversations[0];
         openChat(latest.id);
-        const gen = ++loadGenRef.current;
+        const opened = askNow(true);
         const msgs = await loadConversation(latest.id);
         if (!msgs) { dropThread(latest.id); return; }
-        // The guest opened another thread, or a reply landed, meanwhile (US-15 AC7a).
-        if (shownChatRef.current.id !== latest.id || gen !== loadGenRef.current) return;
+        // The guest opened another thread, a reply landed, or an erase, meanwhile (US-15 AC7a, AC62).
+        if (!stands(opened)) return;
         showMessages(msgs);
       }
     }
-  }, [isLoggedIn, dropThread, openChat]);
+  }, [isLoggedIn, dropThread, openChat, askNow, stands]);
 
   // An erase the page now shows clears the conversation: its turns are erased,
   // so none shows or goes back as history, and the list is read again (US-15
@@ -240,10 +237,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // Another device's erase says why the chat emptied, in place of a refused reply's notice (US-16 AC2e).
     if (!own) onProposeEditRef.current?.leave();
     setNotice(own ? null : CHAT_CLEARED_BY_REMOTE_ERASE);
-    clearedFrom.current = shownChatRef.current.id;
-    openChat(null);
+    // Emptied in place, its key kept: a reply asked before the erase still finds its chat,
+    // and the erase half of its identity refuses it there (US-16 AC2e).
+    openChat(null, shownChatRef.current.key);
     showMessages([]);
-    loadGenRef.current++; // a thread load started before the erase is stale
     setConversations([]);
     setApproachById({});
     setCardsById({});
@@ -256,12 +253,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     openChat(id);
     setError(null);
     onProposeEditRef.current?.leave();
-    const gen = ++loadGenRef.current;
+    const asked = askNow(true);
     const msgs = await loadConversation(id);
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
     if (!msgs) { dropThread(id); return; }
-    // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
-    if (shownChatRef.current.id !== id || gen !== loadGenRef.current) return;
+    // Another thread was opened, a reply landed, or an erase, meanwhile (US-15 AC7a, AC62).
+    if (!stands(asked)) return;
     showMessages(msgs);
     postState(instanceId, eraseRef.current, {
       conversations: conversationsRef.current,
@@ -271,7 +268,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       sending: ownSending(),
       error: null,
     });
-  }, [instanceId, dropThread, openChat]);
+  }, [instanceId, dropThread, openChat, askNow, stands]);
 
   const startNewChat = useCallback(() => {
     openChat(null);
@@ -290,9 +287,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
     setError(null);
     setNotice(null);
-    const sentChat = shownChatRef.current;
-    const eraseAtSend = eraseRef.current;
-    const currentConvId = sentChat.id;
+    const currentConvId = shownChatRef.current.id;
+    // The chat and the erase the question is asked under; the turn carries them to the reply (US-16 AC2a).
+    const sent: Asked = { ...askNow(), ...(onProposeEditRef.current ? { erase: onProposeEditRef.current.ask() } : {}) };
     const currentConvs = conversationsRef.current;
 
     const optimisticMsg: ChatMessage = {
@@ -310,7 +307,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     postInputSync(instanceId, '');
     startOwnSend();
     setIsLocalSender(true);
-    setSendingChat(sentChat.key);
+    setSendingAsked(sent);
 
     postState(instanceId, eraseRef.current, {
       conversations: currentConvs,
@@ -330,13 +327,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
     // A throw before the request (reading the plan for context) is a failed
     // send like any other: the chat frees and the question goes back (US-15 AC17b).
-    const asked = onProposeEditRef.current?.ask() ?? ''; // the turn carries it to the reply (US-16 AC2a)
     const { result, error: sendError } = await (async () => sendMessage(
       trimmed,
       currentConvId,
       guestInputs?.() ?? null,
       history,
-      handleDelta,
+      (delta) => handleDelta(delta, () => where(sent).current),
       Boolean(onProposeEditRef.current),
     ))().catch(() => {
       // A fixed message: the thrown error can quote the saved plan, which holds health values.
@@ -346,11 +342,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     endOwnSend(); // another tab's send may still be in flight (US-15 AC17c)
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
-    // on screen, and the reply stays with the thread it was sent from.
+    // on screen, and the reply stays with the thread it was sent from. An erase since
+    // the question cleared its thread: the turn is erased too (US-15 AC62).
     const shownId = shownChatRef.current.id;
-    // An erase since the question cleared its thread: the turn is erased too (US-15 AC62).
-    const erased = eraseRef.current !== eraseAtSend;
-    const stayed = !erased && shownChatRef.current.key === sentChat.key;
+    const { stayed: sameChat, current } = where(sent);
+    const stayed = sameChat && current;
     // The list as it is now: a thread dropped during the send stays dropped (US-15 AC7a).
     const convsNow = conversationsRef.current;
 
@@ -389,10 +385,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // and drop the old thread from the list, since opening it would 404.
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
-      if (stayed) loadGenRef.current++; // a load started before the reply would replace it
       if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
       showMessages(finalMessages);
-      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback && !erased) {
+      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback && current) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
       }
 
@@ -400,18 +395,18 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits?.length || result.editRefusals?.length) {
-        // Erased: refused, and said in the thread the erase cleared, unless it had been left or
+        // Erased: refused, and said in the chat the erase emptied, unless it had been left or
         // another device's erase is said there already: one notice at a time (US-16 AC2e, US-15 AC62).
-        onProposeEditRef.current?.take(result.proposedEdits ?? [], asked, erased ? clearedFrom.current === currentConvId && !noticeRef.current : stayed, result.editRefusals);
+        onProposeEditRef.current?.take(result.proposedEdits ?? [], sent.erase, sameChat && !noticeRef.current, result.editRefusals);
       }
-      if (result.subscriptionCard && !erased) {
+      if (result.subscriptionCard && current) {
         const card = result.subscriptionCard;
         setCardsById(prev => ({ ...prev, [assistantMsg.id]: { card, phase: 'idle' } }));
       }
 
       let finalConversations = convsNow;
       let finalConvId = shownId;
-      if (!erased && (!currentConvId || restarted)) {
+      if (current && (!currentConvId || restarted)) {
         // The same chat, now a saved thread: it takes that thread's identity.
         if (stayed) { finalConvId = result.conversationId; openChat(finalConvId); }
         finalConversations = [{
@@ -433,7 +428,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         error: null,
       });
     }
-  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend, openChat]);
+  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend, openChat, askNow, where, stands]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -453,7 +448,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   }, [instanceId]);
 
   // Another thread open while the reply streams (US-15 AC7a): it shows the dots, not the reply.
-  const onSendingThread = shownChat.key === sendingChat;
+  // An erase since the question takes the reply off the screen as it shows (US-15 AC62).
+  const onSendingThread = sendingAsked !== null && stands(sendingAsked);
   return {
     state: {
       conversations,

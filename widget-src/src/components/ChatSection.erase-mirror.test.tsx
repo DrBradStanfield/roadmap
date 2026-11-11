@@ -45,7 +45,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-const openFloating = () => render(<ChatSection isLoggedIn startExpanded erase={{ shown: ERASE, erasing: false }} />);
+const openFloating = () => render(<ChatSection isLoggedIn startExpanded erase={{ shown: ERASE, erasing: false, askedUnder: () => ERASE, stillShown: (asked) => asked === ERASE }} />);
 
 describe('US-15 AC62: a floating chat opened after an erase', () => {
   it.each([['null', null], ['absent', undefined]] as const)('a sender with no erase (%s): nothing mirrors in', (_label, erase) => {

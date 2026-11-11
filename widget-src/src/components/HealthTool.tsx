@@ -38,7 +38,7 @@ import {
   loadLatestMeasurements,
   hasSavedRecord,
   getInitialInputsSync,
-  getEraseIdentity,
+  getEraseIdentity, askedUnder, stillShown, // the chat's erase check (US-15 AC62)
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
@@ -696,7 +696,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     isLoggedIn: true,
     guestInputs: readChatContext,
     prefetchedData: prefetchFor(chatPrefetch, epoch),
-    onProposeEdit: chatEditTarget, erase: { shown: shownErase, erasing: isDeleting }, // an erase clears the conversation (US-15 AC62)
+    onProposeEdit: chatEditTarget, erase: { shown: shownErase, erasing: isDeleting, askedUnder, stillShown }, // an erase clears the conversation (US-15 AC62)
   };
 
   // US-62 AC16, AC34: on a phone, three panels, My health, Chat and Account, and a bottom tab

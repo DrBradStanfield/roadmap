@@ -15,7 +15,10 @@ export function useChatStream() {
   // Deltas collect in a ref and render at most once per animation frame.
   // A status line starts a new phase: text streamed before it was not the
   // answer (a run_roadmap round's preamble, US-15 AC38), so it is cleared.
-  const handleDelta = useCallback((delta: ChatDelta) => {
+  // `current`: the erase the send was asked under is still shown. One asked
+  // before an erase renders nothing more (US-15 AC62); one whose thread was
+  // left keeps collecting, since reopening the thread shows it (US-15 AC7a).
+  const handleDelta = useCallback((delta: ChatDelta, current: () => boolean) => {
     const stream = streamRef.current;
     if (delta.type === 'sources') stream.sources = delta.titles;
     else if (delta.type === 'status') { stream.status = delta.text; stream.text = ''; }
@@ -23,7 +26,7 @@ export function useChatStream() {
     if (stream.frame) return;
     stream.frame = requestAnimationFrame(() => {
       stream.frame = 0;
-      setPending({ thinking: stream.thinking, text: stream.text, status: stream.status, sources: stream.sources });
+      if (current()) setPending({ thinking: stream.thinking, text: stream.text, status: stream.status, sources: stream.sources });
     });
   }, []);
 
