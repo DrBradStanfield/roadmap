@@ -60,7 +60,7 @@ export const PURGE_AFTER_DAYS = 30;
  *  update's URL near 3.7 KB, under common gateway limits (US-15 AC51). */
 const BATCH_SIZE = 100;
 /** Stuck ids a pass's select may skip (US-15 AC61). They ride in its URL: at 100 ids near 3.7 KB
- *  (AC51), 150 stay near 5.6 KB, under the common 8 KB request-line limit. Past it the pass ends. */
+ *  (AC51), 150 stay near 6.1 KB once URL-encoded, under the common 8 KB request-line limit. Past it the pass ends. */
 const STUCK_SKIP_MAX = 150;
 
 /** Platforms whose transcripts are private text on a 30-day clock. YouTube is
