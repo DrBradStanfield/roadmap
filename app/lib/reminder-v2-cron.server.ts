@@ -16,7 +16,8 @@
 import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
-import { dailyCron, MACHINE_LABEL } from './daily-cron.server';
+import { dailyCron, LOCK_LOST, MACHINE_ID, MACHINE_LABEL } from './daily-cron.server';
+import { stillHoldsLock } from './supabase.server';
 import { utcNowParts } from './cron-helpers.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { stampReminderDay } from './reminder-v2-day-stamp.server';
@@ -26,18 +27,21 @@ const TARGET_HOUR_UTC = 8;               // same morning window as the v1 remind
 const BATCH_SIZE = 50;
 const CONCURRENCY_LIMIT = 5;
 
-/** Process items in chunks of `limit`, using Promise.allSettled per chunk.
+/** Process items in chunks of `limit`, using Promise.allSettled per chunk,
+ *  and start no chunk after one with a result that `stops`.
  *  (Moved here from the retired v1 reminder cron — pure helper.) */
 async function processWithConcurrency<T, R>(
   items: T[],
   fn: (item: T) => Promise<R>,
   limit: number,
+  stops: (result: R) => boolean,
 ): Promise<PromiseSettledResult<R>[]> {
   const results: PromiseSettledResult<R>[] = [];
   for (let i = 0; i < items.length; i += limit) {
     const chunk = items.slice(i, i + limit);
     const chunkResults = await Promise.allSettled(chunk.map(fn));
     results.push(...chunkResults);
+    if (chunkResults.some((r) => r.status === 'fulfilled' && stops(r.value))) break;
   }
   return results;
 }
@@ -52,15 +56,15 @@ const cron = dailyCron({
   startLog: `Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_LABEL})`,
   // A failed pass re-runs the day (US-28 AC3); the day-stamp (US-23 AC15)
   // skips whoever an earlier run, in this process or a dead one, went to email.
-  run: async (todayStr) => {
-    const count = await processV2Reminders(todayStr);
-    return `Reminder v2 cron: completed, sent ${count} emails`;
+  run: async (todayStr, lockedAt) => {
+    const count = await processV2Reminders(todayStr, () => stillHoldsLock('reminder_v2_cron', MACHINE_ID, lockedAt));
+    return count === LOCK_LOST ? LOCK_LOST : `Reminder v2 cron: completed, sent ${count} emails`;
   },
 });
 export const startReminderV2Cron = cron.start;
 export const stopReminderV2Cron = cron.stop;
 
-type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period' | 'attempted-today';
+type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period' | 'attempted-today' | 'lock-lost';
 
 /**
  * An item is sendable when its due date has arrived AND we haven't nagged
@@ -83,7 +87,7 @@ export function dueItemsFor(optin: ReminderV2Optin, todayStr: string): {
   return { due, anyDue: arrived.length > 0 };
 }
 
-async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promise<V2Result> {
+async function processOneOptin(optin: ReminderV2Optin, todayStr: string, holdsLock: () => Promise<boolean>): Promise<V2Result> {
   if (inQuietPeriod(optin, todayStr)) return 'quiet-period';
   const { due, anyDue } = dueItemsFor(optin, todayStr);
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
@@ -97,6 +101,9 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   // US-23 AC3 — the email is the surviving artifact; AC5's prominent
   // unsubscribe is built into the template for every lane since 2026-09-10.
   const html = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: optin.schedule });
+  // The fence (US-23 AC15): send only while this pass still holds the lock.
+  // A pass that stalled past the stuck limit and was taken over stops here.
+  if (!(await holdsLock())) return 'lock-lost';
   const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder");
   if (!sent) return 'email-send-failed';
 
@@ -122,12 +129,14 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   return 'sent';
 }
 
-export async function processV2Reminders(todayStr: string): Promise<number> {
+/** The day's sends. `holdsLock` is the fence, asked just before each send; a
+ *  false answer stops the pass: LOCK_LOST, and nothing more is sent. */
+export async function processV2Reminders(todayStr: string, holdsLock: () => Promise<boolean>): Promise<number | typeof LOCK_LOST> {
   let sent = 0;
   let errors = 0;
   let total = 0;
   let afterId: string | null = null;
-  const skips: Record<Exclude<V2Result, 'sent'>, number> = {
+  const skips: Record<Exclude<V2Result, 'sent' | 'lock-lost'>, number> = {
     'none-due': 0,
     'all-on-cooldown': 0,
     'email-send-failed': 0,
@@ -142,13 +151,16 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
 
     const results = await processWithConcurrency(
       batch,
-      (o) => processOneOptin(o, todayStr),
+      (o) => processOneOptin(o, todayStr, holdsLock),
       CONCURRENCY_LIMIT,
+      (result) => result === 'lock-lost',
     );
+    let lost = false;
     for (let j = 0; j < results.length; j++) {
       const r = results[j];
       if (r.status === 'fulfilled') {
-        if (r.value === 'sent') sent++;
+        if (r.value === 'lock-lost') lost = true;
+        else if (r.value === 'sent') sent++;
         else skips[r.value]++;
       } else {
         errors++;
@@ -159,6 +171,10 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
       }
     }
 
+    if (lost) {
+      console.log('Reminder v2 cron: lock no longer held (or unreadable); pass stopped, nothing more sent');
+      return LOCK_LOST;
+    }
     afterId = batch[batch.length - 1].id; // keyset, not offset: see getOptinsBatch
     if (batch.length < BATCH_SIZE) break;
   }

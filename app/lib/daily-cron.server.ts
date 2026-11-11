@@ -23,6 +23,11 @@ export const MACHINE_LABEL = MACHINE_ID ?? 'none';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 
+/** A run that finds its lock taken returns this (US-23 AC15): no end state is
+ *  written, since the row is another run's now and the keyed end write would
+ *  refuse anyway, and the day reopens, so the next tick asks the lock. */
+export const LOCK_LOST = Symbol('lock lost');
+
 let sharedLineLogged = false;
 
 /** Reminders and the chat purge share one `cron_lock` row across both Fly apps,
@@ -60,8 +65,9 @@ export interface DailyCron {
   /** Logged once when the interval starts. */
   startLog: string;
   /** The day's work. A throw leaves the day open for the next tick. Its
-   *  returned line is logged after the day is safely marked. */
-  run: (todayStr: string) => Promise<string | void>;
+   *  returned line is logged after the day is safely marked. `lockedAt` is the
+   *  locked_at its acquire wrote, for stillHoldsLock. */
+  run: (todayStr: string, lockedAt: Date) => Promise<string | void | typeof LOCK_LOST>;
 }
 
 export function dailyCron(cron: DailyCron): { start: () => void; stop: () => void } {
@@ -95,13 +101,18 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
         day = transition(day, lock === 'busy' ? { type: 'busy' } : { type: 'held', date: todayStr }).day;
         return;
       }
-      const completed = await cron.run(todayStr).catch(async (runError: unknown) => {
-        await endCronLock(MACHINE_ID, todayStr, cron.lockName, 'failed', new Date());
+      // The acquire wrote `now` as locked_at: the end writes and the fence match it.
+      const completed = await cron.run(todayStr, now).catch(async (runError: unknown) => {
+        await endCronLock(MACHINE_ID, todayStr, cron.lockName, now, 'failed', new Date());
         return fail(runError);
       });
+      if (completed === LOCK_LOST) {
+        day = transition(day, { type: 'busy' }).day;
+        return;
+      }
       day = transition(day, { type: 'finished' }).day;
       // A finished day is refused to every machine, this one after a restart included (AC9).
-      await endCronLock(MACHINE_ID, todayStr, cron.lockName, 'finished', new Date());
+      await endCronLock(MACHINE_ID, todayStr, cron.lockName, now, 'finished', new Date());
       if (completed) console.log(completed);
     } catch (error) {
       console.error(`${cron.label} error:`, safeErrorFields(error));

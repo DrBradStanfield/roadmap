@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
 // US-23 AC15 (2026-11-11): the reminder day-stamp. Before each send the pass
 // reads the row's attempting_on; if it already names today (or a later day) it
@@ -8,7 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // send was in flight when the old process died.
 //
 // Real processV2Reminders, getOptinsBatch and recordSent over a fake
-// reminder_optin_v2 table; a fresh module graph stands for a restart.
+// reminder_optin_v2 table; a fresh module graph stands for a restart. The
+// fence pins at the end add the real cron lock over a fake cron_lock table.
 
 interface Row {
   id: string; email: string; provider: string; token: string; created_at: string;
@@ -22,8 +23,9 @@ const db = vi.hoisted(() => ({
   builders: [] as string[][],  // each builder's method names
   send: null as null | ((email: string) => Promise<boolean>),
   // Runs once just before a stamp write lands: another writer racing in
-  // between a pass's read and its write.
-  beforeStampWrite: null as null | (() => void),
+  // between a pass's read and its write. The write waits for it.
+  beforeStampWrite: null as null | (() => void | Promise<void>),
+  lock: null as null | import('./cron-lock-fake.test-helpers').FakeLockDb,
 }));
 
 vi.mock('./supabase.server', () => {
@@ -38,7 +40,7 @@ vi.mock('./supabase.server', () => {
     let single = false;
     const run = async () => {
       if (patch) {
-        if ('attempting_on' in patch && db.beforeStampWrite) { const race = db.beforeStampWrite; db.beforeStampWrite = null; race(); }
+        if ('attempting_on' in patch && db.beforeStampWrite) { const race = db.beforeStampWrite; db.beforeStampWrite = null; await race(); }
         const hit = db.rows.filter((r) => preds.every((p) => p(r)));
         db.log.push(`update ${Object.keys(patch).filter((k) => k !== 'updated_at').join(',')}`);
         for (const r of hit) Object.assign(r, patch);
@@ -68,7 +70,13 @@ vi.mock('./supabase.server', () => {
     };
     return b;
   }
-  return { supabaseAdmin: { from }, tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() };
+  return { supabaseAdmin: { from }, tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) };
+});
+// The real lock module (vi.importActual below) reads this fake cron_lock table.
+vi.mock('./supabase-client.server', async () => {
+  const helpers = await import('./cron-lock-fake.test-helpers');
+  db.lock ??= helpers.makeFakeLockDb();
+  return { supabaseAdmin: helpers.fakeAdmin(db.lock) };
 });
 vi.mock('./reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./reminder-v2.server')>()),
@@ -93,10 +101,15 @@ const due = (id: string, over: Partial<Row> = {}): Row => ({
   last_sent: {}, attempting_on: null, ...over,
 });
 
-/** A fresh module graph: a new process, with nothing in memory. */
-async function freshProcess() {
+/** The fence (US-23 AC15): this pass keeps its lock. */
+const held = async () => true;
+
+/** A fresh module graph: a new process, with nothing in memory. Its pass
+ *  asks `fence` before each send. */
+async function freshProcess(fence: () => Promise<boolean> = held) {
   vi.resetModules();
-  return (await import('./reminder-v2-cron.server')).processV2Reminders;
+  const { processV2Reminders } = await import('./reminder-v2-cron.server');
+  return (day: string) => processV2Reminders(day, fence);
 }
 const sends = () => db.log.filter((l) => l.startsWith('send '));
 const sendsTo = (id: string) => sends().filter((l) => l === `send ${id}@example.test`).length;
@@ -188,16 +201,19 @@ describe('US-23 AC15: the reminder day-stamp', () => {
   });
 });
 
-// US-28 AC9 with US-23 AC15: machine A's pass dies mid-way; machine B's cron
-// meets A's fresh run (busy) at 08:30 and 09:30, takes the day over at 10:30,
-// and runs the pass once. The stamps skip everyone A went to email, so across
-// the two passes each person gets at most one email that day.
-describe('US-23 AC15 with US-28 AC9: a busy answer, then a takeover', () => {
+// US-28 AC9 with US-23 AC15, a MOCKED-LOCK pin: the lock answers are scripted
+// ('busy', 'busy', 'won'), not computed, so its hours are labels only (the real
+// reminder lock frees a fresh run after 6 h, so 10:30 could not win against an
+// 08:00 run). It pins the cron's handling: machine A's pass dies mid-way;
+// machine B's cron gets busy twice, then won, and runs the pass once; the
+// stamps skip everyone A went to email, so each person gets at most one email
+// that day. The real-lock takeover is pinned in cron-lock-restart.test.ts.
+describe('US-23 AC15 with US-28 AC9: a busy answer, then a takeover (mocked lock)', () => {
   const HOUR_MS = 60 * 60 * 1000;
   let stop: (() => void) | null = null;
   afterEach(() => { stop?.(); stop = null; vi.unstubAllEnvs(); vi.useRealTimers(); });
 
-  it('B tries at 08:30 and 09:30 (busy), runs once at 10:30, and emails only whom A never reached', async () => {
+  it('mocked lock: B gets busy twice, then won, runs once, and emails only whom A never reached', async () => {
     db.rows = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => due(id));
     db.send = (email) => (email === 'b@example.test' ? new Promise<never>(() => {}) : Promise.resolve(true));
     void (await freshProcess())(D); // machine A: the first five are stamped and sent; b never returns, f is never reached
@@ -224,5 +240,91 @@ describe('US-23 AC15 with US-28 AC9: a busy answer, then a takeover', () => {
     await vi.advanceTimersByTimeAsync(HOUR_MS);     // 11:30: the day is done here
     expect(lock).toHaveBeenCalledTimes(3);
     expect(['a', 'b', 'c', 'd', 'e', 'f'].map(sendsTo)).toEqual([1, 1, 1, 1, 1, 1]);
+  });
+});
+
+// US-23 AC15, the fence (Codex R1, 2026-11-11): just before each send the pass
+// re-reads its cron_lock row and sends only if the row still carries its own
+// locked_by and locked_at. The real lock module over a fake cron_lock table.
+describe('US-23 AC15: the fence before each send', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  const T_A = new Date(`${D}T08:00:00.000Z`);
+  const T_B = new Date(`${D}T14:30:00.000Z`); // past A's 6 h stuck limit: a real takeover
+  const clockAt = (now: Date) => ({ now, stuckCutoff: new Date(now.getTime() - 6 * HOUR_MS) });
+  const STOPPED = 'Reminder v2 cron: lock no longer held (or unreadable); pass stopped, nothing more sent';
+  const realLock = () => vi.importActual<typeof import('./supabase-cron-lock.server')>('./supabase-cron-lock.server');
+  /** A pass on `machine`, with the real fence, and that module graph's LOCK_LOST. */
+  async function pass(machine: string, lockedAt: Date, log = false) {
+    const lock = await realLock();
+    const fence = async () => {
+      if (log) db.log.push('fence');
+      return lock.stillHoldsLock('reminder_v2_cron', machine, lockedAt);
+    };
+    const run = await freshProcess(fence);
+    return { run, LOCK_LOST: (await import('./daily-cron.server')).LOCK_LOST };
+  }
+
+  let logSpy: MockInstance<typeof console.log>;
+  beforeEach(async () => {
+    const lock = await realLock(); // the mock factory creates db.lock
+    db.lock!.failReads = false;
+    db.lock!.rows = [{ lock_name: 'reminder_v2_cron', locked_by: null, locked_at: null, lock_date: '1970-01-01', run_state: null, finished_at: null }];
+    await expect(lock.tryAcquireCronLock('machine-a', D, 'reminder_v2_cron', clockAt(T_A))).resolves.toBe('won');
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+  afterEach(() => logSpy.mockRestore());
+
+  it("Codex's scenario: A stalls at the stamp, B takes the day over and sends, A resumes and sends nothing", async () => {
+    db.rows = [due('a')];
+    let resumeA!: () => void;
+    const aStalled = new Promise<void>((stalled) => {
+      db.beforeStampWrite = () => { stalled(); return new Promise<void>((go) => { resumeA = go; }); };
+    });
+    const a = await pass('machine-a', T_A);
+    const passA = a.run(D);
+    await aStalled; // A read a NULL stamp; its write waits
+
+    const lock = await realLock();
+    await expect(lock.tryAcquireCronLock('machine-b', D, 'reminder_v2_cron', clockAt(T_B))).resolves.toBe('won');
+    expect(db.lock!.rows[0]).toMatchObject({ locked_by: 'machine-b', run_state: 'running' });
+    expect(Date.parse(db.lock!.rows[0].locked_at!)).toBe(T_B.getTime());
+    await expect((await pass('machine-b', T_B)).run(D)).resolves.toBe(1);
+    expect(sendsTo('a')).toBe(1);
+
+    resumeA(); // A's write is refused, its read-back shows today (B's stamp): only the fence stops it
+    await expect(passA).resolves.toBe(a.LOCK_LOST);
+    expect(sendsTo('a')).toBe(1);
+  });
+
+  it('a pass that keeps its lock sends as before, with its own fencing read after the stamp and just before each send', async () => {
+    db.rows = [due('a')];
+    await expect((await pass('machine-a', T_A, true)).run(D)).resolves.toBe(1);
+    expect(db.log).toEqual(['select attempting_on', 'update attempting_on', 'select attempting_on', 'fence', 'send a@example.test', 'update last_sent']);
+
+    db.log = [];
+    db.rows = ['b', 'c', 'd', 'e', 'f', 'g'].map((id) => due(id)); // two chunks: five at once, then one
+    await expect((await pass('machine-a', T_A, true)).run(D)).resolves.toBe(6);
+    expect(db.log.filter((l) => l === 'fence')).toHaveLength(6);
+    expect(sends()).toHaveLength(6);
+  });
+
+  it('a fencing read that fails stops the pass: nothing sent, no later chunk started', async () => {
+    db.rows = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => due(id));
+    db.lock!.failReads = true;
+    const a = await pass('machine-a', T_A);
+    await expect(a.run(D)).resolves.toBe(a.LOCK_LOST);
+    expect(sends()).toHaveLength(0);
+    expect(db.rows.find((r) => r.id === 'f')!.attempting_on).toBeNull(); // the second chunk never ran
+  });
+
+  it('the stop is logged once, as a fixed line with no address', async () => {
+    db.rows = ['a', 'b', 'c'].map((id) => due(id));
+    db.lock!.rows[0].locked_by = 'machine-b'; // taken over before the first send
+    const a = await pass('machine-a', T_A);
+    await expect(a.run(D)).resolves.toBe(a.LOCK_LOST);
+    const lines = logSpy.mock.calls.map((c) => c.map(String).join(' '));
+    expect(lines.filter((l) => l.includes('lock no longer held'))).toEqual([STOPPED]);
+    expect(lines.some((l) => l.includes('@'))).toBe(false);
+    expect(sends()).toHaveLength(0);
   });
 });

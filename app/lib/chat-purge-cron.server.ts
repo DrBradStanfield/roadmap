@@ -369,11 +369,12 @@ function mondayOf(iso: string): string {
 export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<PurgeCounts | 'closed' | 'busy'> {
   const lock = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge', lockClock('chat_text_purge', now));
   if (lock !== 'won') return lock;
+  // The acquire wrote `now` as locked_at; the end writes match it.
   const cleared = await purgeOldChatText(now).catch(async (runError: unknown) => {
-    await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', 'failed', new Date());
+    await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', now, 'failed', new Date());
     throw runError;
   });
-  await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', 'finished', new Date());
+  await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', now, 'finished', new Date());
   const { archive } = cleared;
   console.log(
     `Chat text purge (older than ${PURGE_AFTER_DAYS} days): ${cleared.matchEvents} match events, ` +

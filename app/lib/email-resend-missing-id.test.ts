@@ -45,6 +45,8 @@ vi.mock('./reminder-v2.server', () => ({
 process.env.RESEND_API_KEY = 'synthetic-not-a-real-key';
 const { sendEmail, sendReminderEmail, sendFeedbackEmail } = await import('./email.server');
 const { processV2Reminders } = await import('./reminder-v2-cron.server');
+/** The fence (US-23 AC15): this pass keeps its lock. */
+const held = async () => true;
 const { getOptinsBatch, recordSent } = await import('./reminder-v2.server');
 const { recordServerEvent } = await import('./product-events.server');
 const Sentry = await import('@sentry/react-router');
@@ -111,21 +113,21 @@ describe('US-17 AC14: a send with no error and no id is not a sent reminder', ()
     vi.mocked(getOptinsBatch).mockResolvedValue([row] as never);
     send.mockResolvedValue(NO_ID_BODY);
 
-    expect(await processV2Reminders('2026-10-23')).toBe(0);
+    expect(await processV2Reminders('2026-10-23', held)).toBe(0);
     expect(recordSent).not.toHaveBeenCalled();
     expect(recordServerEvent).not.toHaveBeenCalledWith('reminder_sent', expect.anything());
 
     // Nothing was stamped, so the next day's pass is due again and, once
     // Resend accepts it, records it as usual.
     send.mockResolvedValue(ACCEPTED);
-    expect(await processV2Reminders('2026-10-24')).toBe(1);
+    expect(await processV2Reminders('2026-10-24', held)).toBe(1);
     expect(send).toHaveBeenCalledTimes(2);
     expect(recordSent).toHaveBeenCalledWith('optin-no-id', { blood_test_lipids: '2026-10-24' });
   });
 
   it('control: the cron records an accepted send', async () => {
     vi.mocked(getOptinsBatch).mockResolvedValue([optin('optin-accepted')] as never);
-    expect(await processV2Reminders('2026-10-25')).toBe(1);
+    expect(await processV2Reminders('2026-10-25', held)).toBe(1);
     expect(recordSent).toHaveBeenCalledWith('optin-accepted', { blood_test_lipids: '2026-10-25' });
     expect(recordServerEvent).toHaveBeenCalledWith('reminder_sent', { provider: 'typed', count: 1 });
   });

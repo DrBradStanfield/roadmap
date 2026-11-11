@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { LockRow } from './cron-lock-fake.test-helpers';
+import { pgTime, type LockRow } from './cron-lock-fake.test-helpers';
 
 // US-28 AC9 (cron lock follow-up, 2026-11-11): the lock records a run's end.
 // A finished day is refused to every machine, the one that ran it included; an
@@ -16,7 +16,7 @@ vi.mock('./supabase-client.server', async () => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
-const { tryAcquireCronLock, endCronLock, notWonAnswer } = await import('./supabase-cron-lock.server');
+const { tryAcquireCronLock, endCronLock, notWonAnswer, stillHoldsLock } = await import('./supabase-cron-lock.server');
 const Sentry = await import('@sentry/react-router');
 const fake = () => db.fake!;
 
@@ -66,6 +66,7 @@ beforeEach(() => {
   f.calls = [];
   f.filters = [];
   f.afterUpdate = null;
+  f.failReads = false;
 });
 
 describe('US-28 AC9: the acquire table, every day x run_state x owner x age', () => {
@@ -173,39 +174,97 @@ describe('US-28 AC9: an unsafe FLY_MACHINE_ID', () => {
 
 describe('US-28 AC9: the end writes', () => {
   const END = new Date('2026-11-11T05:56:00.000Z');
+  // The run's locked_at as its acquire wrote it, and as Postgres stores and
+  // returns it (microseconds, +00:00): the end write must match by instant.
+  const RUN = new Date(FRESH);
+  const STORED = pgTime(FRESH);
+  const mine = (over: Partial<LockRow> = {}) => row({ locked_by: 'm-a', locked_at: STORED, ...over });
 
   it('a finished run marks its own row finished with its end time, with no .select()', async () => {
-    fake().rows = [row({ locked_by: 'm-a' })];
-    await endCronLock('m-a', TODAY, 'trending_cron', 'finished', END);
+    fake().rows = [mine()];
+    await endCronLock('m-a', TODAY, 'trending_cron', RUN, 'finished', END);
     expect(fake().rows[0]).toMatchObject({ run_state: 'finished', finished_at: END.toISOString() });
     expect(fake().calls.flat()).not.toContain('select');
   });
 
   it('a failed run marks its own row failed and leaves finished_at alone', async () => {
-    fake().rows = [row({ locked_by: 'm-a' })];
-    await endCronLock('m-a', TODAY, 'trending_cron', 'failed', END);
+    fake().rows = [mine()];
+    await endCronLock('m-a', TODAY, 'trending_cron', RUN, 'failed', END);
     expect(fake().rows[0]).toMatchObject({ run_state: 'failed', finished_at: null });
   });
 
   it('a stale run cannot mark a newer day, or another machine\'s row', async () => {
-    const newer = row({ locked_by: 'm-b', lock_date: '2026-11-12' });
+    const newer = row({ locked_by: 'm-b', locked_at: STORED, lock_date: '2026-11-12' });
     fake().rows = [{ ...newer }];
-    await endCronLock('m-a', TODAY, 'trending_cron', 'finished', END);
-    await endCronLock('m-b', TODAY, 'trending_cron', 'finished', END);
+    await endCronLock('m-a', TODAY, 'trending_cron', RUN, 'finished', END);
+    await endCronLock('m-b', TODAY, 'trending_cron', RUN, 'finished', END);
     expect(fake().rows[0]).toEqual(newer);
 
-    const theirs = row({ locked_by: 'm-b' });
+    const theirs = row({ locked_by: 'm-b', locked_at: STORED });
     fake().rows = [{ ...theirs }];
-    await endCronLock('m-a', TODAY, 'trending_cron', 'failed', END);
+    await endCronLock('m-a', TODAY, 'trending_cron', RUN, 'failed', END);
     expect(fake().rows[0]).toEqual(theirs);
   });
 
   it('a process with no machine id ends only a row with no owner', async () => {
-    fake().rows = [row({ locked_by: 'm-a' }), row({ lock_name: 'chat_text_purge', locked_by: null })];
-    await endCronLock(null, TODAY, 'trending_cron', 'finished', END);
-    await endCronLock(null, TODAY, 'chat_text_purge', 'finished', END);
+    fake().rows = [mine(), row({ lock_name: 'chat_text_purge', locked_by: null, locked_at: STORED })];
+    await endCronLock(null, TODAY, 'trending_cron', RUN, 'finished', END);
+    await endCronLock(null, TODAY, 'chat_text_purge', RUN, 'finished', END);
     expect(fake().rows[0].run_state).toBe('running');
     expect(fake().rows[1].run_state).toBe('finished');
+  });
+
+  it("a delayed old 'failed' that lands after the restarted run's 'finished' changes nothing (Codex R2)", async () => {
+    // Run 1 on m-a stalls; m-a restarts and retakes its own running row (run 2).
+    fake().rows = [row({ lock_date: '1970-01-01', run_state: null, locked_by: null, locked_at: null })];
+    const run1 = { now: NOW, stuckCutoff: CUTOFF };
+    const later = new Date(NOW.getTime() + 20 * 60 * 1000);
+    const run2 = { now: later, stuckCutoff: new Date(later.getTime() - HOUR) };
+    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', run1)).resolves.toBe('won');
+    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', run2)).resolves.toBe('won');
+    fake().rows[0].locked_at = pgTime(fake().rows[0].locked_at); // as Postgres stores it
+    await endCronLock('m-a', TODAY, 'trending_cron', run2.now, 'finished', END);
+    const finished = { ...fake().rows[0] };
+    expect(finished).toMatchObject({ run_state: 'finished', finished_at: END.toISOString() });
+    await endCronLock('m-a', TODAY, 'trending_cron', run1.now, 'failed', new Date(END.getTime() + 60_000));
+    expect(fake().rows[0]).toEqual(finished);
+  });
+});
+
+describe('US-23 AC15: stillHoldsLock, the fencing read', () => {
+  const RUN = new Date(FRESH);
+  const held = (over: Partial<LockRow> = {}) => row({ locked_by: 'm-a', locked_at: pgTime(FRESH), ...over });
+
+  it('holds while the row carries this owner and the instant its acquire wrote (stored in Postgres form)', async () => {
+    fake().rows = [held()];
+    await expect(stillHoldsLock('trending_cron', 'm-a', RUN)).resolves.toBe(true);
+    fake().rows = [held({ locked_by: null })];
+    await expect(stillHoldsLock('trending_cron', null, RUN)).resolves.toBe(true);
+  });
+
+  it('a takeover (another owner, or a later locked_at of its own) is not held', async () => {
+    fake().rows = [held({ locked_by: 'm-b' })];
+    await expect(stillHoldsLock('trending_cron', 'm-a', RUN)).resolves.toBe(false);
+    fake().rows = [held({ locked_at: pgTime(NOW.toISOString()) })];
+    await expect(stillHoldsLock('trending_cron', 'm-a', RUN)).resolves.toBe(false);
+  });
+
+  it('fails closed: a read error or a missing row answers false, and never throws', async () => {
+    fake().rows = [held()];
+    fake().failReads = true;
+    vi.mocked(Sentry.captureException).mockClear();
+    await expect(stillHoldsLock('trending_cron', 'm-a', RUN)).resolves.toBe(false);
+    expect(Sentry.captureException).toHaveBeenCalled();
+    fake().failReads = false;
+    fake().rows = [];
+    await expect(stillHoldsLock('trending_cron', 'm-a', RUN)).resolves.toBe(false);
+  });
+
+  it('only reads: no write, no .or()', async () => {
+    fake().rows = [held()];
+    await stillHoldsLock('trending_cron', 'm-a', RUN);
+    expect(fake().calls.flat()).not.toContain('update');
+    expect(fake().calls.flat()).not.toContain('or');
   });
 });
 
@@ -225,7 +284,7 @@ describe('US-28 AC9: a live run on one day blocks the next day', () => {
   it('once the D run has finished, the next day is free at once', async () => {
     fake().rows = [row({ lock_name: 'reminder_v2_cron', lock_date: '1970-01-01', run_state: null, locked_by: null, locked_at: null })];
     await tryAcquireCronLock('m-a', '2026-11-10', 'reminder_v2_cron', at('2026-11-10T23:00:00Z'));
-    await endCronLock('m-a', '2026-11-10', 'reminder_v2_cron', 'finished', new Date('2026-11-10T23:10:00Z'));
+    await endCronLock('m-a', '2026-11-10', 'reminder_v2_cron', new Date('2026-11-10T23:00:00Z'), 'finished', new Date('2026-11-10T23:10:00Z'));
     await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T00:30:00Z'))).resolves.toBe('won');
   });
 });

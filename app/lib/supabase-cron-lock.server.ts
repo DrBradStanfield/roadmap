@@ -105,7 +105,9 @@ function reportUnsafeId(): void {
 
 /** Attempt to acquire the cron lock for today: 'won', 'closed' or 'busy'
  *  (CronLockResult, notWonAnswer's table). `machineId` null means no owner:
- *  such a caller never wins by ownership.
+ *  such a caller never wins by ownership. It writes `clock.now` as locked_at:
+ *  a winner passes that same Date on, as `lockedAt`, to stillHoldsLock and
+ *  endCronLock, which match the run by it.
  *
  *  THROWS on transient DB errors (US-28 AC1): an error is not "another
  *  machine won", and returning a not-won answer here made the erroring machine
@@ -203,17 +205,42 @@ export async function tryAcquireCronLock(
   return won ? 'won' : notWonAnswer(verify, machineId, today);
 }
 
+/** Does this run still hold its lock (US-23 AC15)? True only if the row
+ *  still carries `me` as locked_by and the locked_at this run's acquire wrote,
+ *  compared as an instant. Fails closed: a read that errors, throws or finds
+ *  no row answers false, so the caller sends nothing more. Never throws. */
+export async function stillHoldsLock(lockName: CronLockName, me: string | null, lockedAt: Date): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('cron_lock')
+      .select('locked_by, locked_at')
+      .eq('lock_name', lockName)
+      .maybeSingle();
+    if (error) throw error;
+    return !!data && data.locked_by === me && Date.parse(data.locked_at) === lockedAt.getTime();
+  } catch (error) {
+    Sentry.captureException(error, { tags: { feature: 'cron_lock' } });
+    return false;
+  }
+}
+
 /** Record how this machine's run of `date` ended: 'finished' (with its end
- *  time) or 'failed' (US-28 AC9). Keyed by the lock, this owner and the run's
- *  date, so a stale run can never mark a newer day or another machine's row.
- *  A separate update with no `.select()` (the gotcha above). Never throws: an
- *  error is logged and reported, and the row stays 'running' — its own machine
+ *  time) or 'failed' (US-28 AC9). Keyed by the lock, this owner, the run's
+ *  date and the locked_at its acquire wrote, so a stale run can never mark a
+ *  newer day, another machine's row, or a later run of this machine's own (a
+ *  delayed 'failed' landing after a restarted run's 'finished'). `lockedAt`
+ *  goes as an ISO string; Postgres reads it as a timestamptz and compares
+ *  instants, whatever form it stores. A separate update with no `.select()`
+ *  (the gotcha above). Never throws: an error is logged and reported, and
+ *  the row stays 'running' — its own machine
  *  retakes it after a restart; another machine meets it as 'busy' and keeps
  *  trying each tick, and takes it once it passes the stuck limit. */
 export async function endCronLock(
   machineId: string | null,
   date: string,
   lockName: CronLockName,
+  lockedAt: Date,
   outcome: 'finished' | 'failed',
   now: Date,
 ): Promise<void> {
@@ -222,7 +249,8 @@ export async function endCronLock(
     .from('cron_lock')
     .update(outcome === 'finished' ? { run_state: 'finished', finished_at: now.toISOString() } : { run_state: 'failed' })
     .eq('lock_name', lockName)
-    .eq('lock_date', date);
+    .eq('lock_date', date)
+    .eq('locked_at', lockedAt.toISOString());
   const { error } = await (machineId === null ? write.is('locked_by', null) : write.eq('locked_by', machineId));
   if (error) {
     console.error(`Could not mark cron lock ${outcome} (${lockName}):`, error.message);

@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // whose acquire sat OUTSIDE its try/catch — the one Sentry showed skipping
 // (JAVASCRIPT-REMIX-68, 2026-08-28 08:11Z).
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) }));
 // The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
 // today or later skips the row. It outlives a module reload, as the column does.
 const stamps = vi.hoisted(() => new Map<string, string>());
@@ -33,6 +33,8 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 
 const HOUR_MS = 60 * 60 * 1000;
+/** The fence (US-23 AC15): this pass keeps its lock. */
+const held = async () => true;
 
 // vi.resetModules gives the cron a fresh module graph (a fresh day state);
 // mock instances PERSIST across resets, so import them from the graph and
@@ -99,7 +101,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
     const { cron, sendMock, eventMock } = await loadForSend();
     sendMock.mockResolvedValue(true);
 
-    const sent = await cron.processV2Reminders('2026-08-30');
+    const sent = await cron.processV2Reminders('2026-08-30', held);
 
     expect(sent).toBe(1);
     expect(eventMock).toHaveBeenCalledTimes(1);
@@ -111,7 +113,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
     const { cron, sendMock, eventMock } = await loadForSend();
     sendMock.mockResolvedValue(false);
 
-    const sent = await cron.processV2Reminders('2026-08-30');
+    const sent = await cron.processV2Reminders('2026-08-30', held);
 
     expect(sent).toBe(0);
     expect(eventMock).not.toHaveBeenCalled();
@@ -172,7 +174,7 @@ describe('reminder v2 cron — tombstone retention', () => {
     const { purgeTombstones } = await import('./reminder-v2.server');
     vi.mocked(purgeTombstones).mockClear().mockResolvedValue(3);
 
-    await cron.processV2Reminders('2026-08-30');
+    await cron.processV2Reminders('2026-08-30', held);
     expect(purgeTombstones).toHaveBeenCalledTimes(1);
   });
 
@@ -183,7 +185,7 @@ describe('reminder v2 cron — tombstone retention', () => {
     vi.mocked(purgeTombstones).mockClear().mockRejectedValue(new Error('PGRST303'));
     vi.mocked(Sentry.captureException).mockClear();
 
-    await expect(cron.processV2Reminders('2026-08-30')).resolves.toBe(0);
+    await expect(cron.processV2Reminders('2026-08-30', held)).resolves.toBe(0);
     expect(Sentry.captureException).toHaveBeenCalled();
   });
 });
@@ -358,10 +360,10 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
       .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // a stalled 08-28 pass resumes
       .mockResolvedValueOnce([dueRow]).mockResolvedValue([]); // 08-29 retry, last_sent never stamped
 
-    await cron.processV2Reminders('2026-08-29');
-    await cron.processV2Reminders('2026-08-28');
+    await cron.processV2Reminders('2026-08-29', held);
+    await cron.processV2Reminders('2026-08-28', held);
     const before = sendMock.mock.calls.length;
-    await cron.processV2Reminders('2026-08-29');
+    await cron.processV2Reminders('2026-08-29', held);
     expect(sendMock).toHaveBeenCalledTimes(before);
   });
 });

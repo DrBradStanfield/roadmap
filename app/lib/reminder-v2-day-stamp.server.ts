@@ -4,7 +4,9 @@
  *
  * NOT a mutex. Two passes running at once could both read an old stamp, both
  * write today and both pass the read-back, and both send. Keeping two passes
- * apart is the cron lock's job (US-28 AC9). The stamp guards a LATER re-run:
+ * apart is the cron lock's job (US-28 AC9), with the fence before each send:
+ * a pass that no longer holds the lock sends nothing more (stillHoldsLock).
+ * The stamp guards a LATER re-run:
  * after a restart, a failed pass or a stuck takeover, that run reads today's
  * stamp and skips the row, so a send in flight when the old process died is
  * never repeated the same day.

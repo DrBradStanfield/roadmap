@@ -75,10 +75,12 @@ export interface FakeLockDb {
   afterUpdate: (() => void) | null;
   /** Answers tables other than cron_lock. */
   other: ((table: string) => unknown) | null;
+  /** Every cron_lock read answers an error (a failed fencing read). */
+  failReads: boolean;
 }
 
 export function makeFakeLockDb(): FakeLockDb {
-  return { rows: [], calls: [], filters: [], afterUpdate: null, other: null };
+  return { rows: [], calls: [], filters: [], afterUpdate: null, other: null, failReads: false };
 }
 
 export function fakeAdmin(db: FakeLockDb): { from: (table: string) => unknown } {
@@ -97,6 +99,7 @@ export function fakeAdmin(db: FakeLockDb): { from: (table: string) => unknown } 
           db.afterUpdate?.();
           return { data: null, error: null };
         }
+        if (db.failReads) return { data: null, error: { message: 'fake read failed' } };
         const found = db.rows.filter(hit).map((r) => ({ ...r, locked_at: pgTime(r.locked_at), finished_at: pgTime(r.finished_at) }));
         return { data: single ? found[0] ?? null : found, error: null };
       };

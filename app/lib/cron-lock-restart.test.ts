@@ -6,8 +6,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // machine re-won a day it had already finished. A finished day must stay done;
 // a failed or killed run must still re-run the same day (AC3, AC6, AC7).
 
-const { work, db } = vi.hoisted(() => ({
+const { work, stamp, db } = vi.hoisted(() => ({
   work: vi.fn<() => Promise<unknown>>(),
+  stamp: { before: null as null | (() => void) },
   db: { fake: null as null | import('./cron-lock-fake.test-helpers').FakeLockDb },
 }));
 
@@ -36,7 +37,10 @@ vi.mock('./reminder-v2.server', () => ({
   purgeTombstones: vi.fn(async () => 0),
   recordSent: vi.fn(),
 }));
-vi.mock('./email.server', () => ({ buildReminderV2EmailHtml: vi.fn(), sendReminderEmail: vi.fn() }));
+vi.mock('./reminder-v2-day-stamp.server', () => ({
+  stampReminderDay: vi.fn(async () => { stamp.before?.(); return 'stamped'; }),
+}));
+vi.mock('./email.server', () => ({ buildReminderV2EmailHtml: vi.fn(), sendReminderEmail: vi.fn(async () => true) }));
 vi.mock('./chat-question-scrub.server', () => ({ scrubQuestion: vi.fn(), SCRUB_TIMEOUT_MS: 15_000 }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
@@ -214,5 +218,47 @@ describe('chat purge catch-up across midnight (US-28 AC9)', () => {
     await tick(); // 06:30: past the limit: machine-b runs D+1
     expect(work).toHaveBeenCalledTimes(2);
     expect(db.fake!.rows[0]).toMatchObject({ locked_by: 'machine-b', lock_date: '2026-08-28', run_state: 'finished' });
+  });
+});
+
+// US-23 AC15, the fence through the real reminder cron and the real lock: the
+// acquire's locked_at reaches the pass, which re-reads its row before each send.
+describe('reminder v2 cron: the fence before each send (US-23 AC15)', () => {
+  const reminder = crons.find((c) => c.lockName === 'reminder_v2_cron')!;
+  const optin = { id: 'o1', email: 'o1@example.test', provider: 'typed', token: 'tok-o1', created_at: '2026-07-01T00:00:00Z',
+    schedule: [{ category: 'blood_test_lipids', label: 'Lipid panel', dueAt: '2026-08-01' }], last_sent: {}, attempting_on: null };
+  afterEach(() => { stamp.before = null; });
+
+  it('a pass that keeps its lock sends, and its row ends finished', async () => {
+    const { sendReminderEmail } = await import('./email.server');
+    await boot(reminder, reminder.beforeTarget, 'machine-a');
+    seed(reminder.lockName);
+    work.mockReset().mockResolvedValue([optin]);
+    vi.mocked(sendReminderEmail).mockClear();
+    await tick();
+    expect(sendReminderEmail).toHaveBeenCalledTimes(1);
+    expect(db.fake!.rows[0]).toMatchObject({ locked_by: 'machine-a', lock_date: DAY, run_state: 'finished' });
+  });
+
+  it('a pass taken over after its stamp sends nothing, writes no end state, and reopens its day', async () => {
+    const { sendReminderEmail } = await import('./email.server');
+    await boot(reminder, reminder.beforeTarget, 'machine-a');
+    seed(reminder.lockName);
+    work.mockReset().mockResolvedValue([optin]);
+    vi.mocked(sendReminderEmail).mockClear();
+    const takenAt = new Date(Date.parse(reminder.beforeTarget) + HOUR_MS + 60_000).toISOString();
+    // machine-b takes the row over while machine-a sits at the stamp.
+    stamp.before = () => { Object.assign(db.fake!.rows[0], { locked_by: 'machine-b', locked_at: takenAt, run_state: 'running' }); };
+    await tick();
+    expect(sendReminderEmail).not.toHaveBeenCalled();
+    const takenOver = { lock_name: reminder.lockName, locked_by: 'machine-b', locked_at: takenAt, lock_date: DAY, run_state: 'running', finished_at: null };
+    expect(db.fake!.rows[0]).toEqual(takenOver);
+
+    stamp.before = null;
+    db.fake!.calls = [];
+    await tick(); // the day reopened: machine-a asks the lock, meets machine-b's fresh run (busy)
+    expect(db.fake!.calls.length).toBe(2);
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(db.fake!.rows[0]).toEqual(takenOver);
   });
 });
