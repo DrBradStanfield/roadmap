@@ -118,15 +118,10 @@ async function main() {
   const dir = lockDir();
   if (locked) await acquire(dir, { timeoutMs: timeoutMinutes() * 60_000 });
 
-  // Own process group (not in CI), so signals and the lock cover vitest's workers too.
-  const child = spawn(bin, vitestArgs(extra), { stdio: 'inherit', detached: !inCI() });
-  const kill = (sig) => { try { process.kill(inCI() ? child.pid : -child.pid, sig); } catch { /* gone */ } };
-  if (locked) {
-    try { recordChild(dir, child.pid); } catch (e) { kill('SIGKILL'); release(dir); console.error(`test:all: ${e.message}`); process.exit(1); }
-  }
+  // Handlers before spawn: a signal that lands as vitest starts must not kill us by default
+  // and strand vitest with the lock. They run from the event loop, so `child` is set by then.
   let firstSignal = 0;
   let exitCode = null;
-  child.on('error', (e) => { console.error(`test:all: could not start vitest (${e.code ?? e.message})`); exitCode = 1; if (locked) release(dir); process.exit(1); });
   for (const [name, num] of [['SIGINT', 2], ['SIGTERM', 15]]) {
     process.on(name, () => {
       // npm forwards one Ctrl-C as several signals within milliseconds: only a later one escalates.
@@ -134,6 +129,13 @@ async function main() {
       else if (Date.now() - firstSignal > 1000) kill('SIGKILL');
     });
   }
+  // Own process group (not in CI), so signals and the lock cover vitest's workers too.
+  const child = spawn(bin, vitestArgs(extra), { stdio: 'inherit', detached: !inCI() });
+  const kill = (sig) => { try { process.kill(inCI() ? child.pid : -child.pid, sig); } catch { /* gone */ } };
+  if (locked) {
+    try { recordChild(dir, child.pid); } catch (e) { kill('SIGKILL'); release(dir); console.error(`test:all: ${e.message}`); process.exit(1); }
+  }
+  child.on('error', (e) => { console.error(`test:all: could not start vitest (${e.code ?? e.message})`); exitCode = 1; if (locked) release(dir); process.exit(1); });
   child.on('exit', (code, sig) => {
     if (locked) release(dir);
     process.exit(exitCode ?? code ?? (sig ? 128 + (os.constants.signals[sig] ?? 0) : 1));
