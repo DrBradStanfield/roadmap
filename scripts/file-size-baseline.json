@@ -25,7 +25,7 @@
     "ios/HealthRoadmap/MyData/RecordStore.swift": 785,
     "packages/health-core/src/record-session.ts": 774,
     "widget-src/src/storage/drive.ts": 757,
-    "widget-src/src/components/StartingInfoVitals.tsx": 744,
+    "widget-src/src/components/StartingInfoVitals.tsx": 736,
     "packages/health-core/src/mcp-tools.ts": 747,
     "packages/health-core/src/drive-rest.ts": 730,
     "app/routes/mcp.$.tsx": 724,
