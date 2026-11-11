@@ -256,7 +256,7 @@ export class FileAdapter implements StorageAdapter {
     const left = steps.includes('remove the lock file')
       ? ` The lock file ${name}.lock was left in place; remove it only when no other writer is running.`
       : '';
-    return `${name} was saved, but cleanup did not finish: could not ${steps.join(', ')}.${erase}${left}`;
+    return `${name} was written, but cleanup did not finish: could not ${steps.join(', ')}.${erase}${left}`;
   }
 
   private get lockPath(): string {

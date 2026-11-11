@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-T7,hosted mcp,"Hosted MCP drops an erase warning the adapter returns; privacy class, detail private until fixed",bug,not started,"app/lib/mcp.server.ts savedNote; next PR after lead T1; privacy and agent-contract class",,yes
+T7,hosted mcp,"Hosted MCP drops an erase warning the adapter returns; privacy class, detail private until fixed",bug,not started,next PR after lead T1; privacy and agent-contract class,,yes

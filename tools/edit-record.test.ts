@@ -232,7 +232,7 @@ describe('US-31 AC8 — the write, as the person running it sees it', () => {
       const result = await captureRun(['add', path, '--metric', 'weight', '--value', '92.4', '--date', '2026-08-14']);
       expect(result.code).toBe(0);
       expect(result.stdout).toMatch(/^Added weight 92\.4/);
-      expect(result.stderr).toBe(`edit_record: ${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune copies from before the erase. Copies from before the erase are still on disk; the next save removes them.\n`);
+      expect(result.stderr).toBe(`edit_record: ${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune copies from before the erase. Copies from before the erase are still on disk; the next save removes them.\n`);
       expect(read(path).measurements.some((m) => m.metricType === 'weight')).toBe(true);
     } finally {
       prune.mockRestore();

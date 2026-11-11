@@ -535,7 +535,7 @@ describe('lead T1 — a landed write whose cleanup did not finish', () => {
     try {
       const added = await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: TODAY });
       expect(added.result!.isError).toBeFalsy();
-      expect(text(added)).toMatch(/Saved \(backup: [^)]+\)\. health-roadmap\.json was saved, but cleanup did not finish: could not prune copies from before the erase\. Copies from before the erase are still on disk; the next save removes them\.$/);
+      expect(text(added)).toMatch(/Saved \(backup: [^)]+\)\. health-roadmap\.json was written, but cleanup did not finish: could not prune copies from before the erase\. Copies from before the erase are still on disk; the next save removes them\.$/);
       expect(text(added)).not.toContain('EACCES');
     } finally {
       prune.mockRestore();

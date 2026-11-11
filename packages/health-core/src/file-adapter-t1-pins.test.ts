@@ -77,7 +77,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
     try {
       const saved = await recordSync(adapter, CTX.deviceId, NOW).save(marked());
       expect(saved.warning).toBe(
-        `${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune copies from before the erase. ` +
+        `${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune copies from before the erase. ` +
         'Copies from before the erase are still on disk; the next save removes them.',
       );
       // No error text and no folder: the warning names the step and the file only.
@@ -117,7 +117,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
       const wrote = recordReplace(adapter);
       const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
       expect(saved.warning).toBe(
-        `${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not remove the lock file. ` +
+        `${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not remove the lock file. ` +
         `The lock file ${ROADMAP_FILE_NAME}.lock was left in place; remove it only when no other writer is running.`,
       );
       expect(saved.warning).not.toMatch(/EBUSY|busy|\//);
@@ -160,7 +160,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
       const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
-      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not close the lock file.`);
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not close the lock file.`);
       expect(saved.warning).not.toMatch(/EIO|\//);
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
@@ -290,7 +290,7 @@ describe('lead T1 — the backup trim runs after the replace', () => {
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
       const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
-      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune old backups.`);
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune old backups.`);
       expect(saved.warning).not.toMatch(/EPERM|\//);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
