@@ -15,8 +15,8 @@
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
   (08-25 Ba`prod; 09-03 Ka`prod; 09-04 n.data.split, Tizen TV; 09-10
   `window.webkit.messageHandlers` in `unload`, GSA's WKWebView; 09-20 zaloJSV2).
-  An unhandled AbortError whose stack ends at OUR abort() is a foreign fetch
-  wrapper branching the promise: our loops pass a Chromium repro (11-11, 7K).
+  An AbortError's stack names who ABORTED, not who leaked: re-run the
+  watch-loop Chromium repro before ledgering one not-ours (11-11, 7K).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
@@ -144,7 +144,7 @@
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
-- `[gotcha][supabase]` 2026-09-24, missed 10-15..11-11, 9 runs (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+- `[gotcha][supabase]` 2026-09-24, missed 10-15, 10-22..10-24, 10-26, 10-28, 11-09..11-11 (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
   JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
   + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
   `product_health_ro`, valid to 2027-08-07; the product-health charter has
