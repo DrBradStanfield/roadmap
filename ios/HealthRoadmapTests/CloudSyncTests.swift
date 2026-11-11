@@ -673,6 +673,84 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
     }
 
+    // MARK: US-25 AC11l: a Disconnect during a sign-in voids it (Codex, review of PR 1329)
+
+    /// Dropbox account A on file, its open failed. "Sign in to Dropbox again" signs in as B;
+    /// the browser has closed and the token answer is still on its way when "Use a different
+    /// cloud" disconnects. The sign-in then returns: it began under the old connection, so
+    /// nothing of it is kept and nothing is merged.
+    func testADisconnectDuringASignInVoidsIt_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:B")
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break } // the browser step returned; the token answer is held
+        await sync.disconnect()
+        let files = dropboxFileCalls.value
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a sign-in begun before the Disconnect must not connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .cancelled)
+        }
+        let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNil(text("sync-account"))
+        XCTAssertNil(text("sync-account-email"))
+        XCTAssertNil(tokens.load(.dropbox), "the voided sign-in's grant was never stored")
+        XCTAssertEqual(dropboxFileCalls.value, files, "nothing reached Dropbox's files after the Disconnect")
+        XCTAssertEqual(dropbox.uploads, 0, "nothing was merged up")
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+    }
+
+    /// The twin, with no Disconnect: the held sign-in completes as any sign-in does.
+    func testASignInHeldWithNoDisconnectStillConnects_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:A")
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        gate.open()
+        try await connecting.value
+        XCTAssertEqual(sync.provider, .dropbox)
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the sign-in is kept")
+        XCTAssertTrue(sync.recordOpen)
+    }
+
+    /// Calls to Dropbox's files, counted by `dropboxFailedWithHeldToken`'s handler.
+    private let dropboxFileCalls = Counter()
+
+    final class Counter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        var value: Int { lock.withLock { count } }
+        func add() { lock.withLock { count += 1 } }
+    }
+
+    /// Dropbox account A on file, holding a record, whose launch open failed; then Dropbox is
+    /// back. Sign-ins come back as `account`, and their token answer waits on the gate.
+    private func dropboxFailedWithHeldToken(account: String) async throws -> (CloudSync, StubHTTP.Gate, AsyncStream<Void>) {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try Data("dbid:A".utf8).write(to: folder.appending(path: "sync-account"))
+        dropbox.online = false
+        let (_, sync, _) = try app()
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
+        dropbox.online = true
+        dropbox.tokenAccount = account
+        let gate = StubHTTP.Gate()
+        let (asked, ask) = AsyncStream.makeStream(of: Void.self)
+        let (fake, calls) = (dropbox!, dropboxFileCalls)
+        StubHTTP.handler = { request in
+            if request.url.path.hasPrefix("/2/files") { calls.add() }
+            var answer = fake.answer(request)
+            if request.url.path == "/oauth2/token" {
+                ask.yield()
+                answer.gate = gate
+            }
+            return answer
+        }
+        return (sync, gate, asked)
+    }
+
     // MARK: US-54 AC2d: "Use a different cloud" at failed (review of PR 1329)
 
     /// The welcome sheet's "Use a different cloud" is Disconnect. With the cloud never
