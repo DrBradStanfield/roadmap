@@ -1,0 +1,155 @@
+{
+  "_about": [
+    "Shared upload PR 1: golden pins of today's upload decisions on the web and the phone (no behaviour change).",
+    "Read by widget-src/src/lib/upload-decisions.pins.test.tsx, widget-src/src/components/UploadModal.decision-pins.test.tsx",
+    "and ios/HealthRoadmapTests/UploadDecisionPinsTests.swift (copied into the test bundle by ios/scripts/build-engine.mjs).",
+    "Each row holds the verdict on each client. Where they differ, `decision` names the survey's D-number and `changedBy` the",
+    "later PR that may change it; until then the row stays as it is. A move into health-core keeps every row green, unedited.",
+    "A name is a string, or a list of pieces where {\"repeat\": c, \"times\": n} stands for n copies of c."
+  ],
+
+  "limits": {
+    "_note": "Bytes and counts each client reads with today. D8: the phone takes a 20 MB ZIP, the web 10 MB (changedBy: PR 3 keeps it; the size is a product call).",
+    "web": { "fileBytes": 10485760, "zipBytes": 10485760, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "batchFrom": 20 },
+    "phone": { "fileBytes": 10485760, "zipBytes": 20971520, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "folderBytes": 209715200 }
+  },
+
+  "fileKinds": {
+    "_note": "A picked file (not inside a ZIP), by name alone. web: which reader opens it (pdf, image, docx, zip), legacyDoc (its own notice) or refused. phone: kept (a PDF or picture reader opens it), zip, or unsupported.",
+    "rows": [
+      { "name": "report.pdf", "web": "pdf", "phone": "kept" },
+      { "name": "REPORT.PDF", "web": "pdf", "phone": "kept" },
+      { "name": "scan.jpg", "web": "image", "phone": "kept" },
+      { "name": "scan.JPEG", "web": "image", "phone": "kept" },
+      { "name": "scan.png", "web": "image", "phone": "kept" },
+      { "name": "photo.heic", "web": "image", "phone": "kept" },
+      { "name": ".hidden.pdf", "web": "pdf", "phone": "kept", "_note": "Neither client hides a dot name picked on its own." },
+      { "name": "letter.docx", "web": "docx", "phone": "unsupported", "decision": "D15", "changedBy": "a later PR that adds .docx to the phone" },
+      { "name": "old.doc", "web": "legacyDoc", "phone": "unsupported" },
+      { "name": "notes.txt", "web": "refused", "phone": "unsupported" },
+      { "name": "labs.zip", "web": "zip", "phone": "zip" },
+      { "name": "LABS.ZIP", "web": "zip", "phone": "zip" }
+    ]
+  },
+
+  "zipMembers": {
+    "_note": "A ZIP member's path: read (true) or skipped (false). web: health-core isImportableEntryName (any dot segment, junk lowercased). phone: LabFileReader's isReport and a case-sensitive __MACOSX. D9: changedBy PR 3 (zipMemberVerdict), which keeps these rows until a decision changes them.",
+    "rows": [
+      { "path": "a.pdf", "web": true, "phone": true },
+      { "path": "sub/b.PNG", "web": true, "phone": true },
+      { "path": "sub/c.jpeg", "web": true, "phone": true },
+      { "path": "c.heic", "web": false, "phone": false, "_note": "A picked .heic is read on both; inside a ZIP neither reads it." },
+      { "path": "d.docx", "web": false, "phone": false },
+      { "path": "notes.txt", "web": false, "phone": false },
+      { "path": ".hidden.pdf", "web": false, "phone": false },
+      { "path": "sub/.hidden.pdf", "web": false, "phone": false },
+      { "path": ".git/x.pdf", "web": false, "phone": true, "decision": "D9", "changedBy": "PR 3 (zipMemberVerdict)" },
+      { "path": "__MACOSX/a.pdf", "web": false, "phone": false },
+      { "path": "__MACOSX/._a.pdf", "web": false, "phone": false },
+      { "path": "__macosx/a.pdf", "web": false, "phone": true, "decision": "D9", "changedBy": "PR 3 (zipMemberVerdict)" },
+      { "path": "Thumbs.db.pdf", "web": false, "phone": true, "decision": "D9", "changedBy": "PR 3 (zipMemberVerdict)" },
+      { "path": "folder/.DS_Store", "web": false, "phone": false }
+    ]
+  },
+
+  "fileSizes": {
+    "_note": "A picked file of this many bytes. web: read or tooLarge (its own notice). phone: fits or tooLarge.",
+    "rows": [
+      { "name": "a.pdf", "bytes": 10485760, "web": "read", "phone": "fits" },
+      { "name": "a.pdf", "bytes": 10485761, "web": "tooLarge", "phone": "tooLarge" },
+      { "name": "a.zip", "bytes": 10485760, "web": "read", "phone": "fits" },
+      { "name": "a.zip", "bytes": 10485761, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
+      { "name": "a.zip", "bytes": 20971520, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
+      { "name": "a.zip", "bytes": 20971521, "web": "tooLarge", "phone": "tooLarge" }
+    ],
+    "zipMemberOverCap": {
+      "_note": "A ZIP member over 10 MB once inflated. D8: the web notes that member alone, the phone fails the whole ZIP.",
+      "bytes": 10485761,
+      "web": "memberNoticed",
+      "phone": "zipFails",
+      "decision": "D8",
+      "changedBy": "PR 3 keeps it; per-member notice is a later decision"
+    }
+  },
+
+  "zipCounts": {
+    "_note": "A ZIP of this many readable members. web: how many are read (the rest dropped without a notice). phone: how many are read, or tooLarge for the whole ZIP, with its words. D8 and D14 (the words say a file is too large).",
+    "rows": [
+      { "members": 200, "web": { "read": 200 }, "phone": { "read": 200 } },
+      { "members": 201, "web": { "read": 200 }, "phone": { "failure": "A file inside this ZIP is too large." }, "decision": "D8", "changedBy": "PR 3 keeps it; D14 words in PR 4" }
+    ]
+  },
+
+  "photoResize": {
+    "_note": "The long side of a picked photo as sent. D10.",
+    "web": 1200,
+    "phone": 2000,
+    "decision": "D10",
+    "changedBy": "a later read-accuracy PR"
+  },
+
+  "naming": {
+    "_note": "A file's sourceFileName (the document dedup key). A ZIP member is health-core zipMemberName on both. A plain file: the web keeps its raw name; the phone puts it on one line and cuts it to 255. D13.",
+    "rows": [
+      { "kind": "plain", "name": "Labs 2026.pdf", "web": "Labs 2026.pdf", "phone": "Labs 2026.pdf" },
+      { "kind": "plain", "name": "Bad\u0007\nname.pdf", "web": "Bad\u0007\nname.pdf", "phone": "Bad name.pdf", "decision": "D13", "changedBy": "a later PR on the shared name rule (orchestrator: dedup)" },
+      { "kind": "plain", "name": [{ "repeat": "a", "times": 300 }, ".pdf"], "web": [{ "repeat": "a", "times": 300 }, ".pdf"], "phone": [{ "repeat": "a", "times": 255 }], "decision": "D13", "changedBy": "a later PR on the shared name rule (orchestrator: dedup)" },
+      { "kind": "zip", "zip": "Records.zip", "path": "a/b.png", "web": "Records.zip/a/b.png", "phone": "Records.zip/a/b.png" },
+      { "kind": "zip", "zip": "Records.zip", "path": [{ "repeat": "d", "times": 260 }, "/letter.png"], "web": ["~635451cb/", { "repeat": "d", "times": 234 }, "/letter.png"], "phone": ["~635451cb/", { "repeat": "d", "times": 234 }, "/letter.png"] }
+    ]
+  },
+
+  "failures": {
+    "_note": "One file the server did not read, and the words each client shows. phone words \"$server\" mean the server's own message is shown. retry: the client offers Try again for that file. web: Shopify build, per-file notice. D14 (words) and the phone's retry; changedBy PR 4 (failure words table).",
+    "rows": [
+      { "case": "422 refused", "status": 422, "errorCode": "refused",
+        "web": { "words": "Not read. Claude declined to read this file, so trying again will not help.", "retry": false },
+        "phone": { "words": "The AI could not read this file.", "retry": false }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "422 too_long", "status": 422, "errorCode": "too_long",
+        "web": { "words": "Not read. The file is too long to read in one go.", "retry": false },
+        "phone": { "words": "The AI could not read this file.", "retry": false }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "413", "status": 413,
+        "web": { "words": "Our server could not read it. Please try again.", "retry": false },
+        "phone": { "words": "$server", "retry": false }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "429", "status": 429,
+        "web": { "words": "Not read. The daily upload limit was reached.", "retry": false },
+        "phone": { "words": "$server", "retry": false }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "500", "status": 500,
+        "web": { "words": "Our server could not read it. Please try again.", "retry": false },
+        "phone": { "words": "$server", "retry": true }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "network", "network": "notConnectedToInternet",
+        "web": { "words": "Our server could not read it. Please try again.", "retry": false },
+        "phone": { "words": "The server could not be reached. Check your connection, then try again.", "retry": true }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "connection lost", "network": "networkConnectionLost",
+        "web": { "words": "Our server could not read it. Please try again.", "retry": false },
+        "phone": { "words": "The connection dropped before the answer finished. Please try again.", "retry": true }, "decision": "D14", "changedBy": "PR 4" },
+      { "case": "timeout", "network": "timedOut",
+        "web": null,
+        "phone": { "words": "The server took too long to answer. Please try again.", "retry": true },
+        "_note": "The web sets no request timeout (only a 30 s read of the file itself), so it has no words for this.", "decision": "D14", "changedBy": "PR 4" }
+    ]
+  },
+
+  "reviewDefaults": {
+    "_note": "What the review starts with. ticked: the value saves unless the user acts. keepDocument: the document's keep tick. D1 (U10) and D3 need Brad.",
+    "rows": [
+      { "case": "plain value", "web": { "ticked": true }, "phone": { "ticked": true } },
+      { "case": "value with an extractor question", "web": { "ticked": true }, "phone": { "ticked": false }, "decision": "D1", "changedBy": "a Brad decision PR (U10)" },
+      { "case": "document, sourceFileName not held", "web": { "keepDocument": true }, "phone": { "keepDocument": true } },
+      { "case": "document, sourceFileName held", "web": { "keepDocument": false }, "phone": { "keepDocument": false } },
+      { "case": "letter with values", "web": { "values": true, "document": true }, "phone": { "values": false, "document": true }, "decision": "D3", "changedBy": "a Brad decision PR (clinical)" }
+    ]
+  },
+
+  "saveBlocks": {
+    "_note": "What stops Save. web: blocked means the Save button is disabled for the whole upload. phone: the reason Save waits (LabChoices.valuesWait), or null.",
+    "rows": [
+      { "case": "nothing ticked", "web": "blocked", "phone": "No values ticked", "_note": "web: no cloud connected, so no original to archive." },
+      { "case": "nothing ticked, cloud connected", "web": "original only", "phone": "No values ticked",
+        "_note": "The web archives a lab file's original with no value chosen; the phone files it only after values save.", "decision": "D6", "changedBy": "a Brad decision PR" },
+      { "case": "undated report, no day given", "web": "blocked", "phone": "Needs the test day" },
+      { "case": "one value typed invalid", "web": "blocked", "phone": null,
+        "_note": "The phone has no typed values; its engine refuses a bad row alone at save (U11).", "decision": "D2", "changedBy": "a Brad decision PR (U11)" }
+    ]
+  }
+}
