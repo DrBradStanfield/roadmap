@@ -727,7 +727,7 @@ export function bpTargetFor(age: number | undefined): number {
 
 /** PSA thresholds in ng/mL (same in both unit systems) */
 export const PSA_THRESHOLDS = {
-  normal: 4.0,  // General upper limit of normal (varies by age)
+  normal: 4.0,  // Raised at 4.0 or above (Brad 2026-11-12)
 } as const;
 
 /** The units Lp(a)'s field takes, one control for all three (US-05 AC2): what US, NZ/AU/UK and guideline labs print. */
@@ -741,23 +741,17 @@ export const LPA_THRESHOLDS = {
 } as const;
 
 /**
- * A value as it prints beside its grade: HbA1c and Lp(a) by
+ * A value as it prints beside its grade: HbA1c, Lp(a) and PSA by
  * `formatGradedValue` at each of their grade lines (5.7 and 6.5 %, 75 and
- * 125 nmol/L), so 47 mmol/mol reads 6.45 % in the prediabetic range, not
- * 6.5 %. The lines are many display steps apart, so at most one moves the
- * number. A PSA graded above 4.0 that would print 4.0 prints two decimals,
- * rounded up, so 4.04 ng/mL reads 4.04 (US-06 AC18). Any other metric prints
- * as `formatDisplayValue` (US-07 AC15).
+ * 125 nmol/L, 4.0 ng/mL), so 47 mmol/mol reads 6.45 % in the prediabetic
+ * range, not 6.5 %, and a PSA of 3.96 ng/mL reads 3.96, not 4.0 (US-06 AC18).
+ * The lines are many display steps apart, so at most one moves the number.
+ * Any other metric prints as `formatDisplayValue` (US-07 AC15).
  */
 export function formatGradedReading(metric: MetricType, canonical: number, system: UnitSystem): string {
   const lines = metric === 'hba1c' ? Object.values(HBA1C_THRESHOLDS)
-    : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : [];
+    : metric === 'lpa' ? Object.values(LPA_THRESHOLDS) : metric === 'psa' ? Object.values(PSA_THRESHOLDS) : [];
   const shown = formatDisplayValue(metric, canonical, system);
-  // PSA's grade is strict (> 4.0), so the line itself reads normal: `formatGradedValue` would print it.
-  if (metric === 'psa' && canonical > PSA_THRESHOLDS.normal && Number(shown) <= PSA_THRESHOLDS.normal) {
-    // At least 4.01: toPrecision strips float noise, which also rounds 4.000000000001 down to the line.
-    return (Math.max(Math.ceil(Number((canonical * 100).toPrecision(12))), PSA_THRESHOLDS.normal * 100 + 1) / 100).toFixed(2);
-  }
   for (const line of lines) {
     const graded = formatGradedValue(metric, canonical, system, line);
     if (graded !== shown) return graded;

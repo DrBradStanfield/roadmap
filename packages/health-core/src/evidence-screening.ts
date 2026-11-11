@@ -55,7 +55,7 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-prostate-elevated': {
-    reason: 'A PSA above 4.0 ng/mL is above the typical reference range, but elevated PSA can have multiple causes including benign prostatic hyperplasia (BPH), infection, or prostate cancer. Further evaluation by your doctor is needed to determine the cause.',
+    reason: 'Many doctors use a PSA of 4.0 ng/mL or higher as the level for further tests; some use a lower level. A raised PSA can have several causes, including an enlarged prostate (benign prostatic hyperplasia), infection or prostate cancer, and a level below 4.0 does not rule out cancer. Your doctor can help find the cause.',
     guidelines: [],
     references: REFS_SCREENING_ACS,
   },
