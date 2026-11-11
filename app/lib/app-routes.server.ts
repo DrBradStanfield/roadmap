@@ -3,12 +3,13 @@
  * handlers. The route files under app/routes/api.app.v1.* only call these: a
  * route module's extra exports would pull server code into the client build.
  */
+import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
 import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyStore } from './app-gate.server';
 import { SMALL_BODY_CAP } from './capped-body.server';
-import { extractOneFile } from './lab-extract-one.server';
+import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
 
 /** 2 MB, the web chat's own cap (api.chat.ts). */
@@ -99,5 +100,28 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
   }
   const validation = labImportRequestSchema.safeParse(parsed);
   if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
-  return extractOneFile(validation.data, undefined, { timeoutMs: 90_000, oneDeadline: true });
+  const start = Date.now();
+  let retried = false;
+  const res = await extractOneFile(validation.data, undefined, { timeoutMs: 90_000, oneDeadline: true, onRetry: () => { retried = true; } });
+  await reportSlowImport(res, Date.now() - start, retried);
+  return res;
+}
+
+/**
+ * A timed-out or slow (over 60 s) phone import reports one Sentry warning of four
+ * fixed tags (US-52 AC7d). The request, breadcrumbs, user and trace link the SDK
+ * would attach are dropped from it: the request's headers name the key and the upload's size.
+ */
+async function reportSlowImport(res: Response, ms: number, retried: boolean): Promise<void> {
+  const timedOut = res.status === 500 && await res.clone().json().then((b) => b?.error === TOO_SLOW, () => false);
+  if (!timedOut && ms <= 60_000) return;
+  const outcome = timedOut ? 'timeout' : res.ok ? 'slow-success' : 'slow-failure';
+  const duration = ms <= 60_000 ? '0-60' : ms < 75_000 ? '60-75' : ms < 90_000 ? '75-90' : '90+';
+  const tags = { feature: 'app-lab-import', outcome, duration, retry: retried ? 'yes' : 'no' };
+  // A trace of its own, so the event cannot be joined to the request's transaction or exception.
+  Sentry.startNewTrace(() => Sentry.withScope((scope) => {
+    // Runs after the SDK's own processors, so it also drops their `runtime` tag.
+    scope.addEventProcessor(({ request: _r, breadcrumbs: _b, user: _u, ...event }) => ({ ...event, tags }));
+    Sentry.captureMessage('App lab import slow', { level: 'warning', fingerprint: ['app-lab-import', outcome] });
+  }));
 }
