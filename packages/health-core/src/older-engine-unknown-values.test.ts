@@ -8,21 +8,27 @@
  *
  * What is proven: the stored file keeps the value and its stamp through
  * migrateFile, health-core's own writes and mergeFiles. The edits in case 2
- * are the ones the web form and the assistant can send: the form's
+ * are the ones both apps' forms make once those questions show: the form's
  * `screeningWrites` over the plan's derived screenings, each write applied
  * with `setScreening` (the web form via InputPanel.tsx writeScreening and
  * RoadmapStore.setScreening; the iPhone's edit path at
- * ios/engine/my-data-forms.ts:311-312 calls the same pair). Today's iPhone
- * does not offer those edits for an unknown method: it shows the method
- * question blank and no date or result (screeningForm, input-form.ts:430-432;
- * offered(), my-data-forms.ts:307-308). Picking a method there replaces the
- * value, which is the person's own act (pinned below).
+ * ios/engine/my-data-forms.ts:311-312 calls the same pair). For an unknown
+ * method neither form shows the date or result: both draw from screeningForm
+ * (input-form.ts:430-432), which shows the method question blank, and the
+ * iPhone also refuses an unshown field (offered(), my-data-forms.ts:307-308).
+ * So for the method probes case 2 shows the store is safe if such a write
+ * arrives anyway; for the DEXA and dental probes the DEXA date and result
+ * edits are reachable on both apps. Picking a method replaces the value,
+ * which is the person's own act (pinned below).
  *
- * Today's form also clears only answers that read non-empty after castEnum
- * (input-form.ts:506), so an unknown value survives a clear its parent answer
- * makes. That is pinned below too: the newer engine must ignore a new field
- * when its parent answer no longer supports it (for example dexaNextDue only
- * while dexaScreening is 'dexa_scan' with a date).
+ * Today's clears never remove an unknown value, for two reasons: a clear
+ * touches only answers that read non-empty after castEnum (input-form.ts:506),
+ * which is why lungScreening 'stopped' survives; and no clear list names a
+ * key the engine does not know (input-form.ts:511-512), which is why
+ * dexaNextDue survives. Pinned below. The newer engine must add each new key
+ * to its own clear lists and ignore a new field when its parent answer no
+ * longer supports it (for example dexaNextDue only while dexaScreening is
+ * 'dexa_scan' with a date).
  */
 import { describe, it, expect } from 'vitest';
 import { mergeFiles } from './merge';
@@ -126,6 +132,8 @@ describe('US-06 AC3, Change 11: an older engine keeps a screening value it does 
       }
     });
 
+    // The stale copy never holds the probe key, so this checks merge keeps a field the other side lacks,
+    // whatever the timestamps; it is not a stale-versus-newer test on one field.
     it('3b. an edit made before this device saw the value does not overwrite it in the merge', () => {
       const before = createEmptyFile({ deviceId: 'dev_older', now: T_BASE });
       before.profile = remote.profile;
