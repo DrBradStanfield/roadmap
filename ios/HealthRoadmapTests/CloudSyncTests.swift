@@ -595,8 +595,9 @@ final class CloudSyncTests: XCTestCase {
 
     // MARK: US-25 AC11j: no change of cloud while a record opens (review of PR 1281)
 
-    /// Path (a): a relaunch with Dropbox on file whose launch open failed. During Google
-    /// Drive's sign-in the app comes back and opens Dropbox; then the sign-in returns.
+    /// Path (a): a relaunch with Dropbox on file whose launch open failed. Since AC11l
+    /// (2026-11-12) Google Drive's connect is refused before its sign-in shows, and the
+    /// foreground open that follows lands on Dropbox.
     func testAnotherCloudConnectedDuringAForegroundOpenIsRefused_US25_AC11j() async throws {
         defer { tokens.delete(.googleDrive) }
         answerGoogleToo()
@@ -606,16 +607,9 @@ final class CloudSyncTests: XCTestCase {
         await sync.start()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
         dropbox.online = true
-        let download = StubHTTP.Gate()
-        dropbox.downloadGate = download
-        let drive = heldSignIn()
-        let connecting = Task { try await sync.connect(.googleDrive, authenticate: drive.authenticate) }
-        for await _ in drive.shown { break }
-        dropbox.onDownload = { drive.release() } // Dropbox's open is reading when the sign-in returns
-        let opening = Task { await sync.foreground() }
-        await assertRefused(connecting, "Disconnect from Dropbox first, then connect Google Drive.") // AC11l's words since 2026-11-12
-        download.open() // only now does Dropbox's read answer, and its open land
-        await opening.value
+        await assertRefused(Task { try await sync.connect(.googleDrive, authenticate: noSignIn) },
+                            "Disconnect from Dropbox first, then connect Google Drive.")
+        await sync.foreground()
         assertStillOnDropbox(sync, store: store, account: nil)
     }
 
@@ -660,27 +654,16 @@ final class CloudSyncTests: XCTestCase {
 
     // MARK: US-25 AC11l: one cloud at a time (review of PR 1328)
 
-    /// The review's sequence: Google Drive on file, its launch open fails, and the welcome
-    /// sheet's Connect Dropbox starts a sign-in. Meanwhile the app comes back and Drive's
-    /// open lands, so the sheet goes on with Drive. Then the Dropbox sign-in returns.
-    func testASignInLeftOverFromTheWelcomeSheetCannotSwitchTheOpenCloud_US25_AC11l() async throws {
+    /// The review's sequence, closed at the tap: Google Drive on file and its launch open
+    /// failed. Connect Dropbox is refused before any sign-in shows (review of PR 1329), and
+    /// Drive's foreground open still lands.
+    func testAnotherCloudIsRefusedBeforeItsSignInWhileOneIsConnected_US25_AC11l() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
         tokens.delete(.dropbox)
-        try tokens.save(OAuthTokens(accessToken: "token-g", refreshToken: "r-g", expiresAt: .distantFuture), for: .googleDrive)
-        defer { tokens.delete(.googleDrive) }
-        let drive = DriveOnFile(record: try record(days: ["2026-10-01"], device: "web"), dropbox: dropbox)
-        StubHTTP.handler = { drive.answer($0) }
-        try Data("google-drive".utf8).write(to: folder.appending(path: "sync-provider"))
-        let (store, sync, _) = try app(connected: false)
-        await sync.start()
-        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)), "the launch open failed")
-        let signIn = heldSignIn()
-        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn.authenticate) }
-        for await _ in signIn.shown { break }
+        await assertRefused(Task { try await sync.connect(.dropbox, authenticate: noSignIn) },
+                            "Disconnect from Google Drive first, then connect Dropbox.")
         drive.online = true
         await sync.foreground()
-        XCTAssertTrue(sync.recordOpen, "Drive's foreground open landed while the Dropbox sign-in was held")
-        signIn.release()
-        await assertRefused(connecting, "Disconnect from Google Drive first, then connect Dropbox.")
         let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
         XCTAssertEqual(sync.provider, .googleDrive)
         XCTAssertEqual(text("sync-provider"), "google-drive")
@@ -731,6 +714,82 @@ final class CloudSyncTests: XCTestCase {
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
     }
 
+    // MARK: US-54 AC2d: "Use a different cloud" at failed (review of PR 1329)
+
+    /// The welcome sheet's "Use a different cloud" is Disconnect. With the cloud never
+    /// opened, the phone's record is byte for byte what it was: nothing merged down,
+    /// nothing erased.
+    func testUseADifferentCloudAtFailedLeavesThePhoneRecordUntouched_US54_AC2d() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        let before = try Data(contentsOf: store.file)
+        await sync.disconnect()
+        XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
+        XCTAssertNil(sync.provider)
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+        XCTAssertNil(tokens.load(.googleDrive))
+        XCTAssertEqual(drive.unexpected, [])
+    }
+
+    /// A Try again whose open is still reading when "Use a different cloud" runs lands
+    /// after it and changes nothing: Disconnect moved the generation on.
+    func testAnOpenLandingAfterUseADifferentCloudChangesNothing_US54_AC2d() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        let gate = StubHTTP.Gate()
+        let (reading, read) = AsyncStream.makeStream(of: Void.self)
+        drive.mediaGate = gate
+        drive.onMedia = { read.yield() }
+        drive.online = true
+        let opening = Task { await sync.foreground() } // Try again
+        for await _ in reading { break }
+        let before = try Data(contentsOf: store.file)
+        await sync.disconnect()
+        gate.open()
+        await opening.value
+        XCTAssertNil(sync.provider)
+        XCTAssertFalse(sync.recordOpen)
+        XCTAssertNil(store.cloudErase, "the late open was not shown")
+        XCTAssertEqual(sync.status, .onPhone)
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+        XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
+        XCTAssertNil(try? String(contentsOf: folder.appending(path: "sync-provider"), encoding: .utf8))
+        XCTAssertEqual(drive.unexpected, [])
+    }
+
+    /// The whole way: Drive failed, "Use a different cloud", then Connect Dropbox, which is
+    /// a first connect: the phone's record is merged up into Dropbox's.
+    func testUseADifferentCloudThenConnectDropboxIsAFirstConnect_US54_AC2d() async throws {
+        let (store, sync, _) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        await sync.disconnect()
+        try await sync.connect(.dropbox, authenticate: signIn())
+        XCTAssertEqual(sync.provider, .dropbox)
+        XCTAssertTrue(sync.recordOpen)
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the phone's record was merged up")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"])
+    }
+
+    /// Google Drive on file, holding a record, whose launch open failed: the welcome sheet at failed.
+    private func driveFailedAtLaunch() async throws -> (store: RecordStore, sync: CloudSync, drive: DriveOnFile) {
+        try tokens.save(OAuthTokens(accessToken: "token-g", refreshToken: "r-g", expiresAt: .distantFuture), for: .googleDrive)
+        addTeardownBlock { [tokens] in tokens!.delete(.googleDrive) }
+        let drive = DriveOnFile(record: try record(days: ["2026-09-01"], device: "web"), dropbox: dropbox)
+        StubHTTP.handler = { drive.answer($0) }
+        try Data("google-drive".utf8).write(to: folder.appending(path: "sync-provider"))
+        let (store, sync, _) = try app(connected: false)
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)), "the launch open failed")
+        return (store, sync, drive)
+    }
+
+    /// A sign-in that must never show: the connect is refused before it.
+    private let noSignIn: OAuthClient.Authenticate = { _, _ in
+        XCTFail("no sign-in sheet shows")
+        throw OAuthClient.Failure.cancelled
+    }
+
     /// Google Drive holding one copy of the record, enough for an open to read it, beside
     /// the fake Dropbox. Counts every call to Dropbox's files; a sign-in reaches only its
     /// token and account endpoints.
@@ -741,6 +800,10 @@ final class CloudSyncTests: XCTestCase {
         var online = false
         var dropboxFileCalls = 0
         var unexpected: [String] = []
+        /// When set, the record's bytes answer only once the test opens it.
+        var mediaGate: StubHTTP.Gate?
+        /// Runs as the record's bytes are asked for.
+        var onMedia: (() -> Void)?
 
         init(record: [String: Any], dropbox: FakeDropbox) {
             text = String(decoding: try! JSONSerialization.data(withJSONObject: record), as: UTF8.self)
@@ -759,7 +822,8 @@ final class CloudSyncTests: XCTestCase {
             case ("GET", "/drive/v3/files"):
                 return .init(body: Data(#"{"files":[{"id":"file-1"}]}"#.utf8))
             case ("GET", "/drive/v3/files/file-1") where query.contains { $0.name == "alt" && $0.value == "media" }:
-                return .init(body: Data(text.utf8))
+                onMedia?()
+                return .init(body: Data(text.utf8), gate: mediaGate)
             case ("GET", "/drive/v3/files/file-1"):
                 return .init(body: Data(#"{"version":"1"}"#.utf8))
             default:
