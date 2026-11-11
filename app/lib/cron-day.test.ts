@@ -21,6 +21,7 @@ const started: CronDayEvent = { type: 'started', date: NEXT, now: T0 + HOUR };
 const finished: CronDayEvent = { type: 'finished' };
 const failed: CronDayEvent = { type: 'failed' };
 const held: CronDayEvent = { type: 'held', date: NEXT };
+const busy: CronDayEvent = { type: 'busy' };
 
 const step = (day: CronDay, decision: CronDayStep['decision'] = null): CronDayStep => ({ day, decision });
 
@@ -32,6 +33,7 @@ describe('US-28 AC7: cron day transition, phase by event', () => {
     ['open, finished (impossible): stays open', open, finished, step(open)],
     ['open, failed: stays open', open, failed, step(open)],
     ['open, held: done on that date', open, held, step({ phase: 'done', date: NEXT })],
+    ['open, busy (no acquire runs while open): stays open', open, busy, step(open)],
     // running
     ['running, tick the same day: skips', running, tick(D, HOUR), step(running, 'skip')],
     ["running, tick at the next day's hour, under the limit: skips", running, tick(NEXT, LIMIT), step(running, 'skip')],
@@ -42,6 +44,8 @@ describe('US-28 AC7: cron day transition, phase by event', () => {
     ['running, finished after a stuck report: done on the run date', reported, finished, step(done)],
     ['running, failed: open', running, failed, step(open)],
     ['running, held: done on that date', running, held, step({ phase: 'done', date: NEXT })],
+    ['running, busy: open, so the next tick tries again (US-28 AC9)', running, busy, step(open)],
+    ['running, busy after a stuck report: open', reported, busy, step(open)],
     // done
     ['done, tick on its date: skips', done, tick(D, HOUR), step(done, 'skip')],
     ['done, tick on another date: tries', done, tick(NEXT, DAY), step(done, 'try')],
@@ -49,8 +53,19 @@ describe('US-28 AC7: cron day transition, phase by event', () => {
     ['done, finished (impossible): stays done', done, finished, step(done)],
     ['done, failed: open', done, failed, step(open)],
     ['done, held: done on that date', done, held, step({ phase: 'done', date: NEXT })],
+    ['done, busy (impossible: no acquire runs while done): stays done', done, busy, step(done)],
   ])('%s', (_, day, event, next) => {
     expect(transition(day, event)).toEqual(next);
+  });
+
+  it('a busy answer at every tick keeps the day open: each later tick tries again (US-28 AC9)', () => {
+    let day: CronDay = open;
+    for (let h = 0; h < 3; h++) {
+      const s = transition(day, tick(D, h * HOUR));
+      expect(s.decision).toBe('try');
+      day = transition(transition(s.day, { type: 'started', date: D, now: T0 + h * HOUR }).day, busy).day;
+    }
+    expect(day).toEqual(open);
   });
 
   it('a run that outlasts midnight is never tried beside, at any tick, until it ends', () => {

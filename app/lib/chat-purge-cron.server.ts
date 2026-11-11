@@ -363,12 +363,12 @@ function mondayOf(iso: string): string {
   return day.toISOString().slice(0, 10);
 }
 
-/** The day's work, behind the shared lock. Returns null if the day is not
- *  free to this machine. Its end, finished or failed, is written to the lock
- *  row (US-28 AC9). Exported for the test suite. */
-export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<PurgeCounts | null> {
-  const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge', lockClock('chat_text_purge', now));
-  if (!acquired) return null;
+/** The day's work, behind the shared lock. Returns the lock's answer,
+ *  'closed' or 'busy', if the day is not this machine's now. Its end, finished
+ *  or failed, is written to the lock row (US-28 AC9). Exported for the test suite. */
+export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<PurgeCounts | 'closed' | 'busy'> {
+  const lock = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge', lockClock('chat_text_purge', now));
+  if (lock !== 'won') return lock;
   const cleared = await purgeOldChatText(now).catch(async (runError: unknown) => {
     await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', 'failed', new Date());
     throw runError;
@@ -409,14 +409,17 @@ export function startChatPurgeCron(): void {
 
       // Running while the purge goes, so one that outlasts the hour, or
       // midnight, is not started twice on this machine; a throw (a lock error
-      // included, US-28 AC2) opens the day, so the next tick retries. A held
-      // lock (null) marks the day done (US-28 AC7).
+      // included, US-28 AC2) opens the day, so the next tick retries. A closed
+      // lock marks the day done (US-28 AC7); a busy one reopens it (AC9).
       day = transition(day, { type: 'started', date: todayStr, now: now.getTime() }).day;
-      const cleared = await purgeWithLock(todayStr, now).catch((runError: unknown) => {
+      const outcome = await purgeWithLock(todayStr, now).catch((runError: unknown) => {
         day = transition(day, { type: 'failed' }).day;
         throw runError;
       });
-      day = transition(day, cleared ? { type: 'finished' } : { type: 'held', date: todayStr }).day;
+      day = transition(
+        day,
+        outcome === 'busy' ? { type: 'busy' } : outcome === 'closed' ? { type: 'held', date: todayStr } : { type: 'finished' },
+      ).day;
     } catch (error) {
       console.error('Chat text purge cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'chat_text_purge_cron' } });

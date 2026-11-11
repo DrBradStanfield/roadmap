@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // US-28 AC2 at the caller: a lock-acquire REJECTION leaves the day unmarked
-// so the machine retries on the next hourly tick; a `false` (lost the race /
-// permanent misconfig) still ends its day. reminder_v2_cron is the caller
+// so the machine retries on the next hourly tick; a 'closed' answer (the day
+// is not this machine's, or a permanent misconfig) still ends its day. reminder_v2_cron is the caller
 // whose acquire sat OUTSIDE its try/catch — the one Sentry showed skipping
 // (JAVASCRIPT-REMIX-68, 2026-08-28 08:11Z).
 
@@ -139,7 +139,7 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
     stop = cron.stopReminderV2Cron;
     lockMock
       .mockRejectedValueOnce(new Error('cron lock acquire failed (reminder_v2_cron)'))
-      .mockResolvedValue(true);
+      .mockResolvedValue('won');
 
     cron.startReminderV2Cron();
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: acquire throws → day NOT marked done
@@ -151,13 +151,13 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
     expect(optinsMock).toHaveBeenCalled();
   });
 
-  it('does not re-attempt the same day after losing the race (false)', async () => {
+  it('does not re-attempt the same day after a closed answer', async () => {
     const { cron, lockMock, optinsMock } = await loadCron();
     stop = cron.stopReminderV2Cron;
-    lockMock.mockResolvedValue(false);
+    lockMock.mockResolvedValue('closed');
 
     cron.startReminderV2Cron();
-    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: lost → day marked done
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: closed → day marked done
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 2: skips, the day is done
     expect(lockMock).toHaveBeenCalledTimes(1);
     expect(optinsMock).not.toHaveBeenCalled();
@@ -217,7 +217,7 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
     vi.mocked(purgeTombstones).mockReset().mockResolvedValue(0);
     loaded.optinsMock.mockReset();
     // The lock row names this machine for today, so its own re-acquire wins.
-    loaded.lockMock.mockResolvedValue(true);
+    loaded.lockMock.mockResolvedValue('won');
     return { ...loaded, sendMock };
   }
 

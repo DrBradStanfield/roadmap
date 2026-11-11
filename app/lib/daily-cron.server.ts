@@ -88,9 +88,11 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
         day = transition(day, { type: 'failed' }).day;
         throw error;
       };
-      const won = await tryAcquireCronLock(MACHINE_ID, todayStr, cron.lockName, lockClock(cron.lockName, now)).catch(fail);
-      if (!won) {
-        day = transition(day, { type: 'held', date: todayStr }).day;
+      const lock = await tryAcquireCronLock(MACHINE_ID, todayStr, cron.lockName, lockClock(cron.lockName, now)).catch(fail);
+      if (lock !== 'won') {
+        // Closed ends the day here; busy reopens it, so every hourly tick
+        // after the target hour tries again (US-28 AC9).
+        day = transition(day, lock === 'busy' ? { type: 'busy' } : { type: 'held', date: todayStr }).day;
         return;
       }
       const completed = await cron.run(todayStr).catch(async (runError: unknown) => {

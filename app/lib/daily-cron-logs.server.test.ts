@@ -93,7 +93,7 @@ async function load(c: LogCase, nodeEnv: string) {
   vi.stubEnv('NODE_ENV', nodeEnv);
   vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-23 AC14)
   const { tryAcquireCronLock } = await import('./supabase.server');
-  const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue(true);
+  const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue('won');
   const Sentry = await import('@sentry/react-router');
   const captured = vi.mocked(Sentry.captureException).mockReset();
   work.mockReset().mockImplementation(c.ok);

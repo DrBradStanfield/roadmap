@@ -16,7 +16,8 @@ vi.mock('./supabase-client.server', async () => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
-const { tryAcquireCronLock, endCronLock } = await import('./supabase-cron-lock.server');
+const { tryAcquireCronLock, endCronLock, notWonAnswer } = await import('./supabase-cron-lock.server');
+const Sentry = await import('@sentry/react-router');
 const fake = () => db.fake!;
 
 const HOUR = 60 * 60 * 1000;
@@ -36,20 +37,23 @@ const lockDate = { seed: null, earlier: EARLIER, today: TODAY };
 
 // The row's owner, seen from a caller that is machine m-a: m-a (me), m-b
 // (another machine), or null (a process with no FLY_MACHINE_ID). Each cell is
-// six results, owner by owner, fresh then stuck: T taken, F refused.
+// six answers, owner by owner, fresh then stuck: W won (taken), C closed (the
+// day ends here), B busy (refused for now: the next tick tries again).
 const OWNERS = ['m-a', 'm-b', null] as const;
 const AS_MACHINE: Record<Day, Record<string, string>> = {
-  seed: { null: 'TTTTTT', running: 'TTTTTT', finished: 'TTTTTT', failed: 'TTTTTT' },
-  earlier: { null: 'TTTTTT', running: 'FTFTFT', finished: 'TTTTTT', failed: 'TTTTTT' },
-  // today: NULL (a legacy row) and finished are refused to all; running is
-  // mine at once, anyone's once stuck; failed is mine only (no ping-pong).
-  today: { null: 'FFFFFF', running: 'TTFTFT', finished: 'FFFFFF', failed: 'TTFFFF' },
+  seed: { null: 'WWWWWW', running: 'WWWWWW', finished: 'WWWWWW', failed: 'WWWWWW' },
+  earlier: { null: 'WWWWWW', running: 'BWBWBW', finished: 'WWWWWW', failed: 'WWWWWW' },
+  // today: NULL (a legacy row) and finished are closed to all; running is
+  // mine at once, anyone's once stuck, busy to others while fresh; failed is
+  // mine only (no ping-pong), closed to others so they stop trying.
+  today: { null: 'CCCCCC', running: 'WWBWBW', finished: 'CCCCCC', failed: 'WWCCCC' },
 };
 // The same rows seen from a caller with no machine id: nothing is ever its own.
+const ANSWER = { W: 'won', C: 'closed', B: 'busy' } as const;
 const AS_NULL_OWNER: Record<Day, Record<string, string>> = {
-  seed: { null: 'TTTTTT', running: 'TTTTTT', finished: 'TTTTTT', failed: 'TTTTTT' },
-  earlier: { null: 'TTTTTT', running: 'FTFTFT', finished: 'TTTTTT', failed: 'TTTTTT' },
-  today: { null: 'FFFFFF', running: 'FTFTFT', finished: 'FFFFFF', failed: 'FFFFFF' },
+  seed: { null: 'WWWWWW', running: 'WWWWWW', finished: 'WWWWWW', failed: 'WWWWWW' },
+  earlier: { null: 'WWWWWW', running: 'BWBWBW', finished: 'WWWWWW', failed: 'WWWWWW' },
+  today: { null: 'CCCCCC', running: 'BWBWBW', finished: 'CCCCCC', failed: 'CCCCCC' },
 };
 
 const row = (over: Partial<LockRow>): LockRow => ({
@@ -67,16 +71,16 @@ beforeEach(() => {
 describe('US-28 AC9: the acquire table, every day x run_state x owner x age', () => {
   const cases = (caller: string | null, table: Record<Day, Record<string, string>>) =>
     DAYS.flatMap((day) => STATES.flatMap((state) => OWNERS.flatMap((owner, o) => (['fresh', 'stuck'] as const).map((age, a) => ({
-      caller, day, state, owner, age, taken: table[day][String(state)][o * 2 + a] === 'T',
+      caller, day, state, owner, age, answer: ANSWER[table[day][String(state)][o * 2 + a] as keyof typeof ANSWER],
     })))));
 
   it.each([...cases('m-a', AS_MACHINE), ...cases(null, AS_NULL_OWNER)])(
-    'caller $caller, $day row, run_state $state, owner $owner, $age: taken $taken',
-    async ({ caller, day, state, owner, age, taken }) => {
+    'caller $caller, $day row, run_state $state, owner $owner, $age: $answer',
+    async ({ caller, day, state, owner, age, answer }) => {
       const before = row({ lock_date: lockDate[day], run_state: state, locked_by: owner, locked_at: age === 'fresh' ? FRESH : STUCK });
       fake().rows = [{ ...before }];
-      await expect(tryAcquireCronLock(caller, TODAY, 'trending_cron', clock)).resolves.toBe(taken);
-      expect(fake().rows[0]).toEqual(taken
+      await expect(tryAcquireCronLock(caller, TODAY, 'trending_cron', clock)).resolves.toBe(answer);
+      expect(fake().rows[0]).toEqual(answer === 'won'
         ? { ...before, locked_by: caller, lock_date: TODAY, run_state: 'running', locked_at: NOW.toISOString() }
         : before);
     },
@@ -87,13 +91,23 @@ describe('US-28 AC9: the verify', () => {
   it('compares locked_at as an instant: Postgres answers in microseconds with +00:00', async () => {
     fake().rows = [row({ lock_date: EARLIER, run_state: 'finished', locked_by: 'm-b' })];
     // The fake stores what the update wrote and reads it back as e.g. 2026-11-11T05:54:00.123000+00:00.
-    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', clock)).resolves.toBe(true);
+    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', clock)).resolves.toBe('won');
   });
 
-  it('a row showing this machine, today and running, with a locked_at this call did not write, is not a win', async () => {
+  it('a row showing this machine, today and running, with a locked_at this call did not write, is not a win: busy', async () => {
     fake().rows = [row({ lock_date: EARLIER, run_state: 'finished', locked_by: 'm-b' })];
     fake().afterUpdate = () => { fake().rows[0].locked_at = '2026-11-11T05:54:00.124Z'; };
-    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', clock)).resolves.toBe(false);
+    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', clock)).resolves.toBe('busy');
+  });
+
+  it.each<[string, Partial<LockRow>, 'closed' | 'busy']>([
+    ['running fresh on another machine', { locked_by: 'm-b', run_state: 'running', locked_at: FRESH }, 'busy'],
+    ['already finished by another machine', { locked_by: 'm-b', run_state: 'finished' }, 'closed'],
+    ['failed on another machine', { locked_by: 'm-b', run_state: 'failed' }, 'closed'],
+  ])('a seed row lost in a race to a row %s answers from the row read back: %s', async (_, won, answer) => {
+    fake().rows = [row({ lock_date: null, run_state: null, locked_by: null, locked_at: null })];
+    fake().afterUpdate = () => { Object.assign(fake().rows[0], { lock_date: TODAY, ...won }); };
+    await expect(tryAcquireCronLock('m-a', TODAY, 'trending_cron', clock)).resolves.toBe(answer);
   });
 
   it('the acquire is one update with no .select(), then a separate verify select', async () => {
@@ -109,8 +123,51 @@ describe('US-28 AC9: the verify', () => {
 
   it('a missing machine id writes NULL as the owner', async () => {
     fake().rows = [row({ lock_date: null, run_state: null, locked_by: null, locked_at: null })];
-    await expect(tryAcquireCronLock(null, TODAY, 'trending_cron', clock)).resolves.toBe(true);
+    await expect(tryAcquireCronLock(null, TODAY, 'trending_cron', clock)).resolves.toBe('won');
     expect(fake().rows[0].locked_by).toBeNull();
+  });
+});
+
+// The not-won table as coded (notWonAnswer), row by row, as the verify read
+// returns it, for a caller m-a and a caller with no machine id.
+describe('US-28 AC9: every not-won answer, by the verify row', () => {
+  const v = (lock_date: string | null, run_state: string | null, locked_by: string | null) => ({ lock_date, run_state, locked_by });
+  it.each<[string, ReturnType<typeof v>, string | null, 'closed' | 'busy']>([
+    ['today finished', v(TODAY, 'finished', 'm-b'), 'm-a', 'closed'],
+    ['today finished, my own', v(TODAY, 'finished', 'm-a'), 'm-a', 'closed'],
+    ['today NULL (legacy)', v(TODAY, null, 'm-b'), 'm-a', 'closed'],
+    ['today failed, another machine', v(TODAY, 'failed', 'm-b'), 'm-a', 'closed'],
+    ['today failed, no owner', v(TODAY, 'failed', null), 'm-a', 'closed'],
+    ['today failed, caller has no id', v(TODAY, 'failed', null), null, 'closed'],
+    ['a later day', v('2026-11-12', 'running', 'm-b'), 'm-a', 'closed'],
+    ['a later day, finished', v('2026-11-12', 'finished', 'm-b'), 'm-a', 'closed'],
+    ['today running, another machine', v(TODAY, 'running', 'm-b'), 'm-a', 'busy'],
+    ['today running, my own (a write I did not make)', v(TODAY, 'running', 'm-a'), 'm-a', 'busy'],
+    ['today failed, my own (a lost race)', v(TODAY, 'failed', 'm-a'), 'm-a', 'busy'],
+    ['an earlier day running', v(EARLIER, 'running', 'm-b'), 'm-a', 'busy'],
+    ['an earlier day finished (a lost race)', v(EARLIER, 'finished', 'm-b'), 'm-a', 'busy'],
+    ['the seed', v(null, null, null), 'm-a', 'busy'],
+    ['an unknown run_state today', v(TODAY, 'paused', 'm-b'), 'm-a', 'busy'],
+  ])('%s: %s', (_, verify, me, answer) => {
+    expect(notWonAnswer(verify, me, TODAY)).toBe(answer);
+  });
+});
+
+// R7: an id the filter cannot carry stops every cron on this machine, so it
+// must be loud, once per process, with a fixed message and never the value.
+describe('US-28 AC9: an unsafe FLY_MACHINE_ID', () => {
+  it('answers closed with no query, and logs and reports once per process, never the value', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(Sentry.captureMessage).mockClear();
+    fake().rows = [row({ lock_date: EARLIER, run_state: 'finished' })];
+    await expect(tryAcquireCronLock('bad,id)', TODAY, 'trending_cron', clock)).resolves.toBe('closed');
+    await expect(tryAcquireCronLock('bad,id)', TODAY, 'chat_text_purge', clock)).resolves.toBe('closed');
+    expect(fake().calls).toEqual([]);
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Cron lock: unsafe FLY_MACHINE_ID, daily crons off', { level: 'error', tags: { feature: 'cron_lock' } });
+    expect(JSON.stringify([error.mock.calls, vi.mocked(Sentry.captureMessage).mock.calls])).not.toContain('bad');
+    error.mockRestore();
   });
 });
 
@@ -159,16 +216,16 @@ describe('US-28 AC9: a live run on one day blocks the next day', () => {
 
   it('another machine cannot start D+1 while the D run is fresh, and can once it is stuck', async () => {
     fake().rows = [row({ lock_name: 'reminder_v2_cron', lock_date: '1970-01-01', run_state: null, locked_by: null, locked_at: null })];
-    await expect(tryAcquireCronLock('m-a', '2026-11-10', 'reminder_v2_cron', at('2026-11-10T23:00:00Z'))).resolves.toBe(true);
-    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T00:30:00Z'))).resolves.toBe(false);
-    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T04:30:00Z'))).resolves.toBe(false);
-    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T05:30:00Z'))).resolves.toBe(true);
+    await expect(tryAcquireCronLock('m-a', '2026-11-10', 'reminder_v2_cron', at('2026-11-10T23:00:00Z'))).resolves.toBe('won');
+    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T00:30:00Z'))).resolves.toBe('busy');
+    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T04:30:00Z'))).resolves.toBe('busy');
+    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T05:30:00Z'))).resolves.toBe('won');
   });
 
   it('once the D run has finished, the next day is free at once', async () => {
     fake().rows = [row({ lock_name: 'reminder_v2_cron', lock_date: '1970-01-01', run_state: null, locked_by: null, locked_at: null })];
     await tryAcquireCronLock('m-a', '2026-11-10', 'reminder_v2_cron', at('2026-11-10T23:00:00Z'));
     await endCronLock('m-a', '2026-11-10', 'reminder_v2_cron', 'finished', new Date('2026-11-10T23:10:00Z'));
-    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T00:30:00Z'))).resolves.toBe(true);
+    await expect(tryAcquireCronLock('m-b', '2026-11-11', 'reminder_v2_cron', at('2026-11-11T00:30:00Z'))).resolves.toBe('won');
   });
 });

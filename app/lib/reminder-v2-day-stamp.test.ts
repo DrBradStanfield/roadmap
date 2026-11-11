@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // US-23 AC15 (2026-11-11): the reminder day-stamp. Before each send the pass
 // reads the row's attempting_on; if it already names today (or a later day) it
@@ -21,6 +21,9 @@ const db = vi.hoisted(() => ({
   log: [] as string[],         // reads, writes and sends, in order
   builders: [] as string[][],  // each builder's method names
   send: null as null | ((email: string) => Promise<boolean>),
+  // Runs once just before a stamp write lands: another writer racing in
+  // between a pass's read and its write.
+  beforeStampWrite: null as null | (() => void),
 }));
 
 vi.mock('./supabase.server', () => {
@@ -34,12 +37,14 @@ vi.mock('./supabase.server', () => {
     let limit = Infinity;
     let single = false;
     const run = async () => {
-      const hit = db.rows.filter((r) => preds.every((p) => p(r)));
       if (patch) {
+        if ('attempting_on' in patch && db.beforeStampWrite) { const race = db.beforeStampWrite; db.beforeStampWrite = null; race(); }
+        const hit = db.rows.filter((r) => preds.every((p) => p(r)));
         db.log.push(`update ${Object.keys(patch).filter((k) => k !== 'updated_at').join(',')}`);
         for (const r of hit) Object.assign(r, patch);
         return { data: null, error: null };
       }
+      const hit = db.rows.filter((r) => preds.every((p) => p(r)));
       if (cols === 'attempting_on') db.log.push('select attempting_on');
       const out = hit.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, limit).map((r) => structuredClone(r));
       return { data: single ? out[0] ?? null : out, error: null };
@@ -48,6 +53,13 @@ vi.mock('./supabase.server', () => {
       select: (c: string) => { calls.push('select'); cols = c; return b; },
       update: (p: Partial<Row>) => { calls.push('update'); patch = p; return b; },
       eq: (c: keyof Row, v: unknown) => { calls.push('eq'); preds.push((r) => r[c] === v); return b; },
+      // Only the stamp guard's shape: `col.is.null,col.lt.value`.
+      or: (f: string) => {
+        calls.push('or');
+        const terms = f.split(',').map((t) => t.split('.') as [keyof Row, string, string]);
+        preds.push((r) => terms.some(([c, op, v]) => (op === 'is' && v === 'null' ? r[c] === null : op === 'lt' ? r[c] !== null && String(r[c]) < v : false)));
+        return b;
+      },
       gt: (c: keyof Row, v: string) => { calls.push('gt'); preds.push((r) => String(r[c]) > v); return b; },
       order: () => { calls.push('order'); return b; },
       limit: (n: number) => { calls.push('limit'); limit = n; return b; },
@@ -94,6 +106,7 @@ beforeEach(() => {
   db.log = [];
   db.builders = [];
   db.send = null;
+  db.beforeStampWrite = null;
 });
 
 describe('US-23 AC15: the reminder day-stamp', () => {
@@ -155,5 +168,61 @@ describe('US-23 AC15: the reminder day-stamp', () => {
     await (await freshProcess())(D); // a stalled earlier-day pass
     expect(sendsTo('a')).toBe(0);
     expect(db.rows[0].attempting_on).toBe(NEXT);
+  });
+
+  it('a newer stamp that lands between an older pass\'s read and its write stays, and that pass sends nothing (Codex R2)', async () => {
+    db.rows = [due('a')];
+    // The D pass reads NULL, stalls; meanwhile a D+1 pass stamps D+1; then the D write lands.
+    db.beforeStampWrite = () => { db.rows[0].attempting_on = NEXT; };
+    await (await freshProcess())(D);
+    expect(db.rows[0].attempting_on).toBe(NEXT);
+    expect(sendsTo('a')).toBe(0);
+  });
+
+  it('the stamp write is guarded in the UPDATE itself: NULL or an earlier day only, with no .select()', async () => {
+    db.rows = [due('a')];
+    await (await freshProcess())(D);
+    const write = db.builders.find((c) => c.includes('update') && c.includes('or'));
+    expect(write).toBeDefined();
+    expect(write).not.toContain('select');
+  });
+});
+
+// US-28 AC9 with US-23 AC15: machine A's pass dies mid-way; machine B's cron
+// meets A's fresh run (busy) at 08:30 and 09:30, takes the day over at 10:30,
+// and runs the pass once. The stamps skip everyone A went to email, so across
+// the two passes each person gets at most one email that day.
+describe('US-23 AC15 with US-28 AC9: a busy answer, then a takeover', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  let stop: (() => void) | null = null;
+  afterEach(() => { stop?.(); stop = null; vi.unstubAllEnvs(); vi.useRealTimers(); });
+
+  it('B tries at 08:30 and 09:30 (busy), runs once at 10:30, and emails only whom A never reached', async () => {
+    db.rows = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => due(id));
+    db.send = (email) => (email === 'b@example.test' ? new Promise<never>(() => {}) : Promise.resolve(true));
+    void (await freshProcess())(D); // machine A: the first five are stamped and sent; b never returns, f is never reached
+    await vi.waitFor(() => expect(sends()).toHaveLength(5));
+    db.send = null;
+
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    vi.setSystemTime(new Date(`${D}T07:30:00Z`));
+    vi.resetModules();
+    vi.stubEnv('FLY_MACHINE_ID', 'machine-b');
+    const cron = await import('./reminder-v2-cron.server'); // NODE_ENV=test: self-start is a no-op
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('RUN_SHARED_CRONS', 'true');
+    const lock = vi.mocked((await import('./supabase.server')).tryAcquireCronLock)
+      .mockReset().mockResolvedValueOnce('busy').mockResolvedValueOnce('busy').mockResolvedValue('won');
+    stop = cron.stopReminderV2Cron;
+    cron.startReminderV2Cron();
+
+    await vi.advanceTimersByTimeAsync(2 * HOUR_MS); // 08:30, 09:30: busy, no pass
+    expect(lock).toHaveBeenCalledTimes(2);
+    expect(sends()).toHaveLength(5);
+    await vi.advanceTimersByTimeAsync(HOUR_MS);     // 10:30: won, the pass runs
+    expect(lock).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(HOUR_MS);     // 11:30: the day is done here
+    expect(lock).toHaveBeenCalledTimes(3);
+    expect(['a', 'b', 'c', 'd', 'e', 'f'].map(sendsTo)).toEqual([1, 1, 1, 1, 1, 1]);
   });
 });

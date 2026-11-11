@@ -140,8 +140,11 @@ CREATE POLICY "Users can read own audit logs"
 GRANT SELECT ON audit_logs TO authenticated;
 
 -- ===== Cron lock table =====
--- Coordinates the reminder cron job across multiple Fly.io machines.
--- Atomic UPDATE ... WHERE lock_date != today ensures only one machine runs per day.
+-- Coordinates the daily crons (one row per lock name) across Fly.io machines.
+-- An atomic UPDATE whose filter admits only a row free to this machine for
+-- today (US-28 AC9: seed, an earlier day with no live run, its own failed or
+-- dead row, or a run past its stuck limit), then a separate verify SELECT,
+-- ensures only one machine runs a day; run_state records how the run ended.
 CREATE TABLE IF NOT EXISTS cron_lock (
   lock_name TEXT PRIMARY KEY,
   locked_by TEXT,

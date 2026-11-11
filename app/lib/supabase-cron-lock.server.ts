@@ -49,30 +49,87 @@ function takeableFilter(me: string | null, today: string, stuckCutoff: string): 
   return branches.join(',');
 }
 
-/** Attempt to acquire the cron lock for today. Returns true if this machine
- *  should run the cron; false if the day is not free to it (US-28 AC9) or the
- *  lock is permanently unusable (no admin client, malformed date or id).
- *  `machineId` null means no owner: such a caller never wins by ownership.
+/** What an acquire answers (US-28 AC9). Not 'finished': 'closed' also covers
+ *  a day that failed on another machine, a later day and an unusable lock,
+ *  none of which finished; all mean the same to the caller: not today, here.
+ *  - won: this machine runs the day now.
+ *  - closed: the day is not this machine's; end it here (CronDay 'held').
+ *  - busy: not now, maybe later; the day stays open and the next tick tries. */
+export type CronLockResult = 'won' | 'closed' | 'busy';
+
+/**
+ * Every not-won answer, by the row the verify read returns (US-28 AC9).
+ * A lost race is answered from the same row: whatever won is what it shows.
+ *
+ * | verify row                                         | answer |
+ * |----------------------------------------------------|--------|
+ * | today, finished                                    | closed |
+ * | today, run_state NULL (a legacy row)               | closed |
+ * | today, failed, another owner (or no id here)       | closed |
+ * | a later day than today                             | closed |
+ * | today, running (fresh; or stuck/own, a lost race)  | busy   |
+ * | today, failed, this machine's own (a lost race)    | busy   |
+ * | an earlier day (running and fresh, or a lost race) | busy   |
+ * | the seed (lock_date NULL), or any other run_state  | busy   |
+ *
+ * Today failed on another machine is closed, not busy: the filter gives it
+ * back to its owner only, so trying every hour would be trying for nothing.
+ * Busy is the default: a row this table does not name may change by the next
+ * tick, and a wrong 'closed' skips a day while a wrong 'busy' costs one query.
+ * Not from a row: the verify erroring, or the row missing, THROWS (AC1, AC2);
+ * no admin client, a malformed date or an unsafe machine id answer 'closed',
+ * since nothing in this process can change them.
+ */
+export function notWonAnswer(
+  row: { locked_by: string | null; lock_date: string | null; run_state: string | null },
+  me: string | null,
+  today: string,
+): 'closed' | 'busy' {
+  if (row.lock_date !== null && row.lock_date > today) return 'closed';
+  if (row.lock_date !== today) return 'busy';
+  if (row.run_state === 'finished' || row.run_state === null) return 'closed';
+  if (row.run_state === 'failed' && (me === null || row.locked_by !== me)) return 'closed';
+  return 'busy';
+}
+
+let unsafeIdReported = false;
+
+/** A FLY_MACHINE_ID the filter cannot carry stops every daily cron on this
+ *  machine, so say so once per process: fixed text, never the value. */
+function reportUnsafeId(): void {
+  if (unsafeIdReported) return;
+  unsafeIdReported = true;
+  console.error('Cron lock: FLY_MACHINE_ID is not a safe id; daily crons will not run on this machine');
+  Sentry.captureMessage('Cron lock: unsafe FLY_MACHINE_ID, daily crons off', { level: 'error', tags: { feature: 'cron_lock' } });
+}
+
+/** Attempt to acquire the cron lock for today: 'won', 'closed' or 'busy'
+ *  (CronLockResult, notWonAnswer's table). `machineId` null means no owner:
+ *  such a caller never wins by ownership.
  *
  *  THROWS on transient DB errors (US-28 AC1): an error is not "another
- *  machine won", and returning false here made the erroring machine mark the
- *  day done and silently skip its daily job (Sentry JAVASCRIPT-REMIX-66/68).
- *  Callers keep the acquire inside their tick try/catch, which must NOT mark
- *  the day done — so the machine retries on the next tick. */
+ *  machine won", and returning a not-won answer here made the erroring machine
+ *  mark the day done and silently skip its daily job (Sentry
+ *  JAVASCRIPT-REMIX-66/68). Callers keep the acquire inside their tick
+ *  try/catch, which must NOT mark the day done — so the machine retries on
+ *  the next tick. */
 export async function tryAcquireCronLock(
   machineId: string | null,
   today: string,
   lockName: CronLockName,
   clock: CronLockClock,
-): Promise<boolean> {
-  if (!supabaseAdmin) return false;
+): Promise<CronLockResult> {
+  if (!supabaseAdmin) return 'closed';
 
   // `today` and the machine id are interpolated into the PostgREST `.or()`
   // filter below — guard against anything that could contain `,` or `)` so a
   // future caller can't accidentally bypass the lock. The cutoff comes from
   // toISOString, which has neither.
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) return false;
-  if (machineId !== null && !SAFE_ID.test(machineId)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) return 'closed';
+  if (machineId !== null && !SAFE_ID.test(machineId)) {
+    reportUnsafeId();
+    return 'closed';
+  }
   const lockedAt = clock.now.toISOString();
 
   // PostgreSQL row-level locking serializes concurrent UPDATEs to the same
@@ -138,12 +195,12 @@ export async function tryAcquireCronLock(
   // its own offset form (2026-11-11T05:54:00.123000+00:00), never our string.
   // A null owner can win only through this call's own write (seed, earlier
   // day, stuck): the filter gave it no own-row branch.
-  return (
+  const won =
     verify.locked_by === machineId &&
     verify.lock_date === today &&
     verify.run_state === 'running' &&
-    Date.parse(verify.locked_at) === clock.now.getTime()
-  );
+    Date.parse(verify.locked_at) === clock.now.getTime();
+  return won ? 'won' : notWonAnswer(verify, machineId, today);
 }
 
 /** Record how this machine's run of `date` ended: 'finished' (with its end
@@ -151,7 +208,8 @@ export async function tryAcquireCronLock(
  *  date, so a stale run can never mark a newer day or another machine's row.
  *  A separate update with no `.select()` (the gotcha above). Never throws: an
  *  error is logged and reported, and the row stays 'running' — its own machine
- *  retakes it after a restart, any machine once it is stuck. */
+ *  retakes it after a restart; another machine meets it as 'busy' and keeps
+ *  trying each tick, and takes it once it passes the stuck limit. */
 export async function endCronLock(
   machineId: string | null,
   date: string,

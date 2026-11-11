@@ -65,7 +65,15 @@ vi.mock('./supabase.server', async () => {
         else if (key === 'order') order = raw.split(',').map((o) => ({ col: o.split('.')[0], asc: !o.includes('.desc') }));
         else if (key === 'offset') offset = Number(raw);
         else if (key === 'limit') limit = Number(raw);
-        else preds.push(predicate(key, raw));
+        else if (key === 'or') {
+          // The day-stamp guard (US-23 AC15): `(col.is.null,col.lt.value)`.
+          const terms = raw.replace(/^\(|\)$/g, '').split(',').map((t) => {
+            const [column, ...rest] = t.split('.');
+            const op = rest.join('.');
+            return op === 'is.null' ? (r: R) => r[column] == null : ((p) => (r: R) => r[column] != null && p(r))(predicate(column, op));
+          });
+          preds.push((r) => terms.some((t) => t(r)));
+        } else preds.push(predicate(key, raw));
       }
     } catch (e) {
       return new Response(JSON.stringify({ message: (e as Error).message }), { status: 400 });

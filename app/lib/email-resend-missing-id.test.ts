@@ -19,7 +19,7 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessa
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn(async () => {}) }));
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: null,
-  tryAcquireCronLock: vi.fn(async () => true),
+  tryAcquireCronLock: vi.fn(async () => 'won' as const),
   endCronLock: vi.fn(),
   hashClientIp: () => 'synthetic-ip',
 }));

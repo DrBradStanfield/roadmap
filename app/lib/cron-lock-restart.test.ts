@@ -69,32 +69,33 @@ interface CronCase {
   lockName: string;
   beforeTarget: string; // one hour before the first eligible tick
   later: string;        // the same day, after the restart
+  stuckHours: number;   // the cron's stuck limit (cron-day.ts STUCK_AFTER_HOURS)
   ok: () => Promise<unknown>;
 }
 
 const crons: CronCase[] = [
   { name: 'trending',
     load: async () => { const m = await import('./trending-cron.server'); return { start: m.startTrendingCron, stop: m.stopTrendingCron }; },
-    lockName: 'trending_cron', beforeTarget: '2026-08-27T14:30:00Z', later: '2026-08-27T16:30:00Z', ok: async () => ({ admin: okAdmin }) },
+    lockName: 'trending_cron', beforeTarget: '2026-08-27T14:30:00Z', later: '2026-08-27T16:30:00Z', stuckHours: 1, ok: async () => ({ admin: okAdmin }) },
   { name: 'reminder v2',
     load: async () => { const m = await import('./reminder-v2-cron.server'); return { start: m.startReminderV2Cron, stop: m.stopReminderV2Cron }; },
-    lockName: 'reminder_v2_cron', beforeTarget: '2026-08-28T07:30:00Z', later: '2026-08-28T09:30:00Z', ok: async () => [] },
+    lockName: 'reminder_v2_cron', beforeTarget: '2026-08-28T07:30:00Z', later: '2026-08-28T09:30:00Z', stuckHours: 6, ok: async () => [] },
   { name: 'chat purge',
     load: async () => { const m = await import('./chat-purge-cron.server'); return { start: m.startChatPurgeCron, stop: m.stopChatPurgeCron }; },
-    lockName: 'chat_text_purge', beforeTarget: '2026-08-28T03:30:00Z', later: '2026-08-28T05:30:00Z', ok: noRows },
+    lockName: 'chat_text_purge', beforeTarget: '2026-08-28T03:30:00Z', later: '2026-08-28T05:30:00Z', stuckHours: 6, ok: noRows },
 ];
 
 let stop: (() => void) | null = null;
 afterEach(() => { stop?.(); stop = null; vi.unstubAllEnvs(); vi.useRealTimers(); });
 
-/** One process on machine pin-machine: a fresh module graph, started at `at`. */
-async function boot(c: CronCase, at: string) {
+/** One process on `machine`: a fresh module graph, started at `at`. */
+async function boot(c: CronCase, at: string, machine = 'pin-machine') {
   stop?.();
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
   vi.setSystemTime(new Date(at));
   vi.resetModules();
   vi.unstubAllEnvs();
-  vi.stubEnv('FLY_MACHINE_ID', 'pin-machine');
+  vi.stubEnv('FLY_MACHINE_ID', machine);
   vi.stubEnv('SHOPIFY_SHOP_DOMAIN', '');
   const cron = await c.load(); // NODE_ENV=test: self-start is a no-op
   vi.stubEnv('NODE_ENV', 'production');
@@ -146,5 +147,72 @@ describe.each(crons)('$name cron across a restart (US-28 AC9)', (c) => {
     await tick();
     expect(work).toHaveBeenCalledTimes(2);
     expect(db.fake!.rows[0].run_state).toBe('finished');
+  });
+});
+
+// US-28 AC9, the busy answer at the cron: a machine that meets another
+// machine's FRESH run keeps its day open and tries every hourly tick, and
+// takes the day over once that run passes the stuck limit, with no restart.
+// (Every cron's first eligible tick claims lock_date 2026-08-28 on its clock.)
+const DAY = '2026-08-28';
+
+describe.each(crons)('$name cron meets another machine\'s run (US-28 AC9)', (c) => {
+  const firstTick = () => Date.parse(c.beforeTarget) + HOUR_MS;
+
+  it('retries hourly while that run is fresh, and takes the day over at the stuck cutoff', async () => {
+    await boot(c, c.beforeTarget);
+    // machine-a started today's run half an hour before this machine's first tick, and hangs.
+    db.fake!.rows = [{ lock_name: c.lockName, locked_by: 'machine-a', lock_date: DAY, run_state: 'running',
+      locked_at: new Date(firstTick() - HOUR_MS / 2).toISOString(), finished_at: null }];
+    db.fake!.calls = [];
+    work.mockReset().mockImplementation(c.ok);
+    for (let h = 0; h < c.stuckHours; h++) {
+      await tick(); // the run is h + 0.5 hours old: busy
+      expect(work).not.toHaveBeenCalled();
+      expect(db.fake!.rows[0].locked_by).toBe('machine-a');
+    }
+    expect(db.fake!.calls.length).toBe(2 * c.stuckHours); // one update + one verify per tick, every tick
+    await tick(); // past the stuck limit: this machine takes the day
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(db.fake!.rows[0]).toMatchObject({ locked_by: 'pin-machine', lock_date: DAY, run_state: 'finished' });
+    await tick();
+    expect(work).toHaveBeenCalledTimes(1);
+  });
+
+  it("another machine's finished row ends this machine's day at once", async () => {
+    await boot(c, c.beforeTarget);
+    db.fake!.rows = [{ lock_name: c.lockName, locked_by: 'machine-a', lock_date: DAY, run_state: 'finished',
+      locked_at: new Date(firstTick() - HOUR_MS / 2).toISOString(), finished_at: new Date(firstTick() - HOUR_MS / 4).toISOString() }];
+    db.fake!.calls = [];
+    work.mockReset().mockImplementation(c.ok);
+    await tick(); await tick(); await tick();
+    expect(work).not.toHaveBeenCalled();
+    expect(db.fake!.calls.length).toBe(2); // one acquire, then no more tries that day
+  });
+});
+
+// The purge catch-up case end to end, both machines through the real cron:
+// machine-a was down until after 22:00 UTC, so its day-D purge starts late, at
+// 23:30, and hangs. machine-b boots at 03:30 on D+1: its 04:30 tick meets a
+// fresh earlier-day run and gets busy; it keeps trying and takes D+1 once
+// machine-a's run passes the 6 h limit.
+describe('chat purge catch-up across midnight (US-28 AC9)', () => {
+  it('B gets busy at 04:30 and 05:30, and takes D+1 at 06:30', async () => {
+    const purge = crons.find((c) => c.lockName === 'chat_text_purge')!;
+    await boot(purge, '2026-08-27T22:30:00Z', 'machine-a');
+    seed(purge.lockName);
+    work.mockReset().mockImplementationOnce(HANG).mockImplementation(purge.ok);
+    await tick(); // 23:30 on D: machine-a's catch-up run starts and hangs
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(db.fake!.rows[0]).toMatchObject({ locked_by: 'machine-a', lock_date: '2026-08-27', run_state: 'running' });
+
+    await boot(purge, '2026-08-28T03:30:00Z', 'machine-b'); // machine-a's process is gone; its row stays running
+    await tick(); // 04:30: 5 h old, fresh: busy
+    await tick(); // 05:30: exactly 6 h, not past the limit: busy
+    expect(work).toHaveBeenCalledTimes(1);
+    expect(db.fake!.rows[0].locked_by).toBe('machine-a');
+    await tick(); // 06:30: past the limit: machine-b runs D+1
+    expect(work).toHaveBeenCalledTimes(2);
+    expect(db.fake!.rows[0]).toMatchObject({ locked_by: 'machine-b', lock_date: '2026-08-28', run_state: 'finished' });
   });
 });

@@ -9,13 +9,17 @@
  * stamp and skips the row, so a send in flight when the old process died is
  * never repeated the same day.
  *
- * Order, strictly: read the stamp; if it names today (or a later day: a stalled
- * earlier-day pass never moves a stamp back), skip; else write today (keyed by
- * id, no `.select()`: the PostgREST gotcha); read it back with a separate
- * select; then the caller sends and records last_sent. Nothing ever clears a
- * stamp: a provider error after it leaves it in place, so that person waits a
- * day, and it expires by date. Residual: if last_sent fails to record after a
- * sent email, the person gets a repeat the next day (reported at error level).
+ * Order, strictly: read the stamp; if it names today or a later day, skip;
+ * else write today, guarded in the UPDATE itself to a stamp that is NULL or
+ * earlier than today (no `.select()`: the PostgREST gotcha), so a stalled
+ * earlier-day pass whose write lands late never moves a later stamp back;
+ * read it back with a separate select: a later day means skip, today means
+ * send. Today from ANOTHER writer between our read and write also reads back
+ * as today and passes: the stamp is not a mutex. Then the caller sends and
+ * records last_sent. Nothing ever clears a stamp: a provider error after it
+ * leaves it in place, so that person waits a day, and it expires by date.
+ * Residual: if last_sent fails to record after a sent email, the person gets
+ * a repeat the next day (reported at error level).
  */
 import { requireAdmin } from './reminder-v2.server';
 
@@ -34,15 +38,20 @@ async function readStamp(id: string): Promise<string | null> {
  *  it; 'stamped' means send. Throws on a database error or a stamp that does
  *  not read back, and then nothing is sent. */
 export async function stampReminderDay(id: string, today: string): Promise<'stamped' | 'attempted-today'> {
+  // `today` goes into the `.or()` filter below: a date and nothing else.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error('reminder_optin_v2 day-stamp: malformed date');
   const stamped = await readStamp(id);
   if (stamped !== null && stamped >= today) return 'attempted-today';
 
   const { error } = await requireAdmin()
     .from('reminder_optin_v2')
     .update({ attempting_on: today })
-    .eq('id', id);
+    .eq('id', id)
+    .or(`attempting_on.is.null,attempting_on.lt.${today}`);
   if (error) throw new Error(`reminder_optin_v2 day-stamp write failed: ${error.message}`);
 
-  if ((await readStamp(id)) !== today) throw new Error('reminder_optin_v2 day-stamp did not read back');
+  const after = await readStamp(id);
+  if (after !== null && after > today) return 'attempted-today';
+  if (after !== today) throw new Error('reminder_optin_v2 day-stamp did not read back');
   return 'stamped';
 }
