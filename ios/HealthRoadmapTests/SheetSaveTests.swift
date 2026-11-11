@@ -35,7 +35,8 @@ final class SheetSaveTests: XCTestCase {
         ("rowsFound rows", .rowsFound(["row-b"])),
         ("rowsFound empty", .rowsFound([])),
         ("rowsFound nil", .rowsFound(nil)),
-        ("confirmed", .confirmed(["row-b"])),
+        ("confirmed row-a", .confirmed(["row-a"])),
+        ("confirmed row-b", .confirmed(["row-b"])),
         ("declined", .declined),
         ("wordsStale", .wordsStale),
         ("unitChosen", .unitChosen),
@@ -47,8 +48,8 @@ final class SheetSaveTests: XCTestCase {
     func testEveryStateAndEvent_US25_AC21e() {
         let editing: State = .editing(message: "Old words")
         let table: [(State, [String: State])] = [
-            // "Replace it" after its dialog's dismissal already landed: still the replace.
-            (.editing(message: nil), ["tapped": .saving, "wordsStale": .editing(message: nil), "unitChosen": .saving, "confirmed": .saving]),
+            // A "Replace it" with no question open is ignored (owner's ruling N1).
+            (.editing(message: nil), ["tapped": .saving, "wordsStale": .editing(message: nil), "unitChosen": .saving]),
             (editing, ["tapped": .saving, "wordsStale": .editing(message: nil), "unitChosen": .saving]),
             (.saving, [
                 "landed saved": .done,
@@ -68,7 +69,16 @@ final class SheetSaveTests: XCTestCase {
                 "rowsFound empty": .editing(message: "Held"),
                 "rowsFound nil": .editing(message: "Held"),
             ]),
-            (.asking(["row-a"]), ["confirmed": .saving, "declined": .editing(message: nil)]),
+            // "Replace it" counts only for the rows its dialog asked about.
+            (.asking(["row-a"]), ["confirmed row-a": .saving, "declined": .declined(["row-a"])]),
+            // Dismissed: the person sees editing; a late "Replace it" for the same rows still
+            // replaces, and any edit or a new Save forgets the question.
+            (.declined(["row-a"]), [
+                "tapped": .saving,
+                "wordsStale": .editing(message: nil),
+                "unitChosen": .saving,
+                "confirmed row-a": .saving,
+            ]),
             (.done, [:]),
         ]
         for (state, moves) in table {
@@ -137,41 +147,66 @@ final class SheetSaveTests: XCTestCase {
     func testADeclineBeforeReplaceStillReplaces_US25_AC21e() {
         var state: State = .asking(["row-a"])
         SheetSave.send(&state, .declined)
-        XCTAssertEqual(state, .editing(message: nil))
+        XCTAssertEqual(state, .declined(["row-a"]))
+        XCTAssertFalse(state.busy, "Save is live again")
+        XCTAssertNil(state.message, "no words show")
+        XCTAssertNil(state.held, "the dialog does not show again")
         let shown: [String] = ["row-a"]
         XCTAssertTrue(SheetSave.send(&state, .confirmed(shown)), "the replace starts")
         XCTAssertEqual(state, .saving)
         XCTAssertFalse(SheetSave.send(&state, .confirmed(shown)), "a second press starts nothing")
     }
 
-    /// A person's "Replace it" or dismissal, in either order, ends in the one outcome they chose,
-    /// whether the two land in one turn or across turns. `claims`: the rows each send that
-    /// started a save carried; `send` returns true exactly once for a replace, never for a dismissal.
-    private func outcome(_ events: [Event], acrossTurns: Bool) async -> (State, claims: [[String]]) {
+    /// The owner's ruling N1: a "Replace it" that lands after the person dismissed the
+    /// question and then changed the value or the unit is ignored, so the write is what
+    /// they chose. Only the new unit's save is claimed.
+    func testALateReplaceAfterAChangeIsIgnored_US25_AC21e() {
+        let shown: [String] = ["row-a"]
+        var (state, claims) = outcome([.declined, .unitChosen, .unitLanded(nil), .confirmed(shown)])
+        XCTAssertEqual(state, .editing(message: nil), "declined, unit changed, late confirmed")
+        XCTAssertEqual(claims, ["unitChosen"], "the unit's save only, never the replace")
+
+        (state, claims) = outcome([.declined, .wordsStale, .confirmed(shown)])
+        XCTAssertEqual(state, .editing(message: nil), "declined, typed, late confirmed")
+        XCTAssertEqual(claims, [], "no save")
+
+        (state, claims) = outcome([.declined, .confirmed(["row-b"])])
+        XCTAssertEqual(state, .declined(shown), "a replace for other rows")
+        XCTAssertEqual(claims, [], "no save")
+    }
+
+    /// Starts at the question about row-a and sends `events` in order. `transition` is pure,
+    /// so the outcome depends only on which events come between, not on which turn each
+    /// lands in. `claims`: the events whose `send` started a save.
+    private func outcome(_ events: [Event]) -> (State, claims: [String]) {
         var state: State = .asking(["row-a"])
-        var claims: [[String]] = []
+        var claims: [String] = []
         for event in events {
-            if acrossTurns { await Task.yield() }
-            if SheetSave.send(&state, event), case .confirmed(let held) = event { claims.append(held) }
+            guard SheetSave.send(&state, event) else { continue }
+            switch event {
+            case .confirmed(let held): claims.append("confirmed \(held)")
+            case .unitChosen: claims.append("unitChosen")
+            default: claims.append("other")
+            }
         }
         return (state, claims)
     }
 
-    func testReplaceAndDismissalInEitherOrderEndAsChosen_US25_AC21e() async {
+    /// "Replace it" and the dialog's dismissal, in either order SwiftUI runs them, end in
+    /// the one outcome the person chose; a replace is sent once, with the rows it was shown.
+    func testReplaceAndDismissalInEitherOrderEndAsChosen_US25_AC21e() {
         let shown: [String] = ["row-a"]
-        for acrossTurns in [false, true] {
-            var (state, claims) = await outcome([.confirmed(shown), .declined], acrossTurns: acrossTurns)
-            XCTAssertEqual(state, .saving, "confirmed then declined, across turns: \(acrossTurns)")
-            XCTAssertEqual(claims, [shown], "the replace is sent once")
+        var (state, claims) = outcome([.confirmed(shown), .declined])
+        XCTAssertEqual(state, .saving, "confirmed then declined")
+        XCTAssertEqual(claims, ["confirmed [\"row-a\"]"], "the replace is sent once")
 
-            (state, claims) = await outcome([.declined, .confirmed(shown)], acrossTurns: acrossTurns)
-            XCTAssertEqual(state, .saving, "declined then confirmed, across turns: \(acrossTurns)")
-            XCTAssertEqual(claims, [shown], "sent once, with the rows the dialog showed")
+        (state, claims) = outcome([.declined, .confirmed(shown)])
+        XCTAssertEqual(state, .saving, "declined then confirmed, via declined(row-a)")
+        XCTAssertEqual(claims, ["confirmed [\"row-a\"]"], "sent once, with the rows the dialog showed")
 
-            (state, claims) = await outcome([.declined], acrossTurns: acrossTurns)
-            XCTAssertEqual(state, .editing(message: nil), "declined alone")
-            XCTAssertEqual(claims, [], "no save")
-        }
+        (state, claims) = outcome([.declined])
+        XCTAssertEqual(state, .declined(shown), "declined alone")
+        XCTAssertEqual(claims, [], "no save")
     }
 
     /// Each view's choice of landing (R3): a flip of any one fails here.

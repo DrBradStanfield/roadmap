@@ -28,6 +28,9 @@ enum SheetSave {
         /// A refusal named the day's row; its rows are being read, its words kept for a miss.
         case findingRows(words: String)
         case asking(Held)
+        /// The question was dismissed without "Replace it": the person sees editing; the rows
+        /// it asked about are kept so a late "Replace it" for them still counts.
+        case declined(Held)
         case done
 
         /// Save, Cancel and swipe-down wait.
