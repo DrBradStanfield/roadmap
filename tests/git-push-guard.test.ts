@@ -93,7 +93,20 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       'gh api -XDELETE repos/o/r/git/refs/heads/main',
       'gh api repos/o/r/git/refs/heads/main --method=DELETE',
       'gh api -X delete repos/o/r/git/refs/heads/main',
-      // Fields count as a write unless every method flag is a plain GET or HEAD.
+      // Any field is a write, whatever method is given (as on main). gh flags that take a value swallow the next
+      // word even when it starts with "-", so a GET spelling there is that flag's value, not the method, and gh sends
+      // its default POST because fields are present.
+      'gh api -f --method=GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -p --method=GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -t -XGET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main -f sha=abc1234 -H -XHEAD',
+      'gh api --jq --method GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --input -XGET',
+      // A GET or HEAD with fields is refused too: the simplest rule, and nothing needs it against main's ref.
+      'gh api -X GET repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api repos/o/r/git/refs/heads/main --method=GET -F per_page=1',
+      'gh api -XHEAD repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api --method HEAD repos/o/r/git/refs/heads/main -F per_page=1',
       'gh api -X GET -X OPTIONS repos/o/r/git/refs/heads/main -f sha=abc1234',
       'gh api -X get repos/o/r/git/refs/heads/main -f sha=abc1234',
       'gh api -X=PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
@@ -109,13 +122,11 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       expect(r.stdout, cmd).not.toBe('');
       expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
     }
-    // Reads of main's ref stay allowed, an explicit GET or HEAD with fields included (a GET or HEAD changes nothing).
+    // A read of main's ref with no field stays allowed, and so does a DELETE of another branch.
     for (const cmd of [
       'gh api repos/o/r/git/refs/heads/main',
-      'gh api -X GET repos/o/r/git/refs/heads/main -f per_page=1',
-      'gh api repos/o/r/git/refs/heads/main --method=GET -F per_page=1',
-      'gh api -XHEAD repos/o/r/git/refs/heads/main -f per_page=1',
-      'gh api --method HEAD repos/o/r/git/refs/heads/main -F per_page=1',
+      'gh api -X GET repos/o/r/git/refs/heads/main',
+      'gh api repos/o/r/git/refs/heads/main --method=GET --jq .object.sha',
       'gh api -X DELETE repos/o/r/git/refs/heads/feature',
     ]) {
       const r = runHook(scratch, cmd);

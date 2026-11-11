@@ -181,15 +181,9 @@ for (const seg of segs) {
   // not a wall: a gh alias or another tool cannot be seen here.
   if (gh >= 0 && seg[gh + 1] === 'api') {
     const a = seg.slice(gh + 2);
-    // Fields are a write unless a method is given and every method flag, however spelled (-iX, -X=), is a plain GET
-    // or HEAD: those read, so their fields change nothing.
-    const fields = a.some((t) => /^(-f|-F|--field|--raw-field|--input)(=|$)/.test(t));
-    const methodFlag = (t) => /^(-[A-Za-z]*X|--method)/.test(t);
-    const getOrHead = (t, k) => (/^(-X|--method)$/.test(t) && /^(GET|HEAD)$/.test(a[k + 1] || ''))
-      || /^(-X|--method=)(GET|HEAD)$/.test(t);
-    const readOnly = a.some(methodFlag) && a.every((t, k) => !methodFlag(t) || getOrHead(t, k));
+    // Any field is a write, whatever method is given: a gh flag that takes a value can swallow a GET spelling.
     const writes = a.some((t, k) => (/^(-X|--method)$/.test(a[k - 1] || '') || /^(-X|--method=)/.test(t)) && /(PATCH|POST|PUT|DELETE)$/i.test(t))
-      || (fields && !readOnly);
+      || a.some((t) => /^(-f|-F|--field|--raw-field|--input)(=|$)/.test(t));
     if (a.some((t) => /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef/i.test(t))
         || (writes && a.some((t) => /git\/refs\/heads\/main\b/.test(t)))) {
       deny('Merge PRs only with `gh pr merge <n> --merge --match-head-commit <reviewed sha>`, never through `gh api`, '
