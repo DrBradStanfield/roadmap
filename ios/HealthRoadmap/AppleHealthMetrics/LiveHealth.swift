@@ -33,7 +33,8 @@ final class LiveHealth {
     @ObservationIgnored let calendar: Calendar
     /// When the running read began; nil when none runs.
     @ObservationIgnored private var started: ContinuousClock.Instant?
-    @ObservationIgnored private var again = false
+    /// The refresh asked for during the running one, with the ticket it was asked under (Codex C-R2).
+    @ObservationIgnored private var queued: Ticket?
     @ObservationIgnored private var lastWake: ContinuousClock.Instant?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     /// The cards' last readings (AC2); nil keeps none.
@@ -94,51 +95,62 @@ final class LiveHealth {
     /// Checks whether the sheet is still due, then reads the cards, each time My data shows
     /// (AC2). A refresh asked for during one runs once more after it, unless the running
     /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
-    /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1).
+    /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1). The one asked
+    /// for during it keeps its own ticket: it runs if that still holds, so a request from
+    /// before an erase is dropped and one made after a reconnect is not (Codex C-R2).
     func refresh(force: Bool = false) async {
-        guard available, let begun = ticket() else { return }
+        guard available, let asked = ticket() else { return }
         if let started {
-            if force || ContinuousClock.now - started >= .seconds(2) { again = true }
+            if force || ContinuousClock.now - started >= .seconds(2) { queued = asked }
             return
         }
         started = .now
-        defer { started = nil }
+        defer {
+            started = nil
+            queued = nil
+        }
+        var next: Ticket? = asked
+        while let begun = next {
+            queued = nil
+            await readOnce(begun)
+            next = queued.flatMap { holds($0) ? $0 : nil }
+        }
+    }
+
+    /// One refresh under `begun`; it stops, keeping nothing, once that no longer holds.
+    private func readOnce(_ begun: Ticket) async {
         let store = reader(begun)
-        repeat {
-            again = false
-            // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
-            let due = (try? await store.needsRequest()) ?? needsAccess
-            // Erased or disconnected meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
+        // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
+        let due = (try? await store.needsRequest()) ?? needsAccess
+        // Erased or disconnected meanwhile: this refresh keeps nothing (Codex R1).
+        guard holds(begun) else { return }
+        if needsAccess != due { needsAccess = due }
+        // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
+        if due == true {
+            keep([:])
+            await history.removeAll()
+            removed(LiveMetric.allCases)
+        }
+        guard due == false else { return }
+        do {
+            let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
             guard holds(begun) else { return }
-            if needsAccess != due { needsAccess = due }
-            // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
-            if due == true {
-                keep([:])
-                await history.removeAll()
-                removed(LiveMetric.allCases)
+            // Unchanged readings are not written, so nothing redraws (E5). An empty read always
+            // removes the file, even one the launch could not read (adversary R3).
+            if cards != read || read.isEmpty { keep(read) }
+            // Health answered that it holds none of a metric (its access off in Settings, or
+            // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
+            for metric in absent {
+                await history.remove(metric)
+                removed([metric])
             }
-            guard due == false else { continue }
-            do {
-                let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
-                guard holds(begun) else { return }
-                // Unchanged readings are not written, so nothing redraws (E5). An empty read always
-                // removes the file, even one the launch could not read (adversary R3).
-                if cards != read || read.isEmpty { keep(read) }
-                // Health answered that it holds none of a metric (its access off in Settings, or
-                // emptied): that metric's history goes. A read that failed removes nothing (adversary R3, R10).
-                for metric in absent {
-                    await history.remove(metric)
-                    removed([metric])
-                }
-                if !hasRead { hasRead = true }
-            } catch HealthStoreError.locked {
-                // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
-                lastWake = nil
-            } catch {
-                // Cancelled: keep what was drawn and mark nothing read (N1).
-                return
-            }
-        } while again
+            if !hasRead { hasRead = true }
+        } catch HealthStoreError.locked {
+            // Locked: keep what the last read drew (AC13), and let the unlock's wake through (N2).
+            lastWake = nil
+        } catch {
+            // Cancelled: keep what was drawn and mark nothing read (N1).
+        }
     }
 
     /// "Delete all my data" (AC2): the kept readings and histories go, and nothing shows until

@@ -45,13 +45,21 @@ highest version each phone accepted also live in its Keychain, so a damaged stat
 file on the phone cannot lower them.
 
 **Required floor: PR 1218 (US-72 AC10).** The first engine release built from a `main` that
-holds PR 1218 MUST pass `--min-app-build <N>`, where N is the first app build that
-contains PR 1218's Apple Health disconnect. That engine drops the importers' `erasedAt`
-checks: the app now disconnects Apple Health on an erase instead. An older build running
-it would read pre-erase Health readings back into an erased record. `--min-app-build`
-carries over to later releases (the last manifest's value), so this is needed once. No
-script checks it, and the automatic release after a Deploy (below) passes no
-`--min-app-build`: do not approve that run's signing; release from your Mac with the flag.
+holds PR 1218 MUST pass `--min-app-build 11`: build 11 is the first app build with PR 1218's
+Apple Health disconnect (build 10, commit 305725de, is the highest uploaded). That engine
+drops the importers' `erasedAt` checks: the app now disconnects Apple Health on an erase
+instead. An older build running it would read pre-erase Health readings back into an
+erased record. `ios/engine-floor.json` holds the floor, and the build refuses a manifest
+whose `minAppBuild` is below it, so the automatic release after a Deploy (below), which
+passes no `--min-app-build`, fails until you release once from your Mac with
+`--min-app-build 11`; `--min-app-build` then carries over to later releases (the last
+manifest's value). **From that release on, builds below 11 get no engine updates until
+they install the next app build.** Raise the floor file, never lower it. Build 11 must be cut
+from a commit that contains PR 1218 (the floor assumes it); the UI thread confirmed on
+2026-11-11 that build 10 is the highest uploaded and no 11 has been archived. **Before
+signing the first engine after PR 1218:** confirm in App Store Connect that the highest
+uploaded build is 10. If an 11 exists that was cut before this PR, raise
+`ios/engine-floor.json` to the next unused number first.
 
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new

@@ -286,7 +286,7 @@ final class AppleHealthEraseTests: XCTestCase {
         let before: RecordStore.Mark = app.store.mark
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the second erase was refused") }
         let late = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"), on: before)
-        guard case .refused = late else { return XCTFail("an edit marked before the erase was saved after it") }
+        XCTAssertNil(late, "an edit marked before the erase was not saved after it, and says nothing (F6)")
         let now = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"), on: app.store.mark)
         XCTAssertEqual(now, .saved(), "a mark taken now holds")
     }

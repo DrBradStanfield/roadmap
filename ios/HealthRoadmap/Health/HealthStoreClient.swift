@@ -36,10 +36,11 @@ protocol HealthStoreClient: AnyObject {
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
     /// Readings other apps and devices wrote stay: they are not ours to delete.
     func deleteOwnSamples() async throws
-    /// Another device's erase (US-72 AC10): deletes the samples with these sync ids, the ones
-    /// this phone remembers writing (`HealthSyncMemory.writtenIds`), and only where this app
-    /// is their source: never a query by source alone.
-    func deleteSamples(syncIds: [String]) async throws
+    /// An erase (US-72 AC10): deletes the samples with these sync ids, the delete this phone
+    /// still owes (`HealthSyncMemory.owed`), and only where this app is their source: never a
+    /// query by source alone. Returns the ids it could not delete: a kind whose write access
+    /// is off keeps its own, and any id it did not find (edge 2).
+    func deleteSamples(syncIds: [String]) async throws -> [String]
     /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
     /// when not allowed or not set. Read on demand, never stored by this call.
     func characteristics() -> HealthCharacteristics

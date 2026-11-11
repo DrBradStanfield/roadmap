@@ -521,7 +521,8 @@ final class FakeHealthStore: HealthStoreClient {
     func deleteOwnSamples() async throws {
         if deleteFails { throw HealthStoreError.locked }
         ownDeletes += 1
-        saved = []
+        // As HealthKitClient: a kind whose write access is off is not asked (US-72 AC10 edge 2).
+        saved.removeAll { $0.kind.map(writable.contains) ?? true }
     }
 
     /// k2: the sync ids a remote erase asked Health to delete, one list per call,
@@ -531,12 +532,21 @@ final class FakeHealthStore: HealthStoreClient {
     private(set) var deleteAttempts = 0
     /// The delete fails with this, as HealthKit refuses one once write access is off.
     var deleteRefusal: Error?
-    func deleteSamples(syncIds: [String]) async throws {
+    /// Runs after the samples went, before the delete returns (Codex C-R1).
+    var deleteHold: (@MainActor () async -> Void)?
+    /// As HealthKitClient: a kind whose write access is off is not asked and keeps its ids;
+    /// with one such kind, an id not found stays too (edge 2).
+    func deleteSamples(syncIds: [String]) async throws -> [String] {
+        guard !syncIds.isEmpty else { return [] }
         deleteAttempts += 1
         if deleteFails { throw HealthStoreError.locked }
         if let deleteRefusal { throw deleteRefusal }
         deletedSyncIds.append(syncIds.sorted())
-        saved.removeAll { syncIds.contains($0.syncId) }
+        let gone = Set(saved.filter { syncIds.contains($0.syncId) && $0.kind.map(writable.contains) == true }.map(\.syncId))
+        saved.removeAll { gone.contains($0.syncId) && $0.kind.map(writable.contains) == true }
+        if let deleteHold { await deleteHold() }
+        let blocked = [HealthKind.weight, .waist, .bloodPressure].contains { !writable.contains($0) }
+        return blocked ? syncIds.filter { !gone.contains($0) } : []
     }
 }
 

@@ -54,7 +54,8 @@ final class AppleHealthSync {
     /// The connection generation of the one rule above: moves on every erase disconnect.
     private var generation = 0
     private var again = false
-    private var waiting: [CheckedContinuation<Void, Never>] = []
+    /// Who waits for the running pass to end: a refresh asked for during it, an erase's `drained`.
+    private var waiting: [UUID: CheckedContinuation<Void, Never>] = [:]
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
@@ -101,23 +102,24 @@ final class AppleHealthSync {
 
     /// "Delete all my data" (US-25 AC16, US-72 AC10), once the record's erase has landed:
     /// disconnects Apple Health, waits for a running pass to stop (`drained`), then deletes the
-    /// samples this app wrote and forgets the ids it deleted. `wasConnected`: Health was connected
-    /// as the erase began (a pass that saw the erase first may have disconnected it already); a
-    /// delete still owed (`writtenIds`) is made either way. False when Health refused the delete,
-    /// for the erase to say so; the ids stay owed (`deleteOwed`). Neither: nothing to delete.
+    /// samples this app wrote: by the sync ids owed, so each id leaves only when its own sample
+    /// went (edge 2), then by source, for any it never listed. `wasConnected`: Health
+    /// was connected as the erase began (a pass that saw the erase first may have disconnected
+    /// it already); a delete still owed (`HealthSyncMemory.owed`) is made either way. False when
+    /// Health refused the delete or left an id (a kind whose write access is off), for the erase
+    /// to say so; those ids stay owed (`deleteOwed`). Neither: nothing to delete.
     func erased(wasConnected: Bool) async -> Bool {
         if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
         disconnect()
-        guard client.isAvailable, wasConnected || !memory.writtenIds.isEmpty else { return true }
+        guard client.isAvailable, wasConnected || !memory.owed.isEmpty else { return true }
         await drained()
-        let ids = memory.writtenIds
         do {
+            let paid = try? await pay(memory.owed)
             try await client.deleteOwnSamples()
+            return paid == true
         } catch {
             return false
         }
-        memory.forget(ids)
-        return true
     }
 
     /// The app's one Apple Health connect (US-56 AC4): Apple's permission sheet for
@@ -138,6 +140,9 @@ final class AppleHealthSync {
             status = .failed(error.localizedDescription)
             return
         }
+        // What an erase left owed goes first. A delete that fails (locked) still connects: those
+        // ids stay owed, apart from what this connection writes (edge 1).
+        await deleteOwed()
         memory.connected = true
         start()
         async let imported: Void = refresh()
@@ -219,14 +224,14 @@ final class AppleHealthSync {
         guard memory.connected else { status = .notConnected; return }
         if running {
             again = true
-            await withCheckedContinuation { waiting.append($0) }
+            await withCheckedContinuation { waiting[UUID()] = $0 }
             return
         }
         running = true
         defer {
             running = false
-            waiting.forEach { $0.resume() }
-            waiting = []
+            waiting.values.forEach { $0.resume() }
+            waiting = [:]
         }
         repeat {
             again = false
@@ -267,16 +272,21 @@ final class AppleHealthSync {
         case .disconnect:
             memory.eraseSeen = now
             disconnect()
-            Task { await deleteOwed() }
+            // As a local erase does (DataEraser): nothing read before it stays on screen or on disk (edge 3).
+            Task {
+                await live?.forget()
+                await deleteOwed()
+            }
             return false
         }
     }
 
     /// Disconnected by an erase: nothing is observed or read, and every anchor resets, so
-    /// the next Connect reads everything from the start. What Health showed is kept
-    /// (`labResultsAsked`), so that Connect asks nothing again.
+    /// the next Connect reads everything from the start. Every value written is owed a delete.
+    /// What Health showed is kept (`labResultsAsked`), so that Connect asks nothing again.
     private func disconnect() {
         generation += 1
+        memory.oweWritten()
         guard memory.connected else { return }
         memory.connected = false
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
@@ -285,31 +295,44 @@ final class AppleHealthSync {
         status = .notConnected
     }
 
-    /// A delete is owed while Apple Health is disconnected and `writtenIds` is not empty: the
-    /// list is the only pending state (US-72 AC10). The samples go by their sync ids, once a
-    /// running pass has stopped (`drained`); an id leaves the list only when its delete
-    /// succeeded. Tried when an erase disconnects, then once per return to the foreground and
-    /// once per unlock, never in a loop: a delete Health keeps refusing (write access turned
-    /// off) waits for the next of those.
+    /// A delete is owed while `HealthSyncMemory.owed` is not empty: the list is the only pending
+    /// state (US-72 AC10), connected again or not. The samples go by their sync ids, once a
+    /// running pass has stopped (`drained`); an id leaves the list only when its own delete
+    /// succeeded (`pay`). Tried when an erase disconnects, on Connect, then once per return to
+    /// the foreground and once per unlock, never in a loop: a delete Health keeps refusing
+    /// (write access turned off) waits for the next of those.
     private func deleteOwed() async {
-        guard !memory.connected, client.isAvailable, !memory.writtenIds.isEmpty else { return }
+        guard client.isAvailable, !memory.owed.isEmpty else { return }
         await drained()
-        let ids = memory.writtenIds
-        guard !memory.connected, !ids.isEmpty, (try? await client.deleteSamples(syncIds: ids)) != nil else { return }
-        memory.forget(ids)
+        _ = try? await pay(memory.owed)
+    }
+
+    /// Deletes `owed` by sync id. The ids Health deleted leave the list, each unless a newer
+    /// version was saved meanwhile (Codex C-R1); true when none was left.
+    private func pay(_ owed: [String: Int64]) async throws -> Bool {
+        let left = try await client.deleteSamples(syncIds: Array(owed.keys))
+        memory.paid(owed.filter { !left.contains($0.key) })
+        return left.isEmpty
     }
 
     /// How long an erase's Health delete waits for a running pass. The record's erase has
     /// already landed: only the Health delete waits, and never on a hung HealthKit call.
     static let drainBound: Duration = .seconds(2)
 
-    /// Waits, up to `drainBound`, for a running pass to stop. The erase moved the generation, so
-    /// the pass stops at its next check, once its HealthKit call returns. A call that hangs past
-    /// the bound is left running: a sample it saves later is listed in `writtenIds`
-    /// (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
+    /// Waits for a running pass to end (`waiting`), or `drainBound`, whichever comes first.
+    /// The erase moved the generation, so the pass stops at its next check, once its HealthKit
+    /// call returns. A call that hangs past the bound is left running: a sample it saves later
+    /// is owed (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
+    /// The deadline is its own task, so a cancelled caller still waits for it, never spins.
     private func drained() async {
-        let deadline = ContinuousClock.now + Self.drainBound
-        while running, ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+        guard running else { return }
+        let id = UUID()
+        let deadline = Task { [weak self] in
+            try? await Task.sleep(for: Self.drainBound)
+            self?.waiting.removeValue(forKey: id)?.resume()
+        }
+        await withCheckedContinuation { waiting[id] = $0 }
+        deadline.cancel()
     }
 
     /// What a pass began under: the record's mark and the connection generation.
@@ -370,15 +393,18 @@ final class AppleHealthSync {
     /// the erase guard), checked against the record as it is now: an import is not a
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
-    /// On the pass's mark, the record the batch was read from: after an erase it never lands.
+    /// On the pass's mark, the record the batch was read from: after an erase it never lands,
+    /// and the pass ends silently (`RecordMoved`) for the next one to meet the erase.
     /// Returns what a Health Records batch did (nil for any other edit).
     @discardableResult
     private func save(_ edit: RecordEdit, on pass: Pass) async throws -> HealthRecordCounts? {
-        if case .saved(let counts) = await store.applyNow(edit, on: pass.mark) { return counts }
+        guard let first = await store.applyNow(edit, on: pass.mark) else { throw RecordMoved() }
+        if case .saved(let counts) = first { return counts }
         try still(pass)
         await reread()
         try still(pass)
-        switch await store.applyNow(edit, on: pass.mark) {
+        guard let second = await store.applyNow(edit, on: pass.mark) else { throw RecordMoved() }
+        switch second {
         case .saved(let counts): return counts
         case .refused(let message, _):
             try still(pass)
@@ -388,8 +414,8 @@ final class AppleHealthSync {
 
     /// Each value once per version. One Health refuses does not hold back the rest:
     /// it is tried again next time, and the first refusal is reported after the others.
-    /// Each save starts only while the pass holds. One that lands is listed at once, after an
-    /// erase too, so the delete still owed covers it (`deleteOwed`).
+    /// Each save starts only while the pass holds. One that lands is listed at once: as written,
+    /// or, once an erase has disconnected Health, as owed, so the delete covers it (`deleteOwed`).
     private func writeTyped(on pass: Pass) async throws {
         let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         var refused: Error?
@@ -398,7 +424,11 @@ final class AppleHealthSync {
             try still(pass)
             do {
                 try await client.save(write)
-                memory.setWritten(write.version, for: write.syncId)
+                if pass.generation == generation {
+                    memory.setWritten(write.version, for: write.syncId)
+                } else {
+                    memory.owe(write.version, for: write.syncId)
+                }
             } catch HealthStoreError.locked {
                 throw HealthStoreError.locked
             } catch {

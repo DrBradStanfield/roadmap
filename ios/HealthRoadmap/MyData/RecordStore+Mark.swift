@@ -20,6 +20,16 @@ extension RecordStore {
 
     var mark: Mark { Mark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
 
+    /// `applyNow` for an Apple Health batch (US-72 AC10), on `mark`, the record it was read
+    /// from. Nil when an erase since moved the mark, in its turn: nothing was saved and there
+    /// is nothing to say; the import's next pass meets the erase.
+    func applyNow(_ edit: RecordEdit, on mark: Mark) async -> ApplyResult? {
+        await chain { () -> ApplyResult? in
+            guard mark.holds(at: self.mark) else { return nil }
+            return await self.applyInTurn(edit, as: self.screen)
+        }.value
+    }
+
     /// Which record is shown, for Apple Health's erase gate (US-72 AC10): "phone", the cloud's
     /// provider and account once its record is open, nil while a connected cloud's record is
     /// not open yet.

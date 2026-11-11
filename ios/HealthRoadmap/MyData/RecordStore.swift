@@ -431,17 +431,12 @@ final class RecordStore {
     /// make it refuse. It still takes the same path: in the cloud, the session, the
     /// merge and the erase guard.
     /// Its turn in line decides "now": the screen is read when the edits before it have landed.
-    /// `mark`: the record an Apple Health batch was read from (US-72 AC10); an erase since refuses it in its turn.
-    func applyNow(_ edit: RecordEdit, on mark: Mark? = nil) async -> ApplyResult {
-        await chain {
-            if let mark, !mark.holds(at: self.mark) {
-                return .refused(message: "Your data was deleted since this was read, so it was not saved.", existingId: nil)
-            }
-            return await self.applyInTurn(edit, as: self.screen)
-        }.value
+    /// An Apple Health batch, on the record it was read from: `applyNow(_:on:)`.
+    func applyNow(_ edit: RecordEdit) async -> ApplyResult {
+        await chain { await self.applyInTurn(edit, as: self.screen) }.value
     }
 
-    private func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
+    func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number

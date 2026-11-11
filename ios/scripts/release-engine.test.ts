@@ -24,12 +24,15 @@ const pinsFile = join(work, 'pins.json');
 writeFileSync(pinsFile, JSON.stringify({ daily: publicKeyOf(seed).toString('base64') }));
 const out = join(work, 'out');
 const dir = join(out, `bridge-${bridgeId()}`);
+/** A floor of 1, so these tests choose any build; the committed floor has its own test below. */
+const floorFile = join(work, 'floor.json');
+writeFileSync(floorFile, JSON.stringify({ minAppBuild: 1 }));
 
 /** Step 1, the build, as `env -u ENGINE_SIGNING_KEY node …` runs it: no key. */
 function build(now: string, extra: string[] = [], env: Record<string, string> = {}) {
   const clean: Record<string, string | undefined> = { ...process.env, ...env };
   delete clean.ENGINE_SIGNING_KEY;
-  return spawnSync(process.execPath, [script, '--out', out, '--keys', pinsFile, '--allow-dirty', '--now', now, ...extra], {
+  return spawnSync(process.execPath, [script, '--out', out, '--keys', pinsFile, '--floor', floorFile, '--allow-dirty', '--now', now, ...extra], {
     env: clean,
     encoding: 'utf8',
   });
@@ -178,4 +181,23 @@ export async function resolve(specifier, context, next) {
     expect(lower.status).not.toBe(0);
     expect(lower.stderr).toContain('The floor only rises');
   }, 120_000);
+
+  // PR 1218 (US-72 AC10): an engine without the erasedAt checks must never reach a build
+  // without the Apple Health disconnect. The committed floor is 11 (build 10 is the highest uploaded).
+  it('refuses a manifest whose minAppBuild is below the committed floor, and keeps the last one', () => {
+    const committed = join(__dirname, '..', 'engine-floor.json');
+    expect(JSON.parse(readFileSync(committed, 'utf8')).minAppBuild).toBe(11);
+    const before = manifestBytes();
+    expect(manifest().minAppBuild).toBe(3);
+    const carried = build('2026-10-22T08:00:00Z', ['--floor', committed]);
+    expect(carried.status).not.toBe(0);
+    expect(carried.stderr).toContain('--min-app-build 3 is below the floor 11');
+    const low = build('2026-10-22T08:01:00Z', ['--floor', committed, '--min-app-build', '10']);
+    expect(low.status).not.toBe(0);
+    expect(manifestBytes().equals(before)).toBe(true);
+
+    const at = build('2026-10-22T08:02:00Z', ['--floor', committed, '--min-app-build', '11']);
+    expect(at.status, at.stderr).toBe(0);
+    expect(manifest().minAppBuild).toBe(11);
+  }, 240_000);
 });

@@ -159,10 +159,8 @@ final class AppleHealthEraseRaceTests: XCTestCase {
     func testARemoteEraseDuringAHeldLiveRefreshLandsNothing_US72_AC10_R1() async throws {
         let (live, liveStore) = liveHealth()
         let (app, _) = try await connectedInTheCloud(live: live)
-        let before = live.cards
-        XCTAssertFalse(before.isEmpty)
-        // A read that landed now would empty every card.
-        liveStore.empty = Set(LiveMetric.allCases)
+        XCTAssertFalse(live.cards.isEmpty)
+        // The erase forgets the cards (edge 3); a read that landed after it would draw them again.
         liveStore.delay = .milliseconds(500)
         let latest = liveStore.latestCalls
         let held = Task { await live.refresh(force: true) }
@@ -172,7 +170,10 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await held.value
 
         XCTAssertNil(live.ticket(), "no read may start while disconnected")
-        XCTAssertEqual(live.cards, before, "the read begun before the disconnect landed nothing")
+        await until("the read begun before the disconnect landed nothing") { live.cards.isEmpty }
+        await settle()
+        XCTAssertTrue(live.cards.isEmpty, "and draws nothing later")
+        XCTAssertFalse(live.hasRead)
     }
 
     func testHistoryReadsWhileDisconnectedReadNothing_US72_AC10_R1() async throws {
@@ -241,7 +242,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(health.ownDeletes, 1)
         XCTAssertTrue(health.saved.isEmpty, "the held save landed, then was deleted")
-        XCTAssertTrue(memory.writtenIds.isEmpty)
+        XCTAssertTrue(memory.owed.isEmpty)
         XCTAssertFalse(memory.connected)
     }
 
@@ -266,13 +267,13 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         released = true
         await until("the hung save lands") { !health.saved.isEmpty }
-        await until("and is listed as owed") { !memory.writtenIds.isEmpty }
-        let owed = memory.writtenIds.sorted()
+        await until("and is listed as owed") { !memory.owed.isEmpty }
+        let owed = memory.owed.keys.sorted()
         await app.health.foreground()
 
         XCTAssertEqual(health.deletedSyncIds.last, owed)
         XCTAssertTrue(health.saved.isEmpty)
-        XCTAssertTrue(memory.writtenIds.isEmpty)
+        XCTAssertTrue(memory.owed.isEmpty)
         XCTAssertFalse(memory.connected, "the save did not reconnect anything")
     }
 
@@ -285,19 +286,19 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await remoteErase(app)
         await until("the delete was tried") { health.deleteAttempts == 1 }
         await settle()
-        XCTAssertEqual(memory.writtenIds.sorted(), written, "a locked delete keeps the list")
+        XCTAssertEqual(memory.owed.keys.sorted(), written, "a locked delete keeps the list")
 
         health.deleteFails = false
         NotificationCenter.default.post(name: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil)
-        await until("the unlock deletes what is owed") { memory.writtenIds.isEmpty }
+        await until("the unlock deletes what is owed") { memory.owed.isEmpty }
 
         XCTAssertEqual(health.deletedSyncIds, [written])
-        XCTAssertNil(defaults.dictionary(forKey: "appleHealth.written"))
+        XCTAssertNil(defaults.dictionary(forKey: "appleHealth.owed"))
     }
 
     /// Write access turned off: every delete fails. It is tried once per foreground or unlock,
-    /// never in a loop, and the list stays. A local erase then deletes, though Health was not
-    /// connected as it began.
+    /// never in a loop, and the list stays. A local erase then tries, though Health was not
+    /// connected as it began; refused again, the ids stay owed and the erase says so (A1).
     func testARefusedDeleteStaysOwedAndIsNotRetriedInALoop_US72_AC10_R3() async throws {
         let (app, written) = try await connectedInTheCloud()
         health.deleteRefusal = CocoaError(.fileWriteNoPermission)
@@ -309,11 +310,16 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await app.health.foreground()
         await settle()
         XCTAssertEqual(health.deleteAttempts, 2, "one try per foreground")
-        XCTAssertEqual(memory.writtenIds.sorted(), written, "the list stays: the delete is still owed")
+        XCTAssertEqual(memory.owed.keys.sorted(), written, "the list stays: the delete is still owed")
 
-        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
         XCTAssertEqual(health.ownDeletes, 1, "a local erase deletes when a delete is owed, connected or not")
-        XCTAssertTrue(memory.writtenIds.isEmpty)
+        XCTAssertEqual(memory.owed.keys.sorted(), written, "refused again: still owed")
+        XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
+
+        health.deleteRefusal = nil
+        await app.health.foreground()
+        XCTAssertTrue(memory.owed.isEmpty, "the next foreground deletes them")
     }
 
     // MARK: F4, a Connect meeting a pending erase
@@ -374,5 +380,187 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         XCTAssertEqual(parts.count, 2)
         XCTAssertTrue(parts[0].predicateFormat.contains("healthroadmap:abc"), parts[0].predicateFormat)
         XCTAssertEqual(parts[1].predicateFormat, HKQuery.predicateForObjects(from: HKSource.default()).predicateFormat, "and the source is this app")
+    }
+
+    // MARK: Round 3: edges 1-3, Codex C-R1 and C-R2, F6
+
+    /// The owed list's two invariants: an id is in at most one of written and owed, and an id
+    /// leaves owed only on its own successful delete at the version snapshotted for it.
+    func testTheOwedListInvariants_US72_AC10() {
+        let memory = memory
+        func disjoint() -> Bool { memory.owed.keys.allSatisfy { memory.writtenVersion($0) == 0 } }
+        memory.setWritten(1, for: "a")
+        memory.setWritten(1, for: "b")
+        XCTAssertTrue(disjoint())
+
+        memory.oweWritten()
+        XCTAssertEqual(memory.owed, ["a": 1, "b": 1])
+        XCTAssertEqual(memory.writtenVersion("a"), 0, "moved, not copied")
+        XCTAssertTrue(disjoint())
+
+        memory.owe(2, for: "a")
+        XCTAssertTrue(disjoint())
+        memory.paid(["a": 1, "b": 1])
+        XCTAssertEqual(memory.owed, ["a": 2], "a newer version saved after the snapshot stays")
+        memory.paid([:])
+        XCTAssertEqual(memory.owed, ["a": 2], "an id not deleted stays")
+        memory.paid(["a": 2])
+        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertNil(defaults.dictionary(forKey: "appleHealth.owed"))
+    }
+
+    /// Edge 1: Connect runs the owed delete first. Locked, it still connects, and the old ids
+    /// stay owed, never taken as written; the next foreground deletes them.
+    func testAConnectWhoseOwedDeleteFailsStillConnectsAndKeepsTheOldIdsOwed_US72_AC10_E1() async throws {
+        let (app, written) = try await connectedInTheCloud()
+        health.deleteFails = true
+        await remoteErase(app)
+        await until("the erase's delete was tried") { health.deleteAttempts == 1 }
+
+        await app.health.connect()
+
+        XCTAssertEqual(health.deleteAttempts, 2, "Connect tried the owed delete")
+        XCTAssertTrue(app.health.connected, "and connected though it failed")
+        XCTAssertEqual(memory.owed.keys.sorted(), written, "the old ids stay owed")
+        XCTAssertTrue(written.allSatisfy { memory.writtenVersion($0) == 0 }, "never taken as written")
+
+        health.deleteFails = false
+        await app.health.foreground()
+        XCTAssertEqual(health.deletedSyncIds.last, written)
+        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(app.health.connected)
+    }
+
+    /// Edge 2 (adversary A1): write access to waist turned off before a local erase. The weight
+    /// sample is deleted and its id leaves; the waist sample stays in Health, its id stays owed,
+    /// and the erase says the samples could not all be deleted.
+    func testAKindWithWriteAccessOffStaysOwed_US72_AC10_E2() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        let waist = try XCTUnwrap(health.saved.first { $0.kind == .waist }?.syncId)
+        XCTAssertNotNil(health.saved.first { $0.kind == .weight })
+        health.writable.remove(.waist)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "only the waist id stays owed")
+        XCTAssertEqual(health.saved.map(\.syncId), [waist], "the weight sample went; the waist sample stays")
+        XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// Edge 3 (adversary A3): a remote erase forgets the live cards and the kept history, as a
+    /// local erase does: nothing from before it stays on screen or on disk.
+    func testARemoteEraseForgetsTheCardsAndTheKeptHistory_US72_AC10_E3() async throws {
+        let kept = folder.appending(path: "Live/last-readings.json")
+        try FileManager.default.createDirectory(at: kept.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let liveStore = FakeLiveStore(due: false)
+        liveStore.fill(now: .now)
+        let live = LiveHealth(store: liveStore, calendar: utc, kept: kept)
+        let (app, _) = try await connectedInTheCloud(live: live)
+        XCTAssertFalse(live.cards.isEmpty, "a card is drawn")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
+        let ticket = try XCTUnwrap(live.ticket())
+        _ = try await live.history.refreshDays(live.reader(ticket), .steps, now: .now, calendar: utc)
+        let before = await live.history.keptDays(.steps)
+        XCTAssertNotNil(before, "history is kept")
+
+        await remoteErase(app)
+
+        await until("the cards are gone") { live.cards.isEmpty }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)), "and their file")
+        let after = await live.history.keptDays(.steps)
+        XCTAssertNil(after, "and the kept history")
+    }
+
+    /// Codex C-R1: a correction keeps its sync id. Held past the drain, it lands after the
+    /// delete took that id's sample but before the delete returned: the newer version stays
+    /// owed, and the next foreground deletes it.
+    func testACorrectionLandingDuringTheDeleteStaysOwed_US72_AC10_CR1() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.health.refresh()
+        let first = try XCTUnwrap(health.saved.first)
+        var reached = false, released = false
+        health.saveHold = { [health] in
+            health?.saveHold = nil
+            reached = true
+            for _ in 0..<1000 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+        let rowId = try XCTUnwrap(app.store.myData?.vitals.first?.latest?.id)
+        await XCTAssertSaved(await app.store.apply(.correct(id: rowId, value: 81)))
+        await until("the correction is in HealthKit") { reached }
+        let memory = memory
+        health.deleteHold = { [health] in
+            health?.deleteHold = nil
+            released = true
+            for _ in 0..<300 where (memory.owed[first.syncId] ?? 0) <= first.version { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        let owed = try XCTUnwrap(memory.owed[first.syncId], "the newer version stays owed")
+        XCTAssertGreaterThan(owed, first.version)
+        await app.health.foreground()
+        XCTAssertEqual(health.deletedSyncIds.last, [first.syncId])
+        XCTAssertTrue(memory.owed.isEmpty)
+    }
+
+    /// Codex C-R2: an erase disconnects during a live refresh, then Connect asks for a forced
+    /// one while it still runs. The old read lands nothing; the queued one, under the new
+    /// ticket, runs exactly once and draws the cards.
+    func testARefreshQueuedAfterAReconnectRunsOnce_US72_AC10_CR2() async throws {
+        let (live, liveStore) = liveHealth()
+        let app = try app(cloud: false, live: live)
+        await app.health.connect()
+        let measured = liveStore.latestCalls
+        await live.refresh(force: true)
+        let perRead = liveStore.latestCalls - measured
+        XCTAssertGreaterThan(perRead, 0)
+
+        liveStore.delay = .seconds(3)
+        let start = liveStore.latestCalls
+        let held = Task { await live.refresh(force: true) }
+        await until("the read is under way") { liveStore.latestCalls > start }
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertTrue(live.cards.isEmpty)
+        liveStore.delay = nil
+        await app.health.connect()
+        await held.value
+
+        XCTAssertEqual(liveStore.latestCalls - start, 2 * perRead, "the held read, then the queued one, once")
+        XCTAssertFalse(live.cards.isEmpty, "the queued refresh drew the cards")
+    }
+
+    /// F6: an erase lands between a pass's last check and its save's turn in the store's line.
+    /// The save is not made, nothing red is shown, and the next pass meets the erase.
+    func testAnEraseTakingTheSavesTurnEndsInASilentRetry_US72_AC10_F6() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        health.pending[.weight] = [Self.morning]
+        var reached = false, released = false, open = false
+        health.hold = { [health] in
+            health?.hold = nil
+            reached = true
+            for _ in 0..<500 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+        let refresh = Task { await app.health.refresh() }
+        await until("the import read its batch") { reached }
+        // The store's line held, the erase queued in it, then the batch's save behind the erase.
+        app.store.chain { for _ in 0..<500 where !open { try? await Task.sleep(for: .milliseconds(10)) } }
+        let erase = Task { await app.eraser.eraseAll() }
+        await settle()
+        released = true
+        await settle()
+        open = true
+
+        guard case .erased = await erase.value else { return XCTFail("the erase was refused") }
+        await refresh.value
+
+        XCTAssertTrue(rows(object(app.store.recordJSON), source: "apple_health").isEmpty, "the batch did not land")
+        XCTAssertEqual(app.health.status, .notConnected, "no failure shown: the next pass met the erase")
     }
 }
