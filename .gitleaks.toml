@@ -29,7 +29,7 @@ useDefault = true
 
 [[rules]]
   # A Discord attachment URL (US-63 AC19): signed, and it points at a file read
-  # from a private channel. Nothing read there goes into the repo.
+  # from a private channel. Rules: docs/agent-channel.md § What may leave the session.
   id = "discord-attachment-url"
   description = "Discord attachment URL from a private channel"
   regex = '''(?:cdn\.discordapp\.com|media\.discordapp\.net)/attachments/\d{17,20}/\d{17,20}/'''

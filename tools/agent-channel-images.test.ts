@@ -137,7 +137,8 @@ describe('US-63 AC18: the header decides the dimensions, at most 8192 a side', (
     ['sos.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0])], ['junk.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 1, 7, 7])],
     ['odd.webp', webp('XXXX', () => {})], ['badvp8l.webp', webp('VP8L', () => {})], ['short.gif', Buffer.from('GIF89a')],
     // Codex R1: an IHDR chunk whose length is not 13, and one whose 13 bytes are not all there.
-    ['len0.png', Buffer.from('89504e470d0a1a0a00000000494844520000000100000001', 'hex')],
+    // Padded to 33 bytes, so the length-13 check, not the 29-byte guard, refuses it.
+    ['len0.png', Buffer.concat([Buffer.from('89504e470d0a1a0a00000000494844520000000100000001', 'hex'), Buffer.alloc(9)])],
     ['len14.png', (() => { const b = png(1, 1); b.writeUInt32BE(14, 8); return b; })()], ['cutihdr.png', png(1, 1).subarray(0, 28)],
   ] as [string, Buffer][]) {
     it(`refuses ${filename}: the header cannot be read`, async () => {

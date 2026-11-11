@@ -199,18 +199,18 @@ can see, and the bot sees whatever `@everyone` may. A channel created later inhe
 
 ### What may leave the session
 
-Each channel has its own rule, and the tool prints each one only on that channel's output, as
-`private_note` (Fable's ruling, 2026-11-11):
+Each channel's messages carry that channel's note; every downloaded file carries the #general
+note. The tool prints the note as `private_note` (Fable's ruling, 2026-11-11):
 
-- **The agent channel:** never quote private content, and review anything from it before it
-  reaches the repo. The note reads "Private: never quote private content; review anything from
-  here before it reaches the repo".
-- **#general, and every downloaded file from either channel:** "Private. Act on it, never copy
-  it: no quote, screenshot, file, name or health detail from here goes into the repo, a commit,
-  a PR, an issue, a ledger row or a post. A bug or request found here may be worked on and
-  described in our own words, with nothing that identifies a person or a value." A reply about
-  something read in #general goes in the agent channel only if it carries none of that;
-  otherwise it goes to Brad in the session.
+- **Agent-channel messages** (`read` and `history`): never quote private content, and review
+  anything from them before it reaches the repo. The note reads "Private: never quote private
+  content; review anything from here before it reaches the repo".
+- **#general messages, and every downloaded file from either channel** (`fetch`): "Private.
+  Act on it, never copy it: no quote, screenshot, file, name or health detail from here goes
+  into the repo, a commit, a PR, an issue, a ledger row or a post. A bug or request found here
+  may be worked on and described in our own words, with nothing that identifies a person or a
+  value." A reply about something read in #general goes in the agent channel only if it carries
+  none of that; otherwise it goes to Brad in the session.
 
 ## Status posts (Brad 2026-11-01)
 
