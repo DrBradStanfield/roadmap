@@ -16,7 +16,7 @@ import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
-export { epochOf, eraseIdentityOf } from './erase-identity';
+export { eraseIdentityOf } from './erase-identity';
 
 /** How long a burst of edits waits before one save carries them all. */
 export const PERSIST_DEBOUNCE_MS = 800;

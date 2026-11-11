@@ -17,8 +17,9 @@
  * yet. Only an arrival proves another writer, so it is remembered, in every
  * phase, until something shows it (Fable, round 3). In loading it is read
  * once the page has loaded (US-34 AC4); in idle its arrival reads at once,
- * and a read at or above its epoch clears it (a read below it, or one that
- * fails, leaves it heard); in erasing it waits for the end: an own-end at it
+ * and a read of that erase, or of a higher epoch, clears it (a read below
+ * it, a read of another identity at its epoch, or a read that fails leaves
+ * it heard); in erasing it waits for the end: an own-end at it
  * shows it and reads its rows, an own-end at this tab's erase drops it unless
  * the heard erase is at a higher epoch (then it stays heard and is read), an
  * own-failed reads it. A
@@ -39,9 +40,10 @@
  * later move to the same identity from counting again.
  *
  * `said` holds the erases whose refused save was said: one alert per erase.
- * A refused save while an erase is heard also asks for that erase's read,
- * said or not (Q3): the store refuses because it holds an erase the screen
- * does not show. One read per refused save; a failed read dispatches nothing.
+ * A refused save in loading or idle while an erase is heard emits one `read`,
+ * with `alert-refused` before it only when its erase is not yet said (Q3);
+ * in erasing it emits nothing. A failed read dispatches no event, so nothing
+ * repeats until the next refused save.
  *
  * What the events carry (the hook's contract, PR 2b):
  * - read: the store's identity taken before the read's first await, and
@@ -64,8 +66,8 @@
  *
  * Known cost: own-end is read as another writer's when it ends at the heard
  * erase. That stands on this tab's own erase never arriving: the session
- * holds it before the flush (record-session.ts:362), and adopt announces only
- * an identity unlike the one it holds (record-session.ts:604, 609). Were an
+ * holds it before the flush (record-session.ts:353), and adopt announces only
+ * an identity unlike the one it holds (record-session.ts:595, 600). Were an
  * echo of this tab's erase ever heard, the person would see their erase done,
  * as without it, plus one extra re-read of the empty record (no visible
  * change) and one wrong remote_change_applied: one extra read and one count.
@@ -73,8 +75,8 @@
  * Known limits:
  * - L1, a heard erase whose read fails. The person sees the old record,
  *   whole; the store is at the new erase, so every save from the screen is
- *   refused. The first refusal says WRITE_REFUSED, and every refused save
- *   re-reads (Q3). Ends with: that re-read, the next arrival, own-start, any
+ *   refused. The first refusal under each erase says WRITE_REFUSED, and
+ *   every refused save while the erase is heard re-reads (Q3). Ends with: that re-read, the next arrival, own-start, any
  *   whole re-read (upload, refused, left), or a reload.
  * - L2, a first read that fails. The page stays as it was mounted, its saves
  *   off (`hasApiResponse` false), as before the machine (ledger H37). A held
@@ -181,8 +183,9 @@ export function transition(state: EraseState, event: EraseEvent): Step {
     case 'read': {
       // A read inside this tab's erase loses to it, and leaves `heard` alone.
       if (state.phase === 'erasing') return same;
-      // In idle the read shows the store's identity, and with it a heard erase at or below its epoch.
-      const seen = state.phase === 'idle' && state.heard !== null && epochOf(event.identity) >= epochOf(state.heard) ? { ...state, heard: null } : state;
+      // In idle a read shows the heard erase when it is that erase or outranks it; a same-epoch other identity does not.
+      const clears = state.heard !== null && (event.identity === state.heard || epochOf(event.identity) > epochOf(state.heard));
+      const seen = state.phase === 'idle' && clears ? { ...state, heard: null } : state;
       // The erase shown, or a lower epoch, shows nothing new.
       if (!replaces(event.identity, state.shown)) return seen === state ? same : { state: seen, effects: [] };
       // No erase this tab made reaches a read first: its own-end shows it.
