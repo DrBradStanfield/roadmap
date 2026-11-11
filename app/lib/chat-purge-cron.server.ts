@@ -35,8 +35,9 @@
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a
  * `< target hour` catch-up check so a deploy can't skip the day, and the
- * shared `cron_lock` row so only one machine runs it (both Fly apps share this
- * Supabase project).
+ * shared `cron_lock` row so only one machine runs it. It starts only on
+ * health-tool-app (`RUN_SHARED_CRONS`, US-28 AC8), since both Fly apps share
+ * this Supabase project and the winner would run with its own app's env.
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
