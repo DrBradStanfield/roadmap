@@ -282,7 +282,8 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     vi.mocked(Sentry.captureException).mockClear();
     await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
-    expect(Sentry.captureException).toHaveBeenCalledWith(thrown, { tags: { area: 'erase', op: 'delete-all' } });
+    expect(Sentry.captureException).toHaveBeenCalledWith(new Error('Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
+    expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).not.toBe(thrown); // a fresh error: no provider text
     expect(result.current.erasing).toBe(false);
     expect(doors.forget).not.toHaveBeenCalled();
     expect(alerts).toEqual([ERASE_FAILED]);

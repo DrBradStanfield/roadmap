@@ -30,19 +30,19 @@ describe('scrubEvent — the upload review boundary (feature upload_review)', ()
 // 'erase'. A cloud adapter's error text can quote the record, so it takes the
 // strict branch, as 'cloud-sync' does. Synthetic text.
 describe('scrubEvent — the erase capture (area erase)', () => {
-  it.each(['erase', 'cloud-sync'])('area %s: message, exception text, breadcrumbs and extras go; the stack frames and the area stay', area => {
+  it.each([['erase', 'delete-all'], ['cloud-sync', 'load']])('area %s: message, exception text, breadcrumbs and extras go; the stack frames, the area and op %s stay', (area, op) => {
     const marker = 'zinc-report.pdf weird';
     const frames = { frames: [{ filename: 'useErase.ts', function: 'eraseAll', lineno: 9 }] };
     const scrubbed = scrubEvent(makeEvent({
       message: marker,
-      tags: { area, metric: marker },
+      tags: { area, op, metric: marker },
       exception: { values: [{ type: 'TypeError', value: marker, stacktrace: frames, mechanism: { type: 'generic', handled: true } }] },
       breadcrumbs: [{ category: 'fetch', message: marker }],
       extra: { providerBody: marker },
       contexts: { storage: { path: marker } },
       request: { url: `https://example.test/${marker}` },
     }));
-    expect(scrubbed?.tags).toEqual({ area });
+    expect(scrubbed?.tags).toEqual({ area, op });
     expect(scrubbed?.message).toBe('Health record operation failed');
     expect(scrubbed?.exception?.values).toEqual([{ type: 'Error', value: 'Health record operation failed', stacktrace: frames, mechanism: { type: 'generic', handled: true } }]);
     expect(JSON.stringify(scrubbed)).not.toContain('weird');
