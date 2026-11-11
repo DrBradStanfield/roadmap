@@ -1082,6 +1082,28 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .cards(fitness), "the next good read draws the cards")
     }
 
+    /// AC5d (adversary R1): an erase while a read's history removals wait clears the cards it drew.
+    /// The read draws before those awaits; drawn after them, it would land on top of the erase.
+    /// The history actor is held by a long grouping, so the absent metric's removal waits.
+    func testAnEraseDuringTheReadsHistoryRemovalsLeavesNothing_US56_AC5d() async throws {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        store.empty = [.vo2Max]
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        let points = (0..<300_000).map { LivePoint(start: now.addingTimeInterval(Double(-$0) * 600), value: 1) }
+        let calendar = utc
+        let busy = Task { [history = live.history] in _ = await history.grouped(points, calendar: calendar) }
+        try await Task.sleep(for: .milliseconds(20))
+        let refresh = Task { await live.refresh() }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertNil(live.removals[.vo2Max], "the erase runs while the absent metric's removal waits")
+        await live.forget()
+        await refresh.value
+        await busy.value
+        XCTAssertEqual(live.access, .granted, "nothing read since the erase")
+        XCTAssertEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .nothing, "no cards, no Open Settings row")
+    }
+
     /// N2: the sheet's answer always reads again, even within 2 s of a running read.
     func testTheSheetsAnswerAlwaysReadsAgain_N2() async throws {
         let store = FakeLiveStore(due: false)
@@ -1213,12 +1235,12 @@ private final class Changed: @unchecked Sendable {
     func fire() { lock.lock(); value = true; lock.unlock() }
 }
 
-/// A HealthKit stand-in with a fortnight of each metric.
 extension LiveAccess {
     /// A read has landed since access (tests only).
     var isRead: Bool { if case .read = self { true } else { false } }
 }
 
+/// A HealthKit stand-in with a fortnight of each metric.
 final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     private let lock = NSLock()
     private var state = State()

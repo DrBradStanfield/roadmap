@@ -30,10 +30,11 @@ final class LiveAccessTests: XCTestCase {
             (.granted, .checked(false), .granted, "still granted"),
             (.read(a), .checked(false), .read(a), "the cards stay until the next read"),
             (.read([:]), .checked(false), .read([:]), "the empty read stays"),
-            // cardsRead: lands only once granted. In unknown or needsAccess it is a late read from
-            // before a reset; it must not draw cards the person has just withdrawn access to.
-            (.unknown, .cardsRead(b), .unknown, "no answer yet: a stray read draws nothing"),
-            (.needsAccess, .cardsRead(b), .needsAccess, "access withdrawn: a late read draws nothing"),
+            // cardsRead: lands only once granted. Ignored in unknown or needsAccess: defensive, since
+            // readOnce is the only sender of `checked` and the ticket guard stops a stale read; kept
+            // so a later sender cannot draw cards whose access was withdrawn.
+            (.unknown, .cardsRead(b), .unknown, "no answer yet: a read draws nothing"),
+            (.needsAccess, .cardsRead(b), .needsAccess, "access withdrawn: a read draws nothing"),
             (.granted, .cardsRead(b), .read(b), "the first read draws"),
             (.granted, .cardsRead([:]), .read([:]), "a first read with none: Open Settings may show"),
             (.read(a), .cardsRead(b), .read(b), "a new read replaces the cards"),

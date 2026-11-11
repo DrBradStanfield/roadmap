@@ -986,7 +986,9 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   (`needsAccess`, `cards`, `hasRead`) drifted; an access reset cleared the cards but kept "read", so
   a locked first read after a re-allow drew the Open Settings row. `granted` means access answered
   and nothing read since; it promises no read in flight. A read that lands in unknown or needsAccess
-  is dropped: a late read must not draw cards the person has just withdrawn. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
+  is dropped. Defensive: unreachable while readOnce is the only sender of `checked`; the ticket
+  guard is what keeps a read from before an erase or a disconnect from landing. Kept so a later
+  sender cannot draw cards whose access was withdrawn. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
   Brad 2026-10-27, option A).** Why: on a cold start My data drew the record, then 0.1 to 0.2 s later
   the cards arrived under blood pressure and pushed the blood tests down; Brad: "I don't want us to
   wait for anything." The cards (`[LiveMetric: LiveCard]` and a version) live in

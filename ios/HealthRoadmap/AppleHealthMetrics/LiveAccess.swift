@@ -40,8 +40,10 @@ enum LiveAccess: Equatable {
         case (_, .checked(true)): .needsAccess
         case (.unknown, .checked(false)), (.needsAccess, .checked(false)): .granted
         case (.granted, .checked(false)), (.read, .checked(false)): s
-        // A read lands only once access is granted. In unknown or needsAccess it is a late read
-        // from before a reset: it must not draw cards the person has just withdrawn access to.
+        // A read lands only once access is granted. Ignored in unknown or needsAccess. Defensive:
+        // unreachable while readOnce is the only sender of `checked`; the ticket guard is what
+        // keeps a read from before an erase or a disconnect from landing. Kept so a later sender
+        // cannot draw cards whose access was withdrawn.
         case (.granted, .cardsRead(let cards)), (.read, .cardsRead(let cards)): .read(cards)
         case (.unknown, .cardsRead), (.needsAccess, .cardsRead): s
         // Locked or cancelled: keep what was drawn, and never call it "read, empty" (N1, AC5d).
