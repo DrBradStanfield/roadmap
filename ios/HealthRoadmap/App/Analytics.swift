@@ -79,6 +79,12 @@ final class Analytics {
         /// Never a count, a report's name or a value.
         case labSaveAll = "Lab save all", labSaveOne = "Lab save one"
 
+        /// "Lab save one" only on an upload of two or more reports, where save all was there to
+        /// choose instead, so the two counts compare like with like (US-52 AC8b).
+        static func saveOne(inUploadOf reports: Int) -> Event? {
+            reports >= 2 ? .labSaveOne : nil
+        }
+
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {
             switch (step, skipped) {

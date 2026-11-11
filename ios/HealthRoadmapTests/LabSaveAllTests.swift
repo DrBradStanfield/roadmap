@@ -113,6 +113,44 @@ final class LabSaveAllTests: XCTestCase {
         XCTAssertTrue(outcome.notes.first?.hasPrefix("Glucose: ") == true, "the refused value is named with the engine's reason: \(outcome.notes)")
     }
 
+    /// What the extraction itself left out (a test the server refused, one it named but could
+    /// not read, rows it dropped unnamed) is a note on the report's outcome, in the words the
+    /// single review lists under "Not saved" (AC8): a report that saved a value shows under
+    /// "partly saved", and one that saved nothing under "not saved", so either can be opened.
+    func testTheExtractionsOmissionsAreNotes_US52_AC8b() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let omissions = #""refusedValues":[{"metric":"widget_marker","value":9,"unit":"","reason":"Unit not recognised."}], "unreadValues":[{"name":"gadget_marker","reason":"unreadable"}], "droppedValueCount":3"#
+        let partly = """
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], \(omissions)}
+        """
+        let notes = ["Widget Marker: Unit not recognised.", "Gadget Marker: could not be read", "2 values could not be read."]
+        let saved = try await LabReportSave.saveWaiting(LabResult(name: "Partly.pdf", truncated: false, extractionJSON: partly, failure: nil),
+                                                        held: nil, engine: engine, store: store).get()
+        XCTAssertEqual(saved, .saved(values: 1, documents: 0, notes: notes))
+        let summary = SaveAllSummary(SaveAllProgress(reports: [0], outcomes: [0: saved]))
+        XCTAssertEqual(summary.partlySaved.map(\.notes), [notes], "listed under partly saved, so it can be opened")
+
+        let none = """
+        {"classification":"lab_report","reportDate":null,
+         "values":[{"metric":"hdl","valueSI":1.4,"displayValue":1.4,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], \(omissions)}
+        """
+        let notSaved = try await LabReportSave.saveWaiting(LabResult(name: "None.pdf", truncated: false, extractionJSON: none, failure: nil),
+                                                           held: nil, engine: engine, store: store).get()
+        XCTAssertEqual(notSaved, ReportOutcome(notes: ["Needs the test day"] + notes))
+    }
+
+    /// "Lab save one" counts a report's own Save only where save all could have been
+    /// chosen instead: an upload of two or more reports (AC8b's usage signal).
+    func testLabSaveOneCountsOnlyOnUploadsOfTwoOrMore_US52_AC8b() {
+        XCTAssertNil(Analytics.Event.saveOne(inUploadOf: 1))
+        XCTAssertEqual(Analytics.Event.saveOne(inUploadOf: 2), .labSaveOne)
+        XCTAssertEqual(Analytics.Event.saveOne(inUploadOf: 7), .labSaveOne)
+    }
+
     /// The original's own problem is a note too (AC13d, US-14 AC4's metadata-only warning);
     /// an original kept, or none offered, says nothing.
     func testTheOriginalsProblemIsANote_US52_AC8b() {

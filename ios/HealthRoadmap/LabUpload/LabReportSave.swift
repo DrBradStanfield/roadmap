@@ -90,12 +90,21 @@ struct LabReportSave: Equatable {
     /// the original's own problem (AC8, AC13d).
     var notes: [String] = []
 
-    /// How save all and its summary count it. A save that ran and wrote nothing, with no
-    /// reason, found it all there already (every value's day held, the file already filed).
-    var reportOutcome: ReportOutcome {
+    /// How save all and its summary count it, with what the extraction left out of `review`.
+    /// A save that ran and wrote nothing, with no reason, found it all there already (every
+    /// value's day held, the file already filed).
+    func reportOutcome(_ review: LabReview?) -> ReportOutcome {
         let all = notes + [problem].compactMap { $0 }
-        if values + documents == 0 && all.isEmpty { return .notSaved("Already in your record") }
-        return .saved(values: values, documents: documents, notes: all)
+        let omitted = review.map(Self.omissions) ?? []
+        if values + documents == 0 && all.isEmpty { return ReportOutcome(notes: ["Already in your record"] + omitted) }
+        return .saved(values: values, documents: documents, notes: all + omitted)
+    }
+
+    /// What the extraction itself left out, by name and why: the lines the review lists
+    /// under "Not saved" (AC8), and save all's notes on that report (AC8b).
+    static func omissions(_ review: LabReview) -> [String] {
+        review.notSaved.map { "\($0.label): \($0.reason)" }
+            + (review.unreadCount > 0 ? ["\(review.unreadCount) value\(review.unreadCount == 1 ? "" : "s") could not be read."] : [])
     }
 
     @MainActor
@@ -182,10 +191,10 @@ struct LabReportSave: Equatable {
         }
         let plan = LabSavePlan(result: result, review: review, choices: held ?? LabChoices(review: review),
                                archiveOnly: LabSavePlan.archiveOnly(review, result: result, cloudConnected: store.cloudErase != nil))
-        if case .nothing(let reason) = plan { return .success(.notSaved(reason)) }
+        if case .nothing(let reason) = plan { return .success(ReportOutcome(notes: [reason] + omissions(review))) }
         let done = await run(plan, result: result, store: store)
         if done.problem != nil, done.values + done.documents == 0, let stop = stop(store) { return .failure(stop) }
-        return .success(done.reportOutcome)
+        return .success(done.reportOutcome(review))
     }
 
     /// Why every save now would be refused, or nil: checked as the store checks each save,

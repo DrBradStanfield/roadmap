@@ -173,10 +173,13 @@ struct SaveAllSummary: Equatable {
 
     /// The summary once a report opened from it ran its own Save: what that save wrote adds
     /// to what the report saved before (still in the record), and its notes are the latest.
+    /// A report that saved before and now finds nothing new is not "already in your record":
+    /// its own earlier save put it there.
     func adding(_ outcome: ReportOutcome, at index: Int) -> SaveAllSummary {
         var next = self
         let before = outcomes[index] ?? ReportOutcome()
-        next.outcomes[index] = .saved(values: before.values + outcome.values, documents: before.documents + outcome.documents, notes: outcome.notes)
+        let notes = before.savedNothing ? outcome.notes : outcome.notes.filter { $0 != "Already in your record" }
+        next.outcomes[index] = .saved(values: before.values + outcome.values, documents: before.documents + outcome.documents, notes: notes)
         return next
     }
 }

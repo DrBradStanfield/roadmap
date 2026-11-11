@@ -72,7 +72,7 @@ struct LabReviewView: View {
                 }
                 // Held while a save runs: leaving would drop its outcome, and a second save
                 // of the same file could start before this one has committed.
-                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome) }
+                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome(review)) }
                     .disabled(saving)
             }
             // Its own group under this report's Save: it acts on every waiting report, not this one.
@@ -109,7 +109,7 @@ struct LabReviewView: View {
             Section {
                 DatePicker("Day of the test", selection: choices.testDay, in: ...Date.now, displayedComponents: .date)
                 if review.reportDay == nil {
-                    Text("The report does not print a full date. Set the day of the test.").font(.footnote).foregroundStyle(.orange)
+                    Text("The report does not print a full date. Set the day of the test.").font(.footnote).foregroundStyle(Color.status("attention"))
                     Toggle("This is the right day", isOn: choices.dayConfirmed)
                 }
             }
@@ -124,16 +124,16 @@ struct LabReviewView: View {
                                 // The status tone, not system orange: AA contrast as caption text, light and dark.
                                 Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(Color.status("attention"))
                             } else if item.check {
-                                Text("Check this value and its unit against the report").font(.caption).foregroundStyle(.orange)
+                                Text("Check this value and its unit against the report").font(.caption).foregroundStyle(Color.status("attention"))
                             }
                         }
                     }
                 }
             }
-            if !review.notSaved.isEmpty || review.unreadCount > 0 {
+            let omitted = LabReportSave.omissions(review)
+            if !omitted.isEmpty {
                 Section("Not saved") {
-                    ForEach(Array(review.notSaved.enumerated()), id: \.offset) { Text("\($0.element.label): \($0.element.reason)") }
-                    if review.unreadCount > 0 { Text("\(review.unreadCount) value\(review.unreadCount == 1 ? "" : "s") could not be read.") }
+                    ForEach(Array(omitted.enumerated()), id: \.offset) { Text($0.element) }
                 }
             }
         }
@@ -202,7 +202,8 @@ struct LabReviewView: View {
         if case .nothing = plan { return }
         saving = true
         defer { saving = false }
-        analytics?.event(.labSaveOne)  // AC8b's usage signal: once per Save, nothing with it
+        // AC8b's usage signal: once per Save on an upload save all could take, nothing with it.
+        if let event = Analytics.Event.saveOne(inUploadOf: position.1) { analytics?.event(event) }
         saved = await LabReportSave.run(plan, result: result, store: store)
     }
 }
