@@ -135,15 +135,8 @@ struct WelcomeView: View {
                     }
                 }
                 switch phase {
-                case .opening:
-                    Section {
-                        HStack {
-                            ProgressView()
-                            Text("Opening your record").foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Opening your record")
-                    }
+                case .opening: busy("Opening your record")
+                case .disconnecting: busy("Disconnecting…")
                 case .failed(let problem):
                     if let provider = sync.provider {
                         let failure = WelcomeConnect.failure(problem, provider: provider)
@@ -172,6 +165,18 @@ struct WelcomeView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    /// A spinner row and what it waits on.
+    private func busy(_ words: LocalizedStringKey) -> some View {
+        Section {
+            HStack {
+                ProgressView()
+                Text(words).foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(words)
+        }
     }
 
     /// "Get started" with a cloud connected waits on its record, so the questions never

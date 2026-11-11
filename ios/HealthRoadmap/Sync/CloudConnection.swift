@@ -105,8 +105,8 @@ enum CloudConnection: Equatable {
         case cancel
         /// Keep the sign-in: tokens first, the provider file last.
         case keep
-        /// Remove what a first connect's failed keep wrote: its tokens and account files.
-        case unkeep(CloudProvider)
+        /// Remove what a first connect's failed keep wrote: the tokens and the account files.
+        case unkeep
         /// The screen falls back to the phone's file, where edits wait marked pending.
         case showPhone
         /// Draw a record the shown session brought in.
@@ -383,7 +383,7 @@ enum CloudConnection: Equatable {
     /// Nothing is half-kept: a first connect goes back to the phone with what it kept removed;
     /// a cloud already on file stays connected, closed, with no session behind the screen.
     private static func keepFailed(_ provider: CloudProvider, attempt: Int, connectedAt: Int, _ problem: SyncProblem, onFile: Bool) -> Step {
-        guard onFile else { return Step(next: .phone(attempt: attempt), effects: [.unkeep(provider)]) }
+        guard onFile else { return Step(next: .phone(attempt: attempt), effects: [.unkeep]) }
         return Step(next: .closed(Closed(provider: provider, attempt: attempt, connectedAt: connectedAt, problem: problem)),
                     effects: [.closeSession(attempt: attempt), .showPhone])
     }

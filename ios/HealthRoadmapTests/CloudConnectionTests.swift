@@ -99,7 +99,7 @@ final class CloudConnectionTests: XCTestCase {
             row(trying(first: true), .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5, first: true), [.keep, .open(attempt: 5)]),
             row(opening, .signInReturned(key: 2, provider: .googleDrive, otherAccount: false), opening, [.refuse(another)]),
             row(opening, .keepFailed(attempt: 4, p, onFile: true), closedWith(p), [.closeSession(attempt: 4), .showPhone]),
-            row(opening, .keepFailed(attempt: 4, p, onFile: false), .phone(attempt: 4), [.unkeep(.dropbox)]),
+            row(opening, .keepFailed(attempt: 4, p, onFile: false), .phone(attempt: 4), [.unkeep]),
             row(opening, .edited, trying(edits: 1)),
             row(opening, .opened(attempt: 4, session: 9, at: t1), openWith(.clean(t1), session: 9), [.remember(.dropbox)]),
             row(trying(held: held), .opened(attempt: 4, session: 9, at: t1), openWith(.failed(full), session: 9), [.showCloud(view), .remember(.dropbox)]),
@@ -261,7 +261,7 @@ final class CloudConnectionTests: XCTestCase {
                 // the delay between a step and its effect is tested in CloudSyncTests (R1).
                 case .open(let attempt): (engineSession, running) = (nil, attempt)
                 case .closeSession: (engineSession, running) = (nil, nil)
-                case .unkeep(let provider): tokens.remove(provider)
+                case .unkeep: tokens = []
                 case .refuse, .cancel, .keep, .showPhone, .showCloud, .remember: break
                 }
             }

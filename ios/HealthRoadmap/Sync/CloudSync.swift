@@ -185,7 +185,7 @@ final class CloudSync: CloudPort {
     /// file stays where it is. `done(copied: false)`: the cloud could not be read for the
     /// copy; the phone keeps what it already held.
     func disconnectOutcome() async -> DisconnectOutcome {
-        guard let provider else { return .done(copied: true) }
+        guard provider != nil else { return .done(copied: true) }
         guard !erasing, send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         // Each step after an await checks this Disconnect still owns the connection (Codex C1).
@@ -195,7 +195,7 @@ final class CloudSync: CloudPort {
             await run(send(.openStarted))
             return .failed
         }
-        signOut(provider)
+        signOutAll()
         forgetEmail()
         files.remove(files.pending)
         let shown = store.showPhone()
@@ -251,8 +251,8 @@ final class CloudSync: CloudPort {
             case .remember(let provider):
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
-            case .unkeep(let provider):
-                signOut(provider)
+            case .unkeep:
+                signOutAll()
                 forgetEmail()
             case .open, .closeSession: later.append(effect)
             // connect's own: it throws, or keeps, before the rest run.
@@ -271,6 +271,9 @@ final class CloudSync: CloudPort {
         try oauth.keep(signedIn)
         if let email = signedIn.email { try files.write(email, to: files.email) } else { files.remove(files.email) }
         try files.write(signedIn.provider.rawValue, to: files.provider)
+        // One cloud at a time: any other cloud's token is a leftover (a delete the Keychain
+        // refused, a reinstall). Best effort, and never the cloud just kept.
+        for other in CloudProvider.allCases where other != signedIn.provider { oauth.signOut(other) }
         accountEmail = signedIn.email
         linkStore()
     }
@@ -313,17 +316,18 @@ final class CloudSync: CloudPort {
     /// With no provider file, the sync files are leftovers of a Disconnect or a connect that
     /// failed partway, removed at launch so a relaunch reads one state. An account file marks
     /// tokens that may be left too: a connect writes it before the tokens, and it goes only
-    /// once the Keychain has deleted them (`signOut`), so a launch retries from it (Codex C2).
+    /// once the Keychain has deleted them (`signOutAll`), so a launch retries from it (Codex C2).
     private func removeLeftovers() {
-        if files.exists(files.account), CloudProvider.allCases.map(oauth.signOut).allSatisfy({ $0 }) { files.remove(files.account) }
+        if files.exists(files.account) { signOutAll() }
         files.remove(files.email)
         files.remove(files.pending)
     }
 
-    /// Deletes a cloud's tokens; the account file, the mark that tokens may be left, goes only
-    /// once the Keychain has deleted them.
-    private func signOut(_ provider: CloudProvider) {
-        if oauth.signOut(provider) { files.remove(files.account) }
+    /// Deletes every cloud's tokens, not only the one disconnected: one cloud is connected at a
+    /// time, so no other's should exist (round 2). The account file, the mark launch cleanup
+    /// retries from, goes only once every delete worked.
+    private func signOutAll() {
+        if CloudProvider.allCases.map(oauth.signOut).allSatisfy({ $0 }) { files.remove(files.account) }
     }
 
     private func forgetEmail() {

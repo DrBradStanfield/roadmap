@@ -14,6 +14,8 @@ enum WelcomeConnect {
         case failed(SyncProblem)
         /// The cloud record is open: the screen can go on.
         case opened
+        /// A Disconnect ("Use a different cloud") is closing: a spinner, no Connect rows.
+        case disconnecting
     }
 
     /// No spinner without an open behind it: every tap that can show `opening` also
@@ -32,9 +34,9 @@ enum WelcomeConnect {
         // .connecting in the same turn; saving and synced need an open session). No
         // open is implied, so the taps start one.
         case .onPhone, .synced, .saving: return .opening
-        // A Disconnect closing ("Use a different cloud"): the spinner shows and the Connect rows
-        // stay hidden, since a connect is dropped while it closes; choosing follows (owner, R2 b).
-        case .disconnecting: return .opening
+        // A Disconnect closing: the Connect rows stay hidden, since a connect is dropped while
+        // it closes; choosing follows (owner, R2 b).
+        case .disconnecting: return .disconnecting
         }
     }
 
@@ -43,7 +45,7 @@ enum WelcomeConnect {
     static func showsConnect(_ phase: Phase) -> Bool {
         switch phase {
         case .choosing: true
-        case .opening, .failed, .opened: false
+        case .opening, .failed, .opened, .disconnecting: false
         }
     }
 
@@ -52,7 +54,7 @@ enum WelcomeConnect {
     static func showsRecovery(_ phase: Phase) -> Bool {
         switch phase {
         case .failed: true
-        case .choosing, .opening, .opened: false
+        case .choosing, .opening, .opened, .disconnecting: false
         }
     }
 

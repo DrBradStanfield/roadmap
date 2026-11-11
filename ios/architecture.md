@@ -636,7 +636,10 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   each open or close names its attempt and is skipped once the connection moved on (review R1).
   A second Disconnect while one closes is a table cell that closes nothing; each Disconnect
   step after an await checks its attempt (Codex C1). The account file stays until the Keychain
-  has deleted the tokens, so launch cleanup retries from it (C2). A sign-in voided by a
+  has deleted every cloud's tokens, so launch cleanup retries from it (C2). Disconnect and a
+  failed first connect delete every cloud's tokens, and a connect deletes every other cloud's,
+  never its own: one cloud at a time, so a token a refused delete left never outlives the next
+  cloud (round 2). A sign-in voided by a
   Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
   Disconnect (owner): nothing is lost and the existing words show. Not yet (PR 2): `erasing` is still a boolean beside the union; it moves to
   `DataEraser.phase`, and a one-step cloud switch replaces "Disconnect from <cloud> first".
