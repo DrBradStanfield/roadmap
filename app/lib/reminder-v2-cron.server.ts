@@ -52,6 +52,11 @@ const cron = dailyCron({
   feature: 'reminder_v2_cron',
   lockName: 'reminder_v2_cron',
   targetHour: TARGET_HOUR_UTC,
+  // A pass sends 5 emails at a time, 50 opt-ins a page, and grows with the
+  // opt-in count; the sends have no time limit of their own. At about a second
+  // per batch of 5, 6 hours covers some 100,000 opt-ins, far past today's list,
+  // and still reports a hung pass the same day.
+  stuckAfterHours: 6,
   clock: utcNowParts,
   startLog: `Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`,
   // A failed pass re-runs the day (US-28 AC3); attemptedToday skips whoever

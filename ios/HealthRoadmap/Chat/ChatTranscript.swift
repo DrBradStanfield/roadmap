@@ -29,9 +29,46 @@ struct ChatTranscript {
         lines.removeAll(where: \.failed)
         error = nil
         finished = false
+        pending = .thinking
         lines.append(ChatLine(role: .user, text: question))
         lines.append(ChatLine(role: .assistant, text: ""))
         return lines.count - 1
+    }
+
+    /// What the answer in flight is doing, for the line under the conversation (US-52 AC6g),
+    /// in the web's words (ChatPendingReply.tsx): "Thinking…" from Send, a server status (with
+    /// the web's "…") until answer text arrives, then "Answering…". Nil once the turn ends.
+    enum Pending: Equatable {
+        case status(String), thinking, answering
+
+        var words: String {
+            switch self {
+            case .status(let text): text + "…"
+            case .thinking: "Thinking…"
+            case .answering: "Answering…"
+            }
+        }
+    }
+
+    private(set) var pending: Pending?
+
+    /// A streamed line reaches the answer at `index`. A status line starts a new phase: text
+    /// streamed before it was not the answer (a run_roadmap round's preamble), so it goes,
+    /// as on the web (US-52 AC6f, US-15 AC38). Earlier status lines come before any text.
+    /// A thinking line changes nothing: "Thinking…" shows from Send, a status keeps priority
+    /// over it, as on the web, and its draft notes never show (AC6g).
+    mutating func stream(_ event: ChatStreamEvent, into index: Int) {
+        switch event {
+        case .status(let text):
+            lines[index].text = ""
+            pending = .status(text)
+        case .text(let text):
+            lines[index].text += text
+            if !lines[index].text.isEmpty { pending = .answering }
+        case .sources(let titles): lines[index].sources = titles
+        case .done: pending = nil
+        case .thinking, .other: break
+        }
     }
 
     /// The last answer is in (its `done` arrived) and goes to history: Stop is too late (review R3).
@@ -46,6 +83,7 @@ struct ChatTranscript {
 
     /// The last turn failed: its question stays, an empty answer goes.
     mutating func fail(_ error: Error) {
+        pending = nil
         // An answer already finished (and saved to history) stays as it is.
         guard !finished else { return }
         guard let start = lines.lastIndex(where: { $0.role == .user }) else { return }
@@ -57,6 +95,7 @@ struct ChatTranscript {
     /// The person stopped the last turn: it leaves the screen, and its question comes back.
     /// A finished turn stays, and nothing comes back.
     mutating func stop() -> String? {
+        pending = nil
         guard !finished, let start = lines.lastIndex(where: { $0.role == .user }) else { return nil }
         let question = lines[start].text
         lines.removeSubrange(start...)

@@ -1,0 +1,4 @@
+{
+  "minAppBuild": 11,
+  "why": "PR 1218 (US-72 AC10): engines from here on drop the importers' erasedAt checks; the app disconnects Apple Health on an erase instead. Build 10 (0.2, commit 305725de, 'iOS: build 10 (0.2) for TestFlight and App Store review') is the highest uploaded and lacks the disconnect, so 11 is the first build that has it. ios/engine-updates.md."
+}

@@ -46,7 +46,9 @@ final class NoHealth: HealthStoreClient {
     func canWrite(_ kind: HealthKind) -> Bool { false }
     func save(_ write: HealthWrite) async throws {}
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
+    func stopObserving() {}
     func deleteOwnSamples() async throws {}
+    func deleteSamples(syncIds: [String]) async throws -> HealthDeletion { HealthDeletion(deleted: [], asked: []) }
     func characteristics() -> HealthCharacteristics { .none }
 }
 

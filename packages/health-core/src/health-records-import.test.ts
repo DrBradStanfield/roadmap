@@ -301,15 +301,13 @@ describe('US-72 AC3: the day', () => {
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-19T00:00:00.000Z', '2026-10-18T00:00:00.000Z']);
   });
 
-  it('AC3, AC10: an `issued` later than now, unreadable, or before the erase does not land', () => {
-    const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
-    const { file, counts } = run(erased, [
+  it('AC3: an `issued` later than now or unreadable does not land', () => {
+    const { file, counts } = run(empty(), [
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'a', issued: '2026-11-02T09:30:00Z' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'b', issued: '2026-02-30T09:30:00Z' }, { fhirVersion: DSTU2 }),
-      rec({ ...APPLE_SAMPLE_DSTU2, id: 'c' }, { fhirVersion: DSTU2 }),
       rec({ ...APPLE_SAMPLE_DSTU2, id: 'd', issued: '2026-10-23T09:30:00Z' }, { fhirVersion: DSTU2 }),
     ]);
-    expect(counts).toMatchObject({ added: 1, notRead: 3 });
+    expect(counts).toMatchObject({ added: 1, notRead: 2 });
     expect(file.labValues.map((m) => m.recordedAt)).toEqual(['2026-10-23T09:30:00.000Z']);
   });
 
@@ -956,12 +954,12 @@ describe('US-72 AC9: the import wins a conflict', () => {
   });
 });
 
-describe('US-72 AC10: erase', () => {
-  it('AC10: a result drawn before the record\'s erase does not land; one drawn after does', () => {
+describe('US-72 AC10: erase (Brad\'s yes, 2026-11-11)', () => {
+  it('US-25 AC13, US-72 AC10: a result drawn before the record\'s erase lands (a Connect after an erase reads everything)', () => {
     const erased: RoadmapFile = { ...empty(), meta: { ...empty().meta, erasedAt: '2026-10-22T00:00:00.000Z' } };
     const { file, counts } = run(erased, [rec(obs(R4_LDL)), rec(obs(DSTU2_HDL, { effectiveDateTime: '2026-10-23' }), { fhirVersion: DSTU2 })]);
-    expect(counts).toMatchObject({ added: 1, notRead: 1 });
-    expect(file.labValues.map((m) => m.metricName)).toEqual(['hdl']);
+    expect(counts).toMatchObject({ added: 2, notRead: 0 });
+    expect(file.labValues.map((m) => m.metricName).sort()).toEqual(['hdl', 'ldl']);
   });
 });
 

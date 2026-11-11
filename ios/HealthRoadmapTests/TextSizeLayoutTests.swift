@@ -93,7 +93,7 @@ final class TextSizeLayoutTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
         let edits = ChatEdits(store: store)
         let proposals = #"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"},{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null},{"kind":"profile","sex":null,"heightCm":181}]"#
-        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.chatMark, today: "2026-11-02")
+        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.mark, today: "2026-11-02")
         XCTAssertNotNil(edits.saved)
         XCTAssertNotNil(edits.review)
         let chat = ScrollView { ChatEditBanners(edits: edits).padding() }

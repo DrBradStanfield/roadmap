@@ -640,11 +640,12 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Units are kept** (a setting; the web keeps its unit preference through an erase), the
     welcome flag and the AI consent are kept, the sync connection is kept.
   - **Reminders** need no step of their own: the opt-in ends when the epoch moves (D7).
-  - **Apple Health** (merged in the same evening): after the record erase, `AppleHealthSync.
-    eraseOwnSamples` deletes every sample this app wrote (HealthKit's source predicate, kinds
-    it may write) and clears `HealthSyncMemory`'s written versions. The import anchors stay,
-    so other apps' readings from before the erase are not imported again. A refused delete
-    never undoes the record erase; the words say so. Not checked on a real iPhone.
+  - **Apple Health** (merged in the same evening; disconnect 2026-11-11, D6): after the record
+    erase, `AppleHealthSync.erased` disconnects Health and resets every import anchor, then
+    deletes every sample this app wrote (HealthKit's source predicate, kinds it may write) and
+    clears `HealthSyncMemory`'s written versions. Another device's erase disconnects the same
+    way and deletes only the sync ids that memory lists (`deleteSamples(syncIds:)`). A refused
+    delete never undoes the record erase; the words say so. Not checked on a real iPhone.
   - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
@@ -672,8 +673,15 @@ exact list matched to `types.ts` in the spike).
   Otherwise a scale re-sync would undo a user's correction every time.
 - **A sample deleted in the Health app is ignored.** The row stays. The record is
   append-only (FHIR; Brad 2026-09-24): we never remove or retract a value.
-- After taking in an erase, the importer skips samples older than the erase. The import
-  anchor is kept outside the record.
+- *Superseded 2026-11-11 (Brad's yes):* after taking in an erase, the importer skips
+  samples older than the erase. The import anchor is kept outside the record.
+- **An erase disconnects Apple Health (Brad 2026-11-11; US-72 AC10).** A local
+  erase, or a newer erase taken in from another device on the same record source, disconnects
+  Health and resets every import anchor, vitals and lab results alike. The first open of a
+  record (a new cloud included) adopts its erase as seen and never disconnects. One stored
+  value holds the erase seen and its source; a pure gate decides keep, disconnect or adopt.
+  Order on a local erase: the record mark, the erase, then the disconnect. Connect reads
+  everything from the start; the importers keep no erase rule. Anchors stay outside the record.
 - Merge orders rows by when they were written, not when they were measured. Rules such as
   "the latest reading of the day wins across devices" would need the sample time in the
   record and a merge change: merge-class work, adversary plus Codex.
@@ -1370,7 +1378,7 @@ usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (p
 `medications` or `review`, the proposals as received, the phone's day) and the engine's own
 Undo edit, passed back as it came. A medication change saves at once with Undo; values,
 height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
-question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.Mark`
 (the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
 and ChatView drops the banners when it moves (US-16 AC2a).
 
@@ -1596,7 +1604,21 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
 - `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
-- `scripts/fresh-sim.sh [device]`: builds and starts the app in the simulator as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
+- `scripts/sim-run.sh`: the one door to the simulator (US-71 AC7, 2026-11-11). Every session takes turns on
+  one device, "HR Shared iPhone" (iPhone 18 Pro, newest iOS runtime), under a kernel lock: `lockf` on a
+  file descriptor the wrapper opens in `~/Library/Caches/health-roadmap-sim`. The kernel frees it when the
+  holder exits, however it exits, so there is no stale lock to take over (a hand-made mkdir lease came first,
+  and review found five races in it; Fable 2026-11-11). lockf's command form was not used: it drops the lock
+  when lockf itself is signalled while its command runs on, and its timeout exit (75) is a command's too.
+  A perl shim keeps the descriptor while the device steps and the command run in their own process group,
+  and stops the group (TERM, then KILL) at the time limit, on a signal, or if the wrapper is killed outright,
+  before the lock frees. The device stays booted between runs and a detached sleep shuts it down after 20
+  idle minutes. Why: each test run booted its own simulator (load spikes of 33 to 47 on 2026-11-11), and 171
+  simulator-runtime processes from runs 9 and 11 days old were still alive. The test scripts here run through
+  it. Demos use their own device: a demo hold on the shared one was built and dropped the same day, because a
+  second lock with its own lifetime on top of the first kept handing the device to two callers. Tested by
+  `scripts/sim-run.test.ts` with a fake xcrun (macOS only; CI skips it).
+- `scripts/fresh-sim.sh`: builds and starts the app on the demo device, "HR Demo iPhone" (made once by name, never the shared one; only with the hatch in ios/CLAUDE.md), as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
 - `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first

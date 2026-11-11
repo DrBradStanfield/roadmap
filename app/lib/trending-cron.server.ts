@@ -70,6 +70,10 @@ const cron = dailyCron({
   feature: 'trending_cron',
   lockName: TRENDING_LOCK_NAME,
   targetHour: TARGET_HOUR_NZ,
+  // Every step of a run has its own time limit (15 s + 30 s + 30 s, in
+  // computeAndWriteTrending), so a healthy run ends in under 2 minutes. One
+  // still going an hour on has hung outside those limits.
+  stuckAfterHours: 1,
   // NZ-local date, so the day boundary matches NZ midnight.
   clock: nzNowParts,
   startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`,
