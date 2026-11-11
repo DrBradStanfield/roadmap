@@ -14,9 +14,8 @@ struct SupplementsSection: View {
 
     @State private var editing: SupplementsView.Row?
     @State private var adding = false
-    @State private var refusal: String?
-    /// A "Taking again" is under way: one at a time.
-    @State private var saving = false
+    /// A "Taking again" (US-25 AC21e): one at a time; a refusal's words show in the alert.
+    @State private var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
 
     var body: some View {
         Section {
@@ -35,7 +34,7 @@ struct SupplementsSection: View {
         .sheet(isPresented: $adding) {
             AddSupplementSheet(choices: supplements.choices) { edit in saved(await store.apply(.form(edit))) }
         }
-        .refusalAlert($refusal)
+        .refusalAlert(Binding(get: { state.message }, set: { if $0 == nil { SheetSave.send(&state, .typed) } }))
 
         if !supplements.stopped.isEmpty {
             Section {
@@ -43,7 +42,7 @@ struct SupplementsSection: View {
                     HStack {
                         SupplementRow(row: row, stopped: true).foregroundStyle(.secondary)
                         Button("Taking again") { take(row) }
-                            .disabled(saving)
+                            .disabled(state.busy)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }
@@ -57,11 +56,12 @@ struct SupplementsSection: View {
     }
 
     private func take(_ row: SupplementsView.Row) {
-        saving = true
+        guard SheetSave.send(&state, .tapped) else { return }
         Task {
             let result = saved(await store.apply(.form(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: false))))
-            saving = false
-            if case .refused(let why, _) = result { refusal = why }
+            SheetSave.send(&state, .landed(result, asks: .never))
+            // Not a sheet: a "Taking again" that saved is over, and the next tap starts a new one.
+            if state == .done { state = .editing(message: nil) }
         }
     }
 }
