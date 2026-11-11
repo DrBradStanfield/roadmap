@@ -522,6 +522,42 @@ describe('free-text scrub parity', () => {
     expect(b).toEqual(a);
   });
 
+  // US-09 AC7h: the trace context's ids survive in their exact shape and are
+  // scrubbed in any other, the same way on both copies.
+  it('US-09 AC7h — trace and span ids: kept in their exact shape at their exact paths, on both copies', () => {
+    const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+    const SPAN_ID = 'e212345678abcdef';
+    const trace = (trace_id: string, span_id: string, parent_span_id: string) => ({
+      trace_id, span_id, parent_span_id, links: [{ trace_id, span_id, sampled: false }],
+    });
+    const ID_CASES = [
+      trace(TRACE_ID, SPAN_ID, SPAN_ID),
+      trace('LDL 3.2 mmol/L', 'e2 45', 'e2 45'),
+      trace(TRACE_ID.toUpperCase(), SPAN_ID.toUpperCase(), SPAN_ID.toUpperCase()),
+      trace(TRACE_ID.slice(1), `${SPAN_ID}0`, TRACE_ID),
+    ];
+    const build = (t: ReturnType<typeof trace>) => ({
+      event_id: TRACE_ID,
+      contexts: { trace: t, other: { trace_id: TRACE_ID, span_id: SPAN_ID } },
+      spans: [{ span_id: SPAN_ID, parent_span_id: SPAN_ID, trace_id: TRACE_ID }],
+      extra: { trace_id: TRACE_ID, span_id: SPAN_ID },
+      tags: { trace_id: TRACE_ID },
+    });
+    for (const [i, t] of ID_CASES.entries()) {
+      const a = build(t); const b = build(t);
+      source.scrubEventText(a); copy.scrubEventText(b);
+      expect(b).toEqual(a);
+      const kept = i === 0;
+      expect(a.contexts.trace).toEqual(kept ? t : trace(
+        source.scrubText(t.trace_id), source.scrubText(t.span_id), source.scrubText(t.parent_span_id)));
+      expect(a.event_id).toBe(TRACE_ID);
+      expect(a.spans).toEqual(build(t).spans);
+      expect(a.contexts.other).toEqual({ trace_id: source.scrubText(TRACE_ID), span_id: source.scrubText(SPAN_ID) });
+      expect(a.extra).toEqual({ trace_id: source.scrubText(TRACE_ID), span_id: source.scrubText(SPAN_ID) });
+      expect(a.tags).toEqual({ trace_id: source.scrubText(TRACE_ID) });
+    }
+  });
+
   // The .mjs cannot import units.ts (it loads before the bundle, outside the
   // workspace), so the vocabulary is a literal in both files. This is the guard
   // that fails when units.ts or mappings.ts gains an entry the lists miss.

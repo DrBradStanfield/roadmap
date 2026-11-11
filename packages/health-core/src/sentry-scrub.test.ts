@@ -488,6 +488,81 @@ describe('scrubEventText', () => {
   });
 });
 
+// US-09 AC7h: the SDK's trace and span ids are not text. A lab name made of hex
+// letters (e2, e1, b12) followed by digits sat inside about 1.5% of random
+// trace contexts, and the name-then-value rule put "[value]" inside the id.
+describe('US-09 AC7h — trace and span ids at their exact paths', () => {
+  const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+  const SPAN_ID = 'e212345678abcdef';
+  const PARENT_ID = 'e1987654321fedcb';
+  const idEvent = (trace: unknown, rest: Record<string, unknown> = {}) => ({
+    event_id: TRACE_ID,
+    contexts: { trace },
+    spans: [{ span_id: SPAN_ID, parent_span_id: PARENT_ID, trace_id: TRACE_ID }],
+    ...rest,
+  });
+  const fullTrace = (trace_id: unknown, span_id: unknown, parent_span_id: unknown) => ({
+    trace_id, span_id, parent_span_id, op: 'http.server',
+    links: [{ trace_id, span_id, sampled: true }],
+  });
+
+  it('an id starting with a hex lab name and digits survives unchanged', () => {
+    expect(scrubText(TRACE_ID)).not.toBe(TRACE_ID); // the fault: the rule matches inside the id
+    const event = idEvent(fullTrace(TRACE_ID, SPAN_ID, PARENT_ID));
+    scrubEventText(event);
+    expect(event).toEqual(idEvent(fullTrace(TRACE_ID, SPAN_ID, PARENT_ID)));
+  });
+
+  it('text at an id path is scrubbed as before', () => {
+    for (const text of ['LDL 3.2 mmol/L', 'e2 45']) {
+      const event = idEvent(fullTrace(text, text, text));
+      scrubEventText(event);
+      expect(event.contexts.trace).toEqual(fullTrace(scrubText(text), scrubText(text), scrubText(text)));
+      expect(scrubText(text)).toContain('[value]');
+    }
+  });
+
+  it('upper-case or wrong-length hex at an id path is scrubbed as before', () => {
+    const shapes: Array<[string, string, string]> = [
+      [TRACE_ID.toUpperCase(), SPAN_ID.toUpperCase(), PARENT_ID.toUpperCase()],
+      [TRACE_ID.slice(0, 31), SPAN_ID.slice(0, 15), PARENT_ID.slice(0, 15)],
+      [`${TRACE_ID}0`, `${SPAN_ID}0`, `${PARENT_ID}0`],
+      [SPAN_ID, TRACE_ID, TRACE_ID], // each id in the other's length
+      [` ${TRACE_ID}`, `${SPAN_ID}\n`, `${PARENT_ID} `],
+    ];
+    for (const [t, s, p] of shapes) {
+      const event = idEvent(fullTrace(t, s, p));
+      scrubEventText(event);
+      expect(event.contexts.trace).toEqual(fullTrace(scrubText(t), scrubText(s), scrubText(p)));
+      for (const v of [t, s, p]) expect(scrubText(v)).toContain('[value]');
+    }
+  });
+
+  it('an id-shaped value at any other path is scrubbed as before', () => {
+    const elsewhere = () => idEvent(
+      { trace_id: TRACE_ID, data: { span_id: SPAN_ID, trace_id: TRACE_ID }, op: TRACE_ID },
+      {
+        message: TRACE_ID,
+        extra: { trace_id: TRACE_ID, span_id: SPAN_ID },
+        tags: { trace_id: TRACE_ID },
+        breadcrumbs: [{ message: SPAN_ID, data: { span_id: SPAN_ID } }],
+      },
+    );
+    const event = elsewhere();
+    (event.contexts as Record<string, unknown>).other = { trace_id: TRACE_ID, span_id: SPAN_ID };
+    scrubEventText(event);
+    const t = scrubText(TRACE_ID); const s = scrubText(SPAN_ID);
+    expect(event.contexts).toEqual({
+      trace: { trace_id: TRACE_ID, data: { span_id: s, trace_id: t }, op: t },
+      other: { trace_id: t, span_id: s },
+    });
+    expect(event.message).toBe(t);
+    expect(event.extra).toEqual({ trace_id: t, span_id: s });
+    expect(event.tags).toEqual({ trace_id: t });
+    expect(event.breadcrumbs).toEqual([{ message: s, data: { span_id: s } }]);
+  });
+});
+
 describe('dropLongStrings', () => {
   it('drops a string longer than the limit, key and all', () => {
     const out = dropLongStrings({ blob: 'x'.repeat(300), note: 'short', n: 1 }) as Record<string, unknown>;
