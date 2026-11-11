@@ -50,6 +50,8 @@ enum WelcomeConnect {
         case existing
         case tryAgain
         case phaseChanged
+        /// The person closed a connect error's alert (US-25 AC11j).
+        case alertDismissed
     }
 
     enum Decision: Equatable {
@@ -64,8 +66,10 @@ enum WelcomeConnect {
     }
 
     /// Going on closes the sheet, so it happens once: a phase change goes on only while
-    /// the sheet shows, and a tap only when the record is already open.
-    static func decide(_ event: Event, phase: Phase, sheetShown: Bool) -> Decision {
+    /// the sheet shows, and a tap only when the record is already open. A connect error's
+    /// alert on the sheet holds it: going on would close the alert unread, so the screen
+    /// goes on when the person dismisses it (review of PR 1295).
+    static func decide(_ event: Event, phase: Phase, sheetShown: Bool, alertShown: Bool) -> Decision {
         switch (event, phase) {
         case (.getStarted, .choosing): .start
         case (.existing, .choosing): .showSheet
@@ -73,8 +77,10 @@ enum WelcomeConnect {
         case (.getStarted, _), (.existing, _): .showSheetAndOpen
         case (.tryAgain, .opening), (.tryAgain, .failed): .open
         case (.tryAgain, _): .nothing
-        case (.phaseChanged, .opened): sheetShown ? .goOn : .nothing
+        case (.phaseChanged, .opened): sheetShown && !alertShown ? .goOn : .nothing
         case (.phaseChanged, _): .nothing
+        case (.alertDismissed, .opened): sheetShown ? .goOn : .nothing
+        case (.alertDismissed, _): .nothing
         }
     }
 }

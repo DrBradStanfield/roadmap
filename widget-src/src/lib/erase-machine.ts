@@ -5,8 +5,8 @@
  * Changed only through the pure `transition`. Each event carries its data and
  * is judged against the state alone, never a global. What the page must do is
  * returned as effects, run by `runEraseEffects`; `createEraseStore` holds the
- * state as the page's only copy, for useSyncExternalStore. Nothing uses it
- * yet: useErase and useRecordApply move onto it in a later PR.
+ * state as the page's only copy (hooks/useErase.ts builds it, with the doors).
+ * Arrivals and the count still go through the relay until PR 2b-3.
  *
  * Phases:
  * - loading: the page has not shown its first read.
@@ -48,9 +48,10 @@
  * What the events carry (the hook's contract, PR 2b):
  * - read: the store's identity taken before the read's first await, and
  *   dispatched only when it equals the identity after its last await, in the
- *   turn the record is shown (useRecordApply.ts:113 takes it before; the
+ *   turn the record is shown (useRecordApply.ts:114 takes it before; the
  *   awaits are useRecordReads.ts:46-53); else the read is dropped: the change
- *   that moved it brings its own read. Dispatched stale, it would move
+ *   that moved it brings its own read (the drop lands in PR 2b-3; until
+ *   then apply dispatches every read). Dispatched stale, it would move
  *   `shown` back within an epoch (the overlapping-reads test), and the store
  *   would refuse every save.
  * - own-start: dispatched in the turn eraseAll reads `before`, the store's
@@ -66,7 +67,7 @@
  *
  * Known cost: own-end is read as another writer's when it ends at the heard
  * erase. That stands on this tab's own erase never arriving: the session
- * holds it before the flush (record-session.ts:353), and adopt announces only
+ * holds it before the flush (record-session.ts:351), and adopt announces only
  * an identity unlike the one it holds (record-session.ts:595, 600). Were an
  * echo of this tab's erase ever heard, the person would see their erase done,
  * as without it, plus one extra re-read of the empty record (no visible
@@ -117,8 +118,6 @@ export type EraseEvent =
   | { type: 'loaded' };
 
 export type EraseEffect =
-  /** The store's mark: run it once the tree that shows `identity` commits (US-16 AC2d). */
-  | { type: 'mark-store'; identity: EraseIdentity }
   /** The chat's banners and every draft made under the old erase go. */
   | { type: 'clear-drafts' }
   /** This tab's erase: the page forgets the old record, on the device and on screen. */
@@ -126,7 +125,7 @@ export type EraseEffect =
   /** Re-read the record and show it. */
   | { type: 'read' }
   | { type: 'count-remote-change' }
-  /** Answered to the caller (refusalIsNews), who says it; no door runs it. */
+  /** Answered to the caller (`refusal`), who says it; no door runs it. */
   | { type: 'alert-refused' }
   /** Say how this tab's erase went: the text its own-end or own-failed carried. */
   | { type: 'say-outcome'; message: string };
@@ -168,7 +167,6 @@ function ownEnd(state: EraseState, identity: EraseIdentity, message: string): St
     },
     effects: [
       { type: 'forget' }, { type: 'clear-drafts' },
-      ...(shows ? [{ type: 'mark-store', identity } as const] : []),
       // Another writer's erase won: its rows show. Its arrival's read was lost to this erase.
       ...(theirs || above ? [READ] : []),
       ...(counts ? [COUNT] : []),
@@ -192,7 +190,7 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       const counts = !state.counted.has(event.identity);
       return {
         state: { ...seen, shown: event.identity, counted: counts ? add(state.counted, event.identity) : state.counted },
-        effects: [{ type: 'clear-drafts' }, { type: 'mark-store', identity: event.identity }, ...(counts ? [COUNT] : [])],
+        effects: [{ type: 'clear-drafts' }, ...(counts ? [COUNT] : [])],
       };
     }
     case 'arrived':
@@ -224,11 +222,6 @@ export function transition(state: EraseState, event: EraseEvent): Step {
 
 /** What the page does for each effect; the hook supplies them. */
 export interface EraseDoors {
-  /** Called synchronously, inside dispatch. The hook's door defers the store's
-   *  mark to the layout effect of the commit that shows `identity`, never
-   *  sooner: until then the old tree is on screen, and a save asked from it
-   *  must be refused (US-16 AC2d). Pinned in PR 2b, where the hook is built. */
-  markStore: (identity: EraseIdentity) => void;
   clearDrafts: () => void;
   forget: () => void;
   read: () => void;
@@ -240,18 +233,17 @@ export interface EraseDoors {
 export function runEraseEffects(effects: readonly EraseEffect[], doors: EraseDoors): void {
   for (const effect of effects) {
     switch (effect.type) {
-      case 'mark-store': doors.markStore(effect.identity); break;
       case 'clear-drafts': doors.clearDrafts(); break;
       case 'forget': doors.forget(); break;
       case 'read': doors.read(); break;
       case 'count-remote-change': doors.countRemoteChange(); break;
-      case 'alert-refused': break; // the caller's: refusalIsNews answers it
+      case 'alert-refused': break; // the caller's: `refusal` answers it
       case 'say-outcome': doors.sayOutcome(effect.message); break;
     }
   }
 }
 
-/** The erase state's only copy, synchronous, for useSyncExternalStore. */
+/** The erase state's only copy, synchronous; the page's tree reads it through its listener (hooks/useErase.ts). */
 export interface EraseStore {
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => EraseState;
@@ -280,8 +272,10 @@ export function createEraseStore(shown: EraseIdentity, doors: EraseDoors): Erase
   };
 }
 
-/** A save the store refused: true if it is news to say, once per erase. It
- *  only answers; the caller says it. */
-export function refusalIsNews(store: EraseStore, askedUnder: EraseIdentity): boolean {
-  return store.dispatch({ type: 'refused', askedUnder }).some(effect => effect.type === 'alert-refused');
+/** A save the store refused: `news` to say, once per erase (the caller says
+ *  it), and `reads`: the machine re-read a heard erase itself (Q3), so the
+ *  caller does not read again. */
+export function refusal(store: EraseStore, askedUnder: EraseIdentity): { news: boolean; reads: boolean } {
+  const effects = store.dispatch({ type: 'refused', askedUnder });
+  return { news: effects.some(effect => effect.type === 'alert-refused'), reads: effects.some(effect => effect.type === 'read') };
 }

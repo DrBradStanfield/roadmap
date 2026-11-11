@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T3,ci wait,"wait-run exit 1 covers red checks, a confirmed conflict and a read that failed after green; healthz is not tied to the head sha",implicit state,decided: change,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: codes unchanged; add a JSON status line and the healthz sha check. The audit builder takes it. tools/wait-run.sh,,no

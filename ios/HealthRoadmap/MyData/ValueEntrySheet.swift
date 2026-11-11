@@ -29,10 +29,8 @@ struct ValueEntrySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
     @State private var day = Date.now
-    @State private var message: String?
-    @State private var held: (id: String, value: Double)?
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): held while it or a unit choice lands; asking holds the day's row.
+    @State private var state: SheetSave.State<Held> = .editing(message: nil)
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -44,30 +42,30 @@ struct ValueEntrySheet: View {
             Form {
                 Section {
                     BigNumberField(placeholder: current ?? "0", text: $text, unit: unit, focus: $focused, field: true, label: title)
-                        .onChange(of: text) { message = nil }
+                        .onChange(of: text) { SheetSave.send(&state, .wordsStale) }
                     if let chooseUnit, !units.isEmpty {
                         // Held, with Save, while the choice lands: a value is never read mid-switch.
                         Picker("Unit", selection: Binding(get: { unit }, set: { choice in
-                            saving = true
+                            guard SheetSave.send(&state, .unitChosen) else { return }
                             Task {
-                                message = await chooseUnit(choice)
-                                saving = false
+                                let words = await chooseUnit(choice)
+                                SheetSave.send(&state, .unitLanded(words))
                             }
                         })) {
                             ForEach(units, id: \.self) { Text($0).tag($0) }
                         }
                         .pickerStyle(.segmented)
-                        .disabled(saving)
+                        .disabled(state.busy)
                     }
                     if let typedUnit {
                         TextField("Unit, as the lab printed it", text: typedUnit)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .analyticsMasked()
-                            .onChange(of: typedUnit.wrappedValue) { message = nil }
+                            .onChange(of: typedUnit.wrappedValue) { SheetSave.send(&state, .wordsStale) }
                     }
                 } footer: {
-                    if let message = message ?? TypedNumber.question(text, range: range) {
+                    if let message = state.message ?? TypedNumber.question(text, range: range) {
                         Text(message).foregroundStyle(.red)
                     } else if let current {
                         Text("Now \(current) \(unit)")
@@ -80,22 +78,22 @@ struct ValueEntrySheet: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: submit).disabled(number == nil || saving || typedUnit?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty == true)
+                    Button("Save", action: submit).disabled(number == nil || state.busy || typedUnit?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty == true)
                 }
             }
-            .confirmationDialog("This day already has a value", isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }), titleVisibility: .visible) {
+            .confirmationDialog("This day already has a value", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible, presenting: state.held) { held in
                 Button("Replace it") {
-                    guard let held, let replace else { return }
-                    SheetSave.run($saving, { await replace(held.id, held.value) }) { SheetSave.close($0, dismiss, $message) }
+                    guard let replace else { return }
+                    write(.confirmed(held)) { await replace(held.id, held.value) }
                 }
-            } message: {
+            } message: { _ in
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focused = true }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
     }
 
     /// The typed number: either decimal mark, and nothing that is not read in full,
@@ -105,13 +103,33 @@ struct ValueEntrySheet: View {
     private func submit() {
         guard let number else { return }
         let when = DayText.iso(day)
-        SheetSave.run($saving, { await save(number, when) }) { result in
-            if case .refused(_, let existingId?) = result, replace != nil {
-                held = (existingId, number)
-            } else {
-                SheetSave.close(result, dismiss, $message)
-            }
+        write(.tapped, asks: Self.asks(canReplace: replace != nil, number: number)) { await save(number, when) }
+    }
+
+    /// A save closes the sheet.
+    static let closes = true
+    /// A refusal naming the day's row asks at once about that row and the number typed,
+    /// when the sheet can replace.
+    static func asks(canReplace: Bool, number: Double) -> SheetSave.Asks<Held> {
+        canReplace ? .holding { Held(id: $0, value: number) } : .never
+    }
+
+    /// `claim` moves the state to saving, or the tap does nothing; a refusal naming the day's
+    /// row asks only when `asks` says so.
+    private func write(_ claim: SheetSave.Event<Held>, asks: SheetSave.Asks<Held> = .never, _ edit: @escaping () async -> RecordStore.ApplyResult) {
+        guard SheetSave.send(&state, claim) else { return }
+        Task {
+            let result = await edit()
+            SheetSave.send(&state, .landed(result, closes: Self.closes, asks: asks))
+            if state == .done { dismiss() }
         }
+    }
+
+    /// The day's row a replace corrects, with the number typed.
+    struct Held: SheetHeld {
+        let id: String
+        let value: Double
+        var isEmpty: Bool { id.isEmpty }
     }
 }
 

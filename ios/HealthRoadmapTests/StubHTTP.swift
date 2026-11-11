@@ -15,6 +15,31 @@ final class StubHTTP: URLProtocol {
         var offline = false
         /// Answer after this many seconds (an open still in flight).
         var delay: TimeInterval = 0
+        /// Answer only once the test opens this gate: an open held in flight with no fixed delay.
+        var gate: Gate?
+    }
+
+    /// Holds answers until `open()`, which delivers them; once open, answers pass at once.
+    final class Gate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var isOpen = false
+        private var held: [() -> Void] = []
+
+        func hold(_ deliver: @escaping () -> Void) {
+            lock.lock()
+            guard !isOpen else { lock.unlock(); return deliver() }
+            held.append(deliver)
+            lock.unlock()
+        }
+
+        func open() {
+            lock.lock()
+            isOpen = true
+            let waiting = held
+            held = []
+            lock.unlock()
+            waiting.forEach { $0() }
+        }
     }
 
     /// The request as the handler sees it, body read from its stream.
@@ -68,7 +93,10 @@ final class StubHTTP: URLProtocol {
             client?.urlProtocol(self, didLoad: answer.body)
             client?.urlProtocolDidFinishLoading(self)
         }
-        if answer.delay > 0 {
+        if let gate = answer.gate {
+            let later = EngineQueueOnly(deliver)
+            gate.hold { later.value() }
+        } else if answer.delay > 0 {
             let later = EngineQueueOnly(deliver)
             DispatchQueue.global().asyncAfter(deadline: .now() + answer.delay) { later.value() }
         } else {

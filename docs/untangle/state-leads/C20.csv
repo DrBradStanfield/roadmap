@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C20,app attest,The app gate's refund ledger is five closures and a flag where one union would do; traced consistent,implicit state,not started,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now; security review for any change. app/lib/app-gate.server.ts, app/lib/app-routes.server.ts",,yes

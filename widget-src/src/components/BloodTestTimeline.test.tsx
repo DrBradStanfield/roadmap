@@ -682,7 +682,8 @@ function expectSent(onSaveBatch: Mock, call: number, tasks: Array<Partial<SaveTa
   expect(onSaveBatch.mock.calls[call][0]).toHaveLength(tasks.length);
   expect(onSaveBatch.mock.calls[call][0]).toEqual(expect.arrayContaining(tasks.map((t) => expect.objectContaining(t))));
 }
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 const SAME_SLOT = 'This test already has a value on that day in another column.';
 
 describe('US-03 — the draft', () => {
@@ -705,14 +706,14 @@ describe('US-03 — the draft', () => {
   });
 
   it('is labelled as new, so it never repeats a saved column’s header', () => {
-    const { header } = matrix(history([['ldl', 3.2, TODAY]]));
+    const { header } = matrix(history([['ldl', 3.2, localToday()]]));
     const [saved, draft] = [header.querySelector('.bt-cell-date')!, header.querySelector('.bt-cell-draft-date')!];
     expect(within(draft as HTMLElement).getByText('New')).toBeTruthy();
     expect(draft.textContent).not.toBe(saved.textContent);
   });
 
   it('keeps typed values when the save does not land, says so, and a retry clears both (US-03 AC4)', async () => {
-    const m = matrix([], vi.fn().mockResolvedValueOnce(new Map([[slotOf(TODAY, 'ldl'), 'error']])).mockResolvedValueOnce(new Map()));
+    const m = matrix([], vi.fn().mockResolvedValueOnce(new Map([[slotOf(localToday(), 'ldl'), 'error']])).mockResolvedValueOnce(new Map()));
     const draft = m.cell('LDL Cholesterol');
     typeInto(draft, '3.2');
     fireEvent.keyDown(draft, { key: 'Enter' });
@@ -756,7 +757,7 @@ describe('US-03 — the draft', () => {
     typeInto(m.cell('HDL Cholesterol'), '99');
     press(m.elsewhere);
     await wait(0);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }]);
     expect(m.cell('LDL Cholesterol').value).toBe('');
     expect(m.cell('HDL Cholesterol').value).toBe('99');
     expect(m.cell('HDL Cholesterol').getAttribute('aria-invalid')).toBe('true');
@@ -774,7 +775,7 @@ describe('US-03 — the draft', () => {
     expect(m.backfill('LDL Cholesterol')).toBeNull();
     press(m.elsewhere);
     await wait(0);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { triglycerides: 1.1 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { triglycerides: 1.1 } }]);
   });
 
   // US-03 AC2 (review of 2026-09-24, round 3; round 5): the same fill
@@ -826,7 +827,7 @@ describe('US-03 — the draft', () => {
     first.view.unmount();
     const again = matrix();
     expect(again.cell('LDL Cholesterol').value).toBe('3.2');
-    expect(again.dateInput.value).toBe(TODAY);
+    expect(again.dateInput.value).toBe(localToday());
     expect(first.onSaveBatch).not.toHaveBeenCalled();
   });
 
@@ -856,12 +857,12 @@ describe('US-03 — the draft', () => {
     const onDraftValue = vi.fn();
     const m = matrix([], undefined, onDraftValue);
     typeInto(m.cell('LDL Cholesterol'), '3');
-    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', 3, TODAY);
+    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', 3, localToday());
 
-    m.showHistory(history([['hdl', 1.4, TODAY]])); // another test
+    m.showHistory(history([['hdl', 1.4, localToday()]])); // another test
     expect(onDraftValue).not.toHaveBeenCalledWith('ldlC', undefined);
 
-    m.showHistory(history([['hdl', 1.4, TODAY], ['ldl', 2.9, TODAY]])); // the draft's slot, filled elsewhere
+    m.showHistory(history([['hdl', 1.4, localToday()], ['ldl', 2.9, localToday()]])); // the draft's slot, filled elsewhere
     expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', undefined);
   });
 
@@ -869,7 +870,7 @@ describe('US-03 — the draft', () => {
     const onDraftValue = vi.fn();
     const m = matrix([], undefined, onDraftValue);
     typeInto(m.cell('Creatinine'), '80');
-    expect(onDraftValue).toHaveBeenLastCalledWith('creatinine', 80, TODAY);
+    expect(onDraftValue).toHaveBeenLastCalledWith('creatinine', 80, localToday());
     fireEvent.change(m.dateInput, { target: { value: '2026-07-01' } });
     expect(onDraftValue).toHaveBeenLastCalledWith('creatinine', 80, '2026-07-01');
   });
@@ -893,7 +894,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     press(m.elsewhere);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }, { date: TODAY, values: { hdl: 1.4 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }, { date: localToday(), values: { hdl: 1.4 } }]);
   });
 
   // US-02 AC7: in µmol/L, "1,234" creatinine can only be 1234 (1.234 is below
@@ -906,7 +907,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     press(m.elsewhere);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { creatinine: 1234 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { creatinine: 1234 } }]);
     expect(m.cell('Triglycerides').value).toBe('1,234');
     expect(m.view.getByText('Did you mean 1234 or 1.234?')).toBeTruthy();
   });
@@ -918,7 +919,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     press(m.elsewhere);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }, { date: TODAY, values: { hdl: 1.4 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }, { date: localToday(), values: { hdl: 1.4 } }]);
     await wait(5000);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
   });
@@ -940,7 +941,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     m.tapText(8);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }]);
   });
 
   it('a tap outside on nothing focusable commits, once', async () => {
@@ -949,7 +950,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     m.tapText(8);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }]);
     m.tapText(9);
     await wait(5000);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
@@ -969,7 +970,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     m.tapText(9);
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(2);
-    expectSent(m.onSaveBatch, 1, [{ date: TODAY, values: { ldl: 3.5 } }]);
+    expectSent(m.onSaveBatch, 1, [{ date: localToday(), values: { ldl: 3.5 } }]);
   });
 
   it('a focus outside the matrix commits, once', async () => {
@@ -978,7 +979,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     act(() => m.elsewhere.focus()); // Tab
     await wait(0);
     expect(m.onSaveBatch).toHaveBeenCalledTimes(1);
-    expectSent(m.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }]);
+    expectSent(m.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }]);
   });
 
   it('Enter commits at once, and so does the tick', async () => {
@@ -1012,7 +1013,7 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     press(again.cell('LDL Cholesterol'));
     press(again.elsewhere);
     await wait(0);
-    expectSent(again.onSaveBatch, 0, [{ date: TODAY, values: { ldl: 3.2 } }]);
+    expectSent(again.onSaveBatch, 0, [{ date: localToday(), values: { ldl: 3.2 } }]);
   });
 
   it('the date picker, opened by a press, never commits; leaving commits under the picked date', async () => {
