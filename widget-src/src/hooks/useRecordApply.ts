@@ -10,7 +10,7 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { useRecordState } from './useRecordState';
 import type { useUnits } from './useUnits';
-import type { useErase } from './useErase';
+import type { EraseStore } from '../lib/erase-machine';
 
 /** Why the page re-reads the record: its own upload, another writer's change (US-34), a save the store refused,
  *  or the page's own save (the first-time fields', a correction, a moved test). */
@@ -86,7 +86,8 @@ export function useRecordApply(args: {
   reloadValues: () => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
   units: ReturnType<typeof useUnits>['record'];
-  showErase: ReturnType<typeof useErase>['showErase'];
+  /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
+  erase: Pick<EraseStore, 'getSnapshot' | 'dispatch'>;
   /** The page has shown its first read (the load's own state, set after its writes). */
   loaded: boolean;
   later: () => Later;
@@ -107,7 +108,7 @@ export function useRecordApply(args: {
 
   // Re-read the record and show it: the values, lab rows and both matrices, then the profile and the rest.
   const apply = useCallback(async () => {
-    const { reloadValues, showErase, units, later } = latest.current;
+    const { reloadValues, erase: machine, units, later } = latest.current;
     // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
     later().flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
@@ -128,7 +129,7 @@ export function useRecordApply(args: {
       // Only within one record: an erase from another device clears this
       // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-      const sameRecord = erase === getShownErase();
+      const sameRecord = erase === machine.getSnapshot().shown;
       // This tab's unit switch, still unsaved, rides through too: the save then writes it (US-34 AC7a, H2).
       const switched = units.pending();
       showRecord(result, prev => {
@@ -145,7 +146,7 @@ export function useRecordApply(args: {
     }
     // Another device erased the record (US-16 AC2a / US-09): a chat banner
     // left standing would write pre-erase values into the erased record.
-    showErase(erase);
+    machine.dispatch({ type: 'read', identity: erase });
   }, [showRecord]);
 
   const [relay] = useState(() => createRemoteChangeRelay((remote: boolean) => {

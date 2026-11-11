@@ -14,6 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { LatestMeasurementsResult } from '../lib/api-types';
+import type { EraseEffect, EraseState } from '../lib/erase-machine';
 
 // The record's erase identity as read now; the screen shows 'erase-1'.
 const erase = vi.hoisted(() => ({ now: 'erase-1' }));
@@ -40,13 +41,14 @@ function setup(loaded = true) {
     reloadValues: vi.fn(async () => RESULT),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
-    showErase: vi.fn(),
+    // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
+    erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
     later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
   };
   const hook = renderHook(({ loaded }: { loaded: boolean }) => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
     units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
-    showErase: fx.showErase, loaded, later: () => fx.later,
+    erase: fx.erase, loaded, later: () => fx.later,
   }), { initialProps: { loaded } });
   return { fx, hook };
 }
@@ -73,7 +75,7 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
     saved: fx.later.markSaved.mock.calls.length > 0,
     lists: fx.applyLists.mock.calls.length > 0,
     flush: fx.later.flushPendingSave.mock.calls.length > 0,
-    erase: fx.showErase.mock.calls.length > 0,
+    erase: fx.erase.dispatch.mock.calls.length > 0,
     cleared: fx.later.clearAnswered.mock.calls,
     counted: counted(),
   };
@@ -164,7 +166,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
-    expect(fx.showErase).toHaveBeenCalledWith('erase-2');
+    expect(fx.erase.dispatch).toHaveBeenCalledWith({ type: 'read', identity: 'erase-2' });
     expect(counted()).toBe(1);
     // The hold is over: the save that cleans the profile reads nothing more.
     await act(async () => { hook.result.current.saved(); });
@@ -200,7 +202,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.setInputs).not.toHaveBeenCalled();
     expect(fx.later.markSaved).not.toHaveBeenCalled();
     expect(fx.units.shown).not.toHaveBeenCalled();
-    expect(fx.showErase).not.toHaveBeenCalled();
+    expect(fx.erase.dispatch).not.toHaveBeenCalled();
     // Nothing of the old record is written back: no waiting save started, no list or answer change.
     expect(fx.later.flushPendingSave).not.toHaveBeenCalled();
     expect(fx.applyLists).not.toHaveBeenCalled();
