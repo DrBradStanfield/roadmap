@@ -22,7 +22,8 @@
  * - failed: a pass failed; its changes wait for the next edit or save.
  * - held: an erase put the debounce aside while it reads, or swapped the
  *   erased copy in before its write starts. Moves as failed does, and never
- *   outlives the erase: eraseEnded settles it to failed, or clean.
+ *   outlives the erase: eraseEnded, or holdEnded for an erase that never
+ *   swapped, settles it to failed, or clean.
  *   Held exists only because of lead A6 (an erase accepts edits while it
  *   reads); it folds into erasing if A6 moves the refusal to the erase's
  *   first line.
@@ -35,9 +36,14 @@
  *   awaited mirror write.
  * - saveLoop: `passLanded` where it sets `savedChanges = saving`, before
  *   `adopt()`; run the pass effect it returns after `adopt()`.
+ * - persist(): `join` while `running` is set, `save` only when it is null:
+ *   a save's `running` outlives the passLanded that settled its mode.
  * - erase(): read `debounceArmed(state)` before dispatching `hold`.
- * - erase(): `eraseEnded` in a finally that covers the whole erase from `hold`
- *   on, so an aborted erase (beforeErase threw) leaves held too.
+ * - erase(): `eraseEnded` in a finally around the write, from `eraseStarted`.
+ * - erase(): `holdEnded` in a finally that covers the whole erase from `hold`
+ *   on, so an aborted erase (beforeErase threw) leaves held too. Never
+ *   `eraseEnded` there: a second erase that ends must not unwrap the first's
+ *   erasing mid-write (US-16 AC2a).
  */
 
 export type SaveBase =
@@ -50,13 +56,15 @@ export type SaveState = SaveBase | { mode: 'erasing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
-  | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback
+  | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback, with no save running
+  | { type: 'join' } // the same, while a save runs: never starts a pass
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
   | { type: 'passFailed' }
   | { type: 'synced' } // a synchronous write landed the whole working copy
   | { type: 'hold' } // an erase puts the debounce aside while it reads
   | { type: 'eraseStarted' } // the erased copy swapped in: one more change
-  | { type: 'eraseEnded' }; // the erase's write ended, landed or not
+  | { type: 'eraseEnded' } // the erase's write ended, landed or not
+  | { type: 'holdEnded' }; // an erase ended; settles only a bare held
 
 /** arm: (re)start the debounce, clearing any armed one. cancel: clear it.
  *  pass: run one save pass of the working copy, from change `from`. */
@@ -102,14 +110,16 @@ function settle(changes: number, saved: number, armed: boolean): SaveBase {
   return changes === saved ? { mode: 'clean', changes } : { mode: 'failed', changes, saved };
 }
 
-function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' }>): { state: SaveBase; effects: SaveEffect[] } {
+function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnded' }>): { state: SaveBase; effects: SaveEffect[] } {
   const saved = savedOf(s);
   const cancel: SaveEffect[] = debounceArmed(s) ? [{ type: 'cancel' }] : [];
   const same = { state: s, effects: [] };
   switch (e.type) {
     case 'edited':
       return { state: s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: true } : { mode: 'waiting', changes: s.changes + 1, saved }, effects: [{ type: 'arm' }] };
-    case 'save': // a pass that runs is joined, never doubled
+    case 'join': // a pass that runs is joined, never doubled; anything else waits for its own debounce
+      return s.mode === 'saving' ? { state: { ...s, armed: false }, effects: cancel } : same;
+    case 'save':
       if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel };
       if (s.changes === saved) return { state: { mode: 'clean', changes: s.changes }, effects: cancel };
       return { state: { mode: 'saving', changes: s.changes, saved, from: s.changes, armed: false }, effects: [...cancel, { type: 'pass', from: s.changes }] };
@@ -132,7 +142,10 @@ function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' }>): { sta
 
 /** The only way the save state changes. */
 export function transition(s: SaveState, e: SaveEvent): SaveStep {
-  if (e.type === 'eraseEnded') { // held never outlives the erase, even one that ended before eraseStarted
+  if (e.type === 'holdEnded') { // held never outlives the erase, even one that ended before eraseStarted
+    return { state: s.mode === 'held' ? settle(s.changes, s.saved, false) : s, effects: [] };
+  }
+  if (e.type === 'eraseEnded') {
     const b = s.mode === 'erasing' ? s.under : s;
     return { state: b.mode === 'held' ? settle(b.changes, b.saved, false) : b, effects: [] };
   }

@@ -387,7 +387,7 @@ export class RecordSession {
         return erased ? { success: true, warning: message } : { success: false, error: message };
       }
     } finally {
-      this.dispatch({ type: 'eraseEnded' }); // held never outlives the erase, an aborted one's included
+      this.dispatch({ type: 'holdEnded' }); // held never outlives the erase, an aborted one's included; another erase's erasing stays
     }
   }
 
@@ -671,6 +671,13 @@ export class RecordSession {
     // Nothing to save writes nothing: a save always merges, and every merge
     // moves the lamport on. Covers an empty flush and the debounce left over
     // from an edit a save's own next pass already took (US-10 AC5a).
+    // A running save is joined, never doubled: `running` is the claim, and it
+    // outlives the pass that settled the mode (adopt() runs between), so a
+    // pass starts only when no save runs.
+    if (this.running) {
+      this.dispatch({ type: 'join' });
+      return this.running;
+    }
     const from = this.dispatch({ type: 'save' });
     if (from !== null) this.running = this.saveLoop(from);
     return this.running ?? Promise.resolve(true);

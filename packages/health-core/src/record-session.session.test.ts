@@ -1254,3 +1254,70 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(session.refuses()).toBe(false);
   });
 });
+
+describe("RecordSession: two erases on one session (US-16 AC2a)", () => {
+  function hold(store: TestStore, method: "read" | "write") {
+    const own = store as unknown as Record<string, unknown>;
+    const original = (store[method] as (...args: unknown[]) => Promise<unknown>).bind(store);
+    let release!: () => void; let started!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const reached = new Promise<void>((r) => { started = r; });
+    own[method] = async (...args: unknown[]) => { delete own[method]; started(); await gate; return original(...args); };
+    return { reached, release };
+  }
+  it("a second erase refused at its read leaves the first erase refusing edits", async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, "a");
+    await session.flush();
+    const held = hold(store, "write");
+    const first = session.erase();
+    await held.reached;
+    expect(session.refuses()).toBe(true);
+    store.failReads = true;
+    const second = await session.erase();
+    expect(second.success).toBe(false);
+    store.failReads = false;
+    expect(session.refuses()).toBe(true);
+    held.release();
+    await first;
+  });
+});
+
+describe('RecordSession: a save asked for while a landed save still adopts (US-11 AC7)', () => {
+  it('starts no pass beside that save, so a later flush joins the pass that carries the change', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    // Another device erases: this session's next save merges the erase in, and
+    // its adopt() clears the off-file data after the pass settled the mode.
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    let inner: Promise<void> | null = null;
+    fake.host.clearOffFileData = () => {
+      fake.host.clearOffFileData = () => {};
+      add(session, 'c', 82, '2026-10-03'); // one more change, inside that save's adopt()
+      const write = store.write.bind(store);
+      store.write = async (...args: Parameters<TestStore['write']>) => { store.write = write; await gate; return write(...args); };
+      inner = session.flush();
+    };
+    add(session, 'b', 81, '2026-10-02');
+    await session.flush();
+    expect(inner).not.toBeNull();
+    // The flush made inside adopt() joined that save. A pass started there
+    // would leave `running` cleared by the save it ran beside, and this flush
+    // would answer before its write lands (adversary R2).
+    let answered = false;
+    const late = session.flush().then(() => { answered = true; });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(answered).toBe(false);
+    release();
+    await Promise.all([inner, late]);
+    expect(answered).toBe(true);
+  });
+});
