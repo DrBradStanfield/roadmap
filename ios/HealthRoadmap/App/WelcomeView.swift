@@ -155,6 +155,14 @@ struct WelcomeView: View {
                 case .choosing, .opened:
                     EmptyView()
                 }
+                if WelcomeConnect.showsRecovery(phase), let provider = sync.provider {
+                    Section {
+                        ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
+                            Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
+                        }
+                        Button("Use a different cloud") { apply(.useDifferentCloud) }
+                    }
+                }
             }
             .messageAlert("Your record", $connectMessage)
             .navigationTitle("Your record")
@@ -180,6 +188,9 @@ struct WelcomeView: View {
             choosingCloud = true
             openRecord()
         case .open: openRecord()
+        case .disconnect:
+            guard let sync else { return }
+            Task { await sync.disconnect() }
         case .nothing: break
         }
     }

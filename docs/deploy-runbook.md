@@ -80,7 +80,7 @@ inrel && (cd ~/Documents/claude_business.nosync && node tools/sync-shared-docs.m
 #    The chatbot knowledge base is Brad-global / store-agnostic, so a change to SHARED content
 #    — chatbot prompts (chat-system-prompt.md, chat-posture-*.md, chat-router-prompt.md),
 #    docs/blog/*.md + index.json, docs/products.md, docs/writing-style.md,
-#    docs/chatbot/answer-bank.md, evidence.ts — MUST be deployed to BOTH apps
+#    docs/chatbot/answer-bank.md, evidence.ts + evidence-screening.ts — MUST be deployed to BOTH apps
 #    to go live on both surfaces. A change touching only one app's env/proxy → deploy just that one.
 #    Flags (identical for both, only the config + SENTRY_RELEASE app-name differ):
 #    --build-arg SENTRY_RELEASE: per-commit release for the SERVER source-map upload (the

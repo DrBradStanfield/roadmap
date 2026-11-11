@@ -170,7 +170,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   widen your own scope, schedule, or credentials.
 - **Clinical content and merge/security code sit above every tier.** Clinical
   logic — thresholds, suggestion rules, cascades, and WHICH evidence is cited
-  (`health_roadmap_algorithm.md`, `evidence.ts`, `roadmap_text.html`) — plus
+  (`health_roadmap_algorithm.md`, `packages/health-core/src/evidence*.ts`, `roadmap_text.html`) — plus
   `merge.ts` and security surfaces are never edited by a loop. One narrow
   errata exception, Tier 1+: a mechanically verifiable reference defect (a
   DOI/URL typo where the corrected link demonstrably resolves to the SAME

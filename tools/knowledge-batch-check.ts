@@ -780,7 +780,7 @@ interface RawSet {
 
 /** Open a report's raw files: each must resolve (realpath) under an allowed raw root, never inside the repo, with the sha256 the report gives. */
 /** Brad's own posts and the files that carry his positions (US-50 AC1): raw for a master, read from the base revision. */
-const MASTER_RAW = /(?:^|\/)(docs\/blog\/[^/]+\.md|docs\/products\.md|docs\/guideline\/[^/]+\.md|app\/lib\/chat-system-prompt\.md|packages\/health-core\/src\/evidence\.ts|health_roadmap_algorithm\.md|roadmap_text\.html)$/;
+const MASTER_RAW = /(?:^|\/)(docs\/blog\/[^/]+\.md|docs\/products\.md|docs\/guideline\/[^/]+\.md|app\/lib\/chat-system-prompt\.md|packages\/health-core\/src\/evidence(?:-screening)?\.ts|health_roadmap_algorithm\.md|roadmap_text\.html)$/;
 
 function loadRaw(rep: Report, o: Options, tag: string, ac2: Check, isPost: (h: string) => boolean): RawSet {
   const roots = rootRegexes(o.rawRoots ?? defaultRawRoots());

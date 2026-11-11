@@ -554,8 +554,9 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
 
     // MARK: US-25 AC11j: no change of cloud while a record opens (review of PR 1281)
 
-    /// Path (a): a relaunch with Dropbox on file whose launch open failed. During Google
-    /// Drive's sign-in the app comes back and opens Dropbox; then the sign-in returns.
+    /// Path (a): a relaunch with Dropbox on file whose launch open failed. Since AC11l
+    /// (2026-11-12) Google Drive's connect is refused before its sign-in shows, and the
+    /// foreground open that follows lands on Dropbox.
     func testAnotherCloudConnectedDuringAForegroundOpenIsRefused_US25_AC11j() async throws {
         defer { tokens.delete(.googleDrive) }
         answerGoogleToo()
@@ -565,16 +566,9 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         await sync.start()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
         dropbox.online = true
-        let download = StubHTTP.Gate()
-        dropbox.downloadGate = download
-        let drive = heldSignIn()
-        let connecting = Task { try await sync.connect(.googleDrive, authenticate: drive.authenticate) }
-        for await _ in drive.shown { break }
-        dropbox.onDownload = { drive.release() } // Dropbox's open is reading when the sign-in returns
-        let opening = Task { await sync.foreground() }
-        await assertRefusedWhileOpening(connecting)
-        download.open() // only now does Dropbox's read answer, and its open land
-        await opening.value
+        await assertRefused(Task { try await sync.connect(.googleDrive, authenticate: noSignIn) },
+                            "Disconnect from Dropbox first, then connect Google Drive.")
+        await sync.foreground()
         assertStillOnDropbox(sync, store: store, account: nil)
     }
 
@@ -593,7 +587,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         dropbox.downloadGate = download
         dropbox.onDownload = { drive.release() }
         let first = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
-        await assertRefusedWhileOpening(second)
+        await assertRefused(second, "Disconnect from Dropbox first, then connect Google Drive.") // AC11l's words since 2026-11-12
         download.open()
         try await first.value
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
@@ -617,6 +611,310 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
     }
 
+    // MARK: US-25 AC11l: one cloud at a time (review of PR 1328)
+
+    /// The review's sequence, closed at the tap: Google Drive on file and its launch open
+    /// failed. Connect Dropbox is refused before any sign-in shows (review of PR 1329), and
+    /// Drive's foreground open still lands.
+    func testAnotherCloudIsRefusedBeforeItsSignInWhileOneIsConnected_US25_AC11l() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
+        tokens.delete(.dropbox)
+        await assertRefused(Task { try await sync.connect(.dropbox, authenticate: noSignIn) },
+                            "Disconnect from Google Drive first, then connect Dropbox.")
+        drive.online = true
+        await sync.foreground()
+        let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
+        XCTAssertEqual(sync.provider, .googleDrive)
+        XCTAssertEqual(text("sync-provider"), "google-drive")
+        XCTAssertNil(text("sync-account"), "no Dropbox account was written")
+        XCTAssertNil(tokens.load(.dropbox), "the refused sign-in's tokens were never kept")
+        XCTAssertTrue(sync.recordOpen)
+        XCTAssertNotNil(store.cloudErase, "the open record is Drive's session")
+        XCTAssertEqual(sync.syncedBefore, .googleDrive)
+        XCTAssertEqual(drive.dropboxFileCalls, 0, "nothing reached Dropbox's files")
+        XCTAssertNil(dropbox.file, "the phone's record was never merged up into Dropbox")
+        XCTAssertEqual(drive.unexpected, [])
+    }
+
+    /// Two first connects: Dropbox's connect lands and its record opens, and only then does
+    /// Google Drive's sign-in, begun first, return.
+    func testASecondFirstConnectReturningAfterTheFirstOpenedIsRefused_US25_AC11l() async throws {
+        defer { tokens.delete(.googleDrive) }
+        answerGoogleToo()
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app(connected: false)
+        let drive = heldSignIn()
+        let second = Task { try await sync.connect(.googleDrive, authenticate: drive.authenticate) }
+        for await _ in drive.shown { break }
+        try await sync.connect(.dropbox, authenticate: signIn())
+        XCTAssertTrue(sync.recordOpen)
+        drive.release()
+        await assertRefused(second, "Disconnect from Dropbox first, then connect Google Drive.")
+        assertStillOnDropbox(sync, store: store, account: "dbid:A")
+    }
+
+    /// At failed, the cloud on file signing in again still connects and opens.
+    func testSigningInAgainToTheSameCloudAfterAFailedOpenConnects_US25_AC11l() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        dropbox.online = false
+        let (store, sync, _) = try app()
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
+        dropbox.online = true
+        try await sync.connect(.dropbox, authenticate: signIn())
+        assertStillOnDropbox(sync, store: store, account: "dbid:A")
+    }
+
+    /// A phone with no cloud connects as before.
+    func testAPhoneWithNoCloudConnects_US25_AC11l() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app(connected: false)
+        try await sync.connect(.dropbox, authenticate: signIn())
+        assertStillOnDropbox(sync, store: store, account: "dbid:A")
+    }
+
+    // MARK: US-25 AC11l: a Disconnect during a sign-in voids it (Codex, review of PR 1329)
+
+    /// Dropbox account A on file, its open failed. "Sign in to Dropbox again" signs in as B;
+    /// the browser has closed and the token answer is still on its way when "Use a different
+    /// cloud" disconnects. The sign-in then returns: it began under the old connection, so
+    /// nothing of it is kept and nothing is merged.
+    func testADisconnectDuringASignInVoidsIt_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:B")
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break } // the browser step returned; the token answer is held
+        await sync.disconnect()
+        let files = dropboxFileCalls.value
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a sign-in begun before the Disconnect must not connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .cancelled)
+        }
+        let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNil(text("sync-account"))
+        XCTAssertNil(text("sync-account-email"))
+        XCTAssertNil(tokens.load(.dropbox), "the voided sign-in's grant was never stored")
+        XCTAssertEqual(dropboxFileCalls.value, files, "nothing reached Dropbox's files after the Disconnect")
+        XCTAssertEqual(dropbox.uploads, 0, "nothing was merged up")
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+    }
+
+    /// The twin, with no Disconnect: the held sign-in completes as any sign-in does.
+    func testASignInHeldWithNoDisconnectStillConnects_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:A")
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        await sync.foreground() // a foreground while the sign-in runs must not void it
+        gate.open()
+        try await connecting.value
+        XCTAssertEqual(sync.provider, .dropbox)
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the sign-in is kept")
+        XCTAssertTrue(sync.recordOpen)
+    }
+
+    /// The token exchange fails after the Disconnect: the walked-away sign-in still shows
+    /// nothing, rather than the provider's error in the welcome sheet's alert.
+    func testASignInThatFailsAfterADisconnectIsDroppedSilently_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:B", tokenFails: true)
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        await sync.disconnect()
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a failed sign-in cannot connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .cancelled, "silent, not the provider's error")
+        }
+        let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNil(text("sync-account"))
+        XCTAssertNil(text("sync-account-email"))
+        XCTAssertNil(tokens.load(.dropbox))
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+    }
+
+    /// The twin, with no Disconnect: the provider's error shows exactly as before.
+    func testASignInThatFailsWithNoDisconnectShowsItsError_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:A", tokenFails: true)
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a failed sign-in cannot connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .unreachable("Dropbox sign-in failed (500). Try again."))
+            XCTAssertEqual(error.localizedDescription, "Dropbox sign-in failed (500). Try again.", "the alert's words")
+        }
+        XCTAssertEqual(sync.provider, .dropbox, "still connected; the failed sign-in changed nothing")
+    }
+
+    /// Calls to Dropbox's files, counted by `dropboxFailedWithHeldToken`'s handler.
+    private let dropboxFileCalls = Counter()
+
+    final class Counter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        var value: Int { lock.withLock { count } }
+        func add() { lock.withLock { count += 1 } }
+    }
+
+    /// Dropbox account A on file, holding a record, whose launch open failed; then Dropbox is
+    /// back. Sign-ins come back as `account`, and their token answer waits on the gate;
+    /// with `tokenFails` that answer is a 500.
+    private func dropboxFailedWithHeldToken(account: String, tokenFails: Bool = false) async throws -> (CloudSync, StubHTTP.Gate, AsyncStream<Void>) {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try Data("dbid:A".utf8).write(to: folder.appending(path: "sync-account"))
+        dropbox.online = false
+        let (_, sync, _) = try app()
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
+        dropbox.online = true
+        dropbox.tokenAccount = account
+        let gate = StubHTTP.Gate()
+        let (asked, ask) = AsyncStream.makeStream(of: Void.self)
+        let (fake, calls) = (dropbox!, dropboxFileCalls)
+        StubHTTP.handler = { request in
+            if request.url.path.hasPrefix("/2/files") { calls.add() }
+            var answer = fake.answer(request)
+            if request.url.path == "/oauth2/token" {
+                ask.yield()
+                if tokenFails { answer = .init(status: 500) }
+                answer.gate = gate
+            }
+            return answer
+        }
+        return (sync, gate, asked)
+    }
+
+    // MARK: US-54 AC2d: "Use a different cloud" at failed (review of PR 1329)
+
+    /// The welcome sheet's "Use a different cloud" is Disconnect. With the cloud never
+    /// opened, the phone's record is byte for byte what it was: nothing merged down,
+    /// nothing erased.
+    func testUseADifferentCloudAtFailedLeavesThePhoneRecordUntouched_US54_AC2d() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        let before = try Data(contentsOf: store.file)
+        await sync.disconnect()
+        XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
+        XCTAssertNil(sync.provider)
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+        XCTAssertNil(tokens.load(.googleDrive))
+        XCTAssertEqual(drive.unexpected, [])
+    }
+
+    /// A Try again whose open is still reading when "Use a different cloud" runs lands
+    /// after it and changes nothing. The engine supersedes it: Disconnect's cloudClose moves
+    /// `latest` on (ios/engine/cloud.ts:521) and the late cloudOpen throws 'superseded'
+    /// (:167-171), so only CloudSync.open's catch-path generation check runs here. Its
+    /// success-path checks (in and after the handover) are pinned by CloudConnectionPinsTests
+    /// testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins.
+    func testAnOpenLandingAfterUseADifferentCloudChangesNothing_US54_AC2d() async throws {
+        let (store, sync, drive) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        let gate = StubHTTP.Gate()
+        let (reading, read) = AsyncStream.makeStream(of: Void.self)
+        drive.mediaGate = gate
+        drive.onMedia = { read.yield() }
+        drive.online = true
+        let opening = Task { await sync.foreground() } // Try again
+        for await _ in reading { break }
+        let before = try Data(contentsOf: store.file)
+        await sync.disconnect()
+        gate.open()
+        await opening.value
+        XCTAssertNil(sync.provider)
+        XCTAssertFalse(sync.recordOpen)
+        XCTAssertNil(store.cloudErase, "the late open was not shown")
+        XCTAssertEqual(sync.status, .onPhone)
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+        XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
+        XCTAssertNil(try? String(contentsOf: folder.appending(path: "sync-provider"), encoding: .utf8))
+        XCTAssertEqual(drive.unexpected, [])
+    }
+
+    /// The whole way: Drive failed, "Use a different cloud", then Connect Dropbox, which is
+    /// a first connect: the phone's record is merged up into Dropbox's.
+    func testUseADifferentCloudThenConnectDropboxIsAFirstConnect_US54_AC2d() async throws {
+        let (store, sync, _) = try await driveFailedAtLaunch()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        await sync.disconnect()
+        try await sync.connect(.dropbox, authenticate: signIn())
+        XCTAssertEqual(sync.provider, .dropbox)
+        XCTAssertTrue(sync.recordOpen)
+        XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the phone's record was merged up")
+        XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"])
+    }
+
+    /// Google Drive on file, holding a record, whose launch open failed: the welcome sheet at failed.
+    private func driveFailedAtLaunch() async throws -> (store: RecordStore, sync: CloudSync, drive: DriveOnFile) {
+        try tokens.save(OAuthTokens(accessToken: "token-g", refreshToken: "r-g", expiresAt: .distantFuture), for: .googleDrive)
+        addTeardownBlock { [tokens] in tokens!.delete(.googleDrive) }
+        let drive = DriveOnFile(record: try record(days: ["2026-09-01"], device: "web"), dropbox: dropbox)
+        StubHTTP.handler = { drive.answer($0) }
+        try Data("google-drive".utf8).write(to: folder.appending(path: "sync-provider"))
+        let (store, sync, _) = try app(connected: false)
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)), "the launch open failed")
+        return (store, sync, drive)
+    }
+
+    /// A sign-in that must never show: the connect is refused before it.
+    private let noSignIn: OAuthClient.Authenticate = { _, _ in
+        XCTFail("no sign-in sheet shows")
+        throw OAuthClient.Failure.cancelled
+    }
+
+    /// Google Drive holding one copy of the record, enough for an open to read it, beside
+    /// the fake Dropbox. Counts every call to Dropbox's files; a sign-in reaches only its
+    /// token and account endpoints.
+    private final class DriveOnFile {
+        let text: String
+        let dropbox: FakeDropbox
+        /// False: Drive fails as a dead network does.
+        var online = false
+        var dropboxFileCalls = 0
+        var unexpected: [String] = []
+        /// When set, the record's bytes answer only once the test opens it.
+        var mediaGate: StubHTTP.Gate?
+        /// Runs as the record's bytes are asked for.
+        var onMedia: (() -> Void)?
+
+        init(record: [String: Any], dropbox: FakeDropbox) {
+            text = String(decoding: try! JSONSerialization.data(withJSONObject: record), as: UTF8.self)
+            self.dropbox = dropbox
+        }
+
+        func answer(_ request: StubHTTP.Request) -> StubHTTP.Answer {
+            guard request.url.host == "www.googleapis.com" else {
+                if request.url.path.hasPrefix("/2/files") { dropboxFileCalls += 1 }
+                return dropbox.answer(request)
+            }
+            guard online else { return .init(offline: true) }
+            guard request.headers["authorization"] == "Bearer token-g" else { return .init(status: 401) }
+            let query = URLComponents(url: request.url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            switch (request.method, request.url.path) {
+            case ("GET", "/drive/v3/files"):
+                return .init(body: Data(#"{"files":[{"id":"file-1"}]}"#.utf8))
+            case ("GET", "/drive/v3/files/file-1") where query.contains { $0.name == "alt" && $0.value == "media" }:
+                onMedia?()
+                return .init(body: Data(text.utf8), gate: mediaGate)
+            case ("GET", "/drive/v3/files/file-1"):
+                return .init(body: Data(#"{"version":"1"}"#.utf8))
+            default:
+                unexpected.append("\(request.method) \(request.url.path)")
+                return .init(status: 404)
+            }
+        }
+    }
+
     /// Google's token and account answers beside the fake Dropbox, so a Drive sign-in completes.
     private func answerGoogleToo() {
         let fake = dropbox!
@@ -633,12 +931,12 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         }
     }
 
-    private func assertRefusedWhileOpening(_ connecting: Task<Void, Error>, file: StaticString = #filePath, line: UInt = #line) async {
+    private func assertRefused(_ connecting: Task<Void, Error>, _ words: String, file: StaticString = #filePath, line: UInt = #line) async {
         do {
             try await connecting.value
-            XCTFail("a second cloud must not take over the opening record", file: file, line: line)
+            XCTFail("a second cloud must not take over the connected one", file: file, line: line)
         } catch {
-            XCTAssertEqual(error as? OAuthClient.Failure, .refused("Wait for your record to finish opening, then connect."), file: file, line: line)
+            XCTAssertEqual(error as? OAuthClient.Failure, .refused(words), file: file, line: line)
         }
     }
 

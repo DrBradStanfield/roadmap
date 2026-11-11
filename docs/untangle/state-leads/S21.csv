@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S21,iPhone state,a sign-in pending across a disconnect: the sign-in must carry the attempt it began under; Sign in again then Use a different cloud before the system sign-in sheet covers the screen; S3,lead,done,"ios/HealthRoadmap/Sync/CloudSync.swift connect checks the generation it began under after the sign-in, before anything is kept; Disconnect is the only route that ends a connection and it moves the generation. CloudSyncTests testADisconnectDuringASignInVoidsIt_US25_AC11l (failed first)",1329,no

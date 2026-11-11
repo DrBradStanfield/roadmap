@@ -23,11 +23,24 @@ final class WelcomeConnectTests: XCTestCase {
         }
     }
 
-    /// No second cloud can be chosen while a record opens.
+    /// No second cloud can be chosen while a record opens, nor at failed, where a cloud is
+    /// still connected (US-25 AC11l, US-54 AC2d).
     func testTheConnectButtonsHideWhileARecordOpens_US54_AC2b() {
-        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), true), (.opened, false)]
+        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), false), (.opened, false)]
         for (phase, shows) in rows {
             XCTAssertEqual(WelcomeConnect.showsConnect(phase), shows, "\(phase)")
+        }
+    }
+
+    /// US-54 AC2d (review of PR 1329): at failed, and only there, the sheet shows one row to
+    /// sign in to the connected cloud again and "Use a different cloud".
+    func testOnlyAFailedOpenOffersSignInAgainAndADifferentCloud_US54_AC2d() {
+        let rows: [(Phase, Bool)] = [(.choosing, false), (.opening, false), (.failed(unreachable), true), (.opened, false)]
+        for (phase, shows) in rows {
+            XCTAssertEqual(WelcomeConnect.showsRecovery(phase), shows, "\(phase)")
+        }
+        for kind in SyncProblem.Kind.allCases {
+            XCTAssertTrue(WelcomeConnect.showsRecovery(.failed(SyncProblem(kind: kind))), "\(kind)")
         }
     }
 
@@ -45,6 +58,9 @@ final class WelcomeConnectTests: XCTestCase {
             (.phaseChanged, true, true, [.nothing, .nothing, .nothing, .nothing]),
             (.alertDismissed, true, false, [.nothing, .nothing, .nothing, .goOn]),
             (.alertDismissed, false, false, [.nothing, .nothing, .nothing, .nothing]),
+            // US-54 AC2d: "Use a different cloud" disconnects, at failed only; the sheet stays.
+            (.useDifferentCloud, true, false, [.nothing, .nothing, .disconnect, .nothing]),
+            (.useDifferentCloud, true, true, [.nothing, .nothing, .disconnect, .nothing]),
         ]
         for (event, sheetShown, alertShown, expected) in rows {
             for (phase, decision) in zip(phases, expected) {
