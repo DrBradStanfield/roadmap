@@ -62,6 +62,7 @@ Cutting build 11:
 - [ ] Build 11 is cut from a commit that contains PR 1218 (the floor assumes it).
 - [ ] The owed-delete kind fix (lead H29) is on main. A false 'Health not erased' on every erase must not ship.
 - [ ] The Health Records panel fix is on main: results contained in a DiagnosticReport are read, and the lab rules version goes to 3.
+- [ ] Leads H33 and H34 are fixed on main: a remote erase that joins a pay already running must also pay the ids it just owed, and an erase waits on at most one 2 s drain.
 
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
