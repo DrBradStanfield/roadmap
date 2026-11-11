@@ -61,8 +61,8 @@ Mirrors the reminder cron skeleton:
 
 1. `setInterval` fires every 60 min (auto-started on module import via `startTrendingCron()`).
 2. If NZ-local hour (Pacific/Auckland, DST-aware via Intl) < TARGET_HOUR_NZ, return (too early in the NZ day). Using `<` instead of `!==` means any tick after 3am NZ can run today's cron if it hasn't run yet — resilient to deploys that shift the `setInterval` offset past the target hour. The lock_date is also NZ-local (not UTC), so the day boundary matches NZ midnight.
-3. Local fast-path guard: skip if `lastRunDate === todayStr`.
-4. **Distributed lock** via Supabase `cron_lock` table — `tryAcquireCronLock(machineId, todayStr, 'trending_cron')`. Only one Fly.io machine processes per day even though multiple machines run the interval. The lock is the source of truth for "did today's cron run"; `lastRunDate` is a local fast-path optimization.
+3. Local guard: the cron's day state (`app/lib/cron-day.ts`) skips the tick while a run goes, whatever the date, and once today is done (US-28 AC7).
+4. **Distributed lock** via Supabase `cron_lock` table — `tryAcquireCronLock(machineId, todayStr, 'trending_cron')`. Only one Fly.io machine processes per day even though multiple machines run the interval. The lock is the source of truth for "did today's cron run"; the day state is a per-machine guard on top of it.
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
 6. Sentry instrumentation: `tags: { feature: 'trending_cron' }`.
 

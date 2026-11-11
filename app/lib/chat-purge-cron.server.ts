@@ -42,12 +42,18 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
 import { withTimeout } from './cron-helpers.server';
-import { MACHINE_ID } from './daily-cron.server';
+import { MACHINE_ID, reportStuckRun } from './daily-cron.server';
+import { transition, type CronDay } from './cron-day';
 import { recordServerEvent } from './product-events.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
+/** A day's purge is the day's aged rows, one update per match event, plus an
+ *  archive step capped at 5 minutes; at tens of milliseconds per row, 6 hours
+ *  covers hundreds of thousands of rows, a backlog far past one day's chats.
+ *  A run still going after that is stuck (US-28 AC7). */
+const STUCK_AFTER_MS = 6 * CRON_INTERVAL_MS;
 
 /** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
@@ -106,7 +112,7 @@ interface Held {
   eligible: number;
 }
 
-let lastRunDate: string | null = null;
+let day: CronDay = { phase: 'open' };
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
 /** The question keys. Everything else in `router_context` (the surface name,
@@ -405,14 +411,24 @@ export function startChatPurgeCron(): void {
   cronIntervalId = setInterval(async () => {
     try {
       const now = new Date();
-      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
-
       const todayStr = now.toISOString().slice(0, 10);
-      if (lastRunDate === todayStr) return;
+      const step = transition(day, { type: 'tick', today: todayStr, now: now.getTime(), limitMs: STUCK_AFTER_MS });
+      day = step.day;
+      if (step.decision === 'skip-and-report-stuck' && day.phase === 'running') {
+        reportStuckRun('Chat text purge cron', 'chat_text_purge_cron', day.startedAt, now.getTime());
+      }
+      if (step.decision !== 'try' || now.getUTCHours() < TARGET_HOUR_UTC) return;
 
-      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
-      await purgeWithLock(todayStr, now);
-      lastRunDate = todayStr;
+      // Running while the purge goes, so one that outlasts the hour, or
+      // midnight, is not started twice on this machine; a throw (a lock error
+      // included, US-28 AC2) opens the day, so the next tick retries. A held
+      // lock (null) marks the day done (US-28 AC7).
+      day = transition(day, { type: 'started', date: todayStr, now: now.getTime() }).day;
+      const cleared = await purgeWithLock(todayStr, now).catch((runError: unknown) => {
+        day = transition(day, { type: 'failed' }).day;
+        throw runError;
+      });
+      day = transition(day, cleared ? { type: 'finished' } : { type: 'held', date: todayStr }).day;
     } catch (error) {
       console.error('Chat text purge cron error:', safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: 'chat_text_purge_cron' } });

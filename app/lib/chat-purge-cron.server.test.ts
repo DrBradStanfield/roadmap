@@ -398,10 +398,10 @@ describe('purgeWithLock — one machine per day', () => {
     expect(vi.mocked(tryAcquireCronLock).mock.calls[0][2]).toBe('chat_text_purge');
   });
 
-  // A lock fault must reach the tick's catch, which is the only path that
-  // leaves `lastRunDate` unset — the assignment sits AFTER the await, so the
-  // day stays unclaimed and the next tick retries. If this resolved instead,
-  // the day would be marked done with nothing purged.
+  // A lock fault must reach the tick, which marks the day before the run and
+  // releases it on a throw (US-28 AC7), so the day stays unclaimed and the
+  // next tick retries. If this resolved instead, the day would be marked done
+  // with nothing purged.
   it('propagates a lock fault instead of purging, so the day is never claimed', async () => {
     vi.mocked(tryAcquireCronLock).mockRejectedValue(new Error('cron lock row missing (chat_text_purge)'));
     await expect(purgeWithLock('2026-09-10', NOW)).rejects.toThrow(/cron lock row missing/);
