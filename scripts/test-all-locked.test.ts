@@ -157,6 +157,20 @@ describe('the real script (US-71 AC1-AC3)', () => {
     fs.mkdirSync(path.join(proj, 'node_modules', '.bin'), { recursive: true });
     execFileSync('git', ['init', '-q'], { cwd: proj });
   });
+  // A failed waitFor skips the test's own kill: SIGKILL any wrapper still up and each fake vitest's
+  // group (it runs detached, so its pid is its group), or both run forever. Runs before base is removed.
+  const spawned: ReturnType<typeof spawn>[] = [];
+  const pids = () => path.join(base, 'vitest-pids.txt');
+  afterEach(() => {
+    const kill = (pid: number) => {
+      try { process.kill(pid, 'SIGKILL'); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ESRCH') throw e; }
+    };
+    for (const c of spawned.splice(0)) if (c.exitCode === null && c.signalCode === null) kill(c.pid!);
+    // The fake notes its pid as it boots; the wrapper's owner.json names it from spawn, before that.
+    const groups = fs.existsSync(pids()) ? fs.readFileSync(pids(), 'utf8').split('\n').filter(Boolean).map(Number) : [];
+    const child = readHolder(path.join(proj, '.git', 'test-all.lock'))?.child;
+    for (const g of new Set(child ? [...groups, child] : groups)) kill(-g);
+  });
   // The fake vitest logs start/end with the lock's presence, then behaves as MODE says.
   const fakeVitest = (body: string) => {
     const bin = path.join(proj, 'node_modules', '.bin', 'vitest');
@@ -164,11 +178,15 @@ describe('the real script (US-71 AC1-AC3)', () => {
 const fs = require('fs');
 const lock = ${JSON.stringify(path.join(proj, '.git', 'test-all.lock'))};
 const note = (m) => fs.appendFileSync(${JSON.stringify(log)}, m + '\\n');
+fs.appendFileSync(${JSON.stringify(pids())}, process.pid + '\\n');
 note('start ' + process.argv.slice(2).join(' ') + ' lock=' + fs.existsSync(lock));
 ${body}`, { mode: 0o755 });
   };
-  const run = (args: string[] = [], env: Record<string, string> = {}, nodeArgs: string[] = []) =>
-    spawn(process.execPath, [...nodeArgs, script, ...args], { cwd: proj, env: { ...process.env, CI: '', ...env }, stdio: 'ignore' });
+  const run = (args: string[] = [], env: Record<string, string> = {}, nodeArgs: string[] = []) => {
+    const c = spawn(process.execPath, [...nodeArgs, script, ...args], { cwd: proj, env: { ...process.env, CI: '', ...env }, stdio: 'ignore' });
+    spawned.push(c);
+    return c;
+  };
   const exited = (c: ReturnType<typeof spawn>) => new Promise<number | null>((r) => c.once('exit', (code) => r(code)));
   /** Polls up to 5 s, then fails the test naming what never came. */
   const waitFor = async (what: string, f: () => boolean) => {
