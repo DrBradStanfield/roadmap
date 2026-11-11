@@ -142,6 +142,20 @@ describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', 
     'xcodebuild test -scheme App -parallel-testing-enabled NO',
     // the old hatch value no longer lifts it
     'ALLOW_EXTRA_SIMULATOR=1 xcrun simctl launch AAAA com.x',
+    // review A5/A6 (final pass): commands passed on by env, time, nohup, exec, command, nice, or a shell string
+    'env FOO=1 xcrun simctl launch AAAA com.x',
+    '/usr/bin/env -i PATH=/usr/bin xcrun simctl io AAAA screenshot a.png',
+    'time xcrun simctl install AAAA App.app',
+    'nohup xcrun simctl launch AAAA com.x &',
+    'exec xcrun simctl launch AAAA com.x',
+    'command xcrun simctl launch AAAA com.x',
+    'nice -n 10 xcodebuild test -scheme App -parallel-testing-enabled NO',
+    'bash -c "xcrun simctl launch AAAA com.x"',
+    "sh -lc 'cd ios && xcrun simctl install AAAA App.app'",
+    'bash -c "bash -c \\"xcrun simctl boot AAAA\\""',
+    // review R4: a bare name= destination
+    'xcodebuild build -scheme App -destination name=iPhone',
+    "xcodebuild build -scheme App -destination 'name=iPhone 18 Pro'",
   ])('denies %s, naming the wrapper', (cmd) => {
     const reason = decide(cmd, () => []);
     expect(reason).toContain('US-71 AC7');
@@ -161,8 +175,11 @@ describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', 
     'xcrun simctl shutdown AAAA',
     'ALLOW_EXTRA_SIMULATOR=other-device xcrun simctl launch AAAA com.x',
     'ALLOW_EXTRA_SIMULATOR=other-device xcodebuild build-for-testing -destination "platform=iOS Simulator,name=iPad"',
-    'ios/scripts/sim-run.sh hold',
-    'HR_SIM_LEASE=123-456 ios/scripts/sim-run.sh -- xcrun simctl io {udid} screenshot a.png',
+    'ALLOW_EXTRA_SIMULATOR=other-device ios/scripts/fresh-sim.sh',
+    'bash -c "ios/scripts/sim-run.sh -- xcrun simctl io {udid} screenshot a.png"',
+    'bash -c "echo xcrun simctl launch"',
+    'echo "bash -c xcrun simctl launch AAAA"',
+    "xcodebuild build -scheme App -destination 'platform=iOS,name=Brad iPhone'",
     // review A7: a physical device or generic destination boots nothing
     "xcodebuild test -scheme App -parallel-testing-enabled NO -destination 'platform=iOS,id=00008110-001A2B3C4D5E801E'",
     'xcodebuild build-for-testing -scheme App -destination platform=iOS,id=00008110-001A2B3C4D5E801E',

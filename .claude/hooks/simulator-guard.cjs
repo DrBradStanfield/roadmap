@@ -5,12 +5,13 @@
 //   2. Denies `simctl boot|create|clone` while MAX_BOOTED_SIMULATORS are already booted, unless the
 //      command sets ALLOW_EXTRA_SIMULATOR=other-device. Fails open when the booted check errors or times out.
 //   3. Denies any other simulator use outside ios/scripts/sim-run.sh (US-71 AC7): a simulator
-//      -destination, an xcodebuild test action with no destination, and simctl's device commands
-//      (DOOR_SIMCTL). ALLOW_EXTRA_SIMULATOR=other-device lifts it, for a demo on another simulator.
-// A best-effort warning layer, not a bash parser (PRs 805/930): one scan drops comments, heredoc bodies and
-// quoted text, and the tool must be the command word of its segment (after VAR=1, env, timeout N,
-// perl -e '...' N or xcrun). A malformed command is also checked as raw text, so it can only be denied.
-// Commands run by a script (ios/scripts/*.sh) are not seen.
+//      -destination (iOS Simulator, a simulator UUID, a bare name=), an xcodebuild test action with no
+//      destination, and simctl's device commands (DOOR_SIMCTL). ALLOW_EXTRA_SIMULATOR=other-device lifts
+//      it, for a demo on another simulator.
+// A seat belt, not a wall: a best-effort warning layer, not a bash parser (PRs 805/930). One scan drops
+// comments, heredoc bodies and quoted text, and the tool must be the command word of its segment (past
+// commandIndex's prefixes); a `bash -c "..."` string is checked as a command. A malformed command is also
+// checked as raw text, so it can only be denied. Commands run by a script (ios/scripts/*.sh) are not seen.
 const { execFileSync } = require('child_process');
 
 const MAX_BOOTED_SIMULATORS = 2;
@@ -30,12 +31,18 @@ function bootedSimulators() {
 // `clean` is false when the scan ends inside a quote or heredoc.
 function scan(cmd) {
   const segs = [[]];
-  let word = null, wq = false, state = 'normal', quoted = '', heredocs = [], i = 0;
+  let word = null, raw = '', wq = false, state = 'normal', quoted = '', heredocs = [], i = 0;
   // wq: part of the word before its first '=' was quoted or escaped. Bash never reads such a word as VAR=value
   // (setsEscapeHatch); a quoted value after the '=' (FOO="bar") is still an assignment.
+  // raw: the word as bash reads it, quotes gone but quoted text kept (seg.raw), for `bash -c "..."`.
   const endWord = () => {
-    if (word !== null) { const seg = segs[segs.length - 1]; if (wq) (seg.quoted ||= new Set()).add(seg.length); seg.push(word); }
-    word = null; wq = false;
+    if (word !== null) {
+      const seg = segs[segs.length - 1];
+      if (wq) (seg.quoted ||= new Set()).add(seg.length);
+      (seg.raw ||= [])[seg.length] = raw;
+      seg.push(word);
+    }
+    word = null; raw = ''; wq = false;
   };
   const endSeg = () => { endWord(); segs.push([]); };
   while (i < cmd.length) {
@@ -47,12 +54,13 @@ function scan(cmd) {
       if (ch === (state === 'single' ? "'" : '"')) {
         if (!(word || '').includes('=')) wq = true;
         word = (word || '') + (/^[\w.:\/@+-]*$/.test(quoted) ? quoted : 'QUOTED');
+        raw += quoted;
         state = 'normal';
       } else quoted += ch;
       i++; continue;
     }
     if (ch === '\\' && cmd[i + 1] === '\n') { i += 2; continue; }
-    if (ch === '\\' && i + 1 < cmd.length) { if (!(word || '').includes('=')) wq = true; word = (word || '') + cmd[i + 1]; i += 2; continue; }
+    if (ch === '\\' && i + 1 < cmd.length) { if (!(word || '').includes('=')) wq = true; word = (word || '') + cmd[i + 1]; raw += cmd[i + 1]; i += 2; continue; }
     if (ch === "'" || ch === '"') { state = ch === "'" ? 'single' : 'double'; quoted = ''; i++; continue; }
     if (ch === '#' && word === null) { state = 'comment'; i++; continue; }
     if (ch === '<' && cmd[i + 1] === '<' && cmd[i + 2] !== '<') {
@@ -83,33 +91,42 @@ function scan(cmd) {
     }
     if (ch === ' ' || ch === '\t') endWord();
     else if (';&|()'.includes(ch)) endSeg();
-    else word = (word || '') + ch;
+    else { word = (word || '') + ch; raw += ch; }
     i++;
   }
   endWord();
   return { segs, clean: (state === 'normal' || state === 'comment') && heredocs.length === 0 };
 }
 
-// Each segment's tool (xcodebuild or simctl) and its arguments, after the prefixes VAR=1, env,
-// timeout [-flags] N, perl [-flags -e code] N and xcrun.
-// Paths are reduced to their last part (/usr/bin/xcrun), xcrun's own options are skipped (--sdk X), and
-// simctl's leading options (--set X) are dropped, so args[0] is the subcommand.
+// The index of a segment's real command word, past words that pass a command on: VAR=1, env (and its
+// options), time, nohup, exec, command, nice [-n N], timeout [-flags] N, perl [-flags -e code] N and
+// xcrun (and --sdk X). Paths are reduced to their last part (/usr/bin/xcrun).
 const base = (w) => (w || '').split('/').pop();
-function invocation(w) {
+function commandIndex(w) {
   let i = 0;
   for (;;) {
-    if (/^\w+=/.test(w[i]) || w[i] === 'env') i++;
-    else if (base(w[i]) === 'xcrun') {
+    const b = base(w[i]);
+    if (/^\w+=/.test(w[i]) || ['nohup', 'exec', 'command'].includes(b)) i++;
+    else if (b === 'env') { i++; while (w[i] && (w[i].startsWith('-') || /^\w+=/.test(w[i]))) i += /^-[uPS]$/.test(w[i]) ? 2 : 1; }
+    else if (b === 'time') { i++; if (w[i] === '-p') i++; }
+    else if (b === 'nice') { i++; if (w[i] === '-n') i += 2; else if (/^-\d+$/.test(w[i] || '')) i++; }
+    else if (b === 'xcrun') {
       i++;
       while (w[i] && w[i].startsWith('-')) i += /^--?(sdk|toolchain)$/.test(w[i]) ? 2 : 1;
-    } else if (w[i] === 'timeout' || w[i] === 'perl') {
+    } else if (b === 'timeout' || b === 'perl') {
       i++;
       while (w[i] && w[i].startsWith('-')) i += w[i] === '-e' ? 2 : 1;
       if (/^\d+[smh]?$/.test(w[i] || '')) i++;
-    } else break;
+    } else return i;
   }
+}
+
+// Each segment's tool (xcodebuild or simctl) and its arguments. simctl's leading options (--set X) are
+// dropped, so args[0] is the subcommand.
+function invocation(w) {
+  const i = commandIndex(w);
   const tool = base(w[i]);
-  if (tool === 'xcodebuild') return { tool, args: w.slice(i + 1) };
+  if (tool === 'xcodebuild') return { tool, args: w.slice(i + 1), raws: (w.raw || w).slice(i + 1) };
   if (tool !== 'simctl') return null;
   let j = i + 1;
   while (w[j] && w[j].startsWith('-')) j += /^--(set|profiles)$/.test(w[j]) ? 2 : 1;
@@ -126,7 +143,7 @@ function setsEscapeHatch(seg) {
   return false;
 }
 
-function decide(cmd, lookup = bootedSimulators) {
+function decide(cmd, lookup = bootedSimulators, depth = 0) {
   const { segs, clean } = scan(cmd);
   const words = clean ? segs : segs.concat(cmd.split(/&&|\|\||[;&|\n()]/).map((s) => s.trim().split(/\s+/)));
   const calls = words.map(invocation).filter(Boolean);
@@ -149,7 +166,16 @@ function decide(cmd, lookup = bootedSimulators) {
         + `(US-71 AC6). ${DOOR_HINT}`;
     }
   }
-  if (!hatch && calls.some((c) => usesSimulator(c, cmd))) return `This runs on a simulator outside the shared one (US-71 AC7). ${DOOR_HINT}`;
+  if (!hatch && calls.some(usesSimulator)) return `This runs on a simulator outside the shared one (US-71 AC7). ${DOOR_HINT}`;
+  // A shell given a script string (bash -c "...", sh -lc '...'): the string is checked as a command.
+  if (!hatch && depth < 3) {
+    for (const seg of segs) {
+      const i = commandIndex(seg);
+      if (!['bash', 'sh', 'zsh', 'dash'].includes(base(seg[i])) || !/^-[a-z]*c[a-z]*$/.test(seg[i + 1] || '')) continue;
+      const inner = decide(seg.raw?.[i + 2] ?? seg[i + 2] ?? '', lookup, depth + 1);
+      if (inner) return inner;
+    }
+  }
   return null;
 }
 
@@ -161,20 +187,19 @@ const DOOR_HINT = 'Run it through the shared simulator instead: `ios/scripts/sim
 const DOOR_ACTIONS = ['test', 'test-without-building', 'build-for-testing'];
 const DOOR_SIMCTL = ['boot', 'bootstatus', 'install', 'uninstall', 'launch', 'io', 'erase', 'delete', 'spawn', 'openurl', 'privacy'];
 
-// A destination naming a simulator: "iOS Simulator" (not generic/, which boots nothing) or a simulator's
-// UUID id (a phone's id has another shape). A quoted destination reads as QUOTED, so the raw command is checked.
-const SIM_ID = /(^|[,\s'"])id=[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/;
-function simDestination(a, cmd) {
-  if (a.includes('QUOTED')) return /(^|[^/])platform=iOS Simulator/.test(cmd) || SIM_ID.test(cmd);
-  return !a.startsWith('generic/') && (/Simulator/.test(a) || SIM_ID.test(a));
+// A destination naming a simulator: "iOS Simulator" (not generic/, which boots nothing), a simulator's
+// UUID id (a phone's id has another shape), or a bare name=. Read from the raw word, quotes removed.
+const SIM_ID = /(^|,)id=[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/;
+function simDestination(a) {
+  return !a.startsWith('generic/') && (/Simulator/.test(a) || SIM_ID.test(a) || /^name=/.test(a));
 }
 
 // simctl's device commands; xcodebuild with a simulator destination, or a test action with no destination
 // (Xcode may pick a simulator). A physical device or generic/ destination boots nothing and passes.
-function usesSimulator({ tool, args }, cmd) {
+function usesSimulator({ tool, args, raws }) {
   if (tool === 'simctl') return DOOR_SIMCTL.includes(args[0]);
-  const dests = args.filter((a, j) => args[j - 1] === '-destination');
-  if (dests.some((a) => simDestination(a, cmd))) return true;
+  const dests = raws.filter((a, j) => args[j - 1] === '-destination');
+  if (dests.some(simDestination)) return true;
   return args.some((a) => DOOR_ACTIONS.includes(a)) && dests.length === 0;
 }
 
