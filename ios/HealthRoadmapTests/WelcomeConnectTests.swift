@@ -84,6 +84,32 @@ final class WelcomeConnectTests: XCTestCase {
         XCTAssertEqual(WelcomeConnect.decide(.alertDismissed, phase: .opened, sheetShown: false, alertShown: false), .nothing)
     }
 
+    /// US-54 AC2c: a failed open says what the Sync screen says for that problem, from the same
+    /// source, except a cloud that could not be reached, which keeps AC2's sentence. Try again
+    /// shows only where trying again can help: a revoked sign-in needs the Connect rows, a
+    /// newer app's record an update; a full cloud's Try again checks the freed space.
+    func testTheFailedRowSaysEachProblemInTheSyncScreensWords_US54_AC2c() {
+        let sentence = "Signed in, but your record could not be opened yet. Check your connection, then try again."
+        // (kind, the Sync screen's words or nil for AC2's sentence, Try again)
+        let rows: [(SyncProblem.Kind, Bool, Bool)] = [
+            (.unreachable, false, true),
+            (.busy, true, true),
+            (.signIn, true, false),
+            (.tooNew, true, false),
+            (.storageFull, true, true),
+        ]
+        XCTAssertEqual(Set(rows.map(\.0)), Set(SyncProblem.Kind.allCases), "one row per kind")
+        for provider in CloudProvider.allCases {
+            for (kind, syncWords, tryAgain) in rows {
+                let problem = SyncProblem(kind: kind)
+                let failure = WelcomeConnect.failure(problem, provider: provider)
+                let expected = syncWords ? SyncStatusText.detail(.problem(problem), provider: provider) : sentence
+                XCTAssertEqual(failure.words, expected, "\(kind) \(provider)")
+                XCTAssertEqual(failure.offersTryAgain, tryAgain, "\(kind)")
+            }
+        }
+    }
+
     // MARK: Through the real CloudSync, on a stubbed Dropbox
 
     private var folder: URL!
