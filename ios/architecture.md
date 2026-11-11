@@ -584,6 +584,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   Since 2026-11-12 (US-25 AC11l, review of PR 1328) the rule is wider and that check is gone:
   a different cloud is refused whenever one is connected, in any state ("Disconnect from Google
   Drive first, then connect Dropbox."); S3's union will make it true by construction and delete it.
+  It runs before the sign-in shows (the post-sign-in check is a backstop for races), and the welcome sheet at failed offers only "Sign in to <cloud> again" and "Use a different cloud" (Disconnect; US-54 AC2d).
   Connect errors show in the screen's alert, not the row's, since the welcome sheet hides its
   rows while a record opens. After a Disconnect,
   `sync-history` remembers the cloud, and the words say a copy stays there. The background

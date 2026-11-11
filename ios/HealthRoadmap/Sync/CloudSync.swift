@@ -89,14 +89,14 @@ final class CloudSync: CloudPort {
         guard !DemoRecord.isOn else { throw OAuthClient.Failure.refused("A demo record never syncs.") }
         #endif
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
+        try refuseAnotherCloud(provider)
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
-        // One cloud at a time, in any state: a sign-in left over from an earlier tap must not
-        // switch the record, opening or open (US-25 AC11l, which took in AC11j). Nothing is kept yet.
-        if let current = self.provider, current != provider {
-            throw OAuthClient.Failure.refused("Disconnect from \(current.label) first, then connect \(provider.label).")
-        }
+        // The backstop: a sign-in begun with no cloud may return after another connect set one.
+        // Nothing is kept yet.
+        try refuseAnotherCloud(provider)
         if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
             throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
         }
@@ -110,6 +110,14 @@ final class CloudSync: CloudPort {
         store.marksPending = phone
         store.cloudAccount = Self.source(provider, account: signedIn.account)
         await open(firstConnect: first)
+    }
+
+    /// One cloud at a time, in any state: a different cloud waits for Disconnect, so a
+    /// sign-in left over from an earlier tap never switches the record (US-25 AC11l, which took in AC11j).
+    private func refuseAnotherCloud(_ provider: CloudProvider) throws {
+        if let current = self.provider, current != provider {
+            throw OAuthClient.Failure.refused("Disconnect from \(current.label) first, then connect \(provider.label).")
+        }
     }
 
     /// The app came to the foreground: re-read, or try again to open.
