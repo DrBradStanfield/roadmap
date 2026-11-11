@@ -36,6 +36,7 @@ import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../pac
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
+import { retentionOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 
@@ -432,12 +433,11 @@ async function chatAction(request: Request, app: boolean) {
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);
 
-    // The widget (localFirst) sends the record with every turn, so nothing it
-    // says is stored: no conversation row, no message rows, no dedup — its
-    // history arrives in the body (US-15 AC7). The other surfaces keep their
-    // transcripts server-side and load them here; is_fallback is needed for
-    // the dedup check below, created_at for the time window.
-    const widget = app || body.localFirst === true;
+    // What this turn leaves on our server (chat-retention.ts). The app and the widget send their
+    // history in the body (US-15 AC7); the transcript surfaces load theirs here, is_fallback
+    // for the dedup check below, created_at for its time window.
+    const retention = retentionOf({ app, widget: body.localFirst === true });
+    const widget = retention !== 'transcript';
     if (conversationId && !widget) {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
@@ -647,7 +647,7 @@ async function chatAction(request: Request, app: boolean) {
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget. It is a
       // product_events row, so never on the app's turn, which stores nothing (D9, US-67 AC1).
-      if (completion.roadmapRun && !app) {
+      if (completion.roadmapRun && retention !== 'none') {
         void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
       }
 
@@ -705,9 +705,9 @@ async function chatAction(request: Request, app: boolean) {
           }
         }).catch(() => reportChatError('Chat: Match-event insert failed'));
 
-      if (app) {
+      if (retention === 'none') {
         // D9: the app's turn leaves no row on the server.
-      } else if (widget) {
+      } else if (retention === 'question-rows') {
         logMatchEvent();
       } else {
         // Fire-and-forget: save the assistant message, then log the match event
@@ -741,7 +741,7 @@ async function chatAction(request: Request, app: boolean) {
           }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
       }
 
-      if (!app) logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
+      if (retention !== 'none') logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
         cacheRead: completion.usage.cacheReadTokens,
         cacheCreation: completion.usage.cacheCreationTokens,
       });
