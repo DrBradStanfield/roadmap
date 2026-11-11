@@ -76,7 +76,8 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 
 let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 /** The POSTs analytics received, by name. */
@@ -149,7 +150,7 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#heightCm'));
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
+  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), localToday()]]), { timeout: 2000 });
 }
 function birth(view: RenderResult, month = '5', year = '1975') {
   fireEvent.change(q(view, '#birthMonth')!, { target: { value: month } });
@@ -185,7 +186,7 @@ describe('US-62 AC13: a step answered in this tab by an upload or the chat count
     await waitFor(() => expect(upload.complete).toBeTruthy());
     // The upload's save writes a weight, then the modal hands back to the page.
     await act(async () => {
-      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${localToday()}T00:00:00.000Z`, source: 'lab_import' }]);
       await upload.complete!();
     });
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
@@ -275,7 +276,7 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
     expect(sexQuestion(view)).toBeNull(); // stage 1: only the weight is missing
     type(q(view, '#weightKg'), '105');
     await waitFor(() => expect(landed()).toBe(true)); // the first record's landing
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
     await eraseHere(view);
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
     // The new record: another writer gives height, sex and birth; the weight is missing again.
@@ -392,7 +393,7 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await open();
     type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
     await waitFor(() => expect(landed()).toBe(true));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
     const before = matrixWeight(view);
     cross(); // a phone: the panels are built again
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
@@ -617,7 +618,7 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     const view = await weightLast();
     await waitFor(() => expect(upload.complete).toBeTruthy());
     await act(async () => {
-      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${localToday()}T00:00:00.000Z`, source: 'lab_import' }]);
       await upload.complete!();
     });
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());

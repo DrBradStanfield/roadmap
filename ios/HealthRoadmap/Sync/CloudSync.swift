@@ -92,6 +92,11 @@ final class CloudSync: CloudPort {
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        // An open in flight is single-flight: this connect would join it, and the cloud on
+        // file would no longer be the open record's (US-25 AC11j). Nothing is kept yet.
+        if self.provider != provider, openingFor == generation {
+            throw OAuthClient.Failure.refused("Wait for your record to finish opening, then connect.")
+        }
         if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
             throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
         }

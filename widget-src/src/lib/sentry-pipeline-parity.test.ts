@@ -68,6 +68,27 @@ describe('beforeSend pipeline parity (browser ↔ server)', () => {
     expect(frames[0].filename).toBe('app/routes/upload.ts');
   });
 
+  it('US-09 AC7h — keeps the trace context ids whole, and scrubs them in any other shape, on both sides', () => {
+    const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+    const SPAN_ID = 'e212345678abcdef';
+    const withTrace = (trace: Record<string, unknown>) => () => ({
+      ...syntheticEvent(), event_id: TRACE_ID, contexts: { trace },
+    });
+    const kept = withTrace({ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID });
+    const browser = scrubEvent(kept() as never) as unknown as Record<string, unknown>;
+    const server = copy.scrubServerEvent(kept()) as Record<string, unknown>;
+    expect(browser).toEqual(server);
+    expect(browser.event_id).toBe(TRACE_ID);
+    expect(browser.contexts).toEqual({ trace: { trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID } });
+
+    const text = withTrace({ trace_id: TRACE_ID.toUpperCase(), span_id: 'e2 45', parent_span_id: `${SPAN_ID}0` });
+    const browserText = scrubEvent(text() as never) as unknown as Record<string, unknown>;
+    expect(browserText).toEqual(copy.scrubServerEvent(text()));
+    expect(browserText.contexts).toEqual({
+      trace: { trace_id: 'E2[value]ABCDEF0123456789ABCDE', span_id: 'e2 [value]', parent_span_id: 'e2[value]abcdef0' },
+    });
+  });
+
   it('drops a request query naming a clinical document, on both sides', () => {
     const withDownload = () => ({
       ...syntheticEvent(),

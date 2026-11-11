@@ -93,7 +93,8 @@ import { HealthTool } from './HealthTool';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
 
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 const RIGHT_DAY = '2026-08-15';
 
 /** The guest's record as this browser holds it, after every pending save. */
@@ -163,7 +164,7 @@ async function firstWeight(value: string, { born = true, opened = false } = {}):
   if (opened) await addMeasurement('ldl', 3.0, '2026-09-01');
   const view = render(<HealthTool />);
   await typeAndLeave(await shown<HTMLInputElement>(view.container, '#weightKg'), value);
-  await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), TODAY]]));
+  await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), localToday()]]));
   return view;
 }
 /** Today's saved weight in its first-time field: the onboarding's weight box,
@@ -353,7 +354,7 @@ describe('malformed numeric drafts over the real record', () => {
     fireEvent.keyDown(draftInput(bloodMatrix(view.container), label), { key: 'Enter' });
     await wait(600);
     expect(await rowsOf(metric)).toEqual([]);
-    expect(await activeOn('ldl')).toEqual([[3.2, TODAY]]);
+    expect(await activeOn('ldl')).toEqual([[3.2, localToday()]]);
     view.unmount();
     view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
@@ -363,7 +364,7 @@ describe('malformed numeric drafts over the real record', () => {
     expect(await rowsOf(metric)).toEqual([]);
     typeInto(input, safe);
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric, expected, 'conventional'), TODAY]]));
+    await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric, expected, 'conventional'), localToday()]]));
   });
 });
 
@@ -440,14 +441,14 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.2');
     typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.4');
     commit(view.container);
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, localToday()]]));
     await waitFor(() => expect(ldlTile(view.container)).toBe('3.2 mmol/L'));
 
     const editor = openEditor(row(bloodMatrix(view.container), 'LDL Cholesterol'), 'last');
     fireEvent.change(editor, { target: { value: '2.1' } });
     fireEvent.keyDown(editor, { key: 'Enter' });
 
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[2.1, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[2.1, localToday()]]));
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
     expect(ldlInChat()).toEqual([2.1, 2.1]);
   });
@@ -480,7 +481,7 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.2');
     typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.4');
     tapOutside(view.container);
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, localToday()]]));
 
     // The connector corrects the value; the store takes it in and the page re-reads.
     const [saved] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
@@ -585,7 +586,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
   // closing the group unmounted it first, taking the correction with it.
   it('US-21 AC5: a correction clicked away onto its group\'s header, which closes the group, is written', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${TODAY}T00:00:00.000Z`, source: 'manual' }]);
+    await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -604,7 +605,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
   it('US-21 AC13: the same test twice on one day offers Replace, and Replace is a correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${TODAY}T00:00:00.000Z`, source: 'manual' }]);
+    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -682,7 +683,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect((await rowsOf('weight')).map((m) => [m.value, m.status])).toEqual([[84, 'active']]);
 
     await typeInLbThenSwitchBack('190');
-    expect(await activeOn('weight')).toEqual([[toCanonicalValue('weight', 190, 'conventional'), TODAY]]);
+    expect(await activeOn('weight')).toEqual([[toCanonicalValue('weight', 190, 'conventional'), localToday()]]);
   });
 
   // Round 7 review: the chat fills a first-time field from the unit the user
@@ -714,14 +715,14 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
 
     await typePair('120', '80');
     await wait(600);
-    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]));
+    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active', localToday()], [80, 'active', localToday()]]));
 
     fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value')); // open today's 120/80
     await typePair('120', '80');
     fireEvent.click(view.getByRole('button', { name: /Switch units/ })); // to US units, before the save runs
     await wait(600);
     await waitFor(() => expect(view.container.querySelector('#systolicBp')).toBeNull()); // the save closed the pair
-    expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]);
+    expect(await bpRows()).toEqual([[120, 'active', localToday()], [80, 'active', localToday()]]);
   });
 
   // US-02 AC8 (review R2): the first-time fields say why a pair the wrong way
@@ -802,13 +803,13 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     typeInto(field, '85'); // back in the field while the save runs
     release();
     await waitFor(() => expect(view.queryByText('Saving…')).toBeNull());
-    expect(await activeOn('weight')).toEqual([[84, TODAY]]);
+    expect(await activeOn('weight')).toEqual([[84, localToday()]]);
     expect(chat.context?.weightKg).toBe(85);
     expect((view.container.querySelector('#weightKg') as HTMLInputElement).value).toBe('85');
 
     act(() => field.blur()); // leaving saves it
     await wait(600);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[85, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[85, localToday()]]));
   });
 
   it('US-34 AC4: a change arriving while a weight is being typed keeps the typed weight', async () => {
@@ -878,7 +879,7 @@ describe('US-16 AC1: the chat fills the first-time fields', () => {
 
     savePdf(view); // saves what the fields hold
     await waitFor(async () => {
-      for (const [metric, value] of Object.entries(saved)) expect(await activeOn(metric)).toEqual([[value, TODAY]]);
+      for (const [metric, value] of Object.entries(saved)) expect(await activeOn(metric)).toEqual([[value, localToday()]]);
     });
   });
 });
@@ -982,7 +983,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
 
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
     press(view.container.querySelector('.bt-timeline-title') as HTMLElement); // leave
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]));
     expect(await rowsOf('waist')).toMatchObject([{ value: 88, status: 'active' }]);
   });
 
@@ -996,12 +997,12 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     const ldl = draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl, '3.2');
     tapOutside(view.container);
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.2, localToday()]]));
 
     expect(document.activeElement).toBe(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'));
     typeWithoutTap(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.5');
     tapOutside(view.container);
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.5, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.5, localToday()]]));
   });
 
   // Review of 2026-09-24: the vitals draft rewrote what was typed to the
@@ -1012,7 +1013,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     await wait(50);
     expect(draftInput(vitalsMatrix(view.container), 'Waist Circumference').value).toBe('90.4');
     press(view.container.querySelector('.bt-timeline-title') as HTMLElement);
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90.4, TODAY]]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90.4, localToday()]]));
   });
 
   // Review of 2026-09-24 (round 3): a unit switch rewrote only the draft
@@ -1027,7 +1028,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     await wait(50);
     expect(draftInput(vitalsMatrix(view.container), 'Weight').value).toBe('185');
     leaveVitals(view.container);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]));
   });
 
   it.each([
@@ -1042,7 +1043,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     await wait(50);
     expect(draftInput(vitalsMatrix(view.container), label).value).toBe(typed);
     leaveVitals(view.container);
-    await waitFor(async () => expect((await activeOn(metric)).filter(([, d]) => d === TODAY)).toEqual([[saved, TODAY]]));
+    await waitFor(async () => expect((await activeOn(metric)).filter(([, d]) => d === localToday())).toEqual([[saved, localToday()]]));
   });
 
   it('a backfill typed in kg and switched to lb is saved as the kilograms typed', async () => {
@@ -1063,7 +1064,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     const view = await returningGuest();
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
     leaveVitals(view.container);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]));
 
     toggleChip(vitalsMatrix(view.container), 'Weight'); // kg → lb: today's 84 kg reads 185
     await wait(50);
@@ -1080,7 +1081,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     toggleChip(vitalsMatrix(view.container), 'Weight'); // kg
     await wait(50);
     leaveVitals(view.container);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), localToday()]]));
   });
 
   // Cleanup review of 2026-09-25 (the rest of Codex R2): the chat's pre-fill
@@ -1090,7 +1091,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     const view = await returningGuest();
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
     leaveVitals(view.container);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]));
 
     async function chatSaysLb(lb: number) {
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: lb, unitSystem: 'conventional', date: null }]));
@@ -1104,7 +1105,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     expect(await rowsOf('weight')).toHaveLength(2);
 
     await chatSaysLb(190);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), localToday()]]));
   });
 
   // Codex R2 (2026-09-24): an upload flushed the blood-test draft only, and a
@@ -1121,49 +1122,49 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     expect(await rowsOf('waist')).toEqual([]);
 
     await uploadStarts();
-    expect(await activeOn('waist')).toEqual([[90, TODAY]]);
+    expect(await activeOn('waist')).toEqual([[90, localToday()]]);
   });
 });
 
 // Review of 2026-09-24 (D1): after a vitals save, the copies of the saved
 // values in `inputs` were not all cleared, and Save as PDF saved what was left
-// under TODAY through the field path, whatever day the draft was dated.
+// under today through the field path, whatever day the draft was dated.
 describe('leftover form state never writes a value', () => {
   it('correct today\'s waist to 92, then Save as PDF: 92 stays', async () => {
     const view = await returningGuest();
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
     typeInto(draftInput(vitalsMatrix(view.container), 'Waist Circumference'), '90');
     press(view.container.querySelector('.bt-timeline-title') as HTMLElement); // leave: saved under today
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
 
     const editor = openEditor(row(vitalsMatrix(view.container), 'Waist Circumference'), 'last');
     fireEvent.change(editor, { target: { value: '92' } });
     fireEvent.keyDown(editor, { key: 'Enter' });
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[92, TODAY]]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[92, localToday()]]));
 
     savePdf(view);
     await wait(1500);
-    expect(await activeOn('waist')).toEqual([[92, TODAY]]);
-    expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]);
+    expect(await activeOn('waist')).toEqual([[92, localToday()]]);
+    expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]);
   });
 
   it('a vitals draft dated 20 Aug is saved on 20 Aug only; its invalid cell stays; Save as PDF writes nothing', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('waist', 90, TODAY);
+    await addMeasurement('waist', 90, localToday());
     const view = await secondVisit();
     pickDraftDate(vitalsMatrix(view.container), '2026-08-20');
     typeInto(draftInput(vitalsMatrix(view.container), 'Waist Circumference'), '95');
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '1'); // on its way to a number; not one yet
 
     savePdf(view); // the press leaves the matrix: its valid cells are saved
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY], [95, '2026-08-20']]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()], [95, '2026-08-20']]));
     const weight = draftInput(vitalsMatrix(view.container), 'Weight');
     expect(weight.value).toBe('1');
     expect(weight.getAttribute('aria-invalid')).toBe('true');
 
     savePdf(view); // much later
     await wait(1500);
-    expect(await activeOn('waist')).toEqual([[90, TODAY], [95, '2026-08-20']]);
+    expect(await activeOn('waist')).toEqual([[90, localToday()], [95, '2026-08-20']]);
     expect((await rowsOf('waist')).every((m) => m.status === 'active')).toBe(true);
     expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
   });
@@ -1199,7 +1200,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
 
     // Save as PDF sits at the foot of My health, the tab already shown (US-62 AC26).
     savePdf(view);
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
   });
 
   // Only the fields' own save takes a value out of the form. A matrix's save
@@ -1210,7 +1211,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
     const view = render(<HealthTool />);
     await typeAndLeave(await shown<HTMLInputElement>(view.container, '#waistCm'), '90');
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
     typeInto(view.container.querySelector('#weightKg') as HTMLInputElement, '84'); // not left
     await turnPhone(); // portrait: the form is built again, the vitals as a matrix
     await shown(view.container, '.bt-vitals-card');
@@ -1223,7 +1224,7 @@ describe('US-03 AC3: a first-time value the form was built again without', () =>
     await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10']]));
 
     await uploadStarts(); // saves the fields
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [84, TODAY]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [84, localToday()]]));
   });
 });
 
@@ -1285,13 +1286,13 @@ describe('another writer changes a value the user is working on', () => {
     hidePage(); // the phone put the page away: the draft waits on the device
     await wait(1000);
     showPage();
-    await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
     remoteChange();
     await waitFor(() => expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(SAME_SLOT)).toBeTruthy());
 
     typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.4');
     tapOutside(view.container);
-    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.4, TODAY]]));
+    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.4, localToday()]]));
     expect((await rowsOf('ldl')).map((m) => [m.value, m.status])).toEqual([[3, 'active']]);
     expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('3.2');
 
@@ -1307,7 +1308,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '');
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3.3');
     tapOutside(view.container);
-    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.3, TODAY]]));
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[3.3, localToday()]]));
   });
 
   // Codex R2 (2026-09-24, round 4), and round 5: a blood pressure is one
@@ -1350,7 +1351,7 @@ describe('another writer changes a value the user is working on', () => {
     const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl(), '3.2');
     editHeight(view.container);
-    await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
     remoteChange();
     expect(row(bloodMatrix(view.container), 'LDL Cholesterol').querySelector('.bt-cell-clickable')).toBeNull(); // not on the page
 
@@ -1363,7 +1364,7 @@ describe('another writer changes a value the user is working on', () => {
   });
 
   it('US-03 AC2: a value emptied and typed again while the page shows an older record names the row the page shows, and is refused', async () => {
-    const view = await ldlOnRecord(3.0, `${TODAY}T00:00:00.000Z`);
+    const view = await ldlOnRecord(3.0, `${localToday()}T00:00:00.000Z`);
     const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl(), '3.2');
     editHeight(view.container);
@@ -1375,7 +1376,7 @@ describe('another writer changes a value the user is working on', () => {
 
     fireEvent.keyDown(ldl(), { key: 'Enter' });
     await wait(1000);
-    expect(await activeOn('ldl')).toEqual([[2.8, TODAY]]);
+    expect(await activeOn('ldl')).toEqual([[2.8, localToday()]]);
     expect(ldl().value).toBe('3.4');
   });
 
@@ -1385,7 +1386,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(bpHalf(vitalsMatrix(view.container), 'Systolic'), '120');
     typeInto(bpHalf(vitalsMatrix(view.container), 'Diastolic'), '80');
     editHeight(view.container);
-    await addMeasurement('systolic_bp', 130, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('systolic_bp', 130, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
     remoteChange();
 
     leaveVitals(view.container);
@@ -1458,7 +1459,7 @@ describe('US-03 AC1: the New column\'s day', () => {
 describe('US-03 AC4: a commit that partly lands', () => {
   it('keeps only the refused cell, with its reason; what landed leaves the draft and the form', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`);
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`);
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '2.5'); // corrects the 3.0 the page shows
@@ -1477,11 +1478,11 @@ describe('US-03 AC4: a commit that partly lands', () => {
     });
     tapOutside(view.container);
 
-    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.4, TODAY]]));
+    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.4, localToday()]]));
     await waitFor(() => expect(draftInput(bloodMatrix(view.container), 'HDL Cholesterol').value).toBe(''));
     expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('2.5');
     expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(SAVE_ERRORS.invalid)).toBeTruthy();
-    expect(await activeOn('ldl')).toEqual([[3, TODAY]]);
+    expect(await activeOn('ldl')).toEqual([[3, localToday()]]);
     // The page sent the typed correction; only the store's input was changed.
     expect(correcting.mock.calls.some(([id, value]) => id === ldlRow.id && value === 2.5)).toBe(true);
 
@@ -1489,11 +1490,11 @@ describe('US-03 AC4: a commit that partly lands', () => {
     const editor = openEditor(row(bloodMatrix(view.container), 'HDL Cholesterol'));
     fireEvent.change(editor, { target: { value: '1.2' } });
     fireEvent.keyDown(editor, { key: 'Enter' });
-    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.2, TODAY]]));
+    await waitFor(async () => expect(await activeOn('hdl')).toEqual([[1.2, localToday()]]));
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), ''); // the user settles the refused LDL
     tapOutside(view.container);
     await wait(1000);
-    expect(await activeOn('hdl')).toEqual([[1.2, TODAY]]);
+    expect(await activeOn('hdl')).toEqual([[1.2, localToday()]]);
     expect(chat.context?.hdlC).toBe(1.2);
   });
 });
@@ -1520,7 +1521,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await wait(50);
     expect(ldlTile(view.container)).toBe('2.0 mmol/L');
 
-    pickDraftDate(bloodMatrix(view.container), TODAY); // today: newer than the record's latest
+    pickDraftDate(bloodMatrix(view.container), localToday()); // today: newer than the record's latest
     await wait(50);
     expect(ldlTile(view.container)).toBe('3.4 mmol/L');
     expect(chat.context?.ldlC).toBe(3.4);
@@ -1794,7 +1795,7 @@ describe('US-11: an erase made on another device', () => {
 
     // The user starts again here, and the page loads again.
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 80, TODAY);
+    await addMeasurement('weight', 80, localToday());
     view.unmount();
     const again = render(<HealthTool />);
     await shown(again.container, '.bt-timeline-title');
@@ -1826,7 +1827,7 @@ describe('US-11: an erase made on another device', () => {
     await other.deleteAllData();
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, kept); // one localStorage for both devices
     other.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    other.addMeasurement('weight', 80, `${TODAY}T00:00:00.000Z`);
+    other.addMeasurement('weight', 80, `${localToday()}T00:00:00.000Z`);
     await other.flush();
     await wait(6000);
     act(() => { window.dispatchEvent(new Event('focus')); }); // this page comes back, and re-reads
