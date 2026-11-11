@@ -1,12 +1,13 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// Survey S3 pins (US-25 AC11, 2026-11-12): what callers of CloudSync see today,
+/// Survey S3 pins (US-25 AC11k, 2026-11-12): what callers of CloudSync see today,
 /// pinned before its connection mode moves into one `CloudConnection` union with a
 /// pure transition. Each test reads only what a caller reads: status, provider,
 /// recordOpen, accountEmail, syncedBefore, erasing, the store's screen and record,
 /// the files on disk and the tokens. Opens, erases and re-reads are held with a
-/// StubHTTP.Gate, never a fixed delay. Behaviour CloudSyncTests already pins is not
+/// StubHTTP.Gate, never a fixed delay. Two polls wait on a state, not a timing:
+/// `untilQueued` (the store's line) and `untilRead` (a read with no hook). Behaviour CloudSyncTests already pins is not
 /// repeated here. A test marked "S3 design question" pins today's behaviour, which
 /// may not be the behaviour wanted: the refactor keeps it unless that is decided.
 @MainActor
@@ -85,6 +86,29 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         return await XCTWaiter().fulfillment(of: [done], timeout: 5) == .completed
     }
 
+    /// Steps asked of the store's line so far (RecordStore's private `chained`, read by
+    /// reflection: the line has no other sign that a step joined it).
+    private func steps(_ store: RecordStore) -> Int {
+        Mirror(reflecting: store).children.first { $0.label == "chained" }?.value as? Int ?? -1
+    }
+
+    /// Waits until the store's line holds more than `count` steps. A poll on that state,
+    /// bounded at 10 s; the interval is not what the test depends on.
+    private func untilQueued(_ store: RecordStore, beyond count: Int, file: StaticString = #filePath, line: UInt = #line) async throws {
+        let deadline = Date.now.addingTimeInterval(10)
+        while steps(store) <= count {
+            guard Date.now < deadline else { return XCTFail("the store's line never grew past \(count)", file: file, line: line) }
+            try await Task.sleep(for: .milliseconds(2))
+        }
+    }
+
+    /// A step that holds the store's line until `release()`.
+    private func holdLine(_ store: RecordStore) -> () -> Void {
+        let (released, release) = AsyncStream.makeStream(of: Void.self)
+        store.chain { for await _ in released { break } }
+        return { release.yield() }
+    }
+
     private func news(_ event: String, _ payload: String = "", order: Int = 1_000_000) -> HealthEngine.CloudNews {
         .init(event, payload, order: order)
     }
@@ -102,7 +126,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
     func testWithNoCloudOnFileItIsOnThePhoneAndStartOpensNothing() async throws {
         try write("brad@example.com", "sync-account-email") // left by an older build: not read without a provider
         try write("dropbox", "sync-history")
-        let (store, sync, _) = try app(connected: false)
+        let (store, sync, engine) = try app(connected: false)
         XCTAssertEqual(sync.status, .onPhone)
         XCTAssertNil(sync.provider)
         XCTAssertFalse(sync.recordOpen)
@@ -113,6 +137,10 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(sync.status, .onPhone)
         XCTAssertNil(store.cloudErase)
         XCTAssertEqual(downloads.value, 0, "start with no cloud on file opens nothing")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")))
+        engine.blocking { _ in } // a marker would be set on the engine's queue
+        XCTAssertNil(text("sync-pending"), "no cloud on file: an edit is not marked for one")
+        XCTAssertEqual(store.recordSource, "phone")
     }
 
     func testWithACloudOnFileItIsConnectingBeforeStartAndNothingIsOpen() throws {
@@ -196,26 +224,51 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         await arrive(read)
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")), "the phone takes it meanwhile")
         XCTAssertEqual(sync.status, .connecting, "an edit while opening does not move the status")
+        // The second try's read is held at a second gate: counted there, before any
+        // save the landed open schedules can read again (PERSIST_DEBOUNCE_MS).
+        let again = StubHTTP.Gate()
+        dropbox.downloadGate = again
+        let reread = nextDownload()
         gate.open()
-        await opening.value
+        await arrive(reread)
         XCTAssertEqual(downloads.value, 2, "the open went round once more")
+        XCTAssertEqual(sync.status, .connecting)
+        XCTAssertFalse(sync.recordOpen)
+        dropbox.downloadGate = nil
+        again.open()
+        await opening.value
         XCTAssertTrue(sync.recordOpen)
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"])
     }
 
-    /// The number of tries (3) is not pinned: each try reads the record a varying number
-    /// of times (the open, then the live re-read), and each read here sends one more edit.
+    /// Every record read is held at its own gate, and an edit lands on the phone
+    /// before the read is let go, so each try sees an edit before its handover decides:
+    /// the order is the test's, not the main queue's. The number of tries (3) is not
+    /// pinned as a read count: a try also reads in the previous session's closing
+    /// save, and each held read here sends one more edit.
     func testEditsThatKeepArrivingEndBusyStayConnectedAndTheNextForegroundOpens() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, _) = try app()
+        enum Event { case read, done }
+        let (events, event) = AsyncStream.makeStream(of: Event.self)
+        var gate = StubHTTP.Gate()
+        dropbox.downloadGate = gate
+        dropbox.onDownload = { event.yield(.read) }
+        let opening = Task { await sync.start(); event.yield(.done) }
         var day = 0
-        dropbox.onDownload = {
+        for await next in events {
+            guard next == .read else { break }
             day += 1
-            let day = day
-            Task { _ = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-0\(day)")) }
+            await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: String(format: "2026-10-%02d", day))))
+            let held = gate
+            gate = StubHTTP.Gate()
+            dropbox.downloadGate = gate
+            held.open()
         }
-        await sync.start()
+        await opening.value
         dropbox.onDownload = nil
+        dropbox.downloadGate = nil
+        gate.open()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
         XCTAssertEqual(sync.provider, .dropbox, "still connected")
         XCTAssertFalse(sync.recordOpen)
@@ -279,11 +332,38 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertNil(text("sync-provider"))
     }
 
+    /// The open's read has resolved and its handover waits in the store's line (held
+    /// by a step the test lets go) when Disconnect runs: the handover must not show it
+    /// (CloudSync.open's generation checks in and after the handover), nor open again.
+    func testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, engine) = try app()
+        let release = holdLine(store)
+        let held = steps(store)
+        let opening = Task { await sync.start() }
+        try await untilQueued(store, beyond: held) // the open resolved; its handover is in line
+        XCTAssertEqual(sync.status, .connecting)
+        let disconnecting = Task { await sync.disconnect() }
+        try await untilQueued(store, beyond: held + 1) // the Disconnect closed the session; its showPhone is in line
+        release()
+        let copied = await disconnecting.value
+        await opening.value
+        XCTAssertTrue(copied, "the resolved session was copied down")
+        XCTAssertEqual(sync.status, .onPhone)
+        XCTAssertFalse(sync.recordOpen)
+        XCTAssertNil(store.cloudErase)
+        XCTAssertNil(sync.syncedBefore)
+        XCTAssertNil(text("sync-history"), "a handover that lost to Disconnect is not a sync")
+        XCTAssertEqual(downloads.value, 2, "the open's read and the copy down; no second open")
+        let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now, lpaUnit: "nmol/L") }
+        XCTAssertEqual(probe.reason, "not-open", "the engine holds no session behind the phone's record")
+    }
+
     func testADisconnectAfterTheOpenRemovesTheCloudsFilesAndKeepsSyncedBefore() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         try write("dbid:A", "sync-account")
         try write("brad@example.com", "sync-account-email")
-        let (store, sync, _) = try app()
+        let (store, sync, engine) = try app()
         await sync.start()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")))
         let copied = await sync.disconnect()
@@ -300,6 +380,10 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         }
         XCTAssertEqual(text("sync-history"), "dropbox", "the history stays")
         XCTAssertEqual(activeDays(phoneRecord), ["2026-10-01", "2026-10-02"])
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-03")))
+        engine.blocking { _ in } // a marker would be set on the engine's queue
+        XCTAssertNil(text("sync-pending"), "after Disconnect an edit is not marked for the cloud")
+        XCTAssertEqual(store.recordSource, "phone", "nor named for it")
         let again = await sync.disconnect()
         XCTAssertTrue(again, "a second Disconnect has nothing to do")
         XCTAssertEqual(sync.syncedBefore, .dropbox)
@@ -403,8 +487,10 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01"])
     }
 
-    /// An erase made here whose upload fails: with no news meanwhile it ends
-    /// unreachable; the next test sends news mid-erase.
+    /// An erase made here whose upload fails ends unreachable. That status comes from the
+    /// save loop's own failure news (`op: 'persist'`), which reaches the status before the
+    /// erase returns; the erase's `status == .saving` fallback (CloudSync.erase) is pinned
+    /// only by the unreadable case above.
     func testAnEraseWhoseUploadFailsEndsUnreachable() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (_, sync, _) = try app()
@@ -490,25 +576,70 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertNotNil(store.cloudErase)
     }
 
+    /// Disconnect lands first, then Sync now's re-read: Sync now must not set a status
+    /// over the Disconnect's (CloudSync.syncNow's `shownSession == session` guards).
     func testADisconnectDuringSyncNowIsNotOverwritten() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (store, sync, _) = try app()
         await sync.start()
-        let gate = StubHTTP.Gate()
-        dropbox.downloadGate = gate
+        let rereadGate = StubHTTP.Gate()
+        dropbox.downloadGate = rereadGate
         let reread = nextDownload()
         let syncing = Task { await sync.syncNow() }
         await arrive(reread)
+        try await disconnectThenLetGo(rereadGate, syncing, sync, store)
+    }
+
+    /// The same, with Sync now's re-read failing after the Disconnect (the catch's guard).
+    func testADisconnectDuringAFailingSyncNowIsNotOverwritten() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app()
+        await sync.start()
+        let rereadGate = StubHTTP.Gate()
+        let failOnce = Count()
+        let (fake, count) = (dropbox!, downloads!)
+        StubHTTP.handler = { request in
+            guard request.url.path.hasSuffix("/files/download"), request.headers["dropbox-api-arg"]?.contains("/health-roadmap.json") == true else { return fake.answer(request) }
+            count.add()
+            guard failOnce.value == 0 else { return fake.answer(request) }
+            failOnce.add()
+            return .init(status: 500, body: Data("internal_error".utf8), gate: rereadGate)
+        }
+        let syncing = Task { await sync.syncNow() }
+        await untilRead(1, after: 1)
+        try await disconnectThenLetGo(rereadGate, syncing, sync, store)
+    }
+
+    /// Waits until `count` more record reads than `before` have arrived (the stub's
+    /// failing read has no onDownload hook). Polls the counter, bounded at 10 s.
+    private func untilRead(_ count: Int, after before: Int) async {
+        let deadline = Date.now.addingTimeInterval(10)
+        while downloads.value < before + count {
+            guard Date.now < deadline else { return XCTFail("the read never arrived") }
+            try? await Task.sleep(for: .milliseconds(2))
+        }
+    }
+
+    /// Holds the Disconnect's copy-down at a second gate, lets it land, then lets
+    /// Sync now's held re-read go: the Disconnect's status must stand.
+    private func disconnectThenLetGo(_ rereadGate: StubHTTP.Gate, _ syncing: Task<Void, Never>, _ sync: CloudSync, _ store: RecordStore,
+                                     file: StaticString = #filePath, line: UInt = #line) async throws {
+        let copyGate = StubHTTP.Gate()
+        dropbox.downloadGate = copyGate
         let copyDown = nextDownload()
         let disconnecting = Task { await sync.disconnect() }
-        await arrive(copyDown) // the Disconnect is past its first steps, awaiting the copy down
-        gate.open()
+        await arrive(copyDown)
+        copyGate.open()
+        let copied = await disconnecting.value
+        XCTAssertTrue(copied, file: file, line: line)
+        XCTAssertEqual(sync.status, .onPhone, file: file, line: line)
+        dropbox.downloadGate = nil
+        rereadGate.open()
         await syncing.value
-        _ = await disconnecting.value
-        XCTAssertEqual(sync.status, .onPhone)
-        XCTAssertNil(sync.provider)
-        XCTAssertFalse(sync.recordOpen)
-        XCTAssertNil(store.cloudErase)
+        XCTAssertEqual(sync.status, .onPhone, "Sync now's late answer did not overwrite the Disconnect", file: file, line: line)
+        XCTAssertNil(sync.provider, file: file, line: line)
+        XCTAssertFalse(sync.recordOpen, file: file, line: line)
+        XCTAssertNil(store.cloudErase, file: file, line: line)
     }
 
     // MARK: 10 · background and foreground (background's flush: CloudSyncTests testAnEditWhoseFirstWrite...)
