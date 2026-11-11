@@ -7,7 +7,8 @@
  * Device-import's rule (a later reading the same day replaces) would block
  * every amendment, which keeps its draw time, so this one keys on two things:
  *  - identity: the HealthKit source, the resource type and the FHIR id (AC5).
- *    Apple: the id is unique only within one type and source;
+ *    Apple: the id is unique only within one type and source. A result contained
+ *    in a DiagnosticReport adds the report's id before its own;
  *  - version: `meta.lastUpdated`, `meta.versionId`, the status, value,
  *    comparator and unit together, so a changed result is a new version even
  *    when the server keeps its meta. The row's `externalId` is `identity#version`;
@@ -106,7 +107,8 @@ const MAX_JSON = 1_000_000;
 
 const input = z.object({
   sourceId: z.string().min(1).max(512).refine((s) => !s.includes('#')),
-  resourceType: z.literal('Observation'),
+  // A US lab can file a panel as one DiagnosticReport whose results are contained Observations.
+  resourceType: z.enum(['Observation', 'DiagnosticReport']),
   fhirVersion: z.string().regex(FHIR_VERSIONS),
   json: z.string().max(MAX_JSON),
 });
@@ -143,6 +145,76 @@ const observation = z.object({
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
 });
 type Observation = z.infer<typeof observation>;
+
+/**
+ * A DiagnosticReport, DSTU2 or R4, read only for the results it carries inside: each
+ * `result` reference `#id` names a contained Observation (Argonaut DSTU2, as a US lab
+ * sends a panel). A reference outside the report is not followed. Contained resources
+ * are read through `observation` one by one, so one unreadable result never hides the rest.
+ */
+const report = z.object({
+  resourceType: z.literal('DiagnosticReport'),
+  id: z.string().regex(FHIR_ID),
+  meta: observation.shape.meta,
+  status: z.string().max(32),
+  effectiveDateTime: z.string().max(64).optional(),
+  effectivePeriod: observation.shape.effectivePeriod,
+  issued: z.string().max(64).optional(),
+  contained: z.array(z.unknown()).max(10_000).optional().catch(undefined),
+  result: z.array(z.object({ reference: z.string().max(200).optional() }).catch({})).max(10_000).optional().catch(undefined),
+});
+type Report = z.infer<typeof report>;
+
+/**
+ * A contained result read as the report's: what it does not say for itself, it takes from
+ * the report. Its day (`reportDay`); its version stamp, always the report's `meta` (FHIR
+ * dom-4: a contained resource carries no `meta.versionId` or `meta.lastUpdated`, so the
+ * report's is what changes when the lab amends); and a withdrawal: a report the lab
+ * withdrew withdraws each of its results (AC7). Otherwise the result's own status governs.
+ */
+function asReported(obs: Observation, rep: Report): Observation {
+  return {
+    ...obs,
+    ...reportDay(obs, rep),
+    meta: rep.meta,
+    status: rep.status === 'entered-in-error' ? 'entered-in-error' : obs.status,
+  };
+}
+
+/** A result with no draw of its own (AC3) takes the report's draw, and the report's
+ *  release when it has none of its own either; a result with its own draw keeps its day. */
+function reportDay(obs: Observation, rep: Report): Partial<Observation> {
+  if (obs.effectiveDateTime ?? obs.effectivePeriod?.start) return {};
+  return { effectiveDateTime: rep.effectiveDateTime, effectivePeriod: rep.effectivePeriod, issued: obs.issued ?? rep.issued };
+}
+
+/** A report's contained resources by id; of two with one id, the first. */
+function containedById(contained: readonly unknown[]): Map<string, unknown> {
+  const inside = new Map<string, unknown>();
+  for (const c of contained) {
+    const id = (c as { id?: unknown } | null)?.id;
+    if (typeof id === 'string' && !inside.has(id)) inside.set(id, c);
+  }
+  return inside;
+}
+
+/**
+ * A DiagnosticReport's results, in its `result` order: one null when it carries no
+ * result, and one per reference that names no readable contained Observation. A
+ * contained result's identity is the source, `DiagnosticReport`, the report's id and
+ * its own id: a contained id is unique only inside its report.
+ */
+function reportResults(sourceId: string, json: unknown): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
+  const unread = { identity: null, obs: null } as const;
+  const rep = report.safeParse(json);
+  if (!rep.success || !rep.data.result?.length) return [unread];
+  const inside = containedById(rep.data.contained ?? []);
+  return rep.data.result.map(({ reference }) => {
+    const obs = reference?.startsWith('#') ? observation.safeParse(inside.get(reference.slice(1))) : undefined;
+    if (!obs?.success) return unread;
+    return { identity: `${sourceId}|DiagnosticReport|${rep.data.id}|${obs.data.id}`, obs: asReported(obs.data, rep.data) };
+  });
+}
 
 /** The unit a Quantity states, as printed: its UCUM code when it has one, else the printed unit.
  *  The version key reads it so, so a stored `externalId` never changes. */
@@ -460,23 +532,28 @@ function correctsRow(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): 
   return false;
 }
 
+/** One record's results: an Observation is one, a DiagnosticReport its contained ones
+ *  (`reportResults`); a record this cannot read is one null. */
+function recordResults(raw: ClinicalRecordInput): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
+  const unread = { identity: null, obs: null } as const;
+  const record = input.safeParse(raw);
+  if (!record.success) return [unread];
+  let json: unknown;
+  try { json = JSON.parse(record.data.json); } catch { return [unread]; }
+  const { sourceId, resourceType } = record.data;
+  if (resourceType === 'DiagnosticReport') return reportResults(sourceId, json);
+  const obs = observation.safeParse(json);
+  return obs.success ? [{ identity: `${sourceId}|Observation|${obs.data.id}`, obs: obs.data }] : [unread];
+}
+
 /**
- * Each record read once (null when it is not an Observation this reads), in
- * the order the app gave, except that two versions of one result in one batch
- * are taken oldest first by `meta.lastUpdated` when both carry it, so the
- * newer one ends up active.
+ * Each result read once (null when it is not one this reads), in the order the
+ * app gave, a report's results in its `result` order, except that two versions
+ * of one result in one batch are taken oldest first by `meta.lastUpdated` when
+ * both carry it, so the newer one ends up active (`reportResults` for a report).
  */
 function parsedInOrder(records: ClinicalRecordInput[]): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
-  const parsed = records.map((raw) => {
-    const unread = { identity: null, obs: null } as const;
-    const record = input.safeParse(raw);
-    if (!record.success) return unread;
-    let json: unknown;
-    try { json = JSON.parse(record.data.json); } catch { return unread; }
-    const obs = observation.safeParse(json);
-    if (!obs.success) return unread;
-    return { identity: `${record.data.sourceId}|${record.data.resourceType}|${obs.data.id}`, obs: obs.data };
-  });
+  const parsed = records.flatMap(recordResults);
   const groups = new Map<string, number[]>();
   parsed.forEach(({ identity }, i) => {
     if (!identity) return;
