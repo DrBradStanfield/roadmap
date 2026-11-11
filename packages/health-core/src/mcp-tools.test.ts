@@ -1347,6 +1347,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       .toEqual(Object.fromEntries(refused.map((d) => [d, 'health-value'])));
     // The split comes after the longest name: b12 and 300, not b1 and 2300.
     expect(reportFeedback({ ...GOOD, detail: 'b12300 is missing' }, NOW).text).toContain('“b12 300”');
+    // A word with no letter is a number already, and stays whole.
+    expect(reportFeedback({ ...GOOD, detail: 'My LDL is 3.2' }, NOW).text).toContain('“ldl 3.2”');
     // A whole name keeps its digits; a number inside a longer name is that name;
     // a glued number with no name near it files.
     const filed = [
@@ -1358,6 +1360,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'on ios18 the plan is blank',
       'I clicked save,2 times',
       'the ldl,hdl rows are swapped',
+      // "pressure" is a name only as the end of "blood pressure".
+      'under pressure 2 saves failed',
     ];
     expect(Object.fromEntries(filed.map((d) => [d, outcome(d)])))
       .toEqual(Object.fromEntries(filed.map((d) => [d, 'ok'])));
