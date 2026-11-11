@@ -28,6 +28,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, waitFor, act, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { rowRootIds } from '@roadmap/health-core/merge';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
@@ -137,12 +138,12 @@ async function matrixHoldsDraft(view: RenderResult) {
   act(() => chat.proposeEdit!([ldlDraft()]));
   await settle(50);
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
-  expect(JSON.stringify(chat.context!())).toContain('3.2');
+  expect(numberPaths(chat.context!(), 3.2)).not.toEqual([]);
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(true);
 }
 const draftGone = (view: RenderResult) => {
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
-  expect(JSON.stringify(chat.context!())).not.toContain('3.2');
+  expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(false);
 };
 
@@ -305,7 +306,7 @@ describe('US-16 AC2a, US-11 AC6: each DRAFTS_CLEARED listener drops its state on
     expect(cleared).toHaveBeenCalledTimes(1); // the store's adopt, not the page
     expect(valuePage(view)).toBeNull();
     const file = JSON.parse(localStorage.getItem(FILE_KEY)!) as RoadmapFile;
-    expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('2.2');
+    expect(numberPaths([...file.measurements, ...file.labValues], 2.2)).toEqual([]);
     expect(getShownErase()).toBe(getEraseIdentity());
   });
 
@@ -461,7 +462,8 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0); // no saved LDL shows
     expect(heightShown(view) ?? '').not.toBe(height); // nor the old record's form
     const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-    expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('1.9'); // the correction never landed
+    expect(numberPaths([...file.measurements, ...file.labValues], 1.9)).toEqual([]); // the correction never landed
+    expect([...file.measurements, ...file.labValues].some(r => r.correctsId)).toBe(false);
     expect(alerts).not.toContain(ERASE_FAILED);
   });
 
