@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H2,composition,"A unit switch was not dirty for its 500 ms, so a remote change in that window undid it unsaved",bug,done,"hooks/units-machine.ts: switching until saved{s}; the relay holds on units.pending() and the save always writes a pending switch; pins: the AC7a H2 tests in HealthTool.record-read-pins.test.tsx (a remote weight, remote SI units, the toggle-back, an upload re-read, a failed first read)",1204,no

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P6,plan view,Save as PDF waited for a save before opening the window,behaviour,done,"PlanPdf.tsx usePlanPrint.handlePrint starts onSaveLongitudinal without awaiting it; the save stays (US-16 AC1, US-03 AC3). Pinned by ResultsPanel.skip-gate.test.tsx ""a save that never resolves: the print window still opens""",1189,no

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H9,composition,Held units survived a remount of the focused field,bug,done,"hooks/useUnits.ts: a MutationObserver, live only while holding, sends left when the focused field unmounts; pins: the AC7a H9 test in HealthTool.record-read-pins.test.tsx and the observer-route tests in useUnits.test.tsx. The erase half is units-machine.test.ts's erased rows",1204,no

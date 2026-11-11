@@ -61,7 +61,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
    --run`, seconds). Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
-   counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min); never a
+   counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
    `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs

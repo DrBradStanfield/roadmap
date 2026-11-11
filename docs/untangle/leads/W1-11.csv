@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-11,S8 web big components,Rename the plan view file; email capture in its own file,partial,"ResultsPanel.tsx down to 211 lines after PlanCards (1156), PlanPdf (1160), useHighlights (1169). Left: not renamed; email capture sits in PlanPdf.tsx rather than its own file",1156;1160;1169,none,no

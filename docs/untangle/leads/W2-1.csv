@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-1,"S1 tools, scripts, CI","Chatbot embed declared a Shopify surface, or its event emit removed",not started,widget-src/vite.config.chatbot.ts:18-21 (see B-3),,,yes

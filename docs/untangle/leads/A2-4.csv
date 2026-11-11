@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-4,S5 clinical rules,Zod bounds and creatinine factor derived from UNIT_DEFS,not started,validation.ts:36-69 literal min/max; calculations.ts:101 literal 88.4,,,yes

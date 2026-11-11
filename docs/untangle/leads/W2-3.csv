@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-3,"S1 tools, scripts, CI",Stop tracking built storefront bundles in git,not started,git ls-files still lists extensions/health-tool-widget/assets/*.js and *.css,,,yes

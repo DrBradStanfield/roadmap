@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-10,S2 server,One helper for cross-origin JSON routes and route errors,not started,No crossOriginJsonRoute; each route composes corsHeaders/parseSimpleRequestJson from local-first-route.server.ts itself,,,yes

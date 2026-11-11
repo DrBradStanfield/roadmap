@@ -144,7 +144,7 @@ numbers in the PR body. They are trend numbers from regexes, not verdicts.
 
 ## Decision log
 
-The log lives in `docs/untangle/`, the ledger every untangle PR updates
+The log lives in `docs/untangle/`, the ledger every untangle PR updates, one file per lead
 (its README says how). Write each fix above the
 problems it solves, so a reader sees why it exists. The shape (names made up):
 

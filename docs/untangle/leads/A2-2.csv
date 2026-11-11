@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-2,S5 clinical rules,Split generateSuggestions into one card builder per domain,not started,suggestions.ts:227-1232 is one function,,,yes

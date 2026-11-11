@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-4b,"S7 web data layer, upload, standalone","One record document type: the web's ApiDocument becomes health-core DocumentView (fileRef and contentHash required, nullable)",not started,"packages/health-core/src/document-save.ts DocumentView vs widget-src/src/lib/api-types.ts ApiDocument; Fable ruling 2026-11-11: list every web producer first, report any that omits a field before changing it",,,no

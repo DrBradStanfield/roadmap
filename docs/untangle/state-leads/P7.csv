@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P7,plan view,The first suggestion after an empty plan never glowed,behaviour,done,"hooks/useHighlights.ts transition(): a held phase while the cards are hidden (HealthTool fullForm) or PlanPdf.tsx emailPulses() is true; a hold begun mid-glow takes the glow's plan as the baseline; the new cards glow once the email is given; an empty baseline glows (US-07 AC3, Brad 2026-11-10 reading B). Pinned by useHighlights.test.tsx (transition table), ResultsPanel.highlight-hold.test.tsx and HealthTool.first-glow.test.tsx",1189,no

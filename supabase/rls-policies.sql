@@ -149,6 +149,14 @@ CREATE TABLE IF NOT EXISTS cron_lock (
   lock_date TEXT
 );
 
+-- 2026-11-11 (US-28, cron lock follow-up, Brad's yes): the run's end, so a
+-- finished day is refused to every machine (the one that ran it included) and
+-- a live run blocks the next day. run_state: 'running', 'finished' or 'failed';
+-- NULL means a legacy row (taken before this column existed), read as finished.
+-- No CHECK: old and new code overlap during a rolling deploy; the code validates.
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS run_state TEXT;
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+
 -- lock_date is seeded with a sentinel past date (not NULL) because
 -- `WHERE lock_date != today` evaluates to NULL on NULL rows (not true), so a
 -- NULL seed would silently block lock acquisition.
@@ -640,6 +648,11 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- 2026-11-11 (reminders, Brad's yes): the day a reminder pass stamped before
+-- sending to this row. A later re-run the same day (after a restart) reads it and
+-- skips the send. Not a mutex: the cron lock decides who runs. NULL = never stamped.
+ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
 
 -- Only the Google-verified lane upserts on email (an owner may replace their
 -- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as

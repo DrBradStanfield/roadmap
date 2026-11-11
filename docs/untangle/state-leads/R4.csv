@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+R4,record read,Mirror written twice; labEgfr computed twice,surplus,done,hooks/useRecordReads.ts with one mirror write,1133,no

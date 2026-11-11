@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+U13,upload,"The review's orange captions and undated-day chip / header card at accessibility sizes",lead,not started,"ios/HealthRoadmap/LabUpload/LabReviewView.swift:110-127: the captions now use Color.status(""attention"") (US-52 AC8b fix round); the undated-day row and the header card are unchecked at the accessibility text sizes. Found during save all, 2026-11-11",,no
