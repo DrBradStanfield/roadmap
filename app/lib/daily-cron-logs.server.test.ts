@@ -8,7 +8,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 
 const { work } = vi.hoisted(() => ({ work: vi.fn<() => Promise<unknown>>() }));
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(),
@@ -93,7 +93,7 @@ async function load(c: LogCase, nodeEnv: string) {
   vi.stubEnv('NODE_ENV', nodeEnv);
   vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-23 AC14)
   const { tryAcquireCronLock } = await import('./supabase.server');
-  const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue(true);
+  const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue('won');
   const Sentry = await import('@sentry/react-router');
   const captured = vi.mocked(Sentry.captureException).mockReset();
   work.mockReset().mockImplementation(c.ok);

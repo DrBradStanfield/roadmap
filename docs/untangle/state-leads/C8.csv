@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C8,server,Slow-import warnings cannot be tied to a deploy,lead,not started,"app/lib/app-routes.server.ts:131 rebuilds the App lab import slow event from an allow-list that leaves out release, by choice (US-52 AC7d, PR 1268), so a slowdown cannot be matched to the deploy that brought it",,no

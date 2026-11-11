@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C9,chat,D9 must also guarantee that after an erase no saved web chat thread shows a reply claiming a change the record does not hold,lead,not started,"Fable's PR 1273 ruling: PR 1273 stops a reply's edits landing on a record erased since the question (US-16 AC2a; widget-src/src/components/ChatEdits.tsx), but a saved thread can still show the reply's words claiming the change",,no

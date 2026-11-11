@@ -23,14 +23,62 @@ final class DataEraser {
         case notSent(String)
         /// Nothing was erased (or, rarely, only the chat history, and the words say so).
         case refused(String)
+
+        var words: String {
+            switch self { case .erased(let text), .notSent(let text), .refused(let text): text }
+        }
     }
 
-    private(set) var erasing = false
+    /// One erase at a time, then its words until the person has seen them (US-25 AC16d). The
+    /// words live here, not in the page: `done` shows them on the Delete page; `held` once
+    /// the Settings sheet has closed on them, where RootView shows them. `erasingClosed`: still
+    /// erasing, but the sheet has closed, so the words go straight to RootView.
+    enum Phase: Equatable { case idle, erasing, erasingClosed, done(Outcome), held(Outcome) }
+    enum Event { case started, finished(Outcome), settingsClosed, seen }
+
+    static func transition(_ phase: Phase, _ event: Event) -> Phase {
+        switch (phase, event) {
+        // Unseen erase words are never dropped by a second erase; a refusal's may be.
+        case (.idle, .started), (.done(.refused), .started), (.held(.refused), .started): .erasing
+        case (.erasing, .finished(let outcome)): .done(outcome)
+        case (.erasing, .settingsClosed): .erasingClosed
+        case (.erasingClosed, .finished(let outcome)): .held(outcome)
+        case (.done(let outcome), .settingsClosed): .held(outcome)
+        case (.done, .seen), (.held, .seen): .idle
+        default: phase
+        }
+    }
+
+    private(set) var phase = Phase.idle
     /// Counts erases the person has seen the words for: each one starts the new-user
     /// questions again (US-54 AC7, RootView).
     private(set) var startsOver = 0
-    /// An erase is done but its words are still on screen: nothing else may cover them.
-    private(set) var awaitingDismissal = false
+    /// Counts the times `holdsRemoteErases` turned false: RootView looks at the record again
+    /// then, so an erase from elsewhere that landed meanwhile is not lost.
+    private(set) var holdLifts = 0
+
+    var erasing: Bool { phase == .erasing || phase == .erasingClosed }
+    /// The finished erase's words, until they are seen.
+    var outcome: Outcome? {
+        switch phase {
+        case .done(let outcome), .held(let outcome): outcome
+        case .idle, .erasing, .erasingClosed: nil
+        }
+    }
+    /// The words the Settings sheet closed on, for RootView to show.
+    var held: Outcome? {
+        if case .held(let outcome) = phase { outcome } else { nil }
+    }
+    /// An erase is done but its words are not yet seen: nothing else may cover them.
+    /// A refusal changed nothing, so it holds nothing back.
+    var awaitingDismissal: Bool {
+        switch outcome {
+        case .erased, .notSent: true
+        case .refused, nil: false
+        }
+    }
+    /// While true, an erase from another device waits (RootView.recordChanged).
+    var holdsRemoteErases: Bool { erasing || awaitingDismissal }
 
     private let store: RecordStore
     private let sync: CloudSync
@@ -49,19 +97,41 @@ final class DataEraser {
         self.live = live
     }
 
-    /// The erase's words were dismissed: the questions start again on the empty record.
-    func erasedAndSeen() {
-        awaitingDismissal = false
-        startsOver += 1
+    /// The erase's words were dismissed: after an erase the questions start again on the
+    /// empty record; a refusal's words just go.
+    func seen() {
+        let erased = awaitingDismissal
+        send(.seen)
+        if erased { startsOver += 1 }
+    }
+
+    /// The Settings sheet closed: words still unseen go to RootView.
+    func settingsClosed() { send(.settingsClosed) }
+
+    private func send(_ event: Event) {
+        let holding = holdsRemoteErases
+        phase = Self.transition(phase, event)
+        if holding, !holdsRemoteErases { holdLifts += 1 }
     }
 
     /// Whether the confirmation names Apple Health.
     var appleHealthConnected: Bool { health?.everConnected ?? false }
 
+    @discardableResult
     func eraseAll() async -> Outcome {
-        guard !erasing else { return .refused("An erase is already running.") }
-        erasing = true
-        defer { erasing = false }
+        guard Self.transition(phase, .started) == .erasing, !erasing else {
+            return .refused(erasing ? "An erase is already running." : "The last erase's words have not been seen yet.")
+        }
+        send(.started)
+        let outcome = await erase()
+        send(.finished(outcome))
+        return outcome
+    }
+
+    private func erase() async -> Outcome {
+        #if DEBUG
+        await DemoRecord.slowErase()
+        #endif
         let units = store.myData?.unitSystem
         let healthWasConnected = appleHealthConnected
         let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { await eraseOnPhone() }
@@ -69,7 +139,6 @@ final class DataEraser {
         // refused erase that got as far as the chat step.
         await chat.refresh()
         if case .refused = outcome { return outcome }
-        awaitingDismissal = true
         // After the record: an erase refused there must change nothing (Health stays connected,
         // its anchors where they were), and Health's copies of typed values are only copies (D6).
         // Then Health disconnects (US-72 AC10).

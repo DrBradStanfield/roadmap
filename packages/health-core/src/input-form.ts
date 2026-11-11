@@ -359,7 +359,7 @@ export const SCREENING_LABELS = {
 const FOLLOWUP_INFO = screeningFollowupInfo();
 
 /** The follow-up's name, from its type and method (the table's follow-ups). */
-export function followupName(type: string, method: string | undefined): string | undefined {
+function followupName(type: string, method: string | undefined): string | undefined {
   return FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`]?.followupName;
 }
 
@@ -384,7 +384,7 @@ export function anyScreeningEligible(age: number, sex: string | undefined): bool
  * so an abnormal result's follow-up can be closed below 20, and "Not yet started" below 20 keeps
  * the question to pick LDCT again (US-07 AC1f).
  */
-export function lungScreeningAsked(scr: ScreeningInputs): boolean {
+function lungScreeningAsked(scr: ScreeningInputs): boolean {
   return SCREENING_REFS.lungPackYears(scr) || !!scr.lungScreening || !!scr.lungLastDate || !!scr.lungResult;
 }
 
@@ -392,7 +392,7 @@ export function lungScreeningAsked(scr: ScreeningInputs): boolean {
  * The lung questions show from 50 to 80, and past 80 for an abnormal CT or any stored LDCT answer, so the
  * follow-up can be closed and a changed answer put back (US-07 AC1g).
  */
-export function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
+function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
   return inAges(LUNG.groupAges, age, undefined, !!scr.lungScreening || scr.lungResult === 'abnormal');
 }
 
@@ -402,8 +402,8 @@ export function dexaEligible(age: number, sex: string | undefined): boolean {
 }
 
 /**
- * The screening cards, as the web form shows them (InputPanel renderScreening
- * and renderBoneDensity). `age` is the plan's; without one, no card shows.
+ * The screening cards, as the web form shows them: ScreeningQuestions renders its groups and
+ * questions from here, BoneDensity mirrors it. `age` is the plan's; without one, no card shows.
  */
 export function screeningForm(age: number | undefined, sex: string | undefined, scr: ScreeningInputs): FormSection[] {
   if (age === undefined) return [];

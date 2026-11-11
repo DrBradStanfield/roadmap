@@ -192,7 +192,7 @@ export async function verifyGoogleIdToken(idToken: string): Promise<string | nul
 // DB operations (service role; table is RLS-deny to everyone else)
 // ---------------------------------------------------------------------------
 
-function requireAdmin() {
+export function requireAdmin() {
   if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
   return supabaseAdmin;
 }
