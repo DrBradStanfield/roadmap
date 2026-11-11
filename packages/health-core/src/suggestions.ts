@@ -893,7 +893,7 @@ export function generateSuggestions(
         };
       }
 
-      const nextDue = getPostFollowupDueDate(type, method, 'abnormal', followupStatus, followupDate);
+      const nextDue = getPostFollowupDueDate(type, method, result, followupStatus, followupDate);
       if (nextDue) {
         const nextDueLabel = monthLabel(nextDue);
         if (now > nextDue) {

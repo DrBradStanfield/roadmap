@@ -1,5 +1,5 @@
 import type { InputLimits } from './lab-limits';
-import { LUNG_PACK_YEARS, screeningMinAge } from './screening-rules';
+import { LUNG_PACK_YEARS, followupTrigger, ruleOf, screeningMinAge, type ScreeningId } from './screening-rules';
 
 /**
  * Health input data from user.
@@ -489,19 +489,19 @@ export const POST_FOLLOWUP_INTERVALS: Record<string, number> = {
 };
 
 /**
- * The repeat due date after an abnormal result + completed follow-up, or null
+ * The repeat due date after the result that opens the follow-up + its completion, or null
  * when the post-follow-up pattern doesn't apply. Single home for the interval
  * resolution — used by v1 reminders (overdue = now > due) and the v2 schedule
  * (emits the date itself).
  */
 export function getPostFollowupDueDate(
-  type: string,
+  type: ScreeningId,
   method: string | undefined,
   result: string | undefined,
   followupStatus: string | undefined,
   followupDate: string | undefined,
 ): Date | null {
-  if (result !== 'abnormal' || followupStatus !== 'completed' || !followupDate) return null;
+  if (result !== followupTrigger(ruleOf(type)) || followupStatus !== 'completed' || !followupDate) return null;
   const methodKey = method ? `${type}_${method}` : `${type}_other`;
   const months = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
   const [year, month] = followupDate.split('-').map(Number);
