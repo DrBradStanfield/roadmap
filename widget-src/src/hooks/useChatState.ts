@@ -19,6 +19,7 @@ import {
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
+import { useOffline } from './useOffline';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -108,7 +109,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // (like approachById: never persisted, synced or sent anywhere but the confirm).
   const [cardsById, setCardsById] = useState<Record<string, SubscriptionCardState>>({});
   const streamRef = useRef({ ...NO_PENDING, frame: 0 });
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useOffline();
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -138,15 +139,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   /** The ONE writer of the chat shown (US-67 AC2): the ref a landing reply reads and the state, in one
    *  call, so a reply resolving before the next render never sees the chat it left as shown. */
   const openChat = useCallback((id: string | null) => { shownChatRef.current = mintChat(id); setShownChat(shownChatRef.current); }, []);
-
-  // Offline detection
-  useEffect(() => {
-    const off = () => setIsOffline(true);
-    const on = () => setIsOffline(false);
-    window.addEventListener('offline', off);
-    window.addEventListener('online', on);
-    return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
-  }, []);
 
   // Deltas collect in a ref and render at most once per animation frame.
   // A status line starts a new phase: text streamed before it was not the
