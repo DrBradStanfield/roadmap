@@ -62,7 +62,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             NavigationStack { MyDataView(engine: engine, store: store, sync: sync, planShown: { if !planShowing { planShowing = true } },
-                                         settingsClosed: { Task { await offerCloudSoon() } }).firmTopEdge() }
+                                         settingsClosed: settingsClosed).firmTopEdge() }
                 .tabItem { Label("My health", systemImage: "heart.text.square") }
                 .tag(Tab.health)
             // ChatView keeps its own navigation stack and title.
@@ -113,6 +113,14 @@ struct RootView: View {
         }
         .onAppear(perform: decideFirstRun)
         .onChange(of: eraser.startsOver) { startOver() }
+        // An erase from elsewhere that landed while this phone's own held it (US-25 AC16d).
+        .onChange(of: eraser.holdLifts) { recordChanged() }
+        // Erase words the Settings sheet closed on before they were seen (US-25 AC16d).
+        .alert(EraseText.title, isPresented: Binding(get: { eraser.held != nil }, set: { if !$0 { eraser.seen() } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(eraser.held?.words ?? "")
+        }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
         .onChange(of: shownRecord) { recordChanged() }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
@@ -203,7 +211,7 @@ struct RootView: View {
     /// switched; the questions' own state) is taken, not compared. The phone's copy of a
     /// connected cloud never sets it: only the opened cloud record does.
     private func recordChanged() {
-        guard decided, firstRun == nil, !eraser.erasing, !eraser.awaitingDismissal else { return }
+        guard decided, firstRun == nil, !eraser.holdsRemoteErases else { return }
         if erasedElsewhere { startOver(); return }
         if source != onboardedSource, source.isEmpty || sync.recordOpen { takeCount() }
     }
@@ -263,6 +271,12 @@ struct RootView: View {
     /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up. A pause
     /// first, so the sheet that saved, or the tip that closed, has gone. Nothing waits once
     /// the prompt is spent.
+    /// Settings closed: any erase words left unseen show here, then a due backup offer (US-57 AC8).
+    private func settingsClosed() {
+        eraser.settingsClosed()
+        Task { await offerCloudSoon() }
+    }
+
     private func offerCloudSoon() async {
         guard !cloudPrompt.isSpent else { return }
         try? await Task.sleep(for: .seconds(1))
