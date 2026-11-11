@@ -304,7 +304,7 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
   & { readonly [K in NoteRef]: (age: number) => string }
   & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } }
   & { readonly colorectalStart: (age: number) => CardText }
-  & { readonly colorectalStatus: (card: CardText, age: number, method: string | undefined) => CardText } = {
+  & { readonly colorectalStatus: (card: CardText, age: number, method: string | undefined, result?: string) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
   breastByAge: (age) => age < BREAST_RECOMMENDED_FROM
@@ -330,8 +330,10 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
         ? 'Colorectal screening is recommended. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. The American Cancer Society treats these and other tests as equal options. Discuss with your doctor.'
         : 'Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.',
   }),
-  /** The routine up-to-date and overdue cards (never the follow-up's): yearly FIT from 55 adds the colonoscopy line. */
-  colorectalStatus: (card, age, method) => method === 'fit_annual' && age >= COLORECTAL_COLONOSCOPY_FROM
+  /** The routine up-to-date and overdue cards (never the follow-up's): yearly FIT from 55 adds the colonoscopy line,
+   *  never after an abnormal result (Brad 2026-11-12). */
+  colorectalStatus: (card, age, method, result) => method === 'fit_annual' && age >= COLORECTAL_COLONOSCOPY_FROM
+    && !opensFollowup(ruleOf('colorectal'), result)
     ? { ...card, description: `${card.description} From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor.` }
     : card,
 };

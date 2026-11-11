@@ -850,7 +850,7 @@ export function generateSuggestions(
     function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string, method?: string): void {
       const card = status === 'overdue' ? r.cards.overdue : status === 'upcoming' ? r.cards.upToDate : undefined;
       if (card) suggestions.push({ id: `screening-${r.id}-${status}`, category: 'screening', priority: status === 'overdue' ? 'attention' : 'info',
-        ...fill(r === COLORECTAL ? SCREENING_REFS.colorectalStatus(card, age, method) : card, due) });
+        ...fill(r === COLORECTAL ? SCREENING_REFS.colorectalStatus(card, age, method, screenings?.colorectalResult) : card, due) });
     }
 
     const pushDue = (r: ScreeningRule, lastDate: string, intervalKey: string) =>

@@ -133,6 +133,20 @@ describe('US-07 AC1h: the FIT line from 55 (spec lines 60-63)', () => {
     }
   });
 
+  it('never on the routine card an abnormal result falls through to: follow-up completed with no usable date (Brad 2026-11-12)', () => {
+    // getPostFollowupDueDate returns null for these, so the routine up-to-date or overdue card shows.
+    for (const date of [undefined, '', '2026']) {
+      for (const [last, card, due] of [[RECENT, UP, 'Mar 2027'], [OLD, OVER, 'Jan 2026']] as const) {
+        const cards = plan(60, { ...fit(last), colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: date });
+        expect(cards, `${date} ${last}`).toEqual([expect.objectContaining({ title: card[0], description: card[1].replace('{due}', due) })]);
+      }
+    }
+    // A normal result, or none, still gets the line.
+    for (const colorectalResult of ['normal', undefined] as const) {
+      expect(plan(60, { ...fit(RECENT), colorectalResult })[0].description).toContain(FIT_LINE);
+    }
+  });
+
   it('the 60-year-old\'s yearly FIT reminder and due date are unchanged (spec line 63)', () => {
     const items = computeNextDueDates({ sex: 'male', age: 60 }, { ...fit('2025-07'), updatedAt: '2026-01-01T00:00:00Z' } as ScreeningInputs, {}, []);
     expect(items.find((i) => i.category === 'screening_colorectal')).toMatchObject({ label: 'Colorectal screening', dueAt: '2026-07-01' });
