@@ -26,6 +26,9 @@ vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 import { useErase } from './useErase';
 import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { trackProductEvent } from '../lib/server-api';
+
+const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
 let alerts: string[];
 /** The alert and every door call, in order. */
@@ -138,6 +141,51 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(doors.spend).toHaveBeenCalledTimes(1);
   });
 
+  it('2b-3 R2: a repeat refusal (no news) while an erase is heard re-reads but leaves the answer mark unspent', () => {
+    const { doors, result } = setup();
+    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    store.identity = 'e2';
+    act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails
+    act(() => result.current.writeRefused('e1')); // news: said, read, spent
+    act(() => result.current.writeRefused('e1')); // a repeat: read only
+    expect(doors.shows).toHaveBeenCalledTimes(3);
+    expect(doors.spend).toHaveBeenCalledTimes(1);
+  });
+
+  it('Codex R1, outside act(): two erases read before one commit: only the one the screen shows counts', async () => {
+    const env = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
+    const wasAct = env.IS_REACT_ACT_ENVIRONMENT;
+    env.IS_REACT_ACT_ENVIRONMENT = false;
+    const commits: string[] = [];
+    let page!: ReturnType<typeof useErase>;
+    const doors = { clearDrafts: () => {}, forget: () => {}, reread: () => {}, shows: () => {}, spend: () => {} };
+    function Page() {
+      page = useErase(doors);
+      useLayoutEffect(() => { commits.push(page.shownErase); });
+      return null;
+    }
+    const counts = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied').length;
+    const host = document.createElement('div');
+    const root = createRoot(host);
+    try {
+      root.render(<Page />);
+      await waitFor(() => expect(commits).toEqual(['e1']));
+      vi.mocked(trackProductEvent).mockClear();
+      setTimeout(() => {
+        page.store.dispatch({ type: 'loaded' });
+        page.store.dispatch({ type: 'read', identity: id(1) }); // B
+        page.store.dispatch({ type: 'read', identity: id(2) }); // C overtakes it before React commits
+      }, 0);
+      await waitFor(() => expect(commits[commits.length - 1]).toBe(id(2)));
+      await new Promise(r => setTimeout(r, 20));
+      expect(commits).not.toContain(id(1)); // B never reached the screen
+      expect(counts()).toBe(1); // C only
+    } finally {
+      root.unmount();
+      env.IS_REACT_ACT_ENVIRONMENT = wasAct;
+    }
+  });
+
   it('US-16 AC2d, outside act(): a record and its erase set in one async turn commit together, never the mark first', async () => {
     // React's real scheduling, as in the browser: no act() scope batching the renders for the test.
     const env = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -166,7 +214,8 @@ describe('US-16 AC2a: the erase the screen shows', () => {
       }, 0);
       await waitFor(() => expect(commits[commits.length - 1]).toBe('record=e2 mark=e2'));
       // useSyncExternalStore here commits 'record=e1 mark=e2' between: a save asked then would land in the new record.
-      expect(commits).toEqual(['record=e1 mark=e1', 'record=e2 mark=e2']);
+      // (The commit's own `committed` count re-renders once more at e2: repeats are folded.)
+      expect(commits.filter((c, i) => c !== commits[i - 1])).toEqual(['record=e1 mark=e1', 'record=e2 mark=e2']);
     } finally {
       root.unmount();
       env.IS_REACT_ACT_ENVIRONMENT = wasAct;

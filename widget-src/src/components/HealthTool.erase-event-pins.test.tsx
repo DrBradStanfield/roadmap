@@ -531,4 +531,43 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
     expect(file.profile.heightCm ?? null).not.toBe(190); // the refused height never landed
   });
+
+  // fix 4 2b-3 R1 (Fable): the late REMOTE_CHANGED carries the erase the screen already shows, so it is a plain
+  // remote change: held behind a dirty profile like any other. (Height, not birth year: on the erased record the
+  // year field is not shown yet.)
+  it('US-34 AC4, US-16 AC2a: typing after that refusal\'s re-read, the late REMOTE_CHANGED is held: the typed height stays, and its save lands', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new TwoPassCloud(cloud);
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements(PROFILE, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await openPage();
+    openAboutYou(view.container);
+    const before = getEraseIdentity();
+    await anotherWriterErases(new MemoryAdapter(cloud));
+    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+    await addMeasurement('weight', 81, '2026-09-05');
+    let flushed: Promise<void> = Promise.resolve();
+    await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
+    expect(getShownErase()).toBe(before); // the window
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '190' } });
+    fireEvent.blur(view.container.querySelector('#heightCm')!);
+    await settle(700);
+    expect(alerts).toEqual([WRITE_REFUSED]);
+    expect(getShownErase()).toBe(getEraseIdentity()); // the refusal's re-read showed the new erase
+
+    // The person types a height on the new record, still in the field: the profile is dirty.
+    const height = view.container.querySelector<HTMLInputElement>('#heightCm')!;
+    height.focus();
+    fireEvent.change(height, { target: { value: '175' } });
+    await act(async () => { loop.release(); await flushed; await drain(); }); // the late REMOTE_CHANGED
+    expect(heightShown(view)).toBe('175'); // held: the typing stays
+
+    fireEvent.blur(height);
+    await settle(1500); // the profile save (500 ms), then the store writes
+    await act(async () => { await flushRoadmapStore().catch(() => {}); await drain(); });
+    const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(file.profile.heightCm).toBe(175); // the form stayed dirty, so its save carried the height up
+  });
 });

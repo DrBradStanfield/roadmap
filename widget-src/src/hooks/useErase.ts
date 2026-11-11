@@ -82,8 +82,9 @@ export function useErase(props: EraseDoorProps): Erase {
   // The store's mark moves only once the screen shows the erase: until React
   // commits the new tree, the old one is on screen, and a save asked from it
   // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
-  // run before this one, so none may write; none does (2026-11-10).
-  useLayoutEffect(() => { markEraseShown(state.shown); }, [state.shown]);
+  // run before this one, so none may write; none does (2026-11-10). The same
+  // moment counts another writer's erase now on screen (`committed`, Codex R1).
+  useLayoutEffect(() => { markEraseShown(state.shown); store.dispatch({ type: 'committed', identity: state.shown }); }, [state.shown, store]);
 
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
 
@@ -93,7 +94,7 @@ export function useErase(props: EraseDoorProps): Erase {
     // F4c: the erase the save was asked under; the supplement stop names none, so the mark's (PR 3).
     // The machine says WRITE_REFUSED when it is news, then reads a heard erase itself (Q3): the alert comes first.
     const { news, reads } = refusal(store, erase ?? askedUnder());
-    if (reads) { if (spends) doors.current.spend(); return; } // one read, never two
+    if (reads) { if (news && spends) doors.current.spend(); return; } // one read, never two; a repeat spends nothing (R2)
     if (news) doors.current.reread(spends ? 'refused' : 'left');
   }, [store]);
 

@@ -193,6 +193,6 @@ duplicates.
   #263 on, so W44's pass logged 98 items at once and the median fell for a batch-merge reason.
   Check the last ledgered ref against the newest external item before computing a median.
 - **2026-11-11 [instrumentation]** `remote_change_applied` for another writer's erase moved to the
-  erase machine (fix 4 PR 2b-3): one count per erase, where the screen first shows it. Fewer rows
-  from that deploy (no count for an erase already shown, one overtaken, or a failed read) are
+  erase machine (fix 4 PR 2b-3): one count per erase, when the screen showing it commits. Fewer
+  rows from that deploy (no count for an erase already shown, one overtaken, or a failed read) are
   the new rule, not a trend. Detail: US-34's usage-signal line.

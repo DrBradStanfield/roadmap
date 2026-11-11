@@ -25,10 +25,11 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
  * Each re-read reason's effects (US-34 AC4, AC4a). A held change ends only
  * through a `record` read; `remote` is held while the profile is dirty or a
  * unit switch waits (that test is read in `signal`). A held `remote` does
- * nothing until the save that cleans the profile. An erase never enters the
- * relay: REMOTE_CHANGED with an erase goes to the erase machine (`arrived`),
- * whose read (`shows`) ends a hold, clears the answer mark and counts nothing
- * here; the machine counts the erase.
+ * nothing until the save that cleans the profile. An erase the screen does not
+ * yet show never enters the relay: REMOTE_CHANGED with one goes to the erase
+ * machine (`arrived`), whose read (`shows`) ends a hold, clears the answer
+ * mark and counts nothing here; the machine counts the erase. One carrying the
+ * erase shown is a remote change that counts nothing (its erase counted once).
  *
  * | reason   | read   | flushes the waiting save | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
  * |----------|--------|--------------------------|-------------|-------------------------------------------------------------------------------------|------------------------|-------------|------------------------------|-------------|
@@ -155,17 +156,16 @@ export function useRecordApply(args: {
     machine.dispatch({ type: 'read', identity: erase });
   }, [showRecord]);
 
-  const [relay] = useState(() => createRemoteChangeRelay((remote: boolean) => {
-    if (remote) {
-      latest.current.later().clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
-      trackProductEvent('remote_change_applied', { backend: getBackendKind() });
-    }
+  const [relay] = useState(() => createRemoteChangeRelay((remote: boolean, counts = remote) => {
+    if (remote) latest.current.later().clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
+    if (counts) trackProductEvent('remote_change_applied', { backend: getBackendKind() });
     const read = apply();
     // A remote change's re-read is dropped by the relay (arrived, loaded, saved): a failure is reported here, not left unhandled.
     if (remote) read.catch(reportReadFailure);
     return read;
   }));
 
+  const dirty = useCallback(() => latest.current.later().profileDirty() || !!latest.current.units.pending(), []);
   const signal = useCallback((reason: ReadReason): Promise<void> | void => {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
@@ -178,10 +178,10 @@ export function useRecordApply(args: {
     // switch holds it too: applied now, the record's units would undo it
     // (US-34 AC7a, H2). A page that cannot save never keeps a switch pending
     // (useProfileSave). Another writer's erase never comes here (the listener).
-    if (policy.relay === 'arrive') return relay.arrived(later().profileDirty() || !!latest.current.units.pending());
+    if (policy.relay === 'arrive') return relay.arrived(dirty());
     if (policy.spends) later().clearAnswered(true); // a refusal: not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
-  }, [relay]);
+  }, [relay, dirty]);
 
   // The page's own save re-reads through the table; awaiting it types the read as Promise<void> with no cast.
   const ownSave = useCallback(async () => { await signal('own-save'); }, [signal]);
@@ -202,12 +202,16 @@ export function useRecordApply(args: {
   useLayoutEffect(() => {
     const onRemoteChange = (event: Event) => {
       const erase = (event as CustomEvent<RemoteChange | undefined>).detail?.erase;
-      if (erase) latest.current.erase.dispatch({ type: 'arrived', identity: erase });
-      else void signal('remote');
+      const machine = latest.current.erase;
+      if (!erase) void signal('remote');
+      // An erase arrival only when the machine does not show it yet. Its snapshot, not the store's mark: the snapshot
+      // leads the mark until the commit, so a read already dispatched for this erase counts it there (R1, Fable).
+      else if (erase !== machine.getSnapshot().shown) machine.dispatch({ type: 'arrived', identity: erase });
+      else relay.arrived(dirty(), false); // its late echo: a remote change, held like any, counting nothing
     };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
-  }, [signal]);
+  }, [signal, relay, dirty]);
 
   return { showRecord, signal, ownSave, shows, saved: relay.saved, firstReadFailed };
 }

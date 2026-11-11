@@ -13,45 +13,55 @@
  * - idle: nothing waits;
  * - held: a remote change waits for a clean form.
  * Every whole re-read of the record goes through here, so a held change is applied
- * once (survey R8). `apply(remote)`: `remote` says the re-read takes in
- * another writer's change, to count. Another writer's erase never enters: the
- * erase machine hears and counts it, and its read comes through `shows`.
+ * once (survey R8). `apply(remote, counts)`: `remote` says the re-read takes in
+ * another writer's change; `counts` (by default, `remote`) that it counts.
+ * The late announcement of the erase the screen already shows is a remote
+ * change that counts nothing (fix 4 2b-3 R1): a waiting change carries its
+ * `counts`, and two waiting together count if either does. An erase the
+ * screen does not show never enters: the erase machine hears and counts it,
+ * and its read comes through `shows`.
  */
-export function createRemoteChangeRelay<T>(apply: (remote: boolean) => T) {
-  let state: 'loading' | 'loading-held' | 'idle' | 'held' = 'loading';
-  const loading = () => state === 'loading' || state === 'loading-held';
+export function createRemoteChangeRelay<T>(apply: (remote: boolean, counts?: boolean) => T) {
+  let state: { phase: 'loading' | 'idle' } | { phase: 'loading-held' | 'held'; counts: boolean } = { phase: 'loading' };
+  const loading = () => state.phase === 'loading' || state.phase === 'loading-held';
+  /** Whether a change waits, and if so whether it counts. */
+  const waiting = (): boolean | null => ('counts' in state ? state.counts : null);
+  const applyRemote = (counts: boolean) => (counts ? apply(true) : apply(true, false));
   return {
-    /** A remote change arrived. `formDirty`: the user is mid-edit. */
-    arrived(formDirty: boolean): void {
-      if (loading()) { state = 'loading-held'; return; }
-      state = formDirty ? 'held' : 'idle';
-      if (!formDirty) apply(true); // this re-read is the one a held change waited for
+    /** A remote change arrived. `formDirty`: the user is mid-edit. `counts`: false for the late echo of an erase already shown. */
+    arrived(formDirty: boolean, counts = true): void {
+      const merged = counts || waiting() === true;
+      if (loading()) { state = { phase: 'loading-held', counts: merged }; return; }
+      if (formDirty) { state = { phase: 'held', counts: merged }; return; }
+      state = { phase: 'idle' };
+      applyRemote(merged); // this re-read is the one a held change waited for
     },
     /** The page has shown its first read: a change that arrived before it applies now. */
     loaded(): void {
       if (!loading()) return;
-      const waiting = state === 'loading-held';
-      state = 'idle';
-      if (waiting) apply(true);
+      const held = state.phase === 'loading-held' ? waiting() : null;
+      state = { phase: 'idle' };
+      if (held !== null) applyRemote(held);
     },
     /** A profile save landed. Applies a change held back by a dirty form. */
     saved(): void {
-      if (state !== 'held') return;
-      state = 'idle';
-      apply(true);
+      if (state.phase !== 'held') return;
+      const { counts } = state;
+      state = { phase: 'idle' };
+      applyRemote(counts);
     },
     /** The page re-reads the record for itself (an upload, a refused save): the re-read shows a held change too.
      *  Not before the first read is shown: that read would overwrite this one, so a waiting change waits for it. */
     reread(): T {
       if (loading()) return apply(false);
-      const remote = state === 'held';
-      state = 'idle';
+      const remote = state.phase === 'held' && state.counts;
+      state = { phase: 'idle' };
       return apply(remote);
     },
     /** The erase machine's read (another writer's erase, which never enters here): it shows a waiting change
      *  too, so the wait ends, uncounted; the machine counts the erase. Before the first read is shown it stays loading. */
     shows(): T {
-      state = loading() ? 'loading' : 'idle';
+      state = { phase: loading() ? 'loading' : 'idle' };
       return apply(false);
     },
   };

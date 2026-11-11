@@ -92,8 +92,8 @@ function setup(loaded = true) {
 }
 
 /** The store took in a change and announces it, as RoadmapStore does: `erase` is the identity it moved to, or null. */
-async function announced(erase: string | null) {
-  if (erase) rec.identity = erase;
+async function announced(erase: string | null, moves = true) {
+  if (erase && moves) rec.identity = erase;
   await act(async () => { window.dispatchEvent(new CustomEvent('hr:remote-changed', { detail: { erase } })); });
   await settle();
 }
@@ -194,6 +194,49 @@ describe('fix 4 (2b-3): a read whose identity moved is dropped (US-16 AC2a)', ()
     expect(page.fx.setInputs).toHaveBeenCalledTimes(1);
     expect(page.now().erase.shownErase).toBe(B);
     expect(page.reads()).toBe(2);
+    expect(counted()).toBe(1); // B, once (R4)
+  });
+});
+
+describe('fix 4 (2b-3 R1, Fable): an arrival carrying the erase the machine shows is a plain remote change', () => {
+  /** B shown by a refused save's re-read, before its own late arrival (the two-pass fold, H25). */
+  async function bShownEarly() {
+    const page = setup();
+    rec.identity = B;
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(page.now().erase.shownErase).toBe(B);
+    vi.mocked(trackProductEvent).mockClear();
+    page.fx.reloadValues.mockClear();
+    return page;
+  }
+
+  it('(a) with the profile dirty it is held, as any remote change: nothing read until the save that cleans it, and nothing counted', async () => {
+    const page = await bShownEarly();
+    page.fx.later.profileDirty.mockReturnValue(true);
+    await announced(B);
+    expect(page.reads()).toBe(0); // held: the typing stays
+    page.fx.later.profileDirty.mockReturnValue(false);
+    act(() => { page.now().page.saved(); });
+    await settle();
+    expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });
+  });
+
+  it('(b) with the profile clean it re-reads, and counts nothing', async () => {
+    const page = await bShownEarly();
+    await announced(B);
+    expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });
+  });
+
+  it('(c) while a different erase is heard, its re-read ends with the heard erase shown and counted once', async () => {
+    const page = setup();
+    await announced(B); // shown, counted
+    page.fx.fail = true;
+    await announced(C); // heard; its read fails
+    page.fx.fail = false;
+    await announced(B, false); // the store stays at C: this re-read reads C
+    expect(page.now().erase.shownErase).toBe(C);
+    expect(counted()).toBe(2); // B once, C once
   });
 });
 
