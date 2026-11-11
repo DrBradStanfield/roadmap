@@ -222,15 +222,18 @@ describe('US-06: A2-1 step 2, the screening-rules table', () => {
     expect(Object.values(SCREENING_TEXT).filter((t) => typeof t === 'string').length).toBeGreaterThan(0);
   });
 
+  /** A routine card, and colorectal's with the FIT line from 55 (US-07 AC1h). */
+  const withFitLine = (r: ScreeningRule, c: CardText) => (r.id === 'colorectal' ? [c, SCREENING_REFS.colorectalStatus(c, 55, 'fit_annual')] : [c]);
+
   it('each row\'s whole card template matches that row\'s golden cards, title and description', () => {
     const golden = Object.values(JSON.parse(readFileSync(`${__dirname}/screening-rules.golden.json`, 'utf8')).cards as Record<string, string>);
     const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = (c: CardText) => esc(`${c.title} :: ${c.description}`).replace(/\\\{due\\\}/g, '[A-Z][a-z]{2} \\d{4}').replace(/\\\{packYears\\\}/g, '\\d+');
     for (const r of SCREENING_RULES) {
       const kinds: Array<[string, readonly CardText[]]> = [
-        ['', 'ref' in r.cards.start ? [SCREENING_REFS.breastStart(40), SCREENING_REFS.breastStart(45)] : [r.cards.start]],
-        ['-overdue', r.cards.overdue ? [r.cards.overdue] : []],
-        ['-upcoming', r.cards.upToDate ? [r.cards.upToDate] : []],
+        ['', 'ref' in r.cards.start ? [35, 45, 55].map(SCREENING_REFS[r.cards.start.ref]) : [r.cards.start]],
+        ['-overdue', r.cards.overdue ? withFitLine(r, r.cards.overdue) : []],
+        ['-upcoming', r.cards.upToDate ? withFitLine(r, r.cards.upToDate) : []],
       ];
       for (const [suffix, texts] of kinds) {
         const id = `screening-${r.id}${suffix}`;

@@ -365,9 +365,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "cervical-followup-status: Colposcopy status",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
   },
   "39": {
     "controls": [
@@ -401,9 +401,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "cervical-followup-status: Colposcopy status",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
   },
   "40": {
     "controls": [
@@ -450,10 +450,10 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "cervical-followup-status: Colposcopy status",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
       "screening-age-message: Annual mammograms are optional at your age (40–44).",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031BreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedDate of last mammogramMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsDiagnostic imaging/biopsy statusSelect...Not yet organizedScheduledCompletedWhen was the diagnostic imaging/biopsy completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031BreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedDate of last mammogramMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsDiagnostic imaging/biopsy statusSelect...Not yet organizedScheduledCompletedWhen was the diagnostic imaging/biopsy completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
   },
   "44": {
     "controls": [
@@ -500,10 +500,10 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "cervical-followup-status: Colposcopy status",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
       "screening-age-message: Annual mammograms are optional at your age (40–44).",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031BreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedDate of last mammogramMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsDiagnostic imaging/biopsy statusSelect...Not yet organizedScheduledCompletedWhen was the diagnostic imaging/biopsy completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031BreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedDate of last mammogramMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsDiagnostic imaging/biopsy statusSelect...Not yet organizedScheduledCompletedWhen was the diagnostic imaging/biopsy completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016CervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColposcopy statusSelect...Not yet organizedScheduledCompleted",
   },
   "45": {
     "controls": [
@@ -1379,9 +1379,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "39": {
     "controls": [
@@ -1405,9 +1405,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "40": {
     "controls": [
@@ -1431,9 +1431,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "44": {
     "controls": [
@@ -1457,9 +1457,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "45": {
     "controls": [
@@ -2115,9 +2115,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "39": {
     "controls": [
@@ -2141,9 +2141,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "40": {
     "controls": [
@@ -2167,9 +2167,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "44": {
     "controls": [
@@ -2193,9 +2193,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > every
       "null: When is the colonoscopy scheduled?",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsColonoscopy statusSelect...Not yet organizedScheduledCompletedWhen is the colonoscopy scheduled?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear202620272028202920302031",
   },
   "45": {
     "controls": [
@@ -2888,9 +2888,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "cervical-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
   },
   "39": {
     "controls": [
@@ -2907,9 +2907,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "cervical-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
   },
   "40": {
     "controls": [
@@ -2929,10 +2929,10 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "cervical-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
       "screening-age-message: Annual mammograms are optional at your age (40–44).",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedBreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedBreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
   },
   "44": {
     "controls": [
@@ -2952,10 +2952,10 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "cervical-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
       "screening-age-message: Annual mammograms are optional at your age (40–44).",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedBreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedBreastAnnual mammograms are optional at your age (40–44).Screening frequencySelect...AnnualEvery 2 yearsNot yet startedCervicalScreening methodSelect...HPV test every 5 years (preferred)Pap test every 3 yearsOther methodNot yet started",
   },
   "45": {
     "controls": [
@@ -3365,9 +3365,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "39": {
     "controls": [
@@ -3381,9 +3381,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "40": {
     "controls": [
@@ -3397,9 +3397,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "44": {
     "controls": [
@@ -3413,9 +3413,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "45": {
     "controls": [
@@ -3722,9 +3722,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "39": {
     "controls": [
@@ -3738,9 +3738,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "40": {
     "controls": [
@@ -3754,9 +3754,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "44": {
     "controls": [
@@ -3770,9 +3770,9 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
       "colorectal-method: Screening method",
     ],
     "notes": [
-      "screening-notice: Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.",
+      "screening-notice: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
     ],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalNote: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
+    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalStarting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.Screening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet started",
   },
   "45": {
     "controls": [
