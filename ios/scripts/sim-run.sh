@@ -21,7 +21,8 @@
 # least HR_SIM_MAX_LOAD (1.5 x CPUs, else 8) or two Codex reviews run (node tools/codex-review.mjs, not --codex fakes),
 # polling every HR_SIM_GUARD_POLL_SECONDS (30, at least 1), never holding the device; HR_SIM_IGNORE_LOAD=1
 # skips it. Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease
-# calls skip it; an unreadable load or a non-numeric HR_SIM_MAX_LOAD fails open (US-71 AC8).
+# calls skip it; an unreadable load fails open; a non-numeric HR_SIM_MAX_LOAD skips the load check only
+# (US-71 AC8).
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -40,7 +41,7 @@ POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}"
 NUM='^[0-9]+(\.[0-9]+)?$'
 # A bad poll setting must not busy-loop: anything non-numeric or under 1 second polls every second.
 [[ "$POLL" =~ $NUM ]] && awk -v p="$POLL" 'BEGIN { exit !(p + 0 >= 1) }' || POLL=1
-START=$(date +%s) REASON="" WARNED=0
+START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
 OWN=0 SHIM="" UDID="" TOKEN="$$-$(date +%s)"
 
@@ -77,18 +78,19 @@ default_limit() {
 # True when the load guard trips, with REASON saying why. A Codex review is a process whose argv[0] is
 # node and whose first argument after node's leading flags (not -c/--check) is the script, ending in
 # codex-review.mjs (so vitest related on it does not count), with no --codex (the test suite's fake) after it.
-# Fails open: an unreadable sysctl or ps, or a non-numeric HR_SIM_MAX_LOAD, never makes a run wait.
+# Fails open: an unreadable sysctl or ps never makes a run wait; a non-numeric HR_SIM_MAX_LOAD skips
+# only the load check, and the Codex count stays on.
 guard_tripped() {
-  local load out codex
+  local load="" out codex check_load=1
   [ "${HR_SIM_IGNORE_LOAD:-}" = 1 ] && return 1
   [ -n "$MAX_LOAD" ] || default_limit
   if ! [[ "$MAX_LOAD" =~ $NUM ]]; then
-    [ "$WARNED" = 1 ] || echo "sim-run: load guard: HR_SIM_MAX_LOAD=$MAX_LOAD is not a number; not waiting" >&2
-    WARNED=1
-    return 1
+    [ "$BADMAX" = 1 ] || echo "sim-run: load guard: HR_SIM_MAX_LOAD=$MAX_LOAD is not a number; checking Codex reviews only" >&2
+    BADMAX=1 check_load=0
+  else
+    load=$(sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }')
   fi
-  load=$(sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }')
-  if ! [[ "$load" =~ $NUM ]] || ! out=$(ps -axo pid=,command= 2>/dev/null) || [ -z "$out" ]; then
+  if { [ "$check_load" = 1 ] && ! [[ "$load" =~ $NUM ]]; } || ! out=$(ps -axo pid=,command= 2>/dev/null) || [ -z "$out" ]; then
     [ "$WARNED" = 1 ] || echo "sim-run: load guard could not read the load; not waiting" >&2
     WARNED=1
     return 1
@@ -100,7 +102,7 @@ guard_tripped() {
       for (; i <= NF; i++) if ($i ~ /^--codex(=|$)/) next
       n++ } END { print n + 0 }')
   REASON=""
-  awk -v l="$load" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' && REASON="1-minute load $load is over $MAX_LOAD"
+  [ "$check_load" = 1 ] && awk -v l="$load" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' && REASON="1-minute load $load is over $MAX_LOAD"
   [ "$codex" -ge 2 ] && REASON="${REASON:+$REASON; }$codex Codex reviews running"
   [ -n "$REASON" ]
 }

@@ -511,13 +511,23 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(log('ncpu.log')).toBe('');
     });
 
-    it('a non-numeric HR_SIM_MAX_LOAD fails open with one line on stderr', () => {
+    it('a non-numeric HR_SIM_MAX_LOAD skips only the load check, with one line on stderr', () => {
       setLoads('50.00');
-      setPs([CODEX, CODEX2]);
+      setPs([CODEX]);
       const r = run(['--', 'sh', '-c', 'echo ran'], { ...fast, HR_SIM_MAX_LOAD: 'eight', HR_SIM_WAIT_SECONDS: '2' });
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('ran');
-      expect(r.stderr.match(/sim-run: load guard: HR_SIM_MAX_LOAD=eight is not a number; not waiting/g)).toHaveLength(1);
+      expect(r.stderr.match(/sim-run: load guard: HR_SIM_MAX_LOAD=eight is not a number; checking Codex reviews only/g)).toHaveLength(1);
+    });
+
+    it('a non-numeric HR_SIM_MAX_LOAD with two real Codex reviews still waits', () => {
+      setLoads('1.00');
+      setPs([CODEX, CODEX2]);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_MAX_LOAD: 'eight', HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('sim-run: waiting (load guard): 2 Codex reviews running');
+      expect(r.stderr.match(/is not a number/g)).toHaveLength(1);
+      expect(tookLock()).toBe(false);
     });
 
     it.each(['0', '0.2', 'soon'])('a poll setting of %s polls every second, not in a busy loop', (poll) => {
