@@ -42,7 +42,8 @@ struct ChatPendingLine: View {
             }
             Text(words)
         }
-        .foregroundStyle(.secondary)
+        // The app's neutral status grey, not .secondary (3.4:1 on white): 6.0:1 light, 9.5:1 dark.
+        .foregroundStyle(Color.status(nil))
         .font(.footnote)
         .accessibilityElement(children: .combine)
     }

@@ -29,19 +29,21 @@ struct ChatTranscript {
         lines.removeAll(where: \.failed)
         error = nil
         finished = false
+        pending = .thinking
         lines.append(ChatLine(role: .user, text: question))
         lines.append(ChatLine(role: .assistant, text: ""))
         return lines.count - 1
     }
 
-    /// What the answer in flight is doing, for the line under the conversation (US-52 AC6g):
-    /// the server's status, or the web's words (ChatPendingReply.tsx). Nil once the turn ends.
+    /// What the answer in flight is doing, for the line under the conversation (US-52 AC6g),
+    /// in the web's words (ChatPendingReply.tsx): "Thinking…" from Send, a server status (with
+    /// the web's "…") until answer text arrives, then "Answering…". Nil once the turn ends.
     enum Pending: Equatable {
         case status(String), thinking, answering
 
         var words: String {
             switch self {
-            case .status(let text): text
+            case .status(let text): text + "…"
             case .thinking: "Thinking…"
             case .answering: "Answering…"
             }
@@ -53,19 +55,19 @@ struct ChatTranscript {
     /// A streamed line reaches the answer at `index`. A status line starts a new phase: text
     /// streamed before it was not the answer (a run_roadmap round's preamble), so it goes,
     /// as on the web (US-52 AC6f, US-15 AC38). Earlier status lines come before any text.
-    /// Thinking shows as "Thinking…" until answer text arrives; its draft notes never show (AC6g).
+    /// A thinking line changes nothing: "Thinking…" shows from Send, a status keeps priority
+    /// over it, as on the web, and its draft notes never show (AC6g).
     mutating func stream(_ event: ChatStreamEvent, into index: Int) {
         switch event {
         case .status(let text):
             lines[index].text = ""
             pending = .status(text)
-        case .thinking: if lines[index].text.isEmpty { pending = .thinking }
         case .text(let text):
             lines[index].text += text
             if !lines[index].text.isEmpty { pending = .answering }
         case .sources(let titles): lines[index].sources = titles
         case .done: pending = nil
-        case .other: break
+        case .thinking, .other: break
         }
     }
 
