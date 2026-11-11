@@ -156,7 +156,7 @@ describe('screeningForm', () => {
     const form = screeningForm(50, 'female', {});
     expect(form.map((s) => s.id)).toEqual(['cancer-screening', 'bone-density']);
     expect(form[0].groups.find((g) => g.id === 'breast')!.notes).toEqual(['Annual mammograms are recommended at your age (45–54).']);
-    expect(screeningForm(40, 'male', {})[0].groups[0].notes[0]).toMatch(/^Note: ACS guidelines/);
+    expect(screeningForm(40, 'male', {})[0].groups[0].notes[0]).toMatch(/^Starting at 35 is Dr Brad's recommendation/); // US-07 AC1h
   });
 
   it('opens the date, result and follow-up as each is answered', () => {

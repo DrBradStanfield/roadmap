@@ -258,11 +258,12 @@ describe('METRIC_GUIDES (US-58)', () => {
     // [136]-[147], the Supplements and Medications That I Take sources, appended 2026-11-02 (US-61 AC9);
     // [148]-[154], the salt substitute, BP crisis, statin pregnancy and bempedoic acid sources, appended
     // 2026-11-02 (US-06 AC20, US-07 AC12-AC14); [155]-[158], the four lipid drug labels' pregnancy
-    // sections, appended 2026-11-09 (US-06 AC20).
-    expect(REF_LIST).toHaveLength(158);
+    // sections, appended 2026-11-09 (US-06 AC20); [159], Siegel 2019 for colorectal screening from 35,
+    // appended 2026-11-12 (US-07 AC1h).
+    expect(REF_LIST).toHaveLength(159);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(158);
+    expect(Math.max(...cited)).toBe(159);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {

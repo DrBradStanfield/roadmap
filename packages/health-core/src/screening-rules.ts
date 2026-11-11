@@ -104,7 +104,7 @@ interface RuleBase {
   readonly evidenceKey: string;
   readonly notes: readonly Note[];
   readonly cards: {
-    readonly start: CardText | { readonly ref: 'breastStart' };
+    readonly start: CardText | { readonly ref: 'breastStart' | 'colorectalStart' };
     readonly overdue?: CardText;
     readonly upToDate?: CardText;
   };
@@ -152,11 +152,11 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     reminder: { category: 'screening_colorectal', label: 'Colorectal screening' },
     evidenceKey: 'screening-colorectal',
     notes: [
-      { below: 45, text: 'Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.' },
+      { below: 45, text: 'Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.' },
       { above: 75, text: 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.' },
     ],
     cards: {
-      start: { title: 'Start colorectal cancer screening', description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.' },
+      start: { ref: 'colorectalStart' },
       overdue: { title: 'Colorectal screening overdue', description: 'Your next colorectal screening was due {due}. Please schedule your screening.' },
       upToDate: { title: 'Colorectal screening up to date', description: 'Next screening due {due}.' },
     },
@@ -292,13 +292,19 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
  *  text, and the by-age note), and the note's annual or biennial interval starts at 55. */
 export const BREAST_RECOMMENDED_FROM = 45;
 export const BREAST_ANNUAL_OR_BIENNIAL_FROM = 55;
+/** Colorectal (Brad 2026-11-12): from 35 is Dr Brad's recommendation, the ACS starts at 45; his
+ *  sequence is FIT every year until 55, then colonoscopy every 10 years. */
+export const COLORECTAL_GUIDELINE_FROM = 45;
+export const COLORECTAL_COLONOSCOPY_FROM = 55;
 
 /** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
  *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
  *  gates; the golden pin guards the prose. */
 export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
   & { readonly [K in NoteRef]: (age: number) => string }
-  & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } } = {
+  & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } }
+  & { readonly colorectalStart: (age: number) => CardText }
+  & { readonly colorectalStatus: (card: CardText, age: number, method: string | undefined) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
   breastByAge: (age) => age < BREAST_RECOMMENDED_FROM
@@ -316,6 +322,18 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
       ? 'Mammography is recommended at your age. Discuss with your doctor.'
       : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
   }),
+  colorectalStart: (age) => ({
+    title: 'Start colorectal cancer screening',
+    description: age < COLORECTAL_GUIDELINE_FROM
+      ? 'Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.'
+      : age < COLORECTAL_COLONOSCOPY_FROM
+        ? 'Colorectal screening is recommended. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. The American Cancer Society treats these and other tests as equal options. Discuss with your doctor.'
+        : 'Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.',
+  }),
+  /** The routine up-to-date and overdue cards (never the follow-up's): yearly FIT from 55 adds the colonoscopy line. */
+  colorectalStatus: (card, age, method) => method === 'fit_annual' && age >= COLORECTAL_COLONOSCOPY_FROM
+    ? { ...card, description: `${card.description} From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor.` }
+    : card,
 };
 
 /** The cancer section opens from 35 for anyone, with no upper bound (input-form.ts

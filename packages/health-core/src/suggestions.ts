@@ -846,17 +846,15 @@ export function generateSuggestions(
       suggestions.push({ id: `screening-${r.id}`, category: 'screening', priority, ...fill(start) });
     }
 
-    /** Push a row's overdue or up-to-date card. */
-    function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string): void {
-      if (status === 'overdue' && r.cards.overdue) {
-        suggestions.push({ id: `screening-${r.id}-overdue`, category: 'screening', priority: 'attention', ...fill(r.cards.overdue, due) });
-      } else if (status === 'upcoming' && r.cards.upToDate) {
-        suggestions.push({ id: `screening-${r.id}-upcoming`, category: 'screening', priority: 'info', ...fill(r.cards.upToDate, due) });
-      }
+    /** Push a row's overdue or up-to-date card; colorectal's reads the method for its FIT line from 55. */
+    function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string, method?: string): void {
+      const card = status === 'overdue' ? r.cards.overdue : status === 'upcoming' ? r.cards.upToDate : undefined;
+      if (card) suggestions.push({ id: `screening-${r.id}-${status}`, category: 'screening', priority: status === 'overdue' ? 'attention' : 'info',
+        ...fill(r === COLORECTAL ? SCREENING_REFS.colorectalStatus(card, age, method) : card, due) });
     }
 
     const pushDue = (r: ScreeningRule, lastDate: string, intervalKey: string) =>
-      pushScreeningStatus(r, screeningStatus(lastDate, intervalKey), nextDueStr(lastDate, intervalKey));
+      pushScreeningStatus(r, screeningStatus(lastDate, intervalKey), nextDueStr(lastDate, intervalKey), intervalKey);
 
     /**
      * Check if a screening has the result that opens its follow-up (abnormal; DEXA's osteoporosis).

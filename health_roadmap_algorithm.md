@@ -1104,7 +1104,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 
 | Screening | Age | Sex | Extra Criteria |
 |-----------|-----|-----|----------------|
-| Colorectal | 35-75 | Both | — |
+| Colorectal | 35-75 | Both | 35-44: Dr Brad's recommendation (ACS starts at 45) |
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
 | Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
@@ -1113,6 +1113,8 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | DEXA | Female >= 50, Male >= 70 | Both | — |
 
 With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
+
+Colorectal method by age (Brad 2026-11-12): Dr Brad's sequence is a FIT test every year until 55, then a colonoscopy every 10 years; the ACS treats them as equal options. The start card names the sequence by age (35-44, 45-54, 55-75). From 55 to 75, a person on `fit_annual` sees one more line on the FIT up-to-date and overdue cards, suggesting a colonoscopy. The FIT schedule and reminder are unchanged until the method changes.
 
 Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
 
