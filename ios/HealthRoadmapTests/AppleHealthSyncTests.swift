@@ -534,6 +534,8 @@ final class FakeHealthStore: HealthStoreClient {
     var deleteRefusal: Error?
     /// Runs after the samples went, before the delete returns (Codex C-R1).
     var deleteHold: (@MainActor () async -> Void)?
+    /// Runs before the samples go: a slow HealthKit query (lead H32).
+    var deleteBegin: (@MainActor () async -> Void)?
     /// As HealthKitClient: a kind whose write access is off is not asked and keeps its ids;
     /// with one such kind, an id not found stays too (edge 2).
     func deleteSamples(syncIds: [String]) async throws -> [String] {
@@ -541,6 +543,7 @@ final class FakeHealthStore: HealthStoreClient {
         deleteAttempts += 1
         if deleteFails { throw HealthStoreError.locked }
         if let deleteRefusal { throw deleteRefusal }
+        if let deleteBegin { await deleteBegin() }
         deletedSyncIds.append(syncIds.sorted())
         let gone = Set(saved.filter { syncIds.contains($0.syncId) && $0.kind.map(writable.contains) == true }.map(\.syncId))
         saved.removeAll { gone.contains($0.syncId) && $0.kind.map(writable.contains) == true }

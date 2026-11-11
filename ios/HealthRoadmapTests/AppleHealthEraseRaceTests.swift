@@ -636,6 +636,41 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         XCTAssertTrue(memory.owed.isEmpty)
     }
 
+    /// Lead H32 (Codex, PR 1218 re-check): an unlock runs foreground() and the unlock handler
+    /// together, and both find K owed. Before the one claim, each paid it: the first pay's refresh
+    /// wrote K again, then the second pay's slow query deleted that new sample while written still
+    /// listed K, so K never went to Health again. With the claim, the second awaits the first pay.
+    func testAnUnlockOverlappingAForegroundPaysAnOwedIdOnce_US72_AC10_H32() async throws {
+        let (app, k) = try await reconnectedWithKOwed()
+        health.deleteFails = false
+        let attempts = health.deleteAttempts
+        var calls = 0, released = false
+        health.deleteBegin = { [health] in
+            calls += 1
+            if calls == 1 {
+                for _ in 0..<500 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+            } else {
+                // A second pay's query reaches Health only after the first pay's refresh wrote K again.
+                for _ in 0..<500 where health?.saved.contains(where: { $0.syncId == k }) != true {
+                    try? await Task.sleep(for: .milliseconds(10))
+                }
+            }
+        }
+        let foreground = Task { await app.health.foreground() }
+        await until("the first pay is in flight") { calls == 1 }
+        NotificationCenter.default.post(name: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil)
+        await settle()
+
+        released = true
+        await foreground.value
+        await settle()
+
+        XCTAssertEqual(health.deleteAttempts - attempts, 1, "one pay for both triggers")
+        XCTAssertEqual(savedVersions(k), [1], "K stays in Health")
+        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertEqual(memory.writtenVersion(k), 1)
+    }
+
     private enum Step {
         case connect, write
         /// A remote erase sparing the rows; its delete fails or not.

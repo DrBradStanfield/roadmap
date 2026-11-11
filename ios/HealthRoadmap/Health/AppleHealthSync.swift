@@ -59,6 +59,8 @@ final class AppleHealthSync {
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
+    /// The owed delete in flight, the one claim every caller awaits (`deleteOwed`).
+    private var paying: Task<Bool, Never>?
     /// Where the two Health Records events go (US-72 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
@@ -114,9 +116,11 @@ final class AppleHealthSync {
         guard client.isAvailable, wasConnected || !memory.owed.isEmpty else { return true }
         await drained()
         do {
-            let paid = try? await pay(memory.owed)
+            // A pay begun before this erase owed its ids: wait it out, then pay what is owed now.
+            if let paying { _ = await paying.value }
+            let paid = await deleteOwed()
             try await client.deleteOwnSamples()
-            return paid == true
+            return paid
         } catch {
             return false
         }
@@ -301,10 +305,21 @@ final class AppleHealthSync {
     /// succeeded (`pay`). Tried when an erase disconnects, on Connect, then once per return to
     /// the foreground and once per unlock, never in a loop: a delete Health keeps refusing
     /// (write access turned off) waits for the next of those.
-    private func deleteOwed() async {
-        guard client.isAvailable, !memory.owed.isEmpty else { return }
-        await drained()
-        _ = try? await pay(memory.owed)
+    /// One pay at a time (lead H32): a caller that comes while one runs awaits that same pay
+    /// (`paying`), never starts a second on the same owed ids. So each caller's refresh starts only
+    /// once no pay is in flight, and no slow delete can take a sample a refresh wrote again after
+    /// the pay before it. True when nothing is left owed.
+    @discardableResult
+    private func deleteOwed() async -> Bool {
+        if let paying { return await paying.value }
+        guard client.isAvailable, !memory.owed.isEmpty else { return true }
+        let claim = Task {
+            defer { paying = nil }
+            await drained()
+            return (try? await pay(memory.owed)) == true
+        }
+        paying = claim
+        return await claim.value
     }
 
     /// Deletes `owed` by sync id. The ids Health deleted leave the list, each unless a newer
