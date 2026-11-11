@@ -77,7 +77,7 @@
  *   re-reads (Q3). Ends with: that re-read, the next arrival, own-start, any
  *   whole re-read (upload, refused, left), or a reload.
  * - L2, a first read that fails. The page stays as it was mounted, its saves
- *   off (`hasApiResponse` false), as before the machine (ledger H36). A held
+ *   off (`hasApiResponse` false), as before the machine (ledger H37). A held
  *   erase IS read then: firstReadFailed dispatches `loaded`, as the relay's
  *   `loaded()` does today (useRecordApply.ts firstReadFailed). That wiring is
  *   PR 2b-3's, with the arrivals; nothing dispatches here yet. "Delete all my
