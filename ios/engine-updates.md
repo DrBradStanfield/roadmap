@@ -193,8 +193,13 @@ commits only the new files.
   Actions, Engine release, Run workflow on `main` with **reissue** ticked. It skips
   `--if-changed`, so the same engine gets a fresh 30-day manifest at a new version; if
   no artifact arrives, `verify` fails rather than skipping.
-- **One queue for all runs** (`concurrency: engine-release`), whatever the ref: every
-  run writes the same folder on `main`.
+- **Only `sign` queues** (`concurrency: engine-release-sign`, `cancel-in-progress`): it
+  alone writes the folder on `main`. A newer run's `sign` replaces an older one still
+  waiting for approval, so a forgotten approval never blocks later releases. First the
+  `fresh` job checks that main has not moved on the engine paths since the build; a
+  stale run skips `sign`, ends green with a notice, and never enters the queue, so an
+  older engine cannot replace a newer one's request. stale-pr-watch emails you (an
+  issue assigned to you) when a sign has waited over 12 h.
 - Actions are pinned to commit SHAs; the workflow has no permissions by default, the
   build and `verify` read the repo, and only `sign` may write.
   `ios/scripts/engine-release-workflow.test.ts` holds these guards in place and signs a

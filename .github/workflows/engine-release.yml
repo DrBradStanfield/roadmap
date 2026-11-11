@@ -23,8 +23,10 @@ on:
         type: boolean
         default: false
 permissions: {}
-# One queue for every ref: all runs write the same ios/engine-release folder on main.
-concurrency: engine-release
+# Only `sign` writes ios/engine-release on main, so only `sign` queues. A newer run's sign
+# replaces an older one waiting for approval, so a forgotten approval cannot block later
+# releases. `fresh` keeps a stale run (main moved on the engine paths) out of that queue,
+# so an older engine can never replace a newer one's request.
 jobs:
   build:
     # A Deploy dispatched on main in this repo only. `branches: [main]` alone also matches
@@ -159,10 +161,42 @@ jobs:
             exit 1
           fi
           cat "$summary" >> "$GITHUB_STEP_SUMMARY"
-  sign:
+  fresh:
+    # No secret, no environment, no repo code: one git diff. Runs straight after verify,
+    # so the gap between this check and sign joining its queue is seconds.
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      fresh: ${{ steps.check.outputs.fresh }}
+    env:
+      BUILT_SHA: ${{ needs.verify.outputs.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: check
+        name: This run's engine is still main's engine
+        run: |
+          set -euo pipefail
+          [[ "$BUILT_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if git diff --quiet "$BUILT_SHA" HEAD -- packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json ':(glob)**/.npmrc' ':(glob)**/tsconfig*'; then
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::main moved on the engine paths since this build; a newer run releases it"
+          fi
+  sign:
+    needs: [verify, fresh]
+    if: needs.fresh.outputs.fresh == 'true'
+    runs-on: ubuntu-latest
     environment: engine-signing
+    concurrency:
+      group: engine-release-sign
+      cancel-in-progress: true
     permissions:
       contents: write
     env:
