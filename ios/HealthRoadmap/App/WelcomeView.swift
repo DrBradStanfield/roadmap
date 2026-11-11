@@ -12,8 +12,6 @@ struct WelcomeView: View {
     var connected: () -> Void = {}
     @State private var shown = false
     @State private var choosingCloud = false
-    /// Signed in, but the cloud record did not open: say so, and stay (US-54 AC2).
-    @State private var notOpened = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
@@ -25,6 +23,12 @@ struct WelcomeView: View {
     /// narrow phone) its words scroll above the buttons, which stay on screen (US-54 AC8b).
     private var showsStory: Bool {
         storyNeeds.width <= width && storyNeeds.height <= WelcomeStory.height
+    }
+
+    /// Read from the cloud each time, never kept here (US-54 AC2b).
+    private var phase: WelcomeConnect.Phase {
+        guard let sync else { return .choosing }
+        return WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen)
     }
 
     var body: some View {
@@ -51,12 +55,12 @@ struct WelcomeView: View {
                 }
                 .scrollBounceBehavior(.basedOnSize)
             }
-            Button("Get started", action: getStarted)
+            Button("Get started") { apply(.getStarted) }
             .buttonStyle(.accent)
             .padding(.top, 16)
             .accessibilityIdentifier("welcome.start")
             if sync != nil {
-                Button("I already use Health Roadmap") { choosingCloud = true }
+                Button("I already use Health Roadmap") { apply(.existing) }
                     .padding(.top, 10)
                     .accessibilityIdentifier("welcome.existing")
             }
@@ -65,6 +69,7 @@ struct WelcomeView: View {
             WelcomeStory.needs.hidden().onGeometryChange(for: CGSize.self) { $0.size } action: { storyNeeds = $0 }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onChange(of: phase) { apply(.phaseChanged) }
         .sheet(isPresented: $choosingCloud) {
             if let sync { cloudChooser(sync) }
         }
@@ -112,24 +117,32 @@ struct WelcomeView: View {
                 Section { SyncDiagram() }
                 Section {
                     ForEach(CloudProvider.allCases) { provider in
-                        ConnectCloudButton(sync: sync, provider: provider, connected: { opened(sync) }) {
+                        // The phase change goes on, once; the button's own callback does not.
+                        ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
                             Label("Connect \(provider.label)", systemImage: provider == .dropbox ? "shippingbox" : "externaldrive")
                         }
                     }
                 } footer: {
                     Text("Choose the cloud you connected on the website. Your record comes in from there, and your plan is ready.")
                 }
-                if notOpened {
+                switch phase {
+                case .opening:
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text("Opening your record").foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Opening your record")
+                    }
+                case .failed:
                     Section {
                         Text("Signed in, but your record could not be opened yet. Check your connection, then try again.")
                             .foregroundStyle(.secondary)
-                        Button("Try again") {
-                            Task {
-                                await sync.foreground()
-                                opened(sync)
-                            }
-                        }
+                        Button("Try again") { apply(.tryAgain) }
                     }
+                case .choosing, .opened:
+                    EmptyView()
                 }
             }
             .navigationTitle("Your record")
@@ -141,29 +154,28 @@ struct WelcomeView: View {
         .presentationDetents([.medium])
     }
 
-    /// "Get started" after a cloud sign-in whose record did not open would run the
-    /// questions on the empty phone record, whose answers later win the merge
-    /// (re-check R4): with a cloud connected, it goes the connect way instead.
-    private func getStarted() {
-        if let sync, sync.provider != nil {
+    /// "Get started" with a cloud connected waits on its record, so the questions never
+    /// run on the empty phone record, whose answers would later win the merge (review
+    /// R4). Every tap that can show the spinner starts an open (WelcomeConnect).
+    private func apply(_ event: WelcomeConnect.Event) {
+        switch WelcomeConnect.decide(event, phase: phase, sheetShown: choosingCloud) {
+        case .start: start()
+        case .goOn:
+            choosingCloud = false
+            connected()
+        case .showSheet: choosingCloud = true
+        case .showSheetAndOpen:
             choosingCloud = true
-            opened(sync)
-        } else {
-            start()
+            openRecord()
+        case .open: openRecord()
+        case .nothing: break
         }
     }
 
-    /// Goes on only once the cloud record is open: a connect can sign in and still fail
-    /// to read the record, and the questions must never start from the empty phone record
-    /// (their answers would later win the merge over the website's; review R4).
-    private func opened(_ sync: CloudSync) {
-        guard sync.recordOpen else {
-            notOpened = true
-            return
-        }
-        notOpened = false
-        choosingCloud = false
-        connected()
+    /// CloudSync's open is single-flight: one already running is joined.
+    private func openRecord() {
+        guard let sync else { return }
+        Task { await sync.foreground() }
     }
 }
 
