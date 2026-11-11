@@ -61,6 +61,7 @@ These words were chosen to carry out his decisions, but he has not read them. Pl
 - "Colorectal screening up to date". Before: "Next screening due {due}." After: "Next screening due {due}. From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor."
 - "Colorectal screening overdue". Before: "Your next colorectal screening was due {due}. Please schedule your screening." After: "Your next colorectal screening was due {due}. Please schedule your screening. From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor."
 - The FIT reminder continues yearly until the person changes method.
+- Added after approval: nor on any card after an abnormal result (Brad 2026-11-12, PR 1352).
 
 **Algorithm doc**
 - Eligibility row (`:1107`). Before: "| Colorectal | 35-75 | Both | — |". After: "| Colorectal | 35-75 | Both | 35-44: Dr Brad's recommendation (ACS starts at 45) |".
