@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S14,iPhone state,"No UI test drives the welcome sheet against a fake cloud, so WelcomeView's wiring to WelcomeConnect is unpinned",note,not started,"ios/HealthRoadmap/App/WelcomeView.swift: the onChange(of: phase), openRecord on showSheetAndOpen and the empty ConnectCloudButton callback have no test; WelcomeConnect's pure functions are pinned by WelcomeConnectTests (US-54 AC2b)",1281,no
