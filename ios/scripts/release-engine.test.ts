@@ -202,9 +202,10 @@ export async function resolve(specifier, context, next) {
   }, 240_000);
 
   // PR 1218 R3: a floor file the build cannot read as a whole number fails closed, never passes.
-  it('refuses a floor file without a whole-number minAppBuild, and keeps the last manifest', () => {
+  // A floor below 1 too (PR 1218 re-check N2, lead H29): no app build is below it, so it guards nothing.
+  it('refuses a floor file without a whole-number minAppBuild of at least 1, and keeps the last manifest', () => {
     const before = manifestBytes();
-    for (const [i, bad] of [{}, { minAppBuild: '11' }, { minAppBuild: 11.5 }, { minAppBuild: null }].entries()) {
+    for (const [i, bad] of [{}, { minAppBuild: '11' }, { minAppBuild: 11.5 }, { minAppBuild: null }, { minAppBuild: 0 }].entries()) {
       const file = join(work, `bad-floor-${i}.json`);
       writeFileSync(file, JSON.stringify(bad));
       const run = build(`2026-10-22T09:0${i}:00Z`, ['--floor', file, '--min-app-build', '11']);

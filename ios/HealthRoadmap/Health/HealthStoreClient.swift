@@ -38,12 +38,20 @@ protocol HealthStoreClient: AnyObject {
     func deleteOwnSamples() async throws
     /// An erase (US-72 AC10): deletes the samples with these sync ids, the delete this phone
     /// still owes (`HealthSyncMemory.owed`), and only where this app is their source: never a
-    /// query by source alone. Returns the ids it could not delete: a kind whose write access
-    /// is off keeps its own, and any id it did not find (edge 2).
-    func deleteSamples(syncIds: [String]) async throws -> [String]
+    /// query by source alone. A kind whose write access is off is not asked (edge 2).
+    func deleteSamples(syncIds: [String]) async throws -> HealthDeletion
     /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
     /// when not allowed or not set. Read on demand, never stored by this call.
     func characteristics() -> HealthCharacteristics
+}
+
+/// What a delete by sync id did (lead H29): the ids whose samples went, and the kinds Health was
+/// asked about. An id absent from a kind asked about has no sample left of that kind.
+struct HealthDeletion: Equatable {
+    /// The kinds the app writes, so the kinds a delete by sync id can ask about.
+    static let kinds: Set<HealthKind> = [.weight, .waist, .bloodPressure]
+    let deleted: Set<String>
+    let asked: Set<HealthKind>
 }
 
 enum HealthStoreError: LocalizedError {

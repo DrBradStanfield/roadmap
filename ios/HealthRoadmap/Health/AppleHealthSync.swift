@@ -110,15 +110,16 @@ final class AppleHealthSync {
     /// it already); a delete still owed (`HealthSyncMemory.owed`) is made either way. False when
     /// Health refused the delete or left an id (a kind whose write access is off), for the erase
     /// to say so; those ids stay owed (`deleteOwed`). Neither: nothing to delete.
+    /// One drain deadline for the whole erase (lead H34), so the Health delete starts within
+    /// `drainBound`, never after a second drain.
     func erased(wasConnected: Bool) async -> Bool {
         if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
         disconnect()
         guard client.isAvailable, wasConnected || !memory.owed.isEmpty else { return true }
-        await drained()
+        let deadline = ContinuousClock.now + Self.drainBound
+        await drained(by: deadline)
         do {
-            // A pay begun before this erase owed its ids: wait it out, then pay what is owed now.
-            if let paying { _ = await paying.value }
-            let paid = await deleteOwed()
+            let paid = await deleteOwed(erasing: deadline)
             try await client.deleteOwnSamples()
             return paid
         } catch {
@@ -277,9 +278,10 @@ final class AppleHealthSync {
             memory.eraseSeen = now
             disconnect()
             // As a local erase does (DataEraser): nothing read before it stays on screen or on disk (edge 3).
+            let deadline = ContinuousClock.now + Self.drainBound
             Task {
                 await live?.forget()
-                await deleteOwed()
+                await deleteOwed(erasing: deadline)
             }
             return false
         }
@@ -309,13 +311,20 @@ final class AppleHealthSync {
     /// (`paying`), never starts a second on the same owed ids. So each caller's refresh starts only
     /// once no pay is in flight, and no slow delete can take a sample a refresh wrote again after
     /// the pay before it. True when nothing is left owed.
+    /// `erasing`: an erase just owed new ids, and its drain deadline. A pay already in flight may
+    /// have read the owed list before them (lead H33): the erase waits it out, then pays its own,
+    /// joining only a pay claimed after it. Its drain shares the erase's deadline (lead H34).
     @discardableResult
-    private func deleteOwed() async -> Bool {
-        if let paying { return await paying.value }
+    private func deleteOwed(erasing deadline: ContinuousClock.Instant? = nil) async -> Bool {
+        if let paying {
+            let paid = await paying.value
+            guard deadline != nil else { return paid }
+            if let next = self.paying { return await next.value }
+        }
         guard client.isAvailable, !memory.owed.isEmpty else { return true }
         let claim = Task {
             defer { paying = nil }
-            await drained()
+            await drained(by: deadline ?? .now + Self.drainBound)
             return (try? await pay(memory.owed)) == true
         }
         paying = claim
@@ -324,30 +333,35 @@ final class AppleHealthSync {
 
     /// Deletes `owed` by sync id. The ids Health deleted leave the list, each unless a newer
     /// version was saved meanwhile (Codex C-R1); true when none was left.
+    /// An id not found is gone when Health was asked about its kind (lead H29); one whose kind is
+    /// not known, only when Health was asked about every kind.
     private func pay(_ owed: [String: Int64]) async throws -> Bool {
-        let left = try await client.deleteSamples(syncIds: Array(owed.keys))
-        memory.paid(owed.filter { !left.contains($0.key) })
-        return left.isEmpty
+        let done = try await client.deleteSamples(syncIds: Array(owed.keys))
+        let settled = owed.filter { id, _ in
+            done.deleted.contains(id) || memory.kind(id).map(done.asked.contains) ?? done.asked.isSuperset(of: HealthDeletion.kinds)
+        }
+        memory.paid(settled)
+        return settled.count == owed.count
     }
 
     /// How long an erase's Health delete waits for a running pass. The record's erase has
     /// already landed: only the Health delete waits, and never on a hung HealthKit call.
     static let drainBound: Duration = .seconds(2)
 
-    /// Waits for a running pass to end (`waiting`), or `drainBound`, whichever comes first.
+    /// Waits for a running pass to end (`waiting`), or `deadline`, whichever comes first.
     /// The erase moved the generation, so the pass stops at its next check, once its HealthKit
     /// call returns. A call that hangs past the bound is left running: a sample it saves later
     /// is owed (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
     /// The deadline is its own task, so a cancelled caller still waits for it, never spins.
-    private func drained() async {
-        guard running else { return }
+    private func drained(by deadline: ContinuousClock.Instant) async {
+        guard running, deadline > .now else { return }
         let id = UUID()
-        let deadline = Task { [weak self] in
-            try? await Task.sleep(for: Self.drainBound)
+        let timer = Task { [weak self] in
+            try? await Task.sleep(until: deadline, clock: .continuous)
             self?.waiting.removeValue(forKey: id)?.resume()
         }
         await withCheckedContinuation { waiting[id] = $0 }
-        deadline.cancel()
+        timer.cancel()
     }
 
     /// What a pass began under: the record's mark and the connection generation.
@@ -434,6 +448,7 @@ final class AppleHealthSync {
     /// A pass never writes an owed id; it is written again once its delete is paid.
     private func writeTyped(on pass: Pass) async throws {
         let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        memory.learnKinds(writes)
         var refused: Error?
         for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed[write.syncId] == nil {
             guard let kind = write.kind, client.canWrite(kind) else { continue }
