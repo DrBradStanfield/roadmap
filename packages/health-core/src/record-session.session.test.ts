@@ -976,3 +976,201 @@ describe('RecordSession.deleteAllData: the erase order (US-09 AC23, US-11 AC2; O
     expect(chat).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Today's save mode, pinned as a caller sees it, before it becomes one union
+ * (lead A1, step a). The mode is spread over the debounce timer, the save in
+ * flight, the dirty-during-save flag, the change counts and `erasing`.
+ */
+describe('RecordSession: the save mode as a caller sees it today (lead A1)', () => {
+  /** Holds the store's next `method` call until released; `reached` resolves
+   *  once the call has started. Later calls run as normal. */
+  function holdNext(store: TestStore, method: 'read' | 'write') {
+    const own = store as unknown as Record<string, unknown>;
+    const original = (store[method] as (...args: unknown[]) => Promise<unknown>).bind(store);
+    let release!: () => void;
+    let started!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const reached = new Promise<void>((resolve) => { started = resolve; });
+    own[method] = async (...args: unknown[]) => {
+      delete own[method];
+      started();
+      await gate;
+      return original(...args);
+    };
+    return { reached, release };
+  }
+  /** The fake host on the real timer functions, so vi's fake timers drive the debounce. */
+  const onTimers = (host: RecordHost): RecordHost => ({
+    ...host,
+    timers: {
+      set: (run: () => void, ms: number) => setTimeout(run, ms),
+      clear: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+    },
+  });
+  /** An edit whose background save rejects: one write, the marker set. */
+  async function failedBackgroundSave() {
+    vi.useFakeTimers();
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(onTimers(fake.host));
+    store.failWrites = true;
+    add(session, 'a');
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS);
+    expect(store.writes).toBe(1);
+    expect(fake.pending.value).toBe(true);
+    store.failWrites = false;
+    return { store, fake, session };
+  }
+
+  it('a background cloud save that rejects sets the pending marker, and no save is tried again until an edit (US-09 AC4, US-10 AC5)', async () => {
+    try {
+      const { store, fake, session } = await failedBackgroundSave();
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS * 50);
+      expect(store.writes).toBe(1); // no retry of its own
+      expect(vi.getTimerCount()).toBe(0);
+      expect(fake.pending.value).toBe(true);
+
+      add(session, 'b', 81, '2026-10-02');
+      expect(store.writes).toBe(1); // the edit waits on the debounce
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS);
+      expect(store.writes).toBe(2);
+      expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+      expect(fake.pending.value).toBe(false); // the cloud save that lands clears it
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['flush', 'flushSync'] as const)('after that failure, a %s tries the save again (US-10 AC5)', async (trigger) => {
+    try {
+      const { store, session } = await failedBackgroundSave();
+      if (trigger === 'flush') await session.flush();
+      else session.flushSync();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(store.writes).toBe(2);
+      expect(ids(stored(store.cloud))).toEqual(['a']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('no pending marker while an edit waits on the debounce, nor while its save is in flight (US-09 AC30)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    expect(fake.timers).toHaveLength(1);
+    expect(fake.pending.value).toBe(false);
+    const held = holdNext(store, 'write');
+    fake.timers[0].run();
+    await held.reached;
+    expect(fake.pending.value).toBe(false);
+    held.release();
+    await session.flush();
+    expect(store.writes).toBe(1);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('an edit made during a save pass runs a second pass; with none, one pass and one write (US-10 AC5a)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    expect(store.writes).toBe(1); // no edit during the pass: one write
+
+    store.onWrite = () => { store.onWrite = undefined; add(session, 'b', 81, '2026-10-02'); };
+    add(session, 'c', 82, '2026-10-03');
+    await session.flush();
+    expect(store.writes).toBe(3); // the edit in the pass ran a second one
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
+    // The debounce that edit armed finds nothing left to save.
+    fake.timers.at(-1)!.run();
+    await session.flush();
+    expect(store.writes).toBe(3);
+  });
+
+  it('a flush during a save joins it and resolves when it lands, with no write of its own (US-10 AC5a, US-11 AC7)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    fake.timers[0].run(); // the background save starts
+    await expect(session.flush()).resolves.toBeUndefined();
+    expect(store.writes).toBe(1);
+    expect(ids(stored(store.cloud))).toEqual(['a']);
+  });
+
+  it('a flush that joins a save whose later pass fails rejects with the save-failed text (US-11 AC7)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    // The first pass lands with an edit made during it; the second pass fails.
+    store.onWrite = () => {
+      store.onWrite = () => { store.failWrites = true; };
+      add(session, 'b', 81, '2026-10-02');
+    };
+    fake.timers[0].run();
+    await expect(session.flush()).rejects.toThrow('Cloud sync failed — your latest changes are still on this device.');
+    expect(store.writes).toBe(2);
+    expect(ids(stored(store.cloud))).toEqual(['a']);
+  });
+
+  it('refreshFromRemote answers false and reads nothing while an edit waits or its save is in flight (US-34 AC2)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    const reads = vi.spyOn(store, 'read');
+    add(session, 'a');
+    expect(await session.refreshFromRemote()).toBe(false); // on the debounce
+    expect(reads).not.toHaveBeenCalled();
+
+    const held = holdNext(store, 'write');
+    fake.timers[0].run();
+    await held.reached;
+    expect(reads).toHaveBeenCalledTimes(1); // the save's own read
+    expect(await session.refreshFromRemote()).toBe(false); // in flight
+    expect(reads).toHaveBeenCalledTimes(1);
+    held.release();
+    await session.flush();
+
+    // Nothing pending: it reads, once (the save's verify read came before).
+    const saved = reads.mock.calls.length;
+    expect(await session.refreshFromRemote()).toBe(false);
+    expect(reads).toHaveBeenCalledTimes(saved + 1);
+  });
+
+  it('refuses() is true from the erase swap to the end of its write, and false once the erase is done (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    expect(session.refuses()).toBe(false);
+    const held = holdNext(store, 'write');
+    const erasing = session.erase();
+    await held.reached;
+    expect(session.refuses()).toBe(true);
+    expect(add(session, 'late')).toBe(false);
+    held.release();
+    expect((await erasing).success).toBe(true);
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
+  it("today, refuses() is still false before the erase's stored read answers (lead A6; a later PR may change it)", async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    const held = holdNext(store, 'read');
+    const erasing = session.erase();
+    await held.reached;
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'during-read')).toBe(true); // an edit is let in
+    held.release();
+    expect((await erasing).success).toBe(true);
+    expect(session.refuses()).toBe(false);
+  });
+});
