@@ -1,7 +1,7 @@
 # Privacy policy addendum: the AI connector
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
-by `node scripts/build-privacy-page.mjs connector --publish` (last 30 October 2026). Republish after every edit here; the page is generated, never hand-edited.
+by `node scripts/build-privacy-page.mjs connector --publish` (last 11 November 2026). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`. Re-audited 2026-10-30 against `app/routes/api.chat.ts`,
