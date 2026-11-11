@@ -45,7 +45,7 @@ function run(exitCode: number) {
 describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
   it('a give-up (exit 75) prints NOT RUN, exits 75 and skips the next zone', () => {
     const r = run(75);
-    expect(r.out).toContain('NOT RUN in UTC: load guard (not a test failure)');
+    expect(r.out).toContain('NOT RUN in UTC: sim-run gave up waiting (not a test failure)');
     expect(r.out).toContain('sim-run: gave up after');
     expect(r.out).not.toContain('FAILED in');
     expect(r.status).toBe(75);

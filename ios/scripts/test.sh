@@ -24,7 +24,7 @@ for ZONE in UTC Pacific/Auckland; do
     -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 || echo $? > "$STATUS"; } | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)|sim-run:" || true
   if [ "$(cat "$STATUS" 2>/dev/null)" = 75 ]; then
-    echo "NOT RUN in $ZONE: load guard (not a test failure)"; exit 75
+    echo "NOT RUN in $ZONE: sim-run gave up waiting (not a test failure)"; exit 75
   fi
   grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }
   if grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
