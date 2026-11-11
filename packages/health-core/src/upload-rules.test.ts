@@ -60,6 +60,8 @@ describe('fileVerdict', () => {
     ['a.zip', 20 * MB, undefined, 'phone', 'keep'],
     ['a.zip', 20 * MB, 'file', 'phone', 'tooLarge'],
     ['a', 20 * MB, 'zip', 'phone', 'keep'],
+    // Two dots and "zip": the extension after the last dot (the Swift copy reads it the same way).
+    ['..zip', 15 * MB, undefined, 'phone', 'keep'],
     // The web's readers decide the kind (by name and MIME type): its verdict is size alone.
     ['notes.txt', 1, 'file', 'web', 'keep'],
     ['a.zip', 10 * MB, 'zip', 'web', 'keep'],
@@ -89,6 +91,10 @@ describe('zipMemberVerdict', () => {
     ['x/__MACOSX/a.pdf', 'phone', 'hidden'],
     ['.git/a.pdf', 'phone', 'keep'],
     ['__macosx/a.pdf', 'phone', 'keep'],
+    // A combining mark after the dot or in __MACOSX hides nothing it would not: by code unit.
+    ['.́a.pdf', 'phone', 'hidden'],
+    ['d/.́a.pdf', 'phone', 'hidden'],
+    ['__MACOSX́/a.pdf', 'phone', 'hidden'],
   ];
   it.each(cases)('%s on %s → %s', (path, platform, verdict) => {
     expect(zipMemberVerdict(path, platform)).toBe(verdict);

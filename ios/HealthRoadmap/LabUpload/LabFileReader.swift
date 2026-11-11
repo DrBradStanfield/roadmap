@@ -112,19 +112,19 @@ enum LabFileReader {
     /// False when a file of this size is over the web's limit: 20 MB for a ZIP
     /// (IMPORT_LIMITS.zipMb), 10 MB otherwise.
     static func fits(name: String, bytes: Int) -> Bool {
-        bytes <= ((name as NSString).pathExtension.lowercased() == "zip" ? 20 * 1024 * 1024 : maxFileBytes)
+        bytes <= (pathExtension(name) == "zip" ? 20 * 1024 * 1024 : maxFileBytes)
     }
 
     /// The documents in one picked file: one, or one per report inside a ZIP. A ZIP
     /// member is named `zip/path` here; `HealthEngine.named` gives it the web's name.
     /// `rules`: health-core's, asked for this file and its members (`UploadRules.swift`), else the Swift copy.
     static func documents(from data: Data, name: String, rules: Rules = .swift) throws -> [Document] {
-        let ext = (name as NSString).pathExtension.lowercased()
+        let ext = pathExtension(name)
         if ext == "zip" {
             // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
-            guard rules.file(name, data.count) != "tooLarge" else { throw Failure.tooLarge(name) }
+            guard rules.file(name, data.count) != .tooLarge else { throw Failure.tooLarge(name) }
             let members = try ZipReader.members(of: data, maxMemberBytes: rules.maxMemberBytes, maxMembers: rules.maxMembers,
-                                                maxTotalBytes: rules.maxTotalBytes) { rules.member($0) == "keep" }
+                                                maxTotalBytes: rules.maxTotalBytes) { rules.member($0) == .keep }
             let documents = try members.map { member in
                 var read = try document(from: member.data, name: "\(name)/\(member.name)", rules: rules)
                 read.zipMember = ZipMember(zip: name, path: member.name)
@@ -155,21 +155,14 @@ enum LabFileReader {
 
     /// The reports in one file picked in Files: a ZIP's members keep their bytes; a single
     /// file's original is the file, opened again when it is saved. Its size is checked
-    /// before it is read (adversary R3).
-    static func documents(picked url: URL) throws -> [Document] {
-        let name = url.lastPathComponent
-        guard fits(name: name, bytes: size(of: url)) else { throw Failure.tooLarge(name) }
-        return try documents(from: coordinatedData(url), name: name).map { keptAsFile($0, url) }
-    }
-
-    /// `documents(picked:)` with the rules `ask` gives: first for the file's listed size, then,
-    /// once read, for its bytes and, in a ZIP, each member's path and size.
+    /// before it is read (adversary R3). The rules come from `ask`: first for the file's listed
+    /// size, then, once read, for its bytes and, in a ZIP, each member's path and size.
     static func documents(picked url: URL, ask: AskRules) async throws -> [Document] {
         let name = url.lastPathComponent, listed = size(of: url)
-        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != "tooLarge" else { throw Failure.tooLarge(name) }
+        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != .tooLarge else { throw Failure.tooLarge(name) }
         let data = try coordinatedData(url)
         // A ZIP that will not list is refused by the read below, in its own words.
-        let entries = (name as NSString).pathExtension.lowercased() == "zip" ? (try? ZipReader.entries(of: data)) ?? [] : []
+        let entries = pathExtension(name) == "zip" ? (try? ZipReader.entries(of: data)) ?? [] : []
         let files = [UploadFile(name: name, bytes: data.count)] + entries.map { UploadFile(name: "\(name)/\($0.name)", bytes: $0.size) }
         let rules = await ask(files, entries.map(\.name))
         return try documents(from: data, name: name, rules: rules).map { keptAsFile($0, url) }
@@ -195,7 +188,7 @@ enum LabFileReader {
         // A size the system does not give is unknown: the reads below are checked instead (re-check N2).
         let sized = files.compactMap { file in file.size.map { UploadFile(name: file.url.lastPathComponent, bytes: $0) } }
         let listedRules = await ask(sized, [])
-        if let big = files.first(where: { file in file.size.map { listedRules.file(file.url.lastPathComponent, $0) == "tooLarge" } ?? false }) {
+        if let big = files.first(where: { file in file.size.map { listedRules.file(file.url.lastPathComponent, $0) == .tooLarge } ?? false }) {
             throw Failure.tooLarge(big.url.lastPathComponent)
         }
         guard files.reduce(0, { $0 + ($1.size ?? 0) }) <= maxBytes else { throw Failure.folderTooLarge }
@@ -262,7 +255,7 @@ enum LabFileReader {
 
     /// A report file by its name: a PDF or picture, not hidden.
     static func isReport(_ path: String) -> Bool {
-        !(path as NSString).lastPathComponent.hasPrefix(".") && ["pdf", "jpg", "jpeg", "png"].contains((path as NSString).pathExtension.lowercased())
+        lastComponent(path).first != "." && ["pdf", "jpg", "jpeg", "png"].contains(pathExtension(path))
     }
 
     /// The web's file cap for a ZIP or folder.
@@ -292,11 +285,11 @@ enum LabFileReader {
 
     private static func document(from data: Data, name: String, rules: Rules) throws -> Document {
         switch rules.file(name, data.count) {
-        case "tooLarge": throw Failure.tooLarge(name)
-        case "keep": break
+        case .tooLarge: throw Failure.tooLarge(name)
+        case .keep: break
         default: throw Failure.unsupported(name)
         }
-        let ext = (name as NSString).pathExtension.lowercased()
+        let ext = pathExtension(name)
         var read: Document
         switch ext {
         case "pdf": read = try pdf(data, name: name)

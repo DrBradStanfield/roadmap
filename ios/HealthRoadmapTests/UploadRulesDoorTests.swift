@@ -16,10 +16,10 @@ final class UploadRulesDoorTests: XCTestCase {
         let engine = try HealthEngine()
         let rules = engine.blocking { $0.uploadRules(files: [File(name: "a.pdf", bytes: 1), File(name: "a.txt", bytes: 1)], members: [".x/a.pdf", "__MACOSX/a.pdf"]) }
         XCTAssertEqual(rules.source, .engine)
-        XCTAssertEqual(rules.file("a.pdf", 1), "keep")
-        XCTAssertEqual(rules.file("a.txt", 1), "unsupported")
-        XCTAssertEqual(rules.member(".x/a.pdf"), "keep")
-        XCTAssertEqual(rules.member("__MACOSX/a.pdf"), "hidden")
+        XCTAssertEqual(rules.file("a.pdf", 1), .keep)
+        XCTAssertEqual(rules.file("a.txt", 1), .unsupported)
+        XCTAssertEqual(rules.member(".x/a.pdf"), .keep)
+        XCTAssertEqual(rules.member("__MACOSX/a.pdf"), .hidden)
         XCTAssertEqual(rules.maxMemberBytes, LabFileReader.maxFileBytes)
         XCTAssertEqual(rules.maxMembers, LabFileReader.maxFolderFiles)
         XCTAssertEqual(rules.maxTotalBytes, LabFileReader.maxFolderBytes)
@@ -37,11 +37,69 @@ final class UploadRulesDoorTests: XCTestCase {
                                            files: files, members: []).source, .swift)
     }
 
+    /// A door answer with a verdict it does not know, or a limit not above 0 or past the Swift
+    /// copy's, is no answer: the reader keeps the Swift rules (review R3).
+    func testABadDoorAnswerKeepsTheSwiftRules() {
+        let files = [File(name: "a.pdf", bytes: 1)]
+        func answer(verdict: String = "keep", fileBytes: Int = LabFileReader.maxFileBytes, zipMembers: Int = LabFileReader.maxFolderFiles,
+                    folderBytes: Int = LabFileReader.maxFolderBytes) -> String {
+            #"{"limits":{"fileBytes":\#(fileBytes),"zipMembers":\#(zipMembers),"folderBytes":\#(folderBytes)},"files":["\#(verdict)"],"zipMembers":[]}"#
+        }
+        // Control: a good answer is the engine's.
+        XCTAssertEqual(LabFileReader.Rules(answer: answer(), files: files, members: []).source, .engine)
+        for bad in [answer(verdict: "maybe"), answer(fileBytes: 0), answer(fileBytes: LabFileReader.maxFileBytes + 1),
+                    answer(zipMembers: -1), answer(zipMembers: LabFileReader.maxFolderFiles + 1),
+                    answer(folderBytes: 0), answer(folderBytes: LabFileReader.maxFolderBytes + 1)] {
+            let rules = LabFileReader.Rules(answer: bad, files: files, members: [])
+            XCTAssertEqual(rules.source, .swift, bad)
+            XCTAssertEqual(rules.maxMemberBytes, LabFileReader.maxFileBytes, bad)
+        }
+    }
+
+    /// The production path refuses a file over its cap by its listed size, before reading it.
+    func testAPickedFileOverItsListedSizeIsRefusedUnread() async throws {
+        let engine = try HealthEngine()
+        let folder = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = folder.appending(path: "big.pdf")
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(LabFileReader.maxFileBytes + 1))
+        try handle.close()
+        let asked = Asked()
+        do {
+            _ = try await LabFileReader.documents(picked: url) { files, members in
+                await asked.add(files, members)
+                return await engine.uploadRules(files: files, members: members)
+            }
+            XCTFail("not refused")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, LabFileReader.Failure.tooLarge("big.pdf").localizedDescription)
+        }
+        let questions = await asked.questions
+        XCTAssertEqual(questions.map { $0.files }, [[File(name: "big.pdf", bytes: LabFileReader.maxFileBytes + 1)]], "asked once, by its listed size")
+    }
+
+    /// A picked file's original is kept as the file itself, opened again at save (keptAsFile).
+    func testAPickedFileKeepsItsOriginalAsTheFile() async throws {
+        let engine = try HealthEngine()
+        let folder = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = folder.appending(path: "scan.png")
+        try png.write(to: url)
+        let read = try await LabFileReader.documents(picked: url) { await engine.uploadRules(files: $0, members: $1) }
+        let original = try XCTUnwrap(read.first?.original)
+        guard case .file(let file, let scope) = original.source else { return XCTFail("kept as bytes, not the file") }
+        XCTAssertEqual(file, url)
+        XCTAssertEqual(scope, url)
+        XCTAssertEqual(original.size, png.count)
+        XCTAssertEqual(original.verifiedData(), png)
+    }
+
     /// A picked ZIP asks twice (its listed size, then its bytes and members) and reads by the answer.
     func testAPickedZipIsReadByTheRulesItIsAsked() async throws {
         let engine = try HealthEngine()
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Upload rules \(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let folder = try Self.folder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let url = folder.appending(path: "labs.zip")
         try Self.zip([("a.png", png), ("b.png", png), (".c.png", png)]).write(to: url)
@@ -58,7 +116,7 @@ final class UploadRulesDoorTests: XCTestCase {
         XCTAssertEqual(questions.last?.files.map(\.name), ["labs.zip", "labs.zip/a.png", "labs.zip/b.png", "labs.zip/.c.png"])
 
         // The reader follows the rules it is given, not its own: rules that keep no member read none.
-        let refuseAll = LabFileReader.Rules(source: .engine, file: { _, _ in "keep" }, member: { _ in "hidden" },
+        let refuseAll = LabFileReader.Rules(source: .engine, file: { _, _ in .keep }, member: { _ in .hidden },
                                             maxMemberBytes: 1 << 20, maxMembers: 10, maxTotalBytes: 1 << 20)
         await XCTAssertThrowsErrorAsync(try await LabFileReader.documents(picked: url) { _, _ in refuseAll })
     }
@@ -70,14 +128,22 @@ final class UploadRulesDoorTests: XCTestCase {
         func rows(_ section: String) -> [Row] { (table[section] as? Row)?["rows"] as? [Row] ?? [] }
         let files = rows("fileSizes").compactMap { row in (row["name"] as? String).map { File(name: $0, bytes: row["bytes"] as? Int ?? 0) } }
             + rows("fileKinds").compactMap { ($0["name"] as? String).map { File(name: $0, bytes: 1) } }
-        let members = rows("zipMembers").compactMap { $0["path"] as? String }
+            // Review R1: a combining mark after "." or in "__MACOSX", and a name of two dots and "zip".
+            + [File(name: "..zip", bytes: 15 * 1024 * 1024), File(name: ".\u{301}a.pdf", bytes: 1), File(name: "d/.\u{301}a.pdf", bytes: 1)]
+        let members = rows("zipMembers").compactMap { $0["path"] as? String } + [".\u{301}a.pdf", "d/.\u{301}a.pdf", "__MACOSX\u{301}/a.pdf"]
         XCTAssertFalse(files.isEmpty || members.isEmpty)
 
         let engine = try HealthEngine()
         let rules = engine.blocking { $0.uploadRules(files: files, members: members) }
         XCTAssertEqual(rules.source, .engine)
         for file in files { XCTAssertEqual(rules.file(file.name, file.bytes), LabFileReader.swiftVerdict(file.name, file.bytes), "\(file)") }
-        for path in members { XCTAssertEqual(rules.member(path) == "keep", LabFileReader.swiftMemberVerdict(path) == "keep", path) }
+        for path in members { XCTAssertEqual(rules.member(path), LabFileReader.swiftMemberVerdict(path), path) }
+    }
+
+    private static func folder() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Upload rules \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
     }
 
     private actor Asked {
