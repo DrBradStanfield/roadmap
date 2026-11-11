@@ -57,7 +57,7 @@ const BATCH_SIZE = 100;
 
 /** Platforms whose transcripts are private text on a 30-day clock. YouTube is
  *  absent on purpose: those turns are public comments. */
-const PURGED_PLATFORMS = ['shopify', 'discord'];
+export const PURGED_PLATFORMS = ['shopify', 'discord'];
 
 /** What a reader sees where a purged message used to be. The row is still
  *  there — the words are not. Anything rendering a transcript substitutes it. */
@@ -71,7 +71,7 @@ const ARCHIVE_WRITE_RESERVE_MS = 20_000;
 /** Questions held in memory per run; past it they count as skipped. */
 export const ARCHIVE_MAX_QUESTIONS = 200;
 /** Web chat surfaces and labels whose questions are copied (US-15 AC44). */
-const ARCHIVED_PLATFORMS = ['shopify', 'widget'];
+export const ARCHIVED_PLATFORMS = ['shopify', 'widget'];
 const ARCHIVED_CLASSIFICATIONS = ['ROUTE', 'MEASUREMENT'];
 
 /** The archive step's counts. Working means eligible = kept + skipped. */

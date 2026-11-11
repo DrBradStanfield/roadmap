@@ -36,7 +36,7 @@ import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../pac
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
-import { retentionOf } from '../lib/chat-retention';
+import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 
@@ -623,7 +623,7 @@ async function chatAction(request: Request, app: boolean) {
       // posture — a config slip can never silently produce a selling bot.
       const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
       const systemBlocks = buildSystemBlocks(context.userContextJson, {
-        surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null,
+        surfaceContext, savedChat: savedChatOf(retention), documentContent, orderSummary, blogArticles: articles?.content ?? null,
         subscriptionBlock: subscriptions ? formatSubscriptionBlock(subscriptions) : null,
       });
       const conversationMessages = buildConversationMessages(history, message);

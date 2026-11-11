@@ -7,9 +7,14 @@
  * - 'transcript': the bubble and the embed (US-15 AC8). The conversation and
  *   its messages, kept server-side.
  */
+import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
+
 export type Retention = 'none' | 'question-rows' | 'transcript';
 
 export function retentionOf({ app, widget }: { app: boolean; widget: boolean }): Retention {
   if (app) return 'none';
   return widget ? 'question-rows' : 'transcript';
 }
+
+/** The SAVED-CHAT block that tells the person what this mode keeps (C1). */
+export const savedChatOf = (retention: Retention) => savedChatBlock(SAVED_CHAT_BY_RETENTION[retention]);

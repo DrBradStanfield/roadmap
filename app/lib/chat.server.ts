@@ -297,7 +297,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; savedChat?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -325,10 +325,9 @@ export function buildSystemBlocks(
       text: KNOWLEDGE_OVERVIEW,
       cache_control: PROMPT_CACHE,
     }] : []),
-    ...(opts?.surfaceContext ? [{
-      type: 'text' as const,
-      text: opts.surfaceContext,
-    }] : []),
+    ...(opts?.surfaceContext ? [{ type: 'text' as const, text: opts.surfaceContext }] : []),
+    // C1: what this surface's chat leaves on our server (chat-save-answers.ts), right after the posture.
+    ...(opts?.savedChat ? [{ type: 'text' as const, text: opts.savedChat }] : []),
     {
       type: 'text',
       text: `## Current User Health Data\n\n${userContextJson}`,

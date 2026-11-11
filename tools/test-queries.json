@@ -9191,5 +9191,104 @@
       "avoid"
     ],
     "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-10 (adversary R1, collagen pilot): people with an egg allergy should avoid eggshell-membrane products. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "query": "Is this chat saved anywhere?",
+    "category": "saved-chat",
+    "source": "c1-2026-11-11",
+    "surface": "doctor",
+    "saved_chat": "none",
+    "answer_handles": [],
+    "must_mention": [
+      "not kept on our server",
+      "saved on this iphone",
+      "anthropic",
+      "drstanfield.com/pages/app-privacy"
+    ],
+    "must_not_mention": [
+      "chat-history.json",
+      "connect google drive",
+      "never kept in a dr brad account"
+    ],
+    "notes": "C1 saved-chat answer, 2026-11-11: The iPhone app keeps nothing on our server (US-52 AC5). The prompt's SAVED-CHAT block (app/lib/chat-save-answers.ts) must come back as written. Not run: paid runs need Brad's yes and a cost estimate."
+  },
+  {
+    "query": "Is this chat saved anywhere?",
+    "category": "saved-chat",
+    "source": "c1-2026-11-11",
+    "surface": "doctor",
+    "saved_chat": "question-rows",
+    "answer_handles": [],
+    "must_mention": [
+      "tool-page chats are saved in your own storage",
+      "30 days",
+      "no end date",
+      "where your health data lives"
+    ],
+    "must_not_mention": [
+      "chat-history.json",
+      "connect google drive",
+      "never kept in a dr brad account"
+    ],
+    "notes": "C1 saved-chat answer, 2026-11-11: The tool page's widget keeps only its question rows (US-15 AC7, AC44). The prompt's SAVED-CHAT block (app/lib/chat-save-answers.ts) must come back as written. Not run: paid runs need Brad's yes and a cost estimate."
+  },
+  {
+    "query": "Is this chat saved anywhere?",
+    "category": "saved-chat",
+    "source": "c1-2026-11-11",
+    "surface": "doctor",
+    "saved_chat": "transcript",
+    "answer_handles": [],
+    "must_mention": [
+      "stored on our server",
+      "30 days after your last message",
+      "signed in",
+      "no end date",
+      "where your health data lives"
+    ],
+    "must_not_mention": [
+      "chat-history.json",
+      "connect google drive",
+      "never kept in a dr brad account"
+    ],
+    "notes": "C1 saved-chat answer, 2026-11-11: The bubble and the embed keep the transcript (US-15 AC8). The prompt's SAVED-CHAT block (app/lib/chat-save-answers.ts) must come back as written. Not run: paid runs need Brad's yes and a cost estimate."
+  },
+  {
+    "query": "Is this chat saved anywhere?",
+    "category": "saved-chat",
+    "source": "c1-2026-11-11",
+    "surface": "doctor",
+    "saved_chat": "discord",
+    "answer_handles": [],
+    "must_mention": [
+      "30 days after your last message",
+      "discord keeps your messages"
+    ],
+    "must_not_mention": [
+      "chat-history.json",
+      "connect google drive",
+      "never kept in a dr brad account",
+      "no end date"
+    ],
+    "notes": "C1 saved-chat answer, 2026-11-11: The Discord bot: 30 days on our server, no archive copy. The prompt's SAVED-CHAT block (app/lib/chat-save-answers.ts) must come back as written. Not run: paid runs need Brad's yes and a cost estimate."
+  },
+  {
+    "query": "Is this conversation saved anywhere?",
+    "category": "saved-chat",
+    "source": "c1-2026-11-11",
+    "surface": "youtube",
+    "saved_chat": "youtube",
+    "youtube_video": "what-should-your-blood-pressure-actually-be",
+    "answer_handles": [],
+    "must_mention": [
+      "public on youtube",
+      "no end date"
+    ],
+    "must_not_mention": [
+      "chat-history.json",
+      "connect google drive",
+      "never kept in a dr brad account"
+    ],
+    "notes": "C1 saved-chat answer, 2026-11-11: The YouTube bot: public comments, kept with no end date. The prompt's SAVED-CHAT block (app/lib/chat-save-answers.ts) must come back as written. Not run: paid runs need Brad's yes and a cost estimate."
   }
 ]

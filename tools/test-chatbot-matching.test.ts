@@ -16,6 +16,7 @@ import { loadBlogArticle } from '../app/lib/matched-content';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import { resolveChatContext } from '../app/lib/chat.server';
 import { runRoadmap } from '../packages/health-core/src/run-roadmap';
+import { DISCORD_SAVED_CHAT, SAVED_CHAT_BY_RETENTION, YOUTUBE_SAVED_CHAT, savedChatBlock } from '../app/lib/chat-save-answers';
 
 interface Case { category: string; expected: string[]; must_mention?: string[] }
 
@@ -1020,4 +1021,76 @@ describe('test-chatbot-matching pending entries (US-50)', () => {
     expect(tm).toHaveLength(4);
     expect(tm.every(q => q.pending === 'US-50 masters-1 not merged')).toBe(true);
   });
+});
+
+// C1: a fixture's `saved_chat` adds production's SAVED-CHAT block right after the
+// posture, imported from app/lib/chat-save-answers.ts, and nothing else's. A youtube
+// fixture always gets YouTube's. A key production never sends on that surface exits.
+describe('test-chatbot-matching saved_chat (C1)', () => {
+  interface Entry { query: string; category: string; surface?: string; saved_chat?: string; youtube_video?: string; answer_handles?: string[]; user_context?: unknown; must_mention?: string[] }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const cases = all.filter(q => q.category === 'saved-chat');
+  const BLOCKS: Record<string, string> = { ...SAVED_CHAT_BY_RETENTION, discord: DISCORD_SAVED_CHAT, youtube: YOUTUBE_SAVED_CHAT };
+
+  /** Run the harness offline on the saved-chat category; `fixtures` (if given) replaces tools/test-queries.json. */
+  function run(fixtures?: Entry[]) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-saved-chat-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const fixtures = ${JSON.stringify(fixtures ?? null)};
+        const read = fs.readFileSync;
+        if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const system = Array.isArray(body.system) ? body.system.map(b => b.text) : body.system.split('\\n\\n---\\n\\n');
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ system }) + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'saved-chat', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 110_000 });
+      if (res.error) throw res.error;
+      let calls: Array<{ system: string[] }> = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('one fixture per sentence, each answer call carrying its own block right after the posture and no other', () => {
+    expect(cases.map(q => q.saved_chat).sort()).toEqual(Object.keys(BLOCKS).sort());
+    const { stderr, calls } = run();
+    expect(calls.length, stderr).toBe(cases.length);
+    const seen = calls.map(({ system }) => {
+      const posture = system.findIndex(t => t.startsWith('## SURFACE CONTEXT — Dr Brad education assistant'));
+      expect(posture).toBeGreaterThan(0);
+      const key = Object.keys(BLOCKS).find(k => system[posture + 1] === savedChatBlock(BLOCKS[k]))!;
+      expect(key, system[posture + 1]?.slice(0, 80)).toBeDefined();
+      for (const [other, sentence] of Object.entries(BLOCKS)) if (other !== key) expect(system.join('\n')).not.toContain(sentence);
+      return key;
+    });
+    expect(seen.sort()).toEqual(Object.keys(BLOCKS).sort());
+  }, 120_000);
+
+  it.each([
+    [{ surface: 'doctor', saved_chat: 'youtube' }],
+    [{ surface: 'brand', saved_chat: 'question-rows' }],
+    [{ surface: 'doctor', saved_chat: 'transcript', user_context: {} }],
+    [{ surface: 'doctor', saved_chat: 'toString' }],
+    [{ saved_chat: 'none' }],
+  ])('%j exits before any API call', (extra) => {
+    const { status, stderr, calls } = run([{ query: 'is this saved?', category: 'saved-chat', answer_handles: [], must_mention: ['x'], ...extra }]);
+    expect(status).toBe(1);
+    expect(stderr).toMatch(/saved_chat "[^"]+" is not one production sends on surface/);
+    expect(calls).toEqual([]);
+  }, 120_000);
 });

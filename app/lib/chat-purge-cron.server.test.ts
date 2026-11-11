@@ -170,8 +170,9 @@ vi.mock('./supabase.server', () => ({
 
 import * as Sentry from '@sentry/react-router';
 import {
-  ARCHIVE_MAX_QUESTIONS, clearConversationMatchEvents, purgeOldChatText, purgeWithLock, PURGE_AFTER_DAYS, PURGED_TEXT,
+  ARCHIVE_MAX_QUESTIONS, ARCHIVED_PLATFORMS, clearConversationMatchEvents, purgeOldChatText, purgeWithLock, PURGE_AFTER_DAYS, PURGED_PLATFORMS, PURGED_TEXT,
 } from './chat-purge-cron.server';
+import { DISCORD_SAVED_CHAT, YOUTUBE_SAVED_CHAT } from './chat-save-answers';
 import { tryAcquireCronLock } from './supabase.server';
 import { scrubQuestion } from './chat-question-scrub.server';
 import { recordServerEvent } from './product-events.server';
@@ -609,5 +610,31 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     store.chat_match_events = store.chat_match_events.filter((r) => r.id !== 'other-user-same-conv');
     await purgeOldChatText(NOW);
     expect(archived()).toEqual(['scrubbed: question widget-measure']);
+  });
+});
+
+// C1: the Discord and YouTube saved-chat sentences (chat-save-answers.ts) describe
+// this cron. Each test fails when the cron changes until its sentence does too.
+describe('the saved-chat sentences match the cron (C1)', () => {
+  it('ARCHIVED_PLATFORMS: adding a platform fails until the Discord sentence changes', async () => {
+    // A Discord copy with no end date would make "up to 30 days" false. A new platform
+    // means re-reading the Discord sentence (and the guide), then updating this pin.
+    expect({ ARCHIVED_PLATFORMS, DISCORD_SAVED_CHAT }).toEqual({
+      ARCHIVED_PLATFORMS: ['shopify', 'widget'],
+      DISCORD_SAVED_CHAT: 'Our server keeps the text of this conversation for up to 30 days after your last message in it. Discord keeps your messages under its own terms.',
+    });
+    process.env.CHAT_QUESTION_ARCHIVE = 'on';
+    store.chat_match_events = [row('discord-route', 40, { platform: 'discord', first: 'q', recent: ['q'] })];
+    await purgeOldChatText(NOW);
+    expect(store.chat_question_archive).toEqual([]);
+    expect(byId('discord-route')).toMatchObject({ message: null, router_raw: null, router_error: null });
+  });
+
+  it('fails if the cron starts purging YouTube transcripts while the YouTube sentence says "no end date"', async () => {
+    expect(YOUTUBE_SAVED_CHAT).toContain('no end date');
+    expect(PURGED_PLATFORMS).not.toContain('youtube');
+    await purgeOldChatText(NOW);
+    expect(msg('msg-youtube').content).toBe('text msg-youtube');
+    expect(conv('conv-youtube-old').title).toBe('title conv-youtube-old');
   });
 });
