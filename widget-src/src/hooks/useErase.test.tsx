@@ -23,10 +23,12 @@ vi.mock('../lib/roadmap-data', () => ({
   getBackendKind: () => 'local',
 }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 import { useErase } from './useErase';
 import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 
 const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
@@ -275,8 +277,12 @@ describe('US-16 AC2a: this tab\'s erase', () => {
 
   it('US-16 AC2f: an erase whose write throws ends, unlocked, and says it failed', async () => {
     const { doors, result } = setup();
-    store.next = () => Promise.reject(new Error('network'));
+    const thrown = new Error('network');
+    store.next = () => Promise.reject(thrown);
+    vi.mocked(Sentry.captureException).mockClear();
     await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureException).toHaveBeenCalledWith(thrown, { tags: { area: 'erase', op: 'delete-all' } });
     expect(result.current.erasing).toBe(false);
     expect(doors.forget).not.toHaveBeenCalled();
     expect(alerts).toEqual([ERASE_FAILED]);

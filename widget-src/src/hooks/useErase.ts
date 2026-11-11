@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
 
@@ -103,8 +104,11 @@ export function useErase(props: EraseDoorProps): Erase {
     if (store.getSnapshot().phase === 'erasing' || !window.confirm(ERASE_CONFIRM)) return false;
     const before = getEraseIdentity();
     store.dispatch({ type: 'own-start' });
-    // A throw is a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
-    const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch(() => ({ success: false, chatErased: false }));
+    // A throw is reported, then taken as a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
+    const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch((error: unknown) => {
+      Sentry.captureException(error, { tags: { area: 'erase', op: 'delete-all' } });
+      return { success: false, chatErased: false };
+    });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
     // shows that copy too (US-16 AC2a). A refused erase moved nothing.
