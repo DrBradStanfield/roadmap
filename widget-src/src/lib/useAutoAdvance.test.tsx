@@ -84,6 +84,12 @@ describe('US-02 AC6b: the wait ends in a jump only if the field has the focus', 
     expect(jumped()).toBe(!away || back);
     if (away && !back) expect(focused()).toBe(elsewhere);
   });
+  it('the first-time systolic box, "80", the focus moves to nothing (a press on blank page): no jump', () => {
+    render(<Panel start={DONE} stage={4}/>); type($('#systolicBp'), '80');
+    act(() => { $('#systolicBp').blur(); });
+    wait(900);
+    expect(focused()).toBe(document.body);
+  });
 });
 
 describe('US-02 AC6, AC6b: what does not wait, or never jumps, is unchanged', () => {
