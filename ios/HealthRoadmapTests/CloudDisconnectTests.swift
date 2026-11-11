@@ -28,12 +28,56 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         try? FileManager.default.removeItem(at: folder)
     }
 
-    /// The app's parts on the test folder; `tokens` is the Keychain the OAuth client keeps to.
-    private func app(connected: Bool = true, tokens kept: TokenStore? = nil) throws -> (store: RecordStore, sync: CloudSync) {
+    /// The app's parts on the test folder; `tokens` is the Keychain the OAuth client keeps to,
+    /// or `oauth` the client itself.
+    private func app(connected: Bool = true, tokens kept: TokenStore? = nil, oauth: OAuthClient? = nil) throws -> (store: RecordStore, sync: CloudSync) {
         if connected { try write("dropbox", "sync-provider") }
         let engine = try HealthEngine(session: StubHTTP.session())
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
-        return (store, CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: kept ?? tokens, session: StubHTTP.session())))
+        let client = oauth ?? OAuthClient(tokens: kept ?? tokens, session: StubHTTP.session())
+        return (store, CloudSync(engine: engine, store: store, oauth: client))
+    }
+
+    /// Google's token and account answers beside the fake Dropbox, so a Drive sign-in completes.
+    private func answerGoogleToo() {
+        let fake = dropbox!
+        let scope = CloudProvider.driveFileScope
+        StubHTTP.handler = { request in
+            switch (request.url.host, request.url.path) {
+            case ("oauth2.googleapis.com", "/token"):
+                .init(body: Data(#"{"access_token":"token-g","refresh_token":"r-g","expires_in":3600,"scope":"\#(scope)"}"#.utf8))
+            case ("www.googleapis.com", "/drive/v3/about"):
+                .init(body: Data(#"{"user":{"permissionId":"test-account-b"}}"#.utf8))
+            default:
+                fake.answer(request)
+            }
+        }
+    }
+
+    /// Connects Google Drive with a sign-in that returns at once.
+    private func connectDrive(_ sync: CloudSync) async throws {
+        answerGoogleToo()
+        let drive = heldSignIn()
+        drive.release()
+        try await sync.connect(.googleDrive, authenticate: drive.authenticate)
+        XCTAssertEqual(sync.provider, .googleDrive)
+    }
+
+    /// Dropbox connected and open; its Disconnect meets a Keychain that refuses to delete, so
+    /// Dropbox's token is left. The Keychain then works again.
+    private func dropboxTokenLeftByADisconnect() async throws -> CloudSync {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        var keeping = tokens!
+        keeping.failsDeletes = true
+        let oauth = OAuthClient(tokens: keeping, session: StubHTTP.session())
+        let (_, sync) = try app(oauth: oauth)
+        await sync.start()
+        _ = await sync.disconnectOutcome()
+        XCTAssertNil(sync.provider)
+        XCTAssertNotNil(tokens.load(.dropbox), "the Keychain kept it")
+        oauth.tokens.failsDeletes = false
+        return sync
     }
 
     /// The next launch: a fresh engine, store and CloudSync on the same folder and Keychain.
@@ -202,6 +246,39 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         XCTAssertNil(store.cloudErase)
         XCTAssertFalse(exists("sync-provider"))
         XCTAssertNil(tokens.load(.dropbox))
+    }
+
+    /// Codex and adversary, round 2 on PR 1350: a token left by a failed delete never outlives
+    /// the next cloud. Connect Google Drive, then Disconnect it: no token of either is left.
+    func testATokenLeftByAFailedDeleteGoesWithTheNextCloudsDisconnect_US25_AC11m() async throws {
+        let sync = try await dropboxTokenLeftByADisconnect()
+        try await connectDrive(sync)
+        _ = await sync.disconnectOutcome()
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(tokens.load(.dropbox), "Dropbox's left token is gone")
+        XCTAssertNil(tokens.load(.googleDrive), "and Drive's")
+    }
+
+    /// The same, sooner: once Google Drive's connect has kept its tokens, Dropbox's left token goes.
+    func testATokenLeftByAFailedDeleteGoesOnceAnotherCloudConnects_US25_AC11m() async throws {
+        let sync = try await dropboxTokenLeftByADisconnect()
+        try await connectDrive(sync)
+        XCTAssertNil(tokens.load(.dropbox), "Dropbox's left token is gone")
+        XCTAssertNotNil(tokens.load(.googleDrive), "Drive's is kept")
+    }
+
+    /// A connect's sweep never touches the connected cloud's token: with a stale Dropbox token
+    /// on a phone with no cloud, connecting Google Drive removes Dropbox's and keeps Drive's,
+    /// and a relaunch reads Drive connected.
+    func testAConnectSweepsOtherCloudsTokensAndKeepsItsOwn_US25_AC11m() async throws {
+        let (_, sync) = try app(connected: false)
+        XCTAssertNotNil(tokens.load(.dropbox), "a stale token with no cloud on file")
+        try await connectDrive(sync)
+        XCTAssertNil(tokens.load(.dropbox), "the stale token is gone")
+        XCTAssertEqual(tokens.load(.googleDrive)?.refreshToken, "r-g", "the connected cloud's token is kept")
+        let next = try relaunch()
+        XCTAssertEqual(next.provider, .googleDrive)
+        XCTAssertEqual(tokens.load(.googleDrive)?.refreshToken, "r-g")
     }
 
     // MARK: Connect
