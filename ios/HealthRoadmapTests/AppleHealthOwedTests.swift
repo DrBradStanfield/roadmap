@@ -43,6 +43,18 @@ final class AppleHealthOwedTests: XCTestCase {
         }
     }
 
+    /// An id Health deleted while a newer version of it was saved (a late save landing during the
+    /// pay) stays owed at that version, so the pay counts as failed: after one refused pay the
+    /// footer shows. The next pay deletes that version and clears it, as a pass never writes an
+    /// owed id again (only a save already in flight can land late).
+    func testAReVersionedPayCountsAsFailedAndTheNextPayClearsIt_US72_AC16() {
+        let refusedOnce = Owed(ids: ["a": 1], failedPays: 1)
+        let reVersioned = refusedOnce.owing(2, for: "a").paying(["a": 1])
+        XCTAssertEqual(reVersioned, Owed(ids: ["a": 2], failedPays: 2))
+        XCTAssertTrue(reVersioned.showsFooter, "shown until the next pay")
+        XCTAssertEqual(reVersioned.paying(["a": 2]), Owed(), "the next pay clears it")
+    }
+
     /// A new erase starts the count again; a save owed after it keeps it.
     func testANewEraseResetsTheCountAndASaveKeepsIt_US72_AC16() {
         let stuck = Owed(ids: ["a": 1], failedPays: 2)
