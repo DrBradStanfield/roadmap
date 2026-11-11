@@ -1337,6 +1337,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'my vitamin d50 is low',
       'ldl,140 is wrong',
       'ldl.140 is wrong',
+      'ft4,15 is missing',
       // The cost: digits glued to a word that is no name are a number too, and
       // a name that ends in a digit gives up the digits after it (t3 and 2).
       'ldl in tab2 is blank',
@@ -1344,6 +1345,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     ];
     expect(Object.fromEntries(refused.map((d) => [d, outcome(d)])))
       .toEqual(Object.fromEntries(refused.map((d) => [d, 'health-value'])));
+    // The split comes after the longest name: b12 and 300, not b1 and 2300.
+    expect(reportFeedback({ ...GOOD, detail: 'b12300 is missing' }, NOW).text).toContain('“b12 300”');
     // A whole name keeps its digits; a number inside a longer name is that name;
     // a glued number with no name near it files.
     const filed = [
