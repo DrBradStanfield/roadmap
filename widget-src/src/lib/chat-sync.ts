@@ -14,7 +14,7 @@ export type SyncMessage =
   // read only from an older bundle's message, which has no `sending`; it can go
   // once no cached bundle without `sending` can still be open. `erase` is the
   // erase the sender's screen shows, null from a surface with none (the bubble,
-  // the embed): see useChatState for what a widget mirrors (US-15 AC62).
+  // the embed); a widget mirrors only a sender at its own erase (US-15 AC62).
   | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; sending?: boolean; error: string | null; erase?: string | null }; ts: number }
   | { instanceId: string; type: 'thread-new'; payload: Record<string, never>; ts: number }
   | { instanceId: string; type: 'thread-deleted'; payload: { id: string }; ts: number };

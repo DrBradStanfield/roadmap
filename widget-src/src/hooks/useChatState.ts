@@ -78,13 +78,13 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit, erase }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
-  // The erase the conversation belongs to, the one it loaded with, the thread on
-  // screen when the last erase cleared it, and whether this tab's erase has run
-  // since the last move: a move it made is its own, said by its alert (US-15 AC62).
+  // The erase the conversation belongs to, the thread on screen when the last
+  // erase cleared it, and whether this tab's erase has run since the last move:
+  // a move it made is its own, said by its alert (US-15 AC62). `ownRun` and the
+  // page's erasing copy are a hidden mode owed by PR 1311 (lead C21): not a pattern to copy.
   const shown = erase?.shown;
   const erasing = erase?.erasing ?? false;
   const eraseRef = useRef(shown);
-  const loadedErase = useRef(shown);
   const clearedFrom = useRef<string | null>(null);
   const ownRun = useRef(false);
   const erasingRef = useRef(erasing);
@@ -164,11 +164,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       if (msg.type === 'state') {
         const { payload } = msg;
-        // A tab at another erase, or one with none (the bubble, the embed) once this
-        // tab's erase moved: its busy state counts, its conversation is not this one (US-15 AC62).
-        const theirs = payload.erase ?? undefined;
-        const mine = eraseRef.current;
-        if (mine !== undefined && (theirs === undefined ? mine !== loadedErase.current : theirs !== mine)) {
+        // A tab at another erase, or one that names none (the bubble, the embed, an older
+        // bundle): its busy state counts, its conversation never mirrors in (US-15 AC62).
+        if (eraseRef.current !== undefined && (payload.erase ?? undefined) !== eraseRef.current) {
           onRemote(msg.instanceId, payload.sending, payload.isLoading);
           return;
         }

@@ -92,4 +92,4 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
 export const RECORD_CHANGED_SINCE_ASKED = 'Not saved: your record changed since you asked.';
 
 /** The web chat, cleared by an erase another device made (US-15 AC62). */
-export const CHAT_CLEARED_BY_REMOTE_ERASE = 'Your data was deleted on another device, so this conversation was cleared.';
+export const CHAT_CLEARED_BY_REMOTE_ERASE = 'Your data was deleted elsewhere, so this conversation was cleared.';

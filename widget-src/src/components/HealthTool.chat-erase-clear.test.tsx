@@ -23,7 +23,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, getShownErase, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
 import { sendMessage } from '../lib/chat-api';
 import { CHAT_CLEARED_BY_REMOTE_ERASE, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 
@@ -230,14 +230,15 @@ describe('US-15 AC62: another tab\'s conversation from before the erase is not m
     expect(JSON.stringify(next.history ?? [])).not.toContain('other tab');
   });
 
-  // The site bubble and the chatbot embed send erase: null (older bundles send none): the
-  // bubble B mirrored this tab T, T erases, B types and sends from its erased conversation.
+  // The site bubble and the chatbot embed send erase: null; an older bundle sends none.
+  // Neither names this tab's erase, so neither's conversation ever mirrors in, before or
+  // after an erase: bubble-to-tool thread sharing waits for their own erase mark (lead C12).
   for (const [label, erase] of [['null, as the bubble and the embed send it', null], ['absent, as an older bundle sends it', undefined]] as const) {
-    it(`a surface with no erase (${label}): after this tab's erase, its conversation stays out`, async () => {
+    it(`a sender with no erase (${label}): its conversation never mirrors in, and none of it goes out as history`, async () => {
       const view = await userOnStatin();
       act(() => sync.hear!(otherTabState(erase)));
       await wait(100);
-      expect(chatText(view)).toContain('First question from the other tab');
+      expect(chatText(view)).not.toContain('First question from the other tab');
       await eraseHere();
       act(() => sync.hear!(otherTabState(erase, 'First question from the other tab, and the bubble asks again')));
       await wait(100);
@@ -248,16 +249,34 @@ describe('US-15 AC62: another tab\'s conversation from before the erase is not m
     });
   }
 
-  it('control: with no erase since this tab loaded, a surface with no erase (null) is mirrored', async () => {
-    const view = await userOnStatin();
+  it('a page loaded after another device\'s erase (a reload) mirrors nothing from a null sender', async () => {
+    const first = await userOnStatin();
+    await otherDeviceErases();
+    first.unmount();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(view.container.querySelector('.health-tool-chat textarea')).toBeTruthy());
+    await wait(600);
     act(() => sync.hear!(otherTabState(null)));
     await wait(100);
-    expect(chatText(view)).toContain('First question from the other tab');
+    expect(chatText(view)).not.toContain('First question from the other tab');
   });
 
-  it('control: an older bundle\'s state, which names no erase, is mirrored as before', async () => {
+  it('a null sender\'s busy state still shows: the chat waits while its reply is in flight', async () => {
     const view = await userOnStatin();
-    act(() => sync.hear!(otherTabState()));
+    const busy = otherTabState(null);
+    act(() => sync.hear!({ ...busy, payload: { ...busy.payload, isLoading: true, sending: true } }));
+    await wait(100);
+    expect(chatPanel(view).querySelector<HTMLTextAreaElement>('textarea')!.disabled).toBe(true);
+    expect(chatText(view)).not.toContain('First question from the other tab');
+    act(() => sync.hear!(otherTabState(null)));
+    await wait(100);
+    expect(chatPanel(view).querySelector<HTMLTextAreaElement>('textarea')!.disabled).toBe(false);
+  });
+
+  it('control: a sender at this tab\'s erase shares its conversation', async () => {
+    const view = await userOnStatin();
+    await eraseHere();
+    act(() => sync.hear!(otherTabState(getShownErase())));
     await wait(100);
     expect(chatText(view)).toContain('First question from the other tab');
   });

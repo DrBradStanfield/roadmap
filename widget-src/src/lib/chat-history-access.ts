@@ -69,7 +69,8 @@ let erasures = 0;
 export function beginChatErase(): void {
   erasures += 1;
 }
-/** This page's erase is running, from the confirm to its result. */
+/** This page's erase is running, from the confirm to its result: a copy of the
+ *  page's erasing mode, owed by PR 1311 (lead C21), not a pattern to copy. */
 let erasing = false;
 export async function whileErasing<T>(run: () => Promise<T>): Promise<T> {
   erasing = true;
