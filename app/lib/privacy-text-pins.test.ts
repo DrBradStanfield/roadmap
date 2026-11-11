@@ -1,6 +1,6 @@
 /**
  * US-15 (what chat leaves behind) and US-32 (the report_feedback guard's limits): pins the
- * privacy sentences ruled for PR 1223 round 2 (the saved-chat answer itself waits for C1), so a later edit cannot quietly restore an
+ * privacy sentences ruled for PR 1223 round 2 (the saved-chat answer per surface: api.chat-saved-chat.test.ts, C1), so a later edit cannot quietly restore an
  * overclaim. Static checks on the prompt files, the guides and the reminders disclosure.
  */
 import { describe, it, expect } from 'vitest';

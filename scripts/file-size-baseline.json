@@ -31,7 +31,7 @@
     "app/lib/anthropic.server.ts": 727,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,
-    "app/lib/chat.server.ts": 708,
+    "app/lib/chat.server.ts": 707,
     "widget-src/src/storage/roadmap-store.ts": 684,
     "packages/health-core/src/types.ts": 668,
     "ios/HealthRoadmap/MyData/MyDataView.swift": 657,
