@@ -438,13 +438,13 @@ async function chatAction(request: Request, app: boolean) {
     // for the dedup check below, created_at for its time window.
     const retention = retentionOf({ app, widget: body.localFirst === true });
     const widget = retention !== 'transcript';
-    if (conversationId && !widget) {
+    if (conversationId && retention === 'transcript') {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
     }
     let history: Turn[] = widget ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
-    if (conversationId && !widget) {
+    if (conversationId && retention === 'transcript') {
       const { data: historyRows, error: historyError } = await auth.client
         .from('chat_messages')
         .select('role, content, created_at, is_fallback, failure_mode')
@@ -564,7 +564,7 @@ async function chatAction(request: Request, app: boolean) {
       // Create or validate conversation. A widget conversation exists only in the
       // user's file; the id here is a grouping key for its telemetry rows.
       let activeConversationId = conversationId;
-      if (!activeConversationId && widget) activeConversationId = crypto.randomUUID();
+      if (!activeConversationId && retention !== 'transcript') activeConversationId = crypto.randomUUID();
       if (!activeConversationId) {
         const title = generateTitle(message);
         const { data: conv, error: convError } = await auth.client
@@ -581,7 +581,7 @@ async function chatAction(request: Request, app: boolean) {
       }
 
       // Insert user message (history already loaded above for existing convs)
-      if (!widget) {
+      if (retention === 'transcript') {
         const { error: userMsgError } = await auth.client
           .from('chat_messages')
           .insert({
@@ -663,7 +663,7 @@ async function chatAction(request: Request, app: boolean) {
 
       // The assistant message id doubles as the telemetry row's message_id on
       // the stored surfaces; the widget has no message row, so null there.
-      const assistantMessageId = widget ? null : crypto.randomUUID();
+      const assistantMessageId = retention === 'transcript' ? crypto.randomUUID() : null;
 
       reportChatFallback({
         completion,

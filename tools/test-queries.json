@@ -1504,25 +1504,6 @@
     "notes": "Bot has no info about this brand and must not fabricate attributes. Audit conv 6 turn 6. Expected empty handles until 2026-09-29, a routing expectation older than router rule 6 ('which brand' questions about a covered topic route): the protein powder entries carry what to look for in any brand. Changed 2026-09-29 in the Sonnet 5.5 router move; the case's point is that the answer invents nothing about this brand. 2026-09-29: must_mention \"don't have information\" dropped; Sonnet 5.5 refuses in varying words (\"isn't in my loaded context, so I can't comment\") and the harm guarded here is an invented product claim, which must_not_mention covers."
   },
   {
-    "query": "Can I save this chat? It's been really helpful.",
-    "expected": [],
-    "category": "conversation-persistence",
-    "source": "audit-2026-05-14",
-    "must_mention": [
-      "Yes"
-    ],
-    "must_not_mention": [
-      "account.drstanfield.com",
-      "screenshot",
-      "copy-paste",
-      "email it to yourself",
-      "I don't have the ability",
-      "isn't being saved",
-      "is not being saved"
-    ],
-    "notes": "The scripted saved-chat answer in chat-system-prompt.md (Conversation persistence). It is not yet surface-aware (ledger C1); this case follows the answer on main. The retired v1 account and ghost-session model must not come back. Audit conv 6."
-  },
-  {
     "query": "Can I save this chat?",
     "expected": [],
     "category": "router-conversational",

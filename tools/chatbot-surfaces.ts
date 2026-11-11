@@ -24,8 +24,9 @@
  * 'question-rows' (the tool page's widget), 'transcript' (the bubble and the
  * embed), 'discord' or 'youtube'. A youtube fixture always gets YouTube's, as
  * runPipeline sends it; a brand fixture takes only 'transcript' (microvitamin.com
- * runs the bubble alone), and a user_context fixture only 'none' or
- * 'question-rows' (only the app and the widget send one).
+ * runs the bubble alone), and a user_context fixture any but 'discord' (the app,
+ * the widget, the bubble and the embed all send one, US-15 AC10). Left out, it
+ * defaults as production would send it (see SAVED_CHAT_DEFAULT).
  */
 import fs from 'fs';
 import path from 'path';
@@ -82,14 +83,21 @@ export function loadYouTubeVideos<Q extends SurfaceFixture>(queries: Q[]): Map<Q
 
 const SAVED_CHATS: Record<string, string> = { ...SAVED_CHAT_BY_RETENTION, discord: DISCORD_SAVED_CHAT, youtube: YOUTUBE_SAVED_CHAT };
 
+/** The block a fixture with no saved_chat gets, mirroring the production route that sends its prompt. */
+const SAVED_CHAT_DEFAULT = (q: SurfaceFixture): string | undefined =>
+  q.surface === 'youtube' ? 'youtube' // youtube-bot-pipeline.server.ts runPipeline, always YouTube's
+    : q.surface === 'brand' ? 'transcript' // api.chat.ts with CHAT_SURFACE=brand: microvitamin.com runs only the bubble
+      : q.surface === 'doctor' && q.user_context !== undefined ? 'question-rows' // api.chat.ts with localFirst: the tool page's widget turn
+        : undefined; // a doctor fixture with no context, or no surface: no block, as before C1
+
 /** Each fixture's SAVED-CHAT block, or the first fixture production could never send it with. */
 export function loadSavedChats<Q extends SurfaceFixture>(queries: Q[]): Map<Q, string> | string {
   const blocks = new Map<Q, string>();
   for (const q of queries) {
-    const key = q.saved_chat ?? (q.surface === 'youtube' ? 'youtube' : undefined);
+    const key = q.saved_chat ?? SAVED_CHAT_DEFAULT(q);
     if (key === undefined) continue;
     if (!Object.hasOwn(SAVED_CHATS, key) || q.surface === undefined || (q.surface === 'youtube') !== (key === 'youtube')
-      || (q.surface === 'brand' && key !== 'transcript') || (q.user_context !== undefined && !['none', 'question-rows'].includes(key))) {
+      || (q.surface === 'brand' && key !== 'transcript') || (q.user_context !== undefined && key === 'discord')) {
       return `saved_chat "${key}" is not one production sends on surface "${q.surface}", on: ${q.query}`;
     }
     blocks.set(q, savedChatBlock(SAVED_CHATS[key]));

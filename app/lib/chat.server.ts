@@ -297,7 +297,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; savedChat?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; savedChat: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -326,7 +326,7 @@ export function buildSystemBlocks(
       cache_control: PROMPT_CACHE,
     }] : []),
     ...(opts?.surfaceContext ? [{ type: 'text' as const, text: opts.surfaceContext }] : []),
-    // C1: what this surface's chat leaves on our server (chat-save-answers.ts), right after the posture.
+    // C1: what this surface's chat leaves on our server (chat-save-answers.ts), right after the posture. Required in opts: a caller that passes a posture cannot leave it out.
     ...(opts?.savedChat ? [{ type: 'text' as const, text: opts.savedChat }] : []),
     {
       type: 'text',

@@ -1,9 +1,11 @@
 /**
- * C1: every surface's assembled prompt carries its own saved-chat sentence
- * (chat-save-answers.ts), right after the posture, and none of the other four.
- * The real buildSystemBlocks and getChatCompletion run; the classifier, the
- * database, the Shopify check and the network are stubbed. The old scripted
- * answer ("never to a Dr Brad / MicroVitamin server account") is gone from all five.
+ * C1 (US-15 AC59, US-52 AC15): every surface's assembled prompt carries its own
+ * saved-chat sentence (chat-save-answers.ts), right after the posture, and none
+ * of the other four. The real buildSystemBlocks and getChatCompletion run; the
+ * classifier, the database, the Shopify check and the network are stubbed. The
+ * old claims ("never to a Dr Brad / MicroVitamin server account", "never in a Dr
+ * Brad server account", "migrates to your account") are gone from every prompt,
+ * the brand bubble's included.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -37,7 +39,7 @@ process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 import { action } from './api.chat';
 import { platformChatCompletion } from '../lib/platform-chat.server';
 import { runPipeline } from '../lib/youtube-bot.server';
-import { DOCTOR_POSTURE } from '../lib/chat.server';
+import { BRAND_POSTURE, DOCTOR_POSTURE } from '../lib/chat.server';
 import { DISCORD_SAVED_CHAT, SAVED_CHAT_BY_RETENTION, YOUTUBE_SAVED_CHAT, savedChatBlock } from '../lib/chat-save-answers';
 
 let bodies: () => Array<{ system: Array<{ text: string }> }>;
@@ -78,7 +80,12 @@ const surfaces: Array<[keyof typeof ALL, () => Promise<unknown>]> = [
   ['youtube', () => runPipeline(thread, entry, 'Video body')],
 ];
 
-describe('C1: one saved-chat sentence per surface in the assembled prompt', () => {
+/** Claims no assembled prompt may carry: each contradicts a surface's SAVED-CHAT block (adversary R1, Fable 2026-11-11). */
+const RETIRED = ['never to a Dr Brad / MicroVitamin server account', 'never in a Dr Brad server account', 'migrates to your account', 'chat-history.json'];
+// The doctor posture's "where's my data" line, exactly as Fable ruled it (C1 fix round).
+const WHERES_MY_DATA = "'Where's my data' questions → the user's health record lives in their OWN storage, not on our server. For what this chat leaves on our server, give the SAVED-CHAT block's text as written.";
+
+describe('C1: one saved-chat sentence per surface in the assembled prompt (US-15 AC59, US-52 AC15)', () => {
   it.each(surfaces)('%s: its own sentence, right after the posture, and none of the other four', async (surface, run) => {
     await run();
     expect(bodies()).toHaveLength(1);
@@ -90,9 +97,21 @@ describe('C1: one saved-chat sentence per surface in the assembled prompt', () =
     for (const [other, sentence] of Object.entries(ALL)) {
       if (other !== surface) expect(system, `${surface} carries the ${other} sentence`).not.toContain(sentence);
     }
-    expect(system).not.toContain('never to a Dr Brad / MicroVitamin server account');
-    expect(system).not.toContain('chat-history.json');
+    for (const claim of RETIRED) expect(system, `${surface} still says "${claim}"`).not.toContain(claim);
+    expect(system).toContain(WHERES_MY_DATA);
     expect(system).toContain("give the SAVED-CHAT block's text as written, and add nothing about storage beyond it");
+  });
+
+  it('the brand bubble (microvitamin.com): the bubble sentence after the brand posture, and no retired claim', async () => {
+    vi.stubEnv('CHAT_SURFACE', 'brand');
+    try {
+      await chat({ sessionToken: 'tok' });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    const texts = bodies()[0].system.map((b) => b.text);
+    expect(texts[texts.indexOf(BRAND_POSTURE) + 1]).toBe(savedChatBlock(ALL.bubble));
+    for (const claim of RETIRED) expect(texts.join('\n'), claim).not.toContain(claim);
   });
 
   it('the five sentences are distinct', () => {
