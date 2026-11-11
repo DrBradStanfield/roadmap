@@ -67,8 +67,8 @@ function splitTrailingNumber(word: string): string[] {
   // A word holds only a-z, digits and a comma or dot, so a letter is anything from "a" up.
   let end = word.length;
   while (end > 0 && word[end - 1] < 'a') end--;
-  const number = end > 0 && !METRIC_WORDS.has(word) && TRAILING_NUMBER.exec(word.slice(end));
-  if (!number) return [word];
+  const number = end > 0 && TRAILING_NUMBER.exec(word.slice(end));
+  if (!number || METRIC_WORDS.has(word)) return [word];
   for (let cut = LONGEST_NAME; cut > end; cut--) {
     const value = METRIC_WORDS.has(word.slice(0, cut)) && TRAILING_NUMBER.exec(word.slice(cut));
     if (value) return [word.slice(0, cut), value[1]];
