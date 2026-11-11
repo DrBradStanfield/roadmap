@@ -1,5 +1,5 @@
 /**
- * docs/untangle/README.md: the untangle ledgers keep one file per row, so two PRs collide only when they touch the
+ * US-64 AC31, docs/untangle/README.md: the untangle ledgers keep one file per row, so two PRs collide only when they touch the
  * same id. Every file is the header plus one row named by its id, and the old single CSVs stay gone.
  */
 import { describe, it, expect } from 'vitest';
@@ -29,12 +29,14 @@ function fields(line: string): string[] {
   return [...out, cur];
 }
 
-describe('untangle ledgers: one file per row', () => {
+describe('untangle ledgers: one file per row (US-64 AC31)', () => {
   for (const [name, header] of Object.entries(LEDGERS)) {
     it(`${name}/: every file is the header plus one row whose id is the file name`, () => {
-      const files = readdirSync(join(DIR, name));
+      // Dotfiles (a Finder .DS_Store, gitignored) are not ledger rows; every other entry must be one.
+      const files = readdirSync(join(DIR, name)).filter((f) => !f.startsWith('.'));
       expect(files.length).toBeGreaterThan(0);
       for (const f of files) {
+        expect(f, `${name}/${f}: every non-dot entry is a .csv`).toMatch(/\.csv$/);
         expect(f, `${name}/${f}`).toMatch(/^[A-Za-z0-9][A-Za-z0-9._-]*\.csv$/);
         const lines = readFileSync(join(DIR, name, f), 'utf8').split('\n');
         expect(lines, `${name}/${f}: header, one row, final newline`).toHaveLength(3);

@@ -5,8 +5,9 @@
 #   sh tools/wait-run.sh deploy <run-id>   wait until the run completes; print its conclusion, head sha, each
 #                                          job's name=conclusion and the live healthz status
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
-#                                          and mergeability; a PR in conflict with main gets no CI run, so it
-#                                          says so and exits 1 at once
+#                                          and mergeability; while checks are unfinished, a PR GitHub reports
+#                                          in conflict with main on two polls in a row gets no new CI run, so
+#                                          it says so and exits 1
 #
 # Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
@@ -35,7 +36,7 @@ esac
 [ "$interval" -ge 60 ] || interval=60
 budget=core; [ "$mode" = pr ] && budget=graphql
 
-start=$(date +%s); errors=0; polls=0
+start=$(date +%s); errors=0; polls=0; conflicts=0
 # Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
 # stuck request counts as a gh error instead of hanging the wait.
 gh() { perl -e 'alarm shift; exec @ARGV' "${WAIT_RUN_GH_TIMEOUT:-60}" gh "$@"; }
@@ -73,12 +74,15 @@ nap() {
   sleep "$s"
 }
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
+# GitHub recomputes mergeability after a push, so one CONFLICTING read can be stale: a conflict is final only on
+# two reads in a row, one poll interval apart; any other read resets the count.
 poll() {
   while :; do
     if state=$("$@" 2>/dev/null); then
       errors=0
       [ "$state" = done ] && return 0
-      if [ "$state" = conflict ]; then echo "conflicts with main: no CI will run; merge main in"; exit 1; fi
+      if [ "$state" = conflict ]; then conflicts=$((conflicts + 1)); else conflicts=0; fi
+      if [ "$conflicts" -ge 2 ]; then echo "PR conflicts with main; merge main in (no new CI runs on a conflicting head)"; exit 1; fi
     else
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
@@ -94,13 +98,14 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # `gh pr checks` (cli/cli pkg/cmd/pr/checks/aggregate.go, v2.102): keep the newest check per status context or per
 # name/workflow (gh also keys on the run's event, which this JSON lacks), take its state (a status's state, else a
 # completed run's conclusion, else the run's status), and count it pending unless gh gives that state a bucket.
-# The same query reads mergeability: a PR in conflict with main gets no CI run, so waiting on it never ends.
+# The same query reads mergeability. Finished checks are judged first, so they print their counts even if main
+# moved since; unfinished checks on a PR in conflict with main get no new CI run, so waiting on them never ends.
 pr_state() {
-  gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'if .mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY"
-    then "conflict" else [.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
+  gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq '(.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
+    | [.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
     | .[] | max_by(.startedAt) | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end]
     | if length > 0 and all(IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"))
-      then "done" else "pending" end end'
+      then "done" elif $c then "conflict" else "pending" end'
 }
 
 if [ "$mode" = deploy ]; then
