@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // trending-cron.server.ts imports the Shopify app + Supabase singletons at
 // module load; neither is exercised by these tests, so stub them out.
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 
 import {

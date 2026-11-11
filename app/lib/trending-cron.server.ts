@@ -17,7 +17,7 @@ import { unauthenticated } from '../shopify.server';
 import type { CronLockName } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
-import { dailyCron, MACHINE_ID } from './daily-cron.server';
+import { dailyCron, MACHINE_LABEL } from './daily-cron.server';
 
 // 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
 // lock_date is NZ-local so the day boundary matches NZ midnight, not UTC.
@@ -70,15 +70,11 @@ const cron = dailyCron({
   feature: 'trending_cron',
   lockName: TRENDING_LOCK_NAME,
   targetHour: TARGET_HOUR_NZ,
-  // Every step of a run has its own time limit (15 s + 30 s + 30 s, in
-  // computeAndWriteTrending), so a healthy run ends in under 2 minutes. One
-  // still going an hour on has hung outside those limits.
-  stuckAfterHours: 1,
   // NZ-local date, so the day boundary matches NZ midnight.
   clock: nzNowParts,
-  startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`,
+  startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_LABEL}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`,
   run: async () => {
-    console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
+    console.log(`Trending cron: starting daily processing (machine: ${MACHINE_LABEL})`);
     const ranked = await computeAndWriteTrending();
     return `Trending cron: completed, wrote ${ranked.length} entries`;
   },

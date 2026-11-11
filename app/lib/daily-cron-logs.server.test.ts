@@ -8,7 +8,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 
 const { work } = vi.hoisted(() => ({ work: vi.fn<() => Promise<unknown>>() }));
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(),

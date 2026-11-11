@@ -20,7 +20,19 @@ vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn(async () =>
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: null,
   tryAcquireCronLock: vi.fn(async () => true),
+  endCronLock: vi.fn(),
   hashClientIp: () => 'synthetic-ip',
+}));
+// The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
+// today or later skips the row. It outlives a module reload, as the column does.
+const stamps = vi.hoisted(() => new Map<string, string>());
+vi.mock('./reminder-v2-day-stamp.server', () => ({
+  stampReminderDay: vi.fn(async (id: string, today: string) => {
+    const at = stamps.get(id);
+    if (at !== undefined && at >= today) return 'attempted-today';
+    stamps.set(id, today);
+    return 'stamped';
+  }),
 }));
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: () => 'https://example.test/reminders-v2/unsubscribe?token=synthetic',
@@ -57,6 +69,7 @@ const sentryFeatures = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  stamps.clear();
   send.mockResolvedValue(ACCEPTED);
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});

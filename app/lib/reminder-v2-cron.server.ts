@@ -16,20 +16,15 @@
 import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
-import { dailyCron, MACHINE_ID } from './daily-cron.server';
+import { dailyCron, MACHINE_LABEL } from './daily-cron.server';
 import { utcNowParts } from './cron-helpers.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
+import { stampReminderDay } from './reminder-v2-day-stamp.server';
 import { recordServerEvent } from './product-events.server';
 
 const TARGET_HOUR_UTC = 8;               // same morning window as the v1 reminder cron
 const BATCH_SIZE = 50;
 const CONCURRENCY_LIMIT = 5;
-
-// Optins this process has tried to email today. Marked before the send, so a
-// retried pass (US-28 AC3) never emails anyone twice in a day, even when the
-// failed pass sent the mail but could not stamp last_sent. In memory only: a
-// restart the same day starts empty, as the day itself did before AC3.
-let attemptedToday = { day: '', ids: new Set<string>() };
 
 /** Process items in chunks of `limit`, using Promise.allSettled per chunk.
  *  (Moved here from the retired v1 reminder cron — pure helper.) */
@@ -53,15 +48,10 @@ const cron = dailyCron({
   lockName: 'reminder_v2_cron',
   shared: true,
   targetHour: TARGET_HOUR_UTC,
-  // A pass sends 5 emails at a time, 50 opt-ins a page, and grows with the
-  // opt-in count; the sends have no time limit of their own. At about a second
-  // per batch of 5, 6 hours covers some 100,000 opt-ins, far past today's list,
-  // and still reports a hung pass the same day.
-  stuckAfterHours: 6,
   clock: utcNowParts,
-  startLog: `Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`,
-  // A failed pass re-runs the day (US-28 AC3); attemptedToday skips whoever
-  // the failed pass tried to email.
+  startLog: `Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_LABEL})`,
+  // A failed pass re-runs the day (US-28 AC3); the day-stamp (US-23 AC15)
+  // skips whoever an earlier run, in this process or a dead one, went to email.
   run: async (todayStr) => {
     const count = await processV2Reminders(todayStr);
     return `Reminder v2 cron: completed, sent ${count} emails`;
@@ -98,13 +88,10 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   const { due, anyDue } = dueItemsFor(optin, todayStr);
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
 
-  // At most one attempt per optin per day in this process, whatever the send's outcome.
-  // A pass from an earlier day that is still running never resets a newer day's record.
-  if (todayStr > attemptedToday.day) attemptedToday = { day: todayStr, ids: new Set() };
-  if (attemptedToday.day === todayStr) {
-    if (attemptedToday.ids.has(optin.id)) return 'attempted-today';
-    attemptedToday.ids.add(optin.id);
-  }
+  // At most one attempt per optin per day, whatever the send's outcome and
+  // across restarts: the stamp is read, written and read back before the send
+  // (US-23 AC15). Not a mutex: the cron lock keeps passes apart.
+  if ((await stampReminderDay(optin.id, todayStr)) === 'attempted-today') return 'attempted-today';
 
   const unsubscribeUrl = buildUnsubscribeUrl(optin.token);
   // US-23 AC3 — the email is the surviving artifact; AC5's prominent

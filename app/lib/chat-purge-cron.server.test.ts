@@ -196,6 +196,7 @@ vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureExcepti
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: fakeAdmin,
   tryAcquireCronLock: vi.fn(async () => true),
+  endCronLock: vi.fn(),
 }));
 
 import * as Sentry from '@sentry/react-router';

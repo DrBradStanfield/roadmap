@@ -26,6 +26,7 @@ const noRows = async () => ({ data: [], error: null });
 // Chat purge's run starts with the match-events pass, so that query is its probe.
 vi.mock('./supabase.server', () => ({
   tryAcquireCronLock: vi.fn(),
+  endCronLock: vi.fn(),
   supabaseAdmin: { from: (table: string) => db.from?.(table) ?? chain(table === 'chat_match_events' ? work : noRows) },
 }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
@@ -118,6 +119,8 @@ async function boot(c: CronCase, at: string, onlyTheTick = false) {
   return { lock };
 }
 const tick = () => vi.advanceTimersByTimeAsync(HOUR_MS);
+// The lock's clock for a tick at `ms` (US-28 AC9): that now, less the cron's stuck limit.
+const clockAt = (ms: number, stuckHours: number) => ({ now: new Date(ms), stuckCutoff: new Date(ms - stuckHours * HOUR_MS) });
 
 describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   it('takes its own lock with this machine id and its own day, first at the target hour', async () => {
@@ -125,7 +128,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     lock.mockResolvedValue(true);
     await tick();
     expect(lock).toHaveBeenCalledTimes(1);
-    expect(lock).toHaveBeenCalledWith('pin-machine', c.day, c.lockName);
+    expect(lock).toHaveBeenCalledWith('pin-machine', c.day, c.lockName, clockAt(Date.parse(c.beforeTarget) + HOUR_MS, c.stuckHours));
     expect(work).toHaveBeenCalledTimes(1);
   });
   it('does not tick before the target hour on its own clock', async () => {
@@ -143,7 +146,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     expect(work).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(DAY_MS - 2 * HOUR_MS);
     expect(lock).toHaveBeenCalledTimes(2);
-    expect(lock).toHaveBeenLastCalledWith('pin-machine', c.nextDay, c.lockName);
+    expect(lock).toHaveBeenLastCalledWith('pin-machine', c.nextDay, c.lockName, clockAt(Date.parse(c.beforeTarget) + DAY_MS + HOUR_MS, c.stuckHours));
     expect(work).toHaveBeenCalledTimes(2);
   });
   it('a lock another machine holds means no run and no retry that day', async () => {
@@ -222,7 +225,7 @@ describe('trending cron lock per store', () => {
     stop = m.stopTrendingCron;
     m.startTrendingCron();
     await tick();
-    expect(lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'trending_cron_edu');
+    expect(lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'trending_cron_edu', clockAt(Date.parse(crons[0].beforeTarget) + HOUR_MS, 1));
   });
 });
 
@@ -301,7 +304,7 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     await tick();
     await vi.waitFor(() => expect(inserts).toHaveLength(1));
 
-    expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge');
+    expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge', clockAt(Date.parse('2026-08-28T06:30:00Z'), 6));
     expect(selectFilters.length).toBeGreaterThan(0);
     expect(selectFilters.every((f) => f.includes('message.not.is.null'))).toBe(true);
     expect(vi.mocked(scrubQuestion).mock.calls.map(([text]) => text)).toEqual(['question still-held']);

@@ -6,15 +6,20 @@
  * Built on the machinery the May-2026 cron debugging hardened (CLAUDE.md
  * "Dangerous Gotchas"): the `< target hour` check, not `!==`, makes it
  * deploy-resilient, since a restart that shifts the interval past the hour
- * still fires today via the lock; tryAcquireCronLock's fixed CAS does the rest.
+ * still fires today via the lock; tryAcquireCronLock's fixed CAS does the rest,
+ * and endCronLock records how the run ended (US-28 AC9).
  */
 import * as Sentry from '@sentry/react-router';
-import { tryAcquireCronLock, type CronLockName } from './supabase.server';
+import { endCronLock, tryAcquireCronLock, type CronLockName } from './supabase.server';
 import { safeErrorFields } from './safe-error-fields.server';
-import { transition, type CronDay } from './cron-day';
+import { lockClock, stuckLimitMs, transition, type CronDay } from './cron-day';
 
-/** This machine's name in a `cron_lock` row, the same for every cron. */
-export const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
+/** This machine's name in a `cron_lock` row, the same for every cron. With no
+ *  FLY_MACHINE_ID (local, tests) there is no owner: null, which never wins a
+ *  day by ownership (US-28 AC9). */
+export const MACHINE_ID: string | null = process.env.FLY_MACHINE_ID || null;
+/** MACHINE_ID for a log line. */
+export const MACHINE_LABEL = MACHINE_ID ?? 'none';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -50,8 +55,6 @@ export interface DailyCron {
   /** Its lock row is shared by both Fly apps: starts only where sharedCronsOn(). */
   shared?: boolean;
   targetHour: number;
-  /** Hours a run may take before a tick reports it stuck (US-28 AC7). */
-  stuckAfterHours: number;
   /** The hour and the lock_date on this cron's own clock. */
   clock: (now: Date) => { hour: number; dateStr: string };
   /** Logged once when the interval starts. */
@@ -69,7 +72,7 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
     try {
       const now = new Date();
       const { hour, dateStr: todayStr } = cron.clock(now);
-      const step = transition(day, { type: 'tick', today: todayStr, now: now.getTime(), limitMs: cron.stuckAfterHours * CRON_INTERVAL_MS });
+      const step = transition(day, { type: 'tick', today: todayStr, now: now.getTime(), limitMs: stuckLimitMs(cron.lockName) });
       day = step.day;
       if (step.decision === 'skip-and-report-stuck' && day.phase === 'running') {
         reportStuckRun(cron.label, cron.feature, day.startedAt, now.getTime());
@@ -79,20 +82,24 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
       // Running from before the acquire, so a run that outlasts the hour, or
       // midnight, is never started twice on this machine. A throw (a lock error
       // included, US-28 AC2) opens the day so the next tick retries (AC3, AC6);
-      // the lock row names this machine, so its re-acquire wins.
+      // a failed run marks its row failed, which this machine alone may retake.
       day = transition(day, { type: 'started', date: todayStr, now: now.getTime() }).day;
-      let completed: string | void;
-      try {
-        if (!(await tryAcquireCronLock(MACHINE_ID, todayStr, cron.lockName))) {
-          day = transition(day, { type: 'held', date: todayStr }).day;
-          return;
-        }
-        completed = await cron.run(todayStr);
-      } catch (runError) {
+      const fail = (error: unknown): never => {
         day = transition(day, { type: 'failed' }).day;
-        throw runError;
+        throw error;
+      };
+      const won = await tryAcquireCronLock(MACHINE_ID, todayStr, cron.lockName, lockClock(cron.lockName, now)).catch(fail);
+      if (!won) {
+        day = transition(day, { type: 'held', date: todayStr }).day;
+        return;
       }
+      const completed = await cron.run(todayStr).catch(async (runError: unknown) => {
+        await endCronLock(MACHINE_ID, todayStr, cron.lockName, 'failed', new Date());
+        return fail(runError);
+      });
       day = transition(day, { type: 'finished' }).day;
+      // A finished day is refused to every machine, this one after a restart included (AC9).
+      await endCronLock(MACHINE_ID, todayStr, cron.lockName, 'finished', new Date());
       if (completed) console.log(completed);
     } catch (error) {
       console.error(`${cron.label} error:`, safeErrorFields(error));

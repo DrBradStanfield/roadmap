@@ -6,7 +6,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // whose acquire sat OUTSIDE its try/catch — the one Sentry showed skipping
 // (JAVASCRIPT-REMIX-68, 2026-08-28 08:11Z).
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
+// The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
+// today or later skips the row. It outlives a module reload, as the column does.
+const stamps = vi.hoisted(() => new Map<string, string>());
+vi.mock('./reminder-v2-day-stamp.server', () => ({
+  stampReminderDay: vi.fn(async (id: string, today: string) => {
+    const at = stamps.get(id);
+    if (at !== undefined && at >= today) return 'attempted-today';
+    stamps.set(id, today);
+    return 'stamped';
+  }),
+}));
 vi.mock('./email.server', () => ({
   buildReminderV2EmailHtml: vi.fn(() => '<html></html>'),
   sendReminderEmail: vi.fn(),
@@ -28,6 +39,7 @@ const HOUR_MS = 60 * 60 * 1000;
 // reset their state here rather than trusting top-level imports.
 async function loadCron() {
   vi.resetModules();
+  stamps.clear();
   // Import under NODE_ENV=test so the module's import-time self-start is a
   // no-op, THEN pose as production so the explicit start in the test runs.
   const cron = await import('./reminder-v2-cron.server');
@@ -68,6 +80,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
 
   async function loadForSend() {
     vi.resetModules();
+    stamps.clear();
     const cron = await import('./reminder-v2-cron.server');
     const { getOptinsBatch } = await import('./reminder-v2.server');
     const { sendReminderEmail } = await import('./email.server');

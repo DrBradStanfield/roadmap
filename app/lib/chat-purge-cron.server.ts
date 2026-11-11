@@ -40,20 +40,15 @@
  * this Supabase project and the winner would run with its own app's env.
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
+import { endCronLock, supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { archiveQuestions, type ArchiveCounts, type Held } from './chat-question-archive.server';
-import { MACHINE_ID, reportStuckRun, sharedCronsOn } from './daily-cron.server';
-import { transition, type CronDay } from './cron-day';
+import { MACHINE_ID, MACHINE_LABEL, reportStuckRun, sharedCronsOn } from './daily-cron.server';
+import { lockClock, stuckLimitMs, transition, type CronDay } from './cron-day';
 import { recordServerEvent } from './product-events.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
-/** A day's purge is the day's aged rows, one update per match event, plus an
- *  archive step capped at 5 minutes; at tens of milliseconds per row, 6 hours
- *  covers hundreds of thousands of rows, a backlog far past one day's chats.
- *  A run still going after that is stuck (US-28 AC7). */
-const STUCK_AFTER_MS = 6 * CRON_INTERVAL_MS;
 
 /** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
@@ -368,12 +363,17 @@ function mondayOf(iso: string): string {
   return day.toISOString().slice(0, 10);
 }
 
-/** The day's work, behind the shared lock. Returns null if another machine
- *  won the day. Exported for the test suite. */
+/** The day's work, behind the shared lock. Returns null if the day is not
+ *  free to this machine. Its end, finished or failed, is written to the lock
+ *  row (US-28 AC9). Exported for the test suite. */
 export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<PurgeCounts | null> {
-  const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge');
+  const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge', lockClock('chat_text_purge', now));
   if (!acquired) return null;
-  const cleared = await purgeOldChatText(now);
+  const cleared = await purgeOldChatText(now).catch(async (runError: unknown) => {
+    await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', 'failed', new Date());
+    throw runError;
+  });
+  await endCronLock(MACHINE_ID, todayStr, 'chat_text_purge', 'finished', new Date());
   const { archive } = cleared;
   console.log(
     `Chat text purge (older than ${PURGE_AFTER_DAYS} days): ${cleared.matchEvents} match events, ` +
@@ -394,13 +394,13 @@ export function startChatPurgeCron(): void {
   }
   if (!sharedCronsOn()) return;
 
-  console.log(`Chat text purge cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
+  console.log(`Chat text purge cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_LABEL})`);
 
   cronIntervalId = setInterval(async () => {
     try {
       const now = new Date();
       const todayStr = now.toISOString().slice(0, 10);
-      const step = transition(day, { type: 'tick', today: todayStr, now: now.getTime(), limitMs: STUCK_AFTER_MS });
+      const step = transition(day, { type: 'tick', today: todayStr, now: now.getTime(), limitMs: stuckLimitMs('chat_text_purge') });
       day = step.day;
       if (step.decision === 'skip-and-report-stuck' && day.phase === 'running') {
         reportStuckRun('Chat text purge cron', 'chat_text_purge_cron', day.startedAt, now.getTime());
