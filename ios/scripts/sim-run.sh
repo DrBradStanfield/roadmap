@@ -17,6 +17,11 @@
 # shuts down after HR_SIM_IDLE_MIN minutes with no holder (a detached sleep, no daemon).
 # Settings: HR_SIM_WAIT_MIN (30), HR_SIM_IDLE_MIN (20; 0 keeps it booted), HR_SIM_RUN_LIMIT_SECONDS
 # (1800), HR_SIM_DEVICE_TYPE (iPhone-18-Pro, the 6.3-inch size App Store Connect takes), HR_SIM_HOME.
+# Load guard: before the lock, and once more after taking it, a run waits while the 1-minute load is at
+# least HR_SIM_MAX_LOAD (8) or two Codex reviews run (node tools/codex-review.mjs, not --codex fakes),
+# polling every HR_SIM_GUARD_POLL_SECONDS (30), never holding the device; HR_SIM_IGNORE_LOAD=1 skips it.
+# Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease calls
+# skip it; an unreadable load fails open.
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -30,6 +35,9 @@ WAIT_SECONDS="${HR_SIM_WAIT_SECONDS:-$(( ${HR_SIM_WAIT_MIN:-30} * 60 ))}"
 IDLE_SECONDS="${HR_SIM_IDLE_SECONDS:-$(( ${HR_SIM_IDLE_MIN:-20} * 60 ))}"
 RUN_LIMIT="${HR_SIM_RUN_LIMIT_SECONDS:-1800}"
 KILL_SECONDS="${HR_SIM_KILL_SECONDS:-20}"
+MAX_LOAD="${HR_SIM_MAX_LOAD:-8}"
+POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}"
+START=$(date +%s) REASON="" WARNED=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
 OWN=0 SHIM="" UDID="" TOKEN="$$-$(date +%s)"
 
@@ -48,14 +56,51 @@ write_info() {
 }
 describe() { echo "in use by pid $(field pid) for $(ago "$(field started)") ($(field cwd)): $(field command)"; }
 
-# Takes the lock on fd 9, waiting up to WAIT_SECONDS with one line naming the holder.
+left() { local r=$(( WAIT_SECONDS - ($(now) - START) )); [ "$r" -gt 0 ] && echo "$r" || echo 0; }
+
+# True when the load guard trips, with REASON saying why. A Codex review is a process whose argv[0]
+# is node and a later argument ends in tools/codex-review.mjs, without --codex (the test suite's fake).
+# Fails open: an unreadable sysctl or ps never makes a run wait.
+guard_tripped() {
+  local load out codex
+  [ "${HR_SIM_IGNORE_LOAD:-}" = 1 ] && return 1
+  load=$(sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }')
+  if ! [[ "$load" =~ ^[0-9]+(\.[0-9]+)?$ ]] || ! out=$(ps -axo pid=,command= 2>/dev/null) || [ -z "$out" ]; then
+    [ "$WARNED" = 1 ] || echo "sim-run: load guard could not read the load; not waiting" >&2
+    WARNED=1
+    return 1
+  fi
+  codex=$(printf '%s\n' "$out" | awk -v me=$$ '$1 != me { a = $2; sub(/.*\//, "", a); if (a != "node") next
+      hit = 0; for (i = 3; i <= NF; i++) { if ($i ~ /^--codex(=|$)/) next; if ($i ~ /(^|\/)tools\/codex-review\.mjs$/) hit = 1 }
+      n += hit } END { print n + 0 }')
+  REASON=""
+  awk -v l="$load" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' && REASON="1-minute load $load is over $MAX_LOAD"
+  [ "$codex" -ge 2 ] && REASON="${REASON:+$REASON; }$codex Codex reviews running"
+  [ -n "$REASON" ]
+}
+
+# Waits while the guard trips, one line a minute, within what is left of WAIT_SECONDS.
+wait_guard() {
+  local last=-60 rem
+  while guard_tripped; do
+    rem=$(left)
+    [ "$rem" -gt 0 ] || die "gave up after $(ago "$START") (load guard, not the lock): $REASON" 75
+    if [ $(( $(now) - last )) -ge 60 ]; then
+      echo "sim-run: waiting (load guard): $REASON (HR_SIM_IGNORE_LOAD=1 skips this)" >&2
+      last=$(now)
+    fi
+    sleep "$(awk -v p="$POLL" -v r="$rem" 'BEGIN { print (p + 0 < r + 0) ? p : r }')"
+  done
+}
+
+# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder.
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
   if ! lockf -s -t 0 9; then
     echo "sim-run: the shared simulator is $(describe)" >&2
-    echo "sim-run: waiting up to $((WAIT_SECONDS / 60))m (HR_SIM_WAIT_MIN)" >&2
-    lockf -s -t "$WAIT_SECONDS" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+    echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
+    lockf -s -t "$(left)" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
   fi
   OWN=1
 }
@@ -302,7 +347,14 @@ trap on_exit EXIT
 trap 'on_signal 130' INT
 trap 'on_signal 143' TERM
 trap 'on_signal 129' HUP
-take_lock
+# Never wait on the guard while holding the device: if it trips after the lock is taken, let go.
+while :; do
+  wait_guard
+  take_lock
+  guard_tripped || break
+  exec 9>&-
+  OWN=0
+done
 write_info "$@"
 # In the background so a signal reaches the trap at once (bash defers traps while a foreground child
 # runs), with stdin kept (a background job would otherwise lose it).
