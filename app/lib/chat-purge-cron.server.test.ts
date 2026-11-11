@@ -58,6 +58,12 @@ const store = vi.hoisted(() => ({
   updateIdCounts: [] as number[],
   /** Row ids whose first blank silently commits nothing; the next one lands. */
   swallowFirstBlank: new Set<string>(),
+  /** Row ids whose blank never commits. */
+  neverBlank: new Set<string>(),
+  /** Reverse the row order on every other select (PostgREST promises no order without one). */
+  flipOrder: false,
+  /** Selects sent; past 200 the fake throws, so a spinning loop fails instead of hanging. */
+  selects: 0,
 }));
 
 // A fake PostgREST that really filters, so "only rows older than 30 days" and
@@ -130,10 +136,12 @@ const fakeAdmin = vi.hoisted(() => ({
         matches = () => prev().filter((r) => cols.some((c) => r[c] !== null));
         return query;
       },
-      limit: async (n: number) => ({
-        data: store.selectError ? null : matches().slice(0, n).map((r) => ({ ...r })),
-        error: store.selectError,
-      }),
+      limit: async (n: number) => {
+        if (++store.selects > 200) throw new Error('fake: select loop spinning');
+        const found = matches();
+        if (store.flipOrder && store.selects % 2 === 0) found.reverse();
+        return { data: store.selectError ? null : found.slice(0, n).map((r) => ({ ...r })), error: store.selectError };
+      },
       insert: async (batch: Record<string, unknown>[]) => {
         store.archiveInserts.push(batch);
         if (store.insertError) return { error: store.insertError };
@@ -143,7 +151,7 @@ const fakeAdmin = vi.hoisted(() => ({
       update: (patch: Record<string, unknown>) => {
         const apply = (ids: string[]) => {
           if (store.updateError || store.swallowUpdates === table) return;
-          for (const id of ids) if (!store.swallowFirstBlank.delete(id)) Object.assign(rows.find((r) => (r as { id: string }).id === id)!, patch);
+          for (const id of ids) if (!store.swallowFirstBlank.delete(id) && !store.neverBlank.has(id)) Object.assign(rows.find((r) => (r as { id: string }).id === id)!, patch);
         };
         return {
           eq: async (_col: string, id: string) => {
@@ -231,6 +239,9 @@ beforeEach(() => {
   store.swallowUpdates = null;
   store.updateIdCounts = [];
   store.swallowFirstBlank = new Set();
+  store.neverBlank = new Set();
+  store.flipOrder = false;
+  store.selects = 0;
   store.chat_match_events = [
     row('old-widget', 40, { platform: 'widget' }),
     row('old-shopify', 31, { platform: 'shopify', first: 'HbA1c 41', recent: ['HbA1c 41', 'BP 140/90'] }),
@@ -362,7 +373,7 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
 
   it('is idempotent — a second run finds nothing left to clear', async () => {
     await purgeOldChatText(NOW);
-    expect(await purgeOldChatText(NOW)).toEqual({ matchEvents: 0, messages: 0, conversations: 0, archive: null });
+    expect(await purgeOldChatText(NOW)).toEqual({ matchEvents: 0, messages: 0, conversations: 0, archive: null, didNotBlank: 0 });
   });
 
   it('throws when an update fails instead of counting the rows as cleared', async () => {
@@ -397,7 +408,7 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
 
 describe('purgeWithLock — one machine per day', () => {
   it('purges under the chat_text_purge lock', async () => {
-    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 3, conversations: 2, archive: null });
+    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 3, conversations: 2, archive: null, didNotBlank: 0 });
     expect(vi.mocked(tryAcquireCronLock).mock.calls[0][2]).toBe('chat_text_purge');
   });
 
@@ -588,7 +599,7 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
       const counts = await purgeWithLock('2026-09-10', NOW);
-      expect(counts).toEqual({ matchEvents: 6, messages: 3, conversations: 2, archive: null });
+      expect(counts).toEqual({ matchEvents: 6, messages: 3, conversations: 2, archive: null, didNotBlank: 0 });
     } finally {
       log.mockRestore();
     }
@@ -610,6 +621,69 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     expect(store.chat_question_archive.filter((r) => r.question === 'scrubbed: question stuck')).toHaveLength(1);
     expect(counts.archive).toEqual({ eligible: 151, kept: 151, skipped: 0 });
     expect(byId('stuck').message).toBeNull();
+  });
+
+  it('US-15 AC60: rows that did not blank are reported once per run, by count only, and in the log line', async () => {
+    store.chat_match_events = [
+      row('stuck-SENTINEL-1', 40, { platform: 'widget' }, { message: 'SENTINEL question one' }),
+      row('stuck-SENTINEL-2', 40, { platform: 'shopify' }, { message: 'SENTINEL question two', conversation_id: 'conv-shopify-old' }),
+      ...Array.from({ length: 150 }, (_, i) => row(`w${i}`, 40, { platform: 'widget' })),
+    ];
+    store.swallowFirstBlank = new Set(['stuck-SENTINEL-1', 'stuck-SENTINEL-2']);
+    const spies = (['log', 'error', 'warn'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    try {
+      const counts = await purgeWithLock('2026-09-10', NOW);
+      expect(counts?.didNotBlank).toBe(2);
+      expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+        ['Chat text purge: rows did not blank', { level: 'warning', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
+      ]);
+      const log = spies[0].mock.calls.join(' ');
+      expect(log).toContain('questions archived: 152 eligible, 152 kept, 0 skipped; 2 rows did not blank');
+      const seen = JSON.stringify([
+        spies.map((s) => s.mock.calls),
+        vi.mocked(Sentry.captureMessage).mock.calls,
+        vi.mocked(Sentry.captureException).mock.calls,
+        vi.mocked(recordServerEvent).mock.calls,
+      ]);
+      expect(seen).not.toContain('SENTINEL');
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
+
+  it('US-15 AC60: a clean run reports nothing and logs 0 rows did not blank', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      expect((await purgeWithLock('2026-09-10', NOW))?.didNotBlank).toBe(0);
+      expect(log.mock.calls.join(' ')).toContain('2 eligible, 2 kept, 0 skipped; 0 rows did not blank');
+    } finally {
+      log.mockRestore();
+    }
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+  });
+
+  it('US-15 AC60: the guard stops on a batch holding only rows already sent, whatever their order', async () => {
+    // Two rows that never blank, returned in a different order each time: the
+    // batches never repeat exactly, so a guard that waits for an identical batch spins.
+    store.chat_match_events = [row('never-1', 40, { platform: 'widget' }), row('never-2', 40, { platform: 'widget' })];
+    store.neverBlank = new Set(['never-1', 'never-2']);
+    store.flipOrder = true;
+    await expect(purgeOldChatText(NOW)).rejects.toThrow('chat text purge made no progress');
+    expect(store.selects).toBe(2);
+    // Reported once even though the run threw, with the count only.
+    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+      ['Chat text purge: rows did not blank', { level: 'warning', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
+    ]);
+    expect(store.archiveInserts).toEqual([]);
+  });
+
+  it('US-15 AC60: the guard lets a healthy multi-batch run finish', async () => {
+    store.chat_match_events = Array.from({ length: 250 }, (_, i) => row(`h${i}`, 40, { platform: 'widget' }));
+    store.flipOrder = true;
+    const counts = await purgeOldChatText(NOW);
+    expect(counts).toMatchObject({ matchEvents: 250, didNotBlank: 0, archive: { eligible: 250, kept: 200, skipped: 50 } });
+    expect(store.chat_match_events.every((r) => r.message === null)).toBe(true);
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
   });
 
   it('a deleted conversation’s match events are blanked and never copied', async () => {

@@ -94,6 +94,8 @@ export interface PurgeCounts {
   conversations: number;
   /** Null when the archive is switched off. */
   archive: ArchiveCounts | null;
+  /** Rows selected again after their blank was sent (US-15 AC60): text past its window. */
+  didNotBlank: number;
 }
 
 /** A question read before its row is blanked, held in memory until the scrub.
@@ -110,6 +112,10 @@ interface PendingQuestion {
 interface Held {
   questions: PendingQuestion[];
   eligible: number;
+  /** Row ids already held, so a row selected again is held once (US-15 AC60).
+   *  In memory for this run only: never stored, never sent, so it can never
+   *  link a kept copy to its row. */
+  ids: Set<string>;
 }
 
 let day: CronDay = { phase: 'open' };
@@ -126,45 +132,63 @@ const QUESTION_KEYS = ['first', 'recent'];
  * logging a clean run.
  */
 export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCounts> {
-  if (!supabaseAdmin) return { matchEvents: 0, messages: 0, conversations: 0, archive: null };
+  if (!supabaseAdmin) return { matchEvents: 0, messages: 0, conversations: 0, archive: null, didNotBlank: 0 };
   const cutoff = new Date(now.getTime() - PURGE_AFTER_DAYS * 86400_000).toISOString();
   // US-15 AC44 ships off: no question text is even selected until Brad switches it on.
-  const held: Held | null = process.env.CHAT_QUESTION_ARCHIVE === 'on' ? { questions: [], eligible: 0 } : null;
-  const counts = {
-    matchEvents: await purgeMatchEvents(cutoff, held),
-    // `!inner` makes the join a filter: a message qualifies only if its own
-    // conversation is on a purged platform. Without it PostgREST would return
-    // every message and merely null the embed.
-    messages: await purgeInBatches(
-      'chat message',
-      () =>
-        supabaseAdmin!
-          .from('chat_messages')
-          .select('id, chat_conversations!inner(platform)')
-          .in('chat_conversations.platform', PURGED_PLATFORMS)
-          .lt('created_at', cutoff)
-          .not('content', 'is', null)
-          .limit(BATCH_SIZE),
-      (rows) => supabaseAdmin!.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
-    ),
-    // The title is the first words of the question, so it is question text.
-    // `updated_at` is the conversation's own clock: a thread stays readable
-    // for 30 days after its last turn, not after its first.
-    conversations: await purgeInBatches(
-      'chat title',
-      () =>
-        supabaseAdmin!
-          .from('chat_conversations')
-          .select('id')
-          .in('platform', PURGED_PLATFORMS)
-          .lt('updated_at', cutoff)
-          .not('title', 'is', null)
-          .limit(BATCH_SIZE),
-      (rows) => supabaseAdmin!.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
-    ),
-  };
+  const held: Held | null = process.env.CHAT_QUESTION_ARCHIVE === 'on' ? { questions: [], eligible: 0, ids: new Set() } : null;
+  // Ids selected again after their blank was sent; in memory for this run only, never stored or sent.
+  const stuck = new Set<string>();
+  let counts;
+  try {
+    counts = {
+      matchEvents: await purgeMatchEvents(cutoff, held, stuck),
+      // `!inner` makes the join a filter: a message qualifies only if its own
+      // conversation is on a purged platform. Without it PostgREST would return
+      // every message and merely null the embed.
+      messages: await purgeInBatches(
+        'chat message',
+        () =>
+          supabaseAdmin!
+            .from('chat_messages')
+            .select('id, chat_conversations!inner(platform)')
+            .in('chat_conversations.platform', PURGED_PLATFORMS)
+            .lt('created_at', cutoff)
+            .not('content', 'is', null)
+            .limit(BATCH_SIZE),
+        (rows) => supabaseAdmin!.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
+        stuck,
+      ),
+      // The title is the first words of the question, so it is question text.
+      // `updated_at` is the conversation's own clock: a thread stays readable
+      // for 30 days after its last turn, not after its first.
+      conversations: await purgeInBatches(
+        'chat title',
+        () =>
+          supabaseAdmin!
+            .from('chat_conversations')
+            .select('id')
+            .in('platform', PURGED_PLATFORMS)
+            .lt('updated_at', cutoff)
+            .not('title', 'is', null)
+            .limit(BATCH_SIZE),
+        (rows) => supabaseAdmin!.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
+        stuck,
+      ),
+    };
+  } finally {
+    // Once per run, a thrown run included: a count, never an id or the text.
+    if (stuck.size) reportDidNotBlank(stuck.size);
+  }
   // Only now, with every pass done: nothing here can delay or undo the purge.
-  return { ...counts, archive: held && (await archiveQuestions(held)) };
+  return { ...counts, archive: held && (await archiveQuestions(held)), didNotBlank: stuck.size };
+}
+
+/** US-15 AC60: a row that came back after its blank was sent holds text past its window. */
+function reportDidNotBlank(rows: number): void {
+  Sentry.captureMessage('Chat text purge: rows did not blank', {
+    level: 'warning',
+    tags: { feature: 'chat_text_purge', stuck_rows: rows },
+  });
 }
 
 interface Fallible {
@@ -174,23 +198,27 @@ interface Fallible {
 /**
  * One table's pass: select a batch of stale rows, clear them, repeat until the
  * select comes back empty. All three passes share it, so all three share the
- * no-progress guard — a batch that comes back identical means the updates are
- * not landing (a policy or trigger swallowing them), so stop rather than spin.
+ * no-progress guard — a row selected again after its blank was sent did not
+ * blank (a policy or trigger swallowing it), and a batch holding no new row
+ * makes no progress, so stop rather than spin (US-15 AC60). Rows that came
+ * back go into `stuck`. Ids live in memory for this pass only, never stored or sent.
  */
 async function purgeInBatches<T extends { id: string }>(
   label: string,
   stale: () => PromiseLike<Fallible & { data: T[] | null }>,
   clear: (rows: T[]) => PromiseLike<Fallible>,
+  stuck = new Set<string>(),
 ): Promise<number> {
   let cleared = 0;
-  let previous = '';
+  const sent = new Set<string>();
   for (;;) {
     const { data, error } = await stale();
     if (error) throw new Error(`${label} purge select failed: ${error.message}`);
     if (!data?.length) return cleared;
-    const batch = data.map((r) => r.id).join(',');
-    if (batch === previous) throw new Error(`${label} purge made no progress`);
-    previous = batch;
+    const back = data.filter((r) => sent.has(r.id));
+    for (const r of back) stuck.add(r.id);
+    if (back.length === data.length) throw new Error(`${label} purge made no progress`);
+    for (const r of data) sent.add(r.id);
 
     const { error: updateError } = await clear(data);
     if (updateError) throw new Error(`${label} purge update failed: ${updateError.message}`);
@@ -238,7 +266,7 @@ async function clearMatchEventRows(rows: MatchEventRow[]): Promise<Fallible> {
 /** With the archive on, the question and what decides whether it is copied. */
 const HELD_COLUMNS = 'id, router_context, created_at, message, classification, conversation_id';
 
-function purgeMatchEvents(cutoff: string, held: Held | null): Promise<number> {
+function purgeMatchEvents(cutoff: string, held: Held | null, stuck: Set<string>): Promise<number> {
   return purgeInBatches(
     'chat text',
     () =>
@@ -253,6 +281,7 @@ function purgeMatchEvents(cutoff: string, held: Held | null): Promise<number> {
       if (held) holdQuestions(rows, held);
       return clearMatchEventRows(rows);
     },
+    stuck,
   );
 }
 
@@ -263,6 +292,8 @@ function purgeMatchEvents(cutoff: string, held: Held | null): Promise<number> {
  */
 function holdQuestions(rows: MatchEventRow[], held: Held): void {
   for (const row of rows) {
+    if (held.ids.has(row.id)) continue;
+    held.ids.add(row.id);
     const platform = row.router_context?.platform;
     if (
       typeof platform !== 'string' || !ARCHIVED_PLATFORMS.includes(platform) ||
@@ -394,7 +425,8 @@ export async function purgeWithLock(todayStr: string, now: Date = new Date()): P
       `${cleared.messages} messages, ${cleared.conversations} conversation titles; ` +
       (archive
         ? `questions archived: ${archive.eligible} eligible, ${archive.kept} kept, ${archive.skipped} skipped`
-        : 'question archive off'),
+        : 'question archive off') +
+      `; ${cleared.didNotBlank} rows did not blank`,
   );
   if (archive) await recordServerEvent('chat_question_archived', { ...archive });
   return cleared;
