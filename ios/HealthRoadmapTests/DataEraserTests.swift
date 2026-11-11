@@ -467,7 +467,6 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(epoch(onDisk), 1)
     }
 
-
     // MARK: The erase's words (US-25 AC16d, iOS survey S1)
 
     func testThePhaseTable_US25_AC16d() {
@@ -480,8 +479,14 @@ final class DataEraserTests: XCTestCase {
             (.idle, .seen, .idle),
             (.erasing, .started, .erasing),
             (.erasing, .finished(erased), .done(erased)),
-            (.erasing, .settingsClosed, .erasing),
+            (.erasing, .settingsClosed, .erasingClosed),
             (.erasing, .seen, .erasing),
+            // The sheet closed mid-erase: the words go to RootView (re-check R1).
+            (.erasingClosed, .started, .erasingClosed),
+            (.erasingClosed, .finished(erased), .held(erased)),
+            (.erasingClosed, .finished(refused), .held(refused)),
+            (.erasingClosed, .settingsClosed, .erasingClosed),
+            (.erasingClosed, .seen, .erasingClosed),
             // Unseen erase words are never dropped by a second erase (adversary F4).
             (.done(erased), .started, .done(erased)),
             (.done(erased), .finished(refused), .done(erased)),
@@ -535,6 +540,21 @@ final class DataEraserTests: XCTestCase {
         XCTAssertNil(app.eraser.held)
     }
 
+    /// R1: the sheet closed while the erase still ran; its words show at RootView when it ends.
+    func testAnEraseThatEndsAfterSettingsClosedIsHeldForRootView_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        app.engine.queue.async { Thread.sleep(forTimeInterval: 0.3) } // the erase waits on the engine
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        app.eraser.settingsClosed()
+        XCTAssertTrue(app.eraser.erasing, "still erasing")
+        guard case .erased = await erase.value else { return XCTFail("the erase was refused") }
+        guard case .erased = app.eraser.held else { return XCTFail("RootView shows the words, the Delete page is gone") }
+        app.eraser.seen()
+        XCTAssertEqual(app.eraser.startsOver, 1)
+    }
+
     func testARefusalLeftWhenSettingsClosesIsShownButRestartsNothing_US25_AC16d() async throws {
         try Data("{ not a record".utf8).write(to: phoneFile)
         let app = try app(connected: false)
@@ -548,7 +568,7 @@ final class DataEraserTests: XCTestCase {
 
     /// F3: an erase from another device that lands while this phone's own erase runs waits;
     /// if the own erase is refused, the hold lifts as it ends, which is RootView's cue
-    /// (`.onChange(of: eraser.holdsRemoteErases)`) to look at the record again.
+    /// (`.onChange(of: eraser.holdLifts)`) to look at the record again.
     func testARefusedEraseLiftsTheHoldAsItEnds_US25_AC16d() async throws {
         try Data("{ not a record".utf8).write(to: phoneFile)
         let app = try app(connected: false)

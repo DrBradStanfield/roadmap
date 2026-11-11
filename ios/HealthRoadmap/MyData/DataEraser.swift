@@ -31,8 +31,9 @@ final class DataEraser {
 
     /// One erase at a time, then its words until the person has seen them (US-25 AC16d). The
     /// words live here, not in the page: `done` shows them on the Delete page; `held` once
-    /// the Settings sheet has closed on them, where RootView shows them.
-    enum Phase: Equatable { case idle, erasing, done(Outcome), held(Outcome) }
+    /// the Settings sheet has closed on them, where RootView shows them. `erasingClosed`: still
+    /// erasing, but the sheet has closed, so the words go straight to RootView.
+    enum Phase: Equatable { case idle, erasing, erasingClosed, done(Outcome), held(Outcome) }
     enum Event { case started, finished(Outcome), settingsClosed, seen }
 
     static func transition(_ phase: Phase, _ event: Event) -> Phase {
@@ -40,6 +41,8 @@ final class DataEraser {
         // Unseen erase words are never dropped by a second erase; a refusal's may be.
         case (.idle, .started), (.done(.refused), .started), (.held(.refused), .started): .erasing
         case (.erasing, .finished(let outcome)): .done(outcome)
+        case (.erasing, .settingsClosed): .erasingClosed
+        case (.erasingClosed, .finished(let outcome)): .held(outcome)
         case (.done(let outcome), .settingsClosed): .held(outcome)
         case (.done, .seen), (.held, .seen): .idle
         default: phase
@@ -54,12 +57,12 @@ final class DataEraser {
     /// then, so an erase from elsewhere that landed meanwhile is not lost.
     private(set) var holdLifts = 0
 
-    var erasing: Bool { phase == .erasing }
+    var erasing: Bool { phase == .erasing || phase == .erasingClosed }
     /// The finished erase's words, until they are seen.
     var outcome: Outcome? {
         switch phase {
         case .done(let outcome), .held(let outcome): outcome
-        case .idle, .erasing: nil
+        case .idle, .erasing, .erasingClosed: nil
         }
     }
     /// The words the Settings sheet closed on, for RootView to show.
