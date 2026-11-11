@@ -369,7 +369,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
     const broken = [{ kind: 'medication', medicationKey: 'statin', doseValue: 20, doseUnit: 'mg' }];
     const { medications } = JSON.parse(engine.chatEditsJson(record, JSON.stringify(broken), NOW, 'ios-1', '2026-10-21')) as { medications: { lines: unknown[]; undo: unknown; refusal: string } };
-    expect(medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so nothing was saved.' });
+    expect(medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so it was not saved.' });
     const edit = JSON.stringify({ kind: 'chatEdits', part: 'medications', today: '2026-10-21', edits: broken });
     expect(JSON.parse(engine.cloudEdit(edit, erase, 'si', NOW))).toMatchObject({ ok: false, message: medications.refusal });
   });
