@@ -91,9 +91,11 @@ data, not the mandate.
 
 The fresh `adversary` and Codex (local sessions only) review the same change independently, so start them in
 the same message, both in the background, never one after the other. Several Codex runs may go at once (Brad,
-2026-11-10). Before starting one, check `uptime` and `memory_pressure`: hold it while the load average is over
-about 8 or free memory is under about 20% (swap alone misleads on macOS). At most three test-running reviewers
-at once. Codex reviews an immutable snapshot taken when it starts, so later edits never change what it reviews;
+2026-11-10), but never more than two on this Mac: start each through the machine-wide queue,
+`tools/mac-slot.sh codex -- node tools/codex-review.mjs …`, and heavy local test runs through
+`tools/mac-slot.sh tests -- npx vitest …` (at most three). It waits for a slot, then while the 1-minute load is
+8 or more, so no one checks `uptime` by hand (US-71 AC9; `tools/mac-slot.sh status` shows who holds what). It
+does not read memory: hold a run while `memory_pressure` shows free memory under about 20%. Codex reviews an immutable snapshot taken when it starts, so later edits never change what it reviews;
 clinical, merge/FHIR, security and agent-contract changes still get it before they are committed (CLAUDE.md).
 
 ## Author's response
