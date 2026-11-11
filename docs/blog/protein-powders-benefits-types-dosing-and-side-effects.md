@@ -24,13 +24,13 @@ Brad uses a pea protein powder himself and plans to keep doing so; he pays close
 - People allergic to milk should avoid whey and casein, including lab-made whey, which is beta-lactoglobulin, a major milk allergen [5][6]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [7].
 - Allergy to mycoprotein (Quorn) appears rare but has been severe: self-reports included one fatal reaction [42][43].
 - In rare inherited disorders (urea cycle disorders, phenylketonuria), a large rise in protein can harm the brain; use a powder only with your metabolic team's approval [8][9].
-- Protein powders can carry lead and other metals, plant powders more than dairy on average in one test, though risk assessments found typical servings within limits [10][11].
+- Protein powders can carry lead and other metals, though risk assessments found typical servings within limits [11].
 - In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [12].
 - Mild gut upset and acne have been reported with whey supplements [13][14].
 
 ## Brad's videos on this topic
 
-- 4 Nov 2025, [What They’re HIDING About Lead Found in Protein Powders](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders): Consumer Reports' lead threshold is over 17 times stricter than the FDA's, and typical daily lead from food is already in the same range as the worst powder it tested; plant-based powders had more lead; Brad keeps using pea protein and judges lead against FDA limits.
+- 4 Nov 2025, [What They’re HIDING About Lead Found in Protein Powders](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders): lead has been found in some protein powders; Consumer Reports' lead threshold is over 17 times stricter than the FDA's; Brad keeps using pea protein and judges lead against FDA limits.
 - 2 Oct 2025, [The Protein Obsession Is Going Horribly Wrong](https://drstanfield.com/blogs/articles/the-protein-obsession-is-going-horribly-wrong): Brad recommends 1.2 g/kg of ideal body weight a day from whole foods, warns against 2.2 g/kg, sets out the kidney disease guidelines, and says cramming in protein via supplements or bars rarely helps.
 - 6 Aug 2025, [Are We Wrong About the Perfect Protein Intake?](https://drstanfield.com/blogs/articles/are-we-wrong-about-the-perfect-protein-intake): Brad cut his own intake from 1.6 to 1.2 g/kg a day and sometimes uses a pea protein powder for convenience; powders are not necessary but can help some people hit their target.
 - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): protein powder is one of Brad's three supplements for muscle performance; a 49-study analysis found 1.6 g/kg a day maximized the muscle-building response; choose a powder without added sugar or salt. Superseded on dose: Brad now targets 1.2 g/kg of ideal body weight, and says the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026).
@@ -239,7 +239,7 @@ Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/micr
 
 ### Mixing and Preparation
 
-Follow the label. There is no good public evidence in our sources that mixing method changes how well the protein works.
+Follow the label. No trial cited here tested whether the mixing method changes how well the protein works.
 
 ### Storage
 
@@ -261,11 +261,11 @@ Protein and creatine can also change kidney test results. KDIGO lists high-prote
 
 ### Heavy Metal Contamination
 
-Consumer Reports tested 23 protein powders and shakes in 2025. About 70% of them contained more than 120% of its level of concern for lead, which is 0.5 mcg a day and based on California's Prop 65 limit. In an update dated January 2026, it reported that lead in plant-based products was, on average, nine times that in products made with dairy proteins [10]. FDA's interim reference levels for lead from food are higher: 2.2 mcg a day for children and 8.8 mcg a day for women of childbearing age [83][84].
+Consumer Reports sets its level of concern for lead at 0.5 mcg a day, based on California's Prop 65 limit [10]. FDA's interim reference levels for lead from food are higher: 2.2 mcg a day for children and 8.8 mcg a day for women of childbearing age [83][84].
 
 Risk assessments are more reassuring. An analysis of published test results found no increased health risk from 1 or 3 servings a day, with the lowest risk in whey powders and the highest in mass-gain powders; the authors work for a consulting firm [11]. In 56 European plant powders, metals at 30 g a day stayed within reference limits [85], and in 47 whey powders, up to 100 g a day for 25 years did not pose a risk [86].
 
-Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold; the worst powder in the Consumer Reports test, at 7.7 mcg of lead per serving, still fell within typical daily dietary exposure and just under the FDA's safety limit ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
+Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 
 ### Acne
 

@@ -23,7 +23,7 @@ No single food or supplement will unclog arteries, though a heart-healthy diet, 
 - If you take a blood thinner or antiplatelet drug, ask your doctor first: high-dose fish oil may prolong bleeding time, and policosanol and pantethine reduced platelet clumping in small studies [73][65][58].
 - People with sitosterolemia, a rare inherited disorder, should not take plant sterol supplements [51][74].
 - Supplements do not replace prescribed cholesterol medicine. Plant sterols lower LDL cholesterol, but no trial has shown that they prevent heart attacks or strokes [2][5].
-- Take psyllium with enough fluid, because it can swell and cause choking, and take other medicines at least 2 hours before or after it [66].
+- Take psyllium with enough fluid, because it can swell and cause choking, and take other medicines at least 2 hours before or after it [66]. Do not take it if you have trouble swallowing. If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, get medical help at once [66].
 - High-dose niacin can cause flushing and raise blood sugar and uric acid, and severe liver damage has occurred when sustained-release niacin replaced immediate-release niacin [68].
 - Plant sterols lower blood beta-carotene and some other carotenoids [50].
 
@@ -43,7 +43,7 @@ Supplements lower LDL cholesterol far less than statins. In a 28-day trial in 19
 
 The evidence varies by supplement. Plant sterols and stanols and soluble fiber have the strongest support from meta-analyses. Red yeast rice lowers LDL cholesterol, but its strength varies widely between products and it carries statin risks [17][19]. Omega-3 fatty acids mainly lower triglycerides, not LDL cholesterol [22]. The evidence for the rest is weaker. Reviews disagree on garlic and artichoke [2][44][71][72]. Berberine lowered LDL cholesterol more than placebo in a network meta-analysis, but its trials are of limited quality [76][88]. Pantethine rests on one small trial [23], and policosanol does not appear to work [64][76].
 
-These products are add-ons to lifestyle change (a heart-healthy diet, regular exercise, weight management), not substitutes for prescribed medicines [2]. In the UK, NICE advises against recommending plant stanols or sterols to prevent heart disease [77]. The 2026 American College of Cardiology and American Heart Association cholesterol guideline does not appear to recommend any supplement for lowering LDL cholesterol, though we could not check its full text.
+These products are add-ons to lifestyle change (a heart-healthy diet, regular exercise, weight management), not substitutes for prescribed medicines [2]. In the UK, NICE advises against recommending plant stanols or sterols to prevent heart disease [77].
 
 ## 2. Forms and Bioavailability
 
@@ -274,6 +274,8 @@ Psyllium is generally well tolerated; in one trial, simvastatin plus 15 g of psy
 - Mild bloating, gas, and cramping, particularly when starting treatment or with inadequate fluid intake
 - These symptoms typically resolve after 1-2 weeks as the gut microbiome adjusts
 - Always take psyllium with at least 8 ounces (a full glass) of water or other fluid; without enough fluid it can swell and block the throat or esophagus and cause choking [66]
+- Do not take psyllium if you have trouble swallowing [66]
+- If you get chest pain, vomiting, or trouble swallowing or breathing after a dose, get medical help at once [66]
 
 ### Red Yeast Rice
 
@@ -294,7 +296,7 @@ Fish oil supplements are generally well tolerated at typical doses:
 
 ### Policosanol
 
-In a German trial, policosanol was tolerated well without serious adverse events [64]. In a small trial by the same Cuban group, policosanol reduced platelet aggregation in healthy volunteers; nose and gum bleeding were reported among those taking aspirin, alone or with policosanol [65]. Other reports describe mild complaints: stomach upset or thirst, dizziness, drowsiness or poor sleep, and skin rash. If you take prescription medicines, check with your doctor or pharmacist before starting.
+In a German trial, policosanol was tolerated well without serious adverse events [64]. In a small trial by the same Cuban group, policosanol reduced platelet aggregation in healthy volunteers; nose and gum bleeding were reported among those taking aspirin, alone or with policosanol [65]. Other reports describe complaints that may include stomach upset, thirst or weight loss; migraine, dizziness, drowsiness, poor sleep or irritability; painful urination; and skin rash. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Pantethine
 

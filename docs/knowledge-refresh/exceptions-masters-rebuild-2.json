@@ -1,1 +1,1274 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"## 4. Recommended Dosing\" | \"- **Daily magnesium oxide laxatives in older adults:** In Japanese studies, high levels were most common with poor ki...\"",
+  "reason": "Tokeniser: source [70] writes \"the cases of four elderly patients\" mid-sentence, a number word it does not read; the heading number 4 is the unchanged section heading (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"5\", \"8\": Reviews: A 2023 systematic review of 9 studies in 7,582 people found that observational studies link magnesium status...",
+  "reason": "Tokeniser: source [79] writes \"Five out of eight sleep-related studies\", number words it does not read (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"5\": Guidelines and reviews: The American Academy of Neurology and the American Headache Society rate magnesium as probabl...",
+  "reason": "Tokeniser: source [87] writes \"five clinical trials\" mid-sentence, a number word it does not read (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"50\": Dark chocolate (60-69% cacao solids) [94] | 1 oz (28g) | 50 | 12% |",
+  "reason": "Computed serving value: USDA [94] gives 176 mg per 100 g; 50 mg is the 1 oz (28 g) serving, no verbatim figure (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"6\", \"2\", \"9\": Kidney disease: The risk of magnesium toxicity increases with impaired kidney function, because the ability to remove...",
+  "reason": "Tokeniser: source [72] writes \"six cardiovascular events\", \"two deaths\" and \"nine in the placebo group\" mid-sentence, number words it does not read (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"2\": Brad does not think so. Human results for memory and thinking are mixed, and he is not convinced it offers extra bene...",
+  "reason": "Count of the two cited trials [12][81] (\"Two trials measured sleep\"); no single source states it (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "berberine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Berberine Phytosome:** A food-grade berberine formulation. In healthy volunteers, berberine absorption (AUC) was ar...\" | \"## 3. Evidence for Health Benefits\" | \"**Prediabetes with Berberine Phytosome:** In a trial of 49 overweight adults with impaired fasting glucose, two table...\"",
+  "reason": "Section number '## 3.' unchanged; the new 3s are 'Three of its authors' [40][4], a true count from the two author lists (Petrangolini, Allegrini, Riva), not a quotable figure (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "berberine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"18\": Labels are not always accurate. Fifteen US products held on average 75% of the berberine on the label, ranging from 3...",
+  "reason": "Tokeniser: source writes 'Eighteen berberine FS were analyzed' (abbreviated plural FS not read as a count); quote already entered (addendum-2) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "berberine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 22 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "berberine-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Male Reproductive Health",
+  "reason": "Checker false positive: /product/ matches 'Reproductive'; not a product section (adversary R8) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[0] raw_quote shares no number with its body_line: Brad sees compelling evidence that melatonin helps sleep: an umbrella review of twelve papers fou...",
+  "reason": "Number word: the post says \"twelve papers\" mid-sentence, which the tokeniser reads only at a sentence start; the body says twelve too. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[7] raw_quote shares no number with its body_line: Brad sees compelling evidence that melatonin helps sleep: an umbrella review of twelve papers fou...",
+  "reason": "Tokeniser limit: the post sentence backs only the year 2025, and the checker skips bare years; the line's other numbers have their own entries. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[12] raw_quote shares no number with its body_line: - Talk to a doctor before giving melatonin to a child, and store it out of reach: US poison centr...",
+  "reason": "Tokeniser limit: NIH writes \"people 19 years and younger\" (19 year); the body says \"people 19 and younger\" (19). (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[102] number cited to a primary study without its abstract in reach: Brad suggests taking melatonin 3 to 4 hours before you want to fall asleep (Brad's current guidan...",
+  "reason": "The 2 to 4 hours sits in two sentences: Brad's March post [11], which this POST quote supports verbatim, and Zhdanova 1996 [71], whose abstract is quoted in addendum-2; the checker asks every holding sentence's citation of this entry. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[107] raw_quote shares no number with its body_line: Short-term use appears safe for most people, but long-term safety is unclear [1]. A 2015 review f...",
+  "reason": "Tokeniser limit: the NIH sentence backs only the year 2015, and the checker skips bare years; the line's other numbers have their own entries. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[147] raw_quote shares no number with its body_line: The liver breaks melatonin down almost entirely through the enzyme CYP1A2 [19]. In healthy volunt...",
+  "reason": "Tokeniser limit: the abstract writes \"2.5 (1.7-4.7) %\", so the % lands after the CI; the body says 2.5%. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[191] raw_quote shares no number with its body_line: **Dose in children:** In 72 children aged 6 to 12 with chronic sleep-onset insomnia, 0.05, 0.1 an...",
+  "reason": "Tokeniser limit: the abstract writes \"63 (32-94) minutes\"; the unit after the CI is not joined to 63. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[192] raw_quote shares no number with its body_line: **Dose in children:** In 72 children aged 6 to 12 with chronic sleep-onset insomnia, 0.05, 0.1 an...",
+  "reason": "Tokeniser limit: the abstract writes \"41 (19-62) minutes\"; the unit after the CI is not joined to 41. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[209] raw_quote shares no number with its body_line: Especially at doses above what the body makes, there is too little information to judge melatonin...",
+  "reason": "The body rounds the abstract's \"35.7 and 21.6 microg\" to about 36 and 22 micrograms. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[212] raw_quote shares no number with its body_line: Especially at doses above what the body makes, there is too little information to judge melatonin...",
+  "reason": "Tokeniser limit: the abstract says \"over 50 yr old\" (>50 year); the body says \"adults over 50\" (>50). (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[213] raw_quote shares no number with its body_line: Brad points out that the body makes about 10 to 80 micrograms a night and only about 15% of an or...",
+  "reason": "Tokeniser limit: the abstract says \"peaking at 4 mg/day\"; the body says \"up to 4 mg a day\", which reads as <=4 mg/day. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[233] raw_quote shares no number with its body_line: A 2026 trial in 21 healthy adults found the effect depends on genes. In carriers of a common vari...",
+  "reason": "Tokeniser limit: the abstract says \"63 eligible RCTs\"; the body's \"63-trial meta-analysis\" is not read as 63. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[371] raw_quote shares no number with its body_line: Melatonin is a hormone that the brain makes in response to darkness, and it helps time the body's...",
+  "reason": "The quote supports the receptor names MT1 and MT2; the line's only number token is \"24-hour\" in the NIH sentence before it, which this entry does not claim. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[380] raw_quote shares no number with its body_line: **GERD:** The case rests on two trials, one of melatonin added to omeprazole and one of a combine...",
+  "reason": "Number word: \"Seventy-two out of 78 eligible patients\" is not read as 72 by the tokeniser; the body says 72. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[381] raw_quote shares no number with its body_line: **GERD:** The case rests on two trials, one of melatonin added to omeprazole and one of a combine...",
+  "reason": "Tokeniser limit: the abstract gives \"3 mg/day\"; the body says \"3 mg of sublingual melatonin\" (3 mg). (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Melatonin is sold as tablets, capsules, liquids and gummies [1]. Surge-sustained products combine an immediate-releas...\"",
+  "reason": "Tokeniser limit: the abstract writes \"Melatonin-SR (5.10 h)\" (5.1 hour); the body says \"5.10 versus 1.01 hours\" (5.1). Source: pubmed/39458580.md. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.5 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The liver breaks melatonin down almost entirely through the enzyme CYP1A2 [19]. In healthy volunteers, about 15% of 2...\"",
+  "reason": "Tokeniser limit: the abstract writes \"2.5 (1.7-4.7) %\". Source: pubmed/26893170.md, quoted in changed_tokens. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"24.3 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Older adults:** In 354 adults aged 55 to 80 with insomnia, 2 mg of prolonged-release melatonin 2 hours before bedti...\"",
+  "reason": "Tokeniser limit: the abstract writes \"(-24.3 vs.-12.9 minutes; p = 0.028)\" (pubmed/17875243.md, quoted in changed_tokens); the minus signs and the unit after the second number stop the pairing. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.1 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose in children:** In 72 children aged 6 to 12 with chronic sleep-onset insomnia, 0.05, 0.1 and 0.15 mg per kg wor...\"",
+  "reason": "Tokeniser limit: the abstract lists \"melatonin 0.05, 0.1, and 0.15 mg/kg\"; the unit attaches only to 0.15. Source: pubmed/20668840.md. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"63 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose in children:** In 72 children aged 6 to 12 with chronic sleep-onset insomnia, 0.05, 0.1 and 0.15 mg per kg wor...\"",
+  "reason": "Tokeniser limit: \"63 (32-94) minutes\" in pubmed/11292231.md, quoted in changed_tokens. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"41 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose in children:** In 72 children aged 6 to 12 with chronic sleep-onset insomnia, 0.05, 0.1 and 0.15 mg per kg wor...\"",
+  "reason": "Tokeniser limit: \"41 (19-62) minutes\" in pubmed/11292231.md, quoted in changed_tokens. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"36 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Especially at doses above what the body makes, there is too little information to judge melatonin's overall safety, a...\"",
+  "reason": "The body rounds the abstract's 35.7 microg (men). Source: pubmed/11120654.md, quoted in changed_tokens. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"22 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Especially at doses above what the body makes, there is too little information to judge melatonin's overall safety, a...\"",
+  "reason": "The body rounds the abstract's 21.6 microg (women). Source: pubmed/11120654.md, quoted in changed_tokens. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤4 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad points out that the body makes about 10 to 80 micrograms a night and only about 15% of an oral dose is absorbed,...\"",
+  "reason": "Tokeniser limit: \"peaking at 4 mg/day\" (pubmed/38888087.md) vs the body's \"up to 4 mg a day\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \">10 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2023 study found 22 of 25 melatonin gummy products were inaccurately labeled, with melatonin ranging from 74% to 34...\"",
+  "reason": "Tokeniser limit: the abstract says \"did not meet label within a 10% margin of the label claim in more than 71% of supplements\" (pubmed/27855744.md); the body says \"missed the label by over 10%\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"26 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Melatonin occurs naturally in many foods [124]. In 8,320 university graduates, mean dietary melatonin intake was abou...\"",
+  "reason": "Unit conversion: the abstract gives 25554.7 ng/day (pubmed/41588582.md); the body keeps that figure and adds \"about 26 micrograms\" per review R10. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"19\": Talk to a doctor before giving melatonin to a child, and store it out of reach: US poison centre reports in people 19...",
+  "reason": "Tokeniser limit: NIH and the MMWR abstract write \"19 years and younger\" / \"aged ≤19 years\"; the body says \"people 19 and younger\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"55 year\": The evidence for melatonin in chronic insomnia is modest. The American Academy of Sleep Medicine suggests clinicians ...",
+  "reason": "Tokeniser limit: the guideline abstract writes \"patients ≥ 55 years\" (pubmed/38016484.md); the body says \"people aged 55 and over\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 mg/day\": Tinnitus: In a trial of 120 people, tinnitus perception fell by 40% with 3 mg of melatonin daily for 1 month, by 81% ...",
+  "reason": "Tokeniser limit: the abstract writes \"melatonin (3 mg/24 h)\" (pubmed/17942035.md); the body says \"3 mg of melatonin daily\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"25\": In 27 overweight female nurses, 3 mg of melatonin on the nights they slept, for 12 weeks, reduced circadian misalignm...",
+  "reason": "Number word: the abstract writes \"Twenty five male and female subjects\" (pubmed/33192634.md), which the tokeniser does not read as 25. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2 mg\": Post-stroke delirium: In a propensity-matched (non-randomised) comparison, 2 mg of melatonin at night started within ...",
+  "reason": "Tokeniser limit: the abstract writes \"melatonin (2 mg per day at night)\" (pubmed/33657679.md), read as 2 mg/day; the body says \"2 mg of melatonin at night\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"72\", \"3 mg\": GERD: The case rests on two trials, one of melatonin added to omeprazole and one of a combined supplement, so melaton...",
+  "reason": "Tokeniser limits: \"Seventy-two out of 78 eligible patients\" is not read as 72, and \"sublingual melatonin (3 mg/day)\" is read as 3 mg/day (pubmed/37768310.md). (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1 hour\": Nocturia: In 60 women aged over 55 years with nocturia, 2 mg a day of melatonin for 2 weeks reduced night-time urinat...",
+  "reason": "Tokeniser limit: the abstract writes \"[1.0 (-0.3, 4.5) vs. 0.0 (-3.0, 2.3) h\" (pubmed/35596803.md); the unit after the CI is not joined to 1.0. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3 mg\": Results are mixed. In a placebo-controlled trial of 27 people with MS, 3 mg a night for 12 weeks improved sleep quali...",
+  "reason": "Tokeniser limit: the abstract writes \"3 mg/night during 12 weeks\" (pubmed/39630381.md); the body says \"3 mg a night\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \">50\": Especially at doses above what the body makes, there is too little information to judge melatonin's overall safety, a...",
+  "reason": "Tokeniser limit: the abstract says \"insomniac subjects over 50 yr old\" (pubmed/11600532.md, >50 year); the body says \"adults over 50\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"19\": Reports to US poison control centers of melatonin ingestion by people 19 and younger rose 530% from 2012 to 2021; fiv...",
+  "reason": "Tokeniser limit: the MMWR abstract writes \"aged ≤19 years\" (pubmed/35653284.md); the body says \"people 19 and younger\". (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 1 November 2026)",
+  "reason": "The Current view heading carries its review date, which the master-writer contract updates at each review (1 November 2026 -> 12 November 2026); the section itself is kept. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host msdmanuals.com: [2] MSD Manual Consumer Version. \"Melatonin.\" [https://www.msdmanuals.com/home/special-subjects/d...",
+  "reason": "MSD Manual Consumer Version is a public safety source added under the Step 2 safety rule (autoimmune, fertility, epilepsy, warfarin cautions); the checker's host list does not include it. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host newsroom.heart.org: [77] American Heart Association. News release on American Heart Association Scientific Sessions 2...",
+  "reason": "American Heart Association news release on the 2025 heart failure abstract; it is the only public source for the comparison-group point; the abstract's DOI is in the same reference line and its public Crossref text is in safety-2b. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "melatonin-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Mention",
+  "reason": "Product section rewritten per review R3: claims hedged as docs/products.md words them and the 126 mg magnesium amount added; listed in ask_brad. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "token \"18353\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In VITAL, 1 g a day for 5.3 years did not prevent depression in 18,353 adults; depression was slightly more common wi...\"",
+  "reason": "Tokeniser: VITAL-DEP abstract (PMID 34932079) writes 18 353 with a narrow no-break space (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 22 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 156 -> 117, recomputed 156 -> 126",
+  "reason": "Product mentions recounted after review fixes; base report count is evidence and cannot be edited (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host iris.who.int: [54] World Health Organization. Risk reduction of cognitive decline and dementia: WHO guidelines,...",
+  "reason": "Official public source host (WHO IRIS) not on the allow-list (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1.49\": Cohort and case-control studies: In the UK Biobank cohort of 475,255 adults, calcium supplement use was not linked to...",
+  "reason": "Source abstract misprint: PubMed text writes \"1 49\" for 1.49 (Swedish cohort, CVD death HR 1.49, 1.09 to 2.02) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 22 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"250 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A combination product did not help hand pain. In the RADIANT trial, 106 people with hand osteoarthritis took boswelli...\"",
+  "reason": "Tokeniser: body lists the four RADIANT doses with one closing 'a day'; source writes each as mg/day (250 mg/day verbatim in PMID 33617972) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2500 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Dementia:** In US health records from the University of Florida, people with documented glucosamine use for at le...\"",
+  "reason": "Tokeniser: source writes '~2,500 mg day -1' (read as 2500 mg); body writes '2,500 mg a day'; figure verbatim in PMID 42265388 full text (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"100 mg\", \"1500 mg\": A combination product did not help hand pain. In the RADIANT trial, 106 people with hand osteoarthritis took boswelli...",
+  "reason": "Tokeniser: body lists the RADIANT doses with one closing 'a day'; source writes 100 mg/day and 1,500 mg/day (PMID 33617972) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current evidence position",
+  "reason": "Heading replaced by '## Current view (reviewed 12 November 2026)': the page now carries Brad's view, not an evidence position (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nice.org.uk: [105] National Institute for Health and Care Excellence. \"Osteoarthritis in over 16s: diagnosis a...",
+  "reason": "Official public source host not on the allow-list (NICE NG226; Fable 7: keep the link) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nice.org.uk: [105] National Institute for Health and Care Excellence. \"Osteoarthritis in over 16s: diagnosis a...",
+  "reason": "Official public source host not on the allow-list (NICE NG226; Fable 7: keep the link) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[24] raw_quote shares no number with its body_line: A 2013 meta-analysis of 22 randomized trials (1,606 participants) found that more potassium lower...",
+  "reason": "Tokeniser: source puts the 95% CI between the value and the unit (\"3.49 (95% confidence interval 1.82 to 5.15) mm Hg\") and spells \"mm Hg\" with a space (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3.49 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2013 meta-analysis of 22 randomized trials (1,606 participants) found that more potassium lowered systolic blood pr...\"",
+  "reason": "Tokeniser: Aburto 2013 writes \"3.49 (95% confidence interval 1.82 to 5.15) mm Hg\" (CI between value and unit, \"mm Hg\" with a space); quoted in changed_tokens[24] (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.96 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2013 meta-analysis of 22 randomized trials (1,606 participants) found that more potassium lowered systolic blood pr...\"",
+  "reason": "Tokeniser: Aburto 2013 writes \"1.96 (0.86 to 3.06) mm Hg\" and, in its full text, \"MD 1.96 mm Hg lower\"; \"mm Hg\" with a space is not read as a unit (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"5.32 mmHg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A 2013 meta-analysis of 22 randomized trials (1,606 participants) found that more potassium lowered systolic blood pr...\"",
+  "reason": "Tokeniser: Aburto 2013 full text writes \"5.32 (3.43 to 7.20) mm Hg\" (CI between value and unit, \"mm Hg\" with a space); quoted in changed_tokens[12] (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Potassium phosphate has also been tested: in a 4-year open trial in 25 people with absorptive hypercalciuria, a major...\" | \"## 4. Recommended Dosing\" | \"In chronic kidney disease, impaired potassium excretion means even dietary intakes below the AI can cause hyperkalemi...\"",
+  "reason": "Tokeniser: source writes the CKD stage range as \"stage G3b-4\" (Gritter 2022, PMID 35609996), body says \"stage G3b to 4\"; the other hits (4-year, 4 tablets, heading \"4.\") are carried over (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3170 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Supplemental potassium bicarbonate (median doses of 81 mmol/day and 122 mmol/day, about 3,170 and 4,770 mg of potassi...\"",
+  "reason": "Arithmetic: 81 mmol/day of potassium converted to mg (x 39.1); the source gives mmol only, quoted in its entry (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4770 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Supplemental potassium bicarbonate (median doses of 81 mmol/day and 122 mmol/day, about 3,170 and 4,770 mg of potassi...\"",
+  "reason": "Arithmetic: 122 mmol/day of potassium converted to mg (x 39.1); the source gives mmol only, quoted in its entry (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4770 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bone health:** 2,346-4,770 mg/day (as potassium citrate or bicarbonate) in clinical trials [25][59][60]. These dose...\"",
+  "reason": "Arithmetic: bone-health dose range top is the 122 mmol/day bicarbonate dose converted to mg (x 39.1); the source gives mmol only (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Muscle Cramps and Restless Legs",
+  "reason": "Heading renamed per review (rulings.md item 6: crosscheck O1-O4, now \"### Leg Cramps\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 2 -> 10",
+  "reason": "Earlier-view entries name MicroVitamin as Brad said it (dated superseded statements), the Current view names the Potassium Fiber Drink label as the source of its caution (ruling 5), and the product section links both products; whether the drink belongs here is in ask_brad (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "potassium-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 1 -> 9, recomputed 2 -> 10",
+  "reason": "Report count method differs from the checker by one on both sides (1 -> 9 vs 2 -> 10); the rise of 8 is the same and explained on the line above (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.36 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Dose-response meta-analysis:** A dose-response meta-analysis of 84 randomized controlled trials found that phytoste...\"",
+  "reason": "Tokeniser: source [79] writes a negative range with the unit after the second value only (\"-0.36 to -0.26 mmol/L\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Adding plant stanols or sterols to a statin lowers LDL cholesterol further. A stanol ester spread (5.1 g a day) taken...\"",
+  "reason": "Tokeniser: source [78] writes the figure with an SD (\"16+/-5%\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"58\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Meta-analyses of randomized trials found that at least 3 g a day of oat beta-glucan lowered LDL cholesterol by 0.25 m...\"",
+  "reason": "Tokeniser: source [15] writes the count as a hyphenated number word mid-sentence (\"fifty-eight trials\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.19 mmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Meta-analyses of randomized trials found that at least 3 g a day of oat beta-glucan lowered LDL cholesterol by 0.25 m...\"",
+  "reason": "Tokeniser: source [15] puts the unit after the 95% CI (\"-0·19; 95 % CI -0·23, -0·14 mmol/l\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "token \"46\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Portfolio diet:** Combines plant sterols, viscous fiber, plant protein such as soy, and nuts. Added to a choleste...\"",
+  "reason": "Tokeniser: source [97] opens with a number word before an adjective and comma (\"Forty-six healthy, hyperlipidemic adults\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"14\": Meta-analysis (2024): A systematic review and meta-analysis of 14 double-blind trials lasting 4 to 24 weeks found red...",
+  "reason": "Tokeniser: source [70] writes the count as a number word before a hyphenated adjective (\"Fourteen double-blinded clinical trials\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current evidence position",
+  "reason": "Current view heading carries the new review date (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Plant Sterols and Stanols — LDL Cholesterol Reduction",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Soluble Fiber — Psyllium",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Soluble Fiber — Beta-Glucan (Oats and Barley)",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"## 1. Overview\" | \"**Clinical trial 1, Yamadera et al. (2007):** In volunteers who had been sleeping poorly for some time, 3 g of glycin...\" | \"**Greenberg et al. (2009):** A small double-blind, placebo-controlled trial added glycine, titrated to 60 g a day, fo...\"",
+  "reason": "Section and trial numbering (\"## 1. Overview\", \"Clinical trial 1\"), not a measured value (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"36 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 1996 crossover trial, 11 treatment-resistant patients completed 6 weeks of 0.8 g/kg a day; negative symptoms fel...\"",
+  "reason": "Tokeniser: abstract (PMID 8932891) writes \"a mean 36 (7%) reduction\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"800\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analyses:** A 2010 meta-analysis of about 800 people in 26 studies found that glycine, D-serine and sarcosine ...\"",
+  "reason": "Tokeniser: abstract (PMID 19909229) writes \"About eight hundred subjects\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤800 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**People at risk of psychosis:** In two small pilot studies (10 people open-label, 8 randomised), glycine alone at up...\"",
+  "reason": "Tokeniser: abstract (PMID 23089076) writes \"titrated to 0.8 g/kg/d\"; body \"up to 0.8 g/kg a day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"30000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Clozapine interaction, Potkin et al. (1999):** In a double-blind trial in 19 people on clozapine, 30 g of glycine a...\"",
+  "reason": "Tokeniser: abstract (PMID 9892314) writes \"30 g/day of glycine\"; body \"30 g of glycine a day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**A larger null trial, Lizzo et al. (2022):** In 114 healthy older adults (average age 65), GlyNAC at 2.4, 4.8 or 7.2...\"",
+  "reason": "Tokeniser: abstract (PMID 35821844) writes \"age mean = 65 years\"; body \"average age 65\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2.4\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**A larger null trial, Lizzo et al. (2022):** In 114 healthy older adults (average age 65), GlyNAC at 2.4, 4.8 or 7.2...\"",
+  "reason": "Tokeniser: abstract (PMID 35821844) writes \"low dose: 2.4 g\"; body lists \"2.4, 4.8 or 7.2 g a day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"4800 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**A larger null trial, Lizzo et al. (2022):** In 114 healthy older adults (average age 65), GlyNAC at 2.4, 4.8 or 7.2...\"",
+  "reason": "Tokeniser: abstract (PMID 35821844) writes \"medium dose: 4.8 g\"; body lists \"2.4, 4.8 or 7.2 g a day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"15000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood pressure:** In the Sugaya et al. (2021) bladder study, blood pressure fell during the glycine phase (3 g twic...\"",
+  "reason": "Tokeniser: abstract (PMID 24144057) writes \"glycine (15 g/day)\"; body \"15 g of glycine a day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3 x/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Type 2 diabetes (HbA1c, inflammation) | 15 g/day (5 g three times daily) for 3 months | Divided doses | 1 small RCT...\"",
+  "reason": "Tokeniser: Cruz abstract (PMID 18852529) writes \"po tid\"; dose per Soh 2024 review full text (fix-5.md), not an abstract (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2400 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| GlyNAC (glycine + NAC) for oxidative stress | 2.4 to 7.2 g/day of GlyNAC for 2 weeks in the largest trial | As dire...\"",
+  "reason": "Tokeniser: abstract (PMID 35821844) writes \"low dose: 2.4 g\" and \"7.2 g/day\"; table \"2.4 to 7.2 g/day\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<21\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Under 21 CFR 170.50, the FDA no longer regards glycine and its salts as generally recognized as safe (GRAS) for use i...\"",
+  "reason": "Tokeniser: \"Under 21 CFR 170.50\" read as a comparator; 21 is the CFR title number (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"980 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Turkey breast, roasted (FDC 171496) | 1.151 g | 3 oz (85 g) | 0.98 g |\"",
+  "reason": "USDA per-serving amount: arithmetic from fetched FDC values (1.151 g per 100 g x 85 g), accepted (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"920 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Tofu, firm, raw (FDC 172475) | 0.733 g | Half a cup (126 g) | 0.92 g |\"",
+  "reason": "USDA per-serving amount: arithmetic from fetched FDC values (0.733 g per 100 g x 126 g), accepted (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Peanuts, dry-roasted (FDC 173806) | 1.427 g | 1 oz (28.35 g) | 0.40 g |\"",
+  "reason": "USDA per-serving amount: arithmetic from fetched FDC values (1.427 g per 100 g x 28.35 g), accepted (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"45\": The body uses glycine to make glutathione (GSH), an important antioxidant [51]. Glutathione redox balance in the bloo...",
+  "reason": "Tokeniser: abstract (PMID 12398937) writes \"maintained until 45 years\"; body \"until about age 45\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": Randomised trial, Kumar et al. (2023): 24 older adults were randomised to GlyNAC or an alanine placebo for 16 weeks, ...",
+  "reason": "Tokeniser: abstract (PMID 35975308) writes \"Twenty-four OA\" (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg\", \"15000 mg/day\": Glycine may help regulate immune function [50]. A review reported that glycine dampens the activity of several white ...",
+  "reason": "Cruz abstract (PMID 18852529) writes \"5 g/d glycine ... po tid\"; 5 g three times daily (15 g/d) is from the Soh 2024 review full text [68] (fix-5.md), which is not a PubMed abstract (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg\", \"15000 mg/day\": Type 2 diabetes: In 74 people with type 2 diabetes, 5 g of glycine three times a day (15 g a day in all) for 3 months...",
+  "reason": "Cruz abstract (PMID 18852529) writes \"5 g/d glycine ... po tid\"; 5 g three times daily (15 g/d) is from the Soh 2024 review full text [68] (fix-5.md), which is not a PubMed abstract (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"15000 mg/day\", \"5000 mg\": Type 2 diabetes (HbA1c, inflammation) | 15 g/day (5 g three times daily) for 3 months | Divided doses | 1 small RCT [...",
+  "reason": "Cruz abstract (PMID 18852529) writes \"5 g/d glycine ... po tid\"; 5 g three times daily (15 g/d) is from the Soh 2024 review full text [68] (fix-5.md), which is not a PubMed abstract (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Aging and Longevity",
+  "reason": "Heading renamed in step 2b style fix (\"Aging and Lifespan\": the section reports lifespan studies) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Glycine Does NOT Cause Morning Grogginess",
+  "reason": "Heading softened per adversary ruling R7 (\"Morning Grogginess in Trials\") (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "glycine-benefits-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Product Mention",
+  "reason": "Two hedges added per adversary ruling R2 (rats; low-quality magnesium evidence), as products.md words them; listed in ask_brad (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"800 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The US recommended dietary allowance (RDA) for adults is 0.8 g of protein per kg of body weight a day [15]. A 2023 re...\"",
+  "reason": "Tokeniser: source (Bhasin 2018) writes 'RDA for protein at 0.8 g/kg/d'; body writes '0.8 g of protein per kg of body weight a day' (read as 800 mg) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1998\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Many older adults eat less protein than the RDA. In US national survey data (NHANES, 2005 to 2014) on 11,680 adults a...\"",
+  "reason": "Tokeniser: source (Houston 2017) writes '(n = 1998)', which is read as a year and dropped (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1620 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Protein supplements add a modest amount to the gains from resistance training. A meta-analysis of 49 trials with 1,86...\"",
+  "reason": "Tokeniser: source (Morton 2018) writes 'total protein intakes of 1.62 g/kg/day' (per-day unit); body writes 1.62 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1.3\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Without exercise, extra protein has not built muscle. In older men with physical limits, 1.3 vs 0.8 g/kg a day for 6 ...\"",
+  "reason": "Tokeniser: source (Bhasin 2018) writes '0.8 vs 1.3 g/kg/d' (unit after 1.3); body writes '1.3 vs 0.8 g/kg a day' (unit after 0.8) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1500 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Without exercise, extra protein has not built muscle. In older men with physical limits, 1.3 vs 0.8 g/kg a day for 6 ...\" | \"Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healt...\" | \"- **Calcium and bone:** in 24 trained women, a high-protein diet (2.8 vs 1.5 g/kg a day) for 6 months did not change ...\"",
+  "reason": "Tokeniser: sources write a per-day or split form: Ceglia 2026 '1.5 g/kg/d', ESPEN 2014 '1.2-1.5 g protein/kg body weight/day', Antonio 2018 'control: 1.5±0.3 ... g/kg/d'; body writes 1.5 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"≥1200 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healt...\"",
+  "reason": "Tokeniser: sources write 'at least 1.0-1.2 g protein/kg body weight/day' (ESPEN) and 'at least in the range of 1.0 to 1.2 g protein per kilogram of body weight per day' (PROT-AGE), read as mg; body writes 'at least 1.0 to 1.2 g/kg a day' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \">65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healt...\"",
+  "reason": "Tokeniser: source (PROT-AGE 2013) writes 'older people (>65 years)'; body writes 'people over 65' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"<30\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healt...\"",
+  "reason": "Tokeniser: source (PROT-AGE 2013) writes 'estimated GFR <30 mL/min/1.73 m(2)'; body writes 'eGFR under 30' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \">2 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 60 Australian care homes with 7,195 residents, adding milk, yoghurt and cheese to menus (69 vs 58 g of protein and...\"",
+  "reason": "Tokeniser: source (Iuliano 2021) writes 'Two year cluster randomised controlled trial'; body 'over 2 years' (meaning across 2 years) is read as more than 2 years (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \">3 hour\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In people with type 2 diabetes, whey before a meal lowered blood sugar after it. A 50 g whey drink before breakfast c...\"",
+  "reason": "Tokeniser: source (Jakubowicz 2014) writes 'over the whole 180 min post-meal period, glucose levels were reduced by 28%'; body 'over 3 hours' (meaning across 3 hours) is read as more than 3 hours (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1000 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Dialysis changes the picture. Once dialysis starts, people usually need more protein, not less; KDOQI recommends 1.0 ...\"",
+  "reason": "Tokeniser: sources write a per-day unit (KDIGO 2024 '0.8 g/kg body weight/d', Kistler 2021 '0.55-0.60 g/kg/day', '0.6-0.8 g/kg/day', '1.0-1.2 g/kg/day'); body writes g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"0.58\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Restriction trials show mixed results. In the MDRD trial, 585 people with moderate kidney disease on 0.58 vs 1.3 g/kg...\"",
+  "reason": "Tokeniser: source (Klahr 1994) writes '(1.3 or 0.58 g of protein per kilogram of body weight per day)', read as 1300 mg and 580 mg; body writes '0.58 vs 1.3 g/kg a day' (unit after 1.3) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"2000\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Restriction trials show mixed results. In the MDRD trial, 585 people with moderate kidney disease on 0.58 vs 1.3 g/kg...\"",
+  "reason": "Tokeniser: source (Fouque 2009) writes 'A total of 2000 patients were analysed'; 2000 is read as a year and dropped (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"280 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Restriction trials show mixed results. In the MDRD trial, 585 people with moderate kidney disease on 0.58 vs 1.3 g/kg...\"",
+  "reason": "Tokeniser: source (Menon 2009) writes 'a very low-protein diet (0.28 g/kg/d)' (per-day unit); body writes 0.28 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"715128\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The source of protein may matter more than the amount. In a meta-analysis of 32 cohorts with 715,128 people, higher t...\"",
+  "reason": "Tokeniser: source (Naghshi 2020) writes '715 128 participants' with a space separator, read as two numbers (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"≥1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Healthy older adults (ESPEN, PROT-AGE) | at least 1.0 to 1.2 | [57][58] |\"",
+  "reason": "Tokeniser: table cell 'at least 1.0 to 1.2'; sources write 'at least 1.0-1.2 g protein/kg body weight/day' (ESPEN) and 'at least in the range of 1.0 to 1.2 g protein per kilogram' (PROT-AGE), read as mg (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"≥1.2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Healthy older adults (ESPEN, PROT-AGE) | at least 1.0 to 1.2 | [57][58] |\"",
+  "reason": "Tokeniser: table cell 'at least 1.0 to 1.2'; sources write 'at least 1.0-1.2 g protein/kg body weight/day' (ESPEN) and 'at least in the range of 1.0 to 1.2 g protein per kilogram' (PROT-AGE), read as mg (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1.62\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Total intake beyond which a 49-trial review found no added muscle gain | 1.62 | [44] |\"",
+  "reason": "Tokeniser: bare table cell 1.62; source (Morton 2018) writes 'total protein intakes of 1.62 g/kg/day' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"1800 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In people with healthy kidneys, higher protein has not harmed kidney function in most studies. In 1,324 adults (avera...\"",
+  "reason": "Tokeniser: source (Martin 2006) writes '3.6 (high protein), 1.8 (moderate protein), and 0.8 (low protein) g/kg/day' (unit after the last number); body writes 0.8, 1.8 and 3.6 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"3600 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In people with healthy kidneys, higher protein has not harmed kidney function in most studies. In 1,324 adults (avera...\"",
+  "reason": "Tokeniser: source (Martin 2006) writes '3.6 (high protein), 1.8 (moderate protein), and 0.8 (low protein) g/kg/day' (unit after the last number); body writes 0.8, 1.8 and 3.6 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"≤100000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Risk assessments are more reassuring. An analysis of published test results found no increased health risk from 1 or ...\"",
+  "reason": "Tokeniser: source (Bethencourt-Barbuzano 2023) writes 'The daily intake of 30, 60, and 100 g of whey PS for 25 years does not pose a health risk'; body writes 'up to 100 g a day' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"## 7. Dietary Sources\" | \"| Soy drink, unsweetened, fortified | 7.0 | 80 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5); '7' also matches the section heading '## 7. Dietary Sources' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"8.3\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Skim milk | 8.3 | 83 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"83\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Skim milk | 8.3 | 83 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"8.1\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 2% milk | 8.1 | 122 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"7.7\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Whole milk | 7.7 | 149 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"149\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Whole milk | 7.7 | 149 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"80\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Soy drink, unsweetened, fortified | 7.0 | 80 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "token \"39\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Almond drink, unsweetened | 1.0 | 39 |\"",
+  "reason": "Computed, not quoted: per-cup value = USDA SR Legacy value per 100 g x USDA gram weight of 1 cup (both verbatim in PUBLIC/protein-powders-benefits-types-dosing-and-side-effects.fix-3.md, food_nutrient.csv and food_portion.csv rows); the heading is per cup and USDA publishes per 100 g (ruling R5) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\", \"0.8\": Kidney disease, not on dialysis: for stages 3 to 5, KDIGO suggests about 0.8 g/kg a day and KDOQI 0.55 to 0.6 without...",
+  "reason": "Tokeniser: sources write the stage range as 'CKD G3–G5' (KDIGO 2024) and 'stage 3-5 CKD' (Kistler 2021), read as one token or 5 only; body writes 'stages 3 to 5'; 0.8 in '(0.6 to 0.8 with diabetes)' is bare while Kistler 2021 writes '0.6-0.8 g/kg/day' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"65\": The US recommended dietary allowance (RDA) for adults is 0.8 g of protein per kg of body weight a day [15]. A 2023 re...",
+  "reason": "Tokeniser: sources write 'older adults (≥65 years)' (Weiler 2023) and '65 years or older' (Bhasin 2018); body writes 'adults 65 and over' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1300 mg/kg\": Protein supplements add a modest amount to the gains from resistance training. A meta-analysis of 49 trials with 1,86...",
+  "reason": "Tokeniser: source (Tagawa 2021) writes 'the total protein intake of 1.3 g/kg/d' (per-day unit); body writes 1.3 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"800 mg/kg\": Without exercise, extra protein has not built muscle. In older men with physical limits, 1.3 vs 0.8 g/kg a day for 6 ...",
+  "reason": "Tokeniser: source (Bhasin 2018) writes '0.8 vs 1.3 g/kg/d' (per-day unit); body writes '1.3 vs 0.8 g/kg a day' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≥1000 mg/kg\", \"1200 mg/kg\": Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healt...",
+  "reason": "Tokeniser: source (ESPEN 2014) writes 'at least 1.0-1.2 g protein/kg body weight/day' and '1.2-1.5 g protein/kg body weight/day', read as mg; body writes g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1200 mg/kg\", \"800 mg/kg\": In 187 older adults on a 6-month weight-loss program, hip bone strength rose more over 6 months in the group kept at ...",
+  "reason": "Tokeniser: source (Weaver 2026) writes '1.2 g protein/kg/day' and '0.8 g protein/kg body weight/day'; body writes 1.2 and 0.8 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": For adults with chronic kidney disease who are not on dialysis, guidelines differ. KDIGO (2024) suggests keeping prot...",
+  "reason": "Tokeniser: sources write the stage range as 'CKD G3–G5' (KDIGO 2024) and 'stage 3-5 CKD' (Kistler 2021), read as one token or 5 only; body writes 'stages 3 to 5' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1200 mg/kg\": Dialysis changes the picture. Once dialysis starts, people usually need more protein, not less; KDOQI recommends 1.0 ...",
+  "reason": "Tokeniser: sources write a per-day unit (KDIGO 2024 '0.8 g/kg body weight/d', Kistler 2021 '0.55-0.60 g/kg/day', '0.6-0.8 g/kg/day', '1.0-1.2 g/kg/day'); body writes g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1300 mg/kg\": Restriction trials show mixed results. In the MDRD trial, 585 people with moderate kidney disease on 0.58 vs 1.3 g/kg...",
+  "reason": "Tokeniser: source (Klahr 1994) writes '(1.3 or 0.58 g of protein per kilogram of body weight per day)', read as 1300 mg; body writes 1.3 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"800 mg/kg\": In 8,543 adults aged 60 and over, higher protein was linked with lower 10-year mortality in mild or moderate kidney d...",
+  "reason": "Tokeniser: source (Carballo-Casla 2024) writes the 0.8 g/kg comparison with a per-day unit (g/kg/d); body writes g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.8\": Adults (US RDA) | 0.8 | [15] |",
+  "reason": "Tokeniser: bare table cell 0.8; source (Bhasin 2018) writes 'RDA for protein at 0.8 g/kg/d' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1.1\": Pregnancy (US RDA) | 1.1 | [17] |",
+  "reason": "Tokeniser: bare table cell 1.1; source (Elango 2016) writes 'RDA recommendations of 0.88 and 1.1 g · kg(-1) · d(-1)' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\", \"5\", \"0.8\": Kidney disease stages 3 to 5, not on dialysis (KDIGO 2024) | about 0.8 | [94] |",
+  "reason": "Tokeniser: sources write the stage range as 'CKD G3–G5' (KDIGO 2024) and 'stage 3-5 CKD' (Kistler 2021), read as one token or 5 only; body writes 'stages 3 to 5'; bare table cells ('about 0.8', '0.55 to 0.6') against per-day units in the sources (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Kidney disease stages 3 to 5, not on dialysis, without diabetes (KDOQI 2020) | 0.55 to 0.6 | [95] |",
+  "reason": "Tokeniser: sources write the stage range as 'CKD G3–G5' (KDIGO 2024) and 'stage 3-5 CKD' (Kistler 2021), read as one token or 5 only; body writes 'stages 3 to 5'; bare table cells ('about 0.8', '0.55 to 0.6') against per-day units in the sources (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1300 mg/kg\": The RDA while breastfeeding is 1.3 g/kg a day [16]. Brad's view (October 2026) is that about 1.3 to 1.6 g/kg a day is...",
+  "reason": "Tokeniser: source (Weiler 2023, full-text excerpt in the bundle) writes 'the RDA is 1.3 g/kg/d' (per-day unit); body writes 1.3 g/kg a day (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Risk assessments are more reassuring. An analysis of published test results found no increased health risk from 1 or ...",
+  "reason": "Tokeniser: source (Bandara 2020) writes 'one or three servings' (number words); body writes '1 or 3 servings' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3\": Kidney disease: if you are not on dialysis, guidelines advise about 0.8 g/kg a day (KDIGO) or 0.55 to 0.6 g/kg a day ...",
+  "reason": "Tokeniser: sources write the stage range as 'CKD G3–G5' (KDIGO 2024) and 'stage 3-5 CKD' (Kistler 2021), read as one token or 5 only; body writes 'stages 3 to 5' (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (12 November 2026), as the master contract requires (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "reference line has unknown host hfpappexternal.fda.gov: [5] US Food and Drug Administration. GRAS Notice No. 863: beta-lactoglobulin produced by Trichode...",
+  "reason": "Official public source host not on the allow-list: FDA GRAS Notice Inventory (an fda.gov subdomain) (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "reference line has unknown host consumerreports.org: [10] Consumer Reports. Protein Powders and Shakes Contain High Levels of Lead. Published 14 Octob...",
+  "reason": "Public source host not on the allow-list: Consumer Reports' published level of concern for lead (0.5 mcg a day), the threshold Brad's view compares against; its test results were removed from the body under Codex R4 (masters-rebuild-2, 4d fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "protein-powders-benefits-types-dosing-and-side-effects",
+  "match": "product section changed: ### Protein Powder as Part of MicroVitamin+ Powder",
+  "reason": "Product section gained the docs/products.md:186 safety cautions (vitamin K2 and blood thinners, bovine collagen, not under 18, not in pregnancy or nursing), so it matches products.md (ruling R6); Brad's creatine copy unchanged (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ }
+]

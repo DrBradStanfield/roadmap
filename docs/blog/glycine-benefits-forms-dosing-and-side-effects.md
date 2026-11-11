@@ -160,7 +160,7 @@ The body uses glycine to make glutathione (GSH), an important antioxidant [51]. 
 
 ### Anti-inflammatory Effects
 
-Glycine may help regulate immune function [50]. A review reported that glycine dampens the activity of several white blood cells, including macrophages, neutrophils and lymphocytes, and that dietary glycine protected rats against endotoxaemia and liver injury after interrupted blood flow (ischaemia-reperfusion) [50]. In 74 people with type 2 diabetes, 5 g of glycine a day for 3 months lowered an inflammatory marker (TNF receptor I) compared with placebo [64]. There is limited human clinical evidence for direct anti-inflammatory benefits of glycine supplementation.
+Glycine may help regulate immune function [50]. A review reported that glycine dampens the activity of several white blood cells, including macrophages, neutrophils and lymphocytes, and that dietary glycine protected rats against endotoxaemia and liver injury after interrupted blood flow (ischaemia-reperfusion) [50]. In 74 people with type 2 diabetes, 5 g of glycine three times a day (15 g a day in all) for 3 months lowered an inflammatory marker (TNF receptor I) compared with placebo [64][68]. There is limited human clinical evidence for direct anti-inflammatory benefits of glycine supplementation.
 
 ### Cardiovascular Health
 
@@ -178,7 +178,7 @@ Glycine may help regulate immune function [50]. A review reported that glycine d
 
 **Glucose response:** In a small study in healthy people, taking glycine with glucose cut the blood glucose response by more than 50% compared with glucose alone [45].
 
-**Type 2 diabetes:** In 74 people with type 2 diabetes, 5 g of glycine a day for 3 months gave lower HbA1c than placebo [64].
+**Type 2 diabetes:** In 74 people with type 2 diabetes, 5 g of glycine three times a day (15 g a day in all) for 3 months gave lower HbA1c than placebo [64][68].
 
 **Metabolic syndrome:** A review found that plasma glycine levels are lower in people with metabolic syndrome than in healthy people [46]. In 60 people with metabolic syndrome, 15 g a day for 3 months cut a marker of fat oxidation by 25% compared with placebo [63].
 
@@ -243,7 +243,7 @@ Glycine is sometimes promoted for tinnitus (ringing in the ears) because it calm
 | Sleep quality improvement | 3 g/day | Before bed | 3 small trials [69] |
 | Usual intake from food (not a target) | 1.5–3.0 g/day | From a protein-rich diet | Metabolic estimate [4] |
 | Overactive bladder symptoms | 3 g twice daily (6 g total) | Morning and evening | 1 small non-randomised placebo-first study |
-| Type 2 diabetes (HbA1c, inflammation) | 5 g/day for 3 months | Divided doses | 1 small RCT [64] |
+| Type 2 diabetes (HbA1c, inflammation) | 15 g/day (5 g three times daily) for 3 months | Divided doses | 1 small RCT [64][68] |
 | Metabolic syndrome (oxidative stress) | 15 g/day for 3 months | Daily | 1 small RCT [63] |
 | GlyNAC (glycine + NAC) for oxidative stress | 2.4 to 7.2 g/day of GlyNAC for 2 weeks in the largest trial | As directed | Mixed: one small positive RCT, one larger null RCT [59][60] |
 | Schizophrenia adjunct (specialist use only) | 0.8 g/kg/day | Divided doses | Small RCTs; largest trial null; specialist supervision required |
