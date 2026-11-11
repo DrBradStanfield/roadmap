@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** US-02 AC6c: a value edited back during the 800 ms wait (useAutoAdvance) to one that would not move the focus cancels
- *  the wait, in the first-time systolic and US inches boxes, as the weight's callers and the grid's cell already do. Synthetic values. */
+ *  the wait, in the form's systolic and US inches boxes, as the weight's callers and the grid's cell already do. Synthetic values. */
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
@@ -56,12 +56,14 @@ describe('US-02 AC6c: a value edited back during the wait to one that does not m
     wait(900);
     expect(at()).toBe(box);
   });
-  it('5 ft, inches "1", then the feet made "6" within the wait: the feet box hands back to inches, which keeps the focus', () => {
-    usHeight();
-    typeAll($('#heightInches'), ['1']); wait(300);
-    typeAll($('#heightFeet'), ['6']); wait(900);
-    expect(at()).toBe('heightInches');
-  });
+  // A feet digit hands the focus back to inches; a cleared feet box keeps it.
+  it.each([['made "6"', 'heightInches', '6'], ['cleared', 'heightFeet', '']] as const)(
+    '5 ft, inches "1", then the feet %s within the wait: no jump, the focus stays in %s', (_, box, feet) => {
+      usHeight();
+      typeAll($('#heightInches'), ['1']); wait(300);
+      typeAll($('#heightFeet'), [feet]); wait(900);
+      expect(at()).toBe(box);
+    });
 });
 
 describe('US-02 AC6, AC6c: what still moves, and the callers this does not change', () => {
