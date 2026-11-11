@@ -109,7 +109,8 @@ vi.mock('./UploadModal', async () => {
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
 const conversions = () => vi.mocked(trackABConversion).mock.calls.length;
 const stops: Array<() => void> = [];
@@ -178,7 +179,7 @@ const settle = (ms: number) => act(async () => { await new Promise((r) => setTim
 async function saveWeight(view: RenderResult, weight: string) {
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toContainEqual([Number(weight), TODAY]), { timeout: 2000 });
+  await waitFor(async () => expect(await activeWeights()).toContainEqual([Number(weight), localToday()]), { timeout: 2000 });
   await settle(50);
 }
 /** Another writer changes the record, and the page is told (US-34). */
@@ -241,7 +242,7 @@ describe('US-34 AC4: a change announced before the page has shown its first read
   }
   const announceWeight = () => {
     atMount.run = () => {
-      void addMeasurement('weight', 82, TODAY); // the store takes it at once
+      void addMeasurement('weight', 82, localToday()); // the store takes it at once
       window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
     };
   };
@@ -325,7 +326,7 @@ describe('US-07 AC7: a lab eGFR added by hand reaches the chat mirror', () => {
     fireEvent.change(view.getByRole('combobox', { name: 'Test' }), { target: { value: 'egfr' } });
     fireEvent.change(view.getByRole('textbox', { name: 'Value' }), { target: { value: '40' } });
     fireEvent.click(view.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(mirror()?.labEgfr).toMatchObject({ labEgfr: 40, labEgfrDate: TODAY }));
+    await waitFor(() => expect(mirror()?.labEgfr).toMatchObject({ labEgfr: 40, labEgfrDate: localToday() }));
   });
 });
 
@@ -334,7 +335,7 @@ describe('US-15 AC10, US-34: another writer\'s change reaches the chat mirror', 
     await completeRecord();
     await open();
     await waitFor(() => expect(mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value).toBe(70));
-    await anotherWriter(() => addMeasurement('weight', 82, TODAY));
+    await anotherWriter(() => addMeasurement('weight', 82, localToday()));
     await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1));
     await waitFor(() => expect(mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value).toBe(82));
   });
@@ -380,7 +381,7 @@ describe('US-34 AC4, US-62 AC13: an upload finishes while a change is held', () 
     expect(calls('remote_change_applied')).toEqual([]); // held
     reads.count = 0;
     await act(async () => {
-      await addMeasurement('weight', 80, TODAY); // the upload's save
+      await addMeasurement('weight', 80, localToday()); // the upload's save
       await upload.complete!();
     });
     await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
@@ -626,7 +627,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       press(cell);
       press(q(view, '.alr-add-btn') as HTMLElement);
       await waitFor(async () => expect(await activeWeights()).toHaveLength(2), { timeout: 3000 });
-      const today = (await activeWeights()).find(([, day]) => day === TODAY)!;
+      const today = (await activeWeights()).find(([, day]) => day === localToday())!;
       expect(today[0]).toBeCloseTo(toCanonicalValue('weight', 180, 'conventional'), 1);
     });
   });
