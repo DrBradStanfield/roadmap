@@ -39,7 +39,10 @@ case "$*" in
     [ -n "\${MERGE:-}" ] && { poll_n; json "{$MERGE,\\"statusCheckRollup\\":$pend}"; exit; }
     if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
     else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
-  *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
+  *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1
+    c='{"name":"checks","bucket":"pass"},{"name":"test","bucket":"pass"},{"name":"unit (1, UTC)","bucket":"pass"}'
+    [ "$FAILS" = 0 ] || c="$c,{\\"name\\":\\"\${FAILNAME:-test}\\",\\"bucket\\":\\"fail\\"}"
+    json "\${CHECKS:-[$c]}" ;;
   *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
 `);
@@ -125,6 +128,14 @@ describe('wait-run.sh (US-64 AC26)', () => {
     const r = run(['pr', '42'], { FAILS: '1' });
     expect(r.status).toBe(1);
     expect(r.stdout).toContain('failed: test');
+  });
+  it('US-64 AC26: pr: a draft PR (every check SKIPPED) is not a pass: no successful test check exits 1', () => {
+    const skipped = JSON.stringify(['review', 'checks', 'unit (1, UTC)', 'test'].map((name) => ({ name, bucket: 'skipping' })));
+    const r = run(['pr', '42'], { CHECKS: skipped });
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain('no successful test check (a draft PR? mark it ready: gh pr ready 42)');
+    const noTest = JSON.stringify([{ name: 'checks', bucket: 'pass' }, { name: 'tests', bucket: 'pass' }]);
+    expect(run(['pr', '42'], { CHECKS: noTest }).status).toBe(1);
   });
   it('gives up with exit 3 after 10 gh errors in a row, never hangs', () => {
     expect(run(['deploy', '123'], { GH_FAIL: '1' }).status).toBe(3);

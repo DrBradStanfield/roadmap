@@ -1,8 +1,10 @@
 /**
- * US-64 AC32: tools/merge-gated.sh merges a PR only when its head is the reviewed sha, its checks are green and no
- * Deploy is running, and then only as `gh pr merge <pr> --merge --match-head-commit <sha>`. A stub `gh` on PATH
- * plays GitHub: it answers each read from fixture JSON run through the script's own --jq filter (as gh does), and
- * logs every call, so each test checks the exit code, the reason and whether (and how) the merge ran.
+ * US-64 AC32: tools/merge-gated.sh merges a PR only when its head is the reviewed sha, CI's own workflow and its
+ * checks are green and no Deploy is running, and then only as `gh pr merge <pr> --merge --match-head-commit <sha>`.
+ * A stub `gh` on PATH plays GitHub: it answers each read from fixture JSON run through the script's own --jq
+ * filter (as gh does), and logs every call, so each test checks the exit code, the reason and whether (and how)
+ * the merge ran. Fixtures follow the real shapes (PR 1339's rollup; PR 1322's head b0551915, whose ci.yml runs
+ * were an old queued ghost, a failed dispatch run and a newer green one).
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
@@ -18,18 +20,21 @@ let S: string;
 beforeAll(() => {
   S = mkdtempSync(join(tmpdir(), 'merge-gated-'));
   // Each call's argv goes on one line of $LOG, one argument per tab-separated field. GH_FAIL names a substring of
-  // the argv that makes that call fail.
+  // the argv that makes that call fail; GH_HANG one that makes it hang, ignoring ALRM and TERM. Deploy reads are
+  // filtered by their --status and --limit, as the API does.
   writeFileSync(join(S, 'gh'), `#!/bin/sh
 printf '%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 case "$*" in *"\${GH_FAIL:-@@none@@}"*) echo "gh: HTTP 502" >&2; exit 1 ;; esac
-jqf=; prev=
-for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; prev=$a; done
+case "$*" in *"\${GH_HANG:-@@none@@}"*) trap '' ALRM TERM; sleep 30; exit 0 ;; esac
+jqf=; prev=; st=; lim=20
+for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a; [ "$prev" = --limit ] && lim=$a; prev=$a; done
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "$PR" ;;
+  *"pr view"*changedFiles*) json "$FILES" ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
-  *check-runs*) json "$CHECKRUNS" ;;
-  *"run list"*) json "$RUNS" ;;
+  *"run list"*ci.yml*) json "$CIRUNS" ;;
+  *"run list"*deploy.yml*) json "$(printf '%s\\n' "$RUNS" | jq -c --arg s "$st" --argjson n "$lim" '[.[] | select(.status == $s)] | .[0:$n]')" ;;
   *"pr merge"*) echo "merged"; exit "\${MERGE_RC:-0}" ;;
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
 esac
@@ -38,24 +43,28 @@ esac
 });
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-const cr = (name: string, conclusion: string | null = 'SUCCESS', status = 'COMPLETED') =>
-  ({ __typename: 'CheckRun', name, workflowName: 'CI', status, conclusion });
-const GREEN = [cr('test'), cr('lint'), cr('Claude Review', 'SKIPPED')];
-const run_ = (id: number, name: string, conclusion: string | null = 'success', status = 'completed') =>
-  ({ id, name, status, conclusion });
-// CI's own jobs: checks, the 6 UTC unit shards and test (the Los Angeles shards are extra).
-const EIGHT = ['checks', ...[1, 2, 3, 4, 5, 6].map((n) => `unit (${n}, UTC)`), 'test'].map((n, i) => run_(10 + i, n));
-const page = (runs: ReturnType<typeof run_>[]) => ({ total_count: runs.length, check_runs: runs });
+const cr = (name: string, conclusion: string | null = 'SUCCESS', status = 'COMPLETED', workflowName = 'CI') =>
+  ({ __typename: 'CheckRun', name, workflowName, status, conclusion });
+// PR 1339's real rollup: Claude Review's two skipped `review` jobs, then CI's checks, 6 UTC shards and test.
+const GREEN = [cr('review', 'SKIPPED', 'COMPLETED', 'Claude Review'), cr('review', 'SKIPPED', 'COMPLETED', 'Claude Review'),
+  cr('checks'), ...[1, 2, 3, 4, 5, 6].map((n) => cr(`unit (${n}, UTC)`)), cr('test')];
+const ciRun = (databaseId: number, createdAt: string, conclusion = 'success', status = 'completed', event = 'pull_request') =>
+  ({ databaseId, status, conclusion, createdAt, event });
+const CI_GREEN = [ciRun(43112784472, '2026-11-11T22:33:40Z')];
+const FILES = { changedFiles: 2, files: [{ path: 'tools/wait-run.sh' }, { path: 'docs/git-workflow.md' }] };
 
-function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}) {
+function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}, stdin?: string) {
   const log = join(S, `log-${Math.random()}`);
-  const r = spawnSync('sh', [SCRIPT, ...args], {
+  const argv = stdin === undefined ? [SCRIPT, ...args] : ['-s', '--', ...args];
+  const r = spawnSync('sh', argv, {
     encoding: 'utf8',
+    input: stdin,
     env: {
       ...process.env, PATH: `${S}:${process.env.PATH}`, LOG: log,
       PR: JSON.stringify(fx.pr ?? { state: 'OPEN', headRefOid: SHA }),
+      FILES: JSON.stringify(fx.files ?? FILES),
       ROLLUP: JSON.stringify(fx.rollup ?? GREEN),
-      CHECKRUNS: JSON.stringify(fx.checkruns ?? { total_count: EIGHT.length, check_runs: EIGHT }),
+      CIRUNS: JSON.stringify(fx.ci ?? CI_GREEN),
       RUNS: JSON.stringify(fx.runs ?? [{ databaseId: 1, status: 'completed' }]),
       ...env,
     },
@@ -72,6 +81,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
     expect(r.status).toBe(0);
     expect(r.merges).toEqual([MERGE_ARGV]);
     expect(r.calls.at(-1)).toEqual(MERGE_ARGV);
+    expect(r.calls.some((c) => c.join(' ').includes(`run list --workflow ci.yml --commit ${SHA}`))).toBe(true);
   });
 
   it('refuses a bad sha before calling gh', () => {
@@ -94,58 +104,160 @@ describe('US-64 AC32 merge-gated.sh', () => {
     expect(r.merges).toEqual([]);
   });
 
-  it('refuses a PR that is not open', () => {
-    const r = gate(['123', SHA], { pr: { state: 'MERGED', headRefOid: SHA } });
-    expect(r.status).toBe(5);
-    expect(r.merges).toEqual([]);
-  });
-
-  it('refuses an empty rollup', () => {
-    const r = gate(['123', SHA], { rollup: [] });
-    expect(r.status).toBe(7);
-    expect(r.merges).toEqual([]);
-  });
-
-  it('refuses while one check is pending', () => {
-    const r = gate(['123', SHA], { rollup: [...GREEN, cr('shard 2', null, 'IN_PROGRESS')] });
-    expect(r.status).toBe(8);
-    expect(r.stderr).toMatch(/shard 2/);
-    expect(r.merges).toEqual([]);
-  });
-
-  it('refuses a pending status context', () => {
-    const r = gate(['123', SHA], { rollup: [...GREEN, { __typename: 'StatusContext', context: 'ext', state: 'PENDING' }] });
-    expect(r.status).toBe(8);
-  });
-
-  it('refuses a failed check', () => {
-    const r = gate(['123', SHA], { rollup: [...GREEN, cr('lint', 'FAILURE')] });
-    expect(r.status).toBe(9);
-    expect(r.merges).toEqual([]);
-  });
-
-  it('refuses when no check is named exactly test', () => {
-    const r = gate(['123', SHA], { rollup: [cr('tests'), cr('lint')] });
-    expect(r.status).toBe(10);
-    expect(r.merges).toEqual([]);
-  });
-
-  it('refuses while a Deploy run is in progress or queued', () => {
-    for (const status of ['in_progress', 'queued', 'pending', 'waiting']) {
-      const r = gate(['123', SHA], { runs: [{ databaseId: 77, status }, { databaseId: 1, status: 'completed' }] });
-      expect(r.status).toBe(12);
-      expect(r.stderr).toMatch(/77/);
+  it('refuses a PR that is not open: MERGED, CLOSED', () => {
+    for (const state of ['MERGED', 'CLOSED']) {
+      const r = gate(['123', SHA], { pr: { state, headRefOid: SHA } });
+      expect(r.status).toBe(5);
+      expect(r.stderr).toMatch(new RegExp(state));
       expect(r.merges).toEqual([]);
     }
   });
 
+  describe('a PR that changes tools/merge-gated.sh', () => {
+    const self = { changedFiles: 2, files: [{ path: 'tools/merge-gated.sh' }, { path: 'tools/merge-gated.test.ts' }] };
+    it('refuses it (16) and names the main-copy command', () => {
+      const r = gate(['123', SHA], { files: self });
+      expect(r.status).toBe(16);
+      expect(r.stderr).toContain(`git show origin/main:tools/merge-gated.sh | sh -s -- 123 ${SHA}`);
+      expect(r.stderr).toContain('git fetch origin main');
+      expect(r.merges).toEqual([]);
+    });
+    it("main's copy run from stdin judges it on the other gates and merges", () => {
+      const r = gate(['123', SHA], { files: self }, {}, readFileSync(SCRIPT, 'utf8'));
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+    });
+    it('refuses a PR whose file list gh truncated at 100 (17), or 16 if the part it sees holds the script', () => {
+      const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
+      expect(gate(['123', SHA], { files: { changedFiles: 183, files: hundred } }).status).toBe(17);
+      expect(gate(['123', SHA], { files: { changedFiles: 183, files: [...hundred.slice(1), { path: 'tools/merge-gated.sh' }] } }).status).toBe(16);
+    });
+  });
+
+  describe("CI's own workflow (ci.yml), in both modes", () => {
+    for (const mode of [[], ['--commit-checks']]) {
+      const m = mode.length ? '--commit-checks' : 'default';
+      it(`${m}: merges when the newest run is green beside an older ghost and an older failure (PR 1322)`, () => {
+        const ci = [ciRun(43106242286, '2026-11-11T21:48:09Z', 'success', 'completed', 'workflow_dispatch'),
+          ciRun(43105067257, '2026-11-11T21:40:09Z', 'failure', 'completed', 'workflow_dispatch'),
+          ciRun(43098358997, '2026-11-11T20:50:14Z', '', 'queued')];
+        const r = gate(['123', SHA, ...mode], { ci });
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+      });
+      it(`${m}: refuses no ci.yml run (11)`, () => {
+        expect(gate(['123', SHA, ...mode], { ci: [] }).status).toBe(11);
+      });
+      it(`${m}: refuses a newest run that is queued or in progress (14), naming it`, () => {
+        for (const status of ['queued', 'in_progress', 'waiting']) {
+          const r = gate(['123', SHA, ...mode], { ci: [...CI_GREEN, ciRun(99, '2026-11-12T01:00:00Z', '', status)] });
+          expect(r.status).toBe(14);
+          expect(r.stderr).toMatch(/99/);
+          expect(r.merges).toEqual([]);
+        }
+      });
+      it(`${m}: refuses a newest run that failed, was cancelled or skipped (15), whatever came before`, () => {
+        for (const conclusion of ['failure', 'cancelled', 'skipped', 'timed_out']) {
+          const r = gate(['123', SHA, ...mode], { ci: [ciRun(99, '2026-11-12T01:00:00Z', conclusion), ...CI_GREEN] });
+          expect(r.status).toBe(15);
+          expect(r.stderr).toContain(conclusion);
+          expect(r.merges).toEqual([]);
+        }
+      });
+    }
+    it('default: a `test` job from another workflow cannot stand in for CI', () => {
+      const r = gate(['123', SHA], { ci: [], rollup: [cr('test', 'SUCCESS', 'COMPLETED', 'Other')] });
+      expect(r.status).toBe(11);
+      expect(r.merges).toEqual([]);
+    });
+    it("default: a draft PR (every check skipped, CI's run skipped) never passes", () => {
+      const skipped = GREEN.map((c) => ({ ...c, conclusion: 'SKIPPED' }));
+      expect(gate(['123', SHA], { rollup: skipped, ci: [ciRun(5, '2026-11-11T22:43:39Z', 'skipped')] }).status).toBe(15);
+      expect(gate(['123', SHA], { rollup: skipped }).status).toBe(10);
+    });
+    it('--commit-checks: does not read the rollup', () => {
+      const r = gate(['123', SHA, '--commit-checks'], { rollup: [] });
+      expect(r.status).toBe(0);
+      expect(r.calls.some((c) => c.includes('statusCheckRollup'))).toBe(false);
+    });
+  });
+
+  describe('default mode: the rollup', () => {
+    it('refuses an empty rollup', () => {
+      const r = gate(['123', SHA], { rollup: [] });
+      expect(r.status).toBe(7);
+      expect(r.merges).toEqual([]);
+    });
+
+    it('refuses while one check is pending', () => {
+      const r = gate(['123', SHA], { rollup: [...GREEN, cr('unit (2, UTC)', null, 'IN_PROGRESS')] });
+      expect(r.status).toBe(8);
+      expect(r.stderr).toMatch(/unit \(2, UTC\)/);
+      expect(r.merges).toEqual([]);
+    });
+
+    it('refuses a pending or expected status context', () => {
+      for (const state of ['PENDING', 'EXPECTED']) {
+        expect(gate(['123', SHA], { rollup: [...GREEN, { __typename: 'StatusContext', context: 'ext', state }] }).status).toBe(8);
+      }
+    });
+
+    it('refuses a status context in FAILURE or ERROR', () => {
+      for (const state of ['FAILURE', 'ERROR']) {
+        const r = gate(['123', SHA], { rollup: [...GREEN, { __typename: 'StatusContext', context: 'ext', state }] });
+        expect(r.status).toBe(9);
+        expect(r.stderr).toContain(`ext=${state}`);
+      }
+    });
+
+    it('refuses every conclusion but SUCCESS and SKIPPED', () => {
+      for (const c of ['FAILURE', 'NEUTRAL', 'CANCELLED', 'STALE', 'TIMED_OUT', 'ACTION_REQUIRED']) {
+        const r = gate(['123', SHA], { rollup: [...GREEN, cr('checks', c)] });
+        expect(r.status).toBe(9);
+        expect(r.stderr).toContain(`checks=${c}`);
+        expect(r.merges).toEqual([]);
+      }
+    });
+
+    it('two entries of one name: any red one refuses, older or newer (every entry counts; re-run to replace it)', () => {
+      const oldGreenNewRed = [...GREEN.filter((c) => c.name !== 'unit (3, UTC)'), cr('unit (3, UTC)'), cr('unit (3, UTC)', 'FAILURE')];
+      const oldRedNewGreen = [...GREEN.filter((c) => c.name !== 'unit (3, UTC)'), cr('unit (3, UTC)', 'FAILURE'), cr('unit (3, UTC)')];
+      expect(gate(['123', SHA], { rollup: oldGreenNewRed }).status).toBe(9);
+      expect(gate(['123', SHA], { rollup: oldRedNewGreen }).status).toBe(9);
+    });
+
+    it('refuses when no check is named exactly test', () => {
+      const r = gate(['123', SHA], { rollup: GREEN.filter((c) => c.name !== 'test').concat(cr('tests')) });
+      expect(r.status).toBe(10);
+      expect(r.merges).toEqual([]);
+    });
+  });
+
+  describe('Deploy', () => {
+    it('refuses while a Deploy run is in any unfinished status', () => {
+      for (const status of ['in_progress', 'queued', 'pending', 'waiting', 'requested']) {
+        const r = gate(['123', SHA], { runs: [{ databaseId: 77, status }, { databaseId: 1, status: 'completed' }] });
+        expect(r.status).toBe(12);
+        expect(r.stderr).toMatch(/77/);
+        expect(r.merges).toEqual([]);
+      }
+    });
+
+    it('finds an in-progress Deploy behind more than 20 newer finished runs', () => {
+      const done = Array.from({ length: 25 }, (_, i) => ({ databaseId: 1000 - i, status: 'completed' }));
+      const r = gate(['123', SHA], { runs: [...done, { databaseId: 77, status: 'in_progress' }] });
+      expect(r.status).toBe(12);
+      expect(r.stderr).toMatch(/77 in_progress/);
+      expect(r.merges).toEqual([]);
+    });
+  });
+
   it('refuses on any gh failure, at every step', () => {
-    for (const step of ['state,headRefOid', 'statusCheckRollup', 'run list']) {
+    for (const step of ['state,headRefOid', 'changedFiles', 'ci.yml', 'statusCheckRollup', 'deploy.yml']) {
       const r = gate(['123', SHA], {}, { GH_FAIL: step });
       expect(r.status).toBe(4);
       expect(r.merges).toEqual([]);
     }
-    expect(gate(['123', SHA, '--commit-checks'], {}, { GH_FAIL: 'check-runs' }).status).toBe(4);
   });
 
   it('refuses an unparsable answer', () => {
@@ -154,73 +266,25 @@ describe('US-64 AC32 merge-gated.sh', () => {
     expect(r.merges).toEqual([]);
   });
 
+  it('a gh that ignores ALRM and TERM is killed at the timeout: refuses 4 in about a second, never merges', () => {
+    const t = Date.now();
+    const r = gate(['123', SHA], {}, { GH_HANG: 'state,headRefOid', MERGE_GATED_GH_TIMEOUT: '1' });
+    expect(r.status).toBe(4);
+    expect(Date.now() - t).toBeLessThan(5000);
+    expect(r.merges).toEqual([]);
+  });
+
+  it('a merge that hangs is killed at the timeout: exit 13, outcome unknown', () => {
+    const t = Date.now();
+    const r = gate(['123', SHA], {}, { GH_HANG: 'pr merge', MERGE_GATED_GH_TIMEOUT: '1' });
+    expect(r.status).toBe(13);
+    expect(Date.now() - t).toBeLessThan(5000);
+    expect(r.stderr).toMatch(/timed out.*outcome is unknown: check the PR/);
+  });
+
   it('reports a failed merge call with its own exit code', () => {
     const r = gate(['123', SHA], {}, { MERGE_RC: '1' });
     expect(r.status).toBe(13);
     expect(r.merges).toEqual([MERGE_ARGV]);
-  });
-
-  describe('--commit-checks', () => {
-    it('merges when an old failed run is superseded by a newer green one', () => {
-      const runs = [run_(5, 'test', 'failure'), ...EIGHT];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: runs.length, check_runs: runs }, rollup: [] });
-      expect(r.status).toBe(0);
-      expect(r.merges).toEqual([MERGE_ARGV]);
-      expect(r.calls.some((c) => c[0] === 'api' && c[1].includes(`commits/${SHA}/check-runs`))).toBe(true);
-    });
-
-    it('refuses when the newest run of a unit shard failed', () => {
-      const runs = [...EIGHT, run_(99, 'unit (3, UTC)', 'failure')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
-      expect(r.status).toBe(9);
-      expect(r.stderr).toMatch(/unit \(3, UTC\)=failure/);
-      expect(r.merges).toEqual([]);
-    });
-
-    it('ignores another workflow\'s failed job on the same sha, and names it', () => {
-      const runs = [...EIGHT, run_(99, 'verify', 'failure')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
-      expect(r.status).toBe(0);
-      expect(r.merges).toEqual([MERGE_ARGV]);
-      expect(r.stderr).toMatch(/verify=failure/);
-      expect(r.stderr.split('\n').filter((l) => l.includes('verify')).length).toBe(1);
-    });
-
-    it('does not count unrelated green jobs toward the 8', () => {
-      const runs = [...EIGHT.slice(0, 7).filter((x) => x.name !== 'unit (6, UTC)'), run_(30, 'test'),
-        run_(31, 'verify'), run_(32, 'deploy'), run_(33, 'lint')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
-      expect(r.status).toBe(11);
-      expect(r.stderr).not.toMatch(/verify|deploy|lint/);
-      expect(r.merges).toEqual([]);
-    });
-
-    it('refuses while the newest test run is in progress', () => {
-      const runs = [...EIGHT, run_(99, 'test', null, 'in_progress')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: runs.length, check_runs: runs } });
-      expect(r.status).toBe(10);
-    });
-
-    it('refuses while another check is queued', () => {
-      const runs = [...EIGHT, run_(99, 'unit (2, America/Los_Angeles)', null, 'queued')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: runs.length, check_runs: runs } });
-      expect(r.status).toBe(8);
-    });
-
-    it('refuses fewer than 8 checks', () => {
-      const runs = EIGHT.slice(1);
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: 7, check_runs: runs } });
-      expect(r.status).toBe(11);
-    });
-
-    it('refuses no check runs at all (a ghost run with no jobs makes none)', () => {
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: 0, check_runs: [] } });
-      expect(r.status).toBe(7);
-    });
-
-    it('refuses an answer with more runs than one page holds', () => {
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: 150, check_runs: EIGHT } });
-      expect(r.status).toBe(4);
-    });
   });
 });

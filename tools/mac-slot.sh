@@ -9,8 +9,9 @@
 # that file, which the command inherits through exec, so the slot is held for the command's lifetime (and its
 # children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
 # With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
-# MAC_SLOT_POLL_SECONDS (30); after MAC_SLOT_LOAD_WAIT_MIN (60) it gives up with exit 75. An unreadable load
-# does not wait. Then it execs the command, so the exit code is the command's. Waiting for a slot has no limit:
+# MAC_SLOT_POLL_SECONDS (30); after MAC_SLOT_LOAD_WAIT_MIN (60) it starts anyway with a one-line warning (the
+# slots still bound what runs at once). An unreadable load does not wait. TERM or INT while it waits exits 143 or
+# 130 at once. Then it execs the command, so the exit code is the command's. Waiting for a slot has no limit:
 # holders end and the kernel frees their slot. Exit 64: usage.
 # MAC_SLOT_CODEX_MAX, MAC_SLOT_TESTS_MAX and MAC_SLOT_LOAD_CMD (prints the load) are for the test suite.
 # Off a shared Mac (not macOS, no lockf, or CI set and not false/0) it runs the command directly: no queue.
@@ -123,16 +124,28 @@ if ! scan; then
 fi
 echo "$$ $CMDLINE" > "$DIR/$kind.$SLOT.holder"
 
+# Helpers here run with fd 9 closed (9>&-), so a waiter killed mid-sleep frees its slot at once; the sleep runs in
+# the background under `wait`, so TERM and INT end the wait at once too. Only the command keeps fd 9: a daemon it
+# leaves behind keeps the slot until that daemon exits (by design: it is still load).
+nap_pid=""
+trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 143' TERM
+trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 130' INT
 start=$(date +%s) said=0
 while :; do
-  l=$(load)
+  l=$(load 9>&-)
   case "$l" in ''|*[!0-9.]*) echo "mac-slot: could not read the load; not waiting" >&2; break ;; esac
-  awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' || break
+  awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break
   [ "$said" = 1 ] || echo "mac-slot: waiting: 1-minute load $l is $MAX_LOAD or more; holding $kind slot $SLOT/$MAX, re-checking every ${POLL}s" >&2
   said=1
   left=$(( LOAD_WAIT - ($(date +%s) - start) ))
-  [ "$left" -gt 0 ] || die "gave up after $(( LOAD_WAIT / 60 ))m: 1-minute load $l is still $MAX_LOAD or more (MAC_SLOT_MAX_LOAD)" 75
-  [ "$left" -lt "$POLL" ] && sleep "$left" || sleep "$POLL"
+  if [ "$left" -le 0 ]; then
+    echo "mac-slot: waited $(( LOAD_WAIT / 60 ))m and the 1-minute load $l is still $MAX_LOAD or more; starting anyway (the slots bound what runs at once)" >&2
+    break
+  fi
+  [ "$left" -lt "$POLL" ] || left=$POLL
+  sleep "$left" 9>&- & nap_pid=$!
+  wait "$nap_pid"; nap_pid=""
 done
+trap - TERM INT
 echo "mac-slot: starting $kind slot $SLOT/$MAX (load ${l:-?}): $CMDLINE" >&2
 exec "$@"

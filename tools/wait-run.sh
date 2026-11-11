@@ -7,9 +7,11 @@
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
 #                                          and mergeability; while checks are unfinished, a PR GitHub reports
 #                                          in conflict with main on two polls in a row gets no new CI run, so
-#                                          it says so and exits 1
+#                                          it says so and exits 1; no successful check named `test` (a draft
+#                                          PR, every check skipped) is not a pass: it says so and exits 1
 #
-# Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
+# Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
+# 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
 #
 # Cheap on purpose: many sessions run this at once on one GitHub account, and on 2026-11-10 they spent the
@@ -127,7 +129,7 @@ fi
 while :; do
   poll pr_state
   checks=$(gh pr checks "$id" --json name,bucket --jq '
-    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) pending=\([.[] | select(.bucket == "pending")] | length)",
+    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" else "no" end) pending=\([.[] | select(.bucket == "pending")] | length)",
     (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)")' 2>/dev/null)
   # Verdicts come only from line 1, the fixed-format summary; check names (outside text) never decide anything.
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
@@ -140,5 +142,9 @@ echo "$checks"
 gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
   --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"' \
   || { echo "could not read the PR's head and mergeability" >&2; exit 1; }
-case "$summary" in *" fail=0 skipped="*) exit 0 ;; esac
+# All skipped (a draft PR: CI skips every job) is finished but tested nothing, so it is not a pass.
+case "$summary" in
+  *" fail=0 skipped="*" tested=yes "*) exit 0 ;;
+  *" fail=0 skipped="*) echo "no successful test check (a draft PR? mark it ready: gh pr ready $id)"; exit 1 ;;
+esac
 exit 1

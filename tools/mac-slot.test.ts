@@ -139,12 +139,37 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(await r.done).toBe(0);
   });
 
-  it('gives up on the load after the max wait with exit 75, never running the command', async () => {
+  it('at the load-wait cap starts the command anyway with a one-line warning (the slots still bound it)', async () => {
     setLoads('12.00');
-    const r = bg('codex', hold('x'), { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
-    expect(await r.done).toBe(75);
-    expect(started('x')).toBe(false);
-    expect(r.err()).toMatch(/gave up .*load 12\.00/);
+    const r = bg('codex', ['sh', '-c', 'exit 5'], { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
+    expect(await r.done).toBe(5);
+    expect(r.err().split('\n').filter((l) => /starting anyway/.test(l))).toHaveLength(1);
+    expect(r.err()).toMatch(/load 12\.00/);
+  });
+
+  it('a waiter killed during the load wait frees its slot at once (its sleep holds no slot fd)', async () => {
+    setLoads('12.00');
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    const a = bg('codex', hold('a'), extra);
+    await until(() => /waiting: 1-minute load/.test(a.err()));
+    a.p.kill('SIGKILL');
+    await a.done;
+    const t = Date.now();
+    await until(() => /codex: 0\/1 held/.test(
+      spawnSync('sh', [SCRIPT, 'status'], { env: env(extra), encoding: 'utf8' }).stdout), 5000);
+    expect(Date.now() - t).toBeLessThan(5000);
+    expect(started('a')).toBe(false);
+  });
+
+  it('TERM during the load wait exits promptly with 143', async () => {
+    setLoads('12.00');
+    const a = bg('codex', hold('a'), { MAC_SLOT_POLL_SECONDS: '30' });
+    await until(() => /waiting: 1-minute load/.test(a.err()));
+    const t = Date.now();
+    a.p.kill('SIGTERM');
+    expect(await a.done).toBe(143);
+    expect(Date.now() - t).toBeLessThan(3000);
+    expect(started('a')).toBe(false);
   });
 
   it('honours MAC_SLOT_MAX_LOAD', async () => {

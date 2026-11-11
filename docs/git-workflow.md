@@ -58,17 +58,19 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    reviews, so you do. Before merging, file a `review-note` issue for every finding
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
-   AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, every check finished green
-   with a `test` check SUCCESS, and no Deploy run is queued or running, then runs the one allowed merge form above.
-   Add `--commit-checks` only when CI was started by workflow_dispatch (its runs never reach the PR's rollup): it
-   judges CI's own jobs alone (`checks`, `test`, `unit (<n>, <zone>)`) on the commit, newest per name, wants at
-   least 8, and only names other workflows' red jobs on that sha. Each refusal has its own exit code (header of the
-   script). Waiting first: `sh tools/wait-run.sh pr <n>`.
+   AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the PR leaves the script
+   itself alone, the newest `ci.yml` run on that sha ended success, every rollup check finished green with a `test`
+   check SUCCESS, and no Deploy run is unfinished, then runs the one allowed merge form above. Add
+   `--commit-checks` only when CI was started by workflow_dispatch (its runs never reach the PR's rollup): it skips
+   the rollup and keeps the `ci.yml` run check. A PR that changes `tools/merge-gated.sh` is merged with main's
+   copy: `git fetch origin main`, then `git show origin/main:tools/merge-gated.sh | sh -s -- <pr> <sha>`. Every gh
+   call is killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each refusal has
+   its own exit code (header of the script). Waiting first: `sh tools/wait-run.sh pr <n>`.
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
    --run`, seconds). Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
-   counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
+   counts, the head sha and mergeability, exits non-zero on a failure or when no `test` check succeeded, as on a draft PR whose checks all skip, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
    `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
