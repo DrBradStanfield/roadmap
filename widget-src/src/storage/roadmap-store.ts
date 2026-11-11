@@ -32,7 +32,7 @@ import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/heal
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
-import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication } from '@roadmap/health-core/mappings';
 import { fileProfileToApi, fileScreeningRows } from '@roadmap/health-core/file-inputs';
 import { isClinicalDay, latestActivePerMetric } from '@roadmap/health-core/measurement-history';
 import { localDay } from '@roadmap/health-core/merge';
@@ -65,71 +65,8 @@ export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncP
 /** Defined in health-core's record session, which makes the erase. */
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
-// --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
-
-export interface ApiReminderPreference {
-  reminderCategory: string;
-  enabled: boolean;
-}
-export interface ApiSupplement {
-  id: string;
-  supplementKey: string;
-  supplementName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  status: string;
-  startedAt: string | null;
-  updatedAt: string;
-}
-export interface ApiDocument {
-  id: string;
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  createdAt: string;
-  /** Cloud/device ref of the original uploaded file (mirrors api-types.ApiDocument). */
-  fileRef?: string | null;
-  /** 'sha256-<hex>' of the original's bytes (mirrors api-types.ApiDocument). */
-  contentHash?: string | null;
-}
-export interface ApiLabValue {
-  id: string;
-  metricName: string;
-  value: number;
-  unit: string;
-  referenceLow: number | null;
-  referenceHigh: number | null;
-  recordedAt: string;
-  source: string;
-  createdAt: string;
-}
-export interface ApiMedicationHistory {
-  id: string;
-  medicationKey: string;
-  drugName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  changeType: string;
-  /** When the change was recorded, not a claimed treatment date. */
-  recordedAt: string;
-}
-export interface LatestMeasurementsResult {
-  inputs: Partial<HealthInputs>;
-  previousMeasurements: ApiMeasurement[];
-  medications: ApiMedication[];
-  screenings: ApiScreening[];
-  supplements: ApiSupplement[];
-  reminderPreferences: ApiReminderPreference[];
-  documents: ApiDocument[];
-}
-export type AddMeasurementResult =
-  | { status: 'inserted'; row: ApiMeasurement }
-  | { status: 'duplicate' }
-  | { status: 'invalid' }
-  | { status: 'error' };
+// App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
+import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, LatestMeasurementsResult } from '../lib/api-types';
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
