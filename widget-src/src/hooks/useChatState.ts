@@ -17,6 +17,7 @@ import {
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
+import { useOffline } from './useOffline';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -112,7 +113,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
   // US-59: subscription change cards, by assistant message id, this tab only (hooks/useSubscriptionCards).
   const { cardsById, setCardsById, confirmSubscription, dismissSubscription } = useSubscriptionCards();
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useOffline();
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -139,15 +140,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     messagesRef.current = messages;
     inputTextRef.current = inputText;
   }, [conversations, activeConversationId, messages, inputText]);
-
-  // Offline detection
-  useEffect(() => {
-    const off = () => setIsOffline(true);
-    const on = () => setIsOffline(false);
-    window.addEventListener('offline', off);
-    window.addEventListener('online', on);
-    return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
-  }, []);
 
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
