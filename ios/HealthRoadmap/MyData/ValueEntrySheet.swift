@@ -42,7 +42,7 @@ struct ValueEntrySheet: View {
             Form {
                 Section {
                     BigNumberField(placeholder: current ?? "0", text: $text, unit: unit, focus: $focused, field: true, label: title)
-                        .onChange(of: text) { SheetSave.send(&state, .typed) }
+                        .onChange(of: text) { SheetSave.send(&state, .wordsStale) }
                     if let chooseUnit, !units.isEmpty {
                         // Held, with Save, while the choice lands: a value is never read mid-switch.
                         Picker("Unit", selection: Binding(get: { unit }, set: { choice in
@@ -62,7 +62,7 @@ struct ValueEntrySheet: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .analyticsMasked()
-                            .onChange(of: typedUnit.wrappedValue) { SheetSave.send(&state, .typed) }
+                            .onChange(of: typedUnit.wrappedValue) { SheetSave.send(&state, .wordsStale) }
                     }
                 } footer: {
                     if let message = state.message ?? TypedNumber.question(text, range: range) {
@@ -83,7 +83,7 @@ struct ValueEntrySheet: View {
                     Button("Save", action: submit).disabled(number == nil || state.busy || typedUnit?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty == true)
                 }
             }
-            .confirmationDialog("This day already has a value", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible) {
+            .confirmationDialog("This day already has a value", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { declineLater() } }), titleVisibility: .visible) {
                 Button("Replace it") {
                     guard let held = state.held, let replace else { return }
                     write(.confirmed) { await replace(held.id, held.value) }
@@ -106,13 +106,21 @@ struct ValueEntrySheet: View {
         write(.tapped, asks: replace == nil ? .never : .holding { Held(id: $0, value: number) }) { await save(number, when) }
     }
 
+    /// The dialog's dismissal sends `declined` one main-actor turn later, so "Replace it"'s
+    /// `confirmed` always lands first whichever order SwiftUI runs the button and the
+    /// isPresented set in; a late `declined` meets saving and is ignored. A tap outside
+    /// still reaches editing one turn later.
+    private func declineLater() {
+        Task { @MainActor in SheetSave.send(&state, .declined) }
+    }
+
     /// `claim` moves the state to saving, or the tap does nothing; a refusal naming the day's
     /// row asks only when `asks` says so.
     private func write(_ claim: SheetSave.Event<Held>, asks: SheetSave.Asks<Held> = .never, _ edit: @escaping () async -> RecordStore.ApplyResult) {
         guard SheetSave.send(&state, claim) else { return }
         Task {
             let result = await edit()
-            SheetSave.send(&state, .landed(result, asks: asks))
+            SheetSave.send(&state, .landed(result, closes: true, asks: asks))
             if state == .done { dismiss() }
         }
     }

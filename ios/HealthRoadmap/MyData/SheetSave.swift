@@ -15,7 +15,8 @@ extension Array: SheetHeld where Element: Equatable {}
 /// tap, so a second tap sees saving before the sheet redraws (US-25 AC21d); no ref or
 /// flag is added beside it. Save, Cancel and swipe-down wait while `busy`. Rows that
 /// cannot be read show the engine's words, so a replace never names no rows. `done` is
-/// terminal: a closed sheet ignores every later event. An event a state does not list
+/// terminal: a closed sheet ignores every later event; a save that leaves its screen open
+/// (`closes: false`) goes back to editing instead. An event a state does not list
 /// leaves it as it is.
 @MainActor
 enum SheetSave {
@@ -52,11 +53,14 @@ enum SheetSave {
 
     enum Event<Held: SheetHeld> {
         case tapped
-        case landed(RecordStore.ApplyResult, asks: Asks<Held>)
+        /// `closes`: a save closes its sheet (done); a screen that stays open (a "Taking again")
+        /// goes back to editing.
+        case landed(RecordStore.ApplyResult, closes: Bool, asks: Asks<Held>)
         case rowsFound(Held?)
         case confirmed
         case declined
-        case typed
+        /// The engine's words no longer fit: the user typed, or dismissed the alert showing them.
+        case wordsStale
         case unitChosen
         case unitLanded(String?)
     }
@@ -67,9 +71,9 @@ enum SheetSave {
     nonisolated static func transition<Held>(_ state: State<Held>, _ event: Event<Held>) -> State<Held> {
         switch (state, event) {
         case (.editing, .tapped), (.editing, .unitChosen), (.asking, .confirmed): return .saving
-        case (.editing, .typed), (.asking, .declined): return .editing(message: nil)
-        case (.saving, .landed(.saved, _)): return .done
-        case (.saving, .landed(.refused(let words, let row), let asks)):
+        case (.editing, .wordsStale), (.asking, .declined): return .editing(message: nil)
+        case (.saving, .landed(.saved, let closes, _)): return closes ? .done : .editing(message: nil)
+        case (.saving, .landed(.refused(let words, let row), _, let asks)):
             guard let row else { return .editing(message: words) }
             switch asks {
             case .never: return .editing(message: words)
@@ -101,7 +105,7 @@ enum SheetSave {
         saving.wrappedValue = state.busy
         Task { [state] in
             let result = await save()
-            saving.wrappedValue = transition(state, .landed(result, asks: .never)).busy
+            saving.wrappedValue = transition(state, .landed(result, closes: true, asks: .never)).busy
             finish(result)
         }
     }

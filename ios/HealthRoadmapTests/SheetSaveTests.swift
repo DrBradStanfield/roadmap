@@ -49,18 +49,20 @@ final class SheetSaveTests: XCTestCase {
     // The events, every one the sheets send, with each kind of landing.
     private static let events: [(String, Event)] = [
         ("tapped", .tapped),
-        ("landed saved", .landed(.saved(), asks: .findRows)),
-        ("landed refused, no row", .landed(.refused(message: "Not today", existingId: nil), asks: .findRows)),
-        ("landed refused, row, never asks", .landed(.refused(message: "Held", existingId: "row-a"), asks: .never)),
-        ("landed refused, row, finds rows", .landed(.refused(message: "Held", existingId: "row-a"), asks: .findRows)),
-        ("landed refused, row, holds it", .landed(.refused(message: "Held", existingId: "row-a"), asks: .holding { [$0] })),
-        ("landed refused, empty row, holds it", .landed(.refused(message: "Held", existingId: ""), asks: .holding { $0.isEmpty ? [] : [$0] })),
+        ("landed saved", .landed(.saved(), closes: true, asks: .findRows)),
+        ("landed saved, stays open", .landed(.saved(), closes: false, asks: .never)),
+        ("landed refused, stays open", .landed(.refused(message: "Not today", existingId: nil), closes: false, asks: .never)),
+        ("landed refused, no row", .landed(.refused(message: "Not today", existingId: nil), closes: true, asks: .findRows)),
+        ("landed refused, row, never asks", .landed(.refused(message: "Held", existingId: "row-a"), closes: true, asks: .never)),
+        ("landed refused, row, finds rows", .landed(.refused(message: "Held", existingId: "row-a"), closes: true, asks: .findRows)),
+        ("landed refused, row, holds it", .landed(.refused(message: "Held", existingId: "row-a"), closes: true, asks: .holding { [$0] })),
+        ("landed refused, empty row, holds it", .landed(.refused(message: "Held", existingId: ""), closes: true, asks: .holding { $0.isEmpty ? [] : [$0] })),
         ("rowsFound rows", .rowsFound(["row-b"])),
         ("rowsFound empty", .rowsFound([])),
         ("rowsFound nil", .rowsFound(nil)),
         ("confirmed", .confirmed),
         ("declined", .declined),
-        ("typed", .typed),
+        ("wordsStale", .wordsStale),
         ("unitChosen", .unitChosen),
         ("unitLanded refused", .unitLanded("Unit refused")),
         ("unitLanded taken", .unitLanded(nil)),
@@ -70,10 +72,12 @@ final class SheetSaveTests: XCTestCase {
     func testEveryStateAndEvent_US25_AC21e() {
         let editing: State = .editing(message: "Old words")
         let table: [(State, [String: State])] = [
-            (.editing(message: nil), ["tapped": .saving, "typed": .editing(message: nil), "unitChosen": .saving]),
-            (editing, ["tapped": .saving, "typed": .editing(message: nil), "unitChosen": .saving]),
+            (.editing(message: nil), ["tapped": .saving, "wordsStale": .editing(message: nil), "unitChosen": .saving]),
+            (editing, ["tapped": .saving, "wordsStale": .editing(message: nil), "unitChosen": .saving]),
             (.saving, [
                 "landed saved": .done,
+                "landed saved, stays open": .editing(message: nil),
+                "landed refused, stays open": .editing(message: "Not today"),
                 "landed refused, no row": .editing(message: "Not today"),
                 "landed refused, row, never asks": .editing(message: "Held"),
                 "landed refused, row, finds rows": .findingRows(words: "Held"),
@@ -81,6 +85,7 @@ final class SheetSaveTests: XCTestCase {
                 "landed refused, empty row, holds it": .editing(message: "Held"),
                 "unitLanded refused": .editing(message: "Unit refused"),
                 "unitLanded taken": .editing(message: nil),
+                "declined": .saving, // a dialog's late dismissal after "Replace it"
             ]),
             (.findingRows(words: "Held"), [
                 "rowsFound rows": .asking(["row-b"]),
@@ -102,7 +107,7 @@ final class SheetSaveTests: XCTestCase {
     func testFindingRowsHoldsSaveUntilTheQuestion_US25_AC21e() {
         var state: State = .editing(message: nil)
         XCTAssertTrue(SheetSave.send(&state, .tapped))
-        SheetSave.send(&state, .landed(.refused(message: "Held", existingId: "row-a"), asks: .findRows))
+        SheetSave.send(&state, .landed(.refused(message: "Held", existingId: "row-a"), closes: true, asks: .findRows))
         XCTAssertEqual(state, .findingRows(words: "Held"))
         XCTAssertTrue(state.busy, "Save, Cancel and swipe-down wait while the rows are read")
         XCTAssertFalse(SheetSave.send(&state, .tapped), "a second Save starts nothing")
@@ -132,11 +137,23 @@ final class SheetSaveTests: XCTestCase {
         XCTAssertTrue(SheetSave.send(&state, .tapped))
     }
 
-    /// Bug 4: two fast "Taking again" taps start one apply.
+    /// Bug 4: two fast "Taking again" taps start one apply; its save leaves the section
+    /// open, so the next tap starts a new one.
     func testTwoFastTapsClaimOnce_US25_AC21e() {
         var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
         XCTAssertTrue(SheetSave.send(&state, .tapped))
         XCTAssertFalse(SheetSave.send(&state, .tapped))
+        SheetSave.send(&state, .landed(.saved(), closes: false, asks: .never))
+        XCTAssertEqual(state, .editing(message: nil))
+        XCTAssertTrue(SheetSave.send(&state, .tapped))
+    }
+
+    /// "Replace it" then the dialog's late dismissal: the replace goes ahead.
+    func testALateDeclineAfterReplaceIsIgnored_US25_AC21e() {
+        var state: State = .asking(["row-a"])
+        XCTAssertTrue(SheetSave.send(&state, .confirmed))
+        SheetSave.send(&state, .declined)
+        XCTAssertEqual(state, .saving)
     }
 
     /// A closed sheet ignores every later event.

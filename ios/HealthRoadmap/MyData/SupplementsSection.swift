@@ -34,7 +34,7 @@ struct SupplementsSection: View {
         .sheet(isPresented: $adding) {
             AddSupplementSheet(choices: supplements.choices) { edit in saved(await store.apply(.form(edit))) }
         }
-        .refusalAlert(Binding(get: { state.message }, set: { if $0 == nil { SheetSave.send(&state, .typed) } }))
+        .refusalAlert(Binding(get: { state.message }, set: { if $0 == nil { SheetSave.send(&state, .wordsStale) } }))
 
         if !supplements.stopped.isEmpty {
             Section {
@@ -59,9 +59,8 @@ struct SupplementsSection: View {
         guard SheetSave.send(&state, .tapped) else { return }
         Task {
             let result = saved(await store.apply(.form(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: false))))
-            SheetSave.send(&state, .landed(result, asks: .never))
-            // Not a sheet: a "Taking again" that saved is over, and the next tap starts a new one.
-            if state == .done { state = .editing(message: nil) }
+            // Not a sheet: the section stays open, so a save goes back to editing.
+            SheetSave.send(&state, .landed(result, closes: false, asks: .never))
         }
     }
 }
