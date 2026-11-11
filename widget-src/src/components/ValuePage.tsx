@@ -147,7 +147,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       )}
 
       {readings.length > 0 && (
-        // A chart that cannot load (offline, its chunk refused) says so in its place only (US-62 AC36).
+        // A chart that cannot load (offline, its chunk refused) or throws while drawing says so in its place only (US-62 AC37).
         <ErrorBoundary feature="value_page_chart" fallback={
           <p className="md-page-empty">The chart could not load. Check your connection, then reload the page to see it.</p>
         }>
