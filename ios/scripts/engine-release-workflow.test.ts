@@ -81,10 +81,16 @@ describe('engine-release workflow (US-25 AC18)', () => {
     expect(wf.jobs.fresh.environment).toBeUndefined();
     expect(wf.jobs.sign.permissions).toEqual({ contents: 'write' });
     expect(wf.jobs.sign.environment).toBe('engine-signing');
-    // A stale run (main moved on the engine paths) never joins the sign queue.
+    // US-25 AC18a: a stale run fails `fresh`; a partial re-run keeps fresh's old attempt; a
+    // branch dispatch is not main. None of them joins the sign queue.
     expect(wf.jobs.fresh.needs).toBe('verify');
+    expect(wf.jobs.fresh.outputs).toEqual({ attempt: '${{ github.run_attempt }}' });
     expect(wf.jobs.sign.needs).toEqual(['verify', 'fresh']);
-    expect(wf.jobs.sign.if).toBe("needs.fresh.outputs.fresh == 'true'");
+    expect(wf.jobs.sign.if).toBe("github.ref == 'refs/heads/main' && needs.fresh.outputs.attempt == github.run_attempt");
+    // No status function, so GitHub adds success(): a failed or skipped fresh skips sign.
+    expect(wf.jobs.sign.if).not.toMatch(/\b(success|always|failure|cancelled)\(/);
+    // Both read main as it is now, not the built commit.
+    for (const job of ['fresh', 'sign']) expect(wf.jobs[job].steps.find((s) => s.uses?.startsWith('actions/checkout@'))!.with!.ref).toBe('main');
     for (const job of ['build', 'verify', 'fresh']) expect(JSON.stringify(wf.jobs[job])).not.toContain('secrets.');
   });
 
@@ -115,7 +121,10 @@ describe('engine-release workflow (US-25 AC18)', () => {
     expect(runs('verify')).toContain(`git diff --quiet "$SHA" origin/main -- ${inputs}`);
     expect(step('sign', 'Main has not moved')).toContain(`git diff --quiet "$BUILT_SHA" HEAD -- ${inputs}`);
     expect(step('fresh', "This run's engine")).toContain(`git diff --quiet "$BUILT_SHA" HEAD -- ${inputs}`);
-    for (const job of ['verify', 'sign']) expect(runs(job)).toContain('main moved since this Deploy; dispatch Engine release again');
+    for (const job of ['verify', 'fresh', 'sign']) expect(runs(job)).toContain('main moved since this Deploy; dispatch Engine release again');
+    // US-25 AC18a: a stale `fresh` fails closed; it outputs nothing a later job could misread.
+    expect(step('fresh', "This run's engine")).toMatch(/main moved since this Deploy; dispatch Engine release again"; exit 1/);
+    expect(runs('fresh')).not.toContain('GITHUB_OUTPUT');
   });
 
   it('the summary diffs from the commit the last release was built from, unfiltered and size-capped', () => {

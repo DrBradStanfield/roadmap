@@ -25,8 +25,11 @@ on:
 permissions: {}
 # Only `sign` writes ios/engine-release on main, so only `sign` queues. A newer run's sign
 # replaces an older one waiting for approval, so a forgotten approval cannot block later
-# releases. `fresh` keeps a stale run (main moved on the engine paths) out of that queue,
-# so an older engine can never replace a newer one's request.
+# releases. `fresh` (main has not moved on the engine paths) and its attempt binding keep
+# stale runs and partial re-runs out of that queue. A rare interleaving can still let an
+# older run cancel a newer request: that loses one release and never signs an older
+# engine. What guarantees that: sign's "Main has not moved" step after approval, the
+# version check before the commit, and the push to main, which only fast-forwards.
 jobs:
   build:
     # A Deploy dispatched on main in this repo only. `branches: [main]` alone also matches
@@ -168,8 +171,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # The attempt this check ran in. "Re-run failed jobs" keeps this job's old output, so
+    # that re-run's sign is skipped; "Re-run all jobs" checks again.
     outputs:
-      fresh: ${{ steps.check.outputs.fresh }}
+      attempt: ${{ github.run_attempt }}
     env:
       BUILT_SHA: ${{ needs.verify.outputs.sha }}
     steps:
@@ -178,20 +183,18 @@ jobs:
           ref: main
           fetch-depth: 0
           persist-credentials: false
-      - id: check
-        name: This run's engine is still main's engine
+      - name: This run's engine is still main's engine
         run: |
           set -euo pipefail
           [[ "$BUILT_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
-          if git diff --quiet "$BUILT_SHA" HEAD -- packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json ':(glob)**/.npmrc' ':(glob)**/tsconfig*'; then
-            echo "fresh=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "fresh=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::main moved on the engine paths since this build; a newer run releases it"
+          if ! git diff --quiet "$BUILT_SHA" HEAD -- packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json ':(glob)**/.npmrc' ':(glob)**/tsconfig*'; then
+            echo "::error::main moved since this Deploy; dispatch Engine release again"; exit 1
           fi
   sign:
     needs: [verify, fresh]
-    if: needs.fresh.outputs.fresh == 'true'
+    # No status function here, so GitHub adds success(): a failed fresh skips sign. Main
+    # only (the environment allows no other ref), and only in the attempt fresh ran in.
+    if: github.ref == 'refs/heads/main' && needs.fresh.outputs.attempt == github.run_attempt
     runs-on: ubuntu-latest
     environment: engine-signing
     concurrency:

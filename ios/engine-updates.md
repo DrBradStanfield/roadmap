@@ -197,9 +197,17 @@ commits only the new files.
   alone writes the folder on `main`. A newer run's `sign` replaces an older one still
   waiting for approval, so a forgotten approval never blocks later releases. First the
   `fresh` job checks that main has not moved on the engine paths since the build; a
-  stale run skips `sign`, ends green with a notice, and never enters the queue, so an
-  older engine cannot replace a newer one's request. stale-pr-watch emails you (an
-  issue assigned to you) when a sign has waited over 12 h.
+  stale run fails there ("dispatch Engine release again") and never enters the queue.
+  `sign` runs only on `main` and only in the attempt `fresh` ran in, so "Re-run failed
+  jobs" on an old run skips `sign`; "Re-run all jobs" checks again. A rare interleaving
+  can still let an older run cancel a newer request. That loses one release (the next
+  Deploy or a dispatch brings it) and never signs an older engine: sign's "Main has not
+  moved" step after approval, the version check before the commit, and the push to
+  `main`, which only fast-forwards, guarantee that.
+- **A forgotten approval reaches you.** stale-pr-watch opens one issue assigned to you
+  when a run is waiting for approval now and the oldest run that reached `sign` since
+  the last release commit started over 12 hours ago, so a chain of replaced requests
+  still counts as one wait. It closes the issue once nothing waits.
 - Actions are pinned to commit SHAs; the workflow has no permissions by default, the
   build and `verify` read the repo, and only `sign` may write.
   `ios/scripts/engine-release-workflow.test.ts` holds these guards in place and signs a
