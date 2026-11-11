@@ -111,6 +111,8 @@ export class SyncManager<T extends SyncedFile> {
   async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
     let lastError: unknown;
     let mayHaveWritten = false;
+    // The adapter's note on a landed write, kept for a failure that follows it.
+    let landedWarning: string | undefined;
     for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
       try {
         const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName, signal);
@@ -119,6 +121,7 @@ export class SyncManager<T extends SyncedFile> {
         try {
           const { version: newVersion, warning } = await this.adapter.write(this.doc.fileName, merged, version, signal);
           mayHaveWritten = true;
+          landedWarning = warning;
           if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
           return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}) };
         } catch (error) {
@@ -139,7 +142,9 @@ export class SyncManager<T extends SyncedFile> {
         // undo an earlier write. Preserve the cause, but not its no-write/status certainty.
         if (!mayHaveWritten) throw error;
         // The status stays, so a 401 still refreshes the token (iOS).
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error, error instanceof StorageError ? error.status : undefined);
+        // A lock left behind by the landed write is still said (US-31 AC8a).
+        const hint = landedWarning ? `${VERIFY_HINT} ${landedWarning}` : VERIFY_HINT;
+        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, error instanceof StorageError ? error.status : undefined);
       }
     }
     throw new StorageError(

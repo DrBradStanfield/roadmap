@@ -316,6 +316,24 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
   });
 
+  it('keeps the write’s warning when verify-after-write then fails, so a lock left behind is still said (US-31 AC8a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    const warning = 'health-roadmap.json was saved, but cleanup did not finish: could not remove the lock file.';
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint');
+      return read(...args);
+    };
+    adapter.write = async (...args) => ({ ...(await write(...args)), warning });
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(told.hint).toBe(`The change may or may not have landed. Read the record again before trying it a second time. ${warning}`);
+  });
+
   it('still reports no writes for five ordinary pre-upload conflicts', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);

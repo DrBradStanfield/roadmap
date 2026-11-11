@@ -30,6 +30,9 @@ export const BACKUPS_KEPT = 3;
 const LOCK_RETRY_MS = 25;
 const LOCK_WAIT_MS = 5_000;
 
+/** Its own words: pre-erase copies left on disk are a privacy fact (US-11). */
+const ERASE_STEP = 'prune copies from before the erase';
+
 /**
  * The bytes on disk, as a value that changes whenever they do. A content hash
  * rather than mtime+size: two writes inside one millisecond that keep the file
@@ -74,16 +77,20 @@ function create(dest: string, text: string, mode: number): void {
  */
 function lockAge(lockPath: string): string {
   const name = basename(lockPath);
-  let ms: number;
+  let ms = -1;
   try {
-    ms = Math.max(0, Date.now() - lstatSync(lockPath).mtimeMs);
+    ms = Date.now() - lstatSync(lockPath).mtimeMs;
   } catch {
-    return `The age of the lock file ${name} is unknown.`;
+    // Reported below, as for a clock that puts the lock in the future.
   }
+  if (ms < 0) return `The age of the lock file ${name} is unknown.`;
   const units: Array<[string, number]> = [['day', 86_400_000], ['hour', 3_600_000], ['minute', 60_000], ['second', 1_000]];
-  const [unit, size] = units.find(([, size]) => ms >= size) ?? units[units.length - 1];
-  const n = Math.round(ms / size);
-  return `The lock file ${name} is about ${n} ${unit}${n === 1 ? '' : 's'} old.`;
+  let i = units.findIndex(([, size]) => ms >= size);
+  if (i < 0) i = units.length - 1;
+  let n = Math.round(ms / units[i][1]);
+  // Rounding can reach the next unit up: 59.6 s is about 1 minute, not 60 seconds.
+  if (i > 0 && n * units[i][1] >= units[i - 1][1]) n = Math.round(ms / units[--i][1]);
+  return `The lock file ${name} is about ${n} ${units[i][0]}${n === 1 ? '' : 's'} old.`;
 }
 
 export class FileAdapter implements StorageAdapter {
@@ -229,7 +236,7 @@ export class FileAdapter implements StorageAdapter {
       version = stampOf(next);
       // Trimmed only now: a replace that failed leaves every old copy in place.
       if (!erasing) step('prune old backups', () => this.trim());
-      step('prune old backups', () => this.pruneErased(body));
+      step(ERASE_STEP, () => this.pruneErased(body));
     } finally {
       try {
         step('remove the lock file', () => {
@@ -245,10 +252,11 @@ export class FileAdapter implements StorageAdapter {
   /** The warning for a landed write: the steps that failed, never their error text. */
   private unfinished(steps: string[]): string {
     const name = basename(this.path);
+    const erase = steps.includes(ERASE_STEP) ? ' Copies from before the erase are still on disk; the next save removes them.' : '';
     const left = steps.includes('remove the lock file')
       ? ` The lock file ${name}.lock was left in place; remove it only when no other writer is running.`
       : '';
-    return `${name} was saved, but cleanup did not finish: could not ${steps.join(', ')}.${left}`;
+    return `${name} was saved, but cleanup did not finish: could not ${steps.join(', ')}.${erase}${left}`;
   }
 
   private get lockPath(): string {
@@ -430,7 +438,8 @@ export class FileAdapter implements StorageAdapter {
    * Write a temp file in the same folder, then rename over the original, so a
    * failed write leaves the old file whole rather than half of the new one.
    * Honest limit: a SIGKILL between the two calls leaves a `.tmp-` sibling
-   * behind (harmless, and .gitignored).
+   * behind (harmless, and .gitignored). After the rename there is no temp
+   * left, so nothing runs there that could fail a write that landed.
    */
   private replace(text: string, mode: number): void {
     const temp = this.tempPath();
@@ -438,12 +447,15 @@ export class FileAdapter implements StorageAdapter {
       create(temp, text, mode);
       renameSync(temp, this.path);
     } catch {
+      try {
+        rmSync(temp, { force: true });
+      } catch {
+        // A leftover `.tmp-` is harmless; the failure below is what matters.
+      }
       throw new StorageError(
         `Cannot write ${basename(this.path)}`,
         'Check the file and its folder are writable. Your record was not changed.',
       );
-    } finally {
-      rmSync(temp, { force: true }); // a no-op once the rename has happened
     }
   }
 

@@ -6,7 +6,7 @@
  *
  * Test-only. A pin named "today (lead T1 step b changes this)" records
  * behaviour the owner has ruled will change; step (b) flips exactly those.
- * US-31 AC8 / US-32 AC6.
+ * US-31 AC8 / AC8a / US-32 AC6.
  */
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
@@ -65,7 +65,7 @@ afterEach(() => {
 });
 
 describe('lead T1 — cleanup after a landed replace', () => {
-  it('pruneErased throwing after the replace: save resolves with a warning naming the prune step, and the file holds the new bytes (lead T1 step b)', async () => {
+  it('pruneErased throwing after the replace: save resolves with a warning that copies from before the erase stayed, and the file holds the new bytes (US-31 AC8a)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const adapter = new FileAdapter(path);
@@ -76,7 +76,10 @@ describe('lead T1 — cleanup after a landed replace', () => {
     });
     try {
       const saved = await recordSync(adapter, CTX.deviceId, NOW).save(marked());
-      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune old backups.`);
+      expect(saved.warning).toBe(
+        `${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune copies from before the erase. ` +
+        'Copies from before the erase are still on disk; the next save removes them.',
+      );
       // No error text and no folder: the warning names the step and the file only.
       expect(saved.warning).not.toMatch(/EACCES|permission|\//);
       // The replace landed: the record holds the bytes write produced.
@@ -166,6 +169,65 @@ describe('lead T1 — cleanup after a landed replace', () => {
       expect(existsSync(`${path}.lock`)).toBe(false);
     } finally {
       for (const fd of lockFds) real.closeSync(fd);
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('US-31 AC8a — nothing fails after the rename', () => {
+  /** Reload file-adapter over a node:fs whose rmSync throws on the temp file. */
+  async function tempRemovalThrows() {
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    const fault = Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      rmSync: (target: fs.PathLike, options?: fs.RmOptions) => {
+        if (String(target).includes('.tmp-')) throw fault;
+        return real.rmSync(target, options);
+      },
+    }));
+    const { FileAdapter: Isolated } = await import('./file-adapter');
+    const { recordSync: isolatedSync } = await import('./roadmap-doc');
+    return { Isolated, isolatedSync };
+  }
+
+  it('a landed rename is a save: removing the temp file is never attempted, so its failure cannot reject (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      const { Isolated, isolatedSync } = await tempRemovalThrows();
+      const adapter = new Isolated(path);
+      const wrote = recordReplace(adapter);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.version).toMatch(/^[0-9a-f]{64}$/);
+      expect(saved.warning).toBeUndefined();
+      expect(readFileSync(path, 'utf8')).toBe(wrote.text);
+      expect(readdirSync(dir).filter((n) => n.includes('.tmp-'))).toEqual([]);
+      expect(existsSync(`${path}.lock`)).toBe(false);
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('a failed temp write whose temp file cannot be removed still reports the failure in words (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    const before = readFileSync(path, 'utf8');
+    try {
+      const { Isolated, isolatedSync } = await tempRemovalThrows();
+      const adapter = new Isolated(path);
+      const temp = (adapter as any).tempPath();
+      vi.spyOn(adapter as any, 'tempPath').mockReturnValue(temp);
+      fs.symlinkSync(join(dir, 'elsewhere.txt'), temp);
+      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
+      expect((error as Error).message).toBe(`Cannot write ${ROADMAP_FILE_NAME}`);
+      expect((error as StorageError).hint).toBe('Check the file and its folder are writable. Your record was not changed.');
+      expect(readFileSync(path, 'utf8')).toBe(before);
+    } finally {
       vi.doUnmock('node:fs');
       vi.resetModules();
       rmSync(dir, { recursive: true, force: true });
@@ -329,6 +391,41 @@ describe('lead T1 — a lock held by another writer', () => {
     } finally {
       vi.doUnmock('node:fs');
       vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The refusal's hint for a lock whose mtime is `age` ms before the refusal.
+   * Fake clock from T0: 25 ms retries end the wait at T0 + 5_025.
+   */
+  async function hintFor(path: string, age: number): Promise<string> {
+    const T0 = Date.parse(NOW);
+    vi.useFakeTimers({ now: T0 });
+    writeFileSync(`${path}.lock`, 'held by another writer');
+    const mtime = new Date(T0 + 5_025 - age);
+    utimesSync(`${path}.lock`, mtime, mtime);
+    const outcome = failureOf(recordSync(new FileAdapter(path), CTX.deviceId, NOW).save(marked()));
+    await vi.runAllTimersAsync();
+    return ((await outcome) as StorageError).hint ?? '';
+  }
+
+  it('picks the unit after rounding: 59.7 seconds is about 1 minute, 23.99 hours about 1 day (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      expect(await hintFor(path, 59_700)).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 1 minute old\\. `));
+      vi.useRealTimers();
+      expect(await hintFor(path, 23.99 * 3_600_000)).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 1 day old\\. `));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('says the age is unknown when the lock’s mtime is in the future (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      expect(await hintFor(path, -3_600_000)).toMatch(new RegExp(`^The age of the lock file ${ROADMAP_FILE_NAME}\\.lock is unknown\\. Nothing was changed\\.`));
+    } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });

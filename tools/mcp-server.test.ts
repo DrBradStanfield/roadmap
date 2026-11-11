@@ -527,7 +527,7 @@ describe('US-31 AC8/AC9, US-32 AC6 — the CLI and the stdio server share one wr
 
 
 describe('lead T1 — a landed write whose cleanup did not finish', () => {
-  it('answers success with the backup note and the adapter warning, so the assistant can tell the user', async () => {
+  it('answers success with the backup note and the adapter warning, so the assistant can tell the user (US-31 AC8a)', async () => {
     const { dir, path } = writeFixture(fixture());
     const prune = vi.spyOn(FileAdapter.prototype as any, 'pruneErased').mockImplementation(() => {
       throw new Error('EACCES: permission denied');
@@ -535,7 +535,7 @@ describe('lead T1 — a landed write whose cleanup did not finish', () => {
     try {
       const added = await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: TODAY });
       expect(added.result!.isError).toBeFalsy();
-      expect(text(added)).toMatch(/Saved \(backup: [^)]+\)\. health-roadmap\.json was saved, but cleanup did not finish: could not prune old backups\.$/);
+      expect(text(added)).toMatch(/Saved \(backup: [^)]+\)\. health-roadmap\.json was saved, but cleanup did not finish: could not prune copies from before the erase\. Copies from before the erase are still on disk; the next save removes them\.$/);
       expect(text(added)).not.toContain('EACCES');
     } finally {
       prune.mockRestore();
