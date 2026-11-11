@@ -33,4 +33,40 @@ final class ChatStreamTests: XCTestCase {
         XCTAssertEqual(transcript.lines.last?.sources, ["ApoB explained"])
         XCTAssertEqual(transcript.lines.last?.text, "Answer")
     }
+
+    /// US-52 AC6g: the line under the conversation, step by step, in the web's words
+    /// (ChatPendingReply.tsx). Thinking shows "Thinking…" until answer text arrives,
+    /// then "Answering…" until `done`; a status shows its own text. Draft notes never show.
+    func testThePendingLineFollowsTheStream_US52_AC6g() {
+        var transcript = ChatTranscript()
+        let index = transcript.ask("Is my LDL OK?")
+        XCTAssertNil(transcript.pending?.words, "nothing yet")
+        let steps: [(ChatStreamEvent, String?)] = [
+            (.status("Writing the answer"), "Writing the answer"),
+            (.thinking, "Thinking…"),
+            (.thinking, "Thinking…"),
+            (.text("Your LDL is above target."), "Answering…"),
+            (.thinking, "Answering…"),
+            (.done(content: "Your LDL is above target.", isFallback: false, error: nil), nil),
+        ]
+        for (event, words) in steps {
+            transcript.stream(event, into: index)
+            XCTAssertEqual(transcript.pending?.words, words, "after \(event)")
+        }
+        XCTAssertEqual(transcript.shown.map(\.text), ["Is my LDL OK?", "Your LDL is above target."], "no draft notes in the answer")
+    }
+
+    /// US-52 AC6g: a restart status goes back to its own words, and a stopped or failed turn leaves no line.
+    func testARestartShowsTheStatusAndAnEndedTurnClearsTheLine_US52_AC6g() {
+        var transcript = streamed([.thinking, .text("Let me run those numbers. "), .status("Running your numbers through the roadmap")])
+        XCTAssertEqual(transcript.pending?.words, "Running your numbers through the roadmap")
+        transcript.stream(.text("Your LDL"), into: transcript.lines.count - 1)
+        XCTAssertEqual(transcript.pending?.words, "Answering…")
+        _ = transcript.stop()
+        XCTAssertNil(transcript.pending)
+
+        var failed = streamed([.thinking])
+        failed.fail(URLError(.timedOut))
+        XCTAssertNil(failed.pending)
+    }
 }
