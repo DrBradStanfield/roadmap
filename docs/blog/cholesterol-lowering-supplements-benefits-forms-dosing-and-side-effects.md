@@ -296,7 +296,7 @@ Fish oil supplements are generally well tolerated at typical doses:
 
 ### Policosanol
 
-In a German trial, policosanol was tolerated well without serious adverse events [64]. In a small trial by the same Cuban group, policosanol reduced platelet aggregation in healthy volunteers; nose and gum bleeding were reported among those taking aspirin, alone or with policosanol [65]. Other reports describe complaints that may include stomach upset, thirst or weight loss; migraine, dizziness, drowsiness, poor sleep or irritability; painful urination; and skin rash. If you take prescription medicines, check with your doctor or pharmacist before starting.
+In a German trial, policosanol was tolerated well without serious adverse events [64]. In a small trial by the Cuban research group behind most of the positive policosanol trials, policosanol reduced platelet aggregation in healthy volunteers; nose and gum bleeding were reported among those taking aspirin, alone or with policosanol [65]. Other reports describe complaints that may include stomach upset, thirst or weight loss; migraine, dizziness, drowsiness, poor sleep or irritability; painful urination; and skin rash. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Pantethine
 

@@ -20,7 +20,7 @@ Brad uses a pea protein powder himself and plans to keep doing so; he pays close
 ## Key safety points
 
 - Soy may raise the thyroid hormone dose a person needs, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your pharmacist about timing [1][2][3].
-- Kidney disease, not on dialysis: for stages 3 to 5, KDIGO suggests about 0.8 g/kg a day and KDOQI 0.55 to 0.6 without diabetes (0.6 to 0.8 with diabetes); KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. People on dialysis usually need more protein [95][96]. Set your protein with your kidney team before adding a powder [4].
+- Kidney disease, not on dialysis: for stages 3 to 5, KDIGO suggests about 0.8 g/kg a day and KDOQI 0.55 to 0.6 without diabetes (0.6 to 0.8 with diabetes); KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. People on dialysis usually need more protein [95][96]. Set your protein with your kidney team before adding a powder [96].
 - People allergic to milk should avoid whey and casein, including lab-made whey, which is beta-lactoglobulin, a major milk allergen [5][6]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [7].
 - Allergy to mycoprotein (Quorn) appears rare but has been severe: self-reports included one fatal reaction [42][43].
 - In rare inherited disorders (urea cycle disorders, phenylketonuria), a large rise in protein can harm the brain; use a powder only with your metabolic team's approval [8][9].
@@ -178,7 +178,7 @@ In people with type 2 diabetes, whey before a meal lowered blood sugar after it.
 
 ### Dialysis and Kidney Disease
 
-For adults with chronic kidney disease who are not on dialysis, guidelines differ. KDIGO (2024) suggests keeping protein at about 0.8 g/kg a day in stages 3 to 5, and avoiding more than 1.3 g/kg a day in people at risk of progression [94]. The 2020 KDOQI guideline sets 0.55 to 0.6 g/kg a day for stable people with stages 3 to 5 without diabetes, and 0.6 to 0.8 g/kg a day for those with diabetes [95]. If you have kidney disease, set your protein target with your kidney team; a powder counts toward that total [4].
+For adults with chronic kidney disease who are not on dialysis, guidelines differ. KDIGO (2024) suggests keeping protein at about 0.8 g/kg a day in stages 3 to 5, and avoiding more than 1.3 g/kg a day in people at risk of progression [94]. The 2020 KDOQI guideline sets 0.55 to 0.6 g/kg a day for stable people with stages 3 to 5 without diabetes, and 0.6 to 0.8 g/kg a day for those with diabetes [95]. If you have kidney disease, set your protein target with your kidney team; a powder counts toward that total [96].
 
 Dialysis changes the picture. Once dialysis starts, people usually need more protein, not less; KDOQI recommends 1.0 to 1.2 g/kg a day for stable people on haemodialysis or peritoneal dialysis [95][96]. In 13,473 people on haemodialysis, a serum albumin below 4.0 g/dL, a sign of poor nutrition, was linked with a higher risk of death [97]. In a US dialysis provider's program, people on haemodialysis with albumin of 3.5 g/dL or less who were given oral nutrition supplements at dialysis had fewer deaths than matched controls (hazard ratio 0.31); this was a retrospective review by the provider's own staff [98]. If you are on dialysis, your kidney team or renal dietitian sets your protein target, and may suggest a protein powder [96].
 
@@ -196,7 +196,7 @@ In a randomised trial in 166 malnourished adults with advanced cancer having che
 
 ### Skin and Wrinkles
 
-There are no human trials of protein powders for skin in our sources.
+No trial cited here tested protein powders for skin.
 
 ### HIIT Training
 
@@ -255,7 +255,7 @@ In a 12-month trial in older people, 56% of those taking a whey-enriched supplem
 
 In people with healthy kidneys, higher protein has not harmed kidney function in most studies. In 1,324 adults (average age 64) followed for a median of 10 years with measured kidney function, higher habitual protein was not linked with decline [77]. A meta-analysis of 22 trials in adults without kidney disease found high-protein diets raised eGFR without consistent signs of kidney injury, but most trials were short [78]. In 5 men eating 0.8, 1.8 and 3.6 g/kg a day for 4 weeks each, high protein raised blood urea nitrogen [79].
 
-Existing kidney disease is different. In 1,624 women followed for 11 years, high protein did not speed decline with normal kidney function, but high intake, especially of non-dairy animal protein, may have sped decline in women with mild kidney impairment [80]. A 2026 review concluded that high protein may speed the progression of chronic kidney disease, and that advice should be personalised to age and kidney stage [81]. The 2020 KDOQI guideline covers protein and supplements across all stages of kidney disease [82]. If you have kidney disease, set your protein with your kidney team before using a powder [4].
+Existing kidney disease is different. In 1,624 women followed for 11 years, high protein did not speed decline with normal kidney function, but high intake, especially of non-dairy animal protein, may have sped decline in women with mild kidney impairment [80]. A 2026 review concluded that high protein may speed the progression of chronic kidney disease, and that advice should be personalised to age and kidney stage [81]. The 2020 KDOQI guideline covers protein and supplements across all stages of kidney disease [82]. If you have kidney disease, set your protein with your kidney team before using a powder [96].
 
 Protein and creatine can also change kidney test results. KDIGO lists high-protein diets and creatine supplements among things that change blood creatinine apart from kidney function, so a creatinine-based eGFR may be less accurate, and notes that high protein intake raises urine creatinine, which can make the urine albumin-to-creatinine ratio read falsely low [94]. Meat can briefly raise creatinine and supplements can affect test results, so tell your doctor if you take protein powder or creatine before kidney blood or urine tests [102].
 
@@ -304,7 +304,7 @@ If you take prescription medicines, check with your doctor or pharmacist before 
 
 ### Conditions Requiring Caution
 
-- **Kidney disease:** if you are not on dialysis, guidelines advise about 0.8 g/kg a day (KDIGO) or 0.55 to 0.6 g/kg a day (KDOQI, without diabetes) in stages 3 to 5, and KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. On dialysis, protein needs usually rise [95][96]. Set your protein with your kidney team [4]. High protein may speed the progression of kidney disease [81][80].
+- **Kidney disease:** if you are not on dialysis, guidelines advise about 0.8 g/kg a day (KDIGO) or 0.55 to 0.6 g/kg a day (KDOQI, without diabetes) in stages 3 to 5, and KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. On dialysis, protein needs usually rise [95][96]. Set your protein with your kidney team [96]. High protein may speed the progression of kidney disease [81][80].
 - **Urea cycle disorder:** in this rare inherited disorder, a sudden rise in protein can trigger dangerously high blood ammonia and brain dysfunction, even in adults who did not know they had it [8].
 - **Phenylketonuria (PKU):** phenylalanine builds up and harms the brain if untreated, and the condition needs lifelong management [9]. Use a protein powder only if your metabolic team approves it.
 - **Thyroid disease:** soy protein may affect thyroid hormone levels and the absorption of thyroid medicine [36][1].

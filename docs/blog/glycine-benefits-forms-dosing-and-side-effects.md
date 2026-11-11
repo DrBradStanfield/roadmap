@@ -53,7 +53,7 @@ In the nervous system, glycine is an obligatory co-agonist at the N-methyl-D-asp
 
 The body also needs glycine to make collagen [4]. A review lists glycine as a building block for glutathione, heme, creatine, nucleic acids and uric acid, and as a part of the bile acids that help digest fat [51].
 
-A protein-rich diet also supplies glycine, about 1.5 to 3.0 g a day [4]. Brad takes glycine for one aim, sleep, and says you do not need to take any supplements unless you want to ([Brad, 11 Sep 2025](https://drstanfield.com/blogs/articles/the-diet-my-patients-use-to-crush-visceral-fat)).
+Brad takes glycine for one aim, sleep, and says you do not need to take any supplements unless you want to ([Brad, 11 Sep 2025](https://drstanfield.com/blogs/articles/the-diet-my-patients-use-to-crush-visceral-fat)).
 
 Most human trials of glycine are small. Researchers at Ajinomoto, a glycine maker, ran or co-wrote at least two of the three sleep trials [15][17]; other trials tested glycine for bladder symptoms, schizophrenia and metabolic health.
 
@@ -164,7 +164,7 @@ Glycine may help regulate immune function [50]. A review reported that glycine d
 
 ### Cardiovascular Health
 
-**Blood pressure:** In the Sugaya et al. (2021) bladder study, blood pressure fell during the glycine phase (3 g twice a day), but everyone took placebo first and glycine second, without randomisation [18]. In a placebo-controlled trial in 60 people with metabolic syndrome, 15 g of glycine a day for 3 months lowered systolic blood pressure in men [63].
+**Blood pressure:** In a small study of glycine for bladder symptoms in 20 urology outpatients (Sugaya et al., 2021), blood pressure fell during the glycine phase (3 g twice a day), but everyone took placebo first and glycine second, without randomisation [18]. In a placebo-controlled trial in 60 people with metabolic syndrome, 15 g of glycine a day for 3 months lowered systolic blood pressure in men [63].
 
 **Observational and genetic data:** In 4,109 people with suspected stable angina followed for a median of 7.4 years, higher plasma glycine was linked to fewer heart attacks (hazard ratio 0.89 per standard deviation) [65]. A genetic study of 80,003 people found that glycine is genetically linked to lower coronary heart disease risk, partly through blood pressure [66].
 
@@ -257,7 +257,7 @@ Glycine is sometimes promoted for tinnitus (ringing in the ears) because it calm
 
 ### Product Mention
 
-Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) contains 2,400 mg of glycine alongside low-dose, sustained-release melatonin (0.8 mg) and magnesium bisglycinate (126 mg elemental) — three ingredients targeting different sleep mechanisms: glycine for core body temperature reduction (shown in rats), melatonin for circadian signaling, and magnesium for relaxation and possibly reduced sleep latency (low-quality evidence from two small trials of high-dose magnesium oxide). The glycine dose is close to the 3 g studied in clinical trials, and the 2,400 mg counts the glycine carried by the magnesium bisglycinate chelate.
+Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) contains 2,400 mg of glycine alongside low-dose, sustained-release melatonin (0.8 mg) and magnesium bisglycinate (126 mg elemental) — three ingredients targeting different sleep mechanisms: glycine for core body temperature reduction (shown in rats), melatonin for circadian signaling, and magnesium for relaxation and possibly reduced sleep latency (low to very low quality evidence from two small trials of high-dose magnesium oxide). The glycine dose is close to the 3 g studied in clinical trials, and the 2,400 mg counts the glycine carried by the magnesium bisglycinate chelate.
 
 ## 5. Safety and Side Effects
 
@@ -315,7 +315,7 @@ Some medicines may interact with glycine. Known and theoretical interactions inc
 
 Gelatin, skin and other protein-rich foods hold the most glycine per 100 g [41].
 
-### Top Food Sources
+### Some Food Sources
 
 | Food (FoodData Central ID) | Glycine per 100 g | Serving (weight) | Glycine per serving |
 |------|:-:|------|:-:|

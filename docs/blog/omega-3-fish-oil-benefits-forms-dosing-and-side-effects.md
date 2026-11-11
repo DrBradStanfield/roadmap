@@ -34,8 +34,8 @@ Brad still takes about 1 g of omega-3 a day, from a third-party tested brand, fo
 - 16 Jul 2026, [Shrink the Fat Around Your Heart](https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart): omega-3 calms inflammation, but the cleanest trials show no real effect on visceral or liver fat.
 - 20 May 2026, [Concerning Omega-3 Brain Study](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study): a 2026 study linked omega-3 use with faster cognitive decline, but it measured neither oil oxidation nor B-vitamin status; Brad still takes about 1 g a day.
 - 10 Dec 2025, [Omega-3 Breakthrough Cuts Major Heart Events by 43%](https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43): 4 g a day cut major cardiovascular events by 43% in people on dialysis; Brad stays at 1 g a day because atrial fibrillation risk appears to rise with dose.
-- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): omega-3 at about 1 g a day is one of five picks, for heart and brain; high doses have been linked to atrial fibrillation. The 69% is STRENGTH's own atrial fibrillation result; pooled across trials above 1 g a day the rise was about 49% (Brad's 10 Dec 2025 post).
-- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): omega-3 is one of the three supplements Brad takes, at about 1 g, for the heart benefit seen in VITAL without the atrial fibrillation risk seen at 4 g in STRENGTH. The 69% is STRENGTH's own atrial fibrillation result; pooled across trials above 1 g a day the rise was about 49% (Brad's 10 Dec 2025 post).
+- 5 Oct 2025, [5 Supplements That ACTUALLY Work](https://drstanfield.com/blogs/articles/5-supplements-that-actually-work): omega-3 at about 1 g a day is one of five picks, for heart and brain; high doses have been linked to atrial fibrillation. The post gives STRENGTH's 69% (its own atrial fibrillation result); pooled trials above 1 g a day give about 49% (Brad's 10 Dec 2025 post).
+- 30 Jul 2025, [The Only Three Supplements Doctor Brad Takes](https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes): omega-3 is one of the three supplements Brad takes, at about 1 g, for the heart benefit seen in VITAL without the atrial fibrillation risk seen at 4 g in STRENGTH. The post gives STRENGTH's 69% (its own atrial fibrillation result); pooled trials above 1 g a day give about 49% (Brad's 10 Dec 2025 post).
 - 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): Brad takes about 1 g of mixed EPA and DHA for heart and brain, and warns that megadosing raises atrial fibrillation risk.
 - 26 Sep 2024, [Your Brain on Omega-3, Tantalizing Discovery!](https://drstanfield.com/blogs/articles/brain-omega-3-discovery): the brain benefit of omega-3 seems to depend on healthy B-vitamin status (low homocysteine); Brad takes 1 g a day of EPA and DHA.
 - 11 Jul 2024, [New Study Links Omega-3 to Increased Heart Arrhythmia Risk](https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia): a UK Biobank study linked omega-3 supplements to atrial fibrillation in the general population; Brad stays near the VITAL dose, about 1 g a day. Superseded on the size of the risk: the post said 133% higher, and Brad's 30 Jul 2025 post gives 13% higher.
@@ -178,7 +178,7 @@ In 67 adults without high blood pressure, 8 weeks of fish oil blunted heart rate
 
 Trials in older adults without cognitive problems have mostly found no benefit [1]. In AREDS2, 1 g a day for 5 years did not affect cognitive function [48], and in MAPT, 3 years of omega-3 did not slow cognitive decline [49]. A meta-analysis of 38 trials (49,757 people) found little or no effect on new dementia or cognitive impairment [50]. In a 2026 trial, 2 g a day of DHA for 2 years in older adults with low omega-3 did not change brain volume or cognition, though 38% dropped out [51].
 
-An observational study from the ADNI cohort, published in 2026, linked omega-3 supplement use with faster cognitive decline [52]. It was not a trial. Brad says it did not change his view, because it measured neither oxidation of the oil nor B-vitamin status ([Brad, 20 May 2026](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)).
+An observational study from the ADNI cohort, published in 2026, linked omega-3 supplement use with faster cognitive decline [52]. It was not a trial. Brad says it did not change his view, because it measured neither oxidation of the oil nor B-vitamin status ([Brad, 20 May 2026](https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study)) [53].
 
 The World Health Organization's 2026 guideline on reducing the risk of cognitive decline and dementia recommends against omega-3 supplements for that purpose. It is a strong recommendation with moderate-certainty evidence, and it applies only to people without a diagnosed deficiency [54]. WHO's stated reason is "unexpected harmful effects that outweigh any potential benefits" [54]. The guideline says the effects of supplements were not reassessed in the 2026 update [54].
 
@@ -244,7 +244,7 @@ Taking DHA in pregnancy does not appear to improve a child's later cognition. In
 
 #### Fertility
 
-In a small trial in 34 women with infertility linked to polycystic ovary syndrome (PCOS), omega-3 (3 × 600 mg a day) during ovulation induction gave more clinical pregnancies in overweight or obese women: 29.6% of treatment cycles vs 5.3% with placebo [74].
+In a small trial in 34 women with infertility linked to polycystic ovary syndrome (PCOS), omega-3 (3 × 600 mg a day) during ovulation induction gave clinical pregnancies in 26.7% of treatment cycles vs 13.3% with placebo overall. In overweight or obese women the figures were 29.6% vs 5.3%, the difference the authors report as significant [74].
 
 ### Dry Eye
 
@@ -256,11 +256,11 @@ People who eat more fatty fish have a lower risk of age-related macular degenera
 
 ### Liver Disease (MASLD)
 
-A meta-analysis of 22 trials (1,366 people) found omega-3 supplements reduced liver fat and lowered triglycerides in fatty liver disease [78]. But in a 2024 trial in 203 adults with MASLD, 1.89 g of DHA alone, taken daily for 6 months, did not significantly reduce liver fat compared with placebo [79]. Brad's 2026 post says the cleanest trials show no real effect on liver fat [80].
+A meta-analysis of 22 trials (1,366 people) found omega-3 supplements reduced liver fat and lowered triglycerides in fatty liver disease [78]. But a 2024 four-arm trial in 203 adults with MASLD found that DHA plus vitamin E did not reduce liver fat after 6 months, its main test. 1.89 g of DHA alone, taken daily, was a secondary comparison: it did not significantly reduce liver fat compared with placebo (p = 0.14), and the authors say the trial was not powered adequately for this analysis [79]. Brad's 2026 post says the cleanest trials show no real effect on liver fat [80].
 
 ### Migraine Headache
 
-In 182 adults with migraine, a diet that raised EPA and DHA cut total headache hours per day by 1.3 and headache days per month by 2.0 compared with a control diet. A diet that also cut the omega-6 fat linoleic acid did more: 1.7 fewer headache hours per day and 4.0 fewer headache days per month. Quality of life did not improve significantly [81].
+In 182 adults with migraine, a diet that raised EPA and DHA cut total headache hours per day by 1.3 and headache days per month by 2.0 compared with a control diet. A diet that also cut the omega-6 fat linoleic acid gave 1.7 fewer headache hours per day and 4.0 fewer headache days per month than the control diet. The two omega-3 diets were compared directly only for headache days, where cutting linoleic acid helped more. Quality of life did not improve significantly [81].
 
 ### Muscle, Strength, and Falls
 
@@ -270,7 +270,7 @@ In 60 healthy older adults, 6 months of fish oil omega-3 increased thigh muscle 
 
 #### Younger Adults
 
-In young women, 5 g a day of omega-3, started 4 weeks before 2 weeks of leg immobilization, limited the loss of muscle volume (14 vs 8% with sunflower oil and omega-3) [84]. In soccer players, 4 weeks of omega-3 during training did not improve strength, power or speed, though distance on an endurance running test improved [85].
+In young women, 5 g a day of omega-3, started 4 weeks before 2 weeks of leg immobilization, limited the loss of muscle volume: it fell 14 vs 8% with sunflower oil and omega-3 respectively [84]. In soccer players, 4 weeks of omega-3 during training did not improve strength, power or speed, though distance on an endurance running test improved [85].
 
 ### Insulin Sensitivity and Blood Sugar
 

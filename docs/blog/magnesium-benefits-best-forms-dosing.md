@@ -19,13 +19,13 @@ Brad's newest view is that vitamin D that is not a megadose, plus vitamin K2, bo
 
 ## Key safety points
 
-- Magnesium can reduce the absorption of some medicines, such as bisphosphonates, tetracycline and quinolone antibiotics, levothyroxine, rosuvastatin, sotalol, gabapentin, levodopa and some HIV medicines [1][48][49][50][55][58][60]. Take tetracycline and quinolone antibiotics at least 2 hours before or 4 to 6 hours after magnesium, and bisphosphonates at least 2 hours apart from it [1]; ask your doctor or pharmacist how far apart to take the others.
+- Magnesium can reduce absorption of some medicines, such as bisphosphonates, tetracycline and quinolone antibiotics, levothyroxine, rosuvastatin, sotalol, gabapentin, levodopa and some HIV medicines [1][48][49][50][55][58][60]. Take tetracycline and quinolone antibiotics at least 2 hours before or 4 to 6 hours after magnesium, and bisphosphonates at least 2 hours apart [1]; ask your doctor or pharmacist how far apart to take the others.
 - Long-term proton pump inhibitors and loop or thiazide diuretics can lower magnesium [1]. Potassium-sparing diuretics reduce its loss, so check with your doctor first, as magnesium could build up [1].
 - If you take an SGLT2 inhibitor or digoxin, ask your doctor before taking magnesium [52][53].
-- The risk of magnesium toxicity rises when kidney function is impaired [1]. People with kidney disease should check with their doctor before taking magnesium supplements.
-- The daily upper limit for supplemental magnesium is 350 mg for adults [1]. Higher doses, such as those used for migraine, belong under a doctor's supervision [1].
+- The risk of magnesium toxicity rises with impaired kidney function [1]. With kidney disease, check with your doctor first; severe kidney disease or dialysis: only if your kidney doctor prescribes it.
+- The daily upper limit for supplemental magnesium is 350 mg for adults [1]. Higher doses, such as for migraine, belong under a doctor's supervision [1].
 - Very large doses can cause magnesium toxicity, with muscle weakness, difficulty breathing or an irregular heartbeat [1]. If these appear, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) or go to the emergency department.
-- The most common side effect is diarrhea, which can come with nausea and abdominal cramping, mainly at high doses [1].
+- The most common side effect, mainly at high doses, is diarrhea, sometimes with nausea and abdominal cramping [1].
 
 ## Brad's videos on this topic
 
@@ -127,7 +127,7 @@ Magnesium orotate is sometimes marketed as a "highly bioavailable" form. The Eur
 
 The ISI score fell by 3.9 points on magnesium and 2.3 on placebo (p = 0.049), and no other psychological outcome differed significantly [17].
 
-**Magnesium L-threonate (Magtein) for sleep:** An RCT of 1 g/day Magtein for 21 days in 80 adults reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. The trial was short and industry-funded (by AIDP Inc., which also employed three of its six authors), and on the Insomnia Severity Index and most other sleep questionnaire measures the magnesium group did not improve significantly more than placebo [12]. A later 6-week trial of Magtein found no difference in ring-measured sleep [81]. Brad is not convinced that L-threonate offers extra benefit, given its high cost [45].
+**Magnesium L-threonate (Magtein) for sleep:** An RCT of 1 g/day Magtein for 21 days in 80 adults reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. The trial was short and industry-funded (by AIDP Inc., which also employed three of its six authors), and on the Insomnia Severity Index and most other sleep questionnaire measures the magnesium group did not improve significantly more than placebo [12]. A later 6-week trial of Magtein, funded by Threotech, which supplied the product, found no difference in ring-measured sleep, though on self-report there was a greater improvement in sleep-related impairment (p = 0.043) [81]. Brad is not convinced that L-threonate offers extra benefit, given its high cost [45].
 
 **Reviews:** A 2023 systematic review of 9 studies in 7,582 people found that observational studies link magnesium status with sleep quality, while the randomised trials gave contradictory results [78]. A 2024 review found that 5 of 8 trials measuring sleep reported some improvement, but the trials were small and differed in dose, form and length [79].
 
@@ -139,7 +139,7 @@ The ISI score fell by 3.9 points on magnesium and 2.3 on placebo (p = 0.049), an
 
 **Long-term observational data:** A follow-up of more than 20 years of 6,473 women aged 65-79 years found that those in the middle fifth of magnesium intake had a lower risk of mild cognitive impairment than those in the lowest fifth (hazard ratio 0.63) (Lo et al., *BMJ Open*, 2019) [19]. The authors concluded that total magnesium intake between the estimated average requirement and the recommended dietary allowance may be associated with a lower risk of mild cognitive impairment [19].
 
-**Magnesium L-threonate (Magtein):** The original animal study demonstrated enhanced synaptic plasticity and memory in rats (Slutsky et al., *Neuron*, 2010) [9]. Human results are mixed: one small, manufacturer-funded study showed a small improvement in one cognitive task but no other benefits, and a study in people with dementia showed no meaningful improvement [45]. Brad is not convinced it offers extra benefit, given its high cost [45]. A newer trial in 100 adults with poor sleep found that 2 g a day of Magtein for 6 weeks improved a total cognition score slightly more than placebo (p = 0.043), with no difference on a reasoning test or in ring-measured sleep [81].
+**Magnesium L-threonate (Magtein):** The original animal study demonstrated enhanced synaptic plasticity and memory in rats (Slutsky et al., *Neuron*, 2010) [9]. Human results are mixed: one small, manufacturer-funded study showed a small improvement in one cognitive task but no other benefits, and a study in people with dementia showed no meaningful improvement [45]. Brad is not convinced it offers extra benefit, given its high cost [45]. A newer trial in 100 adults with poor sleep, funded by Threotech, which supplied the product, found that 2 g a day of Magtein for 6 weeks improved a total cognition score slightly more than placebo (p = 0.043), with no difference on a reasoning test or in ring-measured sleep, though self-reported sleep-related impairment improved more (p = 0.043) [81].
 
 ### Diabetes and Insulin Resistance
 
@@ -244,7 +244,7 @@ In Europe the limit is lower: the European Food Safety Authority's upper limit f
 
 ### Practical Dosing by Indication
 
-**General supplementation (to fill dietary gaps):** Brad uses a low-dose supplement as a top-up to a healthy diet, not a replacement for it [45]. In July 2025 he gave that top-up as 126 mg, about 30% of the RDA [45]. His current guidance gives these amounts: his multivitamin capsules have 150 mg in the US (126 mg in the UK and EU) and his multivitamin powder 224 mg, as magnesium taurate, and his sleep supplement has 126 mg as magnesium bisglycinate (Brad's current guidance, 1 Nov 2026). His Australian multivitamin capsules have 260 mg, labelled magnesium amino acid chelate (Brad's current guidance, 1 Nov 2026). The powder with the sleep supplement gives 350 mg a day, at the upper limit, so anyone also taking another magnesium supplement, antacid or laxative would go over it (Brad's current guidance, 1 Nov 2026). The Australian capsules with the sleep supplement give 386 mg a day, above the 350 mg daily upper limit for magnesium from supplements, so check with your doctor or pharmacist before combining them (Brad's current guidance, 1 Nov 2026).
+**General supplementation (to fill dietary gaps):** Brad uses a low-dose supplement as a top-up to a healthy diet, not a replacement for it [45]. In July 2025 he gave that top-up as 126 mg, about 30% of the RDA [45]. His current guidance gives these amounts: his multivitamin capsules have 150 mg in the US (126 mg in the UK and EU) and his multivitamin powder 224 mg, as magnesium taurate, and his sleep supplement has 126 mg as magnesium bisglycinate (Brad's current guidance, 1 Nov 2026). His Australian multivitamin capsules have 260 mg, labelled magnesium amino acid chelate (Brad's current guidance, 1 Nov 2026). The powder with the sleep supplement gives 350 mg a day, at the upper limit, so anyone also taking another magnesium supplement, antacid or laxative would go over it (Brad's current guidance, 1 Nov 2026). The Australian capsules with the sleep supplement give 386 mg a day, above the 350 mg daily upper limit for magnesium from supplements, so check with your doctor or pharmacist before combining them (Brad's current guidance, 1 Nov 2026). In Europe, the UK or EU capsules with the sleep supplement give 252 mg, slightly above the European Food Safety Authority's 250 mg a day upper limit, and the powder with the sleep supplement gives 350 mg, also above it, so a European customer combining them should ask their doctor or pharmacist (Brad's current guidance, 1 Nov 2026).
 
 **Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both are just above the 350 mg/day upper limit for supplemental magnesium [1]. Talk to your doctor before taking more than that limit.
 
@@ -373,6 +373,8 @@ There is no single best form; it remains unclear which form is absorbed best [7]
 
 **Can I take too much magnesium?**
 The upper limit for supplemental magnesium is 350 mg/day for adults. The main risk of excess is diarrhea, not systemic toxicity, in individuals with normal kidney function. The risk of toxicity rises with impaired kidney function, so people with kidney disease should check with their doctor first [1].
+
+If you have severe kidney disease or are on dialysis, take it only if your kidney doctor prescribes it.
 
 **How long does magnesium take to work?**
 Sleep trials that found benefits lasted 3 to 8 weeks [12][15][17]. In the main blood pressure meta-analysis, people took magnesium for about three months [13].

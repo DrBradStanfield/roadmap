@@ -234,8 +234,6 @@ Dr Brad Stanfield's [MicroVitamin Capsules](https://drstanfield.com/products/mic
 
 The rest of the evidence here comes from observational studies, which cannot show that glucosamine causes the differences seen.
 
-**Why lower risks in these studies may not be real:** a 2022 review of 11 such observational studies, which together reported a 16% lower death rate with glucosamine, found that all of them studied people who were already taking it when they joined. The authors showed that this design can produce a false benefit, and concluded that the studies cannot support taking glucosamine to prevent death, cancer or other chronic disease [100].
-
 **Associations with higher risk:**
 - In Beijing insurance-claims data on 685,778 people newly diagnosed with osteoarthritis, followed for a median of 6.13 years, glucosamine use was linked to more cardiovascular disease (HR 1.10, 95% CI 1.08 to 1.11) and coronary heart disease (HR 1.12, 95% CI 1.09 to 1.15), but not to stroke (HR 1.03, 95% CI 0.99 to 1.06). Risk rose with adherence and was highest in the adherent group (HR 1.68, 95% CI 1.59 to 1.78) [87].
 
@@ -243,6 +241,8 @@ The rest of the evidence here comes from observational studies, which cannot sho
 - In 466,039 UK Biobank participants followed for a median of 7 years, glucosamine use was linked to fewer cardiovascular events (HR 0.85, 95% CI 0.80 to 0.90), cardiovascular deaths (HR 0.78, 95% CI 0.70 to 0.87), coronary heart disease (HR 0.82, 95% CI 0.76 to 0.88) and strokes (HR 0.91, 95% CI 0.83 to 1.00) [43].
 - In the same cohort, glucosamine use was linked to a lower risk of type 2 diabetes (HR 0.83, 95% CI 0.78 to 0.89) [44].
 - In a cohort of 77,719 Washington State residents aged 50 to 76, high use of glucosamine (hazard ratio 0.83, 95% CI 0.72 to 0.97) and of chondroitin (HR 0.83, 95% CI 0.69 to 1.00) was linked to lower total mortality over about 5 years, while none of the vitamin or mineral supplements was [41]. In longer follow-up, current glucosamine use was linked to lower total mortality (HR 0.82, 95% CI 0.75 to 0.90) and lower deaths from respiratory disease (HR 0.59, 95% CI 0.41 to 0.83) [42].
+
+**Why lower risks in these studies may not be real:** a 2022 review of 11 such observational studies, which together reported a 16% lower death rate with glucosamine, found that all of them studied people who were already taking it when they joined. The authors showed that this design can produce a false benefit, and concluded that the studies cannot support taking glucosamine to prevent death, cancer or other chronic disease [100].
 
 ### Cancer
 
@@ -296,7 +296,7 @@ In a trial of 206 adults with knee osteoarthritis, a free, self-directed web-bas
 ### Practical Guidance
 
 - Losing weight and increasing physical activity help manage osteoarthritis symptoms [70]
-- A 2008 family-medicine review judged it reasonable to support a 60-day trial of glucosamine sulfate in people who want to try it, especially those at high risk of side effects from other accepted treatments, with the person then deciding whether to continue [98]. Current guidelines advise against it: the American College of Rheumatology strongly recommends against glucosamine for knee, hip and hand osteoarthritis, and NICE says not to offer it [18][105]
+- A 2008 family-medicine review judged it reasonable to support a 60-day trial of glucosamine sulfate in people who want to try it, especially those at high risk of side effects from other accepted treatments, with the person then deciding whether to continue [98]. The ACR and NICE guidelines advise against it [18][105]
 - If you take warfarin or other blood thinners, have diabetes, glaucoma, asthma, dementia or a shellfish allergy, or are pregnant or breastfeeding, talk to your doctor before starting (see Key safety points)
 
 ### How to Read a Supplement Label
