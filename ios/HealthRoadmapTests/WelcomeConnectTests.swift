@@ -23,6 +23,14 @@ final class WelcomeConnectTests: XCTestCase {
         }
     }
 
+    /// No second cloud can be chosen while a record opens.
+    func testTheConnectButtonsHideWhileARecordOpens_US54_AC2b() {
+        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), true), (.opened, false)]
+        for (phase, shows) in rows {
+            XCTAssertEqual(WelcomeConnect.showsConnect(phase), shows, "\(phase)")
+        }
+    }
+
     func testWhatEachTapDoes_US54_AC2b() {
         typealias D = WelcomeConnect.Decision
         let phases: [Phase] = [.choosing, .opening, .failed(unreachable), .opened]

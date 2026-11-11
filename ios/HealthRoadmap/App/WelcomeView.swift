@@ -115,15 +115,17 @@ struct WelcomeView: View {
         NavigationStack {
             List {
                 Section { SyncDiagram() }
-                Section {
-                    ForEach(CloudProvider.allCases) { provider in
-                        // The phase change goes on, once; the button's own callback does not.
-                        ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
-                            Label("Connect \(provider.label)", systemImage: provider == .dropbox ? "shippingbox" : "externaldrive")
+                if WelcomeConnect.showsConnect(phase) {
+                    Section {
+                        ForEach(CloudProvider.allCases) { provider in
+                            // The phase change goes on, once; the button's own callback does not.
+                            ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
+                                Label("Connect \(provider.label)", systemImage: provider == .dropbox ? "shippingbox" : "externaldrive")
+                            }
                         }
+                    } footer: {
+                        Text("Choose the cloud you connected on the website. Your record comes in from there, and your plan is ready.")
                     }
-                } footer: {
-                    Text("Choose the cloud you connected on the website. Your record comes in from there, and your plan is ready.")
                 }
                 switch phase {
                 case .opening:

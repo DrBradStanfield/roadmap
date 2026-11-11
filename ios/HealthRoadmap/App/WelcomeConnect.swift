@@ -1,6 +1,9 @@
 /// The welcome screen's cloud connect (US-54 AC2, AC2b). The screen keeps no copy of
 /// how an open went: it reads its phase from CloudSync each time, so a relaunch shows
 /// the launch open still running, and Cancel never leaves an old failure behind.
+/// Residual: WelcomeView's wiring (its onChange, openRecord on showSheetAndOpen, the empty
+/// connect callback) has no unit test: the project has no view-inspection library and the
+/// UI tests have no fake cloud (state lead M7).
 enum WelcomeConnect {
     enum Phase: Equatable {
         /// No cloud connected: the person picks one.
@@ -29,6 +32,15 @@ enum WelcomeConnect {
         // .connecting in the same turn; saving and synced need an open session). No
         // open is implied, so the taps start one.
         case .onPhone, .synced, .saving: return .opening
+        }
+    }
+
+    /// The Connect buttons hide while a record opens: a second cloud chosen mid-open would
+    /// set the provider while the first cloud's open hands over (review, PR 1281).
+    static func showsConnect(_ phase: Phase) -> Bool {
+        switch phase {
+        case .choosing, .failed: true
+        case .opening, .opened: false
         }
     }
 
