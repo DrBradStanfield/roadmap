@@ -25,8 +25,8 @@ mkdir -p "$WORK"
 SCRATCH="${TMPDIR:-/tmp}/app-store-video"
 mkdir -p "$SCRATCH"
 if [ "${1:-}" != "--compose-only" ]; then
-  # The shared simulator (an iPhone 18 Pro) under its lease (sim-run.sh, US-71 AC7).
-  [ -n "${HR_SIM_LEASE:-}" ] || exec scripts/sim-run.sh -- scripts/app-store-video.sh "$@"
+  # The shared simulator (an iPhone 18 Pro) under its lock (sim-run.sh, US-71 AC7).
+  [ "${HR_SIM_INNER:-}" = "$$" ] || exec scripts/sim-run.sh -- scripts/app-store-video.sh "$@"
   APP_ID=com.drstanfield.healthroadmap
   DERIVED="${TMPDIR:-/tmp}/HealthRoadmap-video-$(pwd | shasum | cut -c1-8)"
   ID=$SIM_UDID
@@ -35,6 +35,12 @@ if [ "${1:-}" != "--compose-only" ]; then
   xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -destination "id=$ID" -derivedDataPath "$DERIVED" -quiet
   xcrun simctl bootstatus "$ID" -b >/dev/null
+  # Set before the first change to the shared device, so a failed run still undoes it. Photos has no
+  # remove: the fictional report added below stays until the device is erased.
+  SERVER= RECORDER=
+  trap 'kill ${SERVER:-} 2>/dev/null || true; [ -n "$RECORDER" ] && kill -INT $RECORDER 2>/dev/null || true
+        xcrun simctl status_bar "$ID" clear; xcrun simctl spawn "$ID" defaults delete "$APP_ID" 2>/dev/null || true
+        scripts/clean-test-clones.sh' EXIT
   xcrun simctl uninstall "$ID" "$APP_ID" 2>/dev/null || true
   xcrun simctl install "$ID" "$DERIVED/Build/Products/Debug-iphonesimulator/HealthRoadmap.app"
 
@@ -64,10 +70,6 @@ fs.writeFileSync(process.argv[2], JSON.stringify(record));
 
   (cd .. && exec npx tsx ios/scripts/app-store-video-lab-server.mts) > "$SCRATCH/lab-server.log" 2>&1 &
   SERVER=$!
-  RECORDER=
-  trap 'kill $SERVER 2>/dev/null || true; [ -n "$RECORDER" ] && kill -INT $RECORDER 2>/dev/null || true
-        xcrun simctl status_bar "$ID" clear; xcrun simctl spawn "$ID" defaults delete "$APP_ID" 2>/dev/null || true
-        scripts/clean-test-clones.sh' EXIT
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do grep -q "lab server on" "$SCRATCH/lab-server.log" && break; sleep 1; done
   grep -q "lab server on" "$SCRATCH/lab-server.log" || { echo "The local lab reader did not start:"; cat "$SCRATCH/lab-server.log"; exit 1; }
 

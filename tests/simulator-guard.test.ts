@@ -27,7 +27,7 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
     'cd ios && xcodebuild test -scheme App | tee log',
     'xcodebuild -scheme App \\\n  test',
     'xcodebuild test -parallel-testing-enabled YES',
-    'ALLOW_EXTRA_SIMULATOR=1 FOO=bar xcodebuild test -scheme App',
+    'ALLOW_EXTRA_SIMULATOR=other-device FOO=bar xcodebuild test -scheme App',
     'env DEVELOPER_DIR=/x timeout 1200 xcodebuild test -scheme App',
     'xcrun xcodebuild test -scheme App',
     // the flag must be on the same xcodebuild (review F2/R1)
@@ -38,7 +38,7 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
   ])('denies %s', (cmd) => {
     const reason = decide(cmd, never);
     expect(reason).toContain('-parallel-testing-enabled NO');
-    expect(reason).toContain("perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild");
+    expect(reason).toContain('ios/scripts/sim-run.sh -- xcodebuild test');
   });
 
   // With the flag, rule 1 passes them; outside the escape hatch rule 3 (AC7) then sends them to sim-run.sh.
@@ -48,7 +48,7 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
     'xcodebuild test -scheme App -parallel-testing-enabled "NO"',
     "(cd ios; perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild -scheme App test -parallel-testing-enabled NO) | tail",
   ])('rule 1 passes %s', (cmd) => {
-    expect(decide(`ALLOW_EXTRA_SIMULATOR=1 ${cmd}`, never)).toBeNull();
+    expect(decide(`ALLOW_EXTRA_SIMULATOR=other-device ${cmd}`, never)).toBeNull();
     expect(decide(cmd, never)).toContain('US-71 AC7');
   });
 
@@ -78,8 +78,8 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
     const reason = decide(cmd, two);
     expect(reason).toContain('iPhone 17 Pro (AAAA-1111)');
     expect(reason).toContain('iPhone SE (BBBB-2222)');
-    expect(reason).toContain('-destination id=<udid>');
-    expect(reason).toContain('xcrun simctl shutdown <udid>');
+    expect(reason).toContain('ios/scripts/sim-run.sh --');
+    expect(reason).not.toContain('ALLOW_EXTRA_SIMULATOR');
   });
 
   it.each(['git commit -m "guard simctl boot"', 'echo xcrun simctl boot X', 'grep -n "simctl create" ios/scripts/*.sh',
@@ -93,8 +93,8 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
     expect(decide('xcrun simctl create Demo iPhone-18-Pro', one)).toBeNull();
   });
 
-  it('allows the escape hatch ALLOW_EXTRA_SIMULATOR=1 without asking simctl', () => {
-    expect(decide('ALLOW_EXTRA_SIMULATOR=1 xcrun simctl boot CCCC', never)).toBeNull();
+  it('allows the escape hatch ALLOW_EXTRA_SIMULATOR=other-device without asking simctl', () => {
+    expect(decide('ALLOW_EXTRA_SIMULATOR=other-device xcrun simctl boot CCCC', never)).toBeNull();
   });
 
   it('fails open when the booted check fails or times out', () => {
@@ -103,13 +103,13 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
 
   it('never asks simctl for commands that do not boot, create or clone', () => {
     const lookup = vi.fn(two);
-    for (const cmd of ['xcrun simctl list devices', 'xcrun simctl shutdown AAAA', 'xcrun simctl bootstatus AAAA -b', 'ls'])
+    for (const cmd of ['xcrun simctl list devices', 'xcrun simctl shutdown AAAA', 'ls'])
       expect(decide(cmd, lookup)).toBeNull();
     expect(lookup).not.toHaveBeenCalled();
   });
 
   it('the escape hatch does not lift rule 1', () => {
-    expect(decide('ALLOW_EXTRA_SIMULATOR=1 xcodebuild test -scheme App', never)).toContain('-parallel-testing-enabled NO');
+    expect(decide('ALLOW_EXTRA_SIMULATOR=other-device xcodebuild test -scheme App', never)).toContain('-parallel-testing-enabled NO');
   });
 });
 
@@ -124,11 +124,29 @@ describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', 
     'xcrun simctl io AAAA screenshot shot.png',
     'xcrun simctl uninstall AAAA com.drstanfield.healthroadmap',
     'ls && simctl boot AAAA',
+    // review A6: more device commands, and spellings that hid simctl
+    'xcrun simctl bootstatus AAAA -b',
+    'xcrun simctl erase AAAA',
+    'xcrun simctl delete AAAA',
+    'xcrun simctl spawn AAAA defaults write com.x onboarded -bool YES',
+    'xcrun simctl openurl AAAA https://example.com',
+    'xcrun simctl privacy AAAA reset all com.x',
+    '/usr/bin/xcrun simctl launch AAAA com.x',
+    'xcrun --sdk iphonesimulator simctl install AAAA App.app',
+    'xcrun -v simctl launch AAAA com.x',
+    'xcrun simctl --set testing install AAAA App.app',
+    '/Applications/Xcode.app/Contents/Developer/usr/bin/simctl launch AAAA com.x',
+    // review A7: a simulator UUID as the destination, and a test action with no destination
+    'xcodebuild test -scheme App -parallel-testing-enabled NO -destination id=11111111-2222-3333-4444-555555555555',
+    "xcodebuild build -scheme App -destination 'id=11111111-2222-3333-4444-555555555555'",
+    'xcodebuild test -scheme App -parallel-testing-enabled NO',
+    // the old hatch value no longer lifts it
+    'ALLOW_EXTRA_SIMULATOR=1 xcrun simctl launch AAAA com.x',
   ])('denies %s, naming the wrapper', (cmd) => {
     const reason = decide(cmd, () => []);
     expect(reason).toContain('US-71 AC7');
     expect(reason).toContain('ios/scripts/sim-run.sh -- xcodebuild test');
-    expect(reason).toContain('ALLOW_EXTRA_SIMULATOR=1');
+    expect(reason).not.toContain('ALLOW_EXTRA_SIMULATOR');
   });
 
   it.each([
@@ -141,15 +159,22 @@ describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', 
     'xcodebuild build -scheme App -destination "generic/platform=iOS Simulator"',
     'xcrun simctl list devices booted',
     'xcrun simctl shutdown AAAA',
-    'ALLOW_EXTRA_SIMULATOR=1 xcrun simctl launch AAAA com.x',
-    'ALLOW_EXTRA_SIMULATOR=1 xcodebuild build-for-testing -destination "platform=iOS Simulator,name=iPad"',
+    'ALLOW_EXTRA_SIMULATOR=other-device xcrun simctl launch AAAA com.x',
+    'ALLOW_EXTRA_SIMULATOR=other-device xcodebuild build-for-testing -destination "platform=iOS Simulator,name=iPad"',
+    'ios/scripts/sim-run.sh hold',
+    'HR_SIM_LEASE=123-456 ios/scripts/sim-run.sh -- xcrun simctl io {udid} screenshot a.png',
+    // review A7: a physical device or generic destination boots nothing
+    "xcodebuild test -scheme App -parallel-testing-enabled NO -destination 'platform=iOS,id=00008110-001A2B3C4D5E801E'",
+    'xcodebuild build-for-testing -scheme App -destination platform=iOS,id=00008110-001A2B3C4D5E801E',
+    "xcodebuild build-for-testing -scheme App -destination 'generic/platform=iOS Simulator'",
+    'xcodebuild build-for-testing -scheme App -destination generic/platform=iOS',
   ])('allows %s', (cmd) => {
     expect(decide(cmd, () => [])).toBeNull();
   });
 
   it('a quoted or commented hatch does not lift it', () => {
-    expect(decide('echo ALLOW_EXTRA_SIMULATOR=1; xcrun simctl launch AAAA com.x', () => [])).toContain('US-71 AC7');
-    expect(decide('xcrun simctl launch AAAA com.x # ALLOW_EXTRA_SIMULATOR=1', () => [])).toContain('US-71 AC7');
+    expect(decide('echo ALLOW_EXTRA_SIMULATOR=other-device; xcrun simctl launch AAAA com.x', () => [])).toContain('US-71 AC7');
+    expect(decide('xcrun simctl launch AAAA com.x # ALLOW_EXTRA_SIMULATOR=other-device', () => [])).toContain('US-71 AC7');
   });
 });
 
@@ -186,33 +211,33 @@ describe('US-71 AC6 scanner: comments, heredocs and quotes (Codex re-check R1/R2
     'echo "x \\" xcodebuild test"',
     "# xcodebuild test\nls",
     "# it's\nls # don't\n# xcrun simctl boot X",
-    '# ALLOW_EXTRA_SIMULATOR=1 note\nls',
+    '# ALLOW_EXTRA_SIMULATOR=other-device note\nls',
   ])('allows %j', (cmd) => {
     expect(decide(cmd, never)).toBeNull();
   });
 
   it('a comment cannot carry the escape hatch', () => {
-    expect(decide('xcrun simctl boot X # ALLOW_EXTRA_SIMULATOR=1', two)).toContain('already booted');
-    expect(decide('export ALLOW_EXTRA_SIMULATOR=1; xcrun simctl boot X', never)).toBeNull();
+    expect(decide('xcrun simctl boot X # ALLOW_EXTRA_SIMULATOR=other-device', two)).toContain('already booted');
+    expect(decide('export ALLOW_EXTRA_SIMULATOR=other-device; xcrun simctl boot X', never)).toBeNull();
   });
 
   it.each([
-    'echo "ALLOW_EXTRA_SIMULATOR=1"; xcrun simctl boot CCCC',
-    "echo ALLOW_EXTRA_SIMULATOR=1; xcrun simctl boot CCCC",
-    'FOO="ALLOW_EXTRA_SIMULATOR=1" xcrun simctl boot CCCC',
-    'ALLOW_EXTRA_SIMULATOR="\\1" xcrun simctl boot CCCC',
-    '"ALLOW_EXTRA_SIMULATOR"=1; xcrun simctl boot CCCC',
-    "'ALLOW_EXTRA_SIMULATOR=1'; xcrun simctl boot CCCC",
-    'ALLOW_EXTRA_SIMULATOR\\=1; xcrun simctl boot CCCC',
+    'echo "ALLOW_EXTRA_SIMULATOR=other-device"; xcrun simctl boot CCCC',
+    "echo ALLOW_EXTRA_SIMULATOR=other-device; xcrun simctl boot CCCC",
+    'FOO="ALLOW_EXTRA_SIMULATOR=other-device" xcrun simctl boot CCCC',
+    'ALLOW_EXTRA_SIMULATOR="\\other-device" xcrun simctl boot CCCC',
+    '"ALLOW_EXTRA_SIMULATOR"=other-device; xcrun simctl boot CCCC',
+    "'ALLOW_EXTRA_SIMULATOR=other-device'; xcrun simctl boot CCCC",
+    'ALLOW_EXTRA_SIMULATOR\\=other-device; xcrun simctl boot CCCC',
   ])('only a real leading assignment carries the escape hatch, not %j (Codex re-check R1)', (cmd) => {
     expect(decide(cmd, two)).toContain('already booted');
   });
 
   it('a leading assignment among others, or after export, still carries it', () => {
-    expect(decide('FOO=1 ALLOW_EXTRA_SIMULATOR=1 xcrun simctl boot X', never)).toBeNull();
-    expect(decide('export FOO=1 ALLOW_EXTRA_SIMULATOR=1 && xcrun simctl boot X', never)).toBeNull();
-    expect(decide('FOO="bar" ALLOW_EXTRA_SIMULATOR=1 xcrun simctl boot X', never)).toBeNull();
-    expect(decide('ALLOW_EXTRA_SIMULATOR="1" xcrun simctl boot X', never)).toBeNull();
+    expect(decide('FOO=1 ALLOW_EXTRA_SIMULATOR=other-device xcrun simctl boot X', never)).toBeNull();
+    expect(decide('export FOO=1 ALLOW_EXTRA_SIMULATOR=other-device && xcrun simctl boot X', never)).toBeNull();
+    expect(decide('FOO="bar" ALLOW_EXTRA_SIMULATOR=other-device xcrun simctl boot X', never)).toBeNull();
+    expect(decide('ALLOW_EXTRA_SIMULATOR="other-device" xcrun simctl boot X', never)).toBeNull();
   });
 
   it.each([

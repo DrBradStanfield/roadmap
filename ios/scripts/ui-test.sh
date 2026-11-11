@@ -2,11 +2,11 @@
 # Runs the UI tests (HealthRoadmapUITests, US-54) on the simulator, one test at a time,
 # each on a fresh install: every test starts from the welcome screen, and a test that
 # finishes onboarding would leave the next one past it. The unit tests are test.sh.
-# Runs on the shared simulator under its lease (sim-run.sh, US-71 AC7) and uninstalls the app there.
+# Runs on the shared simulator under its lock (sim-run.sh, US-71 AC7) and uninstalls the app there.
 #   ios/scripts/ui-test.sh
 set -eu
 cd "$(dirname "$0")/.."
-[ -n "${HR_SIM_LEASE:-}" ] || exec scripts/sim-run.sh -- scripts/ui-test.sh
+[ "${HR_SIM_INNER:-}" = "$$" ] || exec scripts/sim-run.sh -- scripts/ui-test.sh
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 ID=$SIM_UDID
 xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
@@ -18,6 +18,9 @@ for TEST in $TESTS; do
   CLASS=$(grep -l "func $TEST(" HealthRoadmapUITests/*.swift | head -1 | xargs basename | sed 's/\.swift$//')
   xcrun simctl bootstatus "$ID" -b >/dev/null
   xcrun simctl uninstall "$ID" com.drstanfield.healthroadmap 2>/dev/null || true
+  # Each test starts at the welcome screen: clear the skip settings app-store-shots.sh writes
+  # (outside the app, they survive the uninstall) on the shared device.
+  xcrun simctl spawn "$ID" defaults delete com.drstanfield.healthroadmap 2>/dev/null || true
   # A test may answer Apple's Health sheet for good; clear it so the next test sees the sheet (US-56 AC5c).
   xcrun simctl privacy "$ID" reset health com.drstanfield.healthroadmap 2>/dev/null || true
   if xcodebuild test-without-building -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \

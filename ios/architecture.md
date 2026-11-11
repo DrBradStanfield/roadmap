@@ -1596,11 +1596,15 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
 - `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
 - `scripts/sim-run.sh`: the one door to the simulator (US-71 AC7, 2026-11-11). Every session takes turns on
-  one device, "HR Shared iPhone" (iPhone 18 Pro, newest iOS runtime), under an mkdir lease in
-  `~/Library/Caches/health-roadmap-sim`; the device stays booted between runs and a detached sleep shuts it
-  down after 20 idle minutes. Why: each test run booted its own simulator (load spikes of 33 to 47 on
-  2026-11-11), and 171 simulator-runtime processes from runs 9 and 11 days old were still alive. The other
-  scripts here run through it. Tested by `scripts/sim-run.test.ts` with a fake xcrun.
+  one device, "HR Shared iPhone" (iPhone 18 Pro, newest iOS runtime), under a kernel lock: `lockf` on a
+  file descriptor the wrapper opens in `~/Library/Caches/health-roadmap-sim`. The kernel frees it when the
+  holder exits, however it exits, so there is no stale lock to take over (a hand-made mkdir lease came first,
+  and review found five races in it; Fable 2026-11-11). lockf's command form was not used: it drops the lock
+  when lockf itself is signalled while its command runs on, and its timeout exit (75) is a command's too.
+  The device stays booted between runs and a detached sleep shuts it down after 20 idle minutes. Why: each
+  test run booted its own simulator (load spikes of 33 to 47 on 2026-11-11), and 171 simulator-runtime
+  processes from runs 9 and 11 days old were still alive. The other scripts here run through it. Tested by
+  `scripts/sim-run.test.ts` with a fake xcrun.
 - `scripts/fresh-sim.sh`: builds and starts the app in the simulator as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
 - `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
