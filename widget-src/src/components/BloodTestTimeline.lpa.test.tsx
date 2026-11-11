@@ -29,7 +29,8 @@ vi.mock('../lib/server-api', async (original) => ({ ...(await original<typeof im
 
 const LEGACY_KEY = 'health_roadmap_unit_overrides';
 const UNCLEAR = 'Re-enter this value: its unit is unclear after an update.';
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -138,7 +139,7 @@ describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
     const m = matrix({ unitSystem: 'conventional' });
     typeInto(m.draft(), '156');
     await m.leave();
-    expect(m.sent(0)).toEqual([expect.objectContaining({ date: TODAY, values: { lpa: 390 } })]);
+    expect(m.sent(0)).toEqual([expect.objectContaining({ date: localToday(), values: { lpa: 390 } })]);
 
     m.choose('mg/L');
     typeInto(m.draft(), '93');
