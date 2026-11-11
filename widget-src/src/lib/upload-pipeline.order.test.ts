@@ -1,7 +1,8 @@
-// US-12 AC23 (D12): the review lists files in the order they were picked, whatever order they finish in.
+// US-12 AC23 (D12): the review and its notices list files in the order they were picked, whatever order they finish in.
 import { describe, it, expect, vi } from 'vitest';
 import type { HealthUploadAPI } from '../upload-entry';
 import type { PageContent } from './api-types';
+import type { FileNotice } from './upload-pipeline';
 
 const pending = new Map<string, (ok: boolean) => void>();
 vi.mock('./upload-api', () => ({
@@ -26,19 +27,21 @@ const upload = {
 const until = async (n: number) => { for (let i = 0; i < 50 && pending.size < n; i++) await new Promise(r => setTimeout(r, 0)); };
 
 describe('US-12 AC23: the review lists files in picked order (D12)', () => {
-  it('later-picked files that finish first are still listed after the earlier ones', async () => {
+  it('later-picked files that finish first are still listed after the earlier ones, notices too', async () => {
     pending.clear();
     const names = ['a.pdf', 'b.pdf', 'c.pdf', 'd.pdf'];
     const inputs = names.map(fileName => ({ fileName, getFile: async () => new File(['x'], fileName, { type: 'application/pdf' }) }));
-    const run = processPipeline(upload, inputs, new AbortController(), () => {}, 'si', []);
+    const notices: FileNotice[] = [];
+    const run = processPipeline(upload, inputs, new AbortController(), () => {}, 'si', notices);
     await until(names.length);
-    // Answer last-picked first; one fails, and keeps its place too.
-    pending.get('d.pdf')!(true);
-    pending.get('c.pdf')!(false);
-    pending.get('b.pdf')!(true);
+    // Answer last-picked first; two fail, and each keeps its place, its notice too.
+    pending.get('d.pdf')!(false);
+    pending.get('c.pdf')!(true);
+    pending.get('b.pdf')!(false);
     pending.get('a.pdf')!(true);
     const results = await run;
     expect(results.map(r => r.fileName)).toEqual(names);
-    expect(results[2].error).toBe('Extraction failed');
+    expect(results.map(r => r.error)).toEqual([undefined, 'Extraction failed', undefined, 'Extraction failed']);
+    expect(notices.map(n => n.name)).toEqual(['b.pdf', 'd.pdf']);
   });
 });
