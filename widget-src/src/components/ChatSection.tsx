@@ -56,9 +56,11 @@ interface ChatSectionProps {
   onProposeEdit?: ChatEditTarget;
   /** Before the onboarding is done: the general wording, as ChatEmbed's. */
   muted?: boolean;
+  /** The erase the page shows: a move clears the conversation (US-15 AC62). */
+  erase?: string;
 }
 
-export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted, erase }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
@@ -72,6 +74,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     isLoggedIn, guestInputs, prefetchedData,
     onRemoteConversationSelected: closeThreadsPanel,
     onProposeEdit,
+    erase,
   });
   const { inputRef, messagesContainerRef } = refs;
 

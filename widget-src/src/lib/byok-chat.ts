@@ -24,7 +24,7 @@ import { toolOnlyAck, type ProposedEdit } from '@roadmap/health-core/chat-edits'
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
-import { getChatHistory } from './chat-history-access';
+import { chatMark, getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -151,6 +151,7 @@ export async function sendMessage(
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
   const storePromise = getChatHistory();
+  const mark = chatMark(); // an erase since the question keeps the turn out of the history file (US-15 AC62)
   const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? shownHistory : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
@@ -203,7 +204,7 @@ export async function sendMessage(
   const assistantId = `a-${Date.now()}`;
   void storePromise
     .then((store) =>
-      store?.recordExchange({
+      (chatMark() === mark ? store : null)?.recordExchange({
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

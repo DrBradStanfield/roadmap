@@ -24,9 +24,11 @@ interface ChatEmbedProps {
   guestInputs?: ChatContextSource;
   muted?: boolean;
   onProposeEdit?: ChatEditTarget;
+  /** The erase the page shows: a move clears the conversation (US-15 AC62). */
+  erase?: string;
 }
 
-export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: ChatEmbedProps) {
+export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, erase }: ChatEmbedProps) {
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
@@ -36,6 +38,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
     isLoggedIn, guestInputs,
     onRemoteConversationSelected: closeDrawer,
     onProposeEdit,
+    erase,
   });
   const { inputRef, messagesContainerRef } = refs;
 

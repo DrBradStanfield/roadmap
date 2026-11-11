@@ -11,7 +11,7 @@ import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedul
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
+import { beginChatErase, getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
@@ -330,10 +330,12 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // not be read (US-11 AC2c). On the device the record erase clears
   // the chat file itself, so a failed open there loses nothing.
   let chatUnread = false;
-  const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
+  const open = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
     chatUnread = true;
     throw error;
   });
+  // A reply to a question asked before this point is never saved (US-15 AC62).
+  const chat = () => { beginChatErase(); return open(); };
   const result = await store.deleteAllData({ teardown: preEraseHook ?? undefined, chat });
   return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;
 }

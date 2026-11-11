@@ -22,16 +22,8 @@ import { useChatBusy } from './useChatBusy';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
-
-/** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */
-export interface SubscriptionCardState {
-  card: SubscriptionCard;
-  phase: 'idle' | 'sending' | 'closed';
-  /** The last outcome; a 'busy' one leaves the card open to try again. */
-  result?: SubscriptionResult;
-  dismissed?: boolean;
-}
+import { useSubscriptionCards } from './useSubscriptionCards';
+export type { SubscriptionCardState } from './useSubscriptionCards';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -49,6 +41,10 @@ interface UseChatStateOptions {
   onRemoteConversationSelected?: () => void;
   /** Where the form edits the model proposes via tool_use go (pre-fill / med update). */
   onProposeEdit?: ChatEditTarget;
+  /** The erase the page shows. A move, this tab's erase or another device's,
+   *  clears the conversation, and a reply to a question asked before it is
+   *  dropped (US-15 AC62). Undefined off the widget: nothing to follow. */
+  erase?: string;
 }
 
 /** A reply's form edits (US-16): `ask` reads the erase the question is asked
@@ -63,7 +59,8 @@ export interface ChatEditTarget {
 }
 
 /** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
-const postState = (instanceId: string, payload: SyncState) => postSync({ instanceId, type: 'state', payload, ts: Date.now() });
+const postState = (instanceId: string, erase: string | undefined, payload: SyncState) =>
+  postSync({ instanceId, type: 'state', payload: { ...payload, erase }, ts: Date.now() });
 
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
@@ -75,8 +72,12 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
   return e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229;
 }
 
-export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
+export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit, erase }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
+  // The erase the conversation belongs to, and the thread on screen when the
+  // last erase cleared it (US-15 AC62).
+  const eraseRef = useRef(erase);
+  const clearedFrom = useRef<string | null>(null);
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
@@ -95,9 +96,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
   const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
-  // US-59: subscription change cards, by assistant message id, this tab only
-  // (like approachById: never persisted, synced or sent anywhere but the confirm).
-  const [cardsById, setCardsById] = useState<Record<string, SubscriptionCardState>>({});
+  // US-59: subscription change cards, by assistant message id, this tab only (hooks/useSubscriptionCards).
+  const { cardsById, setCardsById, confirmSubscription, dismissSubscription } = useSubscriptionCards();
   const streamRef = useRef({ ...NO_PENDING, frame: 0 });
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -176,6 +176,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       if (msg.type === 'state') {
         const { payload } = msg;
+        // A tab at another erase: its busy state counts, its conversation is not this one (US-15 AC62).
+        if (payload.erase !== undefined && eraseRef.current !== undefined && payload.erase !== eraseRef.current) {
+          onRemote(msg.instanceId, payload.sending, payload.isLoading);
+          return;
+        }
         if (payload.activeConversationId !== activeConversationIdRef.current) {
           onRemoteConversationSelected?.();
           onProposeEditRef.current?.leave();
@@ -243,6 +248,26 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     }
   }, [isLoggedIn, dropThread]);
 
+  // An erase the page now shows clears the conversation: its turns are erased,
+  // so none shows or goes back as history, and the list is read again (US-15
+  // AC62). The edits' notice stays: it outlasts the erase it reports (US-16 AC2e).
+  useEffect(() => {
+    if (erase === eraseRef.current) return;
+    eraseRef.current = erase;
+    clearedFrom.current = activeConversationIdRef.current;
+    activeConversationIdRef.current = null;
+    messagesRef.current = [];
+    loadGenRef.current++; // a thread load started before the erase is stale
+    setActiveConversationId(null);
+    setMessages([]);
+    setConversations([]);
+    setApproachById({});
+    setCardsById({});
+    setError(null);
+    hasLoadedRef.current = false;
+    void loadConversationsIfNeeded();
+  }, [erase, loadConversationsIfNeeded, setCardsById]);
+
   const selectConversation = useCallback(async (id: string) => {
     // Set now, not after render: dropThread below reads it after the await.
     activeConversationIdRef.current = id;
@@ -256,7 +281,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
     if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
     setMessages(msgs);
-    postState(instanceId, {
+    postState(instanceId, eraseRef.current, {
       conversations: conversationsRef.current,
       activeConversationId: id,
       messages: msgs,
@@ -283,6 +308,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
     setError(null);
     const currentConvId = activeConversationIdRef.current;
+    const eraseAtSend = eraseRef.current;
     const currentConvs = conversationsRef.current;
 
     const optimisticMsg: ChatMessage = {
@@ -301,7 +327,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setIsLocalSender(true);
     setSendingConversationId(currentConvId);
 
-    postState(instanceId, {
+    postState(instanceId, eraseRef.current, {
       conversations: currentConvs,
       activeConversationId: currentConvId,
       messages: optimisticMessages,
@@ -337,7 +363,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
     // on screen, and the reply stays with the thread it was sent from.
     const shownId = activeConversationIdRef.current;
-    const stayed = shownId === currentConvId;
+    // An erase since the question cleared its thread: the turn is erased too (US-15 AC62).
+    const erased = eraseRef.current !== eraseAtSend;
+    const stayed = !erased && shownId === currentConvId;
     // The list as it is now: a thread dropped during the send stays dropped (US-15 AC7a).
     const convsNow = conversationsRef.current;
 
@@ -352,7 +380,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
       setError(sendError.error);
       setIsLocalSender(false);
-      postState(instanceId, {
+      postState(instanceId, eraseRef.current, {
         conversations: convsNow,
         activeConversationId: shownId,
         messages: withoutOptimistic,
@@ -379,7 +407,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       if (stayed) loadGenRef.current++; // a load started before the reply would replace it
       if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
       setMessages(finalMessages);
-      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
+      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback && !erased) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
       }
 
@@ -387,16 +415,17 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
+        // Erased: refused, and said in the thread the erase cleared, unless it had been left (US-16 AC2e).
+        onProposeEditRef.current?.take(result.proposedEdits, asked, erased ? clearedFrom.current === currentConvId : stayed);
       }
-      if (result.subscriptionCard) {
+      if (result.subscriptionCard && !erased) {
         const card = result.subscriptionCard;
         setCardsById(prev => ({ ...prev, [assistantMsg.id]: { card, phase: 'idle' } }));
       }
 
       let finalConversations = convsNow;
       let finalConvId = shownId;
-      if (!currentConvId || restarted) {
+      if (!erased && (!currentConvId || restarted)) {
         if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
         finalConversations = [{
           id: result.conversationId,
@@ -408,7 +437,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       setIsLocalSender(false);
-      postState(instanceId, {
+      postState(instanceId, eraseRef.current, {
         conversations: finalConversations,
         activeConversationId: finalConvId,
         messages: finalMessages,
@@ -427,26 +456,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       postSync({ instanceId, type: 'thread-deleted', payload: { id }, ts: Date.now() });
     }
   }, [instanceId, dropThread]);
-
-  /** The customer pressed Confirm (US-59): the one request that makes the change. */
-  const cardsRef = useRef(cardsById);
-  const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
-  useEffect(() => { cardsRef.current = cardsById; }, [cardsById]);
-  const confirmSubscription = useCallback(async (messageId: string) => {
-    const entry = cardsRef.current[messageId];
-    // The ref flips to 'sending' synchronously, so a double click sends once.
-    if (!entry || entry.phase !== 'idle') return;
-    setCards({ ...cardsRef.current, [messageId]: { ...entry, phase: 'sending' } });
-    const result = await confirmSubscriptionChange(entry.card);
-    // The usage signal is counted by the server's confirm route (US-59), on every bundle.
-    // 'busy' leaves the card open to try again; every other outcome closes it.
-    setCards({ ...cardsRef.current, [messageId]: { ...entry, result, phase: result.code === 'busy' ? 'idle' : 'closed' } });
-  }, [setCards]);
-
-  const dismissSubscription = useCallback((messageId: string) => {
-    const entry = cardsRef.current[messageId];
-    if (entry?.phase === 'idle') setCards({ ...cardsRef.current, [messageId]: { ...entry, phase: 'closed', dismissed: true } });
-  }, [setCards]);
 
   const handleInputChange = useCallback((text: string) => {
     const sliced = cutText(text, MAX_CHARS);

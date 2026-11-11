@@ -63,6 +63,22 @@ function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | n
   return store!;
 }
 
+/** Erases this page has begun on its chat history: bumped as the erase's chat
+ *  step starts, before its tombstones are written (US-15 AC62). */
+let erasures = 0;
+export function beginChatErase(): void {
+  erasures += 1;
+}
+/**
+ * Where the chat stands as a question is sent. A reply is saved to the history
+ * file only if the mark is unchanged when it lands: an erase begun here since,
+ * or another device's taken in, would otherwise save a turn it erased, perhaps
+ * one claiming a change the erased record does not hold (US-15 AC62).
+ */
+export function chatMark(): string {
+  return `${erasures}|${eraseIdentity()}`;
+}
+
 /** The cloud chat-history store, or null (production build, no data layer, or
  *  the cloud read failed). Never rejects. */
 export function getChatHistory(): Promise<ChatHistoryStore | null> {

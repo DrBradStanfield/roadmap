@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
-import { getChatHistory } from './chat-history-access';
+import { chatMark, getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -319,6 +319,7 @@ export async function sendMessage(
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
+  const mark = chatMark(); // an erase since the question keeps the turn out of the history file (US-15 AC62)
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -398,7 +399,7 @@ export async function sendMessage(
     // history must never block or fail the chat itself.
     void cloudHistory()
       .then((store) =>
-        store?.recordExchange({
+        (chatMark() === mark ? store : null)?.recordExchange({
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,

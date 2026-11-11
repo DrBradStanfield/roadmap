@@ -11,7 +11,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react';
 
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-vi.mock('../lib/chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
+vi.mock('../lib/chat-history-access', () => ({ chatMark: () => '', getChatHistory: () => Promise.resolve(null) }));
 vi.mock('../lib/server-api', async (original) => ({
   ...await original<typeof import('../lib/server-api')>(),
   trackProductEvent: vi.fn(),

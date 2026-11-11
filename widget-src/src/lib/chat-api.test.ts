@@ -10,6 +10,7 @@ vi.mock('./sentry', () => ({
   Sentry: { captureException: vi.fn() },
 }));
 vi.mock('./chat-history-access', () => ({
+  chatMark: () => '',
   getChatHistory: () => Promise.resolve(null),
 }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
