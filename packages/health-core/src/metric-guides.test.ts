@@ -13,7 +13,7 @@ const ROOT = join(__dirname, '../../..');
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 const FILES = {
   algorithm: read('health_roadmap_algorithm.md'),
-  evidence: read('packages/health-core/src/evidence.ts'),
+  evidence: read('packages/health-core/src/evidence.ts') + read('packages/health-core/src/evidence-screening.ts'),
   html: read('roadmap_text.html'),
   // The app's own drug list, already shown to the user in the medication question.
   types: read('packages/health-core/src/types.ts'),
