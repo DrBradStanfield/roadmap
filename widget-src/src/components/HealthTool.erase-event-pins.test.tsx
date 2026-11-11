@@ -322,7 +322,7 @@ describe('US-16 AC2a, US-11 AC6: each DRAFTS_CLEARED listener drops its state on
   });
 });
 
-describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (HealthTool handleDeleteData: clearOffFileAfterErase)', () => {
+describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase eraseAll: the forget door, clearOffFileAfterErase)', () => {
   // What the machine PR must keep. On a failed write the session clears nothing off the file
   // (record-session erase(): clearOffFileData runs only once the flush lands), so the page's own
   // clearOffFileAfterErase is the ONLY DRAFTS_CLEARED. On success it is the second.
@@ -511,8 +511,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
       expect(getShownErase()).toBe(getEraseIdentity());
       expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0);
       expect(heightShown(view) ?? '').toBe('');
-      // 0 so far: a 'refused' re-read counts remote_change_applied only when it ends a hold (READ_POLICY), and none was held.
-      expect(remoteApplied()).toBe(0);
+      // 1 already (fix 4 2b-3, Fable Q1): the erase machine counts another writer's erase where the screen first shows it,
+      // and the refusal's re-read showed it. Before the machine, the late arrival counted it instead: the same total, earlier.
+      expect(remoteApplied()).toBe(1);
       afterReread = view.container.innerHTML;
 
       await act(async () => { loop.release(); await flushed; await drain(); });
@@ -522,8 +523,8 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     await settle(50);
     expect(heard).toEqual([getEraseIdentity()]); // the late REMOTE_CHANGED, heard once
     expect(alerts).toEqual([WRITE_REFUSED]); // one alert in total
-    // 1 in total, today: the late arrival is not held (its erase is the one shown, the profile clean), so the relay
-    // re-reads and counts it, though it re-reads the record already shown (fix 4 D2, an identity already shown).
+    // 1 in total: the late arrival re-reads the record already shown and counts nothing more (fix 4 D2, an identity
+    // already shown; the machine counts each erase once).
     expect(remoteApplied()).toBe(1);
     expect(view.container.innerHTML).toBe(afterReread); // nothing visible changes
     expect(getShownErase()).toBe(getEraseIdentity());

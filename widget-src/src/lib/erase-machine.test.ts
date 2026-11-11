@@ -249,7 +249,7 @@ describe('erase machine: a refused save while an erase is heard cannot loop by i
     store.dispatch({ type: 'arrived', identity: Z }); // its read fails: no event follows
     expect(refusal(store, X)).toEqual({ news: true, reads: true });
     expect(refusal(store, X)).toEqual({ news: false, reads: true });
-    expect(d.calls).toEqual(['read', 'read', 'read']); // the arrival's, then one per refusal
+    expect(d.calls).toEqual(['read', 'alert-refused', 'read', 'read']); // the arrival's, then one per refusal; the first said (2b-3)
     expect(store.getSnapshot()).toEqual(idle(X, { heard: Z, said: set(X) }));
   });
   it('then the read that shows the heard erase ends it: a later refusal reads nothing', () => {
@@ -339,6 +339,7 @@ function doors(): EraseDoors & { calls: string[] } {
     forget: () => calls.push('forget'),
     read: () => calls.push('read'),
     countRemoteChange: () => calls.push('count-remote-change'),
+    alertRefused: () => calls.push('alert-refused'),
     sayOutcome: (message) => calls.push(`say-outcome ${message}`),
   };
 }
@@ -379,16 +380,26 @@ describe('createEraseStore: the state\'s only copy, and the one place effects ru
   // The two PR 2b todos once here (own-end on any move, whatever result.success says; the mark moving only
   // when the tree that shows it commits, US-16 AC2d) are now hooks/useErase.test.tsx's.
 
-  it('refusal (f, F4b): news once per erase asked under, false inside this tab\'s erase, and runs no door', () => {
+  it('refusal (f, F4b): news once per erase asked under, false inside this tab\'s erase; the alertRefused door says it (2b-3, Fable Q3)', () => {
     const d = doors();
     const store = createEraseStore(W, d);
     store.dispatch({ type: 'loaded' });
     expect(refusal(store, W)).toEqual({ news: true, reads: false });
     expect(refusal(store, W)).toEqual({ news: false, reads: false });
-    expect(d.calls).toEqual([]); // the caller says it
+    expect(d.calls).toEqual(['alert-refused']); // said once
     store.dispatch({ type: 'read', identity: X });
     store.dispatch({ type: 'own-start' });
     expect(refusal(store, X)).toEqual({ news: false, reads: false });
-    expect(d.calls).toEqual(['clear-drafts', 'count-remote-change']);
+    expect(d.calls).toEqual(['alert-refused', 'clear-drafts', 'count-remote-change']);
+  });
+
+  it('2b-3, Fable Q3: a news refusal with an erase heard says it before the read starts', () => {
+    const d = doors();
+    const store = createEraseStore(W, d);
+    store.dispatch({ type: 'loaded' });
+    store.dispatch({ type: 'arrived', identity: X }); // its read fails: no event follows
+    d.calls.length = 0;
+    expect(refusal(store, W)).toEqual({ news: true, reads: true });
+    expect(d.calls).toEqual(['alert-refused', 'read']);
   });
 });

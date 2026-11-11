@@ -14,7 +14,8 @@
  * - held: a remote change waits for a clean form.
  * Every whole re-read of the record goes through here, so a held change is applied
  * once (survey R8). `apply(remote)`: `remote` says the re-read takes in
- * another writer's change.
+ * another writer's change, to count. Another writer's erase never enters: the
+ * erase machine hears and counts it, and its read comes through `shows`.
  */
 export function createRemoteChangeRelay<T>(apply: (remote: boolean) => T) {
   let state: 'loading' | 'loading-held' | 'idle' | 'held' = 'loading';
@@ -46,6 +47,12 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean) => T) {
       const remote = state === 'held';
       state = 'idle';
       return apply(remote);
+    },
+    /** The erase machine's read (another writer's erase, which never enters here): it shows a waiting change
+     *  too, so the wait ends, uncounted; the machine counts the erase. Before the first read is shown it stays loading. */
+    shows(): T {
+      state = loading() ? 'loading' : 'idle';
+      return apply(false);
     },
   };
 }

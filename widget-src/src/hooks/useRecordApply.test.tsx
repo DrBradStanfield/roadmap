@@ -11,8 +11,8 @@
  * leaves a held change held: the save that cleans the profile applies it,
  * counted once.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import type { EraseEffect, EraseState } from '../lib/erase-machine';
 
@@ -105,6 +105,7 @@ const TABLE: Array<[ReadReason, boolean, Seen]> = [
 ];
 
 beforeEach(() => { vi.clearAllMocks(); erase.now = 'erase-1'; });
+afterEach(cleanup); // each hook stops listening for REMOTE_CHANGED
 
 describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
   it.each(TABLE)('US-34 AC4a: %s, a change held before it: %s', async (reason, held, expected) => {
@@ -156,23 +157,50 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     }
   });
 
-  it('US-11 AC6, US-34 AC4: held, another device\'s erase arrives with the profile still dirty: it applies, ends the hold, counted once', async () => {
+  it('US-11 AC6, US-34 AC4 (fix 4 2b-3): held, another device\'s erase arrives with the profile still dirty: it goes to the erase machine, whose read ends the hold, uncounted here', async () => {
     const { fx, hook } = setup();
     fx.later.profileDirty.mockReturnValue(true);
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
     expect(counted()).toBe(0); // held
     erase.now = 'erase-2';
-    await act(async () => { await hook.result.current.signal('remote'); });
+    fx.erase.dispatch.mockClear();
+    await act(async () => { window.dispatchEvent(new CustomEvent('hr:remote-changed', { detail: { erase: 'erase-2' } })); });
+    await settle();
+    expect(fx.erase.dispatch.mock.calls).toEqual([[{ type: 'arrived', identity: 'erase-2' }]]); // never the relay
+    expect(fx.reloadValues).not.toHaveBeenCalled();
+    // The machine's read door (useErase): the record shows, the answer mark is cleared, nothing counted here.
+    await act(async () => { hook.result.current.shows(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(fx.erase.dispatch).toHaveBeenCalledWith({ type: 'read', identity: 'erase-2' });
-    expect(counted()).toBe(1);
+    expect(fx.later.clearAnswered.mock.calls).toEqual([[]]);
+    expect(counted()).toBe(0); // the machine counts the erase
     // The hold is over: the save that cleans the profile reads nothing more.
     await act(async () => { hook.result.current.saved(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(counted()).toBe(0);
+  });
+
+  it('fix 4 2b-3: a remote change with no erase stays the relay\'s, and the loaded page tells the machine before the relay', async () => {
+    const { fx, hook } = setup(false);
+    expect(fx.erase.dispatch).not.toHaveBeenCalled(); // not loaded
+    await act(async () => { window.dispatchEvent(new CustomEvent('hr:remote-changed', { detail: { erase: null } })); });
+    await settle();
+    expect(fx.erase.dispatch).not.toHaveBeenCalled();
+    expect(fx.reloadValues).not.toHaveBeenCalled(); // loading-held, in the relay
+    hook.rerender({ loaded: true });
+    await settle();
+    expect(fx.erase.dispatch.mock.calls[0]).toEqual([{ type: 'loaded' }]);
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(1);
+  });
+
+  it('fix 4 2b-3 (L2): a first read that fails tells the machine the page has loaded', async () => {
+    const { fx, hook } = setup(false);
+    act(() => { hook.result.current.firstReadFailed(new Error('first read failed (test)')); });
+    expect(fx.erase.dispatch.mock.calls).toEqual([[{ type: 'loaded' }]]);
   });
 
   it('US-34 AC4: before the first read is shown, a reread leaves a waiting change for that read, then it applies once', async () => {
@@ -202,7 +230,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.setInputs).not.toHaveBeenCalled();
     expect(fx.later.markSaved).not.toHaveBeenCalled();
     expect(fx.units.shown).not.toHaveBeenCalled();
-    expect(fx.erase.dispatch).not.toHaveBeenCalled();
+    expect(fx.erase.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'read' })); // (its one call: the loaded page, 2b-3)
     // Nothing of the old record is written back: no waiting save started, no list or answer change.
     expect(fx.later.flushPendingSave).not.toHaveBeenCalled();
     expect(fx.applyLists).not.toHaveBeenCalled();

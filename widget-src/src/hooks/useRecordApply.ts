@@ -3,11 +3,12 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
 import { inputRangeFault } from '@roadmap/health-core/validation';
 import type { LatestMeasurementsResult } from '../lib/api-types';
-import { getBackendKind, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
+import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
 import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
@@ -23,13 +24,16 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
 /**
  * Each re-read reason's effects (US-34 AC4, AC4a). A held change ends only
  * through a `record` read; `remote` is held while the profile is dirty or a
- * unit switch waits, within the shown erase (that test is read in `signal`).
- * A held `remote` does nothing until the save that cleans the profile.
+ * unit switch waits (that test is read in `signal`). A held `remote` does
+ * nothing until the save that cleans the profile. An erase never enters the
+ * relay: REMOTE_CHANGED with an erase goes to the erase machine (`arrived`),
+ * whose read (`shows`) ends a hold, clears the answer mark and counts nothing
+ * here; the machine counts the erase.
  *
  * | reason   | read   | flushes the waiting save | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
  * |----------|--------|--------------------------|-------------|-------------------------------------------------------------------------------------|------------------------|-------------|------------------------------|-------------|
  * | upload   | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
- * | remote   | record | unless held              | unless held | a clean arrival, or another device's erase, ends it; a dirty one starts or keeps it | unless held            | unless held | unless held                  | unless held |
+ * | remote   | record | unless held              | unless held | a clean arrival ends it; a dirty one starts or keeps it                             | unless held            | unless held | unless held                  | unless held |
  * | refused  | record | yes                      | yes         | yes                                                                                 | yes (spent)            | yes         | if it ends a hold            | yes         |
  * | left     | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
  * | own-save | values | no                       | no          | no                                                                                  | no                     | no          | no                           | no          |
@@ -113,6 +117,8 @@ export function useRecordApply(args: {
     later().flushPendingSave();
     const erase = getEraseIdentity(); // read with the record, in one turn
     const result = await reloadValues();
+    // The store moved during the read: it shows nothing, neither record nor erase. The change that moved it brings its own read.
+    if (getEraseIdentity() !== erase) return;
     if (result) {
       // The record holds the profile and every saved value. A first-time
       // field's value gets none of a draft's checks: it names the row it
@@ -168,14 +174,11 @@ export function useRecordApply(args: {
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save
-    // carries the edit up and then replays the change.
-    // An erase from another device (a new erase identity) is never held once
-    // the page has shown its first read: it applies then and drops this
-    // device's drafts, refused ones included (US-11 AC6); a refused draft
-    // would otherwise hold it for good. This tab's unsaved unit switch holds it
-    // too: applied now, the record's units would undo it (US-34 AC7a, H2). A
-    // page that cannot save never keeps a switch pending (useProfileSave).
-    if (policy.relay === 'arrive') return relay.arrived(getEraseIdentity() === getShownErase() && (later().profileDirty() || !!latest.current.units.pending()));
+    // carries the edit up and then replays the change. This tab's unsaved unit
+    // switch holds it too: applied now, the record's units would undo it
+    // (US-34 AC7a, H2). A page that cannot save never keeps a switch pending
+    // (useProfileSave). Another writer's erase never comes here (the listener).
+    if (policy.relay === 'arrive') return relay.arrived(later().profileDirty() || !!latest.current.units.pending());
     if (policy.spends) later().clearAnswered(true); // a refusal: not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
   }, [relay]);
@@ -183,19 +186,28 @@ export function useRecordApply(args: {
   // The page's own save re-reads through the table; awaiting it types the read as Promise<void> with no cast.
   const ownSave = useCallback(async () => { await signal('own-save'); }, [signal]);
 
-  const { loaded } = args;
-  useLayoutEffect(() => { if (loaded) relay.loaded(); }, [loaded, relay]);
+  // The erase machine's read door: another writer's erase, never held. It is no answer given here (US-62 AC13).
+  const shows = useCallback(() => { latest.current.later().clearAnswered(); relay.shows().catch(reportReadFailure); }, [relay]);
+
+  // The machine first: its read of an erase heard before this ends the relay's wait, so a change that waited too is read once.
+  const { loaded, erase: machine } = args;
+  useLayoutEffect(() => { if (loaded) { machine.dispatch({ type: 'loaded' }); relay.loaded(); } }, [loaded, machine, relay]);
   // The first read failed part-way: the page stays as it is (not loaded, its
   // saves off), but a change waiting on that read applies now, or never would.
-  const firstReadFailed = useCallback((error: unknown) => { reportReadFailure(error); relay.loaded(); }, [relay]);
+  const firstReadFailed = useCallback((error: unknown) => { reportReadFailure(error); latest.current.erase.dispatch({ type: 'loaded' }); relay.loaded(); }, [relay]);
 
   // Something wrote to the record under us: another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged.
+  // Another writer's erase goes to the erase machine, from the event's own detail (fix 4 D1).
   useLayoutEffect(() => {
-    const onRemoteChange = () => { void signal('remote'); };
+    const onRemoteChange = (event: Event) => {
+      const erase = (event as CustomEvent<RemoteChange | undefined>).detail?.erase;
+      if (erase) latest.current.erase.dispatch({ type: 'arrived', identity: erase });
+      else void signal('remote');
+    };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [signal]);
 
-  return { showRecord, signal, ownSave, saved: relay.saved, firstReadFailed };
+  return { showRecord, signal, ownSave, shows, saved: relay.saved, firstReadFailed };
 }

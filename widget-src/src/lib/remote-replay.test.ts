@@ -116,4 +116,30 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.arrived(false);
     expect(apply.mock.calls).toEqual([[true]]);
   });
+
+  it('fix 4 2b-3: the erase machine\'s read (`shows`) ends a hold and counts nothing; the save that cleans the form reads nothing more', () => {
+    const apply = vi.fn();
+    const relay = ready(apply);
+    relay.arrived(true);
+    relay.shows();
+    expect(apply.mock.calls).toEqual([[false]]);
+    relay.saved();
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it('fix 4 2b-3: before the first read is shown, `shows` ends a wait but the relay stays loading: loaded reads nothing more, a later change still waits', () => {
+    const apply = vi.fn();
+    const relay = createRemoteChangeRelay(apply);
+    relay.arrived(false); // loading-held
+    relay.shows();
+    relay.loaded();
+    expect(apply.mock.calls).toEqual([[false]]);
+    const early = vi.fn();
+    const other = createRemoteChangeRelay(early);
+    other.shows();
+    other.arrived(false);
+    expect(early.mock.calls).toEqual([[false]]); // the change waits for the first read
+    other.loaded();
+    expect(early.mock.calls).toEqual([[false], [true]]);
+  });
 });

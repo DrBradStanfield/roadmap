@@ -6,7 +6,8 @@
  * is judged against the state alone, never a global. What the page must do is
  * returned as effects, run by `runEraseEffects`; `createEraseStore` holds the
  * state as the page's only copy (hooks/useErase.ts builds it, with the doors).
- * Arrivals and the count still go through the relay until PR 2b-3.
+ * Another writer's erase reaches only this machine, never the relay
+ * (lib/remote-replay.ts), and only this machine counts it.
  *
  * Phases:
  * - loading: the page has not shown its first read.
@@ -48,10 +49,12 @@
  * What the events carry (the hook's contract, PR 2b):
  * - read: the store's identity taken before the read's first await, and
  *   dispatched only when it equals the identity after its last await, in the
- *   turn the record is shown (useRecordApply.ts:114 takes it before; the
- *   awaits are useRecordReads.ts:46-53); else the read is dropped: the change
- *   that moved it brings its own read (the drop lands in PR 2b-3; until
- *   then apply dispatches every read). Dispatched stale, it would move
+ *   turn the record is shown (useRecordApply.ts apply takes it before; the
+ *   awaits are useRecordReads.ts:46-53); else the read is dropped, showing
+ *   neither record nor erase: the change that moved it brings its own read.
+ *   The page's first read is the one exception: it is shown even when its
+ *   identity moved (the page must show something), and dispatches no `read`;
+ *   the arrival, heard in loading, is read at `loaded`. Dispatched stale, it would move
  *   `shown` back within an epoch (the overlapping-reads test), and the store
  *   would refuse every save.
  * - own-start: dispatched in the turn eraseAll reads `before`, the store's
@@ -63,7 +66,10 @@
  *   erase was taken in during the erase's flush, it is that erase, already
  *   heard as `arrived`. It carries the text to say (`message`).
  * - own-failed: only when the store's identity did not move. Carries `message`.
- * - arrived: REMOTE_CHANGED's `erase`, when it carries one.
+ * - arrived: REMOTE_CHANGED's `erase`, when it carries one (useRecordApply's
+ *   listener reads the event's detail, never the store again).
+ * - loaded: the page has shown its first read, or that read failed
+ *   (useRecordApply's loaded effect and firstReadFailed).
  *
  * Known cost: own-end is read as another writer's when it ends at the heard
  * erase. That stands on this tab's own erase never arriving: the session
@@ -81,9 +87,8 @@
  *   whole re-read (upload, refused, left), or a reload.
  * - L2, a first read that fails. The page stays as it was mounted, its saves
  *   off (`hasApiResponse` false), as before the machine (ledger H37). A held
- *   erase IS read then: firstReadFailed dispatches `loaded`, as the relay's
- *   `loaded()` does today (useRecordApply.ts firstReadFailed). That wiring is
- *   PR 2b-3's, with the arrivals; nothing dispatches here yet. "Delete all my
+ *   erase IS read then: firstReadFailed dispatches `loaded`, as it calls the
+ *   relay's `loaded()` (useRecordApply.ts firstReadFailed). "Delete all my
  *   data" still works: own-start from loading goes to erasing, the held erase
  *   kept (Q3 ruling). Ends with: a reload. Own-end moves the machine to idle;
  *   the saves stay off until reload.
@@ -125,7 +130,7 @@ export type EraseEffect =
   /** Re-read the record and show it. */
   | { type: 'read' }
   | { type: 'count-remote-change' }
-  /** Answered to the caller (`refusal`), who says it; no door runs it. */
+  /** Say WRITE_REFUSED: listed before a refusal's `read`, so the alert comes first (Fable Q3). */
   | { type: 'alert-refused' }
   /** Say how this tab's erase went: the text its own-end or own-failed carried. */
   | { type: 'say-outcome'; message: string };
@@ -226,6 +231,7 @@ export interface EraseDoors {
   forget: () => void;
   read: () => void;
   countRemoteChange: () => void;
+  alertRefused: () => void;
   sayOutcome: (message: string) => void;
 }
 
@@ -237,7 +243,7 @@ export function runEraseEffects(effects: readonly EraseEffect[], doors: EraseDoo
       case 'forget': doors.forget(); break;
       case 'read': doors.read(); break;
       case 'count-remote-change': doors.countRemoteChange(); break;
-      case 'alert-refused': break; // the caller's: `refusal` answers it
+      case 'alert-refused': doors.alertRefused(); break;
       case 'say-outcome': doors.sayOutcome(effect.message); break;
     }
   }
@@ -272,9 +278,9 @@ export function createEraseStore(shown: EraseIdentity, doors: EraseDoors): Erase
   };
 }
 
-/** A save the store refused: `news` to say, once per erase (the caller says
- *  it), and `reads`: the machine re-read a heard erase itself (Q3), so the
- *  caller does not read again. */
+/** A save the store refused: `news`, said once per erase (the alertRefused
+ *  door said it), and `reads`: the machine re-read a heard erase itself (Q3),
+ *  so the caller does not read again. */
 export function refusal(store: EraseStore, askedUnder: EraseIdentity): { news: boolean; reads: boolean } {
   const effects = store.dispatch({ type: 'refused', askedUnder });
   return { news: effects.some(effect => effect.type === 'alert-refused'), reads: effects.some(effect => effect.type === 'read') };
