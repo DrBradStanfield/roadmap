@@ -198,12 +198,15 @@ commits only the new files.
   waiting for approval, so a forgotten approval never blocks later releases. First the
   `fresh` job checks that main has not moved on the engine paths since the build; a
   stale run fails there ("dispatch Engine release again") and never enters the queue.
-  `sign` runs only on `main` and only in the attempt `fresh` ran in, so "Re-run failed
-  jobs" on an old run skips `sign`; "Re-run all jobs" checks again. A rare interleaving
-  can still let an older run cancel a newer request. That loses one release (the next
-  Deploy or a dispatch brings it) and never signs an older engine: sign's "Main has not
-  moved" step after approval, the version check before the commit, and the push to
-  `main`, which only fast-forwards, guarantee that.
+  `sign` runs only on `main` and only in the attempt `fresh` ran in. So a re-run that
+  reuses `fresh` ("Re-run failed jobs" after `fresh` passed, or re-running `sign`
+  alone) skips `sign` and ends green with nothing released. To retry a release, use
+  "Re-run all jobs" or dispatch Engine release again. A rare interleaving can still let
+  an older run cancel a newer request. That loses one release (the next Deploy or a
+  dispatch brings it) and never publishes an older engine: after approval, sign's "Main
+  has not moved" step refuses a stale engine before signing, and a signature reaches
+  `main` only past the version check before the commit and a push that only
+  fast-forwards.
 - **A forgotten approval reaches you.** stale-pr-watch opens one issue assigned to you
   when a run is waiting for approval now and the oldest run that reached `sign` since
   the last release commit started over 12 hours ago, so a chain of replaced requests

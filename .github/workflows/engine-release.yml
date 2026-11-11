@@ -27,9 +27,10 @@ permissions: {}
 # replaces an older one waiting for approval, so a forgotten approval cannot block later
 # releases. `fresh` (main has not moved on the engine paths) and its attempt binding keep
 # stale runs and partial re-runs out of that queue. A rare interleaving can still let an
-# older run cancel a newer request: that loses one release and never signs an older
-# engine. What guarantees that: sign's "Main has not moved" step after approval, the
-# version check before the commit, and the push to main, which only fast-forwards.
+# older run cancel a newer request: that loses one release and never publishes an older
+# engine. After approval, sign's "Main has not moved" step refuses a stale engine before
+# signing, and a signature reaches main only past the version check before the commit
+# and a push that only fast-forwards.
 jobs:
   build:
     # A Deploy dispatched on main in this repo only. `branches: [main]` alone also matches
@@ -171,8 +172,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # The attempt this check ran in. "Re-run failed jobs" keeps this job's old output, so
-    # that re-run's sign is skipped; "Re-run all jobs" checks again.
+    # The attempt this check ran in. A re-run that reuses this job ("Re-run failed jobs"
+    # after it passed, or re-running sign alone) skips sign and ends green with nothing
+    # released. To retry a release: "Re-run all jobs", or dispatch Engine release again.
     outputs:
       attempt: ${{ github.run_attempt }}
     env:

@@ -120,7 +120,8 @@ describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches 
       : [{ name: 'fresh', status: 'completed', conclusion: 'success' }, { name: 'sign', status: 'completed', conclusion: 'success' }],
   });
   const LAST_RELEASE = hoursAgo(100);
-  async function runSign(runs: Run[], items: Item[] = [], opts: { failLookup?: boolean } = {}) {
+  async function runSign(runs: Run[], items: Item[] = [], opts: { failLookup?: boolean; lastRelease?: string } = {}) {
+    const lastRelease = opts.lastRelease ?? LAST_RELEASE;
     const created: Created[] = [];
     const updated: Array<{ issue_number: number; state?: string; body?: string }> = [];
     const asked: Array<Record<string, unknown>> = [];
@@ -141,7 +142,7 @@ describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches 
           listCommits: async (o: Record<string, unknown>) => {
             asked.push(o);
             if (opts.failLookup) throw new Error('boom');
-            return { data: [{ commit: { committer: { date: LAST_RELEASE } } }] };
+            return { data: [{ commit: { committer: { date: lastRelease } } }] };
           },
         },
         search: { issuesAndPullRequests: async () => ({ data: { items } }) },
@@ -187,6 +188,15 @@ describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches 
     expect(asked).toContainEqual(expect.objectContaining({ sha: 'main', path: 'ios/engine-release', per_page: 1 }));
     expect(asked).toContainEqual(expect.objectContaining({ workflow_id: 'engine-release.yml', created: `>${LAST_RELEASE}`, per_page: 30 }));
     expect(jobsRead.sort()).toEqual([1, 2, 3]);
+  });
+  it('US-25 AC18b: the wait never starts before the last release (Codex R1)', async () => {
+    const recent = await runSign([run(3, 20)], [], { lastRelease: hoursAgo(1) });
+    expect(recent.created).toEqual([]);
+    expect(recent.updated).toEqual([]);
+    const release = hoursAgo(13);
+    const older = await runSign([run(3, 20), run(1, 30, 'cancelled-at-sign')], [], { lastRelease: release });
+    expect(older.created).toHaveLength(1);
+    expect(older.created[0].body).toContain(`An engine has been waiting for approval since ${release}.`);
   });
   it('US-25 AC18b: a cancelled run whose sign was skipped does not count', async () => {
     const { created, updated } = await runSign([run(3, 1), run(1, 30, 'cancelled-skipped')]);

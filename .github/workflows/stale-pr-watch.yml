@@ -105,7 +105,8 @@ jobs:
             }
             // Each newer run cancels the waiting sign, so time the unsigned engine, not one run:
             // the oldest run that reached sign (waiting or cancelled there) since the last release.
-            let starts = waiting.map(r => r.run_started_at);
+            // The wait never starts before that release: it was signed then.
+            let starts = waiting.map(r => r.run_started_at), floor;
             try {
               const last = (await github.rest.repos.listCommits({ owner, repo, sha: 'main', path: 'ios/engine-release', per_page: 1 })).data[0];
               const runs = (await github.rest.actions.listWorkflowRuns({
@@ -118,10 +119,12 @@ jobs:
                 if (fresh?.conclusion === 'success' && (sign?.status === 'waiting' || sign?.conclusion === 'cancelled')) reached.push(r.run_started_at);
               }
               starts = starts.concat(reached);
+              floor = last?.commit.committer.date;
             } catch {
               core.warning('Could not trace the unsigned engine; timing the waiting run alone.');
             }
-            const since = starts.reduce((a, b) => (new Date(b) < new Date(a) ? b : a));
+            const oldest = starts.reduce((a, b) => (new Date(b) < new Date(a) ? b : a));
+            const since = floor && new Date(floor) > new Date(oldest) ? floor : oldest;
             if (!(Date.now() - new Date(since) > 12 * 3600 * 1000)) return;
             const body = 'An engine release has waited over 12 hours for signing approval. Approve or reject it: Actions → the run → Review deployments.\n\n' +
               `An engine has been waiting for approval since ${since}.\n\n` +
