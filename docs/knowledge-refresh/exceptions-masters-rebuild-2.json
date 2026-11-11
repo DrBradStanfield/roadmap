@@ -1254,5 +1254,13 @@
   "reason": "Product section gained the docs/products.md:186 safety cautions (vitamin K2 and blood thinners, bovine collagen, not under 18, not in pregnancy or nursing), so it matches products.md (ruling R6); Brad's creatine copy unchanged (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host nice.org.uk: [105] National Institute for Health and Care Excellence. \"Osteoarthritis in over 16s: diagnosis a...",
+  "reason": "Official public source host not on the allow-list: NICE NG226 guideline, cited by the condition guides (masters-rebuild-2 combined round; Fable ruling 7)",
+  "by": "orchestrator",
+  "date": "2026-11-12"
  }
 ]
