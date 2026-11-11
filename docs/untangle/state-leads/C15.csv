@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C15,discord bot,A Discord reply that fails part way posts an error under half an answer and the turn is never stored; a second message within 3 s is dropped silently,bug,not started,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: app/lib/discord-bot.server.ts chunk sends inside the try, persistConversation after the loop, checkUserCooldown",,no
