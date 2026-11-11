@@ -178,8 +178,10 @@ Health only as a read-only clinical record.
   - UK and Canadian feeds: profiles not checked. Unknown.
   - Results can be `preliminary`, `final`, `amended`, `corrected`, `cancelled` or
     `entered-in-error`. Only some should land (below).
-- Not verified: whether `labResultRecord` ever holds a DiagnosticReport rather than an
-  Observation. `resourceType` tells; anything not an Observation is skipped and counted.
+- Verified 2026-11 (a US Labcorp account): `labResultRecord` can hold a DiagnosticReport
+  whose results are contained Observations (Argonaut DSTU2), and every result arrives that
+  way. The import reads each referenced contained Observation; other resource types are
+  skipped and counted.
 
 ## 5. Options
 
