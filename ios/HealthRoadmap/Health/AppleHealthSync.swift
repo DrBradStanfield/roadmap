@@ -43,6 +43,10 @@ final class AppleHealthSync {
     }
 
     private(set) var status: Status
+    /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
+    /// Read again after every pay and every erase, the two steps that change it: a save owed
+    /// meanwhile keeps the count, so it never does.
+    private(set) var owedFooter: Bool
 
     private let store: RecordStore
     private let engine: HealthEngine
@@ -77,6 +81,7 @@ final class AppleHealthSync {
         self.live = live
         self.reread = reread
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
+        owedFooter = memory.owed.showsFooter
         // After an erase disconnected Health, the cards read nothing until Connect (US-72 AC10).
         live?.connection = { [weak self] in self?.connection }
     }
@@ -115,12 +120,13 @@ final class AppleHealthSync {
     func erased(wasConnected: Bool) async -> Bool {
         if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
         disconnect()
-        guard client.isAvailable, wasConnected || !memory.owed.isEmpty else { return true }
+        guard client.isAvailable, wasConnected || !memory.owed.ids.isEmpty || memory.owedUnreadable else { return true }
         let deadline = ContinuousClock.now + Self.drainBound
         await drained(by: deadline)
         do {
             let paid = await deleteOwed(erasing: deadline)
             try await client.deleteOwnSamples()
+            memory.forgetUnreadableOwed()
             return paid
         } catch {
             return false
@@ -293,6 +299,7 @@ final class AppleHealthSync {
     private func disconnect() {
         generation += 1
         memory.oweWritten()
+        owedFooter = memory.owed.showsFooter
         guard memory.connected else { return }
         memory.connected = false
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
@@ -321,11 +328,11 @@ final class AppleHealthSync {
             guard deadline != nil else { return paid }
             if let next = self.paying { return await next.value }
         }
-        guard client.isAvailable, !memory.owed.isEmpty else { return true }
+        guard client.isAvailable, !memory.owed.ids.isEmpty else { return true }
         let claim = Task {
             defer { paying = nil }
             await drained(by: deadline ?? .now + Self.drainBound)
-            return (try? await pay(memory.owed)) == true
+            return await pay(memory.owed.ids)
         }
         paying = claim
         return await claim.value
@@ -334,13 +341,17 @@ final class AppleHealthSync {
     /// Deletes `owed` by sync id. The ids Health deleted leave the list, each unless a newer
     /// version was saved meanwhile (Codex C-R1); true when none was left.
     /// An id not found is gone when Health was asked about its kind (lead H29); one whose kind is
-    /// not known, only when Health was asked about every kind.
-    private func pay(_ owed: [String: Int64]) async throws -> Bool {
-        let done = try await client.deleteSamples(syncIds: Array(owed.keys))
-        let settled = owed.filter { id, _ in
-            done.deleted.contains(id) || memory.kind(id).map(done.asked.contains) ?? done.asked.isSuperset(of: HealthDeletion.kinds)
-        }
+    /// not known, only when Health was asked about every kind. A delete Health refused deleted none,
+    /// and counts as a failed pay too (AC16).
+    private func pay(_ owed: [String: Int64]) async -> Bool {
+        let done = try? await client.deleteSamples(syncIds: Array(owed.keys))
+        let settled = done.map { done in
+            owed.filter { id, _ in
+                done.deleted.contains(id) || memory.kind(id).map(done.asked.contains) ?? done.asked.isSuperset(of: HealthDeletion.kinds)
+            }
+        } ?? [:]
         memory.paid(settled)
+        owedFooter = memory.owed.showsFooter
         return settled.count == owed.count
     }
 
@@ -450,7 +461,7 @@ final class AppleHealthSync {
         let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         memory.learnKinds(writes)
         var refused: Error?
-        for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed[write.syncId] == nil {
+        for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed.ids[write.syncId] == nil {
             guard let kind = write.kind, client.canWrite(kind) else { continue }
             try still(pass)
             do {

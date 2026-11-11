@@ -242,7 +242,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(health.ownDeletes, 1)
         XCTAssertTrue(health.saved.isEmpty, "the held save landed, then was deleted")
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertFalse(memory.connected)
     }
 
@@ -267,13 +267,13 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         released = true
         await until("the hung save lands") { !health.saved.isEmpty }
-        await until("and is listed as owed") { !memory.owed.isEmpty }
-        let owed = memory.owed.keys.sorted()
+        await until("and is listed as owed") { !memory.owed.ids.isEmpty }
+        let owed = memory.owed.ids.keys.sorted()
         await app.health.foreground()
 
         XCTAssertEqual(health.deletedSyncIds.last, owed)
         XCTAssertTrue(health.saved.isEmpty)
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertFalse(memory.connected, "the save did not reconnect anything")
     }
 
@@ -286,14 +286,14 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await remoteErase(app)
         await until("the delete was tried") { health.deleteAttempts == 1 }
         await settle()
-        XCTAssertEqual(memory.owed.keys.sorted(), written, "a locked delete keeps the list")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), written, "a locked delete keeps the list")
 
         health.deleteFails = false
         NotificationCenter.default.post(name: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil)
-        await until("the unlock deletes what is owed") { memory.owed.isEmpty }
+        await until("the unlock deletes what is owed") { memory.owed.ids.isEmpty }
 
         XCTAssertEqual(health.deletedSyncIds, [written])
-        XCTAssertNil(defaults.dictionary(forKey: "appleHealth.owed"))
+        XCTAssertNil(defaults.object(forKey: "appleHealth.owed"))
     }
 
     /// Write access turned off: every delete fails. It is tried once per foreground or unlock,
@@ -310,16 +310,16 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await app.health.foreground()
         await settle()
         XCTAssertEqual(health.deleteAttempts, 2, "one try per foreground")
-        XCTAssertEqual(memory.owed.keys.sorted(), written, "the list stays: the delete is still owed")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), written, "the list stays: the delete is still owed")
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
         XCTAssertEqual(health.ownDeletes, 1, "a local erase deletes when a delete is owed, connected or not")
-        XCTAssertEqual(memory.owed.keys.sorted(), written, "refused again: still owed")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), written, "refused again: still owed")
         XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
 
         health.deleteRefusal = nil
         await app.health.foreground()
-        XCTAssertTrue(memory.owed.isEmpty, "the next foreground deletes them")
+        XCTAssertTrue(memory.owed.ids.isEmpty, "the next foreground deletes them")
     }
 
     // MARK: F4, a Connect meeting a pending erase
@@ -391,25 +391,25 @@ final class AppleHealthEraseRaceTests: XCTestCase {
     /// every step of the sequences in `testNoIdIsEverWrittenAndOwedAtOnce_US72_AC10`.
     func testTheOwedListInvariants_US72_AC10() {
         let memory = memory
-        func disjoint() -> Bool { memory.owed.keys.allSatisfy { memory.writtenVersion($0) == 0 } }
+        func disjoint() -> Bool { memory.owed.ids.keys.allSatisfy { memory.writtenVersion($0) == 0 } }
         memory.setWritten(1, for: "a")
         memory.setWritten(1, for: "b")
         XCTAssertTrue(disjoint())
 
         memory.oweWritten()
-        XCTAssertEqual(memory.owed, ["a": 1, "b": 1])
+        XCTAssertEqual(memory.owed.ids, ["a": 1, "b": 1])
         XCTAssertEqual(memory.writtenVersion("a"), 0, "moved, not copied")
         XCTAssertTrue(disjoint())
 
         memory.owe(2, for: "a")
         XCTAssertTrue(disjoint())
         memory.paid(["a": 1, "b": 1])
-        XCTAssertEqual(memory.owed, ["a": 2], "a newer version saved after the snapshot stays")
+        XCTAssertEqual(memory.owed.ids, ["a": 2], "a newer version saved after the snapshot stays")
         memory.paid([:])
-        XCTAssertEqual(memory.owed, ["a": 2], "an id not deleted stays")
+        XCTAssertEqual(memory.owed.ids, ["a": 2], "an id not deleted stays")
         memory.paid(["a": 2])
-        XCTAssertTrue(memory.owed.isEmpty)
-        XCTAssertNil(defaults.dictionary(forKey: "appleHealth.owed"))
+        XCTAssertTrue(memory.owed.ids.isEmpty)
+        XCTAssertNil(defaults.object(forKey: "appleHealth.owed"))
     }
 
     /// Edge 1: Connect runs the owed delete first. Locked, it still connects, and the old ids
@@ -424,13 +424,13 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(health.deleteAttempts, 2, "Connect tried the owed delete")
         XCTAssertTrue(app.health.connected, "and connected though it failed")
-        XCTAssertEqual(memory.owed.keys.sorted(), written, "the old ids stay owed")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), written, "the old ids stay owed")
         XCTAssertTrue(written.allSatisfy { memory.writtenVersion($0) == 0 }, "never taken as written")
 
         health.deleteFails = false
         await app.health.foreground()
         XCTAssertEqual(health.deletedSyncIds.last, written)
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertTrue(app.health.connected)
     }
 
@@ -449,7 +449,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
-        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "only the waist id stays owed")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), [waist], "only the waist id stays owed")
         XCTAssertEqual(health.saved.map(\.syncId), [waist], "the weight sample went; the waist sample stays")
         XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
     }
@@ -500,16 +500,16 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         health.deleteHold = { [health] in
             health?.deleteHold = nil
             released = true
-            for _ in 0..<300 where (memory.owed[first.syncId] ?? 0) <= first.version { try? await Task.sleep(for: .milliseconds(10)) }
+            for _ in 0..<300 where (memory.owed.ids[first.syncId] ?? 0) <= first.version { try? await Task.sleep(for: .milliseconds(10)) }
         }
 
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
-        let owed = try XCTUnwrap(memory.owed[first.syncId], "the newer version stays owed")
+        let owed = try XCTUnwrap(memory.owed.ids[first.syncId], "the newer version stays owed")
         XCTAssertGreaterThan(owed, first.version)
         await app.health.foreground()
         XCTAssertEqual(health.deletedSyncIds.last, [first.syncId])
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
     }
 
     /// Codex C-R2: an erase disconnects during a live refresh, then Connect asks for a forced
@@ -543,7 +543,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
     /// No id is in both written and owed.
     private var disjoint: Bool {
         let memory = memory
-        return memory.owed.keys.allSatisfy { memory.writtenVersion($0) == 0 }
+        return memory.owed.ids.keys.allSatisfy { memory.writtenVersion($0) == 0 }
     }
 
     /// The sync id's samples in Health, by version.
@@ -580,7 +580,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertNotNil(app.store.myData?.vitals.first?.latest, "the row survived the erase")
         XCTAssertEqual(savedVersions(k), [1], "only the old sample, whose delete failed: K was not written again")
-        XCTAssertEqual(memory.owed[k], 1)
+        XCTAssertEqual(memory.owed.ids[k], 1)
         XCTAssertEqual(memory.writtenVersion(k), 0)
         XCTAssertTrue(disjoint, "the pass after Connect wrote no owed id")
 
@@ -589,7 +589,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(health.deletedSyncIds.last, [k])
         XCTAssertEqual(savedVersions(k), [1], "written again once, after its delete was paid")
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertEqual(memory.writtenVersion(k), 1)
     }
 
@@ -602,13 +602,13 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await app.health.refresh()
 
         XCTAssertEqual(savedVersions(k), [1], "no new K while it is owed")
-        XCTAssertEqual(memory.owed[k], 1)
+        XCTAssertEqual(memory.owed.ids[k], 1)
 
         health.deleteFails = false
         await app.health.foreground()
 
         XCTAssertEqual(savedVersions(k), [2], "the correction alone, once the delete is paid")
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
     }
 
     /// A pass that runs while the owed delete is in flight (it took the samples but has not
@@ -633,7 +633,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         released = true
         await foreground.value
         XCTAssertEqual(savedVersions(k), [1], "the refresh after the delete wrote K once")
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
     }
 
     /// Lead H32 (Codex, PR 1218 re-check): an unlock runs foreground() and the unlock handler
@@ -667,7 +667,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(health.deleteAttempts - attempts, 1, "one pay for both triggers")
         XCTAssertEqual(savedVersions(k), [1], "K stays in Health")
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertEqual(memory.writtenVersion(k), 1)
     }
 
@@ -777,7 +777,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
         XCTAssertEqual(health.deletedSyncIds.last, [weight], "the delete asked for it")
-        XCTAssertTrue(memory.owed.isEmpty, "not found under a writable kind: paid")
+        XCTAssertTrue(memory.owed.ids.isEmpty, "not found under a writable kind: paid")
         XCTAssertFalse(words.hasSuffix(EraseText.healthNotErased), words)
     }
 
@@ -792,7 +792,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await until("the erase disconnects Apple Health") { !app.health.connected }
         await until("the erase's delete was tried") { health.deleteAttempts == 1 }
         await settle()
-        XCTAssertTrue(memory.owed.isEmpty, "not found under a writable kind: paid")
+        XCTAssertTrue(memory.owed.ids.isEmpty, "not found under a writable kind: paid")
 
         await app.health.connect()
 
@@ -813,15 +813,15 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await until("the erase disconnects Apple Health") { !app.health.connected }
         await until("the erase's delete was tried") { health.deleteAttempts == 1 }
         await settle()
-        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "its sample is still in Health")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), [waist], "its sample is still in Health")
         XCTAssertEqual(health.saved.map(\.syncId), [waist])
 
         await app.health.connect()
-        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "still unwritable at Connect")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), [waist], "still unwritable at Connect")
         health.writable.insert(.waist)
         await app.health.foreground()
 
-        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertTrue(memory.owed.ids.isEmpty)
         XCTAssertEqual(savedVersions(waist), [1], "deleted, then written again")
         XCTAssertEqual(memory.writtenVersion(waist), 1)
     }
@@ -843,7 +843,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
-        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "its sample is still in Health")
+        XCTAssertEqual(memory.owed.ids.keys.sorted(), [waist], "its sample is still in Health")
         XCTAssertEqual(health.saved.map(\.syncId), [waist])
         XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
     }
@@ -877,7 +877,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         health.saved.removeAll()
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
 
-        XCTAssertTrue(memory.owed.isEmpty, "not found under a kind Health was asked about: paid")
+        XCTAssertTrue(memory.owed.ids.isEmpty, "not found under a kind Health was asked about: paid")
         XCTAssertFalse(words.hasSuffix(EraseText.healthNotErased), words)
     }
 
@@ -892,7 +892,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await app.health.connect()
 
         XCTAssertEqual(health.deletedSyncIds.last, ["written-by-build-10"], "Connect tried the owed delete")
-        XCTAssertEqual(memory.owed, ["written-by-build-10": 1], "it may be a waist sample still in Health")
+        XCTAssertEqual(memory.owed.ids, ["written-by-build-10": 1], "it may be a waist sample still in Health")
     }
 
     /// Lead H33: K's owed delete is in flight (its snapshot holds K alone) when a remote erase
@@ -915,11 +915,11 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         // The session re-reads the cloud at most once per 5 s (record-session.ts:31, US-34).
         try? await Task.sleep(for: .seconds(5.1))
         try await remoteEraseSparingTheRow(app, to: 2)
-        await until("the erase owes L") { memory.owed[l] != nil }
+        await until("the erase owes L") { memory.owed.ids[l] != nil }
 
         released = true
         await foreground.value
-        await until("L is paid with no other trigger") { memory.owed.isEmpty }
+        await until("L is paid with no other trigger") { memory.owed.ids.isEmpty }
 
         XCTAssertEqual(Array(health.deletedSyncIds.suffix(2)), [[k], [l]], "K's pay, then the erase's own")
         XCTAssertTrue(savedVersions(l).isEmpty, "L's sample left Health")

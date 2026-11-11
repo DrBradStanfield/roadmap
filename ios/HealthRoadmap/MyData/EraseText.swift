@@ -90,6 +90,10 @@ enum EraseText {
     /// Apple Health refused to delete the app's samples: the record erase still stands.
     static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. You can delete them in the Health app."
 
+    /// Settings' Apple Health footer while the owed delete is stuck (US-72 AC16; text awaiting Brad).
+    /// No count and no reading. The Health app's path and its button's label are not yet confirmed (AC16).
+    static let healthOwed = "Some readings this app wrote to Apple Health could not be deleted. The app tries again each time you open it. To delete them yourself, open the Health app, tap your picture, then Apps, then Health by Dr Brad, then Delete All Data."
+
     static func unreachable(_ provider: CloudProvider) -> String {
         "\(provider.label) could not be reached, so nothing was deleted. An erase must read the record it erases. Try again once you are online."
     }
