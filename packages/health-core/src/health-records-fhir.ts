@@ -40,16 +40,19 @@ export const quantity = z.object({
  * not listed is dropped; a reference range in a shape this cannot read is
  * dropped too, never the result.
  */
+const meta = z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() });
+// effective[x] as a period: its start is the draw (the collection began then).
+const period = z.object({ start: z.string().max(64).optional() });
+
 const observation = z.object({
   resourceType: z.literal('Observation'),
   id: z.string().regex(FHIR_ID),
-  meta: z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() }).optional().catch(undefined),
+  meta: meta.optional().catch(undefined),
   status: z.string().max(32),
   code: z.object({ coding: z.array(z.object({ system: z.string().optional(), code: z.string().optional() })).optional() }),
   valueQuantity: quantity.optional(),
   effectiveDateTime: z.string().max(64).optional(),
-  // effective[x] as a period: its start is the draw (the collection began then).
-  effectivePeriod: z.object({ start: z.string().max(64).optional() }).optional().catch(undefined),
+  effectivePeriod: period.optional().catch(undefined),
   // The release, close to the draw: Apple's sample DSTU2 results carry only this (AC3).
   issued: z.string().max(64).optional(),
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
@@ -65,10 +68,12 @@ export type Observation = z.infer<typeof observation>;
 const report = z.object({
   resourceType: z.literal('DiagnosticReport'),
   id: z.string().regex(FHIR_ID),
-  meta: observation.shape.meta,
+  // Strict, no `.catch`: a result takes these from its report, so a malformed one dropped
+  // would date it by the report's release or lose its version. The whole report is not read.
+  meta: meta.optional(),
   status: z.string().max(32),
   effectiveDateTime: z.string().max(64).optional(),
-  effectivePeriod: observation.shape.effectivePeriod,
+  effectivePeriod: period.optional(),
   issued: z.string().max(64).optional(),
   contained: z.array(z.unknown()).max(10_000).optional().catch(undefined),
   result: z.array(z.object({ reference: z.string().max(200).optional() }).catch({})).max(10_000).optional().catch(undefined),
@@ -79,15 +84,16 @@ type Report = z.infer<typeof report>;
  * A contained result read as the report's: what it does not say for itself, it takes from
  * the report. Its day (`reportDay`); its version stamp, always the report's `meta` (FHIR
  * dom-4: a contained resource carries no `meta.versionId` or `meta.lastUpdated`, so the
- * report's is what changes when the lab amends); and a withdrawal: a report the lab
- * withdrew withdraws each of its results (AC7). Otherwise the result's own status governs.
+ * report's is what changes when the lab amends); a withdrawal: a report the lab withdrew
+ * withdraws each of its results (AC7); and a cancellation: a cancelled report's results are
+ * not read, as a cancelled Observation is not. Otherwise the result's own status governs.
  */
 function asReported(obs: Observation, rep: Report): Observation {
   return {
     ...obs,
     ...reportDay(obs, rep),
     meta: rep.meta,
-    status: rep.status === 'entered-in-error' ? 'entered-in-error' : obs.status,
+    status: rep.status === 'entered-in-error' || rep.status === 'cancelled' ? rep.status : obs.status,
   };
 }
 
