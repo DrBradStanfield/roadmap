@@ -263,13 +263,16 @@ describe('lead T1 — a lock held by another writer', () => {
     return { error, waited: Date.now() - start };
   }
 
-  it('refuses after the wait with today’s exact words, which the CLI and stdio server print as-is — today (lead T1 step b changes this)', async () => {
+  it('refuses after the wait naming the lock file’s age, which the CLI and stdio server print as-is (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     try {
       const { error } = await refusedSave(path);
+      // The lock's mtime is the epoch; the fake clock stands still after the wait.
+      const days = Math.round(Date.now() / 86_400_000);
       expect(error).toBeInstanceOf(StorageError);
       expect((error as StorageError).message).toBe(`Another program is writing ${ROADMAP_FILE_NAME} and did not finish`);
       expect((error as StorageError).hint).toBe(
+        `The lock file ${ROADMAP_FILE_NAME}.lock is about ${days} days old. ` +
         'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
       );
       expect(isStorageFailure(error)).toBe(true);
@@ -279,6 +282,53 @@ describe('lead T1 — a lock held by another writer', () => {
         hint: (error as StorageError).hint,
       });
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('names a recent lock’s age in minutes (lead T1 step b)', async () => {
+    const { dir, path } = scratch();
+    try {
+      writeFileSync(`${path}.lock`, 'held by another writer');
+      const threeMinutesAgo = new Date(Date.now() - 3 * 60_000);
+      utimesSync(`${path}.lock`, threeMinutesAgo, threeMinutesAgo);
+      vi.useFakeTimers();
+      const outcome = failureOf(recordSync(new FileAdapter(path), CTX.deviceId, NOW).save(marked()));
+      await vi.runAllTimersAsync();
+      const error = await outcome;
+      // Three minutes old when planted, five seconds more after the wait.
+      expect((error as StorageError).hint).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 3 minutes old\\. Nothing was changed\\.`));
+      expect(existsSync(`${path}.lock`)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('says the lock’s age is unknown when its stat fails (lead T1 step b)', async () => {
+    const { dir, path } = scratch();
+    writeFileSync(`${path}.lock`, 'held by another writer');
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      lstatSync: (target: fs.PathLike, options?: fs.StatOptions) => {
+        if (String(target).endsWith('.lock')) throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+        return real.lstatSync(target, options);
+      },
+    }));
+    try {
+      const { FileAdapter: Isolated } = await import('./file-adapter');
+      const { recordSync: isolatedSync } = await import('./roadmap-doc');
+      vi.useFakeTimers();
+      const outcome = failureOf(isolatedSync(new Isolated(path), CTX.deviceId, NOW).save(marked()));
+      await vi.runAllTimersAsync();
+      const error = await outcome;
+      expect((error as StorageError).message).toBe(`Another program is writing ${ROADMAP_FILE_NAME} and did not finish`);
+      expect((error as StorageError).hint).toMatch(new RegExp(`^The age of the lock file ${ROADMAP_FILE_NAME}\\.lock is unknown\\. Nothing was changed\\.`));
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
       rmSync(dir, { recursive: true, force: true });
     }
   });

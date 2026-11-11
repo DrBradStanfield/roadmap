@@ -68,6 +68,24 @@ function create(dest: string, text: string, mode: number): void {
   }
 }
 
+/**
+ * How old a lock file is, as one sentence a refusal can open with. Plain
+ * words for the person deciding whether its writer is still alive.
+ */
+function lockAge(lockPath: string): string {
+  const name = basename(lockPath);
+  let ms: number;
+  try {
+    ms = Math.max(0, Date.now() - lstatSync(lockPath).mtimeMs);
+  } catch {
+    return `The age of the lock file ${name} is unknown.`;
+  }
+  const units: Array<[string, number]> = [['day', 86_400_000], ['hour', 3_600_000], ['minute', 60_000], ['second', 1_000]];
+  const [unit, size] = units.find(([, size]) => ms >= size) ?? units[units.length - 1];
+  const n = Math.round(ms / size);
+  return `The lock file ${name} is about ${n} ${unit}${n === 1 ? '' : 's'} old.`;
+}
+
 export class FileAdapter implements StorageAdapter {
   readonly id = 'file' as const;
   readonly label = 'Local file';
@@ -266,7 +284,7 @@ export class FileAdapter implements StorageAdapter {
         if (Date.now() > until) {
           throw new StorageError(
             `Another program is writing ${basename(this.path)} and did not finish`,
-            'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
+            `${lockAge(this.lockPath)} Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.`,
           );
         }
         await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
