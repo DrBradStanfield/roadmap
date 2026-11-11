@@ -38,8 +38,30 @@ case "$1" in
 esac
 `;
 const XCODEBUILD = '#!/bin/bash\necho "$*" >> "$FAKE/xcodebuild.log"\n';
+// The load guard's inputs. sysctl reads $FAKE/loads, one 1-minute load per call, staying on the last
+// line ("fail" exits 1); hw.ncpu prints $FAKE/ncpu (missing exits 1) and logs apart; ps prints $FAKE/ps.
+// Every test starts at load 1 with no Codex review running, and env() pins HR_SIM_MAX_LOAD to 8.
+const SYSCTL = `#!/bin/bash
+if [ "$*" = "-n hw.ncpu" ]; then echo x >> "$FAKE/ncpu.log"; [ -f "$FAKE/ncpu" ] && cat "$FAKE/ncpu"; exit $?; fi
+echo "$*" >> "$FAKE/sysctl.log"
+l=$(head -1 "$FAKE/loads")
+[ "$(wc -l < "$FAKE/loads")" -gt 1 ] && sed -i '' 1d "$FAKE/loads"
+[ "$l" = fail ] && exit 1
+echo "{ $l 1.00 1.00 }"
+`;
+const PS = '#!/bin/bash\ncat "$FAKE/ps.txt"\n';
 
 let dir: string, fake: string, home: string, work: string;
+const setLoads = (...loads: string[]) => writeFileSync(join(fake, 'loads'), `${loads.join('\n')}\n`);
+const setPs = (lines: string[]) => writeFileSync(join(fake, 'ps.txt'), ['    1 /sbin/launchd', ...lines].join('\n') + '\n');
+const CODEX = '  101 /opt/homebrew/bin/node /Users/x/repo/tools/codex-review.mjs --base main';
+const CODEX2 = '  102 node tools/codex-review.mjs';
+const DECOYS = [
+  "  103 /bin/bash -c cd /x && node tools/codex-review.mjs --base main",
+  '  104 node /x/tools/codex-review.mjs --codex /tmp/fake-codex',
+  '  105 node /x/node_modules/.bin/vitest related tools/codex-review.mjs --run',
+  '  106 node --check tools/codex-review.mjs',
+];
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'sim-run-test-'));
   fake = join(dir, 'fake');
@@ -49,12 +71,16 @@ beforeEach(() => {
   mkdirSync(work);
   writeFileSync(join(fake, 'xcrun'), XCRUN, { mode: 0o755 });
   writeFileSync(join(fake, 'xcodebuild'), XCODEBUILD, { mode: 0o755 });
+  writeFileSync(join(fake, 'sysctl'), SYSCTL, { mode: 0o755 });
+  writeFileSync(join(fake, 'ps'), PS, { mode: 0o755 });
+  writeFileSync(join(fake, 'loads'), '1.00\n');
+  setPs([]);
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 const env = (extra: Record<string, string> = {}) => ({
   ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
-  HR_SIM_IDLE_SECONDS: '0', ...extra,
+  HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', ...extra,
 });
 const run = (args: string[], extra: Record<string, string> = {}) =>
   spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8', env: env(extra), timeout: 30_000, cwd: work });
@@ -77,7 +103,7 @@ const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status ===
 const busy = () => existsSync(join(home, 'lock'))
   && spawnSync('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9', '_', join(home, 'lock')]).status === 75;
 
-describe.skipIf(process.platform !== 'darwin')('US-71 AC7 sim-run.sh (macOS: lockf)', () => {
+describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macOS: lockf, load guard)', () => {
   describe('lock: who runs and who waits', () => {
     it('runs the command on the shared device, creating and booting it once, and frees the lock', () => {
       const r = run(['--', 'sh', '-c', 'echo "udid=$SIM_UDID"']);
@@ -327,6 +353,199 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 sim-run.sh (macOS: loc
       expect(log('xcrun.log')).not.toContain('shutdown');
       a.p.kill('SIGTERM');
       await a.done;
+    });
+  });
+
+  describe('load guard (US-71 AC8)', () => {
+    // The poll floor is 1 second (a smaller setting is raised to it).
+    const fast = { HR_SIM_GUARD_POLL_SECONDS: '1' };
+    const tookLock = () => existsSync(join(home, 'holder'));
+
+    it('at load 9 waits, then gives up with exit 75 in load-guard words, never taking the lock', () => {
+      setLoads('9.00');
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('sim-run: waiting (load guard): 1-minute load 9.00 is over 8 (HR_SIM_IGNORE_LOAD=1 skips this)');
+      expect(r.stderr).toMatch(/sim-run: gave up after 0m\d+s \(load guard, not the lock\): 1-minute load 9\.00 is over 8/);
+      expect(r.stderr.match(/waiting \(load guard\)/g)).toHaveLength(1);
+      expect(tookLock()).toBe(false);
+      expect(log('xcrun.log')).toBe('');
+    });
+
+    it('takes HR_SIM_MAX_LOAD as a decimal', () => {
+      setLoads('7.60');
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1', HR_SIM_MAX_LOAD: '7.5' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('1-minute load 7.60 is over 7.5');
+    });
+
+    it('at load 7 with two real Codex reviews waits and names them', () => {
+      setLoads('7.00');
+      setPs([CODEX, CODEX2]);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('sim-run: waiting (load guard): 2 Codex reviews running (HR_SIM_IGNORE_LOAD=1 skips this)');
+      expect(tookLock()).toBe(false);
+    });
+
+    it('names both causes when both trip', () => {
+      setLoads('12.40');
+      setPs([CODEX, CODEX2]);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.stderr).toContain('waiting (load guard): 1-minute load 12.40 is over 8; 2 Codex reviews running');
+    });
+
+    it('a bash -c line, a --codex fake, vitest related and node --check on the script do not count', () => {
+      setLoads('7.00');
+      setPs([CODEX, ...DECOYS]);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('load guard');
+    });
+
+    it('counts node codex-review.mjs run from inside tools/, after node flags', () => {
+      setLoads('7.00');
+      setPs([CODEX, '  107 node --no-warnings codex-review.mjs --base main']);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('2 Codex reviews running');
+    });
+
+    it('at load 7 with one Codex review proceeds', () => {
+      setLoads('7.00');
+      setPs([CODEX]);
+      const r = run(['--', 'sh', '-c', 'echo ran'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('ran');
+    });
+
+    it('proceeds when the guard clears mid-wait', () => {
+      setLoads('9.00', '9.00', '9.00', '2.00');
+      const r = run(['--', 'sh', '-c', 'echo ran'], { ...fast, HR_SIM_WAIT_SECONDS: '10' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('ran');
+      expect(r.stderr).toContain('waiting (load guard)');
+    });
+
+    it('when it trips again after taking the lock, lets the lock go (another caller can take it) and waits again', async () => {
+      // Call 1 (before the lock) is clear; call 2 (after taking it) trips; it stays tripped until we clear it.
+      setLoads('2.00', '9.00');
+      const a = start(['--', 'sh', '-c', 'echo ran >> "$FAKE/ran"'], { ...fast, HR_SIM_WAIT_SECONDS: '20' });
+      await until(() => log('sysctl.log').split('\n').length > 4);
+      expect(busy()).toBe(false);
+      expect(log('ran')).toBe('');
+      // Another caller, skipping the guard, takes the device while the first one waits.
+      expect(run(['--', 'sh', '-c', 'echo other >> "$FAKE/ran"'], { HR_SIM_IGNORE_LOAD: '1' }).status).toBe(0);
+      setLoads('2.00');
+      const ra = await a.done;
+      expect(ra.code).toBe(0);
+      expect(ra.err).toContain('waiting (load guard): 1-minute load 9.00 is over 8');
+      expect(log('ran')).toBe('other\nran\n');
+    });
+
+    it('caps the guard wait plus the lock wait at the wait limit', async () => {
+      const a = start(['--', 'sleep', '15']);
+      await until(busy);
+      // Trips at 0, 1 and 2 s, clears at 3 s; the lock then gets what is left of 4 s, not 4 s more.
+      setLoads('9.00', '9.00', '9.00', '2.00');
+      const t = Date.now();
+      const r = run(['--', 'true'], { HR_SIM_GUARD_POLL_SECONDS: '1', HR_SIM_WAIT_SECONDS: '4' });
+      const took = Date.now() - t;
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('waiting (load guard)');
+      expect(r.stderr).toMatch(/gave up after 4s: the simulator is still in use/);
+      expect(took).toBeGreaterThanOrEqual(3000);
+      expect(took).toBeLessThan(6000);
+      a.p.kill('SIGTERM');
+      await a.done;
+    });
+
+    it('HR_SIM_IGNORE_LOAD=1 proceeds at any load', () => {
+      setLoads('50.00');
+      setPs([CODEX, CODEX2]);
+      const r = run(['--', 'true'], { HR_SIM_IGNORE_LOAD: '1', HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('load guard');
+      expect(log('sysctl.log')).toBe('');
+    });
+
+    it('status and a lease call skip it', () => {
+      setLoads('9.00');
+      const s = run(['status']);
+      expect(s.status).toBe(0);
+      expect(s.stderr).not.toContain('load guard');
+      expect(log('sysctl.log')).toBe('');
+      // The outer run reads the load twice (clear, clear); the inner lease call never reads it.
+      setLoads('2.00', '2.00', '9.00');
+      const r = run(['--', 'bash', SCRIPT, '--', 'sh', '-c', 'echo inner'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('inner');
+      expect(log('sysctl.log').trim().split('\n')).toHaveLength(2);
+    });
+
+    it('by default the limit is 1.5 x the CPU count: with 10 CPUs, load 12 proceeds and load 16 waits', () => {
+      writeFileSync(join(fake, 'ncpu'), '10\n');
+      setLoads('12.00');
+      const ok = run(['--', 'sh', '-c', 'echo ran'], { ...fast, HR_SIM_MAX_LOAD: '', HR_SIM_WAIT_SECONDS: '1' });
+      expect(ok.status).toBe(0);
+      expect(ok.stdout).toContain('ran');
+      expect(ok.stderr).not.toContain('load guard');
+      setLoads('16.00');
+      const r = run(['--', 'true'], { ...fast, HR_SIM_MAX_LOAD: '', HR_SIM_WAIT_SECONDS: '1' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('1-minute load 16.00 is over 15');
+      expect(log('ncpu.log').trim().split('\n')).toHaveLength(2);
+    });
+
+    it('when the CPU count cannot be read, falls back to 8 with one line, still checking the load', () => {
+      setLoads('9.00');
+      const r = run(['--', 'true'], { ...fast, HR_SIM_MAX_LOAD: '', HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(75);
+      expect(r.stderr.match(/sim-run: load guard could not read the CPU count; using a load limit of 8/g)).toHaveLength(1);
+      expect(r.stderr).toContain('1-minute load 9.00 is over 8');
+    });
+
+    it('a set HR_SIM_MAX_LOAD never reads the CPU count', () => {
+      setLoads('9.00');
+      run(['--', 'true'], { ...fast, HR_SIM_WAIT_SECONDS: '1' });
+      expect(log('ncpu.log')).toBe('');
+    });
+
+    it('a non-numeric HR_SIM_MAX_LOAD skips only the load check, with one line on stderr', () => {
+      setLoads('50.00');
+      setPs([CODEX]);
+      const r = run(['--', 'sh', '-c', 'echo ran'], { ...fast, HR_SIM_MAX_LOAD: 'eight', HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('ran');
+      expect(r.stderr.match(/sim-run: load guard: HR_SIM_MAX_LOAD=eight is not a number; checking Codex reviews only/g)).toHaveLength(1);
+    });
+
+    it('a non-numeric HR_SIM_MAX_LOAD with two real Codex reviews still waits', () => {
+      setLoads('1.00');
+      setPs([CODEX, CODEX2]);
+      const r = run(['--', 'true'], { ...fast, HR_SIM_MAX_LOAD: 'eight', HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain('sim-run: waiting (load guard): 2 Codex reviews running');
+      expect(r.stderr.match(/is not a number/g)).toHaveLength(1);
+      expect(tookLock()).toBe(false);
+    });
+
+    it.each(['0', '0.2', 'soon'])('a poll setting of %s polls every second, not in a busy loop', (poll) => {
+      setLoads('9.00');
+      const r = run(['--', 'true'], { HR_SIM_GUARD_POLL_SECONDS: poll, HR_SIM_WAIT_SECONDS: '3' });
+      expect(r.status).toBe(75);
+      // About one load read a second over 3 seconds (a busy loop would make hundreds).
+      const reads = log('sysctl.log').trim().split('\n').length;
+      expect(reads).toBeGreaterThanOrEqual(2);
+      expect(reads).toBeLessThanOrEqual(5);
+    });
+
+    it('an unreadable sysctl fails open with one line on stderr', () => {
+      setLoads('fail');
+      const r = run(['--', 'sh', '-c', 'echo ran'], fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('ran');
+      expect(r.stderr.match(/sim-run: load guard could not read the load; not waiting/g)).toHaveLength(1);
     });
   });
 
