@@ -68,7 +68,7 @@ default_limit() {
   local n
   n=$(sysctl -n hw.ncpu 2>/dev/null)
   if [[ "$n" =~ ^[1-9][0-9]*$ ]]; then
-    MAX_LOAD=$(awk -v n="$n" -v f="$LOAD_PER_CPU" 'BEGIN { print n * f }')
+    MAX_LOAD=$(LC_ALL=C awk -v n="$n" -v f="$LOAD_PER_CPU" 'BEGIN { print n * f }')
   else
     MAX_LOAD=$FALLBACK_LOAD
     echo "sim-run: load guard could not read the CPU count; using a load limit of $MAX_LOAD" >&2
