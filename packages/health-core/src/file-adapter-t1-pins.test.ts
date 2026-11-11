@@ -10,7 +10,7 @@
  */
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
@@ -35,6 +35,12 @@ const backups = (dir: string) => readdirSync(dir).filter((n) => n.includes('.bak
 function at(epoch: number) {
   const file = createEmptyFile(CTX);
   return { ...file, meta: { ...file.meta, eraseEpoch: epoch } };
+}
+
+/** An empty record whose file counter is 7, so the bytes on disk show which body landed. */
+function marked() {
+  const file = createEmptyFile(CTX);
+  return { ...file, meta: { ...file.meta, lamport: 7 } };
 }
 
 /** Wrap the adapter's private `replace` so the test sees the exact bytes it wrote. */
@@ -69,14 +75,14 @@ describe('lead T1 — cleanup after a landed replace', () => {
       throw fault;
     });
     try {
-      const error = await failureOf(recordSync(adapter, CTX.deviceId, NOW).save(createEmptyFile(CTX)));
+      const error = await failureOf(recordSync(adapter, CTX.deviceId, NOW).save(marked()));
       // SyncManager rethrows as-is: `mayHaveWritten` is set only after
       // adapter.write returns, and write never returned.
       expect(error).toBe(fault);
       expect(isStorageFailure(error)).toBe(false);
       // Yet the replace landed: the record holds the bytes write produced.
-      expect(wrote.text).not.toBe('');
-      expect(wrote.text).not.toBe(before);
+      expect(JSON.parse(before).meta.lamport).toBe(0);
+      expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
       // The finally still released the lock.
       expect(existsSync(`${path}.lock`)).toBe(false);
@@ -108,15 +114,58 @@ describe('lead T1 — cleanup after a landed replace', () => {
       const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(createEmptyFile(CTX)));
+      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
       expect(error).toBe(fault);
       expect(isolatedIs(error)).toBe(false);
-      expect(wrote.text).not.toBe('');
-      expect(wrote.text).not.toBe(before);
+      expect(JSON.parse(before).meta.lamport).toBe(0);
+      expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
       // The lock it could not remove is still there.
       expect(existsSync(`${path}.lock`)).toBe(true);
     } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('closeSync(lock) throwing in the finally after the replace: the raw error escapes save, though the file holds the new bytes and the lock is gone — today (lead T1 step b changes this)', async () => {
+    const { dir, path } = scratch();
+    const before = readFileSync(path, 'utf8');
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    const fault = Object.assign(new Error('EIO: i/o error, close'), { code: 'EIO' });
+    // Only the lock's descriptor fails to close; temp and backup files close normally.
+    const lockFds = new Set<number>();
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      openSync: (target: fs.PathLike, flags: fs.OpenMode, mode?: fs.Mode) => {
+        const fd = real.openSync(target, flags, mode);
+        if (String(target).endsWith('.lock')) lockFds.add(fd);
+        return fd;
+      },
+      closeSync: (fd: number) => {
+        if (lockFds.has(fd)) throw fault;
+        return real.closeSync(fd);
+      },
+    }));
+    try {
+      const { FileAdapter: Isolated } = await import('./file-adapter');
+      const { recordSync: isolatedSync } = await import('./roadmap-doc');
+      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
+      const adapter = new Isolated(path);
+      const wrote = recordReplace(adapter);
+      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
+      expect(error).toBe(fault);
+      expect(isolatedIs(error)).toBe(false);
+      expect(JSON.parse(before).meta.lamport).toBe(0);
+      expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
+      expect(readFileSync(path, 'utf8')).toBe(wrote.text);
+      // rmSync(lockPath) runs before closeSync, so the lock file is gone.
+      expect(existsSync(`${path}.lock`)).toBe(false);
+    } finally {
+      for (const fd of lockFds) real.closeSync(fd);
       vi.doUnmock('node:fs');
       vi.resetModules();
       rmSync(dir, { recursive: true, force: true });
@@ -156,19 +205,70 @@ describe('lead T1 — the backup trim runs before the replace', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('rmSync throwing on the trim: the raw error escapes backup() before the replace, the record is unchanged, the new backup exists and the lock is released — today (lead T1 step b changes this)', async () => {
+    const { dir, path } = scratch();
+    const before = readFileSync(path, 'utf8');
+    const old = ['2026-01-01T00-00-00.000Z', '2026-01-02T00-00-00.000Z', '2026-01-03T00-00-00.000Z']
+      .map((stamp) => `${ROADMAP_FILE_NAME}.bak-${stamp}`);
+    for (const name of old) writeFileSync(join(dir, name), before);
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    const fault = Object.assign(new Error('EPERM: operation not permitted'), { code: 'EPERM' });
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      rmSync: (target: fs.PathLike, options?: fs.RmOptions) => {
+        if (String(target).includes('.bak-')) throw fault;
+        return real.rmSync(target, options);
+      },
+    }));
+    try {
+      const { FileAdapter: Isolated } = await import('./file-adapter');
+      const { recordSync: isolatedSync } = await import('./roadmap-doc');
+      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
+      const adapter = new Isolated(path);
+      const replace = vi.spyOn(adapter as any, 'replace');
+      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
+      expect(error).toBe(fault);
+      expect(isolatedIs(error)).toBe(false);
+      expect(replace).not.toHaveBeenCalled();
+      expect(readFileSync(path, 'utf8')).toBe(before);
+      // The trim failed on the oldest, so all three old copies remain beside
+      // this write's new one, which holds the record's bytes.
+      const kept = backups(dir);
+      expect(kept).toHaveLength(4);
+      expect(kept).toEqual(expect.arrayContaining(old));
+      const fresh = kept.filter((name) => !old.includes(name));
+      expect(fresh).toHaveLength(1);
+      expect(readFileSync(join(dir, fresh[0]), 'utf8')).toBe(before);
+      expect(existsSync(`${path}.lock`)).toBe(false);
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('lead T1 — a lock held by another writer', () => {
-  it('refuses after the wait with today’s exact words, never removes the lock, and leaves the record alone', async () => {
-    const { dir, path } = scratch();
-    const before = readFileSync(path, 'utf8');
+  /** Plant an old lock (mtime at the epoch), start a save, run out the wait. */
+  async function refusedSave(path: string): Promise<{ error: unknown; waited: number }> {
     writeFileSync(`${path}.lock`, 'held by another writer');
+    utimesSync(`${path}.lock`, new Date(0), new Date(0));
     const adapter = new FileAdapter(path);
     vi.useFakeTimers();
+    const start = Date.now();
+    const outcome = failureOf(recordSync(adapter, CTX.deviceId, NOW).save(marked()));
+    await vi.runAllTimersAsync();
+    const error = await outcome;
+    return { error, waited: Date.now() - start };
+  }
+
+  it('refuses after the wait with today’s exact words, which the CLI and stdio server print as-is — today (lead T1 step b changes this)', async () => {
+    const { dir, path } = scratch();
     try {
-      const outcome = failureOf(recordSync(adapter, CTX.deviceId, NOW).save(createEmptyFile(CTX)));
-      await vi.runAllTimersAsync();
-      const error = await outcome;
+      const { error } = await refusedSave(path);
       expect(error).toBeInstanceOf(StorageError);
       expect((error as StorageError).message).toBe(`Another program is writing ${ROADMAP_FILE_NAME} and did not finish`);
       expect((error as StorageError).hint).toBe(
@@ -180,7 +280,21 @@ describe('lead T1 — a lock held by another writer', () => {
         message: (error as StorageError).message,
         hint: (error as StorageError).hint,
       });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('waits at least LOCK_WAIT_MS, never removes even an old lock, leaves the record alone and makes no backup', async () => {
+    const { dir, path } = scratch();
+    const before = readFileSync(path, 'utf8');
+    try {
+      const { error, waited } = await refusedSave(path);
+      expect(isStorageFailure(error)).toBe(true);
+      // LOCK_WAIT_MS in file-adapter.ts (not exported).
+      expect(waited).toBeGreaterThanOrEqual(5_000);
       expect(readFileSync(`${path}.lock`, 'utf8')).toBe('held by another writer');
+      expect(fs.statSync(`${path}.lock`).mtimeMs).toBe(0);
       expect(readFileSync(path, 'utf8')).toBe(before);
       expect(backups(dir)).toEqual([]);
     } finally {
@@ -192,22 +306,28 @@ describe('lead T1 — a lock held by another writer', () => {
 describe('lead T1 — lastBackup after a save', () => {
   it('an erase save (epoch raised) leaves lastBackup empty and no backup', async () => {
     const { dir, path } = scratch(JSON.stringify(at(0)));
-    const adapter = new FileAdapter(path);
-    await recordSync(adapter, CTX.deviceId, NOW).save(at(1));
-    expect(JSON.parse(readFileSync(path, 'utf8')).meta.eraseEpoch).toBe(1);
-    expect(adapter.lastBackup).toBe('');
-    expect(backups(dir)).toEqual([]);
-    rmSync(dir, { recursive: true, force: true });
+    try {
+      const adapter = new FileAdapter(path);
+      await recordSync(adapter, CTX.deviceId, NOW).save(at(1));
+      expect(JSON.parse(readFileSync(path, 'utf8')).meta.eraseEpoch).toBe(1);
+      expect(adapter.lastBackup).toBe('');
+      expect(backups(dir)).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('a normal save sets lastBackup to a file that exists beside the record', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
-    const adapter = new FileAdapter(path);
-    await recordSync(adapter, CTX.deviceId, NOW).save(createEmptyFile(CTX));
-    expect(adapter.lastBackup).not.toBe('');
-    expect(backups(dir)).toEqual([adapter.lastBackup]);
-    expect(readFileSync(join(dir, adapter.lastBackup), 'utf8')).toBe(before);
-    rmSync(dir, { recursive: true, force: true });
+    try {
+      const adapter = new FileAdapter(path);
+      await recordSync(adapter, CTX.deviceId, NOW).save(createEmptyFile(CTX));
+      expect(adapter.lastBackup).not.toBe('');
+      expect(backups(dir)).toEqual([adapter.lastBackup]);
+      expect(readFileSync(join(dir, adapter.lastBackup), 'utf8')).toBe(before);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
