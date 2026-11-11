@@ -37,7 +37,7 @@ describe('deploy.yml full suite (US-64 AC22)', () => {
   it('runs the whole suite exactly once, in America/Los_Angeles', () => {
     const suites = Object.values(deploy.jobs)
       .flatMap((j) => j.steps ?? [])
-      .filter((s) => /\b(test:all|vitest)\b/.test(s.run ?? ''));
+      .filter((s) => /\bnpm\s+(run\s+)?test(:[\w:-]+)?(?![\w:-])|\bvitest\b/.test(s.run ?? ''));
     expect(suites).toHaveLength(1);
     expect(suites[0].run).toBe('npm run test:all');
     expect(suites[0].env?.TZ).toBe('America/Los_Angeles');

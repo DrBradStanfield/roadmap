@@ -79,7 +79,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    drstanfield.com/pages/roadmap through the Admin API, backup first, then run `node tools/roadmap-page-drift.mjs`
    until it prints IN SYNC; report it with the deploy. The page is published by hand, so it drifts silently: US-64
    AC16): the CI Deploy always builds main's tip. Run it once per batch of merges, not
-   once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml`, find
+   once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml` (main's CI must be green
+   first: it is the only UTC run of a merged tree), find
    the run id with `gh run list --workflow deploy.yml --limit 1`, then wait with `sh tools/wait-run.sh deploy
    <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code. A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
