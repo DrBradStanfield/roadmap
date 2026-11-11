@@ -209,8 +209,9 @@ export async function processPipeline(
   notices: FileNotice[],
 ): Promise<FileResult[]> {
   const totalFiles = allInputs.length;
-  const queue: Array<{ fileName: string; pages: PageContent[]; file?: File }> = [];
-  const allResults: FileResult[] = [];
+  const queue: Array<{ index: number; fileName: string; pages: PageContent[]; file?: File }> = [];
+  // By picked position, so the review lists files as picked, whatever order they finish in (US-12 AC23).
+  const allResults: Array<FileResult | undefined> = [];
   let completedCount = 0;
   let activeWorkers = 0;
   let feedingDone = false;
@@ -233,11 +234,11 @@ export async function processPipeline(
 
       // Send to LLM
       labImport(item.pages, us).then(({ result, error: importError, errorCode }) => {
-        allResults.push(result
+        allResults[item.index] = result
           ? { ...readResult(item.fileName, result, notices), file: item.file }
-          : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', notices));
+          : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', notices);
       }).catch(() => {
-        allResults.push(unreadResult(item.fileName, undefined, 'Processing failed', notices));
+        allResults[item.index] = unreadResult(item.fileName, undefined, 'Processing failed', notices);
       }).finally(() => {
         completedCount++;
         activeWorkers--;
@@ -259,11 +260,12 @@ export async function processPipeline(
   async function extractWorker() {
     while (extractIndex < allInputs.length) {
       if (abort.signal.aborted) break;
-      const input = allInputs[extractIndex++];
+      const index = extractIndex++;
+      const input = allInputs[index];
       const { pages, file } = await readPages(upload, input, notices);
       if (abort.signal.aborted) return;
       if (pages.length > 0) {
-        queue.push({ fileName: input.fileName, pages, file });
+        queue.push({ index, fileName: input.fileName, pages, file });
         tryStartWorker();
       }
     }
@@ -277,10 +279,11 @@ export async function processPipeline(
   checkDone();
 
   await allDone;
-  if (allResults.length === 0 && !abort.signal.aborted) {
+  const results = allResults.filter((r): r is FileResult => r !== undefined);
+  if (results.length === 0 && !abort.signal.aborted) {
     throw new UploadError('No readable files found.', 'no_files');
   }
-  return allResults;
+  return results;
 }
 
 /** Batch: send all files in one request, poll for results. For 20+ files. */
