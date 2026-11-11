@@ -34,16 +34,22 @@ final class WelcomeConnectTests: XCTestCase {
     func testWhatEachTapDoes_US54_AC2b() {
         typealias D = WelcomeConnect.Decision
         let phases: [Phase] = [.choosing, .opening, .failed(unreachable), .opened]
-        let rows: [(WelcomeConnect.Event, Bool, [D])] = [
-            (.getStarted, false, [.start, .showSheetAndOpen, .showSheetAndOpen, .goOn]),
-            (.existing, false, [.showSheet, .showSheetAndOpen, .showSheetAndOpen, .goOn]),
-            (.tryAgain, true, [.nothing, .open, .open, .nothing]),
-            (.phaseChanged, true, [.nothing, .nothing, .nothing, .goOn]),
-            (.phaseChanged, false, [.nothing, .nothing, .nothing, .nothing]),
+        // (event, sheet shown, a connect error's alert up, decision per phase)
+        let rows: [(WelcomeConnect.Event, Bool, Bool, [D])] = [
+            (.getStarted, false, false, [.start, .showSheetAndOpen, .showSheetAndOpen, .goOn]),
+            (.existing, false, false, [.showSheet, .showSheetAndOpen, .showSheetAndOpen, .goOn]),
+            (.tryAgain, true, false, [.nothing, .open, .open, .nothing]),
+            (.phaseChanged, true, false, [.nothing, .nothing, .nothing, .goOn]),
+            (.phaseChanged, false, false, [.nothing, .nothing, .nothing, .nothing]),
+            // US-25 AC11j: an alert on the sheet holds it; its dismissal goes on instead.
+            (.phaseChanged, true, true, [.nothing, .nothing, .nothing, .nothing]),
+            (.alertDismissed, true, false, [.nothing, .nothing, .nothing, .goOn]),
+            (.alertDismissed, false, false, [.nothing, .nothing, .nothing, .nothing]),
         ]
-        for (event, sheetShown, expected) in rows {
+        for (event, sheetShown, alertShown, expected) in rows {
             for (phase, decision) in zip(phases, expected) {
-                XCTAssertEqual(WelcomeConnect.decide(event, phase: phase, sheetShown: sheetShown), decision, "\(event) \(phase) sheet \(sheetShown)")
+                XCTAssertEqual(WelcomeConnect.decide(event, phase: phase, sheetShown: sheetShown, alertShown: alertShown), decision,
+                               "\(event) \(phase) sheet \(sheetShown) alert \(alertShown)")
             }
         }
     }
@@ -54,17 +60,54 @@ final class WelcomeConnectTests: XCTestCase {
     func testGetStartedDuringTheLaunchOpenStartsAnOpen_US54_AC2b() {
         let phase = WelcomeConnect.phase(provider: .dropbox, status: .connecting, recordOpen: false)
         XCTAssertEqual(phase, .opening)
-        XCTAssertEqual(WelcomeConnect.decide(.getStarted, phase: phase, sheetShown: false), .showSheetAndOpen)
+        XCTAssertEqual(WelcomeConnect.decide(.getStarted, phase: phase, sheetShown: false, alertShown: false), .showSheetAndOpen)
     }
 
     /// Going on closes the sheet, so it happens once: an open that lands with the sheet
     /// closed does nothing, Get started then goes on, and a later change decides nothing.
     func testTheScreenGoesOnOnce_US54_AC2b() {
-        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false), .nothing)
-        XCTAssertEqual(WelcomeConnect.decide(.getStarted, phase: .opened, sheetShown: false), .goOn)
-        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: true), .goOn)
+        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false, alertShown: false), .nothing)
+        XCTAssertEqual(WelcomeConnect.decide(.getStarted, phase: .opened, sheetShown: false, alertShown: false), .goOn)
+        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: true, alertShown: false), .goOn)
         // After goOn the sheet is closed.
-        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false), .nothing)
+        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false, alertShown: false), .nothing)
+    }
+
+    /// US-25 AC11j (review of PR 1295): a connect refused while the record opened leaves its
+    /// alert on the sheet. The open landing does not close the sheet under it; dismissing the
+    /// alert goes on, once, and a later change with the sheet closed decides nothing.
+    func testARefusalAlertHoldsTheSheetUntilDismissed_US25_AC11j() {
+        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: true, alertShown: true), .nothing)
+        XCTAssertEqual(WelcomeConnect.decide(.alertDismissed, phase: .opened, sheetShown: true, alertShown: false), .goOn)
+        // goOn closed the sheet.
+        XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false, alertShown: false), .nothing)
+        XCTAssertEqual(WelcomeConnect.decide(.alertDismissed, phase: .opened, sheetShown: false, alertShown: false), .nothing)
+    }
+
+    /// US-54 AC2c: a failed open says what the Sync screen says for that problem, from the same
+    /// source, except a cloud that could not be reached, which keeps AC2's sentence. Try again
+    /// shows only where trying again can help: a revoked sign-in needs the Connect rows, a
+    /// newer app's record an update; a full cloud's Try again checks the freed space.
+    func testTheFailedRowSaysEachProblemInTheSyncScreensWords_US54_AC2c() {
+        let sentence = "Signed in, but your record could not be opened yet. Check your connection, then try again."
+        // (kind, the Sync screen's words or nil for AC2's sentence, Try again)
+        let rows: [(SyncProblem.Kind, Bool, Bool)] = [
+            (.unreachable, false, true),
+            (.busy, true, true),
+            (.signIn, true, false),
+            (.tooNew, true, false),
+            (.storageFull, true, true),
+        ]
+        XCTAssertEqual(Set(rows.map(\.0)), Set(SyncProblem.Kind.allCases), "one row per kind")
+        for provider in CloudProvider.allCases {
+            for (kind, syncWords, tryAgain) in rows {
+                let problem = SyncProblem(kind: kind)
+                let failure = WelcomeConnect.failure(problem, provider: provider)
+                let expected = syncWords ? SyncStatusText.detail(.problem(problem), provider: provider) : sentence
+                XCTAssertEqual(failure.words, expected, "\(kind) \(provider)")
+                XCTAssertEqual(failure.offersTryAgain, tryAgain, "\(kind)")
+            }
+        }
     }
 
     // MARK: Through the real CloudSync, on a stubbed Dropbox

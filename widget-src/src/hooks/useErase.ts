@@ -1,102 +1,108 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { deleteUserData, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED } from '../lib/erase-copy';
+import { askedUnder, deleteUserData, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
 
 /**
- * The erase the screen shows, and this tab's own "Delete all my data"
- * (US-16 AC2a, AC2c; US-11 AC6).
+ * The page's door to lib/erase-machine.ts: the erase the screen shows, and
+ * this tab's own "Delete all my data" (US-16 AC2a, AC2c, AC2d; US-11 AC6).
  *
- * The store marks the erase the screen shows and refuses every write made
- * under another (US-16 AC2a). Against the store's own erase identity the
- * screen is in one of three states:
- * - shown: the screen shows the store's erase;
- * - unshown (`eraseUnshown`): the store holds an erase the screen does not
- *   show yet: this tab's erase still writing or failed to write, or another
- *   device's erase whose re-read has not landed (the relay never holds an
- *   erase, US-11 AC6). The screen's values are pre-erase then, so no chat
- *   banner is made or answered;
- * - erasing (`erasing`): this tab's erase is writing. The form is locked, and
- *   a save it refuses is no news (the erase throws the change away anyway).
+ * One EraseStore per page holds the state; every event reaches it from one of
+ * its call sites: useRecordApply `apply` and the page's first read (`read`),
+ * `eraseAll` here (`own-start`, then `own-end` or `own-failed`), and
+ * `writeRefused` here (`refused`). Its effects run through the doors below,
+ * built from the latest committed props:
+ * - clearDrafts, forget, reread: the page's;
+ * - read: a whole re-read (`reread('left')`);
+ * - countRemoteChange: nothing yet; the relay still counts (PR 2b-3);
+ * - sayOutcome: an alert.
  *
- * `shownErase` is the same erase as React state: the upload modal is keyed
- * on it, so an erase ends a review read before it (US-16 AC2c).
+ * `eraseUnshown` stays a store query: true while the store holds an erase the
+ * screen does not show yet (this tab's erase writing or failed to write, or
+ * another writer's whose re-read has not landed), so no chat banner is made or
+ * answered on pre-erase values.
  *
- * Three copies of the shown erase, each for a reason: React state (what the
- * tree renders), the `asked` ref (what showErase last asked for, so a second
- * ask before the commit is a no-op), and the store's mark, set only once the
- * tree that shows it commits, so a save asked from the old tree is refused
- * (US-16 AC2d).
+ * The tree reads the store through state its listener sets, not
+ * useSyncExternalStore. Measured on React 18.2 (PR 1283): useSyncExternalStore
+ * commits a store change at sync priority, ahead of state set in the same
+ * async turn. A component changing both in one timer callback committed
+ * `a=0 b=0`, `a=0 b=1`, `a=1 b=1`: an intermediate commit. Here that commit
+ * would move the store's mark to the new erase while the old record is still
+ * on screen, so a save asked from it would land (US-16 AC2d). Set from the
+ * listener, the state commits with the record set in the same turn
+ * (`a=0 b=0`, `a=1 b=1`). The AC2d pin in useErase.test.tsx guards it. `shownErase` keys
+ * the upload modal, so an erase ends a review read before it (US-16 AC2c).
  */
-export interface Erase {
-  shownErase: string;
-  erasing: boolean;
-  /** The screen now shows this erase; `onShown` runs on each move (and again in eraseAll, which may find it already shown). */
-  showErase: (erase: string) => void;
-  eraseUnshown: () => boolean;
-  /** A save the store refused: true if it is news to say, once per erase. */
-  refusalIsNews: () => boolean;
-  /** Ask, erase, and on a moved erase clear the screen with `forget`. Says how it went; true on success. */
-  eraseAll: (forget: () => void) => Promise<boolean>;
+export interface EraseDoorProps {
+  clearDrafts: () => void;
+  /** This tab's erase moved the record: the page forgets the old one, on the device and on screen. */
+  forget: () => void;
+  /** A whole re-read of the record, through the page's read policy. */
+  reread: (reason: 'refused' | 'left') => void;
 }
 
-export function useErase(onShown: () => void): Erase {
-  // The latest committed `onShown`, never one from a render that did not finish.
-  const shownHook = useRef(onShown);
-  useLayoutEffect(() => { shownHook.current = onShown; });
-  const [shownErase, setShownErase] = useState(getShownErase);
+export interface Erase {
+  /** The machine: the page's first read and useRecordApply's re-reads dispatch `read` to it. */
+  store: EraseStore;
+  shownErase: string;
+  erasing: boolean;
+  eraseUnshown: () => boolean;
+  /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
+  writeRefused: (erase?: string) => void;
+  /** Ask, erase, and say how it went; true on success. */
+  eraseAll: () => Promise<boolean>;
+}
+
+export function useErase(props: EraseDoorProps): Erase {
+  // The latest committed props, never ones from a render that did not finish.
+  const doors = useRef(props);
+  useLayoutEffect(() => { doors.current = props; });
+  const [store] = useState(() => createEraseStore(getShownErase(), {
+    clearDrafts: () => doors.current.clearDrafts(),
+    forget: () => doors.current.forget(),
+    read: () => doors.current.reread('left'),
+    countRemoteChange: () => {},
+    sayOutcome: message => window.alert(message),
+  }));
+  const [state, setState] = useState<EraseState>(store.getSnapshot);
+  useLayoutEffect(() => {
+    const unsubscribe = store.subscribe(() => setState(store.getSnapshot()));
+    setState(store.getSnapshot());
+    return unsubscribe;
+  }, [store]);
   // The store's mark moves only once the screen shows the erase: until React
   // commits the new tree, the old one is on screen, and a save asked from it
   // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
   // run before this one, so none may write; none does (2026-11-10).
-  useLayoutEffect(() => { markEraseShown(shownErase); }, [shownErase]);
-  const asked = useRef(shownErase); // the erase last asked of the screen, shown or still committing
-  const [erasing, setErasing] = useState(false);
-  const erasingNow = useRef(false); // the same, for a refusal inside the erase's own turn
-  const saidFor = useRef(''); // the erase whose refusal was last said
+  useLayoutEffect(() => { markEraseShown(state.shown); }, [state.shown]);
 
-  const showErase = useCallback((erase: string) => {
-    if (erase === asked.current) return;
-    asked.current = erase;
-    setShownErase(erase);
-    shownHook.current();
-  }, []);
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
-  const refusalIsNews = useCallback(() => {
-    // One alert per erase, however many saves it refuses (adversary R5).
-    if (erasingNow.current || saidFor.current === getEraseIdentity()) return false;
-    saidFor.current = getEraseIdentity();
-    return true;
-  }, []);
 
-  const eraseAll = useCallback(async (forget: () => void) => {
+  const writeRefused = useCallback((erase?: string) => {
+    // F4c: the erase the save was asked under; the supplement stop names none, so the mark's (PR 3).
+    const { news, reads } = refusal(store, erase ?? askedUnder());
+    if (!news) return;
+    window.alert(WRITE_REFUSED);
+    // A heard erase the machine re-read itself (Q3): one read, never two.
+    if (reads) return;
+    // A save asked of a record the screen has left spends no landing of the one it shows (US-16 AC2d, US-62 AC25b).
+    doors.current.reread(erase === undefined || erase === store.getSnapshot().shown ? 'refused' : 'left');
+  }, [store]);
+
+  const eraseAll = useCallback(async () => {
     if (!window.confirm(ERASE_CONFIRM)) return false;
-    setErasing(true);
-    erasingNow.current = true;
     const before = getEraseIdentity();
+    store.dispatch({ type: 'own-start' });
     const result = await deleteUserData();
-    erasingNow.current = false;
-    setErasing(false);
-
-    // An erase whose write failed still leaves the erased copy in the store,
-    // which retries it: the screen shows that copy too (US-16 AC2a). A
-    // refused erase moved nothing, whatever else the screen is behind.
-    if (result.success || getEraseIdentity() !== before) {
-      forget();
-      // Cleared here too: a re-read during the write may have shown this
-      // erase already, and showErase then clears nothing (adversary R1).
-      shownHook.current();
-      showErase(getEraseIdentity());
-      // A refusal of this erase's own leftovers is not news (adversary R3).
-      saidFor.current = getEraseIdentity();
-    }
-    if (result.success) {
-      const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
-      window.alert(result.warning ? `${done}\n\n${result.warning}` : done);
-    } else {
-      window.alert(result.error || ERASE_FAILED);
-    }
+    // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
+    // still leaves the erased copy in the store, which retries it: the screen
+    // shows that copy too (US-16 AC2a). A refused erase moved nothing.
+    const now = getEraseIdentity();
+    const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
+    const message = result.success ? (result.warning ? `${done}\n\n${result.warning}` : done) : result.error || ERASE_FAILED;
+    store.dispatch(now !== before ? { type: 'own-end', identity: now, message } : { type: 'own-failed', message });
     return result.success;
-  }, [showErase]);
+  }, [store]);
 
-  return { shownErase, erasing, showErase, eraseUnshown, refusalIsNews, eraseAll };
+  return { store, shownErase: state.shown, erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
 }

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C16,chat,"The server chat dedup reads only the last two rows' roles, so an identical resend while the first turn runs gets a second answer",bug,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: with the chat-turn work. app/routes/api.chat.ts; app/lib/chat-dedup.server.ts. The client's own 60 s dedup only catches a resend after the reply,,no

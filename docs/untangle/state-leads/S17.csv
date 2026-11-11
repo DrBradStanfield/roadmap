@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S17,iPhone state,"The test of an erase during the Apple Health read's history removals holds its window open by keeping the history actor busy, so it relies on timing",note,not started,"ios/HealthRoadmapTests/LiveHealthTests.swift testAnEraseDuringTheReadsHistoryRemovalsLeavesNothing_US56_AC5d (PR 1286). Make it deterministic by injecting the history step as a controllable seam. If it fails in CI without a code change, fix it; never re-run it (owner 2026-11-11)",1286,no

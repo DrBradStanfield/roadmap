@@ -97,28 +97,18 @@ const SENSITIVE_SUBSTRINGS = [
 
 function isSensitiveKey(key) {
   const lower = key.toLowerCase();
-  if (SENSITIVE_EXACT_KEYS.has(lower)) return true;
-  return SENSITIVE_SUBSTRINGS.some((sub) => lower.includes(sub));
+  return SENSITIVE_EXACT_KEYS.has(lower) || SENSITIVE_SUBSTRINGS.some((sub) => lower.includes(sub));
 }
 
 export function scrubSensitiveData(input, maxDepth = 10, currentDepth = 0) {
   if (input === null || input === undefined) return input;
   if (currentDepth >= maxDepth) return REDACTED;
   if (typeof input !== 'object') return input;
-
-  if (Array.isArray(input)) {
-    return input.map((item) => scrubSensitiveData(item, maxDepth, currentDepth + 1));
-  }
-
+  if (Array.isArray(input)) return input.map((item) => scrubSensitiveData(item, maxDepth, currentDepth + 1));
   const result = {};
   for (const [key, value] of Object.entries(input)) {
-    if (isSensitiveKey(key)) {
-      result[key] = REDACTED;
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = scrubSensitiveData(value, maxDepth, currentDepth + 1);
-    } else {
-      result[key] = value;
-    }
+    result[key] = isSensitiveKey(key) ? REDACTED
+      : typeof value === 'object' && value !== null ? scrubSensitiveData(value, maxDepth, currentDepth + 1) : value;
   }
   return result;
 }
@@ -135,9 +125,7 @@ export function scrubUrl(url) {
     const parsed = new URL(url, 'https://placeholder.invalid');
     const path = scrubText(decodePath(parsed.pathname));
     return url.startsWith('http') ? parsed.origin + path : path;
-  } catch {
-    return REDACTED;
-  }
+  } catch { return REDACTED; }
 }
 
 // The URL keeps its origin and nothing else: an arbitrary WebDAV/GitHub path
@@ -145,7 +133,6 @@ export function scrubUrl(url) {
 // that. Host, method and status — what a breadcrumb is read for — survive.
 export function scrubBreadcrumbData(data) {
   if (!data) return data;
-
   // Allowlist, not denylist — mirror of sentry-scrub.ts. Method, host, status.
   const kept = {};
   if (typeof data.method === 'string') kept.method = data.method;
@@ -153,9 +140,7 @@ export function scrubBreadcrumbData(data) {
     try { kept.url = new URL(data.url).origin; }
     catch { kept.url = REDACTED; }
   }
-  if (typeof data.status_code === 'number' || typeof data.status_code === 'string') {
-    kept.status_code = data.status_code;
-  }
+  if (typeof data.status_code === 'number' || typeof data.status_code === 'string') kept.status_code = data.status_code;
   return kept;
 }
 
@@ -356,9 +341,26 @@ export function scrubStrings(input, maxDepth = 10, currentDepth = 0) {
   if (currentDepth >= maxDepth) return input;
   if (Array.isArray(input)) return input.map((v) => scrubStrings(v, maxDepth, currentDepth + 1));
   const out = {};
-  for (const [k, v] of Object.entries(input)) {
-    out[k] = scrubStrings(v, maxDepth, currentDepth + 1);
+  for (const [k, v] of Object.entries(input)) out[k] = scrubStrings(v, maxDepth, currentDepth + 1);
+  return out;
+}
+
+// The SDK's trace and span ids, each in the one shape it takes: kept at these
+// paths only, any other value scrubbed (mirror of sentry-scrub.ts, US-09 AC7h).
+const ID_SHAPE = { trace_id: /^[0-9a-f]{32}$/, span_id: /^[0-9a-f]{16}$/, parent_span_id: /^[0-9a-f]{16}$/ };
+const isObject = (v) => typeof v === 'object' && v !== null;
+function keepIds(raw, out, keys) {
+  if (!isObject(raw) || !isObject(out)) return;
+  for (const key of keys) {
+    const id = raw[key];
+    if (typeof id === 'string' && typeof out[key] === 'string' && ID_SHAPE[key].test(id)) out[key] = id;
   }
+}
+function scrubContexts(contexts) {
+  const out = scrubStrings(contexts);
+  keepIds(contexts?.trace, out?.trace, ['trace_id', 'span_id', 'parent_span_id']);
+  const links = contexts?.trace?.links, outLinks = out?.trace?.links;
+  if (Array.isArray(links) && Array.isArray(outLinks)) links.forEach((link, i) => keepIds(link, outLinks[i], ['trace_id', 'span_id']));
   return out;
 }
 
@@ -369,7 +371,7 @@ export function scrubEventText(event) {
     if (typeof value.value === 'string') value.value = scrubText(value.value);
   }
   if (event.extra) event.extra = scrubStrings(event.extra);
-  if (event.contexts) event.contexts = scrubStrings(event.contexts);
+  if (event.contexts) event.contexts = scrubContexts(event.contexts);
   if (event.tags) event.tags = scrubStrings(event.tags);
   for (const crumb of event.breadcrumbs ?? []) {
     if (typeof crumb.message === 'string') crumb.message = scrubText(crumb.message);
@@ -377,9 +379,7 @@ export function scrubEventText(event) {
   }
   if (event.request) {
     if (typeof event.request.url === 'string') event.request.url = scrubText(event.request.url);
-    if (typeof event.request.query_string === 'string') {
-      event.request.query_string = scrubText(event.request.query_string);
-    }
+    if (typeof event.request.query_string === 'string') event.request.query_string = scrubText(event.request.query_string);
   }
 }
 

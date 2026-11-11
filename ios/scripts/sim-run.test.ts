@@ -3,7 +3,7 @@
 // Every test checks what a caller sees: who runs, who waits, exit codes, what reaches xcodebuild.
 // macOS only (lockf, BSD stat and date): CI runs Linux, so these run locally:
 //   npx vitest run ios/scripts/sim-run.test.ts
-import { spawn, spawnSync } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -76,7 +76,19 @@ beforeEach(() => {
   writeFileSync(join(fake, 'loads'), '1.00\n');
   setPs([]);
 });
-afterEach(() => rmSync(dir, { recursive: true, force: true }));
+// Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
+// Whatever a test leaves running (a failed assertion included) is released and stopped here.
+// Keep it that way: a waiter queued behind a holder that ignores the release file (a plain sleep)
+// would block cleanup, because bash defers SIGTERM while the wrapper waits in lockf.
+const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
+afterEach(async () => {
+  writeFileSync(join(dir, 'release'), '');
+  for (const { p, done } of live.splice(0)) {
+    if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
+    await done;
+  }
+  rmSync(dir, { recursive: true, force: true });
+});
 
 const env = (extra: Record<string, string> = {}) => ({
   ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
@@ -89,8 +101,13 @@ const start = (args: string[], extra: Record<string, string> = {}) => {
   let err = '';
   p.stderr.on('data', (d) => { err += d; });
   const done = new Promise<{ code: number | null; err: string }>((res) => p.on('exit', (code) => res({ code, err })));
-  return { p, done };
+  live.push({ p, done });
+  return { p, done, err: () => err };
 };
+/** A command that runs until release() (or the test's end). */
+const HOLD = ['sh', '-c', 'until [ -f "$0" ]; do sleep 0.1; done'];
+const hold = () => [...HOLD, join(dir, 'release')];
+const release = () => writeFileSync(join(dir, 'release'), '');
 const log = (name: string) => (existsSync(join(fake, name)) ? readFileSync(join(fake, name), 'utf8') : '');
 const info = (name: string) => readFileSync(join(home, 'holder'), 'utf8').match(new RegExp(`^${name}=(.*)$`, 'm'))?.[1] ?? '';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -126,28 +143,31 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     });
 
     it('makes a second caller wait, naming the holder, then run', async () => {
-      const a = start(['--', 'sleep', '1']);
+      const a = start(['--', ...hold()]);
       await until(busy);
       const b = start(['--', 'true']);
+      await until(() => b.err().includes('waiting up to'));
+      expect(b.p.exitCode).toBe(null);
+      release();
       const rb = await b.done;
       expect(rb.code).toBe(0);
-      expect(rb.err).toMatch(/in use by pid \d+ for \d+m\d+s \(.*\): sleep 1/);
+      expect(rb.err).toMatch(/in use by pid \d+ for \d+m\d+s \(.*\): sh -c until .*release/);
       expect((await a.done).code).toBe(0);
     });
 
     it('gives up after the wait limit with exit 75, naming the holder', async () => {
-      const a = start(['--', 'sleep', '5']);
+      const a = start(['--', ...hold()]);
       await until(busy);
       const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' });
       expect(r.status).toBe(75);
-      expect(r.stderr).toMatch(/gave up after 1s: the simulator is still in use by pid \d+ .*: sleep 5/);
-      a.p.kill('SIGTERM');
-      await a.done;
+      expect(r.stderr).toMatch(/gave up after 1s: the simulator is still in use by pid \d+ .*: sh -c until .*release/);
+      release();
+      expect((await a.done).code).toBe(0);
     });
 
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
       const pidFile = join(dir, 'child.pid');
-      const a = start(['--', 'sh', '-c', `trap "" TERM; echo $$ > ${pidFile}; while :; do sleep 0.1; done`], { HR_SIM_KILL_SECONDS: '2' });
+      const a = start(['--', 'sh', '-c', `trap "" TERM; echo $$ > ${pidFile}; while :; do sleep 0.1; done`], { HR_SIM_KILL_SECONDS: '5' });
       await until(() => existsSync(pidFile) && busy());
       const child = Number(readFileSync(pidFile, 'utf8'));
       a.p.kill('SIGTERM');
@@ -162,7 +182,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('when the wrapper is killed outright (SIGKILL), the command is stopped first, and only then is the lock free', async () => {
       const pidFile = join(dir, 'child.pid');
       const a = start(['--', 'sh', '-c', `trap "" TERM; echo $$ > ${pidFile}; while :; do sleep 0.1; done`],
-        { HR_SIM_KILL_SECONDS: '2', HR_SIM_IDLE_SECONDS: '1' });
+        { HR_SIM_KILL_SECONDS: '5', HR_SIM_IDLE_SECONDS: '1' });
       await until(() => existsSync(pidFile) && busy());
       const child = Number(readFileSync(pidFile, 'utf8'));
       a.p.kill('SIGKILL');
@@ -170,10 +190,10 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       await sleep(1000);
       expect(alive(child)).toBe(true);
       expect(busy()).toBe(true);
-      await until(() => !alive(child), 6000);
-      await until(() => !busy(), 3000);
+      await until(() => !alive(child), 15_000);
+      await until(() => !busy(), 10_000);
       // The shim arms the idle shutdown the dead wrapper could not.
-      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 8000);
+      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 15_000);
     });
 
     it('stops a run at the whole-run time limit with exit 124 and frees the lock', () => {
@@ -181,7 +201,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       const r = run(['--', 'sleep', '20'], { HR_SIM_RUN_LIMIT_SECONDS: '1' });
       expect(r.status).toBe(124);
       expect(r.stderr).toContain('stopped at the time limit (1s');
-      expect(Date.now() - t).toBeLessThan(8000);
+      expect(Date.now() - t).toBeLessThan(15_000);
       expect(busy()).toBe(false);
     });
 
@@ -205,10 +225,12 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
 
     it('a script that re-runs itself through sim-run (ui-test.sh\'s first line) runs once, under the lock', async () => {
       const script = join(dir, 'self.sh');
-      writeFileSync(script, `#!/bin/sh\n[ "\${HR_SIM_INNER:-}" = "$$" ] || exec bash ${SCRIPT} -- "$0"\necho ran >> ${dir}/count\nsleep 1\n`, { mode: 0o755 });
+      writeFileSync(script, `#!/bin/sh\n[ "\${HR_SIM_INNER:-}" = "$$" ] || exec bash ${SCRIPT} -- "$0"\necho ran >> ${dir}/count\nuntil [ -f ${dir}/release ]; do sleep 0.1; done\n`, { mode: 0o755 });
       const a = spawn(script, [], { env: env({ HR_SIM_INNER: '1' }), cwd: work });
       const done = new Promise((res) => a.on('exit', res));
+      live.push({ p: a, done });
       await until(busy);
+      release();
       await done;
       expect(readFileSync(join(dir, 'count'), 'utf8')).toBe('ran\n');
     });
@@ -216,11 +238,11 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('an old token from a finished run does not skip the lock', async () => {
       run(['--', 'true']);
       const old = info('token');
-      const a = start(['--', 'sleep', '3']);
+      const a = start(['--', ...hold()]);
       await until(busy);
       expect(run(['--', 'true'], { HR_SIM_LEASE: old, HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
-      a.p.kill('SIGTERM');
-      await a.done;
+      release();
+      expect((await a.done).code).toBe(0);
     });
   });
 
@@ -327,7 +349,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('shuts the device down after the idle time with no holder, and the sleeper never holds the lock', async () => {
       run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '2' });
       expect(busy()).toBe(false);
-      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 6000);
+      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 15_000);
     });
 
     it('a probe holding the lock for a moment when the sleeper wakes does not cancel it', async () => {
@@ -335,24 +357,27 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       // The probe holds the lock from before the sleeper wakes (1 s) until 2 s; the sleeper waits it out.
       const probe = spawn('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9 && sleep 2', '_', join(home, 'lock')]);
       await until(busy);
-      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 7000);
+      await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 15_000);
       await new Promise((res) => (probe.exitCode !== null ? res(null) : probe.on('exit', res)));
     });
 
     it('leaves it booted when another run ended since', async () => {
-      run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
+      // The second run must end before the first one's sleeper wakes: 3 s leaves room for a slow start.
+      run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '3' });
       run(['--', 'true']);
-      await sleep(2000);
+      await sleep(4500);
       expect(log('xcrun.log')).not.toContain('shutdown');
     });
 
     it('leaves it booted while a run holds it', async () => {
-      run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
-      const a = start(['--', 'sleep', '8']);
-      await sleep(7000);
+      // The holder must take the lock before the sleeper wakes (3 s); the sleeper then waits 5 s for it.
+      run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '3' });
+      const a = start(['--', ...hold()]);
+      await sleep(9000);
+      expect(busy()).toBe(true);
       expect(log('xcrun.log')).not.toContain('shutdown');
-      a.p.kill('SIGTERM');
-      await a.done;
+      release();
+      expect((await a.done).code).toBe(0);
     });
   });
 
@@ -455,7 +480,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.stderr).toContain('waiting (load guard)');
       expect(r.stderr).toMatch(/gave up after 4s: the simulator is still in use/);
       expect(took).toBeGreaterThanOrEqual(3000);
-      expect(took).toBeLessThan(6000);
+      // A lock wait of 4 s more would take at least 3 + 4 = 7 s.
+      expect(took).toBeLessThan(7000);
       a.p.kill('SIGTERM');
       await a.done;
     });
@@ -551,21 +577,31 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
 
   describe('status', () => {
     it('names the holder and kills nothing', async () => {
-      const a = start(['--', 'sleep', '2']);
+      const a = start(['--', ...hold()]);
       await until(busy);
       const r = run(['status']);
       expect(r.status).toBe(0);
-      expect(r.stdout).toMatch(/Holder: in use by pid \d+ .*: sleep 2/);
+      expect(r.stdout).toMatch(/Holder: in use by pid \d+ .*: sh -c until .*release/);
       expect(r.stdout).toContain('Simulator-runtime processes:');
+      expect(busy()).toBe(true);
+      release();
       expect((await a.done).code).toBe(0);
     });
 
     it('lists the demo device, its age and the command to shut it down', () => {
       run(['--', 'true']);
       writeFileSync(join(fake, 'xcrun'), XCRUN.replace('echo "== Devices =="', `echo "== Devices =="; echo "    HR Demo iPhone (${OTHER}) (Booted) "`), { mode: 0o755 });
-      writeFileSync(join(home, 'demo-booted'), String(Math.floor(Date.now() / 1000) - 125));
+      const before = Math.floor(Date.now() / 1000);
+      writeFileSync(join(home, 'demo-booted'), String(before - 125));
       const r = run(['status']);
-      expect(r.stdout).toContain(`Demo device: HR Demo iPhone (${OTHER}) Booted for 2m5s`);
+      const after = Math.floor(Date.now() / 1000);
+      // The script reads its own clock after several fake xcrun calls, so under load the age can run
+      // past 125 s by up to the time status took.
+      const m = r.stdout.match(new RegExp(`Demo device: HR Demo iPhone \\(${OTHER}\\) Booted for (\\d+)m(\\d+)s`));
+      expect(m).not.toBeNull();
+      const age = Number(m![1]) * 60 + Number(m![2]);
+      expect(age).toBeGreaterThanOrEqual(125);
+      expect(age).toBeLessThanOrEqual(125 + (after - before) + 1);
       expect(r.stdout).toContain(`xcrun simctl shutdown ${OTHER}`);
     });
   });

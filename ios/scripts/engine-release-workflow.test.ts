@@ -13,7 +13,7 @@ import { bridgeId } from './build-engine.mjs';
 import { canonicalManifest, publicKeyOf, verifyManifest } from './engine-signing.mjs';
 
 type Step = { name?: string; uses?: string; run?: string; env?: Record<string, string>; with?: Record<string, unknown> };
-type Job = { if?: string; needs?: string | string[]; permissions?: Record<string, string>; environment?: string; steps: Step[]; env?: Record<string, string>; outputs?: Record<string, string> };
+type Job = { if?: string; needs?: string | string[]; permissions?: Record<string, string>; environment?: string; concurrency?: unknown; steps: Step[]; env?: Record<string, string>; outputs?: Record<string, string> };
 type Workflow = { on: any; permissions: unknown; concurrency: unknown; jobs: Record<string, Job> };
 
 const repo = join(__dirname, '..', '..');
@@ -66,7 +66,9 @@ describe('engine-release workflow (US-25 AC18)', () => {
     expect(cond).toContain("github.event.workflow_run.conclusion == 'success'");
     expect(cond).toContain("github.event.workflow_run.event == 'workflow_dispatch'");
     expect(cond).toContain('github.event.workflow_run.head_repository.full_name == github.repository');
-    expect(wf.concurrency).toBe('engine-release');
+    // Only sign queues; a newer run's sign replaces one still waiting for approval.
+    expect(wf.concurrency).toBeUndefined();
+    expect(wf.jobs.sign.concurrency).toEqual({ group: 'engine-release-sign', 'cancel-in-progress': true });
     // A re-issue runs verify even when build said unchanged (it then fails with no artifact).
     expect(wf.jobs.verify.if).toBe("needs.build.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.reissue)");
   });
@@ -75,11 +77,21 @@ describe('engine-release workflow (US-25 AC18)', () => {
     expect(wf.permissions).toEqual({});
     expect(wf.jobs.build.permissions).toEqual({ contents: 'read' });
     expect(wf.jobs.verify.permissions).toEqual({ contents: 'read' });
+    expect(wf.jobs.fresh.permissions).toEqual({ contents: 'read' });
+    expect(wf.jobs.fresh.environment).toBeUndefined();
     expect(wf.jobs.sign.permissions).toEqual({ contents: 'write' });
     expect(wf.jobs.sign.environment).toBe('engine-signing');
-    expect(wf.jobs.sign.needs).toBe('verify');
-    expect(wf.jobs.sign.if).toBeUndefined();
-    for (const job of ['build', 'verify']) expect(JSON.stringify(wf.jobs[job])).not.toContain('secrets.');
+    // US-25 AC18a: a stale run fails `fresh`; a partial re-run keeps fresh's old attempt; a
+    // branch dispatch is not main. None of them joins the sign queue.
+    expect(wf.jobs.fresh.needs).toBe('verify');
+    expect(wf.jobs.fresh.outputs).toEqual({ attempt: '${{ github.run_attempt }}' });
+    expect(wf.jobs.sign.needs).toEqual(['verify', 'fresh']);
+    expect(wf.jobs.sign.if).toBe("github.ref == 'refs/heads/main' && needs.fresh.outputs.attempt == github.run_attempt");
+    // No status function, so GitHub adds success(): a failed or skipped fresh skips sign.
+    expect(wf.jobs.sign.if).not.toMatch(/\b(success|always|failure|cancelled)\(/);
+    // Both read main as it is now, not the built commit.
+    for (const job of ['fresh', 'sign']) expect(wf.jobs[job].steps.find((s) => s.uses?.startsWith('actions/checkout@'))!.with!.ref).toBe('main');
+    for (const job of ['build', 'verify', 'fresh']) expect(JSON.stringify(wf.jobs[job])).not.toContain('secrets.');
   });
 
   it('pins every action to a full commit SHA', () => {
@@ -108,7 +120,11 @@ describe('engine-release workflow (US-25 AC18)', () => {
     const inputs = 'packages/health-core ios/engine ios/scripts ios/HealthRoadmap.xcodeproj/project.pbxproj package.json package-lock.json \':(glob)**/.npmrc\' \':(glob)**/tsconfig*\'';
     expect(runs('verify')).toContain(`git diff --quiet "$SHA" origin/main -- ${inputs}`);
     expect(step('sign', 'Main has not moved')).toContain(`git diff --quiet "$BUILT_SHA" HEAD -- ${inputs}`);
-    for (const job of ['verify', 'sign']) expect(runs(job)).toContain('main moved since this Deploy; dispatch Engine release again');
+    expect(step('fresh', "This run's engine")).toContain(`git diff --quiet "$BUILT_SHA" HEAD -- ${inputs}`);
+    for (const job of ['verify', 'fresh', 'sign']) expect(runs(job)).toContain('main moved since this Deploy; dispatch Engine release again');
+    // US-25 AC18a: a stale `fresh` fails closed; it outputs nothing a later job could misread.
+    expect(step('fresh', "This run's engine")).toMatch(/main moved since this Deploy; dispatch Engine release again"; exit 1/);
+    expect(runs('fresh')).not.toContain('GITHUB_OUTPUT');
   });
 
   it('the summary diffs from the commit the last release was built from, unfiltered and size-capped', () => {
@@ -125,7 +141,7 @@ describe('engine-release workflow (US-25 AC18)', () => {
   });
 
   it('every regex guard fails closed whatever the shell (bash 3.2 ignores set -e on [[ ]])', () => {
-    for (const job of ['verify', 'sign']) for (const line of runs(job).split('\n')) if (/^\s*\[\[/.test(line)) expect(line).toMatch(/\]\] \|\| exit 1$/);
+    for (const job of ['verify', 'fresh', 'sign']) for (const line of runs(job).split('\n')) if (/^\s*\[\[/.test(line)) expect(line).toMatch(/\]\] \|\| exit 1$/);
   });
 
   describe('the sign check step, on fixtures', () => {

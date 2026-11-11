@@ -20,12 +20,9 @@ struct BloodPressureSheet: View {
     @State private var systolic = ""
     @State private var diastolic = ""
     @State private var day = Date.now
-    @State private var message: String?
-    @State private var asking = false
-    /// The day's active rows when the "replace it?" prompt was shown.
-    @State private var held: [String] = []
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): held while it lands and while the day's rows are read; asking
+    /// holds the day's active rows the "replace it?" prompt is about.
+    @State private var state: SheetSave.State<[String]> = .editing(message: nil)
     @FocusState private var focus: Field?
 
     var body: some View {
@@ -39,7 +36,7 @@ struct BloodPressureSheet: View {
                         Text("mmHg").font(.title3).foregroundStyle(.secondary)
                     }
                 } footer: {
-                    if let message {
+                    if let message = state.message {
                         Text(message).foregroundStyle(.red)
                     } else if let correcting {
                         Text("Now \(correcting.value) mmHg")
@@ -52,19 +49,19 @@ struct BloodPressureSheet: View {
             .navigationTitle(correcting.map { "Correct \(DayText.short($0.day))" } ?? "Blood pressure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save(replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil || saving)
+                    Button("Save") { save(.tapped, replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil || state.busy)
                 }
             }
-            .confirmationDialog("This day already has a blood pressure", isPresented: $asking, titleVisibility: .visible) {
-                Button("Replace it") { save(replace: true, seen: held) }
-            } message: {
+            .confirmationDialog("This day already has a blood pressure", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible, presenting: state.held) { held in
+                Button("Replace it") { save(.confirmed(held), replace: true, seen: held) }
+            } message: { _ in
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focus = .systolic }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
         .pinsRecord()
     }
 
@@ -78,7 +75,7 @@ struct BloodPressureSheet: View {
                 .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                 .monospacedDigit()
                 .focused($focus, equals: field)
-                .onChange(of: text.wrappedValue) { message = nil }
+                .onChange(of: text.wrappedValue) { SheetSave.send(&state, .wordsStale) }
                 .accessibilityLabel(label)
         }
     }
@@ -89,20 +86,27 @@ struct BloodPressureSheet: View {
         return (s, d)
     }
 
-    private func save(replace: Bool, seen: [String]) {
-        guard let pair else { return }
+    /// A save closes the sheet.
+    static let closes = true
+    /// A refused first save asks after reading the day's rows; a refused replace shows its words.
+    static func asks(replace: Bool) -> SheetSave.Asks<[String]> { replace ? .never : .findRows }
+
+    /// `claim` (a tap on Save, or "Replace it") moves the state to saving, or the tap does nothing.
+    private func save(_ claim: SheetSave.Event<[String]>, replace: Bool, seen: [String]) {
+        guard let pair, SheetSave.send(&state, claim) else { return }
         let when = correcting?.day ?? DayText.iso(day)
         let edit = RecordEdit.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)
-        SheetSave.run($saving, { saved(await store.apply(edit, as: self.seen)) }) { result in
-            if case .refused(_, .some) = result, !replace {
+        Task {
+            let result = saved(await store.apply(edit, as: self.seen))
+            SheetSave.send(&state, .landed(result, closes: Self.closes, asks: Self.asks(replace: replace)))
+            switch state {
+            case .findingRows:
                 // The rows the prompt is about, read from the record as it is now (off the main
                 // thread); a replace naming rows that moved since is refused (Codex R1).
-                Task {
-                    held = await store.chart(for: MyData.bloodPressure)?.history.rows.first { $0.isActive && $0.day == when }?.pairIds ?? []
-                    asking = true
-                }
-            } else {
-                SheetSave.close(result, dismiss, $message)
+                let rows = await store.chart(for: MyData.bloodPressure)?.history.rows.first { $0.isActive && $0.day == when }?.pairIds
+                SheetSave.send(&state, .rowsFound(rows))
+            case .done: dismiss()
+            default: break
             }
         }
     }
