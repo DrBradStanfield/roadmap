@@ -23,10 +23,12 @@ vi.mock('../lib/roadmap-data', () => ({
   getBackendKind: () => 'local',
 }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 import { useErase } from './useErase';
 import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 
 const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
@@ -271,6 +273,40 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(doors.forget).toHaveBeenCalledTimes(1);
     expect(result.current.shownErase).toBe('e2');
     expect(alerts).toEqual([ERASE_FAILED, 'Not saved']);
+  });
+
+  it('US-16 AC2f: an erase whose write throws ends, unlocked, and says it failed', async () => {
+    const { doors, result } = setup();
+    const thrown = new Error('network');
+    store.next = () => Promise.reject(thrown);
+    vi.mocked(Sentry.captureException).mockClear();
+    await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureException).toHaveBeenCalledWith(new Error('Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
+    expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).not.toBe(thrown); // a fresh error: no provider text
+    expect(result.current.erasing).toBe(false);
+    expect(doors.forget).not.toHaveBeenCalled();
+    expect(alerts).toEqual([ERASE_FAILED]);
+  });
+
+  it('US-16 AC2f: a second erase asked while one writes is refused, asks nothing and leaves the lock to the first', async () => {
+    const { result } = setup();
+    const confirm = vi.fn(() => true);
+    vi.stubGlobal('confirm', confirm);
+    let finish!: () => void;
+    const next = vi.fn(() => new Promise<Record<string, unknown>>(r => { finish = () => { store.identity = 'e2'; r({ success: true, chatErased: true }); }; }));
+    store.next = next;
+    let first!: Promise<boolean>;
+    let second!: Promise<boolean>;
+    act(() => { first = result.current.eraseAll(); second = result.current.eraseAll(); });
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(await second).toBe(false);
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(result.current.erasing).toBe(true); // the form stays refused (fieldset disabled={isDeleting})
+    expect(alerts).toEqual([]);
+    await act(async () => { finish(); expect(await first).toBe(true); });
+    expect(result.current.erasing).toBe(false);
+    expect(alerts).toEqual([ERASE_DONE]);
   });
 
   it('a cancelled confirm erases nothing', async () => {
