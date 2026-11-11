@@ -1386,7 +1386,7 @@ describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 12
 
   // One row per report status, each report holding one `final` result, on an empty record.
   it.each([
-    ['registered', { ...NONE, added: 1 }],
+    ['registered', { ...NONE, notRead: 1 }],
     ['partial', { ...NONE, added: 1 }],
     ['preliminary', { ...NONE, added: 1 }],
     ['final', { ...NONE, added: 1 }],
@@ -1410,6 +1410,19 @@ describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 12
       expect(counts).toEqual({ ...NONE, notRead: 1 });
       expect(active(file)).toEqual([['ldl', 4.6]]);
     }
+  });
+
+  it('a registered report lands nothing; the same report later final, in a newer version, lands its result once', () => {
+    const registered = report(panel([ldl()], { status: 'registered' }));
+    const final = report(panel([ldl()], { meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    const first = run(empty(), [registered]);
+    expect(first.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(first.file.labValues).toEqual([]);
+    const second = run(first.file, [final], LATER);
+    expect(second.counts).toEqual({ ...NONE, added: 1 });
+    // Both again: the older registered copy is stale (AC5) and the final one known, so nothing lands twice.
+    expect(run(second.file, [registered, final], LATER).counts).toEqual({ ...NONE, alreadyInRecord: 2 });
+    expect(active(second.file)).toEqual([['ldl', 4.6]]);
   });
 
   it('a withdrawn report with no results withdraws nothing (re-check R5)', () => {

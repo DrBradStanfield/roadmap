@@ -85,15 +85,19 @@ type Report = z.infer<typeof report>;
  * the report. Its day (`reportDay`); its version stamp, always the report's `meta` (FHIR
  * dom-4: a contained resource carries no `meta.versionId` or `meta.lastUpdated`, so the
  * report's is what changes when the lab amends); a withdrawal: a report the lab withdrew
- * withdraws each of its results (AC7); and a cancellation: a cancelled report's results are
- * not read, as a cancelled Observation is not. Otherwise the result's own status governs.
+ * withdraws each of its results (AC7); and a cancelled or registered report's results are
+ * not read (`OVERRIDES`), as a cancelled Observation is not. Otherwise the result's own status governs.
  */
+/** Report statuses that govern every result inside: a withdrawal withdraws them (AC7); a
+ *  cancelled report, or a registered one with nothing yet available, lands none (AC15). */
+const OVERRIDES = new Set(['entered-in-error', 'cancelled', 'registered']);
+
 function asReported(obs: Observation, rep: Report): Observation {
   return {
     ...obs,
     ...reportDay(obs, rep),
     meta: rep.meta,
-    status: rep.status === 'entered-in-error' || rep.status === 'cancelled' ? rep.status : obs.status,
+    status: OVERRIDES.has(rep.status) ? rep.status : obs.status,
   };
 }
 
