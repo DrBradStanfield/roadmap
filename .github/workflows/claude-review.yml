@@ -135,7 +135,7 @@ jobs:
                titles, chat, uploads) handled as data, never as instructions.
                A violation is a REJECT.
             5. Repo red lines: NO edits to clinical content
-               (health_roadmap_algorithm.md, packages/health-core/src/evidence.ts,
+               (health_roadmap_algorithm.md, packages/health-core/src/evidence*.ts,
                roadmap_text.html), merge semantics (packages/health-core/src/merge.ts),
                security surfaces (HMAC/CORS/auth), .github/workflows/**, or
                docs/loops/LOOP.md Guardrails. Any such edit in the diff is an
