@@ -49,19 +49,39 @@ const EXTRA_NAMES = EXTRA_METRIC_NAMES.map((name) => foldLpa(name).match(FEEDBAC
  * vitamin, US-73 AC8), "a1c", "bmi" and "height" are names here too (US-32 AC9a).
  */
 const METRIC_WORDS = new Set([...metricNameWords(2), ...EXTRA_NAMES.filter((name) => name.length === 1).flat()]);
-/** A number typed straight after a word ("ldl140", "a1c7.2"); the word ends in a letter. */
-const GLUED_NUMBER = /^([a-z][a-z0-9]*[a-z])(\d+(?:[.,]\d+)?)$/;
+/** The number a word ends in, with any comma or dot just before it ("140", ",140", "3.2"). */
+const TRAILING_NUMBER = /^[.,]?(\d+(?:[.,]\d+)?)$/;
+/** The longest name the guard reads, so a cut is looked for only that far into a word. */
+const LONGEST_NAME = Math.max(...[...METRIC_WORDS].map((name) => name.length));
 
 /**
- * The words of `text`, with a number glued after a name split off as its value
- * ("ldl140" is "ldl 140", US-32 AC9a). A name that ends in digits stays whole
- * ("igf1", "b12"), and so does a word that is no name ("tab2").
+ * A word that is not itself a name and ends in a number, read as two words:
+ * split after the longest name it starts with that leaves only a number after
+ * it ("b12300" is "b12 300", "ldl,140" is "ldl 140"), or else after its last
+ * letter ("pressure140" is "pressure 140", "tab2" is "tab 2"), with a comma or
+ * dot at the split dropped (US-32 AC9a). A name keeps its digits ("igf1",
+ * "b12"). The scan looks no further than the longest name, so a long run stays
+ * linear (US-32 AC58).
+ */
+function splitTrailingNumber(word: string): string[] {
+  // A word holds only a-z, digits and a comma or dot, so a letter is anything from "a" up.
+  let end = word.length;
+  while (end > 0 && word[end - 1] < 'a') end--;
+  const number = end > 0 && !METRIC_WORDS.has(word) && TRAILING_NUMBER.exec(word.slice(end));
+  if (!number) return [word];
+  for (let cut = LONGEST_NAME; cut > end; cut--) {
+    const value = METRIC_WORDS.has(word.slice(0, cut)) && TRAILING_NUMBER.exec(word.slice(cut));
+    if (value) return [word.slice(0, cut), value[1]];
+  }
+  return [word.slice(0, end), number[1]];
+}
+
+/**
+ * The words of `text`, with the number a word ends in split off as its own
+ * word (US-32 AC9a, `splitTrailingNumber`).
  */
 function feedbackWords(text: string): string[] {
-  return (foldLpa(text).match(FEEDBACK_WORD) ?? []).flatMap((word) => {
-    const glued = GLUED_NUMBER.exec(word);
-    return glued && !METRIC_WORDS.has(word) && METRIC_WORDS.has(glued[1]) ? [glued[1], glued[2]] : [word];
-  });
+  return (foldLpa(text).match(FEEDBACK_WORD) ?? []).flatMap(splitTrailingNumber);
 }
 /** A number and nothing else — what a metric name next to it turns into a value. */
 const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;

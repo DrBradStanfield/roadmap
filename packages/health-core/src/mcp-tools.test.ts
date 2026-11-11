@@ -1298,11 +1298,13 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'a1c7.2 is wrong',
       'my a1c7.2 shows',
       'hba1c7.2 shows',
+      // "apo b" is a name of two words in the Sentry scrub's list, so the reach runs from its b.
+      'apo b is at 95',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
     // The same words with no number are what a bug report is made of; a name
-    // that ends in a digit keeps it; digits glued to a word that is no name stay a word.
+    // that ends in a digit keeps it.
     for (const detail of [
       'the blood pressure chart is missing',
       'the plan page lost its height after the update',
@@ -1310,10 +1312,52 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'the a1c and bmi rows are in the wrong order',
       'the igf1 row is missing',
       'the omega3 row is missing',
-      'ldl in tab2 is blank',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
+  });
+
+  // US-32 AC9a, the glued split: a number at the end of a word that is not
+  // itself a name is its own word. AC9a's own examples, and the five forms Brad
+  // ruled should be refused too (ft415, b12300, blood pressure140/90, vitamin
+  // d50, ldl,140): a refused report is reworded in a turn, a filed one is public.
+  it('reads a number at the end of a word that is not itself a name as its own word', () => {
+    const outcome = (detail: string) => {
+      const result = reportFeedback({ ...GOOD, detail }, NOW);
+      return result.status === 'rejected' ? result.reason : result.status;
+    };
+    const refused = [
+      'igf1200 is missing',
+      'total cholesterol200 is wrong',
+      'the ldl2 tab is blank',
+      'the alpha2 build broke the plan',
+      'ft415 is missing',
+      'b12300 is missing',
+      'my blood pressure140/90 shows as high',
+      'my vitamin d50 is low',
+      'ldl,140 is wrong',
+      'ldl.140 is wrong',
+      // The cost: digits glued to a word that is no name are a number too, and
+      // a name that ends in a digit gives up the digits after it (t3 and 2).
+      'ldl in tab2 is blank',
+      'the t32 column is blank',
+    ];
+    expect(Object.fromEntries(refused.map((d) => [d, outcome(d)])))
+      .toEqual(Object.fromEntries(refused.map((d) => [d, 'health-value'])));
+    // A whole name keeps its digits; a number inside a longer name is that name;
+    // a glued number with no name near it files.
+    const filed = [
+      'the pyridoxal5 phosphate row is missing',
+      'the igf1 row is missing',
+      'the b12 row is blank',
+      'the ft4 row is missing',
+      'tab2 has 3 rows',
+      'on ios18 the plan is blank',
+      'I clicked save,2 times',
+      'the ldl,hdl rows are swapped',
+    ];
+    expect(Object.fromEntries(filed.map((d) => [d, outcome(d)])))
+      .toEqual(Object.fromEntries(filed.map((d) => [d, 'ok'])));
   });
 
   it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {
