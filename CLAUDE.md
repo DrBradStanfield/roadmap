@@ -47,7 +47,7 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 ## Clinical Content — three-file sync (HARD RULE)
 
 [health_roadmap_algorithm.md](health_roadmap_algorithm.md) (thresholds,
-formulas, suggestion rules) + `packages/health-core/src/evidence.ts` (reasons,
+formulas, suggestion rules) + `packages/health-core/src/evidence*.ts` (reasons,
 guideline tags, DOIs) + `roadmap_text.html` (user-facing text + citations)
 **must stay in sync** — any clinical change touches all three or explains why
 not. Citation numbering/cross-refs break silently on partial edits: verify
