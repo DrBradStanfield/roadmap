@@ -141,6 +141,12 @@ describe('calculateAge', () => {
     expect(calculateAge(1990, 6, new Date(2026, 4, 1))).toBe(35);
     expect(calculateAge(1990, 6, new Date(2026, 5, 1))).toBe(36);
   });
+
+  // A2-1: guards the premise that ages are whole years, which the screening table's age-band boundaries
+  // (breast `age < 45`, colorectal `age <= 75`) are written for.
+  it('returns a whole number of years on any day', () => {
+    for (let m = 1; m <= 12; m++) for (const day of [1, 15, 28]) expect(Number.isInteger(calculateAge(1981, m, new Date(2026, m - 1, day, 23, 59)))).toBe(true);
+  });
 });
 
 // US-07 AC6 (2026-10-14): the adults-only gate. Amended 2026-10-14: a missing
