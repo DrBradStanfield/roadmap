@@ -291,7 +291,12 @@ A signature means "the key holder approved this bundle", nothing more.
   AC12): `documentOriginal(id)`, the first that answers a Promise, of an ArrayBuffer; Swift reaches it
   through `optionalCall`'s async form (`read:`), and `bridge.test.ts` freezes its arguments and checks it
   refuses with no cloud open (its bytes answer is pinned in `cloud.test.ts`). Beside it, a sixth
-  optional field: `screenJson`'s `myData.documents`.
+  optional field: `screenJson`'s `myData.documents`. Third (2026-11-11, shared upload PR 3, US-52 AC7):
+  `uploadVerdictsJson(request)`, health-core `upload-rules.ts` (`UPLOAD_LIMITS`, `fileVerdict`,
+  `zipMemberVerdict`) for the files and ZIP members one read step names; `LabFileReader` asks it through
+  `HealthEngine.uploadRules` and keeps its Swift rules when the door is absent (`UploadRules.swift`;
+  lead U14 deletes them once the engine floor guarantees the door). No floor bump: an older app never
+  calls it and keeps its Swift rules, which answer the same today.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and

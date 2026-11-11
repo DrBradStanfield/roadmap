@@ -44,7 +44,7 @@ In claude.ai, open Settings, then Connectors, then Add custom connector. Name it
 
 ### ChatGPT
 
-You need a paid ChatGPT plan, on the web. OpenAI has not published our app yet, so today you add it in developer mode: switch on developer mode, create the app with the address above, and sign in with Dropbox or Google Drive. ChatGPT asks you to pick the app again in each new chat. The steps, and what to do when one goes wrong, are in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
+You need a paid ChatGPT plan, on the web. OpenAI does not list health apps in ChatGPT at present, so you add it in developer mode: switch on developer mode, create the app with the address above, and sign in with Dropbox or Google Drive. ChatGPT asks you to pick the app again in each new chat. The steps, and what to do when one goes wrong, are in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
 You authorize the connector once. After 90 days it asks again.
 

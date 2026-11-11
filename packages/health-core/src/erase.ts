@@ -84,3 +84,9 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   }
   return file;
 }
+
+/** What the chat shows when a reply's record was erased since its question
+ *  was asked: none of its edits apply (US-16 AC2a, US-67 AC5). The web reads
+ *  it here; the iPhone keeps its own copy (`ChatEdits.moved`) until a later
+ *  change moves it to this one. */
+export const RECORD_CHANGED_SINCE_ASKED = 'Not saved: your record changed since you asked.';

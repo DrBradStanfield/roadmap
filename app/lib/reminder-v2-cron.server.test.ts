@@ -1,12 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // US-28 AC2 at the caller: a lock-acquire REJECTION leaves the day unmarked
-// so the machine retries on the next hourly tick; a `false` (lost the race /
-// permanent misconfig) still ends its day. reminder_v2_cron is the caller
+// so the machine retries on the next hourly tick; a 'closed' answer (the day
+// is not this machine's, or a permanent misconfig) still ends its day. reminder_v2_cron is the caller
 // whose acquire sat OUTSIDE its try/catch — the one Sentry showed skipping
 // (JAVASCRIPT-REMIX-68, 2026-08-28 08:11Z).
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) }));
+// The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
+// today or later skips the row. It outlives a module reload, as the column does.
+const stamps = vi.hoisted(() => new Map<string, string>());
+vi.mock('./reminder-v2-day-stamp.server', () => ({
+  stampReminderDay: vi.fn(async (id: string, today: string) => {
+    const at = stamps.get(id);
+    if (at !== undefined && at >= today) return 'attempted-today';
+    stamps.set(id, today);
+    return 'stamped';
+  }),
+}));
 vi.mock('./email.server', () => ({
   buildReminderV2EmailHtml: vi.fn(() => '<html></html>'),
   sendReminderEmail: vi.fn(),
@@ -22,12 +33,15 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 
 const HOUR_MS = 60 * 60 * 1000;
+/** The fence (US-23 AC15): this pass keeps its lock. */
+const held = async () => true;
 
 // vi.resetModules gives the cron a fresh module graph (a fresh day state);
 // mock instances PERSIST across resets, so import them from the graph and
 // reset their state here rather than trusting top-level imports.
 async function loadCron() {
   vi.resetModules();
+  stamps.clear();
   // Import under NODE_ENV=test so the module's import-time self-start is a
   // no-op, THEN pose as production so the explicit start in the test runs.
   const cron = await import('./reminder-v2-cron.server');
@@ -68,6 +82,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
 
   async function loadForSend() {
     vi.resetModules();
+    stamps.clear();
     const cron = await import('./reminder-v2-cron.server');
     const { getOptinsBatch } = await import('./reminder-v2.server');
     const { sendReminderEmail } = await import('./email.server');
@@ -86,7 +101,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
     const { cron, sendMock, eventMock } = await loadForSend();
     sendMock.mockResolvedValue(true);
 
-    const sent = await cron.processV2Reminders('2026-08-30');
+    const sent = await cron.processV2Reminders('2026-08-30', held);
 
     expect(sent).toBe(1);
     expect(eventMock).toHaveBeenCalledTimes(1);
@@ -98,7 +113,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
     const { cron, sendMock, eventMock } = await loadForSend();
     sendMock.mockResolvedValue(false);
 
-    const sent = await cron.processV2Reminders('2026-08-30');
+    const sent = await cron.processV2Reminders('2026-08-30', held);
 
     expect(sent).toBe(0);
     expect(eventMock).not.toHaveBeenCalled();
@@ -126,7 +141,7 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
     stop = cron.stopReminderV2Cron;
     lockMock
       .mockRejectedValueOnce(new Error('cron lock acquire failed (reminder_v2_cron)'))
-      .mockResolvedValue(true);
+      .mockResolvedValue('won');
 
     cron.startReminderV2Cron();
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: acquire throws → day NOT marked done
@@ -138,13 +153,13 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
     expect(optinsMock).toHaveBeenCalled();
   });
 
-  it('does not re-attempt the same day after losing the race (false)', async () => {
+  it('does not re-attempt the same day after a closed answer', async () => {
     const { cron, lockMock, optinsMock } = await loadCron();
     stop = cron.stopReminderV2Cron;
-    lockMock.mockResolvedValue(false);
+    lockMock.mockResolvedValue('closed');
 
     cron.startReminderV2Cron();
-    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: lost → day marked done
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: closed → day marked done
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 2: skips, the day is done
     expect(lockMock).toHaveBeenCalledTimes(1);
     expect(optinsMock).not.toHaveBeenCalled();
@@ -159,7 +174,7 @@ describe('reminder v2 cron — tombstone retention', () => {
     const { purgeTombstones } = await import('./reminder-v2.server');
     vi.mocked(purgeTombstones).mockClear().mockResolvedValue(3);
 
-    await cron.processV2Reminders('2026-08-30');
+    await cron.processV2Reminders('2026-08-30', held);
     expect(purgeTombstones).toHaveBeenCalledTimes(1);
   });
 
@@ -170,7 +185,7 @@ describe('reminder v2 cron — tombstone retention', () => {
     vi.mocked(purgeTombstones).mockClear().mockRejectedValue(new Error('PGRST303'));
     vi.mocked(Sentry.captureException).mockClear();
 
-    await expect(cron.processV2Reminders('2026-08-30')).resolves.toBe(0);
+    await expect(cron.processV2Reminders('2026-08-30', held)).resolves.toBe(0);
     expect(Sentry.captureException).toHaveBeenCalled();
   });
 });
@@ -204,7 +219,7 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
     vi.mocked(purgeTombstones).mockReset().mockResolvedValue(0);
     loaded.optinsMock.mockReset();
     // The lock row names this machine for today, so its own re-acquire wins.
-    loaded.lockMock.mockResolvedValue(true);
+    loaded.lockMock.mockResolvedValue('won');
     return { ...loaded, sendMock };
   }
 
@@ -345,10 +360,10 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
       .mockResolvedValueOnce([dueRow]).mockResolvedValueOnce([]) // a stalled 08-28 pass resumes
       .mockResolvedValueOnce([dueRow]).mockResolvedValue([]); // 08-29 retry, last_sent never stamped
 
-    await cron.processV2Reminders('2026-08-29');
-    await cron.processV2Reminders('2026-08-28');
+    await cron.processV2Reminders('2026-08-29', held);
+    await cron.processV2Reminders('2026-08-28', held);
     const before = sendMock.mock.calls.length;
-    await cron.processV2Reminders('2026-08-29');
+    await cron.processV2Reminders('2026-08-29', held);
     expect(sendMock).toHaveBeenCalledTimes(before);
   });
 });

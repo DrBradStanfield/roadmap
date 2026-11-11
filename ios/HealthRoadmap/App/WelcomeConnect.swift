@@ -3,7 +3,7 @@
 /// the launch open still running, and Cancel never leaves an old failure behind.
 /// Residual: WelcomeView's wiring (its onChange, openRecord on showSheetAndOpen, the empty
 /// connect callback) has no unit test: the project has no view-inspection library and the
-/// UI tests have no fake cloud (state lead M7).
+/// UI tests have no fake cloud (state lead S14).
 enum WelcomeConnect {
     enum Phase: Equatable {
         /// No cloud connected: the person picks one.

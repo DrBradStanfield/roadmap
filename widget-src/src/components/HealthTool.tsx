@@ -533,7 +533,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     if (isMobileRef.current) selectTab('health');
     setSettingsOpen(false);
   }, [selectTab]);
-  const { handleProposeEdit, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
+  const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
     medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
     medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
   });
@@ -702,7 +702,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     isLoggedIn: true,
     guestInputs: readChatContext,
     prefetchedData: prefetchFor(chatPrefetch, epoch),
-    onProposeEdit: handleProposeEdit,
+    onProposeEdit: chatEditTarget,
   };
 
   // US-62 AC16, AC34: on a phone, three panels, My health, Chat and Account, and a bottom tab
@@ -717,7 +717,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const healthForm = <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
   const chat = (
     <div className="health-tool-chat">
-      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={handleProposeEdit}/>
+      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={chatEditTarget}/>
     </div>
   );
   return (

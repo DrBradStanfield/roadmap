@@ -11,6 +11,7 @@
  * throttle, and the profile save can be made to refuse once.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
 import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -59,8 +60,8 @@ const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEd
 vi.mock('./ChatEmbed', async () => {
   const { useEffect } = await import('react');
   return {
-    ChatEmbed: ({ onProposeEdit, muted }: { onProposeEdit: (edits: ProposedEdit[]) => void; muted: boolean }) => {
-      chat.proposeEdit = onProposeEdit;
+    ChatEmbed: ({ onProposeEdit, muted }: { onProposeEdit: ChatEditTarget; muted: boolean }) => {
+      chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
       useEffect(() => { if (!muted) chat.unmuted?.(); }, [muted]);
       return null;
     },
