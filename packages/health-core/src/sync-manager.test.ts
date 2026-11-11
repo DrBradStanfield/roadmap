@@ -413,6 +413,47 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     }
   });
 
+  /**
+   * One save, two landed writes: the first verify sees a lost update, so save()
+   * writes again; the second verify then fails. `second` is the second write's warning.
+   */
+  async function twoLandedWrites(second: string | undefined) {
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    let reads = 0;
+    let writes = 0;
+    adapter.read = async (...args) => {
+      reads++;
+      if (reads === 2) throw new LostUpdateError('synthetic lost update');
+      if (reads === 4) throw new StorageError('synthetic read failure', 'synthetic hint');
+      return read(...args);
+    };
+    adapter.write = async (...args) => {
+      const landed = await write(...args);
+      const note = ++writes === 1 ? warning : second;
+      return { ...landed, ...(note ? { warning: note } : {}) };
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(writes).toBe(2);
+    return describeStorageFailure(failure, 'Memory');
+  }
+
+  it('drops an earlier attempt’s warning once a later write lands clean: its cleanup ran (US-31 AC8a)', async () => {
+    const told = await twoLandedWrites(undefined);
+    expect(told.hint.startsWith('Earlier in this save:')).toBe(false);
+    expect(told.hint).not.toContain('cleanup did not finish');
+    expect(told.hint).toBe('The change may or may not have landed. Read the record again before trying it a second time.');
+  });
+
+  it('carries the latest landed write’s warning, not an earlier one, when both warn (US-31 AC8a)', async () => {
+    const later = 'health-roadmap.json was written, but cleanup did not finish: could not prune old backups.';
+    const told = await twoLandedWrites(later);
+    expect(told.hint).toBe(`Earlier in this save: ${later} Then a later step failed, so check what landed: read the record again before trying it a second time.`);
+    expect(told.hint).not.toContain('could not remove the lock file');
+    expectNoSuccessClaim(told.hint);
+  });
+
   it('still reports no writes for five ordinary pre-upload conflicts', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
