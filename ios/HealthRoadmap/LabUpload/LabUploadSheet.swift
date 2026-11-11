@@ -10,6 +10,7 @@ struct LabUploadSheet: View {
     let store: RecordStore
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.analytics) private var analytics
     /// The sheet's one named state, moved only by `send(_:)` (LabUploadFlow).
     @State private var step = Self.firstStep
     #if DEBUG
@@ -242,6 +243,7 @@ struct LabUploadSheet: View {
     /// until the run ends.
     private func saveAll(_ results: [LabResult], from index: Int) {
         store.pinScreen()
+        analytics?.event(.labSaveAll)  // AC8b's usage signal: once per run, nothing with it
         send(.saveAll)
         start {
             defer { store.unpinScreen() }

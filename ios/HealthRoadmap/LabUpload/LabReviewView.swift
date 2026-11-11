@@ -27,6 +27,7 @@ struct LabReviewView: View {
     /// Skip, Next report or Done, with what this report's own Save did (nil: it did not run).
     let onDone: (ReportOutcome?) -> Void
 
+    @Environment(\.analytics) private var analytics
     @State private var review: LabReview?
     /// This report's own Save, once it ran.
     @State private var saved: LabReportSave?
@@ -201,6 +202,7 @@ struct LabReviewView: View {
         if case .nothing = plan { return }
         saving = true
         defer { saving = false }
+        analytics?.event(.labSaveOne)  // AC8b's usage signal: once per Save, nothing with it
         saved = await LabReportSave.run(plan, result: result, store: store)
     }
 }
