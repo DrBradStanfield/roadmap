@@ -70,6 +70,22 @@ describe('US-71 AC10: broad test runs are refused on the Mac', () => {
     'timeout 600 npm run test:all',
     'tools/mac-slot.sh tests -- npm run test:all',
     'tools/mac-slot.sh tests -- npx vitest related a.ts --run',
+    'sh tools/mac-slot.sh tests -- npm test',
+    'bash tools/mac-slot.sh tests -- npx vitest run',
+    'zsh tools/mac-slot.sh tests -- npm run test:all',
+    // every operand a top-level folder: a near-whole-suite run
+    'npx vitest run tests/',
+    'npx vitest run tests',
+    'npx vitest run app',
+    'npx vitest run app/',
+    'npx vitest run ./app',
+    'npx vitest run src',
+    'npx vitest run widget-src',
+    'npx vitest run packages/',
+    'npx vitest run .',
+    'npx vitest run ./',
+    'npx vitest run app widget-src',
+    'npx vitest run --reporter=dot tests/',
     '(cd app && npx vitest run)',
     'bash -c "npm test"',
     "sh -lc 'cd x && npx vitest run'",
@@ -102,6 +118,14 @@ describe('US-71 AC10: broad test runs are refused on the Mac', () => {
     'cd packages/health-core && npx vitest run src/merge.test.ts',
     'npx vitest run "tests/a b.test.ts"',
     'tools/mac-slot.sh tests -- npx vitest run tests/a.test.ts',
+    'sh tools/mac-slot.sh tests -- npx vitest run tests/a.test.ts',
+    'bash tools/mac-slot.sh tests -- npx vitest run tests/a.test.ts',
+    // a deeper path or a name filter is not refused (a false refusal is the worse failure)
+    'npx vitest run app/lib',
+    'npx vitest run packages/health-core/src/merge.test.ts',
+    'npx vitest run tests/foo.test.ts',
+    'npx vitest run app tests/foo.test.ts',
+    'npx vitest run merge',
     'node scripts/test-all-locked.mjs tests/a.test.ts',
     'git diff --name-only | grep test.ts | xargs npx vitest run',
     'npx vitest --version',
@@ -165,8 +189,15 @@ describe('US-71 AC10 wiring: the hook runs as settings.json calls it', () => {
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
   });
 
-  it('says nothing for an ordinary command', () => {
-    const r = run('ls -la');
+  // `npm run build` passes the settings.json prefilter (*npm*), so it reaches the hook.
+  it('says nothing for an ordinary command that reaches the hook', () => {
+    const r = run('npm run build');
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('');
+  });
+
+  it.skipIf(process.platform === 'darwin')('lets npm test through where the guard is off', () => {
+    const r = run('npm test');
     expect(r.status).toBe(0);
     expect(r.stdout).toBe('');
   });

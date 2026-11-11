@@ -5,10 +5,12 @@
 // scripts/test-all-locked.mjs with no file argument. A leading ALLOW_BROAD_TESTS=<reason> lifts it. Off in CI and
 // outside macOS.
 // A seat belt like simulator-guard.cjs, whose scan it reuses: the tool must be the command word of its segment
-// (past env prefixes, npx, npm exec, xargs and `tools/mac-slot.sh tests --`); quoted text, comments and heredoc
-// bodies are not commands; a `bash -c "..."` string is checked as a command. Not seen: a command run by a script,
-// inside "$(...)", by find -exec, or through a vitest option this file does not know takes a value (`--foo x`
-// reads x as a file and passes).
+// (past env prefixes, npx, npm exec, xargs and `[sh|bash|zsh] tools/mac-slot.sh tests --`); quoted text, comments
+// and heredoc bodies are not commands; a `bash -c "..."` string is checked as a command. A vitest run whose every
+// operand is a top-level folder (tests, app, src, widget-src, packages, .) counts as no file. Not seen: a command
+// run by a script, inside "$(...)", by find -exec, or through a vitest option this file does not know takes a
+// value (`--foo x` reads x as a file and passes); a deeper folder or a name filter (`app/lib`, `merge`) still
+// passes, though it can run many files, as a false refusal is the worse failure.
 const { scan, commandIndex, base } = require('./simulator-guard.cjs');
 
 const BROAD_SCRIPTS = ['test', 'test:all', 'test:core', 'test:server', 'test:watch', 'mutation:clinical'];
@@ -16,6 +18,8 @@ const REASON = 'Broad test runs belong to CI, not this shared Mac (US-71 AC10): 
   + '(`npx vitest run <files>`), then push; CI runs the rest. For a flake hunt or a run Brad asked for, '
   + 'prefix `ALLOW_BROAD_TESTS=<reason>`.';
 const NPM_VALUE = /^(-w|--workspace|--prefix|-C|--loglevel|--userconfig|-p|--package)$/;
+// Top-level folders: a run naming only these is near-whole-suite ('' is ./).
+const TOP_DIRS = ['', '.', 'tests', 'app', 'src', 'widget-src', 'packages'];
 const VITEST_SUBS = ['run', 'watch', 'dev', 'related', 'bench', 'list'];
 // vitest options that take a separate value, so the value is not read as a file.
 const VITEST_VALUE = /^(-t|--testNamePattern|-c|--config|-r|--root|--dir|--project|--maxWorkers|--minWorkers|--reporter|--outputFile|--shard|--environment|--pool|--exclude|--testTimeout|--hookTimeout|--bail|--retry|--mode|--sequence\.seed|--changed)$/;
@@ -36,6 +40,7 @@ function judge(seg) {
   for (;;) {
     w = w.slice(commandIndex(w));
     const b = base(w[0]);
+    if (['sh', 'bash', 'zsh'].includes(b) && base(w[1]) === 'mac-slot.sh') { w = w.slice(1); continue; }
     if (b === 'mac-slot.sh' && w.includes('--')) { w = w.slice(w.indexOf('--') + 1); continue; }
     if (b === 'xargs') {
       let i = 1;
@@ -66,7 +71,9 @@ function judge(seg) {
     args = args.slice(1);
   }
   if (args.some((a) => /^(-h|--help|-v|--version)$/.test(a))) return null;
-  return stdin || operand(args, 0, VITEST_VALUE) >= 0 ? null : 'broad';
+  const files = [];
+  for (let i = operand(args, 0, VITEST_VALUE); i >= 0; i = operand(args, i + 1, VITEST_VALUE)) files.push(args[i]);
+  return stdin || files.some((f) => !TOP_DIRS.includes(f.replace(/^\.\/|\/+$/g, ''))) ? null : 'broad';
 }
 
 // The escape hatch counts only as a real, unquoted leading assignment with a reason (or after `export`).
