@@ -209,6 +209,8 @@ export class FileAdapter implements StorageAdapter {
       }
       this.replace(next, mode);
       version = stampOf(next);
+      // Trimmed only now: a replace that failed leaves every old copy in place.
+      if (!erasing) step('prune old backups', () => this.trim());
       step('prune old backups', () => this.pruneErased(body));
     } finally {
       try {
@@ -339,7 +341,7 @@ export class FileAdapter implements StorageAdapter {
     return dest;
   }
 
-  /** Copy the record beside itself, then prune all but the newest few backups. */
+  /** Copy the record beside itself. */
   private backup(text: string, mode: number): string {
     const dest = this.backupPath();
     try {
@@ -352,6 +354,11 @@ export class FileAdapter implements StorageAdapter {
         'Check the folder is writable, then try again. Your record was not changed.',
       );
     }
+    return basename(dest);
+  }
+
+  /** Remove all but the newest few backups. */
+  private trim(): void {
     // Backups named before the colon-free rule carry `:` (0x3A), which sorts
     // AFTER `-` (0x2D), so a plain sort reads an older colon name as the
     // newest and prunes a newer one instead. Compare on a normalised key.
@@ -360,7 +367,6 @@ export class FileAdapter implements StorageAdapter {
     for (const name of this.siblings().sort(order).slice(0, -BACKUPS_KEPT)) {
       rmSync(join(dirname(this.path), name), { force: true });
     }
-    return basename(dest);
   }
 
   /** Every `.bak-` sibling of the record, by name. */

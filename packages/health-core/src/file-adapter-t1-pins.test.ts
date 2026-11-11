@@ -173,8 +173,8 @@ describe('lead T1 — cleanup after a landed replace', () => {
   });
 });
 
-describe('lead T1 — the backup trim runs before the replace', () => {
-  it('with three backups and a failing replace, the oldest backup is gone and the record unchanged — today (lead T1 step b changes this)', async () => {
+describe('lead T1 — the backup trim runs after the replace', () => {
+  it('with three backups and a failing replace, every old backup stays and the record is unchanged (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const old = ['2026-01-01T00-00-00.000Z', '2026-01-02T00-00-00.000Z', '2026-01-03T00-00-00.000Z']
@@ -193,12 +193,11 @@ describe('lead T1 — the backup trim runs before the replace', () => {
       expect((error as StorageError).message).toBe(`Cannot write ${ROADMAP_FILE_NAME}`);
       expect(isStorageFailure(error)).toBe(true);
       expect(readFileSync(path, 'utf8')).toBe(before);
-      // backup() made a fourth copy and trimmed to three before replace ran:
-      // the oldest is gone, the two newer ones and this write's copy remain.
+      // backup() made a fourth copy; the trim waits for a landed replace, so
+      // all three old copies remain beside it.
       const kept = backups(dir);
-      expect(kept).toHaveLength(3);
-      expect(kept).not.toContain(old[0]);
-      expect(kept).toEqual(expect.arrayContaining([old[1], old[2]]));
+      expect(kept).toHaveLength(4);
+      expect(kept).toEqual(expect.arrayContaining(old));
       // lastBackup names this failed write's copy.
       expect(kept).toContain(adapter.lastBackup);
     } finally {
@@ -206,7 +205,7 @@ describe('lead T1 — the backup trim runs before the replace', () => {
     }
   });
 
-  it('rmSync throwing on the trim: the raw error escapes backup() before the replace, the record is unchanged, the new backup exists and the lock is released — today (lead T1 step b changes this)', async () => {
+  it('rmSync throwing on the trim: the replace has landed, save resolves with a warning naming the prune step, every backup stays and the lock is released (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const old = ['2026-01-01T00-00-00.000Z', '2026-01-02T00-00-00.000Z', '2026-01-03T00-00-00.000Z']
@@ -226,16 +225,15 @@ describe('lead T1 — the backup trim runs before the replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
-      const replace = vi.spyOn(adapter as any, 'replace');
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
-      expect(replace).not.toHaveBeenCalled();
-      expect(readFileSync(path, 'utf8')).toBe(before);
+      const wrote = recordReplace(adapter);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune old backups.`);
+      expect(saved.warning).not.toMatch(/EPERM|\//);
+      expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
+      expect(readFileSync(path, 'utf8')).toBe(wrote.text);
       // The trim failed on the oldest, so all three old copies remain beside
-      // this write's new one, which holds the record's bytes.
+      // this write's new one, which holds the record's previous bytes.
       const kept = backups(dir);
       expect(kept).toHaveLength(4);
       expect(kept).toEqual(expect.arrayContaining(old));
