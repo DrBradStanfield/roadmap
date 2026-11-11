@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-9,S8 web big components,Erase copy moves out of HealthTool,done,"widget-src/src/lib/erase-copy.ts holds ERASE_CONFIRM, ERASE_DONE*, WRITE_REFUSED",1099,"none (erase-copy.test.ts pins the text, not its home)",no

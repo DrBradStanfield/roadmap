@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-8,bug leads,A failed chat send loses the typed question,done,useChatState.ts restores the question on a failed send,1020,widget-src/src/hooks/useChatState.test.tsx:134,no

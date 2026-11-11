@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-9,S4 privacy scrub and vocabularies,Project identity and chat-tool selection move to their surfaces,not started,"plan.ts:39,54 REPO_SLUG/SCHEMA_URL; run-roadmap.ts:84,97,392 CHAT_TOOLS/chatToolsFor/STUBS",,,no

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-4,S8 web big components,One hook owns the screen copy of the record,done,"hooks/useRecordState.ts (clearForErase, upsert, patches); debounced list saves in hooks/useListSaves.ts",1102;1128,none,no

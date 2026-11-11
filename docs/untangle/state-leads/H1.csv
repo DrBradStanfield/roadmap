@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H1,composition,"A unit control pressed from a focused field released the held units first, and the click toggled back from them",bug,done,"hooks/units-machine.ts: pressing holds the release until the click and remembers what the person saw; pins: the AC7a H1 tests in HealthTool.record-read-pins.test.tsx (Chrome and Safari order, click two frames late, Height pill, row chip, a chip kept while units are held, the first-time weight pill, a chip mid-load) and units-machine.test.ts",1204,no

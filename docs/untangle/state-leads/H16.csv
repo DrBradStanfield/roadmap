@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H16,composition,"An own-save re-read after another device's erase shows the new record's values beside the old record's form until the erase's own remote signal applies",bug,not started,"useRecordApply.test.tsx ""US-34 AC4a (today, fix 4 owns erase events)"": reloadValues runs, no setInputs, markSaved, units or showErase; fix 4 owns erase events",,no

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-1,S5 clinical rules,"One screening-rules table read by plan, reminders and form",partial,Brad approved one table (2026-11-11); master/austin builds it. packages/health-core/src/screening-rules.ts exists; suggestions.ts and input-form.ts read it. Left: the owner confirms what still restates ages (ScreeningQuestions.tsx does not import the table directly),1215;1219;1222,,no

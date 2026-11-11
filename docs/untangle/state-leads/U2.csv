@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+U2,upload,One fact held twice: a ref and a flag,implicit state,done,The mode is one union in lib/upload-flow-state.ts with a pure transition and a table test,1153;1181,no

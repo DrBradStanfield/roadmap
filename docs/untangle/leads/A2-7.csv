@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-7,S5 clinical rules,Make evidence lookup explicit,cannot tell,"Report gives no locations; evidence.ts:151 SUGGESTION_EVIDENCE is still a string-keyed record, unchanged structurally since baseline",,,yes

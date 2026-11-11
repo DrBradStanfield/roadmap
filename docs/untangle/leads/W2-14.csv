@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-14,"S7 web data layer, upload, standalone",Standalone boot exported so tests stop slicing app.tsx,done,"widget-src/standalone/boot.ts loadRecord(), called by app.tsx main(); the latch test imports it instead of slicing app.tsx",1201,"widget-src/standalone/logout-latch-during-load.test.ts (US-09 AC2h, standalone main() cases)",no

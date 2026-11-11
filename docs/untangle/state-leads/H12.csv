@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H12,composition,A document upload whose erase has moved writes no copy on the device,bug,partial,"partial: the save checks the erase before each file write (US-11 AC1a); checked by roadmap-store-refused-documents.test.ts. Follow-up parked (Brad 2026-11-11): per-write unique device refs, only if a refusal shows up in real use. No product event fires on a refused write today (HealthTool.tsx shows WRITE_REFUSED by alert only), so a refusal cannot be seen in data yet.",1200,no

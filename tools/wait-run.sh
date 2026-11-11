@@ -5,7 +5,8 @@
 #   sh tools/wait-run.sh deploy <run-id>   wait until the run completes; print its conclusion, head sha, each
 #                                          job's name=conclusion and the live healthz status
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
-#                                          and mergeability
+#                                          and mergeability; a PR in conflict with main gets no CI run, so it
+#                                          says so and exits 1 at once
 #
 # Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
@@ -77,6 +78,7 @@ poll() {
     if state=$("$@" 2>/dev/null); then
       errors=0
       [ "$state" = done ] && return 0
+      if [ "$state" = conflict ]; then echo "conflicts with main: no CI will run; merge main in"; exit 1; fi
     else
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
@@ -92,11 +94,13 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # `gh pr checks` (cli/cli pkg/cmd/pr/checks/aggregate.go, v2.102): keep the newest check per status context or per
 # name/workflow (gh also keys on the run's event, which this JSON lacks), take its state (a status's state, else a
 # completed run's conclusion, else the run's status), and count it pending unless gh gives that state a bucket.
+# The same query reads mergeability: a PR in conflict with main gets no CI run, so waiting on it never ends.
 pr_state() {
-  gh pr view "$id" --json statusCheckRollup --jq '[.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
+  gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'if .mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY"
+    then "conflict" else [.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
     | .[] | max_by(.startedAt) | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end]
     | if length > 0 and all(IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"))
-      then "done" else "pending" end'
+      then "done" else "pending" end end'
 }
 
 if [ "$mode" = deploy ]; then

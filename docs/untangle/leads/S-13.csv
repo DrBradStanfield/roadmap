@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-13,S2 server,One module names the store this Fly app serves,not started,trending-cron.server.ts:25-35 decides brand vs edu from SHOP_DOMAIN; no store.server.ts,,,no

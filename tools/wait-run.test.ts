@@ -33,6 +33,7 @@ case "$*" in
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
     [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
+    [ -n "\${MERGE:-}" ] && { poll_n; json "{$MERGE,\\"statusCheckRollup\\":$pend}"; exit; }
     if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
     else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
   *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
@@ -220,6 +221,19 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(pollsTwice(['pr', '42'], { ROLLUP: status('PENDING') })).toBe(true);
     expect(pollsTwice(['pr', '42'], { ROLLUP: status('EXPECTED') })).toBe(true);
     for (const s of ['SUCCESS', 'ERROR', 'FAILURE']) expect(pollsTwice(['pr', '42'], { ROLLUP: status(s) })).toBe(false);
+  });
+  it('pr: a PR in conflict with main says so and exits 1 at once, without waiting out the limit', () => {
+    for (const merge of ['"mergeable":"CONFLICTING","mergeStateStatus":"DIRTY"', '"mergeable":"UNKNOWN","mergeStateStatus":"DIRTY"',
+      '"mergeable":"CONFLICTING","mergeStateStatus":"UNKNOWN"']) {
+      const r = run(['pr', '42'], { MERGE: merge, ROLLUP: '[]' });
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('conflicts with main: no CI will run; merge main in\n');
+      expect(r.sleeps).toEqual([]);
+    }
+    // Mergeable, or not yet known: keep waiting as before.
+    const r = run(['pr', '42'], { MERGE: '"mergeable":"UNKNOWN","mergeStateStatus":"UNKNOWN"', ROLLUP: '[]', WAIT_RUN_MAX_MIN: '2' });
+    expect(r.status).toBe(3);
+    expect(r.stdout).not.toContain('conflicts');
   });
   it('pr: an empty or null rollup (no checks yet) is pending', () => {
     expect(pollsTwice(['pr', '42'], { ROLLUP: '[]' })).toBe(true);

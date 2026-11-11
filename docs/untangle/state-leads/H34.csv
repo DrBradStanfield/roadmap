@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H34,composition,"A local erase waits twice for a hung import pass: erased's drained() then deleteOwed's own drained(), each up to 2 s, so the Health delete can start after about 4 s, past AC10's 2 s bound. Must be on main before build 11",bug,done,"ios/HealthRoadmap/Health/AppleHealthSync.swift:121 erased drains, then deleteOwed's claim drains again. Fix: one shared drain deadline. Test: a hung correction of a written id; the delete begins within 2 s. Codex, PR 1218 final check",1256,no

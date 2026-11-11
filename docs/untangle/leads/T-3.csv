@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-3,"S1 tools, scripts, CI",Remove the one-off WebKit scripts,done,"The six one-off scripts are deleted; tools/webkit-verify.mjs is the only WebKit tool (docs/reference.md, CLI + agent surfaces)",1197,none,no

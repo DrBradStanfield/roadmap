@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+I-5,S6 record edits and iPhone engine,Small engine doors replace Swift raw-JSON reads,not started,No weightKgJson/regionUnitsJson doors; Swift still parses record JSON (e.g. SyncProblem.swift:23),,,no

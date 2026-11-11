@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-10,"S1 tools, scripts, CI",Remove the one-time user-stories.html migration from merge-batch,done,"tools/merge-batch.mjs no longer names docs/user-stories.html (untracked since 5ee6567e, 2026-11-04; no open PR touched it); US-64 AC13 and AC17 updated",1197,none,no

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M3,phone mirrors,"The 9am reminder hour is written twice, Swift and engine, held equal only by a test",lead,not started,"ios/HealthRoadmap/Reminders/ReminderScheduler.swift:38 hour = 9 vs ios/engine/reminders.ts:22 NOTIFY_HOUR; pinned by ios/engine/reminders.test.ts:223 reading the Swift source. Should come from the engine. Found during shared upload PR 1, 2026-11-11",,no
