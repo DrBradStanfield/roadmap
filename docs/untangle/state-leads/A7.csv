@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A7,small forms,"Small web forms hold a saving flag beside a notice: AddLabTest replace has no finally, FeedbackForm's 3 s timer is not cleared on close or unmount, DocumentLightbox keeps three flags",implicit state,not started,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now. widget-src/src/components/AddLabTest.tsx, FeedbackForm.tsx, DocumentLightbox.tsx. Low harm",,no

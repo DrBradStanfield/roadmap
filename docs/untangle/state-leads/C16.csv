@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C16,lab import,"The website lab batch poll answers any failure as processing 0 of N, and a batch still being watched is cancelled at one hour with no word to the person",bug,decided: change,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: keep the one-hour cancel; the person is told it took too long; a poll failure answers error, never processing 0. app/routes/api.lab-import-v2.ts poll; app/lib/lab-batches.server.ts",,no
