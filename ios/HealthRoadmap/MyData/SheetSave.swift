@@ -100,26 +100,6 @@ enum SheetSave {
         state = transition(was, event)
         return state == .saving && was != .saving
     }
-
-    /// A save held as a Bool (`saving` is the state's `busy`), claimed and released by `transition`.
-    static func run(_ saving: Binding<Bool>, _ save: @escaping () async -> RecordStore.ApplyResult, then finish: @escaping (RecordStore.ApplyResult) -> Void) {
-        var state: State<NoHeld> = saving.wrappedValue ? .saving : .editing(message: nil)
-        guard send(&state, .tapped) else { return }
-        saving.wrappedValue = state.busy
-        Task { [state] in
-            let result = await save()
-            saving.wrappedValue = transition(state, .landed(result, closes: true, asks: .never)).busy
-            finish(result)
-        }
-    }
-
-    /// The usual end: close on a save, else say why.
-    static func close(_ result: RecordStore.ApplyResult, _ dismiss: DismissAction, _ message: Binding<String?>) {
-        switch result {
-        case .saved: dismiss()
-        case .refused(let why, _): message.wrappedValue = why
-        }
-    }
 }
 
 extension View {

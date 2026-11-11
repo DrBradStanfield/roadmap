@@ -1,4 +1,3 @@
-import SwiftUI
 import XCTest
 @testable import HealthRoadmap
 
@@ -7,43 +6,19 @@ import XCTest
 /// 2026-11-11): a sheet's save is one state, changed only by `SheetSave.transition`.
 @MainActor
 final class SheetSaveTests: XCTestCase {
-    private final class Box { var saving = false; var saves = 0; var finishes = 0 }
     private typealias State = SheetSave.State<[String]>
     private typealias Event = SheetSave.Event<[String]>
 
-    func testASecondRunWhileSavingDoesNothing_US25_AC21d() async {
-        let box = Box()
-        let saving = Binding(get: { box.saving }, set: { box.saving = $0 })
-        let done = expectation(description: "the first save finishes")
-        let save: () async -> RecordStore.ApplyResult = {
-            box.saves += 1
-            try? await Task.sleep(for: .milliseconds(100))
-            return .saved()
-        }
-        SheetSave.run(saving, save) { _ in box.finishes += 1; done.fulfill() }
-        XCTAssertTrue(box.saving, "saving is set in the tap")
-        SheetSave.run(saving, save) { _ in box.finishes += 1 }
-        await fulfillment(of: [done], timeout: 5)
-        try? await Task.sleep(for: .milliseconds(300))
-        XCTAssertEqual(box.saves, 1, "the second tap wrote nothing")
-        XCTAssertEqual(box.finishes, 1, "the sheet closes once")
-        XCTAssertFalse(box.saving, "Cancel works again")
-    }
-
-    /// A refused run clears `saving` and hands the words on, as a saved one does.
-    func testRunRoutesThroughTheTransition_US25_AC21e() async {
-        let box = Box()
-        let saving = Binding(get: { box.saving }, set: { box.saving = $0 })
-        let done = expectation(description: "the refusal lands")
-        var words: String?
-        SheetSave.run(saving, { .refused(message: "Not today", existingId: "row-a") }) { result in
-            if case .refused(let why, _) = result { words = why }
-            done.fulfill()
-        }
-        XCTAssertTrue(box.saving)
-        await fulfillment(of: [done], timeout: 5)
-        XCTAssertEqual(words, "Not today")
-        XCTAssertFalse(box.saving, "a refusal frees the sheet")
+    /// A second tap on a sheet's save while the first is landing claims nothing, and the
+    /// save closes the sheet once, never leaving Cancel disabled. Every sheet saves this way.
+    func testASecondTapWhileSavingDoesNothing_US25_AC21d() {
+        var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
+        XCTAssertTrue(SheetSave.send(&state, .tapped), "the first tap starts the save")
+        XCTAssertTrue(state.busy, "Save, Cancel and swipe-down wait")
+        XCTAssertFalse(SheetSave.send(&state, .tapped), "the second tap writes nothing")
+        SheetSave.send(&state, .landed(.saved(), closes: true, asks: .never))
+        XCTAssertEqual(state, .done, "the sheet closes once")
+        XCTAssertFalse(state.busy, "Cancel works again")
     }
 
     // The events, every one the sheets send, with each kind of landing.

@@ -10,9 +10,8 @@ struct FeetInchesSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var feet = 5
     @State private var inches = 7
-    @State private var message: String?
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): its words show under the fields; Save, Cancel and swipe-down wait while busy.
+    @State private var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
 
     var body: some View {
         NavigationStack {
@@ -23,7 +22,7 @@ struct FeetInchesSheet: View {
                         wheel("Inches", selection: $inches, values: 0...11, unit: "in")
                     }
                 } footer: {
-                    if let message {
+                    if let message = state.message {
                         Text(message).foregroundStyle(.red)
                     } else if let current {
                         Text("Now \(current.text)")
@@ -33,13 +32,9 @@ struct FeetInchesSheet: View {
             .navigationTitle("Height")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let height = MyData.FeetInches(feet: feet, inches: inches)
-                        SheetSave.run($saving, { await save(height) }) { SheetSave.close($0, dismiss, $message) }
-                    }
-                    .disabled(saving)
+                    Button("Save", action: submit).disabled(state.busy)
                 }
             }
             .onAppear {
@@ -48,11 +43,21 @@ struct FeetInchesSheet: View {
                     inches = current.inches
                 }
             }
-            .onChange(of: feet) { message = nil }
-            .onChange(of: inches) { message = nil }
+            .onChange(of: feet) { SheetSave.send(&state, .wordsStale) }
+            .onChange(of: inches) { SheetSave.send(&state, .wordsStale) }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
         .pinsRecord()
+    }
+
+    private func submit() {
+        let height = MyData.FeetInches(feet: feet, inches: inches)
+        guard SheetSave.send(&state, .tapped) else { return }
+        Task {
+            let result = await save(height)
+            SheetSave.send(&state, .landed(result, closes: true, asks: .never))
+            if state == .done { dismiss() }
+        }
     }
 
     private func wheel(_ label: String, selection: Binding<Int>, values: ClosedRange<Int>, unit: String) -> some View {
