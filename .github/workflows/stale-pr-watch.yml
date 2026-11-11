@@ -21,6 +21,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   issues: write
   pull-requests: read
@@ -81,3 +82,25 @@ jobs:
             } else {
               await github.rest.issues.create({ owner, repo, title: TITLE, body, assignees: ['DrBradStanfield'] });
             }
+      # tests/stale-prs.test.ts runs this script too, with a stub GitHub client (12 h).
+      - name: Warn when an engine sign approval has waited over 12 h
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const TITLE = '🔏 Engine release waiting for signing approval';
+            const runs = (await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'engine-release.yml', status: 'waiting', per_page: 20,
+            })).data.workflow_runs.filter(r => Date.now() - new Date(r.created_at) > 12 * 3600 * 1000);
+            const found = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue is:open in:title "Engine release waiting"`,
+            });
+            const open = found.data.items.find(i => i.title === TITLE && i.user?.login === 'github-actions[bot]');
+            if (!runs.length) {
+              if (open) await github.rest.issues.update({ owner, repo, issue_number: open.number, state: 'closed' });
+              return;
+            }
+            const body = 'A waiting sign holds the release queue; every later engine release is blocked until it is approved or rejected.\n\n' +
+              runs.map(r => `- ${r.html_url} (since ${r.created_at})`).join('\n');
+            if (open) await github.rest.issues.update({ owner, repo, issue_number: open.number, body });
+            else await github.rest.issues.create({ owner, repo, title: TITLE, body, assignees: ['DrBradStanfield'] });

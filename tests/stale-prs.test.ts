@@ -11,11 +11,16 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const YML = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '.github/workflows/stale-pr-watch.yml'), 'utf8');
-// The `script: |` block, de-indented.
-const lines = YML.slice(YML.indexOf('script: |') + 'script: |'.length).split('\n').slice(1);
-const indent = lines[0].match(/^ */)![0].length;
-const end = lines.findIndex((x) => x.trim() !== '' && !x.startsWith(' '.repeat(indent)));
-const SCRIPT = lines.slice(0, end === -1 ? undefined : end).map((l) => l.slice(indent)).join('\n');
+// The n-th `script: |` block, de-indented.
+function scriptBlock(n: number) {
+  const blocks = YML.split('script: |');
+  const lines = blocks[n + 1].split('\n').slice(1);
+  const indent = lines[0].match(/^ */)![0].length;
+  const end = lines.findIndex((x) => x.trim() !== '' && !x.startsWith(' '.repeat(indent)));
+  return lines.slice(0, end === -1 ? undefined : end).map((l) => l.slice(indent)).join('\n');
+}
+const SCRIPT = scriptBlock(0);
+const SIGN_SCRIPT = scriptBlock(1);
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 const pr = (number: number, draft: boolean, hours: number) =>
@@ -95,5 +100,64 @@ describe('stale-pr-watch.yml: the issue reaches Brad and outsider text stays ine
     expect(row).not.toContain('https://');
     expect(row).not.toMatch(/www\./i);
     expect(row).toContain('https:\u200b//x.example');
+  });
+});
+
+describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches Brad', () => {
+  const TITLE = '\ud83d\udd0f Engine release waiting for signing approval';
+  const waiting = (id: number, hours: number) => ({ html_url: `https://github.com/o/r/actions/runs/${id}`, created_at: hoursAgo(hours) });
+  async function runSign(runs: ReturnType<typeof waiting>[], items: Item[] = []) {
+    const created: Created[] = [];
+    const updated: Array<{ issue_number: number; state?: string; body?: string }> = [];
+    const asked: unknown[] = [];
+    const github = {
+      rest: {
+        actions: { listWorkflowRuns: async (o: unknown) => { asked.push(o); return { data: { workflow_runs: runs } }; } },
+        search: { issuesAndPullRequests: async () => ({ data: { items } }) },
+        issues: {
+          create: async (o: Created) => { created.push(o); },
+          update: async (o: { issue_number: number; state?: string; body?: string }) => { updated.push(o); },
+        },
+      },
+    };
+    await runInNewContext(`(async () => {\n${SIGN_SCRIPT}\n})()`, { github, context: { repo: { owner: 'o', repo: 'r' } }, Date });
+    return { created, updated, asked };
+  }
+  const mine = { number: 11, title: TITLE, user: { login: 'github-actions[bot]' } };
+
+  it('asks only for waiting engine-release runs', async () => {
+    const { asked } = await runSign([]);
+    expect(asked).toEqual([expect.objectContaining({ workflow_id: 'engine-release.yml', status: 'waiting' })]);
+  });
+  it('closes its open warning when no run is waiting', async () => {
+    const { created, updated } = await runSign([], [mine]);
+    expect(created).toEqual([]);
+    expect(updated).toEqual([{ owner: 'o', repo: 'r', issue_number: 11, state: 'closed' }]);
+  });
+  it('does nothing for a run waiting under 12 h', async () => {
+    const { created, updated } = await runSign([waiting(1, 11)]);
+    expect(created).toEqual([]);
+    expect(updated).toEqual([]);
+  });
+  it('opens one issue, assigned to Brad, for a run waiting over 12 h', async () => {
+    const { created, updated } = await runSign([waiting(1, 11), waiting(2, 13)]);
+    expect(updated).toEqual([]);
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ title: TITLE, assignees: ['DrBradStanfield'] });
+    expect(created[0].body).toContain('/actions/runs/2');
+    expect(created[0].body).not.toContain('/actions/runs/1 ');
+  });
+  it('a second pass updates its issue and opens no second one', async () => {
+    const { created, updated } = await runSign([waiting(2, 37)], [mine]);
+    expect(created).toEqual([]);
+    expect(updated).toHaveLength(1);
+    expect(updated[0].issue_number).toBe(11);
+    expect(updated[0].state).toBeUndefined();
+    expect(updated[0].body).toContain('/actions/runs/2');
+  });
+  it('never updates a look-alike issue someone else opened', async () => {
+    const { created, updated } = await runSign([waiting(3, 13)], [{ ...mine, user: { login: 'mallory' } }]);
+    expect(updated).toEqual([]);
+    expect(created).toHaveLength(1);
   });
 });
