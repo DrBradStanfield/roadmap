@@ -979,7 +979,16 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
-  the access state and the cards. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
+  the access state and the cards, as one named state: `access: LiveAccess` (`LiveAccess.swift`:
+  unknown, needsAccess, granted, read(cards)), changed only through its pure `transition` on four
+  events (the sheet check, a read landed, a read failed, the erase). `cards` is a read-only view of
+  `read(cards)`. Why (iPhone survey S4, US-56 AC5d, 2026-11-11): three properties side by side
+  (`needsAccess`, `cards`, `hasRead`) drifted; an access reset cleared the cards but kept "read", so
+  a locked first read after a re-allow drew the Open Settings row. `granted` means access answered
+  and nothing read since; it promises no read in flight. A read that lands in unknown or needsAccess
+  is dropped. Defensive: unreachable while readOnce is the only sender of `checked`; the ticket
+  guard is what keeps a read from before an erase or a disconnect from landing. Kept so a later
+  sender cannot draw cards whose access was withdrawn. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
   Brad 2026-10-27, option A).** Why: on a cold start My data drew the record, then 0.1 to 0.2 s later
   the cards arrived under blood pressure and pushed the blood tests down; Brad: "I don't want us to
   wait for anything." The cards (`[LiveMetric: LiveCard]` and a version) live in
@@ -988,7 +997,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   it: sync, export and the chat summary read only the record, so they never see it. Written
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
-  a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
+  a missing, damaged or other-version file is none. Kept cards start as `read` (`LiveAccess.launch`), so
   `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
@@ -1647,7 +1656,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
-    `WelcomeView`, `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
+    `WelcomeView` and `WelcomeConnect` (its cloud connect derives its phase from CloudSync
+    each time and keeps no copy, so a relaunch waits on the launch open; US-54 AC2b), `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
     the original road-to-heart icon, our own drawing, redrawn as Shapes on 2026-10-25; never an
     SF Symbol, traced or not, US-25 AC10), `Analytics` (Clarity, masked, D9), `Colors` (the app-wide colour helpers)
     and `MessageAlert` (the one-button alert every tab uses).

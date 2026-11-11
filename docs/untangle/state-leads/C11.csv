@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C11,tooling,"The sim-run load guard looks at load only; this Mac's real crash risk is memory and swap, so a free-memory floor is the natural second condition",lead,not started,"ios/scripts/sim-run.sh guard_tripped reads vm.loadavg and counts Codex reviews only (US-71 AC8); macOS ships memory_pressure, which could give a free-memory floor",,no

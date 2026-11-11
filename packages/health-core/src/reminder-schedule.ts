@@ -15,7 +15,8 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
+import { SCREENING_REFS, inAges, ruleOf, ruleTakes, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -144,9 +145,12 @@ function screeningSchedule(
   const push = (category: ReminderCategory, label: string, due: Date | null): void => {
     if (due) items.push({ category, group: getCategoryGroup(category), label, dueAt: localDay(due) });
   };
+  // Each reminder's age and sex gate is its row's cardAges (screening-rules.ts), the plan card's.
+  const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, DEXA] =
+    (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'dexa'] as const).map(ruleOf);
+  const takes = (r: ScreeningRule) => ruleTakes(r, r.cardAges, age, sex);
 
-  // Colorectal (age 35-75)
-  if (age >= 35 && age <= 75 && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
+  if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
     const label = s.colorectalMethod === 'colonoscopy_10yr' ? 'Colonoscopy' : 'Colorectal screening';
     push('screening_colorectal', label, earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
@@ -155,8 +159,7 @@ function screeningSchedule(
     ));
   }
 
-  // Breast (female, age 40+)
-  if (sex === 'female' && age >= 40 && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
+  if (takes(BREAST) && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
     push('screening_breast', 'Mammogram', earliest(
       getScreeningNextDueDate(s.breastLastDate, s.breastFrequency),
       getPostFollowupDueDate('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
@@ -164,8 +167,7 @@ function screeningSchedule(
     ));
   }
 
-  // Cervical (female, age 25-65)
-  if (sex === 'female' && age >= 25 && age <= 65 && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
+  if (takes(CERVICAL) && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
     push('screening_cervical', 'Cervical screening', earliest(
       getScreeningNextDueDate(s.cervicalLastDate, s.cervicalMethod),
       getPostFollowupDueDate('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
@@ -173,14 +175,13 @@ function screeningSchedule(
     ));
   }
 
-  // Lung (age 50-80, smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
+  // Lung (smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
   // keeps its reminder exactly while the plan shows its follow-up card (US-07 AC1f, AC1g): a last
   // date, until the follow-up is completed.
   const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
   if (
-    age >= 50 &&
-    (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    ((age <= 80 && s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS) || lungFollowupCard) &&
+    inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(s) &&
+    ((inAges(LUNG.cardAges, age, sex) && SCREENING_REFS.lungPackYears(s)) || lungFollowupCard) &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(
@@ -190,14 +191,14 @@ function screeningSchedule(
     ));
   }
 
-  // Prostate (male, age 45+, elected to screen)
-  if (sex === 'male' && age >= 45 && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
+  // Prostate (elected to screen)
+  if (takes(PROSTATE) && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
     push('screening_prostate', 'PSA test', getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
   }
 
-  // DEXA bone density (female ≥50, male ≥70); result-based interval
+  // DEXA bone density; result-based interval
   if (
-    ((sex === 'female' && age >= 50) || (sex === 'male' && age >= 70)) &&
+    takes(DEXA) &&
     s.dexaScreening && s.dexaScreening !== 'not_yet_started' && s.dexaLastDate &&
     s.dexaResult !== 'awaiting'
   ) {
