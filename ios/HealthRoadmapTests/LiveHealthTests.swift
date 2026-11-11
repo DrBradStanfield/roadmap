@@ -1177,7 +1177,7 @@ final class LiveHealthTests: XCTestCase {
         }
         let live = try FileManager.default.contentsOfDirectory(at: app.appending(path: "AppleHealthMetrics"), includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == "swift" }
-        XCTAssertEqual(live.count, 8, "LiveHistory.swift is the eighth (US-56 AC7a)")
+        XCTAssertEqual(live.count, 9, "LiveHistory.swift is the eighth (US-56 AC7a), LiveAccess.swift the ninth (AC5d)")
         for file in live {
             // Code only: comments may name what is not done.
             let text = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")

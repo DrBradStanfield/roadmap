@@ -113,21 +113,25 @@ enum LiveShown: Equatable {
     /// after a "Don't Allow" or with an empty Health (iOS cannot tell them apart), it shows one
     /// calm Open Settings row, never an error or a greyed line (AC5b, Brad 2026-10-25). A place
     /// with none of its own metrics shows nothing, so its heading hides (US-73 AC2). Nothing
-    /// while the answer is unknown or unread.
-    static func shown(_ metrics: [LiveMetric], connected: Bool, needsAccess: Bool?, hasRead: Bool, cards: [LiveMetric: LiveCard], keepsReconnect: Bool) -> LiveShown {
-        if needsAccess == true { return keepsReconnect && connected ? .turnOn : .nothing }
-        guard needsAccess == false, hasRead else { return .nothing }
-        if keepsReconnect, cards.isEmpty { return .reconnect }
-        let held = metrics.filter { cards[$0] != nil }
-        return held.isEmpty ? .nothing : .cards(held)
+    /// while the answer is unknown or unread: granted with no read landed shows nothing, never
+    /// Open Settings (AC5d).
+    static func shown(_ metrics: [LiveMetric], connected: Bool, access: LiveAccess, keepsReconnect: Bool) -> LiveShown {
+        switch access {
+        case .needsAccess: return keepsReconnect && connected ? .turnOn : .nothing
+        case .unknown, .granted: return .nothing
+        case .read(let cards):
+            if keepsReconnect, cards.isEmpty { return .reconnect }
+            let held = metrics.filter { cards[$0] != nil }
+            return held.isEmpty ? .nothing : .cards(held)
+        }
     }
 
     /// What this place shows now; `.nothing` without live Health. The sync's status is read only
     /// where it matters, before the sheet, so its import never redraws the cards (review, efficiency 2).
     @MainActor static func shown(_ metrics: [LiveMetric], keepsReconnect: Bool, live: LiveHealth?, health: AppleHealthSync?) -> LiveShown {
         guard let live, live.available else { return .nothing }
-        let connected = keepsReconnect && live.needsAccess == true && health?.connected == true
-        return shown(metrics, connected: connected, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: keepsReconnect)
+        let connected = keepsReconnect && live.access == .needsAccess && health?.connected == true
+        return shown(metrics, connected: connected, access: live.access, keepsReconnect: keepsReconnect)
     }
 }
 

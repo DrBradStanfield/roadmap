@@ -38,6 +38,7 @@ final class LiveAccessTests: XCTestCase {
             (.granted, .cardsRead([:]), .read([:]), "a first read with none: Open Settings may show"),
             (.read(a), .cardsRead(b), .read(b), "a new read replaces the cards"),
             (.read(a), .cardsRead([:]), .read([:]), "a read with none empties them"),
+            (.read([:]), .cardsRead(b), .read(b), "data after Open Settings: the cards draw"),
             // readFailed: locked or cancelled, the state stays (N1, AC13). Granted stays granted,
             // so a failed first read never shows Open Settings (the S4 fix).
             (.unknown, .readFailed, .unknown, "nothing known"),

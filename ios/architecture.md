@@ -979,7 +979,14 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
-  the access state and the cards. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
+  the access state and the cards, as one named state: `access: LiveAccess` (`LiveAccess.swift`:
+  unknown, needsAccess, granted, read(cards)), changed only through its pure `transition` on four
+  events (the sheet check, a read landed, a read failed, the erase). `cards` is a read-only view of
+  `read(cards)`. Why (iPhone survey S4, US-56 AC5d, 2026-11-11): three properties side by side
+  (`needsAccess`, `cards`, `hasRead`) drifted; an access reset cleared the cards but kept "read", so
+  a locked first read after a re-allow drew the Open Settings row. `granted` means access answered
+  and nothing read since; it promises no read in flight. A read that lands in unknown or needsAccess
+  is dropped: a late read must not draw cards the person has just withdrawn. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
   Brad 2026-10-27, option A).** Why: on a cold start My data drew the record, then 0.1 to 0.2 s later
   the cards arrived under blood pressure and pushed the blood tests down; Brad: "I don't want us to
   wait for anything." The cards (`[LiveMetric: LiveCard]` and a version) live in
@@ -988,7 +995,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   it: sync, export and the chat summary read only the record, so they never see it. Written
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
-  a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
+  a missing, damaged or other-version file is none. Kept cards start as `read` (`LiveAccess.launch`), so
   `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
