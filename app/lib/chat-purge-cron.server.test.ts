@@ -56,6 +56,8 @@ const store = vi.hoisted(() => ({
   swallowUpdates: null as string | null,
   /** How many ids each `.update(...).in('id', …)` carried, in the order sent. */
   updateIdCounts: [] as number[],
+  /** Row ids whose first blank silently commits nothing; the next one lands. */
+  swallowFirstBlank: new Set<string>(),
 }));
 
 // A fake PostgREST that really filters, so "only rows older than 30 days" and
@@ -141,7 +143,7 @@ const fakeAdmin = vi.hoisted(() => ({
       update: (patch: Record<string, unknown>) => {
         const apply = (ids: string[]) => {
           if (store.updateError || store.swallowUpdates === table) return;
-          for (const id of ids) Object.assign(rows.find((r) => (r as { id: string }).id === id)!, patch);
+          for (const id of ids) if (!store.swallowFirstBlank.delete(id)) Object.assign(rows.find((r) => (r as { id: string }).id === id)!, patch);
         };
         return {
           eq: async (_col: string, id: string) => {
@@ -228,6 +230,7 @@ beforeEach(() => {
   store.updateError = null;
   store.swallowUpdates = null;
   store.updateIdCounts = [];
+  store.swallowFirstBlank = new Set();
   store.chat_match_events = [
     row('old-widget', 40, { platform: 'widget' }),
     row('old-shopify', 31, { platform: 'shopify', first: 'HbA1c 41', recent: ['HbA1c 41', 'BP 140/90'] }),
@@ -593,6 +596,20 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     expect(store.archiveInserts).toEqual([]);
     expect(vi.mocked(recordServerEvent)).not.toHaveBeenCalled();
     expect(byId('shopify-route').message).toBeNull();
+  });
+
+  // US-15 AC60: a row whose blank silently did nothing comes back in the next
+  // batch beside new rows. Its question is held once per run, not once per batch.
+  it('US-15 AC60: a row selected again after a silent blank makes one kept copy, not several', async () => {
+    store.chat_match_events = [
+      row('stuck', 40, { platform: 'widget' }),
+      ...Array.from({ length: 150 }, (_, i) => row(`w${i}`, 40, { platform: 'widget' })),
+    ];
+    store.swallowFirstBlank = new Set(['stuck']);
+    const counts = await purgeOldChatText(NOW);
+    expect(store.chat_question_archive.filter((r) => r.question === 'scrubbed: question stuck')).toHaveLength(1);
+    expect(counts.archive).toEqual({ eligible: 151, kept: 151, skipped: 0 });
+    expect(byId('stuck').message).toBeNull();
   });
 
   it('a deleted conversation’s match events are blanked and never copied', async () => {
