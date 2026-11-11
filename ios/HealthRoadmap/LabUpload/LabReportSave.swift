@@ -86,14 +86,16 @@ struct LabReportSave: Equatable {
     var problem: String?
     var values = 0
     var documents = 0
-    /// Why a save that ran wrote nothing new (every value refused or already there, the file already held).
-    var nothingNew = "Already in your record"
+    /// What a save that ran did not save, beside `problem`: each value the engine refused,
+    /// the original's own problem (AC8, AC13d).
+    var notes: [String] = []
 
-    /// How save all counts it.
+    /// How save all and its summary count it. A save that ran and wrote nothing, with no
+    /// reason, found it all there already (every value's day held, the file already filed).
     var reportOutcome: ReportOutcome {
-        guard outcome != nil else { return .notSaved(problem ?? "Not saved") }
-        if values == 0 && documents == 0 { return .notSaved(problem ?? nothingNew) }
-        return .saved(values: values, documents: documents)
+        let all = notes + [problem].compactMap { $0 }
+        if values + documents == 0 && all.isEmpty { return .notSaved("Already in your record") }
+        return .saved(values: values, documents: documents, notes: all)
     }
 
     @MainActor
@@ -110,7 +112,7 @@ struct LabReportSave: Equatable {
             case .success(let summary):
                 done.outcome = describe(summary)
                 done.values = summary.saved
-                if summary.skipped == 0, let refused = summary.refused.first { done.nothingNew = refused.message }
+                done.notes = summary.refused.map(line)
                 // The lab report's original, kept in the cloud as the web's hidden row (the
                 // engine keeps it only there); the values are already saved.
                 guard let original = result.original else { break }
@@ -119,6 +121,7 @@ struct LabReportSave: Equatable {
                 case .saved(let count, let stored, let unstored, let stale):
                     let line = originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: "The original report is kept in your cloud.")
                     done.outcome = [done.outcome, line].compactMap { $0 }.joined(separator: "\n")
+                    done.notes += [originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: nil)].compactMap { $0 }
                 case .refused(let message):
                     done.problem = message
                 }
@@ -130,6 +133,7 @@ struct LabReportSave: Equatable {
                 let line = originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: "The original file is kept in your cloud.")
                 done.outcome = [first, line].compactMap { $0 }.joined(separator: "\n")
                 done.documents = count > 0 ? 1 : 0
+                done.notes = [originalLine(count: count, stored: stored, unstored: unstored, stale: stale, kept: nil)].compactMap { $0 }
             case .refused(let message):
                 done.problem = message
             }
@@ -139,8 +143,9 @@ struct LabReportSave: Equatable {
 
     /// What a save says of the original: `kept` when the cloud took it; that it changed
     /// since the review read it; the web's words (US-14 AC4) when the cloud did not take
-    /// it; nothing when none was offered or nothing was new.
-    static func originalLine(count: Int, stored: Bool?, unstored: Int, stale: Bool, kept: String) -> String? {
+    /// it; nothing when none was offered or nothing was new. With `kept` nil, only the
+    /// original's problem: the note save all lists (AC8b).
+    static func originalLine(count: Int, stored: Bool?, unstored: Int, stale: Bool, kept: String?) -> String? {
         if stale { return "The original changed or could not be read, so only its text was saved." }
         return switch stored {
         case true?: kept
@@ -152,25 +157,44 @@ struct LabReportSave: Equatable {
     static func describe(_ summary: LabSaveSummary) -> String {
         var parts = ["\(summary.saved) value\(summary.saved == 1 ? "" : "s") saved to your record."]
         if summary.skipped > 0 { parts.append("\(summary.skipped) left as they were: that day already had a value.") }
-        for refused in summary.refused { parts.append(refused.line ?? "Not saved, \(refused.label): \(refused.message)") }
+        parts += summary.refused.map(line)
         return parts.joined(separator: "\n")
     }
 
+    /// A value the engine refused, in its words: the single Save's line and save all's note.
+    static func line(_ refused: LabSaveSummary.Refused) -> String {
+        refused.line ?? "Not saved, \(refused.label): \(refused.message)"
+    }
+
     /// One waiting report saved as its own Save would (AC8b): its review read against the
-    /// record as it is now, its held choices or its defaults, then `run`.
+    /// record as it is now, its held choices or its defaults, then `run`. A refusal because
+    /// the record the review showed is gone would repeat for every report left: it stops
+    /// the run. A report with nothing to save never does.
     @MainActor
-    static func saveWaiting(_ result: LabResult, held: LabChoices?, engine: HealthEngine, store: RecordStore) async -> ReportOutcome {
-        guard result.failure == nil, let json = result.extractionJSON else { return .notSaved("Could not be read") }
+    static func saveWaiting(_ result: LabResult, held: LabChoices?, engine: HealthEngine, store: RecordStore) async -> Result<ReportOutcome, SaveAllStop> {
+        guard result.failure == nil, let json = result.extractionJSON else { return .success(.notSaved("Could not be read")) }
         let review: LabReview
         do {
             review = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
                                                 contentHash: result.original?.contentHash ?? "", deviceId: store.deviceId)
         } catch {
-            return .notSaved("Could not be read")
+            return .success(.notSaved("Could not be read"))
         }
         let plan = LabSavePlan(result: result, review: review, choices: held ?? LabChoices(review: review),
                                archiveOnly: LabSavePlan.archiveOnly(review, result: result, cloudConnected: store.cloudErase != nil))
-        if case .nothing(let reason) = plan { return .notSaved(reason) }
-        return await run(plan, result: result, store: store).reportOutcome
+        if case .nothing(let reason) = plan { return .success(.notSaved(reason)) }
+        let done = await run(plan, result: result, store: store)
+        if done.problem != nil, done.values + done.documents == 0, let stop = stop(store) { return .failure(stop) }
+        return .success(done.reportOutcome)
+    }
+
+    /// Why every save now would be refused, or nil: checked as the store checks each save,
+    /// against the record the review pinned when it opened (RecordStore's erase guard).
+    @MainActor
+    static func stop(_ store: RecordStore) -> SaveAllStop? {
+        let seen = store.pinned ?? store.screen
+        if seen.erase != store.cloudErase { return store.cloudErase == nil ? .noCloud : .recordChanged }
+        if seen.erase == nil, store.problem != nil { return .unreadable }
+        return nil
     }
 }

@@ -96,7 +96,7 @@ struct LabUploadSheet: View {
                           held: Binding(get: { held[result.id] }, set: { held[result.id] = $0 }),
                           saveAll: from == nil && waiting >= 2 ? ("Save all (\(waiting) reports)", { saveAll(results, from: index) }) : nil,
                           leaveTitle: from == nil ? nil : "Back to summary") {
-                send(.next(saved: $0))
+                send(.next($0))
             }
             .id(result.id)
         case .savingAll(_, let progress):
@@ -237,23 +237,24 @@ struct LabUploadSheet: View {
 
     /// Save all (US-52 AC8b): each waiting report saved in turn, in picked order, as its own
     /// Save would, through the same calls. A refusal that would repeat for every report left
-    /// (the record the run began on is gone: erased, or the cloud disconnected) stops the run.
-    /// The record stays pinned to the one the review showed until the run ends.
+    /// (the record the review showed is gone: erased, changed, or the cloud disconnected)
+    /// stops the run (`saveWaiting`). The record stays pinned to the one the review showed
+    /// until the run ends.
     private func saveAll(_ results: [LabResult], from index: Int) {
         store.pinScreen()
-        let began = store.cloudErase
         send(.saveAll)
         start {
             defer { store.unpinScreen() }
             for i in index..<results.count {
                 if Task.isCancelled { return }
                 send(.reportStarted(i))
-                let outcome = await LabReportSave.saveWaiting(results[i], held: held[results[i].id], engine: engine, store: store)
-                if case .notSaved(let reason) = outcome, store.cloudErase != began || store.problem != nil {
-                    send(.stopped(i, reason))
+                switch await LabReportSave.saveWaiting(results[i], held: held[results[i].id], engine: engine, store: store) {
+                case .success(let outcome):
+                    send(.reportFinished(i, outcome))
+                case .failure(let stop):
+                    send(.stopped(i, stop))
                     return
                 }
-                send(.reportFinished(i, outcome))
             }
         }
     }

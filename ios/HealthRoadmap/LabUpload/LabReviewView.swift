@@ -24,12 +24,17 @@ struct LabReviewView: View {
     /// The leave button's words when it does not go on to the next report (a review opened
     /// from the save-all summary goes back to it, AC8b); nil: Skip, Next report or Done.
     var leaveTitle: String? = nil
-    /// Skip, Next report or Done; true when this report's own Save ran.
-    let onDone: (Bool) -> Void
+    /// Skip, Next report or Done, with what this report's own Save did (nil: it did not run).
+    let onDone: (ReportOutcome?) -> Void
 
     @State private var review: LabReview?
-    @State private var outcome: String?
+    /// This report's own Save, once it ran.
+    @State private var saved: LabReportSave?
+    /// Why the review could not be read.
     @State private var problem: String?
+
+    /// What was saved, in the review's words; nil until a save wrote something.
+    private var outcome: String? { saved?.outcome }
 
     private var choices: Binding<LabChoices> {
         Binding(get: { held ?? LabChoices() }, set: { held = $0 })
@@ -50,7 +55,7 @@ struct LabReviewView: View {
             } else if let review {
                 reviewSections(review)
             }
-            if let problem { Section { Text(problem).foregroundStyle(.red) } }
+            if let problem = problem ?? saved?.problem { Section { Text(problem).foregroundStyle(.red) } }
             if let outcome { Section("Saved") { Text(outcome) } }
             Section {
                 if outcome == nil, let review, review.isLabReport, result.failure == nil {
@@ -66,7 +71,7 @@ struct LabReviewView: View {
                 }
                 // Held while a save runs: leaving would drop its outcome, and a second save
                 // of the same file could start before this one has committed.
-                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(outcome != nil) }
+                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome) }
                     .disabled(saving)
             }
             // Its own group under this report's Save: it acts on every waiting report, not this one.
@@ -115,7 +120,8 @@ struct LabReviewView: View {
                             Text("\(item.value) \(item.unit)").font(.body.monospacedDigit())
                             if let day = item.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
                             if let question = item.question {
-                                Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(.orange)
+                                // The status tone, not system orange: AA contrast as caption text, light and dark.
+                                Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(Color.status("attention"))
                             } else if item.check {
                                 Text("Check this value and its unit against the report").font(.caption).foregroundStyle(.orange)
                             }
@@ -195,9 +201,6 @@ struct LabReviewView: View {
         if case .nothing = plan { return }
         saving = true
         defer { saving = false }
-        problem = nil
-        let done = await LabReportSave.run(plan, result: result, store: store)
-        outcome = done.outcome
-        problem = done.problem
+        saved = await LabReportSave.run(plan, result: result, store: store)
     }
 }

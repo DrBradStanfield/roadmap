@@ -30,15 +30,15 @@ enum LabUploadFlow {
         case cancel
         case failed(String)
         case restart
-        /// Skip, Next report or Done on a review; `saved`: that report's own Save ran.
-        case next(saved: Bool)
+        /// Skip, Next report or Done on a review, with what that report's own Save did (nil: it did not run).
+        case next(ReportOutcome?)
         /// Save all: every report from the one shown to the last (AC8b).
         case saveAll
         case reportStarted(Int)
         case reportFinished(Int, ReportOutcome)
-        /// A refusal that would repeat for every report left (the record the run began on
-        /// is gone): the run stops and says so once; what was saved stays saved.
-        case stopped(Int, String)
+        /// A refusal that would repeat for every report left (the record the review showed
+        /// is gone): the run stops at that report and says why once; what was saved stays saved.
+        case stopped(Int, SaveAllStop)
         /// A not-saved report tapped in the summary.
         case open(Int)
         case done
@@ -66,8 +66,8 @@ enum LabUploadFlow {
             return .failed(message)
         case (_, .restart):
             return .choose
-        case (.review(let results, let index, let from?), .next(let saved)):
-            return .saveAllDone(results, saved ? from.marking(savedAt: index) : from)
+        case (.review(let results, let index, let from?), .next(let outcome)):
+            return .saveAllDone(results, outcome.map { from.adding($0, at: index) } ?? from)
         case (.review(let results, let index, .none), .next):
             return index + 1 < results.count ? .review(results, index: index + 1) : .finished
         case (.review(let results, let index, .none), .saveAll):
@@ -79,8 +79,9 @@ enum LabUploadFlow {
             progress.inFlight.remove(i)
             progress.outcomes[i] = outcome
             return progress.done == progress.total ? .saveAllDone(results, SaveAllSummary(progress)) : .savingAll(results, progress)
-        case (.savingAll(let results, let progress), .stopped(let i, let reason)):
-            return .saveAllDone(results, SaveAllSummary(progress, stoppedAt: i, reason: reason))
+        case (.savingAll(let results, var progress), .stopped(let i, let why)):
+            progress.outcomes[i] = .notSaved(why.words)
+            return .saveAllDone(results, SaveAllSummary(progress, stopped: why))
         case (.saveAllDone(let results, let summary), .open(let i)):
             return .review(results, index: i, from: summary)
         case (_, .done):
@@ -91,11 +92,33 @@ enum LabUploadFlow {
     }
 }
 
-/// How one report fared in save all.
-enum ReportOutcome: Equatable {
-    case saved(values: Int, documents: Int)
-    /// Not saved, with why in plain words ("Needs the test day").
-    case notSaved(String)
+/// How one report fared, in save all or by its own Save: what was saved, and each part not
+/// saved in the person's words (a value the engine refused, the original's problem, or why
+/// nothing was: "Needs the test day").
+struct ReportOutcome: Equatable {
+    var values = 0
+    var documents = 0
+    var notes: [String] = []
+    var savedNothing: Bool { values + documents == 0 }
+
+    static func saved(values: Int, documents: Int, notes: [String] = []) -> ReportOutcome {
+        ReportOutcome(values: values, documents: documents, notes: notes)
+    }
+
+    static func notSaved(_ reason: String) -> ReportOutcome { ReportOutcome(notes: [reason]) }
+}
+
+/// Why save all stopped: a refusal that would repeat for every report left, said once (AC8b).
+enum SaveAllStop: Error, Equatable {
+    case noCloud, recordChanged, unreadable
+
+    var words: String {
+        switch self {
+        case .noCloud: "Your cloud was disconnected, so this was not saved."
+        case .recordChanged: "Your record changed while this was open, so this was not saved."
+        case .unreadable: "Your record could not be read, so this was not saved."
+        }
+    }
 }
 
 /// Save all under way. Keyed by report index, so results may arrive in any order and
@@ -109,41 +132,51 @@ struct SaveAllProgress: Equatable {
     var total: Int { reports.count }
 }
 
-/// What save all did, said once at its end (AC8b).
+/// What save all did, said once at its end (AC8b). The totals and lists derive from each
+/// report's outcome, so a report saved later from the summary moves both.
 struct SaveAllSummary: Equatable {
-    struct NotSaved: Equatable {
+    struct Row: Equatable {
         let index: Int
-        let reason: String
+        let notes: [String]
     }
 
-    var values = 0
-    var documents = 0
-    /// In picked order.
-    var notSaved: [NotSaved] = []
+    /// In picked order; a report not tried has no outcome.
+    let reports: [Int]
+    var outcomes: [Int: ReportOutcome]
     /// Why the run stopped early; nil when every report was tried.
-    var stopped: String?
+    var stopped: SaveAllStop?
 
-    init(_ progress: SaveAllProgress, stoppedAt: Int? = nil, reason: String? = nil) {
-        for index in progress.reports {
-            switch progress.outcomes[index] {
-            case .saved(let v, let d)?:
-                values += v
-                documents += d
-            case .notSaved(let why)?:
-                notSaved.append(.init(index: index, reason: why))
-            case nil where index == stoppedAt:
-                notSaved.append(.init(index: index, reason: reason ?? "Not saved"))
-            case nil:
-                notSaved.append(.init(index: index, reason: "Not tried"))
-            }
-        }
-        stopped = reason
+    init(_ progress: SaveAllProgress, stopped: SaveAllStop? = nil) {
+        reports = progress.reports
+        outcomes = progress.outcomes
+        self.stopped = stopped
     }
 
-    /// The summary once a report opened from it was saved by its own Save.
-    func marking(savedAt index: Int) -> SaveAllSummary {
+    var values: Int { outcomes.values.reduce(0) { $0 + $1.values } }
+    var documents: Int { outcomes.values.reduce(0) { $0 + $1.documents } }
+
+    /// The reports that saved nothing, or were not tried.
+    var notSaved: [Row] {
+        reports.compactMap { index in
+            guard let outcome = outcomes[index] else { return Row(index: index, notes: ["Not tried"]) }
+            return outcome.savedNothing ? Row(index: index, notes: outcome.notes) : nil
+        }
+    }
+
+    /// The reports that saved something, with what they did not.
+    var partlySaved: [Row] {
+        reports.compactMap { index in
+            guard let outcome = outcomes[index], !outcome.savedNothing, !outcome.notes.isEmpty else { return nil }
+            return Row(index: index, notes: outcome.notes)
+        }
+    }
+
+    /// The summary once a report opened from it ran its own Save: what that save wrote adds
+    /// to what the report saved before (still in the record), and its notes are the latest.
+    func adding(_ outcome: ReportOutcome, at index: Int) -> SaveAllSummary {
         var next = self
-        next.notSaved.removeAll { $0.index == index }
+        let before = outcomes[index] ?? ReportOutcome()
+        next.outcomes[index] = .saved(values: before.values + outcome.values, documents: before.documents + outcome.documents, notes: outcome.notes)
         return next
     }
 }
