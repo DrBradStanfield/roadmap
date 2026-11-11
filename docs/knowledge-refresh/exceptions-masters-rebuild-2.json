@@ -400,7 +400,7 @@
   "date": "2026-11-10"
  },
  {
-  "check": "AC4",
+  "check": "AC7",
   "handle": "melatonin-benefits-forms-dosing-and-side-effects",
   "match": "product section changed: ### Product Mention",
   "reason": "Product section rewritten per review R3: claims hedged as docs/products.md words them and the 126 mg magnesium amount added; listed in ask_brad. (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
@@ -484,22 +484,6 @@
   "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
   "match": "heading missing from new body: ## Current evidence position",
   "reason": "Heading replaced by '## Current view (reviewed 12 November 2026)': the page now carries Brad's view, not an evidence position (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC7",
-  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host nice.org.uk: [105] National Institute for Health and Care Excellence. \"Osteoarthritis in over 16s: diagnosis a...",
-  "reason": "Official public source host not on the allow-list (NICE NG226; Fable 7: keep the link) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
-  "by": "orchestrator",
-  "date": "2026-11-10"
- },
- {
-  "check": "AC7",
-  "handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
-  "match": "reference line has unknown host nice.org.uk: [105] National Institute for Health and Care Excellence. \"Osteoarthritis in over 16s: diagnosis a...",
-  "reason": "Official public source host not on the allow-list (NICE NG226; Fable 7: keep the link) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
   "by": "orchestrator",
   "date": "2026-11-10"
  },
@@ -864,7 +848,7 @@
   "date": "2026-11-10"
  },
  {
-  "check": "AC4",
+  "check": "AC7",
   "handle": "glycine-benefits-forms-dosing-and-side-effects",
   "match": "product section changed: ### Product Mention",
   "reason": "Two hedges added per adversary ruling R2 (rats; low-quality magnesium evidence), as products.md words them; listed in ask_brad (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
@@ -1264,7 +1248,7 @@
   "date": "2026-11-10"
  },
  {
-  "check": "AC4",
+  "check": "AC7",
   "handle": "protein-powders-benefits-types-dosing-and-side-effects",
   "match": "product section changed: ### Protein Powder as Part of MicroVitamin+ Powder",
   "reason": "Product section gained the docs/products.md:186 safety cautions (vitamin K2 and blood thinners, bovine collagen, not under 18, not in pregnancy or nursing), so it matches products.md (ruling R6); Brad's creatine copy unchanged (masters-rebuild-2, 4b fix) (masters-rebuild-2, per-master fixer; checked by a fresh adversary re-check)",
