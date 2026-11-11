@@ -11,7 +11,7 @@ import { formatGradedOrLimit } from '@roadmap/health-core/lab-limits';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
-import { SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, readScreening, followupName, followupDateLabel, lungGroupShown, lungScreeningAsked } from '@roadmap/health-core/input-form';
+import { SCREENING_TEXT, SCREENING_OPTIONS, SCREENING_LABELS, readScreening, screeningForm } from '@roadmap/health-core/input-form';
 
 interface ScreeningQuestionsProps {
   place: Placement;
@@ -36,17 +36,21 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
   const { place, form, screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit, bloodTestHistory, age, writeScreening, renderScreeningDateInput } = props;
   const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait } = form;
 
-  const sex = inputs.sex;
   const scr = screeningsToInputs(screenings);
+  // Which groups and questions show, and the follow-up's words, are the screening table's,
+  // through screeningForm (screening-rules.ts groupAges and askAges): this file holds no age.
+  const groups = screeningForm(age, inputs.sex, scr).find(s => s.id === 'cancer-screening')?.groups ?? [];
+  const group = (id: string) => groups.find(g => g.id === id);
+  const field = (key: string) => groups.flatMap(g => g.fields).find(f => 'key' in f && f.key === key);
 
   /** Render result dropdown + follow-up status + follow-up date for a screening type. */
-  const renderResultFollowup = (type: string, method: string | undefined) => {
-    if (!readScreening(scr, `${type}_last_date`)) return null;
+  const renderResultFollowup = (type: string) => {
+    if (!field(`${type}_result`)) return null;
 
     const result = readScreening(scr, `${type}_result`);
     const followupStatus = readScreening(scr, `${type}_followup_status`);
-    const name = followupName(type, method);
-    const followupLabel = name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up';
+    const status = field(`${type}_followup_status`);
+    const date = field(`${type}_followup_date`);
 
     return (
       <>
@@ -61,9 +65,9 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
           </select>
         </div>
 
-        {result === 'abnormal' && (
+        {status && (
           <div className="health-field">
-            <label htmlFor={`${type}-followup-status`}>{followupLabel} status</label>
+            <label htmlFor={`${type}-followup-status`}>{status.label}</label>
             <select
               id={`${type}-followup-status`}
               value={followupStatus}
@@ -74,13 +78,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
           </div>
         )}
 
-        {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-          renderScreeningDateInput(scr,
-            `${type}_followup_date`,
-            followupDateLabel(name, followupStatus),
-            { futureOnly: followupStatus === 'scheduled' }
-          )
-        )}
+        {date?.kind === 'month' && renderScreeningDateInput(scr, date.key, date.label, { futureOnly: date.when === 'future' })}
       </>
     );
   };
@@ -92,18 +90,18 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         {SCREENING_TEXT.intro}
       </p>
 
-      {/* Colorectal (age 35-85, all genders) */}
-      {age >= 35 && age <= 85 && (
+      {/* Colorectal (all genders) */}
+      {group('colorectal') && (
         <div className="screening-group">
           <h4>Colorectal</h4>
           {place.in('colorectal')}
-          {age < 45 && (
+          {group('colorectal')!.notes.includes(SCREENING_TEXT.colorectalEarly) && (
             <div className="screening-notice">
               {SCREENING_TEXT.colorectalEarly}
             </div>
           )}
 
-          {age <= 75 ? (
+          {field('colorectal_method') ? (
             <>
               <div className="health-field">
                 <label htmlFor="colorectal-method">{SCREENING_LABELS.method}</label>
@@ -116,10 +114,10 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                 </select>
               </div>
 
-              {readScreening(scr, 'colorectal_method') && readScreening(scr, 'colorectal_method') !== 'not_yet_started' && (
+              {field('colorectal_last_date') && (
                 <>
                   {renderScreeningDateInput(scr, 'colorectal_last_date', SCREENING_LABELS.lastScreening)}
-                  {renderResultFollowup('colorectal', readScreening(scr, 'colorectal_method'))}
+                  {renderResultFollowup('colorectal')}
                 </>
               )}
             </>
@@ -131,8 +129,8 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         </div>
       )}
 
-      {/* Breast (female, age 40+) */}
-      {sex === 'female' && age >= 40 && (
+      {/* Breast (female) */}
+      {group('breast') && (
         <div className="screening-group">
           <h4>Breast</h4>
           {place.in('breast')}
@@ -153,21 +151,21 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
             </select>
           </div>
 
-          {readScreening(scr, 'breast_frequency') && readScreening(scr, 'breast_frequency') !== 'not_yet_started' && (
+          {field('breast_last_date') && (
             <>
               {renderScreeningDateInput(scr, 'breast_last_date', SCREENING_LABELS.lastMammogram)}
-              {renderResultFollowup('breast', readScreening(scr, 'breast_frequency'))}
+              {renderResultFollowup('breast')}
             </>
           )}
         </div>
       )}
 
-      {/* Cervical (female, age 25+) */}
-      {sex === 'female' && age >= 25 && (
+      {/* Cervical (female) */}
+      {group('cervical') && (
         <div className="screening-group">
           <h4>Cervical</h4>
           {place.in('cervical')}
-          {age <= 65 ? (
+          {field('cervical_method') ? (
             <>
               <div className="health-field">
                 <label htmlFor="cervical-method">{SCREENING_LABELS.method}</label>
@@ -180,10 +178,10 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                 </select>
               </div>
 
-              {readScreening(scr, 'cervical_method') && readScreening(scr, 'cervical_method') !== 'not_yet_started' && (
+              {field('cervical_last_date') && (
                 <>
                   {renderScreeningDateInput(scr, 'cervical_last_date', SCREENING_LABELS.lastScreening)}
-                  {renderResultFollowup('cervical', readScreening(scr, 'cervical_method'))}
+                  {renderResultFollowup('cervical')}
                 </>
               )}
             </>
@@ -195,8 +193,8 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         </div>
       )}
 
-      {/* Lung (age 50-80, all genders; past 80 for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
-      {lungGroupShown(age, scr) && (
+      {/* Lung (all genders; past its upper age for an abnormal CT or any stored LDCT answer, US-07 AC1g) */}
+      {group('lung') && (
         <div className="screening-group">
           <h4>Lung</h4>
           {place.in('lung')}
@@ -212,7 +210,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
             </select>
           </div>
 
-          {(readScreening(scr, 'lung_smoking_history') === 'former_smoker' || readScreening(scr, 'lung_smoking_history') === 'current_smoker') && (
+          {field('lung_pack_years') && (
             <>
               <div className="health-field">
                 <label htmlFor="lung-pack-years">{SCREENING_TEXT.packYearsLabel}</label>
@@ -232,7 +230,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                 <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
               </div>
 
-              {lungScreeningAsked(scr) && (
+              {field('lung_screening') && (
                 <>
                   <div className="health-field">
                     <label htmlFor="lung-screening">{SCREENING_LABELS.lungScreening}</label>
@@ -245,10 +243,10 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                     </select>
                   </div>
 
-                  {readScreening(scr, 'lung_screening') === 'annual_ldct' && (
+                  {field('lung_last_date') && (
                     <>
                       {renderScreeningDateInput(scr, 'lung_last_date', SCREENING_LABELS.lastLdct)}
-                      {renderResultFollowup('lung', readScreening(scr, 'lung_screening'))}
+                      {renderResultFollowup('lung')}
                     </>
                   )}
                 </>
@@ -258,8 +256,8 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         </div>
       )}
 
-      {/* Prostate (male, age 45+) — shared decision */}
-      {sex === 'male' && age >= 45 && (
+      {/* Prostate (male) — shared decision */}
+      {group('prostate') && (
         <div className="screening-group">
           <h4>Prostate</h4>
           {place.in('prostate')}
@@ -280,7 +278,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
             </select>
           </div>
 
-          {readScreening(scr, 'prostate_discussion') === 'will_screen' && (
+          {group('prostate')!.fields.some(f => f.kind === 'measurement') && (
             <>
               {/* PSA input with inline date picker */}
               {(() => {
@@ -366,8 +364,8 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         </div>
       )}
 
-      {/* Endometrial (female, age 45+) — awareness */}
-      {sex === 'female' && age >= 45 && (
+      {/* Endometrial (female) — awareness */}
+      {group('endometrial') && (
         <div className="screening-group">
           <h4>Endometrial</h4>
           {place.in('endometrial')}

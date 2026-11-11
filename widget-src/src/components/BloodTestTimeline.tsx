@@ -917,7 +917,7 @@ export function ValueCell({
     ? !!validateTypedValue(core.metric, text, core.display).error
     : readNumericCell(text) === undefined;
 
-  const submit = async () => {
+  const submit = async () => { clearBlurTimer(); // an armed click-away save would ask a second time
     const opened = openedOn.current;
     if (!opened || !onCorrect || typed === null) return;
     // The unit changed since the editor opened: the text is in the old one.

@@ -2435,6 +2435,14 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
   });
 });
 
+describe('US-36 AC8: the empty-folder refusal offers the chat drop on any device', () => {
+  it('points to the chat without limiting it to a computer', () => {
+    // The assistant reads a dropped file itself (file_results), so a phone works too.
+    expect(IMPORT_REFUSALS.emptyFolder).toMatch(/drop them into the chat, from any device\. Nothing was read\.$/);
+    expect(IMPORT_REFUSALS.emptyFolder).not.toMatch(/computer/);
+  });
+});
+
 describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or nothing', () => {
   function payloadFor(file: RoadmapFile, files: ExtractedFile[]): ImportPayload {
     return prepareImport(file, bundleOf(files), IMPORT_CTX).payload;

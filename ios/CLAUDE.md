@@ -44,7 +44,7 @@ This file adds only what is specific to the iPhone app.
   the shared one: `ALLOW_EXTRA_SIMULATOR=other-device ios/scripts/fresh-sim.sh` makes, boots and fills it.
   Or wrap all the steps in one script run through sim-run. Shut the demo device down when done.
 - A wait can last 30 minutes, longer than the Bash tool's 10-minute limit, which would kill it.
-  Run a sim-run command that may wait in the background (`run_in_background`).
+  Run a sim-run command that may wait in the background (`run_in_background`); it also waits while the load is 8+ or two Codex reviews run.
 - `ios/scripts/sim-run.sh status`: both devices, the holder, leftover simulator processes, and the
   cleanup commands for Brad to run (never kill simulator processes yourself). Its tests need macOS
   (lockf), so CI skips them: run `npx vitest run ios/scripts/sim-run.test.ts` after changing it.

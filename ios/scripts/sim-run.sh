@@ -17,6 +17,12 @@
 # shuts down after HR_SIM_IDLE_MIN minutes with no holder (a detached sleep, no daemon).
 # Settings: HR_SIM_WAIT_MIN (30), HR_SIM_IDLE_MIN (20; 0 keeps it booted), HR_SIM_RUN_LIMIT_SECONDS
 # (1800), HR_SIM_DEVICE_TYPE (iPhone-18-Pro, the 6.3-inch size App Store Connect takes), HR_SIM_HOME.
+# Load guard: before the lock, and once more after taking it, a run waits while the 1-minute load is at
+# least HR_SIM_MAX_LOAD (1.5 x CPUs, else 8) or two Codex reviews run (node tools/codex-review.mjs, not --codex fakes),
+# polling every HR_SIM_GUARD_POLL_SECONDS (30, at least 1), never holding the device; HR_SIM_IGNORE_LOAD=1
+# skips it. Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease
+# calls skip it; an unreadable load fails open; a non-numeric HR_SIM_MAX_LOAD skips the load check only
+# (US-71 AC8).
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -30,6 +36,12 @@ WAIT_SECONDS="${HR_SIM_WAIT_SECONDS:-$(( ${HR_SIM_WAIT_MIN:-30} * 60 ))}"
 IDLE_SECONDS="${HR_SIM_IDLE_SECONDS:-$(( ${HR_SIM_IDLE_MIN:-20} * 60 ))}"
 RUN_LIMIT="${HR_SIM_RUN_LIMIT_SECONDS:-1800}"
 KILL_SECONDS="${HR_SIM_KILL_SECONDS:-20}"
+MAX_LOAD="${HR_SIM_MAX_LOAD:-}" LOAD_PER_CPU=1.5 FALLBACK_LOAD=8
+POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}"
+NUM='^[0-9]+(\.[0-9]+)?$'
+# A bad poll setting must not busy-loop: anything non-numeric or under 1 second polls every second.
+[[ "$POLL" =~ $NUM ]] && awk -v p="$POLL" 'BEGIN { exit !(p + 0 >= 1) }' || POLL=1
+START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
 OWN=0 SHIM="" UDID="" TOKEN="$$-$(date +%s)"
 
@@ -48,14 +60,75 @@ write_info() {
 }
 describe() { echo "in use by pid $(field pid) for $(ago "$(field started)") ($(field cwd)): $(field command)"; }
 
-# Takes the lock on fd 9, waiting up to WAIT_SECONDS with one line naming the holder.
+left() { local r=$(( WAIT_SECONDS - ($(now) - START) )); [ "$r" -gt 0 ] && echo "$r" || echo 0; }
+
+# Sets MAX_LOAD to LOAD_PER_CPU x hw.ncpu, or FALLBACK_LOAD when the count cannot be read. Read on the
+# guard's first check, so status and lease calls never read it.
+default_limit() {
+  local n
+  n=$(sysctl -n hw.ncpu 2>/dev/null)
+  if [[ "$n" =~ ^[1-9][0-9]*$ ]]; then
+    MAX_LOAD=$(LC_ALL=C awk -v n="$n" -v f="$LOAD_PER_CPU" 'BEGIN { print n * f }')
+  else
+    MAX_LOAD=$FALLBACK_LOAD
+    echo "sim-run: load guard could not read the CPU count; using a load limit of $MAX_LOAD" >&2
+  fi
+}
+
+# True when the load guard trips, with REASON saying why. A Codex review is a process whose argv[0] is
+# node and whose first argument after node's leading flags (not -c/--check) is the script, ending in
+# codex-review.mjs (so vitest related on it does not count), with no --codex (the test suite's fake) after it.
+# Fails open: an unreadable sysctl or ps never makes a run wait; a non-numeric HR_SIM_MAX_LOAD skips
+# only the load check, and the Codex count stays on.
+guard_tripped() {
+  local load="" out codex check_load=1
+  [ "${HR_SIM_IGNORE_LOAD:-}" = 1 ] && return 1
+  [ -n "$MAX_LOAD" ] || default_limit
+  if ! [[ "$MAX_LOAD" =~ $NUM ]]; then
+    [ "$BADMAX" = 1 ] || echo "sim-run: load guard: HR_SIM_MAX_LOAD=$MAX_LOAD is not a number; checking Codex reviews only" >&2
+    BADMAX=1 check_load=0
+  else
+    load=$(sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }')
+  fi
+  if { [ "$check_load" = 1 ] && ! [[ "$load" =~ $NUM ]]; } || ! out=$(ps -axo pid=,command= 2>/dev/null) || [ -z "$out" ]; then
+    [ "$WARNED" = 1 ] || echo "sim-run: load guard could not read the load; not waiting" >&2
+    WARNED=1
+    return 1
+  fi
+  codex=$(printf '%s\n' "$out" | awk -v me=$$ '$1 != me { a = $2; sub(/.*\//, "", a); if (a != "node") next
+      i = 3; while (i <= NF && $i ~ /^-/) i++
+      if (i > NF || $i !~ /(^|\/)codex-review\.mjs$/) next
+      for (j = 3; j < i; j++) if ($j ~ /^(-c|--check)$/) next
+      for (; i <= NF; i++) if ($i ~ /^--codex(=|$)/) next
+      n++ } END { print n + 0 }')
+  REASON=""
+  [ "$check_load" = 1 ] && awk -v l="$load" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' && REASON="1-minute load $load is over $MAX_LOAD"
+  [ "$codex" -ge 2 ] && REASON="${REASON:+$REASON; }$codex Codex reviews running"
+  [ -n "$REASON" ]
+}
+
+# Waits while the guard trips, one line a minute, within what is left of WAIT_SECONDS.
+wait_guard() {
+  local last=-60 rem
+  while guard_tripped; do
+    if [ $(( $(now) - last )) -ge 60 ]; then
+      echo "sim-run: waiting (load guard): $REASON (HR_SIM_IGNORE_LOAD=1 skips this)" >&2
+      last=$(now)
+    fi
+    rem=$(left)
+    [ "$rem" -gt 0 ] || die "gave up after $(ago "$START") (load guard, not the lock): $REASON" 75
+    sleep "$(awk -v p="$POLL" -v r="$rem" 'BEGIN { print (p + 0 < r + 0) ? p : r }')"
+  done
+}
+
+# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder.
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
   if ! lockf -s -t 0 9; then
     echo "sim-run: the shared simulator is $(describe)" >&2
-    echo "sim-run: waiting up to $((WAIT_SECONDS / 60))m (HR_SIM_WAIT_MIN)" >&2
-    lockf -s -t "$WAIT_SECONDS" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+    echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
+    lockf -s -t "$(left)" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
   fi
   OWN=1
 }
@@ -302,7 +375,14 @@ trap on_exit EXIT
 trap 'on_signal 130' INT
 trap 'on_signal 143' TERM
 trap 'on_signal 129' HUP
-take_lock
+# Never wait on the guard while holding the device: if it trips after the lock is taken, let go.
+while :; do
+  wait_guard
+  take_lock
+  guard_tripped || break
+  exec 9>&-
+  OWN=0
+done
 write_info "$@"
 # In the background so a signal reaches the trap at once (bash defers traps while a foreground child
 # runs), with stdin kept (a background job would otherwise lose it).

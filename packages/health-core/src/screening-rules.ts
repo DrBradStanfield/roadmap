@@ -1,7 +1,8 @@
 /**
  * The one screening-rules table (audit A2-1). The rules lived in five copies; each
  * PR moves one copy onto this table, with screening-rules.golden.test.ts proving
- * nothing changed. F and S read it (steps 3 and 4); Q, R and M still keep their own copies.
+ * nothing changed. F, S and R read it (steps 3 to 5), M too (step 6), and Q's ScreeningQuestions
+ * through screeningForm (step 7); BoneDensity's DEXA questions still restate F's field gates.
  *   S  plan cards     suggestions.ts (cancer screening and DEXA)
  *   F  form data      input-form.ts screeningForm, screeningWrites
  *   Q  web JSX        ScreeningQuestions.tsx, BoneDensity.tsx
@@ -37,14 +38,16 @@
  *   endometrial screening-endometrial #cancer-screening, "Endometrial Cancer"
  *   dexa        screening-dexa        #other-health-screening, "Osteoporosis Screening"
  *
- * Imports: health-core only. Server code that reads this later deep-imports it
+ * Imports: health-core only, and types only, since types.ts and reminder-schedule.ts
+ * read their views from here. Server code that reads this later deep-imports it
  * (../../packages/health-core/src/screening-rules), never @roadmap/health-core.
- * When types.ts turns its constants into views, LUNG_PACK_YEARS must move here
- * first, or types.ts and this file import each other.
  */
 import type { ReminderCategory } from './reminders';
 import type { ScreeningInputs } from './types';
-import { LUNG_PACK_YEARS } from './types';
+
+/** Lung screening's smoking history, ACS 2023: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
 
 export type ScreeningId = 'colorectal' | 'breast' | 'cervical' | 'lung' | 'prostate' | 'endometrial' | 'dexa';
 export type AgeRange = readonly [min: number, max?: number];
@@ -285,16 +288,22 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
   },
 ];
 
+/** Breast: mammography moves from optional to recommended at 45 (the start card's priority and
+ *  text, and the by-age note), and the note's annual or biennial interval starts at 55. */
+export const BREAST_RECOMMENDED_FROM = 45;
+export const BREAST_ANNUAL_OR_BIENNIAL_FROM = 55;
+
 /** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
  *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
  *  gates; the golden pin guards the prose. */
 export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
-  & { readonly [K in NoteRef]: (age: number) => string } & { readonly breastStart: (age: number) => CardText } = {
+  & { readonly [K in NoteRef]: (age: number) => string }
+  & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
-  breastByAge: (age) => age <= 44
+  breastByAge: (age) => age < BREAST_RECOMMENDED_FROM
     ? 'Annual mammograms are optional at your age (40–44).'
-    : age <= 54
+    : age < BREAST_ANNUAL_OR_BIENNIAL_FROM
       ? 'Annual mammograms are recommended at your age (45–54).'
       : 'Annual or biennial mammograms are recommended at your age (55+).',
   prostateByAge: (age) => age < 50
@@ -302,7 +311,8 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
     : 'PSA testing is an option after an informed discussion with your doctor.',
   breastStart: (age) => ({
     title: 'Start breast cancer screening',
-    description: age >= 45
+    priority: age >= BREAST_RECOMMENDED_FROM ? 'attention' : 'info',
+    description: age >= BREAST_RECOMMENDED_FROM
       ? 'Mammography is recommended at your age. Discuss with your doctor.'
       : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
   }),
@@ -343,8 +353,9 @@ export const followupTrigger = (r: ScreeningRule): string | undefined => r.resul
 export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
 
 // ---------------------------------------------------------------------------
-// Views: today's shared constants, derived from the table. Only F and S read one yet
-// (screeningFollowupInfo); screening-rules.test.ts proves each deep-equals the constant it replaces.
+// Views: today's shared constants, derived from the table. F and S read screeningFollowupInfo, M
+// screeningMinAge (types.ts), R screeningScheduleLabels (reminder-schedule.ts). screening-rules.test.ts
+// proves each other view deep-equals the constant it will replace.
 // ---------------------------------------------------------------------------
 
 type Entry = readonly [key: string, months: number];

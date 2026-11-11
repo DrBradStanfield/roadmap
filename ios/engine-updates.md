@@ -65,6 +65,10 @@ Cutting build 11:
 - [ ] The contributor confirms on build 11 that his own labs import.
 - [ ] Leads H33 and H34 are fixed on main: a remote erase that joins a pay already running must also pay the ids it just owed, and an erase waits on at most one 2 s drain.
 
+Build 12:
+
+- [ ] U14 (build 12): replace the Swift upload-rule copy (UploadRules.swift `Rules.swift`, swiftVerdict, swiftMemberVerdict, lastComponent, pathExtension, and the LabFileReader limit constants it alone reads) with a fail-closed refusal with words. No floor bump is needed: the engine bundled with build 11 and later carries uploadVerdictsJson, and an OTA engine must beat the bundled one. Its own PR, on hold for the owner.
+
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.

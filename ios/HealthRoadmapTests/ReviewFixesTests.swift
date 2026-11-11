@@ -86,7 +86,7 @@ final class ReviewFixesTests: XCTestCase {
     func testFitnessWithOnlySleepShowsNothing_US73_AC2() {
         let card = LiveCard(value: 60, date: .now, trend: [])
         let fitness: [LiveMetric] = [.vo2Max, .restingHeartRate, .steps]
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card], keepsReconnect: true), .nothing)
-        XCTAssertEqual(LiveShown.shown([.sleep], connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card], keepsReconnect: false), .cards([.sleep]))
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .read([.sleep: card]), keepsReconnect: true), .nothing)
+        XCTAssertEqual(LiveShown.shown([.sleep], connected: true, access: .read([.sleep: card]), keepsReconnect: false), .cards([.sleep]))
     }
 }
