@@ -13,8 +13,6 @@
  *    never supersedes a value a person typed or corrected: otherwise a scale
  *    re-sync would undo the person's correction every time.
  *  - The two halves of a blood pressure land together or not at all.
- *  - A reading measured before the record's erase is skipped: the erase
- *    removed the rows that would have deduplicated it.
  *  - Deletions in the store are not handed over at all: the record is
  *    append-only (Brad 2026-09-24).
  *  - Height is the profile's, not a row: it fills an empty height only.
@@ -47,7 +45,7 @@ export interface DeviceSample {
   /**
    * When and where it was measured: the instant with the UTC offset of the
    * zone it was taken in, `2026-10-21T08:30:00+13:00`. Its date is the slot's
-   * day; as an instant it orders a day's readings and is compared with the erase.
+   * day; as an instant it orders a day's readings.
    */
   measuredAt: string;
   /** Shared by the two halves of one blood pressure: they land together or not at all. */
@@ -70,8 +68,6 @@ export interface DeviceImportResult {
     held: number;
     /** The day holds a later reading from the store. */
     earlier: number;
-    /** Measured before the record's erase. */
-    erased: number;
     /** Not a metric the record tracks, out of range, a future day or an unreadable time. */
     invalid: number;
   };
@@ -131,9 +127,8 @@ export function importDeviceSamples(
 ): DeviceImportResult {
   const { now, source } = options;
   const result: DeviceImportResult = {
-    file, added: 0, replaced: 0, heightSet: false, skipped: { known: 0, held: 0, earlier: 0, erased: 0, invalid: 0 },
+    file, added: 0, replaced: 0, heightSet: false, skipped: { known: 0, held: 0, earlier: 0, invalid: 0 },
   };
-  const erasedAt = file.meta.erasedAt ? Date.parse(file.meta.erasedAt) : null;
   const known = new Set(file.measurements.flatMap((row) => (row.externalId ? [row.externalId] : [])));
   // Copied once and edited in place, with an index of each slot's active row:
   // a first import can carry years of readings.
@@ -150,7 +145,6 @@ export function importDeviceSamples(
       skip('invalid');
       continue;
     }
-    if (erasedAt !== null && Date.parse(reading[0].measuredAt) < erasedAt) { skip('erased'); continue; }
 
     if (reading.length === 1 && reading[0].metricType === 'height') {
       if (heightFault(reading[0].value)) skip('invalid');

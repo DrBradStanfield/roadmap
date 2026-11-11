@@ -37,8 +37,7 @@
  *    other-source row holding its (metric, day) when the value, unit or limit
  *    differs, and appends nothing when they match (AC9, Brad 2026-11-02); a
  *    result whose day another row won in a merge, a row that does not correct
- *    its newest landed version, is such a conflict, not the person's call (AC9, R2, R1);
- *  - a result drawn before the record's erase does not land (AC10, D6).
+ *    its newest landed version, is such a conflict, not the person's call (AC9, R2, R1).
  * A result the app cannot read (AC4) is counted, never guessed.
  */
 import * as z from './zod';
@@ -316,7 +315,6 @@ export function importHealthRecords(
 ): { file: RoadmapFile; counts: HealthRecordsCounts } {
   const { now } = opts;
   const counts: HealthRecordsCounts = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 };
-  const erasedAt = file.meta.erasedAt ? Date.parse(file.meta.erasedAt) : null;
   // Every result is a lab row (US-66, one blood-test table): copied once and edited in
   // place, since a first import can carry years of results.
   const rows = [...file.labValues];
@@ -392,8 +390,6 @@ export function importHealthRecords(
 
     const reading = readingOf(obs, now);
     if (!reading) { counts.notRead++; continue; }
-    // AC10 (D6): the erase removed the rows that would have deduplicated it.
-    if (erasedAt !== null && Date.parse(reading.recordedAt) < erasedAt) { counts.notRead++; continue; }
 
     let slot = slotAt(reading, reading.recordedAt);
     // AC3: `issued` is this version's release, so a version dated by it alone keeps the

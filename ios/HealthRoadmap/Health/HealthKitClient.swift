@@ -95,6 +95,42 @@ final class HealthKitClient: HealthStoreClient {
         }
     }
 
+    func deleteSamples(syncIds: [String]) async throws -> [String] {
+        guard !syncIds.isEmpty else { return [] }
+        // Weight and waist samples carry the sync ids, a blood pressure's correlation does and
+        // its halves go with it. A kind whose write access is off is not asked: its ids stay.
+        let ours = Self.deletePredicate(syncIds: syncIds)
+        let types: [(HealthKind, HKSampleType)] = [(.weight, HKQuantityType(.bodyMass)), (.waist, HKQuantityType(.waistCircumference)),
+                                                   (.bloodPressure, HKCorrelationType(.bloodPressure))]
+        var deleted: Set<String> = []
+        var blocked = false
+        do {
+            for (kind, type) in types {
+                guard canWrite(kind) else { blocked = true; continue }
+                var found: [HKObject] = []
+                for sample in try await HKSampleQueryDescriptor(predicates: [.sample(type: type, predicate: ours)], sortDescriptors: []).result(for: store) {
+                    found.append(sample)
+                    if let pair = sample as? HKCorrelation { found += pair.objects }
+                }
+                if !found.isEmpty { try await store.delete(found) }
+                deleted.formUnion(found.compactMap { ($0.metadata?[HKMetadataKeySyncIdentifier] as? String)?.dropFirst(Self.syncPrefix.count) }.map(String.init))
+            }
+        } catch let error as HKError where error.code == .errorDatabaseInaccessible {
+            throw HealthStoreError.locked
+        }
+        // With a kind not asked, an id not found may be that kind's: it stays owed.
+        return blocked ? syncIds.filter { !deleted.contains($0) } : []
+    }
+
+    /// What a remote erase deletes (US-72 AC10): our sync ids AND this app as the source, so a
+    /// sample another app saved with a matching id stays.
+    static func deletePredicate(syncIds: [String]) -> NSPredicate {
+        NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: syncIds.map { syncPrefix + $0 }),
+            HKQuery.predicateForObjects(from: HKSource.default()),
+        ])
+    }
+
     func characteristics() -> HealthCharacteristics {
         // Each throws when not allowed; iOS never says which.
         let sex = (try? store.biologicalSex().biologicalSex).map { value -> String in
@@ -166,6 +202,12 @@ final class HealthKitClient: HealthStoreClient {
             store.execute(query)
             observers.append(query)
         }
+    }
+
+    func stopObserving() {
+        observers.forEach(store.stop)
+        observers = []
+        store.disableAllBackgroundDelivery { _, _ in }
     }
 
     // MARK: Pure parts (tested)
