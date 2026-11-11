@@ -58,7 +58,7 @@ interface UseChatStateOptions {
  *  switched (New chat, or a saved chat opened). */
 export interface ChatEditTarget {
   ask: () => string;
-  /** `stayed`: the thread the question was sent from is still on screen. `refusals`: the parts
+  /** `stayed`: the chat the question was sent from (its local identity) is still shown. `refusals`: the parts
    *  refused as unreadable (US-67 AC2), their edits already left out. */
   take: (edits: ProposedEdit[], asked: string, stayed: boolean, refusals?: ChatEditRefusal[]) => void;
   leave: () => void;
@@ -77,11 +77,18 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
   return e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229;
 }
 
+/** The chat on screen, carrying the server's `id` as data. Its `key` is the identity a reply is
+ *  checked against (US-67 AC2): a new chat mints a fresh one, so two unsaved chats never match;
+ *  a saved thread's is its own, so reopening it mid-send still shows its reply (US-15 AC7a). */
+let chatSeq = 0;
+const mintChat = (id: string | null) => ({ key: id === null ? `new:${++chatSeq}` : `thread:${id}`, id });
+
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
+  const [shownChat, setShownChat] = useState(() => mintChat(prefetchedData?.activeConversationId ?? null));
+  const activeConversationId = shownChat.id;
   const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
   // isLocalSender: true only on the instance that triggered the send — controls animation
@@ -91,8 +98,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending
   // instance only; other tabs show the dots.
   const [pending, setPending] = useState(NO_PENDING);
-  // The thread the reply in flight was sent from: the stream shows only there (US-15 AC7a).
-  const [sendingConversationId, setSendingConversationId] = useState<string | null>(null);
+  // The chat the reply in flight was sent from (its key): the stream shows only there (US-15 AC7a).
+  const [sendingChat, setSendingChat] = useState<string | null>(null);
   // A landed answer's thinking summary and articles read, by message id, for
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
@@ -113,7 +120,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // Refs for current values needed inside async callbacks and subscriptions
   const conversationsRef = useRef(conversations);
-  const activeConversationIdRef = useRef(activeConversationId);
+  const shownChatRef = useRef(shownChat);
   const messagesRef = useRef(messages);
   const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
@@ -124,10 +131,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const loadGenRef = useRef(0);
   useEffect(() => {
     conversationsRef.current = conversations;
-    activeConversationIdRef.current = activeConversationId;
+    shownChatRef.current = shownChat;
     messagesRef.current = messages;
     inputTextRef.current = inputText;
-  }, [conversations, activeConversationId, messages, inputText]);
+  }, [conversations, shownChat, messages, inputText]);
+  /** Show a chat under a new identity with the ref set now, where a later await reads it. */
+  const openChat = useCallback((id: string | null) => { shownChatRef.current = mintChat(id); setShownChat(shownChatRef.current); }, []);
 
   // Offline detection
   useEffect(() => {
@@ -178,12 +187,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       if (msg.type === 'state') {
         const { payload } = msg;
-        if (payload.activeConversationId !== activeConversationIdRef.current) {
+        if (payload.activeConversationId !== shownChatRef.current.id) {
           onRemoteConversationSelected?.();
           onProposeEditRef.current?.leave();
+          setShownChat(mintChat(payload.activeConversationId));
         }
         setConversations(payload.conversations);
-        setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
         // That tab's own send, tracked apart from this tab's (US-15 AC17c).
         onRemote(msg.instanceId, payload.sending, payload.isLoading);
@@ -193,7 +202,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       if (msg.type === 'thread-new') {
-        setActiveConversationId(null);
+        setShownChat(mintChat(null));
         setMessages([]);
         setError(null);
         onProposeEditRef.current?.leave();
@@ -203,8 +212,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       if (msg.type === 'thread-deleted') {
         const { id } = msg.payload;
         setConversations(prev => prev.filter(c => c.id !== id));
-        if (activeConversationIdRef.current === id) {
-          setActiveConversationId(null);
+        if (shownChatRef.current.id === id) {
+          setShownChat(mintChat(null));
           setMessages([]);
           onProposeEditRef.current?.leave();
         }
@@ -216,8 +225,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   const dropThread = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
-    if (activeConversationIdRef.current === id) {
-      setActiveConversationId(null);
+    if (shownChatRef.current.id === id) {
+      setShownChat(mintChat(null));
       setMessages([]);
       onProposeEditRef.current?.leave();
     }
@@ -233,22 +242,19 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       setConversations(result.conversations);
       if (!isLoggedIn && result.conversations.length > 0) {
         const latest = result.conversations[0];
-        activeConversationIdRef.current = latest.id; // dropThread reads it after the await
-        setActiveConversationId(latest.id);
+        openChat(latest.id); // dropThread reads it after the await
         const gen = ++loadGenRef.current;
         const msgs = await loadConversation(latest.id);
         if (!msgs) { dropThread(latest.id); return; }
         // The guest opened another thread, or a reply landed, meanwhile (US-15 AC7a).
-        if (activeConversationIdRef.current !== latest.id || gen !== loadGenRef.current) return;
+        if (shownChatRef.current.id !== latest.id || gen !== loadGenRef.current) return;
         setMessages(msgs);
       }
     }
-  }, [isLoggedIn, dropThread]);
+  }, [isLoggedIn, dropThread, openChat]);
 
   const selectConversation = useCallback(async (id: string) => {
-    // Set now, not after render: dropThread below reads it after the await.
-    activeConversationIdRef.current = id;
-    setActiveConversationId(id);
+    openChat(id); // dropThread below reads it after the await
     setError(null);
     onProposeEditRef.current?.leave();
     const gen = ++loadGenRef.current;
@@ -256,7 +262,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
     if (!msgs) { dropThread(id); return; }
     // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
-    if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
+    if (shownChatRef.current.id !== id || gen !== loadGenRef.current) return;
     setMessages(msgs);
     postState(instanceId, {
       conversations: conversationsRef.current,
@@ -266,10 +272,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       sending: ownSending(),
       error: null,
     });
-  }, [instanceId, dropThread]);
+  }, [instanceId, dropThread, openChat]);
 
   const startNewChat = useCallback(() => {
-    setActiveConversationId(null);
+    setShownChat(mintChat(null));
     setMessages([]);
     setError(null);
     onProposeEditRef.current?.leave();
@@ -284,7 +290,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (isOffline) { setError("You're offline. Check your connection and try again."); return; }
 
     setError(null);
-    const currentConvId = activeConversationIdRef.current;
+    const sentChat = shownChatRef.current;
+    const currentConvId = sentChat.id;
     const currentConvs = conversationsRef.current;
 
     const optimisticMsg: ChatMessage = {
@@ -301,7 +308,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     postInputSync(instanceId, '');
     startOwnSend();
     setIsLocalSender(true);
-    setSendingConversationId(currentConvId);
+    setSendingChat(sentChat.key);
 
     postState(instanceId, {
       conversations: currentConvs,
@@ -338,8 +345,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
     // on screen, and the reply stays with the thread it was sent from.
-    const shownId = activeConversationIdRef.current;
-    const stayed = shownId === currentConvId;
+    const shownId = shownChatRef.current.id;
+    const stayed = shownChatRef.current.key === sentChat.key;
     // The list as it is now: a thread dropped during the send stays dropped (US-15 AC7a).
     const convsNow = conversationsRef.current;
 
@@ -399,7 +406,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       let finalConversations = convsNow;
       let finalConvId = shownId;
       if (!currentConvId || restarted) {
-        if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
+        // The same chat, now a saved thread: it takes that thread's identity.
+        if (stayed) { finalConvId = result.conversationId; shownChatRef.current = mintChat(finalConvId); setShownChat(shownChatRef.current); }
         finalConversations = [{
           id: result.conversationId,
           title: cutText(trimmed, 80), // never half an emoji (US-15 AC26b)
@@ -459,7 +467,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   }, [instanceId]);
 
   // Another thread open while the reply streams (US-15 AC7a): it shows the dots, not the reply.
-  const onSendingThread = activeConversationId === sendingConversationId;
+  const onSendingThread = shownChat.key === sendingChat;
   return {
     state: {
       conversations,

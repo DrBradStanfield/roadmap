@@ -174,4 +174,27 @@ describe('US-67 AC2: an unreadable entry refuses its part, on screen only for th
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
     expect(reportedKinds()).toEqual([{ level: 'warning', tags: { feature: 'chat-edits', invalid: 'medication' } }]);
   });
+
+  // Two fresh chats both have no server id yet; each has its own local identity, so
+  // the first one's reply never lands in the second.
+  it('a first question in a fresh chat, then New chat while its reply is pending: no edit, no refusal, no Undo in the new chat', async () => {
+    const cloud = new MemoryCloud();
+    const view = await userOnStatin(cloud);
+    const newChat = async () => {
+      const panel = view.container.querySelector('.health-tool-chat') as HTMLElement;
+      fireEvent.click(panel.querySelector('[aria-label="Show conversations"]')!);
+      await act(async () => { fireEvent.click(panel.querySelector('.chat-new-btn')!); });
+      await wait(100);
+    };
+    await newChat();
+    await ask(view);
+    await newChat();
+    await replyLands([statin, badLdl, ldl]);
+    expect(await cloudMedications(cloud)).not.toContain('atorvastatin');
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
+    expect(document.body.querySelector('.chat-edit-refusal')).toBeNull();
+    expect(bodyText()).not.toContain('Medication updated from chat.');
+    expect(Array.from(document.body.querySelectorAll('.chat-banners button')).some((b) => b.textContent === 'Undo')).toBe(false);
+    expect(reportedKinds()).toEqual([{ level: 'warning', tags: { feature: 'chat-edits', invalid: 'field' } }]);
+  });
 });
