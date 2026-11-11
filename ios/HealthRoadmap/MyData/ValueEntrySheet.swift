@@ -83,12 +83,12 @@ struct ValueEntrySheet: View {
                     Button("Save", action: submit).disabled(number == nil || state.busy || typedUnit?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty == true)
                 }
             }
-            .confirmationDialog("This day already has a value", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { declineLater() } }), titleVisibility: .visible) {
+            .confirmationDialog("This day already has a value", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible, presenting: state.held) { held in
                 Button("Replace it") {
-                    guard let held = state.held, let replace else { return }
-                    write(.confirmed) { await replace(held.id, held.value) }
+                    guard let replace else { return }
+                    write(.confirmed(held)) { await replace(held.id, held.value) }
                 }
-            } message: {
+            } message: { _ in
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focused = true }
@@ -103,15 +103,15 @@ struct ValueEntrySheet: View {
     private func submit() {
         guard let number else { return }
         let when = DayText.iso(day)
-        write(.tapped, asks: replace == nil ? .never : .holding { Held(id: $0, value: number) }) { await save(number, when) }
+        write(.tapped, asks: Self.asks(canReplace: replace != nil, number: number)) { await save(number, when) }
     }
 
-    /// The dialog's dismissal sends `declined` one main-actor turn later, so "Replace it"'s
-    /// `confirmed` always lands first whichever order SwiftUI runs the button and the
-    /// isPresented set in; a late `declined` meets saving and is ignored. A tap outside
-    /// still reaches editing one turn later.
-    private func declineLater() {
-        Task { @MainActor in SheetSave.send(&state, .declined) }
+    /// A save closes the sheet.
+    static let closes = true
+    /// A refusal naming the day's row asks at once about that row and the number typed,
+    /// when the sheet can replace.
+    static func asks(canReplace: Bool, number: Double) -> SheetSave.Asks<Held> {
+        canReplace ? .holding { Held(id: $0, value: number) } : .never
     }
 
     /// `claim` moves the state to saving, or the tap does nothing; a refusal naming the day's
@@ -120,7 +120,7 @@ struct ValueEntrySheet: View {
         guard SheetSave.send(&state, claim) else { return }
         Task {
             let result = await edit()
-            SheetSave.send(&state, .landed(result, closes: true, asks: asks))
+            SheetSave.send(&state, .landed(result, closes: Self.closes, asks: asks))
             if state == .done { dismiss() }
         }
     }

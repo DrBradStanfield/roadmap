@@ -16,8 +16,10 @@ extension Array: SheetHeld where Element: Equatable {}
 /// flag is added beside it. Save, Cancel and swipe-down wait while `busy`. Rows that
 /// cannot be read show the engine's words, so a replace never names no rows. `done` is
 /// terminal: a closed sheet ignores every later event; a save that leaves its screen open
-/// (`closes: false`) goes back to editing instead. An event a state does not list
-/// leaves it as it is.
+/// (`closes: false`) goes back to editing instead. "Replace it" sends `confirmed` with the
+/// rows it was shown, so it is taken from asking, or from editing(nil) when the dialog's
+/// dismissal (`declined`) landed first: no order of the two drops the tap. An event a
+/// state does not list leaves it as it is.
 @MainActor
 enum SheetSave {
     enum State<Held: SheetHeld>: Equatable {
@@ -57,7 +59,8 @@ enum SheetSave {
         /// goes back to editing.
         case landed(RecordStore.ApplyResult, closes: Bool, asks: Asks<Held>)
         case rowsFound(Held?)
-        case confirmed
+        /// "Replace it", carrying the rows its dialog showed (only that button sends it).
+        case confirmed(Held)
         case declined
         /// The engine's words no longer fit: the user typed, or dismissed the alert showing them.
         case wordsStale
@@ -70,7 +73,7 @@ enum SheetSave {
 
     nonisolated static func transition<Held>(_ state: State<Held>, _ event: Event<Held>) -> State<Held> {
         switch (state, event) {
-        case (.editing, .tapped), (.editing, .unitChosen), (.asking, .confirmed): return .saving
+        case (.editing, .tapped), (.editing, .unitChosen), (.asking, .confirmed), (.editing(message: nil), .confirmed): return .saving
         case (.editing, .wordsStale), (.asking, .declined): return .editing(message: nil)
         case (.saving, .landed(.saved, let closes, _)): return closes ? .done : .editing(message: nil)
         case (.saving, .landed(.refused(let words, let row), _, let asks)):

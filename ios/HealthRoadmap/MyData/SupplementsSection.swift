@@ -55,12 +55,14 @@ struct SupplementsSection: View {
         }
     }
 
+    /// Not a sheet: the section stays open, so a save goes back to editing.
+    static let closes = false
+
     private func take(_ row: SupplementsView.Row) {
         guard SheetSave.send(&state, .tapped) else { return }
         Task {
             let result = saved(await store.apply(.form(.supplement(key: row.key, name: row.name, dose: row.dose, unit: row.unit, stopped: false))))
-            // Not a sheet: the section stays open, so a save goes back to editing.
-            SheetSave.send(&state, .landed(result, closes: false, asks: .never))
+            SheetSave.send(&state, .landed(result, closes: Self.closes, asks: .never))
         }
     }
 }

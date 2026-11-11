@@ -54,12 +54,9 @@ struct BloodPressureSheet: View {
                     Button("Save") { save(.tapped, replace: correcting != nil, seen: correcting?.pairIds ?? []) }.disabled(pair == nil || state.busy)
                 }
             }
-            .confirmationDialog("This day already has a blood pressure", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { declineLater() } }), titleVisibility: .visible) {
-                Button("Replace it") {
-                    guard let held = state.held else { return }
-                    save(.confirmed, replace: true, seen: held)
-                }
-            } message: {
+            .confirmationDialog("This day already has a blood pressure", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible, presenting: state.held) { held in
+                Button("Replace it") { save(.confirmed(held), replace: true, seen: held) }
+            } message: { _ in
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focus = .systolic }
@@ -89,13 +86,10 @@ struct BloodPressureSheet: View {
         return (s, d)
     }
 
-    /// The dialog's dismissal sends `declined` one main-actor turn later, so "Replace it"'s
-    /// `confirmed` always lands first whichever order SwiftUI runs the button and the
-    /// isPresented set in; a late `declined` meets saving and is ignored. A tap outside
-    /// still reaches editing one turn later.
-    private func declineLater() {
-        Task { @MainActor in SheetSave.send(&state, .declined) }
-    }
+    /// A save closes the sheet.
+    static let closes = true
+    /// A refused first save asks after reading the day's rows; a refused replace shows its words.
+    static func asks(replace: Bool) -> SheetSave.Asks<[String]> { replace ? .never : .findRows }
 
     /// `claim` (a tap on Save, or "Replace it") moves the state to saving, or the tap does nothing.
     private func save(_ claim: SheetSave.Event<[String]>, replace: Bool, seen: [String]) {
@@ -104,7 +98,7 @@ struct BloodPressureSheet: View {
         let edit = RecordEdit.bloodPressure(systolic: pair.systolic, diastolic: pair.diastolic, day: when, replace: replace, seenIds: seen)
         Task {
             let result = saved(await store.apply(edit, as: self.seen))
-            SheetSave.send(&state, .landed(result, closes: true, asks: replace ? .never : .findRows))
+            SheetSave.send(&state, .landed(result, closes: Self.closes, asks: Self.asks(replace: replace)))
             switch state {
             case .findingRows:
                 // The rows the prompt is about, read from the record as it is now (off the main
