@@ -3,20 +3,32 @@
 # onboarding runs from its first screen (Brad 2026-10-23). It removes the app,
 # its settings and its privacy answers (Health, camera, photos), and resets the
 # simulator's whole keychain (every app's, on that simulator only), then installs
-# and launches. Usage: ios/scripts/fresh-sim.sh [simulator name or UDID]
+# and launches.
+# Demos run on their own device, "HR Demo iPhone" (made once, by name), never on the shared one
+# sim-run.sh lends out (US-71 AC7: a demo holding the shared device was tried and dropped). It is a
+# second booted simulator, so it runs only with the escape hatch ios/CLAUDE.md documents for demos.
+# It stays booted for the demo; `ios/scripts/sim-run.sh status` shows it, its age and how to shut it down.
+# Usage: see ios/CLAUDE.md (xcodebuild and simulators)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+[ "${ALLOW_EXTRA_SIMULATOR:-}" = other-device ] || { echo "fresh-sim boots a second simulator for a demo; see ios/CLAUDE.md for how to run it." >&2; exit 64; }
 
-device="${1:-iPhone 18 Pro}"
+name="HR Demo iPhone"
 bundle=com.drstanfield.healthroadmap
 derived="${HR_DERIVED_DATA:-$TMPDIR/HealthRoadmap-sim}"
+cache="${HR_SIM_HOME:-$HOME/Library/Caches/health-roadmap-sim}"
 
-xcrun simctl boot "$device" 2>/dev/null || true
 node scripts/build-engine.mjs >/dev/null
-# xcodebuild takes a UDID only as id=, a name only as name=.
-if [[ "$device" =~ ^[0-9A-F-]{36}$ ]]; then where="id=$device"; else where="platform=iOS Simulator,name=$device"; fi
+# A generic destination builds for any simulator and needs none booted.
 xcodebuild -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
-  -destination "$where" -derivedDataPath "$derived" build -quiet
+  -destination "generic/platform=iOS Simulator" -derivedDataPath "$derived" build -quiet
+
+device=$(xcrun simctl list devices available | grep -F "    $name (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+[ -n "$device" ] || device=$(xcrun simctl create "$name" com.apple.CoreSimulator.SimDeviceType.iPhone-18-Pro)
+if ! xcrun simctl list devices booted | grep -qF "($device)"; then
+  xcrun simctl bootstatus "$device" -b >/dev/null
+  mkdir -p "$cache" && date +%s > "$cache/demo-booted"
+fi
 
 xcrun simctl uninstall "$device" "$bundle" 2>/dev/null || true
 xcrun simctl keychain "$device" reset

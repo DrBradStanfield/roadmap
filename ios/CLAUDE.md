@@ -33,21 +33,31 @@ This file adds only what is specific to the iPhone app.
 
 ## xcodebuild and simulators (shared by every session on this Mac)
 
-- Before any `xcodebuild`, run `pgrep -fl xcodebuild`. If another is running, report back; do not wait.
-- Run it under a time limit: `perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild ...`. A hung run blocks
-  every other session's builds: stop it and report. If builds keep hanging, a long-open Xcode app is
-  the likely cause; quit it.
-- A direct `xcodebuild test` call always carries `-parallel-testing-enabled NO` (the guard below denies
-  one without it). Parallel testing clones simulators that fill the disk and the process table.
-  `ios/scripts/test.sh` passes no such flag; it deletes its shut-down clones on exit.
-- One simulator per session. Shut it down when done (`xcrun simctl shutdown <udid>`).
-- Check the Mac's load first: `uptime` and `xcrun simctl list devices booted`.
-- The guard `.claude/hooks/simulator-guard.cjs` denies `xcodebuild test` without
-  `-parallel-testing-enabled NO`, and denies `simctl boot|create|clone` once two simulators are booted
-  (`ALLOW_EXTRA_SIMULATOR=1` for a demo). It cannot see commands inside `ios/scripts/*.sh`;
-  `test.sh`, `ui-test.sh` and `app-store-shots.sh` run `ios/scripts/clean-test-clones.sh` on exit.
-- Scripts: `test.sh` (engine, then unit tests in two time zones), `ui-test.sh` (UI tests, each on a
-  fresh install), `fresh-sim.sh [device]` (a true new install, so onboarding runs from the start).
+- One simulator for every session (US-71 AC7): "HR Shared iPhone", reached only through
+  `ios/scripts/sim-run.sh -- <command>` (xcodebuild test, build-for-testing, test-without-building;
+  simctl device commands; `{udid}` in the command is the device). It holds a kernel lock (lockf) for
+  the run: a second caller waits, naming the holder (30 min, `HR_SIM_WAIT_MIN`). It adds the device and
+  `-parallel-testing-enabled NO`, stops a run after 30 minutes, keeps the device booted, and shuts it
+  down after 20 idle minutes. Check your work and let the command finish; never hold it while coding.
+- `--reset-app` uninstalls the app and clears its simulator settings, so no data leaks between sessions.
+- Demos and the iOS Simulator MCP tool (outside the guard) use the demo device, "HR Demo iPhone", never
+  the shared one: `ALLOW_EXTRA_SIMULATOR=other-device ios/scripts/fresh-sim.sh` makes, boots and fills it.
+  Or wrap all the steps in one script run through sim-run. Shut the demo device down when done.
+- A wait can last 30 minutes, longer than the Bash tool's 10-minute limit, which would kill it.
+  Run a sim-run command that may wait in the background (`run_in_background`).
+- `ios/scripts/sim-run.sh status`: both devices, the holder, leftover simulator processes, and the
+  cleanup commands for Brad to run (never kill simulator processes yourself). Its tests need macOS
+  (lockf), so CI skips them: run `npx vitest run ios/scripts/sim-run.test.ts` after changing it.
+- Any other `xcodebuild` (archive, plain build): `pgrep -fl xcodebuild` first; if one runs, report
+  back. Time-limit it: `perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild ...`. A long-open Xcode app
+  is the likely cause of hung builds; quit it.
+- The guard `.claude/hooks/simulator-guard.cjs` denies simulator use outside sim-run.sh, an
+  `xcodebuild test` without `-parallel-testing-enabled NO`, and `simctl create|clone` once two are
+  booted. It is a seat belt, not a wall: it reads one command line, not scripts or every shell trick.
+  Only for a demo device, prefix `ALLOW_EXTRA_SIMULATOR=other-device`; its messages never offer this.
+- Scripts: `test.sh` (engine, then unit tests in two time zones) and `ui-test.sh` (UI tests, each on a
+  fresh install) run through sim-run.sh and `clean-test-clones.sh` on exit; `fresh-sim.sh` (a true new
+  install, onboarding from the start) runs on the demo device.
 
 ## Devices and data
 

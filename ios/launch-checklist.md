@@ -135,7 +135,7 @@ by the orchestrator, not a fresh reviewer.
     recording to confirm every screen is masked (the supplement search bar included).
     Decide whether to pause Clarity on two-button questions (tap position can show the answer).
 11. **App Store pictures** are in `ios/build/app-store-shots/` (run
-    `ios/scripts/app-store-shots.sh "iPhone 18 Pro"` again after any UI change).
+    `ios/scripts/app-store-shots.sh` again after any UI change; it runs on the shared simulator, an iPhone 18 Pro).
 
 ## To check on a real iPhone
 
