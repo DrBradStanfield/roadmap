@@ -102,7 +102,8 @@ export function useErase(props: EraseDoorProps): Erase {
     if (!window.confirm(ERASE_CONFIRM)) return false;
     const before = getEraseIdentity();
     store.dispatch({ type: 'own-start' });
-    const result = await deleteUserData();
+    // A throw is a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
+    const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch(() => ({ success: false, chatErased: false }));
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
     // shows that copy too (US-16 AC2a). A refused erase moved nothing.

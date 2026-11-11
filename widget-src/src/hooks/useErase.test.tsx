@@ -273,6 +273,15 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(alerts).toEqual([ERASE_FAILED, 'Not saved']);
   });
 
+  it('US-16 AC2f: an erase whose write throws ends, unlocked, and says it failed', async () => {
+    const { doors, result } = setup();
+    store.next = () => Promise.reject(new Error('network'));
+    await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    expect(result.current.erasing).toBe(false);
+    expect(doors.forget).not.toHaveBeenCalled();
+    expect(alerts).toEqual([ERASE_FAILED]);
+  });
+
   it('a cancelled confirm erases nothing', async () => {
     vi.stubGlobal('confirm', () => false);
     store.next = vi.fn();
