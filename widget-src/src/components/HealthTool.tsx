@@ -145,13 +145,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The erase the screen shows, and this tab's own erase (hooks/useErase.ts).
   // The chat's banners (a profile proposal, a medication Undo) go when the
   // screen moves to another erase, this tab's or another device's, even with
-  // post-erase rows. A re-read that brings no erase keeps them.
-  // A save the store refused re-reads the record the store holds, which also takes in a change the relay held (US-34 AC4).
+  // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
   const { store: eraseStore, shownErase, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
     clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
+    shows: () => showErase(), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, saved: profileClean, firstReadFailed } = useRecordApply({
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
@@ -164,11 +164,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
     async function loadData() {
-      // The mount's read, or a fresh one: the erase is read with the record, in one turn.
+      // The mount's read, or a fresh one: the erase is read with the record. Shown even if the store moved since, not as that erase: its arrival is read at loaded.
       const first = mountRead.current;
       mountRead.current = null;
       const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
-      eraseStore.dispatch({ type: 'read', identity: erase });
+      if (getEraseIdentity() === erase) eraseStore.dispatch({ type: 'read', identity: erase });
       if (hasSavedRecord(result)) {
         showRecord(result);
         setPreviousMeasurements(result.previousMeasurements);
