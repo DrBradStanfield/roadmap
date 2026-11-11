@@ -6,23 +6,37 @@
  * merges a record a newer device wrote. If one fails, the change that adds
  * that value must wait for an iPhone engine release.
  *
- * The edit path is the one both apps use: the form's `screeningWrites` over
- * the plan's derived screenings, each write applied with `setScreening`
- * (ios/engine/my-data-forms.ts:311-312; the web form sends the same writes
- * through InputPanel.tsx writeScreening to RoadmapStore.setScreening, which
- * calls the same `setScreening`).
+ * What is proven: the stored file keeps the value and its stamp through
+ * migrateFile, health-core's own writes and mergeFiles. The edits in case 2
+ * are the ones the web form and the assistant can send: the form's
+ * `screeningWrites` over the plan's derived screenings, each write applied
+ * with `setScreening` (the web form via InputPanel.tsx writeScreening and
+ * RoadmapStore.setScreening; the iPhone's edit path at
+ * ios/engine/my-data-forms.ts:311-312 calls the same pair). Today's iPhone
+ * does not offer those edits for an unknown method: it shows the method
+ * question blank and no date or result (screeningForm, input-form.ts:430-432;
+ * offered(), my-data-forms.ts:307-308). Picking a method there replaces the
+ * value, which is the person's own act (pinned below).
+ *
+ * Today's form also clears only answers that read non-empty after castEnum
+ * (input-form.ts:506), so an unknown value survives a clear its parent answer
+ * makes. That is pinned below too: the newer engine must ignore a new field
+ * when its parent answer no longer supports it (for example dexaNextDue only
+ * while dexaScreening is 'dexa_scan' with a date).
  */
 import { describe, it, expect } from 'vitest';
 import { mergeFiles } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
-import { screeningWrites } from './input-form';
+import { screeningForm, screeningWrites } from './input-form';
 import { setScreening } from './state-edits';
 import { computePlan, derivePlanInputs } from './plan';
 
 const T_BASE = '2026-01-01T00:00:00Z';
 const T_NEWER = '2026-11-01T09:00:00Z';
 const T_EDIT = '2026-11-02T10:00:00Z';
+/** Before T_NEWER: an edit this device made before it saw the newer device's value. */
+const T_STALE = '2026-10-01T08:00:00Z';
 const OPTS = { deviceId: 'dev_older', now: '2026-11-03T12:00:00Z' };
 const stamp = (lamport: number, updatedAt: string) => ({ lamport, updatedAt });
 
@@ -37,6 +51,8 @@ type Probe = {
 const PROBES: Probe[] = [
   { name: "cervicalMethod 'cotest_every_5yr'", values: { cervicalMethod: 'cotest_every_5yr' },
     edits: [['cervical_last_date', '2025-03'], ['cervical_result', 'normal']] },
+  { name: "cervicalMethod 'stopped'", values: { cervicalMethod: 'stopped' },
+    edits: [['cervical_last_date', '2025-03'], ['cervical_result', 'normal']] },
   { name: "cervicalMethod 'hpv_self_every_3yr'", values: { cervicalMethod: 'hpv_self_every_3yr' },
     edits: [['cervical_last_date', '2025-03'], ['cervical_result', 'normal']] },
   { name: "colorectalMethod 'stopped'", values: { colorectalMethod: 'stopped' },
@@ -45,6 +61,8 @@ const PROBES: Probe[] = [
     edits: [['lung_last_date', '2025-03'], ['lung_result', 'normal']] },
   { name: "unknown key dexaNextDue '2028-04'", values: { dexaNextDue: '2028-04' },
     edits: [['dexa_last_date', '2025-03'], ['dexa_result', 'normal']] },
+  // Dental fields live in file.screenings (merged field by field), so this probe
+  // covers them; a top-level file key would not be covered by this test.
   // No dental screening exists today, so the edit is to another screening's answers.
   { name: "unknown key dentalInterval '6'", values: { dentalInterval: '6' },
     edits: [['dexa_last_date', '2025-03'], ['dexa_result', 'normal']] },
@@ -66,10 +84,10 @@ function newerDeviceFile(probe: Probe): RoadmapFile {
 }
 
 /** Today's engine changes other answers the way both apps do. */
-function editOnTodaysEngine(file: RoadmapFile, edits: Array<[string, string]>): RoadmapFile {
+function editOnTodaysEngine(file: RoadmapFile, edits: Array<[string, string]>, at = T_EDIT): RoadmapFile {
   return edits.reduce((current, [key, value]) => {
     const writes = screeningWrites(derivePlanInputs(current).screenings, key, value);
-    return writes.reduce((next, [k, v]) => setScreening(next, k, v, T_EDIT), current);
+    return writes.reduce((next, [k, v]) => setScreening(next, k, v, at), current);
   }, file);
 }
 
@@ -102,6 +120,7 @@ describe('US-06 AC3, Change 11: an older engine keeps a screening value it does 
     });
 
     it('3. mergeFiles both ways keeps the value and its stamp', () => {
+      // Both copies hold the probe here, so this only checks merge does not drop it; 3b is the real merge test.
       for (const merged of [mergeFiles(edited, remote, OPTS), mergeFiles(remote, edited, OPTS)]) {
         expectProbeKept(merged, probe);
       }
@@ -110,7 +129,8 @@ describe('US-06 AC3, Change 11: an older engine keeps a screening value it does 
     it('3b. an edit made before this device saw the value does not overwrite it in the merge', () => {
       const before = createEmptyFile({ deviceId: 'dev_older', now: T_BASE });
       before.profile = remote.profile;
-      const staleEdit = editOnTodaysEngine(before, probe.edits);
+      const staleEdit = editOnTodaysEngine(before, probe.edits, T_STALE);
+      expect(staleEdit.meta.updatedAt < T_NEWER).toBe(true);
       for (const merged of [mergeFiles(staleEdit, remote, OPTS), mergeFiles(remote, staleEdit, OPTS)]) {
         expectProbeKept(merged, probe);
       }
@@ -120,6 +140,39 @@ describe('US-06 AC3, Change 11: an older engine keeps a screening value it does 
       for (const file of [loaded, edited, mergeFiles(edited, remote, OPTS)]) {
         expect(() => computePlan(file, new Date(OPTS.now))).not.toThrow();
       }
+    });
+  });
+  describe("today's form: a clear does not touch an unknown value; a new method replaces it", () => {
+    const load = (values: Record<string, string>) =>
+      migrateFile(JSON.parse(JSON.stringify(newerDeviceFile({ name: '', values, edits: [] }))), OPTS);
+    const read = (file: RoadmapFile) => file.screenings as unknown as Record<string, unknown>;
+
+    it("dexa 'not_yet_started' clears the date and result but leaves an unknown dexaNextDue", () => {
+      const dated = editOnTodaysEngine(load({ dexaNextDue: '2028-04' }), [['dexa_last_date', '2025-03'], ['dexa_result', 'normal']]);
+      expect(read(dated).dexaResult).toBe('normal');
+      const cleared = editOnTodaysEngine(dated, [['dexa_screening', 'not_yet_started']]);
+      expect(read(cleared).dexaScreening).toBe('not_yet_started');
+      expect(read(cleared).dexaLastDate ?? '').toBe('');
+      expect(read(cleared).dexaResult ?? '').toBe('');
+      expect(read(cleared).dexaNextDue).toBe('2028-04');
+    });
+
+    it("lung 'never_smoked' clears pack years but leaves lungScreening 'stopped'", () => {
+      const cleared = editOnTodaysEngine(load({ lungScreening: 'stopped' }), [['lung_smoking_history', 'never_smoked']]);
+      expect(read(cleared).lungSmokingHistory).toBe('never_smoked');
+      expect(read(cleared).lungPackYears ?? null).toBeNull();
+      expect(read(cleared).lungScreening).toBe('stopped');
+    });
+    // colorectalMethod has no sibling clear: only its own answer writes it, and that replaces it (as below).
+
+    it("an unknown cervical method shows no date or result, and picking 'hpv_every_5yr' replaces 'cotest_every_5yr'", () => {
+      const loaded = load({ cervicalMethod: 'cotest_every_5yr' });
+      const keys = screeningForm(62, 'female', derivePlanInputs(loaded).screenings).flatMap((s) => s.groups)
+        .filter((g) => g.id === 'cervical').flatMap((g) => g.fields).map((f) => ('key' in f ? f.key : ''));
+      expect(keys).toEqual(['cervical_method']);
+      const picked = editOnTodaysEngine(loaded, [['cervical_method', 'hpv_every_5yr']]);
+      expect(read(picked).cervicalMethod).toBe('hpv_every_5yr');
+      expect(picked.screenings.fieldStamps?.cervicalMethod?.updatedAt).toBe(T_EDIT);
     });
   });
 });
