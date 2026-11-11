@@ -22,6 +22,7 @@ import { useChatBusy } from './useChatBusy';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
+import type { ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
 
 /** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */
@@ -57,8 +58,9 @@ interface UseChatStateOptions {
  *  switched (New chat, or a saved chat opened). */
 export interface ChatEditTarget {
   ask: () => string;
-  /** `stayed`: the thread the question was sent from is still on screen. */
-  take: (edits: ProposedEdit[], asked: string, stayed: boolean) => void;
+  /** `stayed`: the thread the question was sent from is still on screen. `refusals`: the parts
+   *  refused as unreadable (US-67 AC2), their edits already left out. */
+  take: (edits: ProposedEdit[], asked: string, stayed: boolean, refusals?: ChatEditRefusal[]) => void;
   leave: () => void;
 }
 
@@ -386,8 +388,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // Apply any form edits the model proposed. Only the local sender reaches
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
-      if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
+      if (result.proposedEdits?.length || result.editRefusals?.length) {
+        onProposeEditRef.current?.take(result.proposedEdits ?? [], asked, stayed, result.editRefusals);
       }
       if (result.subscriptionCard) {
         const card = result.subscriptionCard;

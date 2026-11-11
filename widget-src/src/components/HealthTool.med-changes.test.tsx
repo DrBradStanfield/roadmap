@@ -554,3 +554,26 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
     expect(await recorded()).toEqual({});
   });
 });
+
+// US-67 AC2: one reply, a readable statin change beside an escalation entry that
+// is not its shape. Read as chat-api reads it, the whole medication part is
+// refused, as on the iPhone: nothing of it saves, the escalation answer stays,
+// and the banner gives the iPhone's words.
+describe('US-67 AC2: a malformed medication entry refuses every medication edit of the reply', () => {
+  it('a valid statin change beside a malformed escalation: nothing saves, the answer stays, the phone\'s words show', async () => {
+    const { readProposedEdits } = await import('@roadmap/health-core/chat-edits');
+    const { refuseUnreadableEdits } = await import('@roadmap/health-core/chat-edit-refusals');
+    await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['statin_escalation', 'not_tolerated']], '#statin-name');
+    const before = await rowCounts();
+    const { edits, refusals } = refuseUnreadableEdits(readProposedEdits([
+      { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+      { kind: 'medication', medicationKey: 'statin_escalation', drugName: 42, doseValue: null, doseUnit: null },
+    ]));
+    act(() => chat.props!.onProposeEdit.take(edits, chat.props!.onProposeEdit.ask(), true, refusals));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', statin_escalation: 'not_tolerated@null' });
+    expect(await rowCounts()).toEqual(before);
+    expect(document.querySelector('.chat-med-undo')!.textContent).toContain("The chat's medication change could not be read, so nothing was saved.");
+    expect(document.querySelector('.chat-med-undo-btn')).toBeNull();
+  });
+});

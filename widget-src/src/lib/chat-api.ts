@@ -5,6 +5,7 @@
 import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
 import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
@@ -47,6 +48,8 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
+  /** Parts of the reply's edits refused as unreadable, with the iPhone's words (US-67 AC2). */
+  editRefusals?: ChatEditRefusal[];
   /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
   subscriptionCard?: SubscriptionCard;
 }
@@ -407,9 +410,15 @@ export async function sendMessage(
         Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
       });
 
-    // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind or a
-    // known kind that is not its shape is dropped, never applied as something else.
-    const { edits } = readProposedEdits(data.proposedEdits);
+    // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind is
+    // left out, and an entry of a known kind that is not its shape refuses every edit of its part.
+    // A missing or non-list `proposedEdits` is no edits, as the iPhone takes it.
+    const read = Array.isArray(data.proposedEdits) ? readProposedEdits(data.proposedEdits) : { edits: [], invalid: [] };
+    // The invalid kinds only: never a value or the reply's words (CLAUDE.md, health values never in telemetry).
+    if (read.invalid.length > 0) {
+      Sentry.captureMessage('Chat edits unreadable', { level: 'warning', tags: { feature: 'chat-edits', invalid: [...new Set(read.invalid)].join(',') } });
+    }
+    const { edits, refusals } = refuseUnreadableEdits(read);
     return {
       result: {
         conversationId: data.conversationId,
@@ -419,6 +428,7 @@ export async function sendMessage(
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
         ...(edits.length > 0 ? { proposedEdits: edits } : {}),
+        ...(refusals.length > 0 ? { editRefusals: refusals } : {}),
         ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,

@@ -134,17 +134,28 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
   });
 
   // US-67 AC2: the web reads a reply's edits once, through health-core's readProposedEdits,
-  // as the phone does; an entry of a known kind that is not its shape never reaches ChatEdits.
-  it('US-67 AC2: drops malformed and wrong-typed edits of a known kind, keeps the valid ones', async () => {
+  // as the phone does. An unknown kind is left out; an entry of a known kind that is not its
+  // shape refuses every edit of its part (medications, or values and profile), with the phone's words.
+  it('US-67 AC2: a malformed entry refuses its whole part; the other part still applies', async () => {
     const field = { kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null };
     const med = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' };
-    const badMed = { kind: 'medication', medicationKey: 'statin', drugName: 42, doseValue: null, doseUnit: null };
+    const badMed = { kind: 'medication', medicationKey: 'statin_escalation', drugName: 42, doseValue: null, doseUnit: null };
     const wrongTypedValue = { kind: 'field', field: 'ldlC', displayValue: '4.1', unitSystem: 'si', date: null };
-    const unknownField = { kind: 'field', field: 'notAMetric', displayValue: 1, unitSystem: 'si', date: null };
-    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [badMed, field, wrongTypedValue, { kind: 'goal', target: 5 }, unknownField, med] }]));
-    expect((await sendMessage('q', null, null, [], () => {}, true)).result?.proposedEdits).toEqual([field, med]);
-    fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [badMed, wrongTypedValue, { kind: 'goal' }] }]));
-    expect((await sendMessage('r', null, null, [], () => {}, true)).result).not.toHaveProperty('proposedEdits');
+    const unknown = { kind: 'goal', target: 5 };
+    const medsWords = "The chat's medication change could not be read, so nothing was saved.";
+    const reviewWords = "The chat's suggestion could not be read, so nothing was saved.";
+    const reply = async (proposedEdits: unknown[]) => {
+      fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits }]));
+      return (await sendMessage('q', null, null, [], () => {}, true)).result;
+    };
+    expect(await reply([med, badMed, field, unknown])).toMatchObject({ proposedEdits: [field], editRefusals: [{ part: 'medications', words: medsWords }] });
+    expect(await reply([wrongTypedValue, field, med])).toMatchObject({ proposedEdits: [med], editRefusals: [{ part: 'review', words: reviewWords }] });
+    const both = await reply([badMed, med, wrongTypedValue, field, unknown]);
+    expect(both).not.toHaveProperty('proposedEdits');
+    expect(both?.editRefusals).toEqual([{ part: 'medications', words: medsWords }, { part: 'review', words: reviewWords }]);
+    // A readable reply is unchanged: no refusals.
+    expect(await reply([field, med])).toMatchObject({ proposedEdits: [field, med] });
+    expect(await reply([field, med])).not.toHaveProperty('editRefusals');
   });
 
   it('a refusal or fallback done line carries isFallback and replaces the streamed text', async () => {

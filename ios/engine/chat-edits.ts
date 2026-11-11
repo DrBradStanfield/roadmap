@@ -22,6 +22,7 @@ import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
 import { isReadableRow, readableView } from '../../packages/health-core/src/readable-rows';
+import { CHAT_EDIT_UNREADABLE, partRefusal } from '../../packages/health-core/src/chat-edit-refusals';
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
 export type ChatEdit =
@@ -48,13 +49,12 @@ type Seen = Array<[string, unknown]>;
 
 type Outcome = { ok: true; file: RoadmapFile } | { ok: false; reason: string; message: string };
 
-const UNREADABLE = 'The chat\'s suggestion could not be read, so nothing was saved.';
+const UNREADABLE = CHAT_EDIT_UNREADABLE;
 const NOTHING_SAVED = 'Nothing was saved.';
 const STALE = `Your record changed on another device while this was shown. ${NOTHING_SAVED}`;
 /** A held row or profile value this build cannot read (US-65 AC2): named, never shown. */
 const UNREADABLE_HELD = 'a value this app cannot read';
 const NOT_PREPARED = `This could not be prepared. ${NOTHING_SAVED}`;
-const MEDS_UNREADABLE = 'The chat\'s medication change could not be read, so nothing was saved.';
 
 /** A part's work, so a failure in one part refuses that part alone and never sinks the reply. */
 function guarded<T>(work: () => T, failed: T): T {
@@ -110,7 +110,8 @@ export function applyChatEdit(file: RoadmapFile, edit: ChatEdit, now: string, ch
  */
 function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[], now: string):
   { ok: true; file: RoadmapFile; lines: ChatLine[]; undo: ChatMedicationRow[] | null } | { ok: false; message: string } {
-  if (invalid.includes('medication') || invalid.includes('list')) return { ok: false, message: MEDS_UNREADABLE };
+  const refusal = partRefusal(invalid, 'medications');
+  if (refusal) return { ok: false, message: refusal };
   const meds = edits.filter((e): e is ProposedMedicationEdit => e.kind === 'medication');
   const stated = new Set(meds.map((e) => e.medicationKey));
   const saved = readableView(file).file.medications;
@@ -184,7 +185,8 @@ function reviewPart(file: RoadmapFile, edits: ProposedEdit[], invalid: string[],
   const lines: ChatReviewLine[] = [];
   const seen: Seen = [];
   const refuse = (message: string) => ({ file, lines, seen, refusal: `${message} ${NOTHING_SAVED}` });
-  if (invalid.includes('field') || invalid.includes('profile') || invalid.includes('list')) return { file, lines, seen, refusal: UNREADABLE };
+  const refusal = partRefusal(invalid, 'review');
+  if (refusal) return { file, lines, seen, refusal };
   const fields = edits.filter((e): e is ProposedFieldEdit => e.kind === 'field');
   const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
   if (fields.length === 0 && profiles.length === 0) return { file, lines, seen, refusal: null };

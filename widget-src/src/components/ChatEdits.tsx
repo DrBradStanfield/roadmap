@@ -12,6 +12,7 @@ import { VITALS_INPUT_FIELDS, chatMedicationChange, unsavedProfile, type ChatMed
 import { RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { askedUnder, getEraseIdentity, loadLatestMeasurementsSync, holdsUnreadableMedication, stillShown } from '../lib/roadmap-data';
 import type { ChatEditTarget } from '../hooks/useChatState';
+import type { ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { trackProductEvent } from '../lib/server-api';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
@@ -62,10 +63,11 @@ export function useChatEdits({
   // US-16 AC2: a sex or height the chat proposed, waiting for the user's Save.
   // The form writes these on change, so nothing reaches the form until then.
   const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
-  // A reply's edits refused because the record moved since the question: the
-  // erase it was refused at, so the line outlasts that erase and no later one.
-  // It goes at the next send or conversation switch too, as the iPhone's does.
-  const [notSavedAt, setNotSavedAt] = useState<string | null>(null);
+  // A reply's edits refused: because the record moved since the question (the
+  // erase it was refused at, so the line outlasts that erase and no later one),
+  // or because a part of the reply could not be read (US-67 AC2, the iPhone's
+  // words). It goes at the next send or conversation switch too, as the iPhone's does.
+  const [notice, setNotice] = useState<{ kind: 'recordChanged'; at: string } | { kind: 'unreadable'; words: string[] } | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -128,7 +130,7 @@ export function useChatEdits({
     setProfileProposal(null);
   };
 
-  const handleProposeEdit = useCallback((edits: ProposedEdit[], asked: string, stayed: boolean) => {
+  const handleProposeEdit = useCallback((edits: ProposedEdit[], asked: string, stayed: boolean, refusals: ChatEditRefusal[] = []) => {
     // The record moved since the question, or the store holds an erase the
     // screen does not show: the reply comes from the conversation the erase
     // tombstones. None of it applies, and the chat says so, as the iPhone's
@@ -136,10 +138,12 @@ export function useChatEdits({
     // An earlier reply's Undo goes too: "Not saved" never shows beside it. A
     // reply for a thread no longer on screen says nothing in the new one.
     if (!stillShown(asked)) {
-      if (stayed) { setMedUndo(null); setNotSavedAt(getEraseIdentity()); }
+      if (stayed) { setMedUndo(null); setNotice({ kind: 'recordChanged', at: getEraseIdentity() }); }
       return;
     }
-    setNotSavedAt(null);
+    // A refused part saves nothing; its line replaces an earlier reply's Undo for medications.
+    setNotice(refusals.length > 0 ? { kind: 'unreadable', words: refusals.map(r => r.words) } : null);
+    if (refusals.some(r => r.part === 'medications')) setMedUndo(null);
     let editedField: string | null = null;
     let inGrid = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
@@ -183,9 +187,9 @@ export function useChatEdits({
   }, [applyFieldEdit, applyMedicationEdit, unitSystem, inputsRef, showForm, reveal]);
   /** The chat's turn asks under the erase shown as it sends (US-16 AC2a). */
   const chatEditTarget: ChatEditTarget = useMemo(() => ({
-    ask: () => { setNotSavedAt(null); return askedUnder(); },
+    ask: () => { setNotice(null); return askedUnder(); },
     take: handleProposeEdit,
-    leave: () => setNotSavedAt(null),
+    leave: () => setNotice(null),
   }), [handleProposeEdit]);
 
   const undoMedEdit = useCallback(() => {
@@ -199,7 +203,7 @@ export function useChatEdits({
   const clearChatEdits = useCallback(() => {
     setMedUndo(null);
     setProfileProposal(null);
-    setNotSavedAt((at) => (at === getEraseIdentity() ? at : null));
+    setNotice((n) => (n?.kind === 'recordChanged' && n.at === getEraseIdentity() ? n : null));
   }, []);
   /** The user's own sex or height outranks a chat proposal for it (US-16 AC2). */
   const dropProfileProposal = useCallback(() => setProfileProposal(null), []);
@@ -208,12 +212,12 @@ export function useChatEdits({
   // the chat applies + states the change; this banner offers the Undo).
   // Both portal outside the masked widget root, so their column carries
   // the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners).
-  const banners = (medUndo || pendingProfile || notSavedAt !== null) && createPortal(
+  const banners = (medUndo || pendingProfile || notice) && createPortal(
     <div className="chat-banners no-print" data-clarity-mask="true">
-      {notSavedAt !== null && (
+      {notice && (
         <div className="chat-med-undo" role="status">
-          <span className="chat-med-undo-text">{RECORD_CHANGED_SINCE_ASKED}</span>
-          <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={() => setNotSavedAt(null)}>✕</button>
+          <span className="chat-med-undo-text">{notice.kind === 'recordChanged' ? RECORD_CHANGED_SINCE_ASKED : notice.words.join(' ')}</span>
+          <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
         </div>
       )}
       {medUndo && (
