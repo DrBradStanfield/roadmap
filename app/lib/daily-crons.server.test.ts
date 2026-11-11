@@ -68,6 +68,8 @@ interface CronCase {
   name: string;
   load: () => Promise<{ start: () => void; stop: () => void }>;
   lockName: string;
+  feature: string;               // Sentry tag on a stuck report
+  stuckHours: number;            // the cron's stuck limit
   beforeTarget: string;          // one hour before the first eligible tick (a tick fires an hour after start)
   day: string;                   // lock_date the first eligible tick claims
   nextDay: string;
@@ -79,17 +81,17 @@ interface CronCase {
 const crons: CronCase[] = [
   { name: 'trending',
     load: async () => { const m = await import('./trending-cron.server'); return { start: m.startTrendingCron, stop: m.stopTrendingCron }; },
-    lockName: 'trending_cron', beforeTarget: '2026-08-27T14:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
+    lockName: 'trending_cron', feature: 'trending_cron', stuckHours: 1, beforeTarget: '2026-08-27T14:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-27T13:30:00Z',
     ok: async () => ({ admin: okAdmin }), hang: HANG },
   { name: 'reminder v2',
     load: async () => { const m = await import('./reminder-v2-cron.server'); return { start: m.startReminderV2Cron, stop: m.stopReminderV2Cron }; },
-    lockName: 'reminder_v2_cron', beforeTarget: '2026-08-28T07:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
+    lockName: 'reminder_v2_cron', feature: 'reminder_v2_cron', stuckHours: 6, beforeTarget: '2026-08-28T07:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-28T06:30:00Z',
     ok: async () => [], hang: HANG },
   { name: 'chat purge',
     load: async () => { const m = await import('./chat-purge-cron.server'); return { start: m.startChatPurgeCron, stop: m.stopChatPurgeCron }; },
-    lockName: 'chat_text_purge', beforeTarget: '2026-08-28T03:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
+    lockName: 'chat_text_purge', feature: 'chat_text_purge_cron', stuckHours: 6, beforeTarget: '2026-08-28T03:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-28T02:30:00Z',
     ok: noRows, hang: HANG }, // US-28 AC7
 ];
@@ -188,6 +190,20 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     expect(lock).toHaveBeenCalledTimes(1);
     expect(work).toHaveBeenCalledTimes(1);
   });
+  it('a run past its stuck limit is reported once, with the cron and the hours only (US-28 AC7)', async () => {
+    const { lock } = await boot(c, c.beforeTarget, true);
+    lock.mockResolvedValue(true);
+    work.mockImplementation(c.hang);
+    const { captureMessage } = await import('@sentry/react-router');
+    vi.mocked(captureMessage).mockClear();
+    await tick();
+    await vi.advanceTimersByTimeAsync(DAY_MS);
+    // Ticks fall on whole hours after the start, so the first one past the limit is an hour over it.
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage).toHaveBeenCalledWith('Daily cron run still going', {
+      level: 'warning', tags: { feature: c.feature, hours: c.stuckHours + 1 },
+    });
+  });
 });
 
 describe('trending cron lock per store', () => {
@@ -227,10 +243,13 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     const selectFilters: string[] = [];
     let messagesPass: () => Promise<unknown> = HANG; // the first process dies here
     db.from = (table) => {
-      const q: { op: string; payload?: any; id?: string } = { op: 'select' };
+      const q: { op: string; payload?: any; id?: string; holds?: string[] } = { op: 'select' };
       const answer = async (): Promise<unknown> => {
         if (table === 'chat_match_events' && q.op === 'select') {
-          return { data: events.filter((r) => r.message !== null).map((r) => ({ ...r })), error: null };
+          // Honour the `.or()` the purge gave: a row qualifies if any named column holds text.
+          const holds = q.holds ?? [];
+          const rows = events.filter((r) => holds.some((col) => (r as any)[col] != null));
+          return { data: rows.map((r) => ({ ...r })), error: null };
         }
         if (table === 'chat_match_events' && q.op === 'update') {
           Object.assign(events.find((r) => r.id === q.id)!, { message: q.payload.message });
@@ -246,7 +265,10 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
           : (...args: any[]) => {
             if (key === 'update' || key === 'insert') { q.op = key; q.payload = args[0]; }
             if (key === 'eq') q.id = args[1];
-            if (key === 'or' && table === 'chat_match_events') selectFilters.push(args[0]);
+            if (key === 'or' && table === 'chat_match_events') {
+              selectFilters.push(args[0]);
+              q.holds = String(args[0]).split(',').map((f) => f.replace(/\.not\.is\.null$/, ''));
+            }
             return builder;
           },
       });
@@ -274,6 +296,7 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     await vi.waitFor(() => expect(inserts).toHaveLength(1));
 
     expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge');
+    expect(selectFilters.length).toBeGreaterThan(0);
     expect(selectFilters.every((f) => f.includes('message.not.is.null'))).toBe(true);
     expect(vi.mocked(scrubQuestion).mock.calls.map(([text]) => text)).toEqual(['question still-held']);
     expect(inserts[0].map((r) => r.question)).toEqual(['scrubbed: question still-held']);

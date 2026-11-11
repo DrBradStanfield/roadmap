@@ -23,7 +23,7 @@ vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 
 const HOUR_MS = 60 * 60 * 1000;
 
-// vi.resetModules gives the cron a fresh module graph (fresh lastRunDate);
+// vi.resetModules gives the cron a fresh module graph (a fresh day state);
 // mock instances PERSIST across resets, so import them from the graph and
 // reset their state here rather than trusting top-level imports.
 async function loadCron() {
@@ -144,7 +144,7 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
 
     cron.startReminderV2Cron();
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 1: lost → day marked done
-    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 2: short-circuits on lastRunDate
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 2: skips, the day is done
     expect(lockMock).toHaveBeenCalledTimes(1);
     expect(optinsMock).not.toHaveBeenCalled();
   });
