@@ -8,7 +8,7 @@ import { MAX_NAME_LENGTH } from './lab-extraction';
 import { oneLine, printable, REPO_PUBLIC } from './plan';
 import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
-import { EMAIL_SOURCE } from './sentry-scrub';
+import { EMAIL_SOURCE, EXTRA_METRIC_NAMES } from './sentry-scrub';
 import * as z from './zod';
 import {
   FEEDBACK_REPO,
@@ -37,15 +37,18 @@ const VALUE_WITH_UNIT = new RegExp(
   'i',
 );
 
-/**
- * Every word a metric or catalogued test is known by; 2 over-refuses on purpose.
- * "vit" is typed for vitamin (US-73 AC8); "a1c", "bmi" and "height" are how a
- * person writes values no name in either list spells (US-32 AC9a).
- */
-const METRIC_WORDS = new Set([...metricNameWords(2), 'vit', 'a1c', 'bmi', 'height']);
-
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
+
+/** The Sentry scrub's names that no metric or catalogue name spells, as the guard splits each one. */
+const EXTRA_NAMES = EXTRA_METRIC_NAMES.map((name) => foldLpa(name).match(FEEDBACK_WORD) ?? []);
+
+/**
+ * Every word a metric or catalogued test is known by; 2 over-refuses on purpose.
+ * The one-word names the Sentry scrub adds join them, so "vit" (typed for
+ * vitamin, US-73 AC8), "a1c", "bmi" and "height" are names here too (US-32 AC9a).
+ */
+const METRIC_WORDS = new Set([...metricNameWords(2), ...EXTRA_NAMES.filter((name) => name.length === 1).flat()]);
 /** A number typed straight after a word ("ldl140", "a1c7.2"); the word ends in a letter. */
 const GLUED_NUMBER = /^([a-z][a-z0-9]*[a-z])(\d+(?:[.,]\d+)?)$/;
 
@@ -71,8 +74,9 @@ const METRIC_DISTANCE = 3;
  * factor 1 was 200" the generic words inside it cannot carry the value out of
  * reach of "insulin", and the 1 inside it is the name, not a value.
  */
-const METRIC_PHRASES = [...new Set([...LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]), 'blood pressure'].map(foldLpa))]
+const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
   .map((name) => name.match(FEEDBACK_WORD) ?? [])
+  .concat(EXTRA_NAMES)
   .filter((phrase) => phrase.length > 1);
 
 /** "My LDL is 3.2" — a bare number a few words from a name this record knows. */

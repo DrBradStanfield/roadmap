@@ -233,6 +233,14 @@ export const SCRUB_UNITS: readonly string[] = caselessUnique([
   '"',
 ]);
 
+/**
+ * What no name in either list spells: the phrases a person writes, and the
+ * metrics that live in the calculator rather than the catalogue. "vit" is the
+ * typed short form of vitamin ("Vit D 45", US-09 AC7g). The feedback guard
+ * reads the same list (US-32 AC9a).
+ */
+export const EXTRA_METRIC_NAMES: readonly string[] = ['blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit'];
+
 /** Metric and lab names that make an adjacent number a health value. */
 export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
   // Every word a metric or catalogued test is known by. 3 is the floor for a
@@ -243,10 +251,7 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
   // however short ("Na 140", "Ca 2.4"), and a name ending in a digit keeps the
   // digit while the value goes ("IGF 1 200", "Free T4 15").
   ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
-  // What no name in either list spells: the phrases a person writes, and the
-  // metrics that live in the calculator rather than the catalogue.
-  // "vit" is the typed short form of vitamin ("Vit D 45", US-09 AC7g).
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit',
+  ...EXTRA_METRIC_NAMES,
 ])];
 
 /** A number, or a blood-pressure pair ("140/90"). */
