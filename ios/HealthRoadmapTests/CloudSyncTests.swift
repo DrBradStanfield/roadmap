@@ -691,7 +691,11 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
     }
 
     /// A Try again whose open is still reading when "Use a different cloud" runs lands
-    /// after it and changes nothing: Disconnect moved the generation on.
+    /// after it and changes nothing. The engine supersedes it: Disconnect's cloudClose moves
+    /// `latest` on (ios/engine/cloud.ts:521) and the late cloudOpen throws 'superseded'
+    /// (:167-171), so only CloudSync.open's catch-path generation check runs here. Its
+    /// success-path checks (in and after the handover) are pinned by CloudConnectionPinsTests
+    /// testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins.
     func testAnOpenLandingAfterUseADifferentCloudChangesNothing_US54_AC2d() async throws {
         let (store, sync, drive) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
