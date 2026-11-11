@@ -324,7 +324,7 @@ Use this guide to match a shopper's primary concern to the right product. Eviden
 
 - **Choose MicroVitamin Capsules if:** you want the core 25 ingredients (USA and UK/EU v9, Canada v7) / 26 ingredients (Australia v8.5), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point (per-market prices: MicroVitamin Capsules table)
 - **Choose MicroVitamin+ Powder if:** you want collagen, creatine for muscle/brain, fiber for gut health, or want everything in one scoop. Best value — saves $89.01/mo vs buying separately (computed for v8). Available in Mixed Berry or Unflavored
-- **Do NOT take both** — the Powder contains the full MicroVitamin core formula (US v9, 25 core ingredients, in every market), so taking it with any MicroVitamin Capsules would double-dose the vitamins and minerals. It matches the US v9 capsules except for magnesium (224 mg in the Powder vs 150 mg); it is NOT the same as the UK/EU v9 capsules (the Powder has 224 mg of magnesium, not 126 mg, and the US v9 forms: thiamine mononitrate, boron, chromium and selenium as glycinate, AlgeD3™), so a UK/EU customer switching from capsules to powder gets a different formula.
+- **Do NOT take both** — the Powder contains the full MicroVitamin core formula (US v9, 25 core ingredients; Unflavored is v9 now, Mixed Berry follows in about 3–4 weeks), so taking it with any MicroVitamin Capsules would double-dose the vitamins and minerals. It matches the US v9 capsules except for magnesium (224 mg in the Powder vs 150 mg); it is NOT the same as the UK/EU v9 capsules (the Powder has 224 mg of magnesium, not 126 mg, and the US v9 forms: thiamine mononitrate, boron, chromium and selenium as glycinate, AlgeD3™), so a UK/EU customer switching from capsules to powder gets a different formula.
 
 ### Can I take Sleep alongside MicroVitamin or MicroVitamin+ Powder?
 
@@ -382,7 +382,7 @@ MicroVitamin contains four bone-supportive nutrients designed to work through co
 | Vitamin K2 MK-7 90mcg (encapsulated; Canada v7 is not) | K2VITAL® DELTA | Australia: K2VITAL® Vitamin K2 |
 | Vitamin D3 1,000IU (encapsulated; Canada v7 is not) | AlgeD3™ | UK/EU v9 capsules: 25mcg as Vitashine®, from lichen |
 | Magnesium Taurate | 150mg (USA capsules; MicroVitamin+ Powder v9 224mg) | UK and EU v9 capsules 126mg; Australia: see Regional Formula Differences |
-| Boron | 3mg glycinate (USA capsules, and MicroVitamin+ Powder v9 in every market) | UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules) (if your bottle shows NPN 80132012, go by the label or contact us); Australian capsules 3 mg as borax |
+| Boron | 3mg glycinate (USA capsules, and Unflavored MicroVitamin+ Powder v9; Mixed Berry follows in about 3–4 weeks) | UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules) (if your bottle shows NPN 80132012, go by the label or contact us); Australian capsules 3 mg as borax |
 
 UK, EU and Canada: give the boron dose only and attach no bone benefit to boron (content map §7).
 
