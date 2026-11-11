@@ -18,6 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = 'scripts/build-privacy-page.mjs';
+// Mirrors the script's PAGES: each master and the first line of its public body.
+const MASTERS: Record<string, { md: string; start: string }> = {
+  connector: { md: 'privacy-connector-addendum.md', start: 'This section covers one optional feature' },
+  app: { md: 'privacy-app-addendum.md', start: 'This policy covers the Health Roadmap iPhone app' },
+};
 
 describe('build-privacy-page.mjs', () => {
   it('holds no raw NUL byte', () => {
@@ -66,5 +71,13 @@ describe('build-privacy-page.mjs', () => {
     const html = render(page, '2026-03-01T00:00:00Z');
     expect(html).toContain('<p>Last updated 1 March 2026</p>');
     expect(html.match(/last updated|effective date|updated on/gi)).toHaveLength(1);
+    // The master's header holds maintainer dates ("(last ...)", "Republished ...");
+    // the build drops everything above the public body's first line.
+    const master = readFileSync(join(ROOT, 'docs', MASTERS[page].md), 'utf8');
+    const header = master.slice(0, master.indexOf('\n' + MASTERS[page].start));
+    expect(header.length).toBeGreaterThan(0);
+    for (const word of ['Republished', 'first published', '(last ']) expect(html).not.toContain(word);
+    const lines = header.split('\n').map((l) => l.replace(/^>\s?/, '').trim()).filter((l) => l && !l.startsWith('#'));
+    for (const l of lines) expect(html, l).not.toContain(l);
   });
 });
