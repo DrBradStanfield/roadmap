@@ -11,7 +11,7 @@ import { buildErasedFile } from './erase';
 import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearOffFile, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { debounceArmed, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
@@ -66,12 +66,6 @@ export function visibleContentOf(file: RoadmapFile): string {
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
 export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
-
-/** The stored originals of the documents still live in `file`: an erase
- *  leaves these (US-09 AC20, AC23; US-11 AC6). */
-function liveOriginals(file: RoadmapFile): Set<string> {
-  return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
-}
 
 /** The refusal for a stored record a newer app wrote, read from its raw
  *  `schemaVersion` before any shape check; null for bytes that do not parse,
@@ -151,6 +145,9 @@ export class RecordSession {
   private shown: string | null = null;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
+  /** The erase this device's off-file data was last cleared for, set by
+   *  open(): a clear is owed while it is not this copy's (US-11 AC7). */
+  private clearedFor = '';
 
   private constructor(
     private readonly host: RecordHost,
@@ -213,6 +210,7 @@ export class RecordSession {
         }
       }
     }
+    session.clearedFor = session.eraseIdentity; // opened at this erase: no clear owed
     return session;
   }
 
@@ -349,6 +347,7 @@ export class RecordSession {
         this.dispatch({ type: 'hold' }); // an edit made during the read waits too
         this.saveWarning = undefined;
         this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
+        this.clearedFor = this.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
         this.dispatch({ type: 'eraseStarted' }); // after the build, so one that throws refuses nothing
         try {
           if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
@@ -459,6 +458,7 @@ export class RecordSession {
     // change nobody made.
     if (contentOf(merged) === before) {
       this.revisionSeen = revision;
+      this.settleClear();
       return false;
     }
     // A local edit that landed during the read would be lost by taking the
@@ -528,29 +528,23 @@ export class RecordSession {
     }
   }
 
-  /**
-   * Clear this device's off-file health data for the erase this copy is at
-   * (US-11 AC1, AC6), sparing only the stored originals of documents that
-   * outlive it (US-09 AC20, AC23): those live in this copy, and those live in
-   * the device's own record copy once the erase is applied to it, so an
-   * original the erase listed goes even where a stale device copy still names
-   * it. A device copy that cannot be read names nothing, as in erase().
-   * The page calls it too, after an erase whose write failed.
-   */
+  /** Clear this device's off-file health data for the erase this copy is at
+   *  (record-host `clearOffFile`). The page calls it too, after an erase
+   *  whose write failed. */
   clearOffFileData(): void {
-    this.clearOffFile(this.current);
+    clearOffFile(this.host, this.current, this.ctx());
+    this.clearedFor = this.eraseIdentity;
   }
 
-  private clearOffFile(after: RoadmapFile): void {
-    const ctx = this.ctx();
-    let kept = after;
+  /** The clear owed since an erase was taken in, once per adopt(), and per
+   *  re-read that brings nothing; a throw is reported and leaves it owed. */
+  private settleClear(): void {
+    if (this.clearedFor === this.eraseIdentity) return;
     try {
-      const body = this.host.deviceRecord?.();
-      if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
-    } catch {
-      /* unreadable: it names nothing */
+      this.clearOffFileData();
+    } catch (error) {
+      this.host.report(error, { op: 'clear-off-file', repeat: false });
     }
-    this.host.clearOffFileData(liveOriginals(kept));
   }
 
   /** Device tier: write the erased record over bytes no record reads, at the
@@ -582,9 +576,10 @@ export class RecordSession {
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
     const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
     // Taken in before the clear: an edit the host makes from it lands on the
-    // merge, and a clear that throws never leaves the pre-erase copy (US-11 AC7).
+    // merge, and a clear that throws never leaves the pre-erase copy nor
+    // hides the erase from the page (US-11 AC7).
     this.current = merged;
-    if (erasedElsewhere) this.clearOffFile(merged);
+    this.settleClear();
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);
     return visibleContentOf(merged) === seen ? null : { erase: erasedElsewhere ? eraseIdentityOf(merged) : null };
@@ -715,10 +710,15 @@ export class RecordSession {
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
       return true;
     } catch (error) {
-      if (owns()) { // as above; an adopt() that threw after its pass ended fails no newer pass
-        this.dispatch({ type: 'passFailed' });
-        this.running = null;
+      // A throw once the last pass landed and its claim ended (an adopt() or a
+      // listener after it): the write stands, and a newer save may own the
+      // mode and the copy. It is reported, and fails neither (US-11 AC7).
+      if (!owns()) {
+        this.host.report(error, { op: 'after-save', repeat: false });
+        return true;
       }
+      this.dispatch({ type: 'passFailed' });
+      this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);

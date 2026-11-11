@@ -9,7 +9,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
-import type { RecordHost } from './record-host';
+import type { RecordHost, RemoteChange } from './record-host';
 import type { SaveEvent, SaveState } from './save-state';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
@@ -1300,16 +1300,19 @@ describe('RecordSession: a save asked for while a landed save still adopts (US-1
     let release!: () => void;
     const gate = new Promise<void>((r) => { release = r; });
     let inner: Promise<void> | null = null;
+    let storedWhenInner: string[] | null = null;
     fake.host.clearOffFileData = () => {
       fake.host.clearOffFileData = () => {};
       add(session, 'c', 82, '2026-10-03'); // one more change, inside that save's adopt()
       const write = store.write.bind(store);
       store.write = async (...args: Parameters<TestStore['write']>) => { store.write = write; await gate; return write(...args); };
-      inner = session.flush();
+      inner = session.flush().then(() => { storedWhenInner = ids(stored(store.cloud)); });
     };
     add(session, 'b', 81, '2026-10-02');
     await session.flush();
     expect(inner).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storedWhenInner).toBeNull(); // the flush made with 'c' waits for the write that carries it
     // The flush made inside adopt() started the pass that carries 'c', after
     // the landed pass's claim ended. The old save never clears that newer
     // claim, so this flush joins it: it answers only once that write lands,
@@ -1323,6 +1326,7 @@ describe('RecordSession: a save asked for while a landed save still adopts (US-1
     await Promise.all([inner, late]);
     expect(answered).toBe(true);
     expect(store.writes - writes).toBe(1);
+    expect(storedWhenInner).toContain('c');
     expect(ids(stored(store.cloud))).toContain('c');
   });
 });
@@ -1379,36 +1383,151 @@ describe("RecordSession: an edit made while another device's erase is taken in (
     expect(ids(record)).toContain('c');
   });
 
-  describe('a clear that throws keeps the erased copy, and surfaces as before', () => {
-    const boom = () => { throw new Error('clear refused'); };
+  describe('a clear that throws keeps the erased copy, announces the erase, and stays owed', () => {
+    /** The host's off-file clear, failing its first `fails` calls; counts every call. */
+    function clearThatThrows(fake: Fake, fails = Infinity) {
+      const clears = { calls: 0 };
+      const real = fake.host.clearOffFileData;
+      fake.host.clearOffFileData = (keep) => {
+        clears.calls += 1;
+        if (clears.calls <= fails) throw new Error('clear refused');
+        real(keep);
+      };
+      return clears;
+    }
+    /** What the page hears: each change the session announces. */
+    function heard(fake: Fake) {
+      const changes: RemoteChange[] = [];
+      fake.host.remoteChanged = (change) => void changes.push(change);
+      return changes;
+    }
 
-    it('through a save: the flush fails and the failure is reported', async () => {
-      const { fake, session, erased } = await erasedElsewhere();
-      fake.host.clearOffFileData = boom;
+    it('through a save: the flush lands, the page hears the erase, and the throw is reported', async () => {
+      const { store, fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
       add(session, 'b', 81, '2026-10-02');
-      await expect(session.flush()).rejects.toThrow(/Cloud sync failed/);
-      expect(fake.reports).toEqual([{ cause: undefined, repeat: false }]);
+      await session.flush();
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual([{ op: 'clear-off-file', repeat: false }]);
+      expect(clears.calls).toBe(1);
       expect(session.eraseIdentity).toBe(erased);
-      expect(ids(session.file)).not.toContain('a');
+      expect(ids(session.file)).toEqual(['b']);
+      expect(ids(stored(store.cloud))).toEqual(['b']);
     });
 
-    it('through a re-read: the re-read rejects with the error', async () => {
+    it('through a re-read: it answers true, the page hears the erase, and the throw is reported', async () => {
       const { fake, session, erased } = await erasedElsewhere();
-      fake.host.clearOffFileData = boom;
-      await expect(session.refreshFromRemote()).rejects.toThrow('clear refused');
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual([{ op: 'clear-off-file', repeat: false }]);
+      expect(clears.calls).toBe(1);
       expect(session.eraseIdentity).toBe(erased);
-      expect(ids(session.file)).not.toContain('a');
+      expect(ids(session.file)).toEqual([]);
     });
 
     it('through a page hide: nothing throws to the page, and no save is left to run', async () => {
       const { fake, session, erased } = await erasedElsewhere('device');
-      fake.host.clearOffFileData = boom;
+      clearThatThrows(fake, 1);
       add(session, 'b', 81, '2026-10-02');
       expect(() => session.flushSync()).not.toThrow();
       expect(session.saveStatus).toBe('saved');
       expect(session.eraseIdentity).toBe(erased);
       expect(ids(session.file)).not.toContain('a');
     });
+
+    it('the next save retries the clear, which then runs once, and nothing pre-erase is left', async () => {
+      const { store, fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(2);
+      expect(fake.kept).toEqual([[]]); // the clear that ran kept no pre-erase original
+      add(session, 'e', 84, '2026-10-05');
+      await session.flush();
+      expect(clears.calls).toBe(2); // none is owed now
+      expect(ids(session.file)).not.toContain('a');
+      expect(ids(stored(store.cloud))).not.toContain('a');
+    });
+
+    it('the next re-read retries the clear though nothing new came in', async () => {
+      const { fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
+      expect(await session.refreshFromRemote()).toBe(true);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(2);
+      expect(fake.kept).toEqual([[]]);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(2);
+      expect(changes).toHaveLength(1);
+    });
+
+    it('a clear that keeps throwing is tried once at each save and re-read, and the erase is announced once', async () => {
+      const { fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake);
+      const changes = heard(fake);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      expect(clears.calls).toBe(1);
+      await session.flush(); // nothing to save: no pass, so no retry
+      expect(clears.calls).toBe(1);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(2);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(3);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(clears.calls).toBe(3); // no loop left running
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual(Array(3).fill({ op: 'clear-off-file', repeat: false }));
+      expect(session.saveStatus).toBe('saved');
+    });
+  });
+});
+
+describe('RecordSession: a throw after a save landed and a newer save took the claim (US-11 AC7)', () => {
+  it('fails neither save: no in-place stamp, no save-failed report, and the older flush answers its landed write', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    add(other, 'theirs', 70, '2026-09-01');
+    await other.flush();
+    // The page, hearing the change this save folded in, makes an edit, starts
+    // its save, and then throws.
+    let inner: Promise<void> | null = null;
+    let target: RoadmapFile | null = null;
+    let stampAt = '';
+    let heard = 0;
+    fake.host.remoteChanged = () => {
+      heard += 1;
+      if (inner) return;
+      add(session, 'x', 82, '2026-10-03');
+      inner = session.flush();
+      target = session.file;
+      stampAt = target.meta.updatedAt;
+      clock += 60_000;
+      throw new Error('listener broke');
+    };
+    add(session, 'b', 81, '2026-10-02');
+    await expect(session.flush()).resolves.toBeUndefined();
+    expect(target!.meta.updatedAt).toBe(stampAt);
+    expect(fake.reports.filter((r) => !('op' in r) || r.op === 'persist')).toEqual([]);
+    expect(fake.pending.value).toBe(false);
+    expect(heard).toBe(1);
+    await inner;
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'theirs', 'x']);
+    expect(session.saveStatus).toBe('saved');
   });
 });
 

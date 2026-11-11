@@ -6,6 +6,13 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+import { mergeFiles } from './merge';
+import { ROADMAP_DOC } from './roadmap-doc';
+import type { RoadmapFile } from './roadmap-file';
+import type { SyncContext } from './sync-manager';
+
+/** What failed, in a host's `report`. */
+export type RecordFailureOp = 'persist' | 'pre-erase' | 'chat-erase' | 'clear-off-file' | 'after-save';
 
 /** What `remoteChanged` tells the page: the erase a merge brought in, if any (US-16 AC2a). */
 export interface RemoteChange { erase: string | null }
@@ -19,6 +26,26 @@ export function laterChange(prior: RemoteChange | null, next: RemoteChange | nul
 /** Tell the page of a change taken in, when there is one. */
 export function announce(host: RecordHost, change: RemoteChange | null): void {
   if (change) host.remoteChanged(change);
+}
+
+/**
+ * Clear this device's off-file health data for the erase `after` is at
+ * (US-11 AC1, AC6), sparing only the stored originals of documents that
+ * outlive it (US-09 AC20, AC23): those live in `after`, and those live in
+ * the device's own record copy once the erase is applied to it, so an
+ * original the erase listed goes even where a stale device copy still names
+ * it. A device copy that cannot be read names nothing. Throws what the host's
+ * clear throws.
+ */
+export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
+  let kept = after;
+  try {
+    const body = host.deviceRecord?.();
+    if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
+  } catch {
+    /* unreadable: it names nothing */
+  }
+  host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)));
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).
@@ -99,10 +126,12 @@ interface HostBase {
   failureCause(error: unknown): string;
   /** Something the user cannot fix failed and must still be seen: a save
    *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
-   *  server teardown; `chat-erase`, the chat history's tombstones). `repeat`:
+   *  server teardown; `chat-erase`, the chat history's tombstones), the
+   *  off-file clear an erase taken in owes (`clear-off-file`, retried until it
+   *  lands), or a throw after a save's write landed (`after-save`). `repeat`:
    *  this kind of device refusal was already reported this session. Gets the
    *  error and closed tags only, never record content. */
-  report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }): void;
+  report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }): void;
 }
 
 /**

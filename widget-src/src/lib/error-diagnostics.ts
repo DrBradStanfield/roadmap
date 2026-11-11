@@ -16,6 +16,7 @@ type RecordFailure =
   | 'Chat-history erase failed'
   | 'Chat-history save failed'
   | 'Pre-erase teardown failed'
+  | 'Record upkeep failed'
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
