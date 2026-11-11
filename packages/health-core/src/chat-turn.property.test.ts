@@ -2,7 +2,8 @@
  * The chat-turn reducer over random event sequences (design page §7 item 1).
  * A seeded PRNG (mulberry32), no dependency: ~500 sequences of 1-40 events,
  * landings sometimes current and sometimes stale. Five invariants after every
- * step; a failure prints the seed and the sequence.
+ * step; a failure prints the seed and the sequence. Reachability counts prove
+ * the generator visits the states the invariants are about (PR 1349 R5).
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -23,18 +24,18 @@ function mulberry32(seed: number): () => number {
 
 const IDS = ['A', 'B', 'C'];
 const ERASES = ['E0', 'E1', 'E2'];
-const msg = (id: string): Msg => ({ id, role: 'assistant', content: id });
+const msg = (id: string): Msg => ({ id, role: 'assistant', content: id, createdAt: 'T' });
 const convs = (ids: string[]): Conv[] => ids.map((id) => ({ id, title: id }));
 
 /** One event, weighted, with landings carrying the current number about half the time. */
-function genEvent(r: () => number, s: ChatState): ChatEvent {
+function genEvent(r: () => number, s: ChatState, guest: boolean): ChatEvent {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
   const coin = (p: number) => r() < p;
   const turnNo = s.turn.phase !== 'idle' && coin(0.7) ? s.turn.turn : Math.floor(r() * (s.seq.turn + 2));
   const kinds: Array<[number, () => ChatEvent]> = [
-    [10, () => ({ type: 'send', text: pick(['hi', 'hi', 'hi', '', '  ', 'x'.repeat(8001)]), online: coin(0.9), othersBusy: coin(0.1) })],
+    [10, () => ({ type: 'send', text: pick(['hi', 'hi', 'hi', '', '  ', 'x'.repeat(8001)]), online: coin(0.9), othersBusy: coin(0.1), now: 'T', nonce: String(r()) })],
     [10, () => ({ type: 'delta', turn: turnNo, delta: coin(0.2) ? { type: 'sources', titles: ['s'] } : { type: pick(['text', 'thinking', 'status'] as const), text: 't' } })],
-    [8, () => ({ type: 'done', turn: turnNo, result: {
+    [8, () => ({ type: 'done', turn: turnNo, now: 'T', result: {
       conversationId: pick(IDS), messageId: coin(0.5) ? 'r' : null, content: 'a', isFallback: coin(0.1),
       editRefusals: coin(0.5) ? [{ part: 'review', words: 'w' }] : undefined, subscriptionCard: coin(0.2) ? { c: 1 } : undefined,
     } })],
@@ -49,7 +50,7 @@ function genEvent(r: () => number, s: ChatState): ChatEvent {
     [3, () => ({ type: 'thread-gone', id: pick(IDS), tell: coin(0.5) })],
     [5, () => ({ type: 'erase-state', moving: pick(['none', 'own', 'remote'] as const) })],
     [4, () => ({ type: 'erase-shown', erase: coin(0.2) ? s.erase.shown : pick(ERASES), by: pick(['own', 'remote'] as const) })],
-    [5, () => ({ type: 'list-wanted' })],
+    [5, () => ({ type: 'list-wanted', guest })],
     [6, () => ({
       type: 'list-landed', read: s.list.phase === 'reading' && coin(0.6) ? s.list.read : Math.floor(r() * (s.seq.read + 2)),
       conversations: coin(0.2) ? null : convs(IDS.filter(() => coin(0.5))),
@@ -72,9 +73,21 @@ const LANDINGS = new Set(['delta', 'done', 'failed', 'list-landed', 'load-landed
 const isCurrent = (s: ChatState, e: ChatEvent): boolean => {
   if (e.type === 'delta' || e.type === 'done' || e.type === 'failed') return s.turn.phase !== 'idle' && s.turn.turn === e.turn;
   if (e.type === 'list-landed') return s.list.phase === 'reading' && s.list.read === e.read;
-  if (e.type === 'load-landed') return e.turns === null || (s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id);
+  if (e.type === 'load-landed') return s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
   return true;
 };
+/** Key-order-free JSON, to compare a state with one built here. */
+const canon = (v: unknown) => JSON.stringify(v, (_, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x));
+/** A stale 404: the thread leaves the list, and if shown, the fresh-chat reset (AC6a, R8). Nothing else changes. */
+function afterStale404(prev: ChatState, id: string): [ChatState, Effect[]] {
+  const dropped: ChatState = { ...prev, conversations: prev.conversations.filter((c) => c.id !== id) };
+  if (prev.shown.id !== id) return [dropped, []];
+  const seq = { ...prev.seq, key: prev.seq.key + 1, opening: prev.seq.opening + 1 };
+  return [{ ...dropped, seq, shown: { key: `new:${seq.key}`, id: null, opening: seq.opening }, messages: [], error: null, notice: 'none', load: { phase: 'none' } }, [{ type: 'edits-leave' }]];
+}
+/** A send the reducer would take, but for the shown thread still loading (PR 1349 D). */
+const sendWhileLoading = (s: ChatState, e: ChatEvent) => e.type === 'send' && s.load.phase === 'loading' && s.turn.phase === 'idle'
+  && s.erase.moving === 'none' && !e.othersBusy && e.online && e.text.trim().length > 0 && e.text.trim().length <= 8000;
 const count = (fx: Effect[], type: Effect['type']) => fx.filter((f) => f.type === type).length;
 
 /** Returns the broken invariant's description, or null. */
@@ -98,10 +111,16 @@ function check(prev: ChatState, e: ChatEvent, next: ChatState, fx: Effect[], las
     if (f.type === 'read-list' && (next.list.phase !== 'reading' || next.list.read !== f.read)) return 'I3: read-list not the current read';
     if (f.type === 'read-turns' && (next.load.phase !== 'loading' || next.load.opening !== f.opening || next.load.id !== f.id)) return 'I3: read-turns not the current load';
   }
-  if (LANDINGS.has(e.type) && !isCurrent(prev, e) && (JSON.stringify(next) !== JSON.stringify(prev) || fx.length > 0)) return 'I3: a stale landing changed state';
+  if (e.type === 'load-landed' && e.turns === null && !isCurrent(prev, e)) {
+    const [want, wantFx] = afterStale404(prev, e.id);
+    if (canon(next) !== canon(want) || canon(fx) !== canon(wantFx)) return 'I3: a stale 404 changed more than the list and the fresh-chat reset';
+  } else if (LANDINGS.has(e.type) && !isCurrent(prev, e) && (JSON.stringify(next) !== JSON.stringify(prev) || fx.length > 0)) return 'I3: a stale landing changed state';
+  if (sendWhileLoading(prev, e) && (next !== prev || fx.length > 0)) return 'D: a send while the shown thread loads was taken';
   // 4. No read or request in response to a landing that was dropped; no landing ever re-asks.
   if (LANDINGS.has(e.type) && (count(fx, 'request') + count(fx, 'read-list') > 0)) return 'I4: a landing re-asked';
   if (e.type === 'load-landed' && count(fx, 'read-turns') > 0) return 'I4: a load landing re-asked';
+  // A load is only ever for the shown chat (so send's refusal and loadLanded need no other case).
+  if (next.load.phase === 'loading' && (next.load.id !== next.shown.id || next.load.opening !== next.shown.opening)) return 'Load: loading a chat not shown';
   // 5. moving is the last erase-state's, and nothing else moves it.
   if (next.erase.moving !== lastMoving) return 'I5: moving is not the last erase-state';
   return null;
@@ -110,15 +129,17 @@ function check(prev: ChatState, e: ChatEvent, next: ChatState, fx: Effect[], las
 describe('chat-turn property: five invariants over random sequences (§7 item 1)', () => {
   it('holds for 500 seeded sequences of 1-40 events', () => {
     let steps = 0;
+    const seen = { orphanedOwn: 0, orphanedRemote: 0, listWaiting: 0, staleLoadingLanding: 0, guestAutoOpen: 0, sendRefusedWhileLoading: 0 };
     for (let seed = 1; seed <= 500; seed++) {
       const r = mulberry32(seed);
       const initialMoving = (['none', 'none', 'own', 'remote'] as const)[seed % 4];
-      let s = initialChatState({ guest: seed % 3 === 0, erase: 'E0', moving: initialMoving });
+      const guest = seed % 3 === 0;
+      let s = initialChatState({ erase: 'E0', moving: initialMoving, ...(seed % 7 === 0 ? { conversations: convs(['A']) } : {}) });
       let lastMoving: string = initialMoving;
       const events: ChatEvent[] = [];
       const n = 1 + Math.floor(r() * 40);
       for (let i = 0; i < n; i++) {
-        const e = genEvent(r, s);
+        const e = genEvent(r, s, guest);
         events.push(e);
         const before = JSON.stringify(s);
         const { state, effects } = transition(s, e);
@@ -127,10 +148,16 @@ describe('chat-turn property: five invariants over random sequences (§7 item 1)
         if (broken) {
           throw new Error(`${broken}\nseed ${seed}, step ${i}\nevents: ${JSON.stringify(events)}\nprev: ${before}\nnext: ${JSON.stringify(state)}\neffects: ${JSON.stringify(effects)}`);
         }
+        if (state.turn.phase === 'orphaned') seen[state.turn.by === 'own' ? 'orphanedOwn' : 'orphanedRemote']++;
+        if (state.list.phase === 'waiting') seen.listWaiting++;
+        if (e.type === 'load-landed' && e.turns && s.load.phase === 'loading' && !isCurrent(s, e)) seen.staleLoadingLanding++;
+        if (e.type === 'list-landed' && effects.some((f) => f.type === 'read-turns')) seen.guestAutoOpen++;
+        if (sendWhileLoading(s, e)) seen.sendRefusedWhileLoading++;
         s = state;
         steps++;
       }
     }
     expect(steps).toBeGreaterThan(5000);
+    for (const [name, n] of Object.entries(seen)) expect([name, n > 0]).toEqual([name, true]);
   });
 });
