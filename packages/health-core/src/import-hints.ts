@@ -105,7 +105,7 @@ export const IMPORT_REFUSALS = {
   /** The folder route found nothing it reads. */
   emptyFolder:
     `There are no ${IMPORT_ACCEPTED_TYPES} files in the folder root (${DROPBOX_APP_FOLDER}). ` +
-    'Put the files there and ask again, or drop them into the chat from a computer. Nothing was read.',
+    'Put the files there and ask again, or drop them into the chat, from any device. Nothing was read.',
   /** A `commit` block that does not parse. */
   commit:
     'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids, ' +

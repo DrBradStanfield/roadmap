@@ -1,6 +1,6 @@
 import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
@@ -9,7 +9,7 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
@@ -45,7 +45,7 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   network: 'Could not reach Anthropic. Check your connection and try again.',
 };
 
-export const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
+export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 /** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
@@ -272,10 +272,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     // quota/draft flushing is still pending. Never start a read the state would ignore.
     if (!selectedFiles || (phase !== 'picking' && phase !== 'readFailed') || abortRef.current || savingRef.current) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
-    const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
+    // The kind by name: the upload bundle that knows a ZIP by its type is not loaded yet.
+    const tooLarge = (f: File) => fileVerdict({ name: f.name, bytes: f.size, platform: 'web' }) === 'tooLarge';
+    const valid = fileArray.filter(f => !tooLarge(f));
     const leftOut = selectedFiles.length - fileArray.length;
     const notices: FileNotice[] = [
-      ...fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
+      ...fileArray.filter(tooLarge).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
       ...(leftOut > 0 ? [leftOutNotice(leftOut)] : []),
     ];
     const counts: RunCounts = { picked: noticedFiles(notices) + valid.length, docx: fileArray.filter(isDocx).length };

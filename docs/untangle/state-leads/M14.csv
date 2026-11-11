@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M14,phone mirrors,"The eGFR trend uses the last 7 readings on both clients, and recent-trend.ts's header falsely claims a 30-day rule for them",lead,not started,"ios/HealthRoadmap/MyData/TopicPlan.swift:211 prefix(7); MyDataRows.tsx:327 slice(0, 7) copies the phone. Swift test only. Fable ruled 2026-11-11: (R7) labs keep 7 readings; fix the false header in recent-trend.ts. iPhone survey 2026-11-11 (main fcc4ed9b) L11",,no

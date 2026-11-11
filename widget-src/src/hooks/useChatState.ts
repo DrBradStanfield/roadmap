@@ -47,8 +47,19 @@ interface UseChatStateOptions {
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onRemoteConversationSelected?: () => void;
-  /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  /** Where the form edits the model proposes via tool_use go (pre-fill / med update). */
+  onProposeEdit?: ChatEditTarget;
+}
+
+/** A reply's form edits (US-16): `ask` reads the erase the question is asked
+ *  under as it is sent; `take` gets the reply's edits with it, so they never
+ *  land on a record erased since (US-16 AC2a). `leave`: the conversation
+ *  switched (New chat, or a saved chat opened). */
+export interface ChatEditTarget {
+  ask: () => string;
+  /** `stayed`: the thread the question was sent from is still on screen. */
+  take: (edits: ProposedEdit[], asked: string, stayed: boolean) => void;
+  leave: () => void;
 }
 
 /** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
@@ -167,6 +178,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         const { payload } = msg;
         if (payload.activeConversationId !== activeConversationIdRef.current) {
           onRemoteConversationSelected?.();
+          onProposeEditRef.current?.leave();
         }
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
@@ -182,6 +194,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(null);
         setMessages([]);
         setError(null);
+        onProposeEditRef.current?.leave();
         return;
       }
 
@@ -191,6 +204,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         if (activeConversationIdRef.current === id) {
           setActiveConversationId(null);
           setMessages([]);
+          onProposeEditRef.current?.leave();
         }
         return;
       }
@@ -203,6 +217,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (activeConversationIdRef.current === id) {
       setActiveConversationId(null);
       setMessages([]);
+      onProposeEditRef.current?.leave();
     }
   }, []);
 
@@ -233,6 +248,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = id;
     setActiveConversationId(id);
     setError(null);
+    onProposeEditRef.current?.leave();
     const gen = ++loadGenRef.current;
     const msgs = await loadConversation(id);
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
@@ -254,6 +270,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setActiveConversationId(null);
     setMessages([]);
     setError(null);
+    onProposeEditRef.current?.leave();
     inputRef.current?.focus();
     postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
   }, [instanceId]);
@@ -302,6 +319,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
     // A throw before the request (reading the plan for context) is a failed
     // send like any other: the chat frees and the question goes back (US-15 AC17b).
+    const asked = onProposeEditRef.current?.ask() ?? ''; // the turn carries it to the reply (US-16 AC2a)
     const { result, error: sendError } = await (async () => sendMessage(
       trimmed,
       currentConvId,
@@ -359,6 +377,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
       if (stayed) loadGenRef.current++; // a load started before the reply would replace it
+      if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -368,7 +387,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.(result.proposedEdits);
+        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
       }
       if (result.subscriptionCard) {
         const card = result.subscriptionCard;

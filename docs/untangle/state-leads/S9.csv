@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S9,iPhone state,"Eight first-run flags allow combinations that should not exist, and the backup offer's cancel check never fires",lead,not started,"ios/HealthRoadmap/App/RootView.swift:22-25,36-58,65,87,242-253,269 (@AppStorage flags, onboarded with onboardingStarted never cleared; offerCloudSoon checks Task.isCancelled but its Tasks are never cancelled). Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S9",,no

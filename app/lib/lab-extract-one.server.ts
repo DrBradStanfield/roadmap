@@ -11,6 +11,9 @@ import { extractOrClassify, ExtractionStopError, reportExtractionStop } from './
 import type { DayFlags } from './lab-batches.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
+/** The app route's timeout answer, which its slow-import report reads (US-52 AC7c, AC7d). */
+export const TOO_SLOW = 'The server took too long to read this report. Please try again.';
+
 /**
  * One file's extraction and its answer, shared with the iPhone app's route
  * (US-52 AC7). `extra` adds the caller's own fields to a success. The app
@@ -18,7 +21,7 @@ import { safeErrorFields } from './safe-error-fields.server';
  * idle, so its call never retries a timed-out attempt (US-52 AC7c).
  */
 export async function extractOneFile(
-  data: LabImportRequest, extra: () => object = () => ({}), opts: { timeoutMs?: number; oneDeadline?: true } = {},
+  data: LabImportRequest, extra: () => object = () => ({}), opts: { timeoutMs?: number; oneDeadline?: true; onRetry?: () => void } = {},
 ): Promise<Response> {
   const { pages, ownDates, undatedPrev, refusedRows } = data;
   try {
@@ -42,7 +45,7 @@ export async function extractOneFile(
     });
     // The phone shows `error` verbatim, and offers Try again on a 5xx (US-52 AC7c).
     const tooSlow = opts.oneDeadline && (error as Error)?.name === 'TimeoutError';
-    return Response.json({ success: false, error: tooSlow ? 'The server took too long to read this report. Please try again.' : 'Failed to process request' }, { status: 500 });
+    return Response.json({ success: false, error: tooSlow ? TOO_SLOW : 'Failed to process request' }, { status: 500 });
   }
 }
 

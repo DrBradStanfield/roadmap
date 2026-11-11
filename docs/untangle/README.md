@@ -85,8 +85,11 @@ the upload flow into state hooks. The audit has no id for that work. Each
 area was surveyed first for modes held in flags, refs and timers; the
 leads are `D` (onboarding), `R` (record read), `P` (plan view), `U`
 (upload), `H` (composition, the machines meeting in `HealthTool`), `M`
-(phone mirrors: values the iPhone keeps beside the engine's) and `C` (the
-server: chat prompt `C1`, chat purge `C2`-`C4`, crons and reminders from `C5`).
+(phone mirrors: values and rules the iPhone keeps beside the engine's or the
+web's; `M4`-`M16` are the iPhone survey's copied-logic leads L1-L13), `S`
+(implicit state in the iPhone app, from the same survey on 2026-11-11) and `C`
+(the server: chat prompt `C1`, chat purge `C2`-`C4`, crons and reminders from
+`C5`; `C9` is web chat after an erase).
 This ledger has no `durability_check` column: a done row names its check in
 `evidence`.
 
