@@ -86,7 +86,7 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
       const other = eraseIdentityOf(theirs);
       const arrivals: EraseEvent[] = [{ type: 'arrived', identity: other }, ...(store === other || store === before ? [] : [{ type: 'arrived', identity: store } as const])];
       const state = run(idle(pre), [{ type: 'own-start' }, ...arrivals]);
-      const end = transition(state, { type: 'own-end', identity: store });
+      const end = transition(state, { type: 'own-end', identity: store, message: 'erase done (test text)' });
       expect(end.state.phase).toBe('idle');
       expect(end.state.shown).toBe(store);
       // The other writer's rows are read, and its erase counted, exactly when the store ends at it.
