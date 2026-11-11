@@ -16,7 +16,7 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
-import { SCREENING_REFS, followupTrigger, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -178,7 +178,7 @@ function screeningSchedule(
   // Lung (smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
   // keeps its reminder exactly while the plan shows its follow-up card (US-07 AC1f, AC1g): a last
   // date, until the follow-up is completed.
-  const lungFollowupCard = s.lungResult === followupTrigger(LUNG) && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
+  const lungFollowupCard = opensFollowup(LUNG, s.lungResult) && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
   if (
     inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(s) &&
     ((inAges(LUNG.cardAges, age, sex) && SCREENING_REFS.lungPackYears(s)) || lungFollowupCard) &&
@@ -203,7 +203,7 @@ function screeningSchedule(
     s.dexaResult !== 'awaiting'
   ) {
     let due: Date | null;
-    if (s.dexaResult === followupTrigger(DEXA)) {
+    if (opensFollowup(DEXA, s.dexaResult)) {
       const hasCompletedFollowup = s.dexaFollowupStatus === 'completed' && s.dexaFollowupDate;
       due = hasCompletedFollowup
         ? getPostFollowupDueDate('dexa', 'dexa_scan', s.dexaResult, s.dexaFollowupStatus, s.dexaFollowupDate)

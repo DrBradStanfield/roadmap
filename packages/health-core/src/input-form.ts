@@ -13,7 +13,7 @@ import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
 import {
-  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, followupTrigger, inAges, ruleNotes, ruleOf, ruleTakes,
+  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, inAges, opensFollowup, ruleNotes, ruleOf, ruleTakes,
   screeningFollowupInfo, type ScreeningId, type ScreeningRule,
 } from './screening-rules';
 import { LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
@@ -415,7 +415,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
   /** The follow-up's status, then its date once booked or done: shown while the result opens it. */
   const followup = (r: ScreeningRule, method: string): FormField[] => {
     const [resultKey, statusKey, dateKey] = chainKeys(r);
-    if (str(resultKey) !== followupTrigger(r)) return [];
+    if (!opensFollowup(r, str(resultKey))) return [];
     const name = followupName(r.id, method);
     const status = str(statusKey);
     const fields = [choice(statusKey, `${name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up'} status`, O.followup_status)];
@@ -513,7 +513,7 @@ export function screeningWrites(scr: ScreeningInputs, key: string, value: string
   } else if (key === 'lung_smoking_history') {
     if (value === 'never_smoked' || value === '') clear('lung_pack_years', LUNG.choice.key, LUNG.dateKey!, ...chainKeys(LUNG));
   } else if (byResult) {
-    if (value !== followupTrigger(byResult)) clear(...chainKeys(byResult).slice(1));
+    if (!opensFollowup(byResult, value)) clear(...chainKeys(byResult).slice(1));
   } else if (key.endsWith('_followup_status')) {
     if (value === 'not_organized' || value === '') clear(`${key.split('_')[0]}_followup_date`);
   }
