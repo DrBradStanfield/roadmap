@@ -195,7 +195,8 @@ vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: fakeAdmin,
-  tryAcquireCronLock: vi.fn(async () => true),
+  tryAcquireCronLock: vi.fn(async () => 'won' as const),
+  endCronLock: vi.fn(),
 }));
 
 import * as Sentry from '@sentry/react-router';
@@ -288,7 +289,7 @@ beforeEach(() => {
     message('msg-discord-fresh', 'conv-discord-fresh', 2),
     message('msg-youtube', 'conv-youtube-old', 400),
   ];
-  vi.mocked(tryAcquireCronLock).mockClear().mockResolvedValue(true);
+  vi.mocked(tryAcquireCronLock).mockClear().mockResolvedValue('won');
 });
 
 const byId = (id: string) => store.chat_match_events.find((r) => r.id === id)!;
@@ -449,9 +450,9 @@ describe('purgeWithLock — one machine per day', () => {
     expect(byId('old-widget').message).toBe('question old-widget');
   });
 
-  it('does nothing when another machine holds the lock', async () => {
-    vi.mocked(tryAcquireCronLock).mockResolvedValue(false);
-    expect(await purgeWithLock('2026-09-10', NOW)).toBeNull();
+  it.each(['closed', 'busy'] as const)('does nothing, and says so, when the lock answers %s', async (answer) => {
+    vi.mocked(tryAcquireCronLock).mockResolvedValue(answer);
+    expect(await purgeWithLock('2026-09-10', NOW)).toBe(answer);
     expect(byId('old-widget').message).toBe('question old-widget');
     expect(msg('msg-shopify-q').content).toBe('text msg-shopify-q');
   });

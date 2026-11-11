@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // trending-cron.server.ts imports the Shopify app + Supabase singletons at
 // module load; neither is exercised by these tests, so stub them out.
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 
 import {
@@ -336,7 +336,7 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
   it('re-runs the day on the next tick after a failed run, then ends it once a run succeeds', async () => {
     const { cron, adminMock, lockMock, Sentry } = await loadTick();
     // The lock row names this machine for today, so its own re-acquire wins.
-    lockMock.mockResolvedValue(true);
+    lockMock.mockResolvedValue('won');
     adminMock
       .mockRejectedValueOnce(new Error('unauthenticated.admin failed'))
       .mockResolvedValue({ admin: okAdmin } as any);
@@ -364,7 +364,7 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
     const { cron, adminMock, lockMock } = await loadTick();
     lockMock
       .mockRejectedValueOnce(new Error('cron lock acquire failed (trending_cron)'))
-      .mockResolvedValue(true);
+      .mockResolvedValue('won');
     adminMock.mockResolvedValue({ admin: okAdmin } as any);
 
     cron.startTrendingCron();

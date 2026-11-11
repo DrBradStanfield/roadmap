@@ -26,6 +26,7 @@ const noRows = async () => ({ data: [], error: null });
 // Chat purge's run starts with the match-events pass, so that query is its probe.
 vi.mock('./supabase.server', () => ({
   tryAcquireCronLock: vi.fn(),
+  endCronLock: vi.fn(),
   supabaseAdmin: { from: (table: string) => db.from?.(table) ?? chain(table === 'chat_match_events' ? work : noRows) },
 }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
@@ -118,44 +119,58 @@ async function boot(c: CronCase, at: string, onlyTheTick = false) {
   return { lock };
 }
 const tick = () => vi.advanceTimersByTimeAsync(HOUR_MS);
+// The lock's clock for a tick at `ms` (US-28 AC9): that now, less the cron's stuck limit.
+const clockAt = (ms: number, stuckHours: number) => ({ now: new Date(ms), stuckCutoff: new Date(ms - stuckHours * HOUR_MS) });
 
 describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   it('takes its own lock with this machine id and its own day, first at the target hour', async () => {
     const { lock } = await boot(c, c.beforeTarget);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     await tick();
     expect(lock).toHaveBeenCalledTimes(1);
-    expect(lock).toHaveBeenCalledWith('pin-machine', c.day, c.lockName);
+    expect(lock).toHaveBeenCalledWith('pin-machine', c.day, c.lockName, clockAt(Date.parse(c.beforeTarget) + HOUR_MS, c.stuckHours));
     expect(work).toHaveBeenCalledTimes(1);
   });
   it('does not tick before the target hour on its own clock', async () => {
     const { lock } = await boot(c, c.ineligibleOnThisClock);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     await tick();
     expect(lock).not.toHaveBeenCalled();
     expect(work).not.toHaveBeenCalled();
   });
   it('runs at most once a day, then again the next day', async () => {
     const { lock } = await boot(c, c.beforeTarget);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     await tick(); await tick(); await tick();
     expect(lock).toHaveBeenCalledTimes(1);
     expect(work).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(DAY_MS - 2 * HOUR_MS);
     expect(lock).toHaveBeenCalledTimes(2);
-    expect(lock).toHaveBeenLastCalledWith('pin-machine', c.nextDay, c.lockName);
+    expect(lock).toHaveBeenLastCalledWith('pin-machine', c.nextDay, c.lockName, clockAt(Date.parse(c.beforeTarget) + DAY_MS + HOUR_MS, c.stuckHours));
     expect(work).toHaveBeenCalledTimes(2);
   });
-  it('a lock another machine holds means no run and no retry that day', async () => {
+  it('a closed lock means no run and no retry that day', async () => {
     const { lock } = await boot(c, c.beforeTarget);
-    lock.mockResolvedValue(false);
+    lock.mockResolvedValue('closed');
     await tick(); await tick();
     expect(lock).toHaveBeenCalledTimes(1);
     expect(work).not.toHaveBeenCalled();
   });
+  it('a busy lock leaves the day open: every hourly tick tries again, and the run starts once won (US-28 AC9)', async () => {
+    const { lock } = await boot(c, c.beforeTarget);
+    lock.mockResolvedValueOnce('busy').mockResolvedValueOnce('busy').mockResolvedValue('won');
+    await tick(); await tick();
+    expect(lock).toHaveBeenCalledTimes(2);
+    expect(work).not.toHaveBeenCalled();
+    await tick();
+    expect(lock).toHaveBeenCalledTimes(3);
+    expect(work).toHaveBeenCalledTimes(1);
+    await tick();
+    expect(lock).toHaveBeenCalledTimes(3);
+  });
   it('a lock error retries on the next tick (US-28 AC2)', async () => {
     const { lock } = await boot(c, c.beforeTarget);
-    lock.mockRejectedValueOnce(new Error('cron lock acquire failed')).mockResolvedValue(true);
+    lock.mockRejectedValueOnce(new Error('cron lock acquire failed')).mockResolvedValue('won');
     await tick();
     expect(work).not.toHaveBeenCalled();
     await tick();
@@ -164,7 +179,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   });
   it('a failed run leaves the day open, so the next tick runs it again (US-28 AC3, AC6)', async () => {
     const { lock } = await boot(c, c.beforeTarget);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     work.mockRejectedValueOnce(new Error('run failed'));
     await tick();
     expect(work).toHaveBeenCalledTimes(1);
@@ -176,7 +191,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   });
   it('a run still going blocks the next tick on this machine (US-28 AC3, AC6, AC7)', async () => {
     const { lock } = await boot(c, c.beforeTarget, true);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     work.mockImplementation(c.hang);
     await tick(); await tick();
     expect(lock).toHaveBeenCalledTimes(1);
@@ -184,7 +199,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   });
   it("a run still going at the next day's eligible hour blocks that tick (US-28 AC7)", async () => {
     const { lock } = await boot(c, c.beforeTarget, true);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     work.mockImplementation(c.hang);
     await tick();                              // the day's run starts and never ends
     await vi.advanceTimersByTimeAsync(DAY_MS); // every tick through the next day's eligible hour
@@ -193,7 +208,7 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
   });
   it('a run past its stuck limit is reported once, with the cron and the hours only (US-28 AC7)', async () => {
     const { lock } = await boot(c, c.beforeTarget, true);
-    lock.mockResolvedValue(true);
+    lock.mockResolvedValue('won');
     work.mockImplementation(c.hang);
     const { captureMessage } = await import('@sentry/react-router');
     vi.mocked(captureMessage).mockClear();
@@ -218,11 +233,11 @@ describe('trending cron lock per store', () => {
     const m = await import('./trending-cron.server');
     vi.stubEnv('NODE_ENV', 'production');
     const { tryAcquireCronLock } = await import('./supabase.server');
-    const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue(false);
+    const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue('closed');
     stop = m.stopTrendingCron;
     m.startTrendingCron();
     await tick();
-    expect(lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'trending_cron_edu');
+    expect(lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'trending_cron_edu', clockAt(Date.parse(crons[0].beforeTarget) + HOUR_MS, 1));
   });
 });
 
@@ -284,7 +299,7 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     // Process one: wins the lock, blanks both rows, holds both questions, then hangs.
     const first = await boot(crons[2], crons[2].beforeTarget, true);
     vi.stubEnv('CHAT_QUESTION_ARCHIVE', 'on');
-    first.lock.mockResolvedValue(true);
+    first.lock.mockResolvedValue('won');
     await tick();
     expect(events.map((r) => r.message)).toEqual([null, null]);
     expect(inserts).toEqual([]);
@@ -297,11 +312,11 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     vi.stubEnv('CHAT_QUESTION_ARCHIVE', 'on');
     const { scrubQuestion } = await import('./chat-question-scrub.server');
     vi.mocked(scrubQuestion).mockImplementation(async (text: string) => `scrubbed: ${text}`);
-    second.lock.mockResolvedValue(true);
+    second.lock.mockResolvedValue('won');
     await tick();
     await vi.waitFor(() => expect(inserts).toHaveLength(1));
 
-    expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge');
+    expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge', clockAt(Date.parse('2026-08-28T06:30:00Z'), 6));
     expect(selectFilters.length).toBeGreaterThan(0);
     expect(selectFilters.every((f) => f.includes('message.not.is.null'))).toBe(true);
     expect(vi.mocked(scrubQuestion).mock.calls.map(([text]) => text)).toEqual(['question still-held']);
