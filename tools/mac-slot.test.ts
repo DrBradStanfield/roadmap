@@ -117,6 +117,18 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(s.stdout).toMatch(new RegExp(`waiting: pid ${w.p.pid}\\b`));
   });
 
+  it("a status probe's instant lock does not send a caller past the free slot (retried once)", () => {
+    // Fd 8 locks slot 1 the way status probes it; the caller starts with fd 8 closed, and 0.05 s later the lock goes.
+    mkdirSync(home, { recursive: true });
+    const s = spawnSync('sh', ['-c', `( exec 8>>"${home}/codex.1"; lockf -s -t 0 8
+      sh "${SCRIPT}" codex -- true 8>&- 2>"${fake}/err" & sleep 0.05; exec 8>&-; wait )`],
+    { env: env({ MAC_SLOT_CODEX_MAX: '1' }), encoding: 'utf8' });
+    expect(s.status).toBe(0);
+    const err = readFileSync(join(fake, 'err'), 'utf8');
+    expect(err).toMatch(/starting codex slot 1\/1/);
+    expect(err).not.toMatch(/waiting/);
+  });
+
   it('with a slot, waits while the load is 8 or more, then starts', async () => {
     setLoads('9.50', '8.00', '3.20');
     const r = bg('tests', hold('x'));

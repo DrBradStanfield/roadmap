@@ -60,8 +60,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, every check finished green
    with a `test` check SUCCESS, and no Deploy run is queued or running, then runs the one allowed merge form above.
-   For CI started by workflow_dispatch (not in the PR's rollup), add `--commit-checks`: it reads the commit's
-   check runs instead, newest per name, and wants at least 8. Each refusal has its own exit code (header of the
+   Add `--commit-checks` only when CI was started by workflow_dispatch (its runs never reach the PR's rollup): it
+   judges CI's own jobs alone (`checks`, `test`, `unit (<n>, <zone>)`) on the commit, newest per name, wants at
+   least 8, and only names other workflows' red jobs on that sha. Each refusal has its own exit code (header of the
    script). Waiting first: `sh tools/wait-run.sh pr <n>`.
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run

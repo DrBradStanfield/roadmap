@@ -92,7 +92,17 @@ take() {
   exec 9>&-
   return 1
 }
-scan() { i=1; while [ "$i" -le "$MAX" ]; do take "$i" 0 && return 0; i=$((i + 1)); done; return 1; }
+# `status` can only probe a slot by locking it for an instant (lockf has no test-only mode), so a slot that
+# refuses is tried once more after 0.2 s: a status probe must not send a caller past a free slot.
+scan() {
+  i=1
+  while [ "$i" -le "$MAX" ]; do
+    take "$i" 0 && return 0
+    sleep 0.2; take "$i" 0 && return 0
+    i=$((i + 1))
+  done
+  return 1
+}
 
 SLOT=""
 if ! scan; then

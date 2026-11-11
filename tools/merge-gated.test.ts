@@ -43,7 +43,9 @@ const cr = (name: string, conclusion: string | null = 'SUCCESS', status = 'COMPL
 const GREEN = [cr('test'), cr('lint'), cr('Claude Review', 'SKIPPED')];
 const run_ = (id: number, name: string, conclusion: string | null = 'success', status = 'completed') =>
   ({ id, name, status, conclusion });
-const EIGHT = ['test', 'lint', 'typecheck', 'build', 'shard 1', 'shard 2', 'shard 3', 'gitleaks'].map((n, i) => run_(10 + i, n));
+// CI's own jobs: checks, the 6 UTC unit shards and test (the Los Angeles shards are extra).
+const EIGHT = ['checks', ...[1, 2, 3, 4, 5, 6].map((n) => `unit (${n}, UTC)`), 'test'].map((n, i) => run_(10 + i, n));
+const page = (runs: ReturnType<typeof run_>[]) => ({ total_count: runs.length, check_runs: runs });
 
 function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}) {
   const log = join(S, `log-${Math.random()}`);
@@ -167,10 +169,30 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.calls.some((c) => c[0] === 'api' && c[1].includes(`commits/${SHA}/check-runs`))).toBe(true);
     });
 
-    it('refuses when the newest run of a name failed', () => {
-      const runs = [...EIGHT, run_(99, 'lint', 'failure')];
-      const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: runs.length, check_runs: runs } });
+    it('refuses when the newest run of a unit shard failed', () => {
+      const runs = [...EIGHT, run_(99, 'unit (3, UTC)', 'failure')];
+      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
       expect(r.status).toBe(9);
+      expect(r.stderr).toMatch(/unit \(3, UTC\)=failure/);
+      expect(r.merges).toEqual([]);
+    });
+
+    it('ignores another workflow\'s failed job on the same sha, and names it', () => {
+      const runs = [...EIGHT, run_(99, 'verify', 'failure')];
+      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(r.stderr).toMatch(/verify=failure/);
+      expect(r.stderr.split('\n').filter((l) => l.includes('verify')).length).toBe(1);
+    });
+
+    it('does not count unrelated green jobs toward the 8', () => {
+      const runs = [...EIGHT.slice(0, 7).filter((x) => x.name !== 'unit (6, UTC)'), run_(30, 'test'),
+        run_(31, 'verify'), run_(32, 'deploy'), run_(33, 'lint')];
+      const r = gate(['123', SHA, '--commit-checks'], { checkruns: page(runs) });
+      expect(r.status).toBe(11);
+      expect(r.stderr).not.toMatch(/verify|deploy|lint/);
+      expect(r.merges).toEqual([]);
     });
 
     it('refuses while the newest test run is in progress', () => {
@@ -180,13 +202,13 @@ describe('US-64 AC32 merge-gated.sh', () => {
     });
 
     it('refuses while another check is queued', () => {
-      const runs = [...EIGHT, run_(99, 'e2e', null, 'queued')];
+      const runs = [...EIGHT, run_(99, 'unit (2, America/Los_Angeles)', null, 'queued')];
       const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: runs.length, check_runs: runs } });
       expect(r.status).toBe(8);
     });
 
     it('refuses fewer than 8 checks', () => {
-      const runs = EIGHT.slice(0, 7);
+      const runs = EIGHT.slice(1);
       const r = gate(['123', SHA, '--commit-checks'], { checkruns: { total_count: 7, check_runs: runs } });
       expect(r.status).toBe(11);
     });
