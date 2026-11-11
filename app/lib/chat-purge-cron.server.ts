@@ -14,13 +14,13 @@
  * counts are made of — `matched_handles`, `classification`, the timings,
  * `is_fallback`, and the surface name — stays.
  *
- * Before it blanks a web chat question (`shopify` or `widget`, classified
- * `ROUTE` or `MEASUREMENT`), the pass keeps a scrubbed copy of that one
+ * Once a web chat question's blank has landed (`shopify` or `widget`, classified
+ * `ROUTE` or `MEASUREMENT`), the run keeps a scrubbed copy of that one
  * question, with no end date, in `chat_question_archive` (US-15 AC44): the
  * question with names, places, dates, ages, contact details, ids and jobs
  * replaced, its platform, and the Monday of its week. We do not link it
  * to an account, a conversation or a session (US-15 AC44 says how it could be traced). The scrub runs only after all
- * three passes; a failure there is counted, never thrown. Off unless the
+ * three passes (`chat-question-archive.server.ts`); a failure there is counted, never thrown. Off unless the
  * `CHAT_QUESTION_ARCHIVE` secret is `on`: then no model call, no insert, no event.
  *
  * `chat_messages` and `chat_conversations` are the transcripts behind the blog
@@ -40,8 +40,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
-import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
-import { withTimeout } from './cron-helpers.server';
+import { archiveQuestions, type ArchiveCounts, type Held } from './chat-question-archive.server';
 import { MACHINE_ID, reportStuckRun } from './daily-cron.server';
 import { transition, type CronDay } from './cron-day';
 import { recordServerEvent } from './product-events.server';
@@ -60,6 +59,9 @@ export const PURGE_AFTER_DAYS = 30;
 /** Rows cleared per round trip. The loop re-selects until nothing is left. 100 ids keep the
  *  update's URL near 3.7 KB, under common gateway limits (US-15 AC51). */
 const BATCH_SIZE = 100;
+/** Stuck ids a pass's select may skip (US-15 AC61). They ride in its URL: at 100 ids near 3.7 KB
+ *  (AC51), 150 stay near 6.1 KB once URL-encoded, under the common 8 KB request-line limit. Past it the pass ends. */
+const STUCK_SKIP_MAX = 150;
 
 /** Platforms whose transcripts are private text on a 30-day clock. YouTube is
  *  absent on purpose: those turns are public comments. */
@@ -69,23 +71,11 @@ export const PURGED_PLATFORMS = ['shopify', 'discord'];
  *  there — the words are not. Anything rendering a transcript substitutes it. */
 export const PURGED_TEXT = '[removed after 30 days]';
 
-/** The archive step's whole run (US-15 AC44): scrubs plus the one insert. */
-const ARCHIVE_BUDGET_MS = 5 * 60_000;
-/** Kept back from the scrubs for the conversation check and the insert, so a
- *  budget spent on scrubbing never throws away what was scrubbed. */
-const ARCHIVE_WRITE_RESERVE_MS = 20_000;
 /** Questions held in memory per run; past it they count as skipped. */
 export const ARCHIVE_MAX_QUESTIONS = 200;
 /** Web chat surfaces and labels whose questions are copied (US-15 AC44). */
 export const ARCHIVED_PLATFORMS = ['shopify', 'widget'];
 const ARCHIVED_CLASSIFICATIONS = ['ROUTE', 'MEASUREMENT'];
-
-/** The archive step's counts. Working means eligible = kept + skipped. */
-export interface ArchiveCounts {
-  eligible: number;
-  kept: number;
-  skipped: number;
-}
 
 /** What one run cleared, per table, and what it archived. Counts, never text. */
 export interface PurgeCounts {
@@ -96,26 +86,6 @@ export interface PurgeCounts {
   archive: ArchiveCounts | null;
   /** Rows selected again after their blank was sent (US-15 AC60): text past its window. */
   didNotBlank: number;
-}
-
-/** A question read before its row is blanked, held in memory until the scrub.
- *  The conversation id (shopify only) is for the deleted-conversation check,
- *  never stored. */
-interface PendingQuestion {
-  platform: string;
-  week: string;
-  text: string;
-  conversationId: string | null;
-}
-
-/** The run's held questions, and how many qualified (the cap's excess included). */
-interface Held {
-  questions: PendingQuestion[];
-  eligible: number;
-  /** Row ids already held, so a row selected again is held once (US-15 AC60).
-   *  In memory for this run only: never stored, never sent, so it can never
-   *  link a kept copy to its row. */
-  ids: Set<string>;
 }
 
 let day: CronDay = { phase: 'open' };
@@ -129,7 +99,8 @@ const QUESTION_KEYS = ['first', 'recent'];
  * Clear the free text from every row older than the window, in all three
  * tables. Returns how many rows each pass cleared — counts, never the text.
  * Throws on a database error so the caller's catch reports it instead of
- * logging a clean run.
+ * logging a clean run. A row that will not blank does not throw: its pass
+ * ends, the rest of the run goes on, and the count is reported (US-15 AC61).
  */
 export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCounts> {
   if (!supabaseAdmin) return { matchEvents: 0, messages: 0, conversations: 0, archive: null, didNotBlank: 0 };
@@ -137,58 +108,78 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
   // US-15 AC44 ships off: no question text is even selected until Brad switches it on.
   const held: Held | null = process.env.CHAT_QUESTION_ARCHIVE === 'on' ? { questions: [], eligible: 0, ids: new Set() } : null;
   // Ids selected again after their blank was sent; in memory for this run only, never stored or sent.
-  const stuck = new Set<string>();
+  const stuck: Stuck = { ids: new Set(), capReached: false };
+  const end = { onNoProgress: 'end', stuck } as const;
   let counts;
   try {
     counts = {
-      matchEvents: await purgeMatchEvents(cutoff, held, stuck),
+      matchEvents: await purgeMatchEvents(cutoff, held, end),
       // `!inner` makes the join a filter: a message qualifies only if its own
       // conversation is on a purged platform. Without it PostgREST would return
       // every message and merely null the embed.
       messages: await purgeInBatches(
         'chat message',
-        () =>
-          supabaseAdmin!
-            .from('chat_messages')
-            .select('id, chat_conversations!inner(platform)')
-            .in('chat_conversations.platform', PURGED_PLATFORMS)
-            .lt('created_at', cutoff)
-            .not('content', 'is', null)
-            .limit(BATCH_SIZE),
+        (skip) =>
+          skipping(
+            supabaseAdmin!
+              .from('chat_messages')
+              .select('id, chat_conversations!inner(platform)')
+              .in('chat_conversations.platform', PURGED_PLATFORMS)
+              .lt('created_at', cutoff)
+              .not('content', 'is', null),
+            skip,
+          ).limit(BATCH_SIZE),
         (rows) => supabaseAdmin!.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
-        stuck,
+        end,
       ),
       // The title is the first words of the question, so it is question text.
       // `updated_at` is the conversation's own clock: a thread stays readable
       // for 30 days after its last turn, not after its first.
       conversations: await purgeInBatches(
         'chat title',
-        () =>
-          supabaseAdmin!
-            .from('chat_conversations')
-            .select('id')
-            .in('platform', PURGED_PLATFORMS)
-            .lt('updated_at', cutoff)
-            .not('title', 'is', null)
-            .limit(BATCH_SIZE),
+        (skip) =>
+          skipping(
+            supabaseAdmin!
+              .from('chat_conversations')
+              .select('id')
+              .in('platform', PURGED_PLATFORMS)
+              .lt('updated_at', cutoff)
+              .not('title', 'is', null),
+            skip,
+          ).limit(BATCH_SIZE),
         (rows) => supabaseAdmin!.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
-        stuck,
+        end,
       ),
     };
   } finally {
     // Once per run, a thrown run included: a count, never an id or the text.
-    if (stuck.size) reportDidNotBlank(stuck.size);
+    if (stuck.ids.size) reportDidNotBlank(stuck);
   }
   // Only now, with every pass done: nothing here can delay or undo the purge.
-  return { ...counts, archive: held && (await archiveQuestions(held)), didNotBlank: stuck.size };
+  return { ...counts, archive: held && (await archiveQuestions(held)), didNotBlank: stuck.ids.size };
 }
 
-/** US-15 AC60: a row that came back after its blank was sent holds text past its window. */
-function reportDidNotBlank(rows: number): void {
+/** US-15 AC60, AC61: a row that came back after its blank was sent holds text past its window; a person must look.
+ *  `stuck_cap_reached` says a pass ended at STUCK_SKIP_MAX, so rows behind the stuck ones may be unreached. */
+function reportDidNotBlank({ ids, capReached }: Stuck): void {
   Sentry.captureMessage('Chat text purge: rows did not blank', {
-    level: 'warning',
-    tags: { feature: 'chat_text_purge', stuck_rows: rows },
+    level: 'error',
+    tags: { feature: 'chat_text_purge', stuck_rows: ids.size, ...(capReached && { stuck_cap_reached: true }) },
   });
+}
+
+/** What the daily passes collect about rows that will not blank. In memory for this run only. */
+interface Stuck {
+  ids: Set<string>;
+  capReached: boolean;
+}
+
+/** What a pass does on a batch holding only rows it already sent a blank for. */
+type OnNoProgress = { onNoProgress: 'end'; stuck: Stuck } | { onNoProgress: 'throw' };
+
+/** The select without the ids given (US-15 AC61); none given, the select as it was. */
+function skipping<Q extends { not: (column: 'id', operator: 'in', value: string) => unknown }>(query: Q, ids: string[]): Q {
+  return ids.length ? (query.not('id', 'in', `(${ids.join(',')})`) as Q) : query;
 }
 
 interface Fallible {
@@ -200,24 +191,38 @@ interface Fallible {
  * select comes back empty. All three passes share it, so all three share the
  * no-progress guard — a row selected again after its blank was sent did not
  * blank (a policy or trigger swallowing it), and a batch holding no new row
- * makes no progress, so stop rather than spin (US-15 AC60). Rows that came
- * back go into `stuck`. Ids live in memory for this pass only, never stored or sent.
+ * makes no progress (US-15 AC60). Ids live in memory for this pass only, never stored or sent.
+ * `end` (the daily purge): rows that came back go into `stuck.ids`, and the
+ * pass selects again past them, so stuck rows cannot hide the rows behind them;
+ * it ends when nothing is left, or at STUCK_SKIP_MAX skipped ids (US-15 AC61).
+ * `throw` (the chat DELETE): a user's explicit delete must fail loudly to its
+ * caller, which reports it.
  */
 async function purgeInBatches<T extends { id: string }>(
   label: string,
-  stale: () => PromiseLike<Fallible & { data: T[] | null }>,
+  stale: (skip: string[]) => PromiseLike<Fallible & { data: T[] | null }>,
   clear: (rows: T[]) => PromiseLike<Fallible>,
-  stuck = new Set<string>(),
+  mode: OnNoProgress,
 ): Promise<number> {
   let cleared = 0;
   const sent = new Set<string>();
+  const skip: string[] = [];
   for (;;) {
-    const { data, error } = await stale();
+    const { data, error } = await stale(skip);
     if (error) throw new Error(`${label} purge select failed: ${error.message}`);
     if (!data?.length) return cleared;
     const back = data.filter((r) => sent.has(r.id));
-    for (const r of back) stuck.add(r.id);
-    if (back.length === data.length) throw new Error(`${label} purge made no progress`);
+    if (mode.onNoProgress === 'end') for (const r of back) mode.stuck.ids.add(r.id);
+    if (back.length === data.length) {
+      if (mode.onNoProgress === 'throw') throw new Error(`${label} purge made no progress`);
+      // Skipped rows are never selected again, so every row here is new to `skip`.
+      if (skip.length + back.length > STUCK_SKIP_MAX) {
+        mode.stuck.capReached = true;
+        return cleared;
+      }
+      skip.push(...back.map((r) => r.id));
+      continue;
+    }
     for (const r of data) sent.add(r.id);
 
     const { error: updateError } = await clear(data);
@@ -266,27 +271,52 @@ async function clearMatchEventRows(rows: MatchEventRow[]): Promise<Fallible> {
 /** With the archive on, the question and what decides whether it is copied. */
 const HELD_COLUMNS = 'id, router_context, created_at, message, classification, conversation_id';
 
-function purgeMatchEvents(cutoff: string, held: Held | null, stuck: Set<string>): Promise<number> {
+function purgeMatchEvents(cutoff: string, held: Held | null, mode: OnNoProgress): Promise<number> {
   return purgeInBatches(
     'chat text',
-    () =>
-      supabaseAdmin!
-        .from('chat_match_events')
-        .select(held ? HELD_COLUMNS : 'id, router_context')
-        .lt('created_at', cutoff)
-        .or(HOLDS_TEXT)
+    (skip) =>
+      skipping(
+        supabaseAdmin!
+          .from('chat_match_events')
+          .select(held ? HELD_COLUMNS : 'id, router_context')
+          .lt('created_at', cutoff)
+          .or(HOLDS_TEXT),
+        skip,
+      )
         .returns<MatchEventRow[]>()
         .limit(BATCH_SIZE),
-    (rows: MatchEventRow[]) => {
-      if (held) holdQuestions(rows, held);
-      return clearMatchEventRows(rows);
+    async (rows: MatchEventRow[]) => {
+      const cleared = await clearMatchEventRows(rows);
+      return held && !cleared.error ? holdBlanked(rows, held) : cleared;
     },
-    stuck,
+    mode,
   );
 }
 
 /**
- * US-15 AC44: read the copyable questions out of a batch about to be blanked.
+ * US-15 AC61: hold only the questions whose blank landed. A per-row update can
+ * match nothing with no error, so a separate select of the batch's ids finds
+ * the rows that exist and now hold no text, and only those are held. A row
+ * still holding text is held on the day it finally blanks; a row another
+ * writer deleted is never held. Only with the archive on, so an off run pays nothing.
+ */
+async function holdBlanked(rows: MatchEventRow[], held: Held): Promise<Fallible> {
+  const { data, error } = await supabaseAdmin!
+    .from('chat_match_events')
+    .select('id')
+    .in('id', rows.map((r) => r.id))
+    .is('message', null)
+    .is('router_raw', null)
+    .is('router_error', null)
+    .limit(rows.length);
+  if (error) return { error };
+  const blank = new Set((data ?? []).map((r: { id: string }) => r.id));
+  holdQuestions(rows.filter((r) => blank.has(r.id)), held);
+  return { error: null };
+}
+
+/**
+ * US-15 AC44: read the copyable questions out of a batch whose blank landed.
  * The row's own question only, never `first` or `recent`, so each question is
  * read at most once, from its own row. Past the cap a question still counts.
  */
@@ -326,6 +356,7 @@ export function clearConversationMatchEvents(conversationId: string, userId: str
         .or(HOLDS_TEXT)
         .limit(BATCH_SIZE),
     clearMatchEventRows,
+    { onNoProgress: 'throw' },
   );
 }
 
@@ -334,83 +365,6 @@ function mondayOf(iso: string): string {
   const day = new Date(iso);
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
   return day.toISOString().slice(0, 10);
-}
-
-/** Fisher-Yates, so the batch's order says nothing about the rows' order. */
-function shuffle<T>(items: T[]): T[] {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  return items;
-}
-
-/**
- * The shopify questions whose conversation still exists, plus every widget
- * question (the widget keeps no conversation here). Covers a DELETE during
- * the scrub, one racing the match-event insert, and a failed blank. A
- * question with no conversation id is dropped. Throws on a database error.
- */
-async function withLiveConversations(items: ScrubbedQuestion[]): Promise<ScrubbedQuestion[]> {
-  const ids = [...new Set(items.flatMap((q) => (q.conversationId ? [q.conversationId] : [])))];
-  let live = new Set<string>();
-  if (ids.length) {
-    const { data, error } = await supabaseAdmin!.from('chat_conversations').select('id').in('id', ids).limit(ids.length);
-    if (error) throw new Error('conversation check failed');
-    live = new Set((data ?? []).map((r: { id: string }) => r.id));
-  }
-  return items.filter((q) => q.platform !== 'shopify' || (q.conversationId !== null && live.has(q.conversationId)));
-}
-
-type ScrubbedQuestion = PendingQuestion & { question: string };
-
-/**
- * US-15 AC44: scrub each held question and insert the kept ones in one
- * shuffled batch. Sequential at this volume, inside a 5-minute budget that
- * each call and the final writes take their time from (the deadline pattern of
- * `extractOrClassify`); a question the budget never reached is a skip, as is
- * one past the cap. Never throws, and reports counts only: never the text,
- * never a database error's details or hint.
- */
-async function archiveQuestions({ questions, eligible }: Held): Promise<ArchiveCounts> {
-  const counts = (kept: number) => ({ eligible, kept, skipped: eligible - kept });
-  if (!questions.length) return counts(0);
-  const until = Date.now() + ARCHIVE_BUDGET_MS;
-  const left = () => until - Date.now();
-  try {
-    const scrubbed: ScrubbedQuestion[] = [];
-    for (const q of questions) {
-      const scrubTime = left() - ARCHIVE_WRITE_RESERVE_MS;
-      if (scrubTime <= 0) break;
-      const timeoutMs = Math.min(SCRUB_TIMEOUT_MS, scrubTime);
-      // The call aborts itself at timeoutMs; the outer limit holds even if it never settles.
-      const out = await withTimeout(scrubQuestion(q.text, { timeoutMs }), timeoutMs + 1_000, 'archive scrub').catch(() => null);
-      if (out) scrubbed.push({ ...q, question: out });
-    }
-    // Immediately before the insert, so a DELETE during the scrub still counts.
-    const live = await withTimeout(withLiveConversations(scrubbed), Math.max(left(), 1), 'archive conversation check');
-    if (!live.length) return counts(0);
-    const rows = shuffle(live.map(({ platform, week, question }) => ({ platform, week, question })));
-    // No time limit on the insert: a write cut off by a timer can still commit, and the counts must say what landed.
-    const { error } = await supabaseAdmin!.from('chat_question_archive').insert(rows);
-    if (error) {
-      reportArchiveFailure('insert');
-      return counts(0);
-    }
-    return counts(rows.length);
-  } catch {
-    reportArchiveFailure('error');
-    return counts(0);
-  }
-}
-
-/** A fixed message and a stage word: the error itself may quote a question. */
-function reportArchiveFailure(stage: 'insert' | 'error'): void {
-  console.error(`Chat question archive failed (${stage})`);
-  Sentry.captureMessage('Chat question archive failed', {
-    level: 'warning',
-    tags: { feature: 'chat_question_archive', stage },
-  });
 }
 
 /** The day's work, behind the shared lock. Returns null if another machine
