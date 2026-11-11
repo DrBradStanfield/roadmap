@@ -28,7 +28,6 @@
     "widget-src/src/components/StartingInfoVitals.tsx": 744,
     "packages/health-core/src/mcp-tools.ts": 747,
     "packages/health-core/src/drive-rest.ts": 730,
-    "app/lib/anthropic.server.ts": 727,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,
     "app/lib/chat.server.ts": 708,
