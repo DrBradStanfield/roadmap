@@ -78,12 +78,14 @@ const isCurrent = (s: ChatState, e: ChatEvent): boolean => {
 };
 /** Key-order-free JSON, to compare a state with one built here. */
 const canon = (v: unknown) => JSON.stringify(v, (_, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x));
-/** A stale 404: the thread leaves the list, and if shown, the fresh-chat reset (AC6a, R8). Nothing else changes. */
+/** The person moved: a pending guest auto-open is off (the reducer's `settled`, Q7). */
+const settledList = (s: ChatState): ChatState['list'] => (s.list.phase === 'reading' || s.list.phase === 'waiting' ? { ...s.list, autoOpen: false } : s.list);
+/** A stale 404: the thread leaves the list, and if shown, the fresh-chat reset (AC6a, R8), which settles the list. Nothing else changes. */
 function afterStale404(prev: ChatState, id: string): [ChatState, Effect[]] {
   const dropped: ChatState = { ...prev, conversations: prev.conversations.filter((c) => c.id !== id) };
   if (prev.shown.id !== id) return [dropped, []];
   const seq = { ...prev.seq, key: prev.seq.key + 1, opening: prev.seq.opening + 1 };
-  return [{ ...dropped, seq, shown: { key: `new:${seq.key}`, id: null, opening: seq.opening }, messages: [], error: null, notice: 'none', load: { phase: 'none' } }, [{ type: 'edits-leave' }]];
+  return [{ ...dropped, list: settledList(prev), seq, shown: { key: `new:${seq.key}`, id: null, opening: seq.opening }, messages: [], error: null, notice: 'none', load: { phase: 'none' } }, [{ type: 'edits-leave' }]];
 }
 /** A send the reducer would take, but for the shown thread still loading (PR 1349 D). */
 const sendWhileLoading = (s: ChatState, e: ChatEvent) => e.type === 'send' && s.load.phase === 'loading' && s.turn.phase === 'idle'
@@ -129,7 +131,7 @@ function check(prev: ChatState, e: ChatEvent, next: ChatState, fx: Effect[], las
 describe('chat-turn property: five invariants over random sequences (§7 item 1)', () => {
   it('holds for 500 seeded sequences of 1-40 events', () => {
     let steps = 0;
-    const seen = { orphanedOwn: 0, orphanedRemote: 0, listWaiting: 0, staleLoadingLanding: 0, guestAutoOpen: 0, sendRefusedWhileLoading: 0 };
+    const seen = { orphanedOwn: 0, orphanedRemote: 0, listWaiting: 0, staleLoadingLanding: 0, guestAutoOpen: 0, sendRefusedWhileLoading: 0, guestWantedAfterMove: 0 };
     for (let seed = 1; seed <= 500; seed++) {
       const r = mulberry32(seed);
       const initialMoving = (['none', 'none', 'own', 'remote'] as const)[seed % 4];
@@ -153,6 +155,11 @@ describe('chat-turn property: five invariants over random sequences (§7 item 1)
         if (e.type === 'load-landed' && e.turns && s.load.phase === 'loading' && !isCurrent(s, e)) seen.staleLoadingLanding++;
         if (e.type === 'list-landed' && effects.some((f) => f.type === 'read-turns')) seen.guestAutoOpen++;
         if (sendWhileLoading(s, e)) seen.sendRefusedWhileLoading++;
+        // Codex on PR 1349: a guest who sent or opened a chat before the first read was wanted never auto-opens (Q7).
+        if (e.type === 'list-wanted' && e.guest && s.list.phase === 'unread' && (s.shown.key !== 'new:0' || s.turn.phase !== 'idle' || s.messages.length > 0)) {
+          seen.guestWantedAfterMove++;
+          if ((state.list.phase === 'reading' || state.list.phase === 'waiting') && state.list.autoOpen) throw new Error(`Q7: auto-open after the person moved\nseed ${seed}, step ${i}\nevents: ${JSON.stringify(events)}`);
+        }
         s = state;
         steps++;
       }

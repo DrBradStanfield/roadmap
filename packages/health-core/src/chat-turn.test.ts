@@ -553,6 +553,32 @@ describe('§3 Shown chat, list and load', () => {
     const OPEN: Load = { phase: 'loading', opening: 3, id: 'B' };
     loadCells('list-landed, a guest opening the latest', guest, E, { none: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]], loading: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]] });
     loadCells('list-landed, no auto-open', (s) => ({ ...s, list: reading(3) }), E, both([]));
+
+    // Codex on PR 1349: a guest who moved before the first read was even wanted.
+    const INIT = initialChatState({ erase: 'E0', moving: 'none' });
+    const GUEST: ChatEvent = { type: 'list-wanted', guest: true };
+    it('send, then a guest\'s list-wanted, then list-landed | the asked chat stays; the reply shows (US-15 AC7a, Q7)', () => {
+      const asked = step(INIT, SEND, GUEST);
+      const landed = transition(asked.state, { type: 'list-landed', read: 1, conversations: [convA] });
+      expect(landed.state.shown).toEqual(INIT.shown);
+      expect(landed.effects.some((f) => f.type === 'read-turns')).toBe(false);
+      const done = transition(landed.state, { type: 'done', turn: 1, now: T1, result: RES });
+      expect(done.state.shown).toMatchObject({ key: 'thread:A', id: 'A' }); // landed: the new chat becomes its thread
+      expect(done.state.messages.map((m) => m.content)).toEqual(['hi', 'ans']);
+    });
+    it('open-thread, then a guest\'s list-wanted, then list-landed | the opened thread stays (US-15 AC7a, Q7)', () => {
+      const opened = step(INIT, { type: 'open-thread', id: 'A' }, GUEST);
+      const landed = transition(opened.state, { type: 'list-landed', read: 1, conversations: [convB, convA] });
+      expect(landed.state.shown).toMatchObject({ key: 'thread:A', id: 'A' });
+      expect(landed.effects).toEqual([]);
+    });
+    it('open-thread while moving, then a guest\'s list-wanted | waiting, no auto-open (US-15 AC7a, Q7)', () => {
+      const moving = initialChatState({ erase: 'E0', moving: 'own' });
+      expect(step(moving, { type: 'open-thread', id: 'A' }, GUEST).state.list).toEqual({ phase: 'waiting', autoOpen: false });
+    });
+    it('a guest\'s list-wanted from the untouched first chat | auto-opens on landing (Q7)', () => {
+      expect(transition(INIT, GUEST).state.list).toEqual({ phase: 'reading', read: 1, autoOpen: true });
+    });
   });
 
   describe('load-landed', () => {

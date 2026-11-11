@@ -122,6 +122,8 @@ const inFlight = (t: Turn): t is Extract<Turn, { phase: 'sending' | 'streaming' 
 function settled(s: ChatState): ChatState {
   return s.list.phase === 'reading' || s.list.phase === 'waiting' ? { ...s, list: { ...s.list, autoOpen: false } } : s;
 }
+/** The first chat, never sent from or left: only then may a guest's first read open a thread (Q7). */
+const untouched = (s: ChatState): boolean => s.shown.key === 'new:0' && s.turn.phase === 'idle' && s.messages.length === 0;
 
 /** A new shown chat with no thread (New chat, its mirror, a thread gone): its own key and opening. */
 function freshChat(s: ChatState): ChatState {
@@ -286,9 +288,11 @@ export function transition(s: ChatState, e: ChatEvent): Step {
       return same(next);
     }
     case 'erase-shown': return eraseShown(s, e);
-    case 'list-wanted':
+    case 'list-wanted': {
       if (s.list.phase !== 'unread') return same(s);
-      return s.erase.moving !== 'none' ? same({ ...s, list: { phase: 'waiting', autoOpen: e.guest } }) : readList(s, e.guest);
+      const autoOpen = e.guest && untouched(s);
+      return s.erase.moving !== 'none' ? same({ ...s, list: { phase: 'waiting', autoOpen } }) : readList(s, autoOpen);
+    }
     case 'list-landed': return listLanded(s, e);
     case 'load-landed': return loadLanded(s, e);
     case 'dismiss': return same({ ...s, notice: 'none' });
