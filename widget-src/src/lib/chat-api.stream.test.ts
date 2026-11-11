@@ -142,8 +142,8 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     const badMed = { kind: 'medication', medicationKey: 'statin_escalation', drugName: 42, doseValue: null, doseUnit: null };
     const wrongTypedValue = { kind: 'field', field: 'ldlC', displayValue: '4.1', unitSystem: 'si', date: null };
     const unknown = { kind: 'goal', target: 5 };
-    const medsWords = "The chat's medication change could not be read, so nothing was saved.";
-    const reviewWords = "The chat's suggestion could not be read, so nothing was saved.";
+    const medsWords = "The chat's medication change could not be read, so it was not saved.";
+    const reviewWords = "The chat's suggested values could not be read, so none of them were saved.";
     const reply = async (proposedEdits: unknown[]) => {
       fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits }]));
       return (await sendMessage('q', null, null, [], () => {}, true)).result;

@@ -7,8 +7,9 @@
  */
 import type { ProposedEdit } from './chat-edits';
 
-export const CHAT_EDIT_UNREADABLE = 'The chat\'s suggestion could not be read, so nothing was saved.';
-export const CHAT_MEDS_UNREADABLE = 'The chat\'s medication change could not be read, so nothing was saved.';
+/** One sentence per refused part, each about its own part only, shown beside that part's banner. */
+export const CHAT_VALUES_UNREADABLE = 'The chat\'s suggested values could not be read, so none of them were saved.';
+export const CHAT_MEDS_UNREADABLE = 'The chat\'s medication change could not be read, so it was not saved.';
 
 export type ChatEditPart = 'medications' | 'review';
 export interface ChatEditRefusal { part: ChatEditPart; words: string }
@@ -20,7 +21,7 @@ const PART_OF: Record<string, ChatEditPart | undefined> = { medication: 'medicat
 /** The words refusing `part`, or null when nothing in it is unreadable. A list that is not one refuses both. */
 export function partRefusal(invalid: Invalid, part: ChatEditPart): string | null {
   if (!invalid.some((k) => k === 'list' || PART_OF[k] === part)) return null;
-  return part === 'medications' ? CHAT_MEDS_UNREADABLE : CHAT_EDIT_UNREADABLE;
+  return part === 'medications' ? CHAT_MEDS_UNREADABLE : CHAT_VALUES_UNREADABLE;
 }
 
 /**

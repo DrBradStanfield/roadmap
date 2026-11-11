@@ -17,6 +17,16 @@ import { trackProductEvent } from '../lib/server-api';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
 
+/** Where a reply stands against the screen as it lands, in one test of the
+ *  turn's whole identity (US-16 AC2a, US-67 AC2): its thread (`stayed`) and the
+ *  erase it was asked under. Only a 'shown' reply applies its edits, sets Undo
+ *  or shows a refusal; a 'recordChanged' one says only that; a 'threadLeft'
+ *  one says and applies nothing in the thread now shown. */
+function replyStanding(asked: string, stayed: boolean): 'shown' | 'recordChanged' | 'threadLeft' {
+  if (!stayed) return 'threadLeft';
+  return stillShown(asked) ? 'shown' : 'recordChanged';
+}
+
 /** Decide where a chatbot vitals edit should land. When the vitals matrix is
  *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
  *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
@@ -65,9 +75,10 @@ export function useChatEdits({
   const [profileProposal, setProfileProposal] = useState<ProposedProfileEdit | null>(null);
   // A reply's edits refused: because the record moved since the question (the
   // erase it was refused at, so the line outlasts that erase and no later one),
-  // or because a part of the reply could not be read (US-67 AC2, the iPhone's
-  // words). It goes at the next send or conversation switch too, as the iPhone's does.
-  const [notice, setNotice] = useState<{ kind: 'recordChanged'; at: string } | { kind: 'unreadable'; words: string[] } | null>(null);
+  // or because a part of the reply could not be read (US-67 AC2: one sentence
+  // per part, the iPhone's words, each shown beside its own part's banner).
+  // It goes at the next send or conversation switch too, as the iPhone's does.
+  const [notice, setNotice] = useState<{ kind: 'recordChanged'; at: string } | { kind: 'unreadable'; medications: string | null; review: string | null } | null>(null);
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -136,14 +147,14 @@ export function useChatEdits({
     // tombstones. None of it applies, and the chat says so, as the iPhone's
     // does (US-16 AC2a, US-67 AC5); its words may claim a change.
     // An earlier reply's Undo goes too: "Not saved" never shows beside it. A
-    // reply for a thread no longer on screen says nothing in the new one.
-    if (!stillShown(asked)) {
-      if (stayed) { setMedUndo(null); setNotice({ kind: 'recordChanged', at: getEraseIdentity() }); }
-      return;
-    }
-    // A refused part saves nothing; its line replaces an earlier reply's Undo for medications.
-    setNotice(refusals.length > 0 ? { kind: 'unreadable', words: refusals.map(r => r.words) } : null);
-    if (refusals.some(r => r.part === 'medications')) setMedUndo(null);
+    // reply for a thread no longer on screen says and applies nothing in the new one.
+    const standing = replyStanding(asked, stayed);
+    if (standing === 'threadLeft') return;
+    if (standing === 'recordChanged') { setMedUndo(null); setNotice({ kind: 'recordChanged', at: getEraseIdentity() }); return; }
+    // A refused part saves nothing; its line takes the place of an earlier reply's Undo for medications.
+    const refused = (part: ChatEditRefusal['part']) => refusals.find(r => r.part === part)?.words ?? null;
+    setNotice(refusals.length > 0 ? { kind: 'unreadable', medications: refused('medications'), review: refused('review') } : null);
+    if (refused('medications')) setMedUndo(null);
     let editedField: string | null = null;
     let inGrid = false;
     const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
@@ -208,18 +219,36 @@ export function useChatEdits({
   /** The user's own sex or height outranks a chat proposal for it (US-16 AC2). */
   const dropProfileProposal = useCallback(() => setProfileProposal(null), []);
 
+  /** A part's refusal (US-67 AC2), in that part's place; dismissing it leaves the other part's. */
+  const unreadable = (part: 'medications' | 'review') => {
+    const words = notice?.kind === 'unreadable' ? notice[part] : null;
+    if (!words) return null;
+    const dismiss = () => setNotice(n => {
+      if (n?.kind !== 'unreadable') return n;
+      const rest = { ...n, [part]: null };
+      return rest.medications || rest.review ? rest : null;
+    });
+    return (
+      <div className="chat-med-undo chat-edit-refusal" data-part={part} role="status">
+        <span className="chat-med-undo-text">{words}</span>
+        <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={dismiss}>✕</button>
+      </div>
+    );
+  };
+
   // Undo banner for a medication the chat just changed (meds auto-save, so
   // the chat applies + states the change; this banner offers the Undo).
   // Both portal outside the masked widget root, so their column carries
   // the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners).
   const banners = (medUndo || pendingProfile || notice) && createPortal(
     <div className="chat-banners no-print" data-clarity-mask="true">
-      {notice && (
+      {notice?.kind === 'recordChanged' && (
         <div className="chat-med-undo" role="status">
-          <span className="chat-med-undo-text">{notice.kind === 'recordChanged' ? RECORD_CHANGED_SINCE_ASKED : notice.words.join(' ')}</span>
+          <span className="chat-med-undo-text">{RECORD_CHANGED_SINCE_ASKED}</span>
           <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
         </div>
       )}
+      {unreadable('medications')}
       {medUndo && (
         <div className="chat-med-undo" role="status">
           <span className="chat-med-undo-text">
@@ -235,6 +264,7 @@ export function useChatEdits({
           >✕</button>
         </div>
       )}
+      {unreadable('review')}
       {/* US-16 AC2: a sex or height the chat proposed. Nothing is written
           until the user presses Save; Not now writes nothing. */}
       {pendingProfile && (

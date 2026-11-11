@@ -22,7 +22,7 @@ import { cellLabel, cellText } from '../../packages/health-core/src/cell-unit';
 import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
 import { isReadableRow, readableView } from '../../packages/health-core/src/readable-rows';
-import { CHAT_EDIT_UNREADABLE, partRefusal } from '../../packages/health-core/src/chat-edit-refusals';
+import { partRefusal } from '../../packages/health-core/src/chat-edit-refusals';
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
 export type ChatEdit =
@@ -49,7 +49,7 @@ type Seen = Array<[string, unknown]>;
 
 type Outcome = { ok: true; file: RoadmapFile } | { ok: false; reason: string; message: string };
 
-const UNREADABLE = CHAT_EDIT_UNREADABLE;
+const UNREADABLE = 'The chat\'s suggestion could not be read, so nothing was saved.';
 const NOTHING_SAVED = 'Nothing was saved.';
 const STALE = `Your record changed on another device while this was shown. ${NOTHING_SAVED}`;
 /** A held row or profile value this build cannot read (US-65 AC2): named, never shown. */

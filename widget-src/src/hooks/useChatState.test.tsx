@@ -237,6 +237,25 @@ describe('US-15 AC19 — only the chat that applies edits asks for the tools', (
   });
 });
 
+// US-67 AC2: a reply whose every edit was refused as unreadable still reaches the
+// page, so the refusal shows; it carries no edits.
+describe('US-67 AC2 — a reply carrying only refusals reaches take()', () => {
+  it('take() gets no edits, the asked-under mark, stayed, and the refusals', async () => {
+    const take = vi.fn();
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit: { ask: () => 'erase-1', take, leave: () => {} } }));
+    act(() => hook.result.current.actions.handleInputChange('I take atorvastatin 40'));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    const editRefusals = [{ part: 'medications' as const, words: "The chat's medication change could not be read, so it was not saved." }];
+    await act(async () => {
+      send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'Noted.', editRefusals }, error: null });
+      await sending;
+    });
+    expect(take).toHaveBeenCalledTimes(1);
+    expect(take).toHaveBeenCalledWith([], 'erase-1', true, editRefusals);
+  });
+});
+
 // US-15 AC26 (2026-10-04): a pasted lab report or prompt template is kept whole
 // up to 8,000 characters; it was cut silently at 500.
 describe('US-15 AC26 — the input holds 8,000 characters', () => {
