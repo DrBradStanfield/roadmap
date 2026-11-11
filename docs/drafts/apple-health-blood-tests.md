@@ -312,9 +312,10 @@ Trade-offs stated:
     The person may have typed the right number; a later provider feed must not undo it.
     The skipped value is counted ("3 results already in your record").
   - Rows are never mutated; deletions in Health are ignored (D6).
-  - **Erase:** D6 skips readings measured before the record's erase. For labs that means
-    a person who erases never gets their older results back from Health. Probably right
-    (they asked for a clean record), but noticeable: question 9.
+  - **Erase:** decided 2026-11-11 (US-72 AC10, Brad's yes): an erase disconnects Apple
+    Health and resets every anchor, lab results included. Nothing is read until the person
+    connects again, and that Connect reads every result from the start, older ones too: no
+    erase rule filters them (question 9).
 - **How HealthKit delivers an amendment is unknown** (section 1). The rule above works
   whether it comes as a new sample or a replaced one, as long as its JSON carries the
   same `id`. Test with the simulator accounts before relying on it.

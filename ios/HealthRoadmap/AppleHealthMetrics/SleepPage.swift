@@ -61,7 +61,8 @@ struct SleepPage: View {
     /// kept), then the samples added or deleted in Health since are applied (AC7a). A cancelled
     /// read marks nothing read (N1).
     private func load(_ fresh: ReadFor) async {
-        guard fresh != readFor else { return }
+        // Disconnected by an erase: nothing is read or drawn (US-72 AC10, AppleHealthSync's one rule).
+        guard fresh != readFor, let ticket = live.ticket() else { return }
         // Sleep's history was removed: nothing old stays drawn (Codex R2).
         if let readFor, readFor.removals != fresh.removals {
             nights = []
@@ -69,10 +70,10 @@ struct SleepPage: View {
             picked = nil
             selected = nil
         }
-        let (store, now, calendar) = (live.store, live.now(), live.calendar)
-        if nights.isEmpty, let kept = await live.history.keptNights(calendar: calendar), !Task.isCancelled { land(kept) }
-        if nights.isEmpty, let first = try? await LiveHealth.readNights(store, reaching: reading, now: now, calendar: calendar), !Task.isCancelled { land(first) }
-        guard let read = try? await live.history.refreshNights(store, now: now, calendar: calendar), !Task.isCancelled else { return }
+        let (store, now, calendar) = (live.reader(ticket), live.now(), live.calendar)
+        if nights.isEmpty, let kept = await live.history.keptNights(calendar: calendar), live.holds(ticket) { land(kept) }
+        if nights.isEmpty, let first = try? await LiveHealth.readNights(store, reaching: reading, now: now, calendar: calendar), live.holds(ticket) { land(first) }
+        guard let read = try? await live.history.refreshNights(store, now: now, calendar: calendar), live.holds(ticket) else { return }
         land(read)
         readFor = fresh
     }

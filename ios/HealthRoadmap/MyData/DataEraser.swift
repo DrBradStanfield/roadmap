@@ -63,22 +63,24 @@ final class DataEraser {
         erasing = true
         defer { erasing = false }
         let units = store.myData?.unitSystem
+        let healthWasConnected = appleHealthConnected
         let outcome = if let provider = sync.provider { await eraseInCloud(provider) } else { await eraseOnPhone() }
         // Either way, the chat list is read again: its file may have been erased, even by a
         // refused erase that got as far as the chat step.
         await chat.refresh()
         if case .refused = outcome { return outcome }
         awaitingDismissal = true
+        // After the record: an erase refused there must change nothing (Health stays connected,
+        // its anchors where they were), and Health's copies of typed values are only copies (D6).
+        // Then Health disconnects (US-72 AC10).
+        let healthErased = await health?.erased(wasConnected: healthWasConnected) ?? true
         await live?.forget()
-        // After the record: an erase refused there must change nothing, and Health's
-        // copies of typed values are only copies (D6).
-        let healthErased = await health?.eraseOwnSamples() ?? true
         await keepUnits(units)
         await reminders?.refresh()
-        guard !healthErased else { return outcome }
+        let after = (healthWasConnected ? EraseText.healthDisconnected : "") + (healthErased ? "" : EraseText.healthNotErased)
         switch outcome {
-        case .erased(let text): return .erased(text + EraseText.healthNotErased)
-        case .notSent(let text): return .notSent(text + EraseText.healthNotErased)
+        case .erased(let text): return .erased(text + after)
+        case .notSent(let text): return .notSent(text + after)
         case .refused: return outcome
         }
     }

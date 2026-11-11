@@ -412,7 +412,7 @@ final class FakeHealthStore: HealthStoreClient {
     var writable: Set<HealthKind> = Set(HealthKind.allCases)
     /// Saves of these sync ids fail, as HealthKit can refuse one sample.
     var refusing: Set<String> = []
-    private(set) var saved: [HealthWrite] = []
+    var saved: [HealthWrite] = []
     private var served: [HealthKind: Int] = [:]
 
     let isAvailable = true
@@ -465,6 +465,11 @@ final class FakeHealthStore: HealthStoreClient {
 
     func anchorData(_ kind: HealthKind) -> Data { Data("\(kind.rawValue)-\(served[kind] ?? 0)".utf8) }
 
+    /// The anchor each read of a kind started from (US-72 AC10: a Connect after an erase reads from nil).
+    private(set) var sampleAnchors: [HealthKind: [Data?]] = [:]
+    /// Every read of any kind, vitals and lab results.
+    var reads: Int { sampleAnchors.values.reduce(0) { $0 + $1.count } + recordReads }
+
     func samples(of kind: HealthKind, after anchor: Data?) async throws -> HealthBatch {
         if locked { throw HealthStoreError.locked }
         // HealthKit answers later: another refresh can be asked for meanwhile.
@@ -473,6 +478,7 @@ final class FakeHealthStore: HealthStoreClient {
         let batch = pending[kind] ?? []
         pending[kind] = nil
         served[kind, default: 0] += 1
+        sampleAnchors[kind, default: []].append(anchor)
         return HealthBatch(samples: batch, anchor: anchorData(kind))
     }
 
@@ -481,17 +487,31 @@ final class FakeHealthStore: HealthStoreClient {
     var characteristicsGiven = HealthCharacteristics.none
     func characteristics() -> HealthCharacteristics { characteristicsGiven }
 
+    /// Runs before a save lands: a test holds it there, or fails it (US-72 AC10 R2).
+    var saveHold: (@MainActor () async throws -> Void)?
+
     func save(_ write: HealthWrite) async throws {
         if locked { throw HealthStoreError.locked }
+        if let saveHold { try await saveHold() }
         if refusing.contains(write.syncId) { throw CocoaError(.validationNumberTooLarge) }
         saved.append(write)
     }
 
     private(set) var observed: [HealthKind] = []
     private(set) var onChange: (@MainActor () async -> Void)?
+    private(set) var observeCalls = 0
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {
+        observeCalls += 1
         observed = kinds
         self.onChange = onChange
+    }
+
+    /// US-72 AC10: the erase stops every observer query and background delivery.
+    private(set) var stops = 0
+    func stopObserving() {
+        stops += 1
+        observed = []
+        onChange = nil
     }
 
     /// How many times the app asked Health to delete its own samples (US-25 AC16).
@@ -501,7 +521,35 @@ final class FakeHealthStore: HealthStoreClient {
     func deleteOwnSamples() async throws {
         if deleteFails { throw HealthStoreError.locked }
         ownDeletes += 1
-        saved = []
+        // As HealthKitClient: a kind whose write access is off is not asked (US-72 AC10 edge 2).
+        saved.removeAll { $0.kind.map(writable.contains) ?? true }
+    }
+
+    /// k2: the sync ids a remote erase asked Health to delete, one list per call,
+    /// taken from the written-versions memory (never a query by source).
+    private(set) var deletedSyncIds: [[String]] = []
+    /// Every call, refused or not (US-72 AC10 R3: a refused delete is not retried in a loop).
+    private(set) var deleteAttempts = 0
+    /// The delete fails with this, as HealthKit refuses one once write access is off.
+    var deleteRefusal: Error?
+    /// Runs after the samples went, before the delete returns (Codex C-R1).
+    var deleteHold: (@MainActor () async -> Void)?
+    /// Runs before the samples go: a slow HealthKit query (lead H32).
+    var deleteBegin: (@MainActor () async -> Void)?
+    /// As HealthKitClient: a kind whose write access is off is not asked and keeps its ids;
+    /// with one such kind, an id not found stays too (edge 2).
+    func deleteSamples(syncIds: [String]) async throws -> [String] {
+        guard !syncIds.isEmpty else { return [] }
+        deleteAttempts += 1
+        if deleteFails { throw HealthStoreError.locked }
+        if let deleteRefusal { throw deleteRefusal }
+        if let deleteBegin { await deleteBegin() }
+        deletedSyncIds.append(syncIds.sorted())
+        let gone = Set(saved.filter { syncIds.contains($0.syncId) && $0.kind.map(writable.contains) == true }.map(\.syncId))
+        saved.removeAll { gone.contains($0.syncId) && $0.kind.map(writable.contains) == true }
+        if let deleteHold { await deleteHold() }
+        let blocked = [HealthKind.weight, .waist, .bloodPressure].contains { !writable.contains($0) }
+        return blocked ? syncIds.filter { !gone.contains($0) } : []
     }
 }
 

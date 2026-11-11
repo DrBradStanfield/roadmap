@@ -7,7 +7,9 @@ import Foundation
 /// - one HealthKit query anchor per kind, and one for lab results (US-72), so each launch
 ///   reads only what is new, with the lab results rules version that anchor was read under;
 /// - when Health's lab results sheet was last shown, so coming on screen asks only once (US-72 AC1);
-/// - the version of each value already written to Health, so it is written once.
+/// - the version of each value already written to Health, so it is written once, and the
+///   delete an erase still owes (US-72 AC10);
+/// - the last record erase this phone saw, and on which record (US-72 AC10, `EraseGate`).
 struct HealthSyncMemory {
     private let defaults: UserDefaults
 
@@ -52,18 +54,76 @@ struct HealthSyncMemory {
         nonmutating set { defaults.set(newValue, forKey: "appleHealth.labResultsAsked") }
     }
 
-    func writtenVersion(_ syncId: String) -> Int64 {
-        (defaults.dictionary(forKey: "appleHealth.written")?[syncId] as? NSNumber)?.int64Value ?? 0
+    /// The record erase the sync last saw, with its source: one value, written in one step.
+    var eraseSeen: EraseSeen? {
+        get { defaults.data(forKey: "appleHealth.eraseSeen").flatMap { try? JSONDecoder().decode(EraseSeen.self, from: $0) } }
+        nonmutating set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: "appleHealth.eraseSeen") }
     }
 
-    /// After an erase deleted our samples from Health: nothing is written any more.
-    func forgetWritten() {
-        defaults.removeObject(forKey: "appleHealth.written")
+    /// The version of each value this app wrote to Health while connected.
+    func writtenVersion(_ syncId: String) -> Int64 {
+        versions("appleHealth.written")[syncId] ?? 0
     }
 
     func setWritten(_ version: Int64, for syncId: String) {
-        var written = defaults.dictionary(forKey: "appleHealth.written") ?? [:]
-        written[syncId] = NSNumber(value: version)
-        defaults.set(written, forKey: "appleHealth.written")
+        var written = versions("appleHealth.written")
+        written[syncId] = version
+        set(written, "appleHealth.written")
+    }
+
+    /// The delete still owed (US-72 AC10), by sync id and version: what an erase found written
+    /// (`oweWritten`) and any save that landed after it. Never a live sample: a Connect that
+    /// comes before the delete succeeds starts a new written list beside it (edge 1).
+    /// A pass never writes an owed id; it is written again once its delete is paid.
+    var owed: [String: Int64] { versions("appleHealth.owed") }
+
+    /// An erase disconnected Apple Health: every value written is owed.
+    func oweWritten() {
+        for (syncId, version) in versions("appleHealth.written") { owe(version, for: syncId) }
+        set([:], "appleHealth.written")
+    }
+
+    /// A save that landed after an erase disconnected Health; the newer version is kept.
+    func owe(_ version: Int64, for syncId: String) {
+        var owed = owed
+        owed[syncId] = max(owed[syncId] ?? 0, version)
+        set(owed, "appleHealth.owed")
+    }
+
+    /// After a delete of `deleted`: each entry leaves unless a newer version of it was saved
+    /// meanwhile, which stays owed (Codex C-R1: a correction keeps its sync id).
+    func paid(_ deleted: [String: Int64]) {
+        var owed = owed
+        for (syncId, version) in deleted where owed[syncId] == version { owed[syncId] = nil }
+        set(owed, "appleHealth.owed")
+    }
+
+    private func versions(_ key: String) -> [String: Int64] {
+        (defaults.dictionary(forKey: key) ?? [:]).compactMapValues { ($0 as? NSNumber)?.int64Value }
+    }
+
+    /// The last entry gone removes the key.
+    private func set(_ versions: [String: Int64], _ key: String) {
+        defaults.set(versions.isEmpty ? nil : versions.mapValues { NSNumber(value: $0) }, forKey: key)
+    }
+}
+
+/// A record erase (its `eraseEpoch`) and the record it was on: "phone", or the cloud's name.
+struct EraseSeen: Codable, Equatable {
+    let epoch: Int
+    let source: String
+}
+
+/// What the Apple Health sync does about the record's erase (US-72 AC10): a newer erase
+/// on the record it saw before disconnects Apple Health; a first look, a new record source,
+/// or an erase while not connected is taken as seen and never disconnects (a fresh
+/// Connect after a reinstall keeps its rows). Anything else keeps.
+enum EraseGate: Equatable {
+    case keep, disconnect, adopt
+
+    static func decide(connected: Bool, seen: EraseSeen?, recordErase: Int, recordSource: String) -> EraseGate {
+        guard let seen, seen.source == recordSource else { return .adopt }
+        guard recordErase > seen.epoch else { return .keep }
+        return connected ? .disconnect : .adopt
     }
 }

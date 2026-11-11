@@ -12,7 +12,7 @@ final class ChatEdits {
     struct Saved: Equatable {
         let lines: [ChatEditsPreview.Line]
         let undo: OpaqueJSON?
-        let mark: RecordStore.ChatMark
+        let mark: RecordStore.Mark
     }
 
     /// The values waiting for Save.
@@ -25,7 +25,7 @@ final class ChatEdits {
         let today: String
         /// The preview's `seen`, passed back on Save.
         let seen: OpaqueJSON?
-        let mark: RecordStore.ChatMark
+        let mark: RecordStore.Mark
     }
 
     private(set) var saved: Saved?
@@ -33,7 +33,7 @@ final class ChatEdits {
     /// Why a medication change or its Undo was not saved.
     private(set) var problem: String?
     /// The record the problem line was shown on.
-    @ObservationIgnored private var problemMark: RecordStore.ChatMark?
+    @ObservationIgnored private var problemMark: RecordStore.Mark?
     /// A Save or Undo is landing: the buttons wait.
     private(set) var busy = false
     /// Sends a Clarity event (D9): fixed words only.
@@ -49,7 +49,7 @@ final class ChatEdits {
 
     /// A reply's edits (`edits`, as the server sent them), for the question asked on `asked`.
     /// Dropped when the record was erased since (AC5). A new banner replaces an unanswered one.
-    func take(_ edits: OpaqueJSON, asked: RecordStore.ChatMark, today: String = DayText.iso(.now)) async {
+    func take(_ edits: OpaqueJSON, asked: RecordStore.Mark, today: String = DayText.iso(.now)) async {
         let generation = generation
         let taken: RecordStore.ChatEditsTaken
         switch await store.takeChatEdits(edits, today: today, asked: asked) {
@@ -59,7 +59,7 @@ final class ChatEdits {
         case .unreadable: return show("These changes could not be shown, so nothing was saved.", for: generation)
         }
         // Erased while the turn returned: whatever it wrote went with the erase.
-        guard taken.mark.holds(at: store.chatMark) else { return show(Self.moved, for: generation) }
+        guard taken.mark.holds(at: store.mark) else { return show(Self.moved, for: generation) }
         var shown = false
         // A medication change that was written always gets its banner and Undo, even if the
         // conversation moved on meanwhile: the two are never split.
@@ -112,12 +112,12 @@ final class ChatEdits {
     private func show(_ words: String, for generation: Int) {
         guard generation == self.generation else { return }
         problem = words
-        problemMark = store.chatMark
+        problemMark = store.mark
     }
 
     /// The record on screen moved (ChatView): a banner or problem line made before an erase
     /// goes, here or by sync (US-67 AC5). Connecting or disconnecting a cloud is not an erase.
-    func follow(_ now: RecordStore.ChatMark) {
+    func follow(_ now: RecordStore.Mark) {
         if let saved, !saved.mark.holds(at: now) { self.saved = nil }
         if let review, !review.mark.holds(at: now) { self.review = nil }
         if let problemMark, !problemMark.holds(at: now) { problem = nil }

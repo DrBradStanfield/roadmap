@@ -223,6 +223,28 @@ describe('US-15 AC20 — status and sources while the answer is prepared', () =>
     expect(plain.status).toBe(500);
     expect(await plain.json()).toEqual({ success: false, error: 'Failed to create conversation' });
   });
+
+  // US-52 AC6f and US-15 AC38: both clients clear the streamed text on a status line, so a
+  // run_roadmap round's restart status must reach the wire after the first call's text and
+  // before the second call's. chat.server.run-roadmap.test.ts pins getChatCompletion's side.
+  it('a run_roadmap round: the restart status reaches the stream between the preamble and the answer', async () => {
+    const restart = { type: 'status', text: 'Running your numbers through the roadmap' };
+    mocks.getChatCompletion.mockImplementation(async (_s: unknown, _m: unknown, _c: boolean, onEvent?: (e: unknown) => void) => {
+      onEvent?.({ type: 'text', text: 'Let me run those numbers.' });
+      onEvent?.(restart);
+      onEvent?.({ type: 'text', text: 'Synthetic answer' });
+      return mocks.completion;
+    });
+    const out = await lines(await post({ message: 'is my LDL ok', localFirst: true, stream: true }));
+    const writing = out.findIndex((l) => l.type === 'status' && l.text === 'Writing the answer');
+    expect(writing).toBeGreaterThanOrEqual(0);
+    expect(out.slice(writing + 1)).toEqual([
+      { type: 'text', text: 'Let me run those numbers.' },
+      restart,
+      { type: 'text', text: 'Synthetic answer' },
+      expect.objectContaining({ type: 'done', content: 'Synthetic answer' }),
+    ]);
+  });
 });
 
 // US-15 AC20 with the real loader: every entry that loads is named by its index title.
