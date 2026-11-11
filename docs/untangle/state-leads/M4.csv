@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M4,phone mirrors,"The iPhone welcome screen kept its own notOpened copy of CloudSync's open (survey S2), so Get started during the launch open said it failed and never moved on",bug,done,"ios/HealthRoadmap/App/WelcomeConnect.swift phase() derives the phase from CloudSync each time (no default arm over Status) and decide() goes on once; pinned by ios/HealthRoadmapTests/WelcomeConnectTests.swift (US-54 AC2b)",,no
