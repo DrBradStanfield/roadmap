@@ -756,11 +756,25 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       expect(q(view, '.mh-ready')).toBeNull();
     });
 
-    it('a waist from the chat is no answer: the last weight typed in the grid still lands after its wait', async () => {
-      const view = await chatReady();
-      type(weightRow(view)!.querySelector('.bt-cell-draft input'), '25'); // may become 250: an 800 ms wait
+    const typedWeight = (view: RenderResult, grid: boolean) =>
+      type(grid ? weightRow(view)!.querySelector('.bt-cell-draft input') : q(view, '#weightKg'), '25'); // may become 250: an 800 ms wait
+
+    it.each([['the box', false], ['the grid', true]])('a waist from the chat is no answer (%s): the last weight typed still lands after its wait', async (_where, grid) => {
+      const view = await chatReady({ waist: grid });
+      typedWeight(view, grid);
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
       await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    });
+
+    it.each([['the box', false], ['the grid', true]])('the chat\'s weight during a typed weight\'s wait (%s) is the answer: counted once, no landing (AC25b)', async (_where, grid) => {
+      const view = await chatReady({ waist: grid });
+      typedWeight(view, grid);
+      chatWeight();
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      await settle(1500);
+      expect(landed()).toBe(false);
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
     });
 
     it('a record already holding a weight: the chat\'s grid weight sends nothing and shows no card', async () => {
