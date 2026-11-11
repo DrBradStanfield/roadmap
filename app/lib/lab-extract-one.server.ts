@@ -14,10 +14,12 @@ import { safeErrorFields } from './safe-error-fields.server';
 /**
  * One file's extraction and its answer, shared with the iPhone app's route
  * (US-52 AC7). `extra` adds the caller's own fields to a success. The app
- * passes `oneDeadline`: the phone gives up after 120 s idle, so its call never
- * retries a timed-out attempt and answers inside about 61 s (US-52 AC7c).
+ * passes one 90 s budget with `oneDeadline`: the phone gives up after 120 s
+ * idle, so its call never retries a timed-out attempt (US-52 AC7c).
  */
-export async function extractOneFile(data: LabImportRequest, extra: () => object = () => ({}), opts: { oneDeadline?: true } = {}): Promise<Response> {
+export async function extractOneFile(
+  data: LabImportRequest, extra: () => object = () => ({}), opts: { timeoutMs?: number; oneDeadline?: true } = {},
+): Promise<Response> {
   const { pages, ownDates, undatedPrev, refusedRows } = data;
   try {
     // One deadline for the file's calls: a malformed answer's re-send gets what
@@ -38,7 +40,9 @@ export async function extractOneFile(data: LabImportRequest, extra: () => object
       tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },
       extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) },
     });
-    return Response.json({ success: false, error: 'Failed to process request' }, { status: 500 });
+    // The phone shows `error` verbatim, and offers Try again on a 5xx (US-52 AC7c).
+    const tooSlow = opts.oneDeadline && (error as Error)?.name === 'TimeoutError';
+    return Response.json({ success: false, error: tooSlow ? 'The server took too long to read this report. Please try again.' : 'Failed to process request' }, { status: 500 });
   }
 }
 

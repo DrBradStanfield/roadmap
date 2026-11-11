@@ -99,5 +99,5 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
   }
   const validation = labImportRequestSchema.safeParse(parsed);
   if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
-  return extractOneFile(validation.data, undefined, { oneDeadline: true });
+  return extractOneFile(validation.data, undefined, { timeoutMs: 90_000, oneDeadline: true });
 }

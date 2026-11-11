@@ -328,7 +328,8 @@ interface ReadControl { began(): void; idle: AbortController }
  * result; a retryable network or timeout error is retried only while nothing
  * has been read (`began` not called).
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
- * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and none starts past it (US-52 AC7c).
+ * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and a retry starts only
+ * with a useful window, 5 s after its 1 s wait (US-52 AC7c).
  */
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
@@ -337,7 +338,7 @@ async function fetchAnthropicRaw(
   const left = () => (deadline === undefined ? Infinity : deadline - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let began = false;
-    const retry = () => attempt < maxAttempts && left() > RETRY_DELAY_MS;
+    const retry = () => attempt < maxAttempts && left() > RETRY_DELAY_MS + 5_000;
     const idle = new AbortController();
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -348,7 +349,7 @@ async function fetchAnthropicRaw(
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.any([AbortSignal.timeout(Math.min(timeoutMs, left())), idle.signal]),
+        signal: AbortSignal.any([AbortSignal.timeout(Math.max(1, Math.min(timeoutMs, left()))), idle.signal]),
       });
 
       if (!response.ok) {

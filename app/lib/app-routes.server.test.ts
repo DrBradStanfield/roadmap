@@ -619,12 +619,12 @@ describe('US-52 AC7: lab import', () => {
     expect(json.success).toBe(true);
     expect(json.data.values.map((v: { metric: string }) => v.metric)).toEqual(['ldl', 'hba1c']);
     expect(json.data.refusedValues).toHaveLength(1);
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 60_000, oneDeadline: true });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, oneDeadline: true });
   });
 
   // US-52 AC7c: the phone gives up after 120 s idle; the web's retry of a
   // timed-out attempt made the worst case 60 + 1 + 60 s (Brad's 18-file import).
-  it('US-52 AC7c: a timed-out extraction is not retried; the phone gets a 500 well inside its limit', async () => {
+  it('US-52 AC7c: a timed-out extraction is not retried; the phone gets a 500 with plain words well inside its limit', async () => {
     const real = await vi.importActual<typeof import('./anthropic.server')>('./anthropic.server');
     mocks.extract.mockImplementation(real.extractOrClassify);
     process.env.ANTHROPIC_API_KEY = 'test-key-dummy';
@@ -639,8 +639,15 @@ describe('US-52 AC7: lab import', () => {
     const start = Date.now();
     try {
       const res = await appLabImport(signed('/api/app/v1/lab-import', body), store);
-      expect(res.status).toBe(500);
+      // A 5xx: the phone treats it as "may mend" and shows these words with Try again
+      // (LabUploadSheet.swift `status >= 500`; AppAttestClient shows `error` verbatim).
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      expect(await res.json()).toEqual({ success: false, error: 'The server took too long to read this report. Please try again.' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
+      // Real time runs here: the one window is the 90 s budget less the ms already spent.
+      expect(timeouts).toHaveBeenCalledTimes(1);
+      expect(timeouts.mock.calls[0][0]).toBeGreaterThan(89_000);
+      expect(timeouts.mock.calls[0][0]).toBeLessThanOrEqual(90_000);
       expect(Date.now() - start).toBeLessThan(100_000);
     } finally {
       vi.unstubAllGlobals();

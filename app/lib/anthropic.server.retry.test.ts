@@ -263,8 +263,8 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     }
   });
 
-  // US-52 AC7c: the iPhone app's route. Its retries share the call's one
-  // deadline, so the worst case stays near 61 s, inside the phone's 120 s.
+  // US-52 AC7c: the iPhone app's route. One 90 s budget covers the whole
+  // request, re-send and retries included, inside the phone's 120 s.
   describe('US-52 AC7c: oneDeadline', () => {
     const timedOut = () => new DOMException('signal timed out', 'TimeoutError');
     let timeouts: MockInstance<typeof AbortSignal.timeout>;
@@ -280,24 +280,26 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     });
     /** An attempt that runs to its own timeout in fake time. */
     const hangs = async () => { vi.advanceTimersByTime(timeouts.mock.calls.at(-1)![0]); throw timedOut(); };
+    const after = (ms: number, res: () => Response) => async () => { vi.advanceTimersByTime(ms); return res(); };
+    const ok = () => anthropicMessage(validUnifiedJson);
 
-    it('does not retry a timed-out attempt, and fails inside 100 s', async () => {
-      const fetchMock = vi.fn(hangs);
+    it.each([
+      { name: 'a timed-out attempt is not retried', replies: [hangs], windows: [90_000], fails: 'TimeoutError' },
+      { name: 'a 529 is retried with what is left', replies: [after(10_000, () => errResponse(529)), ok], windows: [90_000, 79_000], fails: null },
+      { name: 'a 529 with 7 s left is retried (6 s window)', replies: [after(83_000, () => errResponse(529)), ok], windows: [90_000, 6_000], fails: null },
+      { name: 'a 529 with 5.5 s left is not retried', replies: [after(84_500, () => errResponse(529))], windows: [90_000], fails: 'Error' },
+      { name: 'a slow malformed reply: the re-send gets only what is left', replies: [after(85_000, () => anthropicMessage('not json')), hangs], windows: [90_000, 5_000], fails: 'TimeoutError' },
+    ])('$name, and the request ends inside 100 s', async ({ replies, windows, fails }) => {
+      const fetchMock = vi.fn();
+      for (const r of replies) fetchMock.mockImplementationOnce(r);
       global.fetch = fetchMock as unknown as typeof fetch;
       const start = Date.now();
-      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000, oneDeadline: true })).rejects.toMatchObject({ name: 'TimeoutError' });
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const run = extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true });
+      if (fails) await expect(run).rejects.toMatchObject({ name: fails });
+      else await expect(run).resolves.toMatchObject({ classification: 'lab_report' });
+      expect(fetchMock).toHaveBeenCalledTimes(replies.length);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual(windows);
       expect(Date.now() - start).toBeLessThan(100_000);
-    });
-
-    it('still retries a capacity error, with only what is left of the deadline', async () => {
-      const fetchMock = vi.fn()
-        .mockImplementationOnce(async () => { vi.advanceTimersByTime(10_000); return errResponse(529); })
-        .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
-      global.fetch = fetchMock as unknown as typeof fetch;
-      await extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000, oneDeadline: true });
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([60_000, 49_000]);
     });
 
     it('the website keeps its retry of a timed-out attempt, in a fresh window', async () => {
