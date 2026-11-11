@@ -140,7 +140,9 @@ that day.
 Our server sees your network (IP) address on each request. It uses it in memory to limit how
 often one address can call us, and does not store it. Our hosting provider records ordinary
 request lines: the time, the method, the path and the status code. Errors on our server go
-to Sentry, after our code removes request bodies and known health fields.
+to Sentry, after our code removes request bodies and known health fields. A lab upload that
+takes over a minute also sends Sentry one report saying only that it was slow, how slow, and
+whether it was retried.
 
 ## Reminders
 
