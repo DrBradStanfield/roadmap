@@ -1412,6 +1412,17 @@ describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 12
     }
   });
 
+  it('a cancelled or registered re-send whose stamp is not newer than the row\'s is already in the record (re-check N1)', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    for (const status of ['cancelled', 'registered']) {
+      // The row's own stamp (2026-10-22T10:00:00Z): the stale rule runs before the status rule.
+      const { file, counts } = run(v1, [report(panel([inner('13457-7', 4.1, 'mmol/L', 'r1')], { status }))], LATER);
+      expect(counts).toEqual({ ...NONE, alreadyInRecord: 1 });
+      expect(active(file)).toEqual([['ldl', 4.6]]);
+      expect(file.labValues).toHaveLength(1);
+    }
+  });
+
   it('a registered report lands nothing; the same report later final, in a newer version, lands its result once', () => {
     const registered = report(panel([ldl()], { status: 'registered' }));
     const final = report(panel([ldl()], { meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));

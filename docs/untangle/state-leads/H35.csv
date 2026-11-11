@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H35,composition,"An Observation's own malformed meta or effectivePeriod (top-level or contained in a report) is dropped by .catch(undefined), so the result loses its draw and lands on its issued date (or its report's). Predates PR 1253; the report-level copies are strict since PR 1269",bug,not started,"packages/health-core/src/health-records-fhir.ts:50 meta and :55 effectivePeriod keep .optional().catch(undefined); :108 reportDay falls back to obs.issued ?? rep.issued. Re-check N3 on PR 1269",,no
