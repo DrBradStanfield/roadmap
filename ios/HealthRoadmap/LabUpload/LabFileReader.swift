@@ -117,32 +117,36 @@ enum LabFileReader {
 
     /// The documents in one picked file: one, or one per report inside a ZIP. A ZIP
     /// member is named `zip/path` here; `HealthEngine.named` gives it the web's name.
-    static func documents(from data: Data, name: String) throws -> [Document] {
+    /// `rules`: health-core's, asked for this file and its members (`UploadRules.swift`), else the Swift copy.
+    static func documents(from data: Data, name: String, rules: Rules = .swift) throws -> [Document] {
         let ext = (name as NSString).pathExtension.lowercased()
         if ext == "zip" {
             // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
-            guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
-            let members = try ZipReader.members(of: data, maxMemberBytes: maxFileBytes, maxMembers: maxFolderFiles, maxTotalBytes: maxFolderBytes) { member in
-                !member.contains("__MACOSX") && isReport(member)
-            }
+            guard rules.file(name, data.count) != "tooLarge" else { throw Failure.tooLarge(name) }
+            let members = try ZipReader.members(of: data, maxMemberBytes: rules.maxMemberBytes, maxMembers: rules.maxMembers,
+                                                maxTotalBytes: rules.maxTotalBytes) { rules.member($0) == "keep" }
             let documents = try members.map { member in
-                var read = try document(from: member.data, name: "\(name)/\(member.name)")
+                var read = try document(from: member.data, name: "\(name)/\(member.name)", rules: rules)
                 read.zipMember = ZipMember(zip: name, path: member.name)
                 return read
             }
             guard !documents.isEmpty else { throw Failure.empty }
             return documents
         }
-        return [try document(from: data, name: name)]
+        return [try document(from: data, name: name, rules: rules)]
     }
+
+    /// Asks no engine: the Swift copy of the rules.
+    static let swiftRules: AskRules = { _, _ in .swift }
 
     /// A file or folder picked in Files, read on the shared pool, never the caller's actor:
     /// its PDFs are rendered and its ZIPs opened off the main thread (AC21, merge review R2).
     /// `progress(done, total)` before each of a folder's files.
     @concurrent
-    static func decoded(picked url: URL, progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> [Document] {
+    /// `ask`: the upload rules for each step (`HealthEngine.uploadRules`).
+    static func decoded(picked url: URL, progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
         decodingWatch?()
-        return try url.hasDirectoryPath ? await documents(inFolder: url, progress: progress) : documents(picked: url)
+        return try url.hasDirectoryPath ? await documents(inFolder: url, progress: progress, ask: ask) : await documents(picked: url, ask: ask)
     }
 
     /// Called where a report is decoded, so a test can see which thread does it (US-25
@@ -155,12 +159,28 @@ enum LabFileReader {
     static func documents(picked url: URL) throws -> [Document] {
         let name = url.lastPathComponent
         guard fits(name: name, bytes: size(of: url)) else { throw Failure.tooLarge(name) }
-        return try documents(from: coordinatedData(url), name: name).map { read in
-            guard read.zipMember == nil, let original = read.original else { return read }
-            var kept = read
-            kept.original = original.file(url, scope: url)
-            return kept
-        }
+        return try documents(from: coordinatedData(url), name: name).map { keptAsFile($0, url) }
+    }
+
+    /// `documents(picked:)` with the rules `ask` gives: first for the file's listed size, then,
+    /// once read, for its bytes and, in a ZIP, each member's path and size.
+    static func documents(picked url: URL, ask: AskRules) async throws -> [Document] {
+        let name = url.lastPathComponent, listed = size(of: url)
+        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != "tooLarge" else { throw Failure.tooLarge(name) }
+        let data = try coordinatedData(url)
+        // A ZIP that will not list is refused by the read below, in its own words.
+        let entries = (name as NSString).pathExtension.lowercased() == "zip" ? (try? ZipReader.entries(of: data)) ?? [] : []
+        let files = [UploadFile(name: name, bytes: data.count)] + entries.map { UploadFile(name: "\(name)/\($0.name)", bytes: $0.size) }
+        let rules = await ask(files, entries.map(\.name))
+        return try documents(from: data, name: name, rules: rules).map { keptAsFile($0, url) }
+    }
+
+    /// A single file's original kept as the picked file, opened again when it is saved.
+    private static func keptAsFile(_ read: Document, _ url: URL) -> Document {
+        guard read.zipMember == nil, let original = read.original else { return read }
+        var kept = read
+        kept.original = original.file(url, scope: url)
+        return kept
     }
 
     /// The reports in a picked folder and the folders inside it (US-52 AC13c): every PDF,
@@ -169,11 +189,13 @@ enum LabFileReader {
     /// one file over the web's limit, or more than `maxFolderBytes` in all, refuses the
     /// folder (adversary R3). Close cancels it between files; `progress(done, total)` before each.
     static func documents(inFolder folder: URL, maxBytes: Int = maxFolderBytes,
-                          progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> [Document] {
+                          progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
         let files = try listed(folder).sorted { $0.url.path.localizedStandardCompare($1.url.path) == .orderedAscending }.prefix(maxFolderFiles)
         guard !files.isEmpty else { throw Failure.folderEmpty }
         // A size the system does not give is unknown: the reads below are checked instead (re-check N2).
-        if let big = files.first(where: { file in file.size.map { !fits(name: file.url.lastPathComponent, bytes: $0) } ?? false }) {
+        let sized = files.compactMap { file in file.size.map { UploadFile(name: file.url.lastPathComponent, bytes: $0) } }
+        let listedRules = await ask(sized, [])
+        if let big = files.first(where: { file in file.size.map { listedRules.file(file.url.lastPathComponent, $0) == "tooLarge" } ?? false }) {
             throw Failure.tooLarge(big.url.lastPathComponent)
         }
         guard files.reduce(0, { $0 + ($1.size ?? 0) }) <= maxBytes else { throw Failure.folderTooLarge }
@@ -187,7 +209,8 @@ enum LabFileReader {
             let data = try coordinatedData(file.url)
             bytes += data.count
             guard bytes <= maxBytes else { throw Failure.folderTooLarge }
-            var read = try document(from: data, name: "\(base)/\(inside)")
+            let name = "\(base)/\(inside)"
+            var read = try document(from: data, name: name, rules: await ask([UploadFile(name: name, bytes: data.count)], []))
             read.original = read.original?.file(file.url, scope: folder)
             documents.append(read)
         }
@@ -238,7 +261,7 @@ enum LabFileReader {
     }
 
     /// A report file by its name: a PDF or picture, not hidden.
-    private static func isReport(_ path: String) -> Bool {
+    static func isReport(_ path: String) -> Bool {
         !(path as NSString).lastPathComponent.hasPrefix(".") && ["pdf", "jpg", "jpeg", "png"].contains((path as NSString).pathExtension.lowercased())
     }
 
@@ -267,8 +290,12 @@ enum LabFileReader {
         return try await pictures([image], name: "Photo")
     }
 
-    private static func document(from data: Data, name: String) throws -> Document {
-        guard fits(name: name, bytes: data.count) else { throw Failure.tooLarge(name) }
+    private static func document(from data: Data, name: String, rules: Rules) throws -> Document {
+        switch rules.file(name, data.count) {
+        case "tooLarge": throw Failure.tooLarge(name)
+        case "keep": break
+        default: throw Failure.unsupported(name)
+        }
         let ext = (name as NSString).pathExtension.lowercased()
         var read: Document
         switch ext {
