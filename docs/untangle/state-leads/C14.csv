@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-C14,chat,"The server chat dedup reads only the last two rows' roles, so an identical resend while the first turn runs gets a second answer",bug,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: with the chat-turn work. app/routes/api.chat.ts; app/lib/chat-dedup.server.ts. The client's own 60 s dedup only catches a resend after the reply,,no
+C14,reminders,"Verified reminder opt-in: security class, detail private until the fix is live",bug,decided: change,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: security class; master/austin builds; detail private,,yes
