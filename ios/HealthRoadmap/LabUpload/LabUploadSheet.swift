@@ -196,9 +196,9 @@ struct LabUploadSheet: View {
             do {
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                read = try await LabFileReader.decoded(picked: url) { done, total in
+                read = try await LabFileReader.decoded(picked: url, progress: { done, total in
                     send(.readProgress(done: done, total: total, at: .now))
-                }
+                }, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) })
             }
             return await engine.named(read)
         }

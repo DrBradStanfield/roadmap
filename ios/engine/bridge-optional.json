@@ -35,6 +35,12 @@
         "id"
       ],
       "returns": "US-73 AC12: a Promise of the listed document's original as an ArrayBuffer, read from the open cloud by the document's id (the record's fileRef, never a path from the app); rejects when no cloud is open, the record names no original for that id, or the cloud cannot give it. Since review R6 of PR 972 the rejection's message is failure JSON, {kind, detail}: kind \"not-open\", \"no-original\", or the cloud's failure as a save classes it (\"sign-in\", \"unreachable\", \"storage-full\", \"too-new\"); an app before it reads any rejection as the original not loading. An engine before it has no such door: the app reads that as no original to open (optionalCall answers nil), never a crash."
+    },
+    "uploadVerdictsJson": {
+      "args": [
+        "request"
+      ],
+      "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
     }
   }
 }

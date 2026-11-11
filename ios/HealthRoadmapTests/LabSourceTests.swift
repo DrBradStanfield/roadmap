@@ -254,7 +254,7 @@ final class LabSourceTests: XCTestCase {
     func testAnOversizedFileIsRefusedBeforeItIsRead() async throws {
         let folder = try newFolder("Big")
         let big = try sparse(folder.appending(path: "big.pdf"), bytes: LabFileReader.maxFileBytes + 1)
-        await assertRefused(try LabFileReader.documents(picked: big), LabFileReader.Failure.tooLarge("big.pdf").localizedDescription)
+        await assertRefused(try await LabFileReader.documents(picked: big, ask: LabFileReader.swiftRules), LabFileReader.Failure.tooLarge("big.pdf").localizedDescription)
         try Self.png.write(to: folder.appending(path: "a.png"))
         await assertRefused(try await LabFileReader.documents(inFolder: folder), LabFileReader.Failure.tooLarge("big.pdf").localizedDescription)
     }
