@@ -22,8 +22,9 @@ vi.mock('../lib/chat-api', () => ({
 }));
 const postSync = vi.hoisted(() => vi.fn());
 const postInputSync = vi.hoisted(() => vi.fn());
+const sync = vi.hoisted(() => ({ hear: undefined as undefined | ((m: unknown) => void) }));
 vi.mock('../lib/chat-sync', () => ({
-  postSync, postInputSync, subscribeSync: () => () => {}, generateInstanceId: () => 'test',
+  postSync, postInputSync, subscribeSync: (h: (m: unknown) => void) => { sync.hear = h; return () => {}; }, generateInstanceId: () => 'test',
 }));
 
 import * as hookModule from './useChatState';
@@ -821,6 +822,25 @@ describe('US-67 AC2 — the chat identity a reply belongs to', () => {
     await act(async () => { send.resolve!({ result: lateReply, error: null }); await sending; });
     expect(texts(hook)).toEqual([]);
     // The page is told the reply's chat is not the one shown, so ChatEdits applies and shows none of it (replyStanding).
+    expect(onProposeEdit.take).toHaveBeenCalledWith([ldl], 'erase-1', false, refusals);
+  });
+
+  // Codex R1 (high), 2026-11-12: the switch reached the ref a landing reply reads only
+  // after the next render, so a reply resolving before it read the old chat as shown.
+  it.each([
+    ['New chat', (hook: { result: { current: ReturnType<typeof useChatState> } }) => hook.result.current.actions.startNewChat()],
+    ['another tab\'s New chat', () => sync.hear!({ instanceId: 'other-tab', type: 'thread-new', payload: {}, ts: 0 })],
+  ])('%s, then the reply resolves with no render between: nothing lands in the new chat', async (_name, switchChat) => {
+    const onProposeEdit = target();
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit, prefetchedData: { conversations: [], messages: [], activeConversationId: null } }));
+    const { sending } = sendFrom(hook, 'Q1');
+    await act(async () => {
+      switchChat(hook);
+      send.resolve!({ result: { conversationId: 'N', messageId: 'm', content: 'R1', proposedEdits: [ldl], editRefusals: refusals }, error: null });
+      await sending;
+    });
+    expect(hook.result.current.state.activeConversationId).toBeNull();
+    expect(texts(hook)).toEqual([]);
     expect(onProposeEdit.take).toHaveBeenCalledWith([ldl], 'erase-1', false, refusals);
   });
 });

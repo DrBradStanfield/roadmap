@@ -184,7 +184,6 @@ describe('US-67 AC2: an unreadable entry refuses its part, on screen only for th
       const panel = view.container.querySelector('.health-tool-chat') as HTMLElement;
       fireEvent.click(panel.querySelector('[aria-label="Show conversations"]')!);
       await act(async () => { fireEvent.click(panel.querySelector('.chat-new-btn')!); });
-      await wait(100);
     };
     await newChat();
     await ask(view);

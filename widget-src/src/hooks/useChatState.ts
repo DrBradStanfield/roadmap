@@ -131,11 +131,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const loadGenRef = useRef(0);
   useEffect(() => {
     conversationsRef.current = conversations;
-    shownChatRef.current = shownChat;
-    messagesRef.current = messages;
     inputTextRef.current = inputText;
-  }, [conversations, shownChat, messages, inputText]);
-  /** Show a chat under a new identity with the ref set now, where a later await reads it. */
+  }, [conversations, inputText]);
+  /** The shown chat's turns, ref and state in one call, as openChat does for the chat itself. */
+  const showMessages = useCallback((list: ChatMessage[]) => { messagesRef.current = list; setMessages(list); }, []);
+  /** The ONE writer of the chat shown (US-67 AC2): the ref a landing reply reads and the state, in one
+   *  call, so a reply resolving before the next render never sees the chat it left as shown. */
   const openChat = useCallback((id: string | null) => { shownChatRef.current = mintChat(id); setShownChat(shownChatRef.current); }, []);
 
   // Offline detection
@@ -190,10 +191,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         if (payload.activeConversationId !== shownChatRef.current.id) {
           onRemoteConversationSelected?.();
           onProposeEditRef.current?.leave();
-          setShownChat(mintChat(payload.activeConversationId));
+          openChat(payload.activeConversationId);
         }
         setConversations(payload.conversations);
-        setMessages(payload.messages);
+        showMessages(payload.messages);
         // That tab's own send, tracked apart from this tab's (US-15 AC17c).
         onRemote(msg.instanceId, payload.sending, payload.isLoading);
         if (!ownSending()) setIsLocalSender(false);
@@ -202,8 +203,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       }
 
       if (msg.type === 'thread-new') {
-        setShownChat(mintChat(null));
-        setMessages([]);
+        openChat(null);
+        showMessages([]);
         setError(null);
         onProposeEditRef.current?.leave();
         return;
@@ -213,24 +214,24 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         const { id } = msg.payload;
         setConversations(prev => prev.filter(c => c.id !== id));
         if (shownChatRef.current.id === id) {
-          setShownChat(mintChat(null));
-          setMessages([]);
+          openChat(null);
+          showMessages([]);
           onProposeEditRef.current?.leave();
         }
         return;
       }
     });
     return unsubscribe;
-  }, [instanceId, onRemoteConversationSelected, onRemote]);
+  }, [instanceId, onRemoteConversationSelected, onRemote, openChat]);
 
   const dropThread = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
     if (shownChatRef.current.id === id) {
-      setShownChat(mintChat(null));
-      setMessages([]);
+      openChat(null);
+      showMessages([]);
       onProposeEditRef.current?.leave();
     }
-  }, []);
+  }, [openChat]);
 
   const loadConversationsIfNeeded = useCallback(async () => {
     if (hasLoadedRef.current || isLoadingConvsRef.current) return;
@@ -242,19 +243,19 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       setConversations(result.conversations);
       if (!isLoggedIn && result.conversations.length > 0) {
         const latest = result.conversations[0];
-        openChat(latest.id); // dropThread reads it after the await
+        openChat(latest.id);
         const gen = ++loadGenRef.current;
         const msgs = await loadConversation(latest.id);
         if (!msgs) { dropThread(latest.id); return; }
         // The guest opened another thread, or a reply landed, meanwhile (US-15 AC7a).
         if (shownChatRef.current.id !== latest.id || gen !== loadGenRef.current) return;
-        setMessages(msgs);
+        showMessages(msgs);
       }
     }
   }, [isLoggedIn, dropThread, openChat]);
 
   const selectConversation = useCallback(async (id: string) => {
-    openChat(id); // dropThread below reads it after the await
+    openChat(id);
     setError(null);
     onProposeEditRef.current?.leave();
     const gen = ++loadGenRef.current;
@@ -263,7 +264,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     if (!msgs) { dropThread(id); return; }
     // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
     if (shownChatRef.current.id !== id || gen !== loadGenRef.current) return;
-    setMessages(msgs);
+    showMessages(msgs);
     postState(instanceId, {
       conversations: conversationsRef.current,
       activeConversationId: id,
@@ -275,13 +276,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   }, [instanceId, dropThread, openChat]);
 
   const startNewChat = useCallback(() => {
-    setShownChat(mintChat(null));
-    setMessages([]);
+    openChat(null);
+    showMessages([]);
     setError(null);
     onProposeEditRef.current?.leave();
     inputRef.current?.focus();
     postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
-  }, [instanceId]);
+  }, [instanceId, openChat]);
 
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
@@ -300,9 +301,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       content: trimmed,
       createdAt: new Date().toISOString(),
     };
-    const optimisticMessages = [...messagesRef.current, optimisticMsg];
+    const history = messagesRef.current; // the turns before this question, sent with it
+    const optimisticMessages = [...history, optimisticMsg];
 
-    setMessages(optimisticMessages);
+    showMessages(optimisticMessages);
     setInputText('');
     inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
     postInputSync(instanceId, '');
@@ -333,7 +335,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       trimmed,
       currentConvId,
       guestInputs?.() ?? null,
-      messagesRef.current,
+      history,
       handleDelta,
       Boolean(onProposeEditRef.current),
     ))().catch(() => {
@@ -352,7 +354,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
     if (sendError) {
       const withoutOptimistic = stayed ? optimisticMessages.filter(m => m.id !== optimisticMsg.id) : messagesRef.current;
-      setMessages(withoutOptimistic);
+      showMessages(withoutOptimistic);
       // The question leaves the thread, so it goes back in the box, unless
       // something new was typed meanwhile, as Stop does on the iPhone (US-15 AC57).
       if (stayed && !inputTextRef.current) {
@@ -387,7 +389,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
       if (stayed) loadGenRef.current++; // a load started before the reply would replace it
       if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
-      setMessages(finalMessages);
+      showMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
       }
@@ -407,7 +409,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       let finalConvId = shownId;
       if (!currentConvId || restarted) {
         // The same chat, now a saved thread: it takes that thread's identity.
-        if (stayed) { finalConvId = result.conversationId; shownChatRef.current = mintChat(finalConvId); setShownChat(shownChatRef.current); }
+        if (stayed) { finalConvId = result.conversationId; openChat(finalConvId); }
         finalConversations = [{
           id: result.conversationId,
           title: cutText(trimmed, 80), // never half an emoji (US-15 AC26b)
@@ -427,7 +429,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         error: null,
       });
     }
-  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend]);
+  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend, openChat]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
