@@ -32,11 +32,14 @@ export function useHealthToolLifecycle(): void {
   });
   afterEach(async () => {
     cleanup();
+    // Spies come off before the flush: a test that throws past its release leaves
+    // the flush hung until the hook times out, and a spy left on would be wrapped
+    // again by the next test's spyOn (Maximum call stack size exceeded).
+    vi.restoreAllMocks();
     await flushRoadmapStore();
     // Vitest 4's restoreAllMocks only undoes vi.spyOn; resetAllMocks also drops
     // each vi.fn's calls and unused mock*Once values, as restoreAllMocks did in 1.x.
     vi.resetAllMocks();
-    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 }

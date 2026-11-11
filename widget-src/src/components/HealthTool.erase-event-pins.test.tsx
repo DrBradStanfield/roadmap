@@ -413,21 +413,25 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const view = await openPage();
     showTables(view.container);
     const cells = await waitFor(() => { const c = ldlRow(view)!.querySelectorAll('.bt-cell-clickable'); expect(c.length).toBeGreaterThan(0); return c; });
-    fireEvent.click(cells[cells.length - 1]);
-    fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
+    // About you first: its rows focus their fields in a frame, which would blur the correction editor and arm its click-away.
     openAboutYou(view.container); // the form's height field shows
     const height = heightShown(view);
     expect(height).not.toBeNull();
     expect(height).not.toBe('');
+    await settle(50);
+    fireEvent.click(cells[cells.length - 1]);
+    fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
     const before = getEraseIdentity();
     const heard: string[] = [];
     const onRemote = () => { heard.push(getEraseIdentity()); };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    let releaseLoop = () => {};
     try {
       // Another device erases; this tab's next save folds it in, and an edit made while its first write is out
       // sends it round again. The second write waits: the window.
       await anotherWriterErases(new MemoryAdapter(cloud));
       const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      releaseLoop = loop.release;
       await addMeasurement('weight', 81, '2026-09-05');
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
@@ -454,6 +458,7 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
 
       await act(async () => { loop.release(); await flushed; await drain(); });
     } finally {
+      releaseLoop(); // a failed assertion must not leave the second write hung for afterEach's flush
       window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
     }
     await settle(50);
@@ -490,9 +495,11 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const onRemote = () => { heard.push(getEraseIdentity()); };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
     let afterReread = '';
+    let releaseLoop = () => {};
     try {
       await anotherWriterErases(new MemoryAdapter(cloud));
       const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      releaseLoop = loop.release;
       await addMeasurement('weight', 81, '2026-09-05');
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
@@ -517,6 +524,7 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
 
       await act(async () => { loop.release(); await flushed; await drain(); });
     } finally {
+      releaseLoop(); // a failed assertion must not leave the second write hung for afterEach's flush
       window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
     }
     await settle(50);
