@@ -69,14 +69,7 @@ private struct EraseView: View {
         .alert(EraseText.title, isPresented: Binding(get: { eraser.outcome != nil }, set: { if !$0 { finish() } })) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(words)
-        }
-    }
-
-    private var words: String {
-        switch eraser.outcome {
-        case .erased(let text), .notSent(let text), .refused(let text): text
-        case nil: ""
+            Text(eraser.outcome?.words ?? "")
         }
     }
 
