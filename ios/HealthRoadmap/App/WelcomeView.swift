@@ -72,6 +72,7 @@ struct WelcomeView: View {
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: phase) { apply(.phaseChanged) }
+        .onChange(of: connectMessage) { old, new in if old != nil, new == nil { apply(.alertDismissed) } }
         .sheet(isPresented: $choosingCloud) {
             if let sync { cloudChooser(sync) }
         }
@@ -163,7 +164,7 @@ struct WelcomeView: View {
     /// run on the empty phone record, whose answers would later win the merge (review
     /// R4). Every tap that can show the spinner starts an open (WelcomeConnect).
     private func apply(_ event: WelcomeConnect.Event) {
-        switch WelcomeConnect.decide(event, phase: phase, sheetShown: choosingCloud) {
+        switch WelcomeConnect.decide(event, phase: phase, sheetShown: choosingCloud, alertShown: connectMessage != nil) {
         case .start: start()
         case .goOn:
             choosingCloud = false

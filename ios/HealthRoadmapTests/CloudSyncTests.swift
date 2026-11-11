@@ -21,6 +21,8 @@ final class CloudSyncTests: XCTestCase {
         var uploadsWork = true
         /// Seconds every download waits before it answers.
         var downloadDelay: TimeInterval = 0
+        /// When set, every record download waits until the test opens it (StubHTTP.Gate).
+        var downloadGate: StubHTTP.Gate?
         /// Runs on the main queue as each download starts, before its answer.
         var onDownload: (@MainActor () -> Void)?
         /// Runs once, just before the next upload lands: another device writing first.
@@ -54,8 +56,8 @@ final class CloudSyncTests: XCTestCase {
             }
             if request.url.path.hasSuffix("/files/download") {
                 if let hook = onDownload { DispatchQueue.main.async { MainActor.assumeIsolated { hook() } } }
-                guard let file else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8), delay: downloadDelay) }
-                return .init(headers: ["Dropbox-API-Result": #"{"rev":"r\#(file.rev)"}"#], body: Data(file.text.utf8), delay: downloadDelay)
+                guard let file else { return .init(status: 409, body: Data(#"{"error_summary":"path/not_found/"}"#.utf8), delay: downloadDelay, gate: downloadGate) }
+                return .init(headers: ["Dropbox-API-Result": #"{"rev":"r\#(file.rev)"}"#], body: Data(file.text.utf8), delay: downloadDelay, gate: downloadGate)
             }
             guard uploadsWork else { return .init(status: 500, body: Data("internal_error".utf8)) }
             beforeNextUpload?()
@@ -604,13 +606,15 @@ final class CloudSyncTests: XCTestCase {
         await sync.start()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
         dropbox.online = true
-        dropbox.downloadDelay = 0.4
+        let download = StubHTTP.Gate()
+        dropbox.downloadGate = download
         let drive = heldSignIn()
         let connecting = Task { try await sync.connect(.googleDrive, authenticate: drive.authenticate) }
         for await _ in drive.shown { break }
         dropbox.onDownload = { drive.release() } // Dropbox's open is reading when the sign-in returns
         let opening = Task { await sync.foreground() }
         await assertRefusedWhileOpening(connecting)
+        download.open() // only now does Dropbox's read answer, and its open land
         await opening.value
         assertStillOnDropbox(sync, store: store, account: nil)
     }
@@ -626,12 +630,14 @@ final class CloudSyncTests: XCTestCase {
         let drive = heldSignIn()
         let second = Task { try await sync.connect(.googleDrive, authenticate: drive.authenticate) }
         for await _ in drive.shown { break }
-        dropbox.downloadDelay = 0.4
+        let download = StubHTTP.Gate()
+        dropbox.downloadGate = download
         dropbox.onDownload = { drive.release() }
-        try await sync.connect(.dropbox, authenticate: signIn())
+        let first = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
         await assertRefusedWhileOpening(second)
+        download.open()
+        try await first.value
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
-        dropbox.downloadDelay = 0
         await sync.background()
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "Dropbox's first connect merged the phone's record up")
     }
@@ -639,12 +645,14 @@ final class CloudSyncTests: XCTestCase {
     /// Signing in again to the cloud whose open is running joins that open, as before.
     func testSigningInAgainToTheSameCloudDuringItsOpenJoinsIt_US25_AC11j() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
-        dropbox.downloadDelay = 0.4
+        let download = StubHTTP.Gate()
+        dropbox.downloadGate = download
         let (store, sync, _) = try app()
         let opening = Task { await sync.start() }
         let again = heldSignIn()
         dropbox.onDownload = { again.release() }
-        try await sync.connect(.dropbox, authenticate: again.authenticate)
+        try await sync.connect(.dropbox, authenticate: again.authenticate) // returns while the open is held: it joined
+        download.open()
         await opening.value
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the new sign-in is kept")
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
