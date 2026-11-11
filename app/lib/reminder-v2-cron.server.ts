@@ -58,7 +58,7 @@ const cron = dailyCron({
   // the failed pass tried to email.
   run: async (todayStr) => {
     const count = await processV2Reminders(todayStr);
-    console.log(`Reminder v2 cron: completed, sent ${count} emails`);
+    return `Reminder v2 cron: completed, sent ${count} emails`;
   },
 });
 export const startReminderV2Cron = cron.start;

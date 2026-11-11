@@ -76,7 +76,7 @@ const cron = dailyCron({
   run: async () => {
     console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
     const ranked = await computeAndWriteTrending();
-    console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
+    return `Trending cron: completed, wrote ${ranked.length} entries`;
   },
 });
 export const startTrendingCron = cron.start;

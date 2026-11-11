@@ -28,8 +28,9 @@ export interface DailyCron {
   clock: (now: Date) => { hour: number; dateStr: string };
   /** Logged once when the interval starts. */
   startLog: string;
-  /** The day's work. A throw leaves the day open for the next tick. */
-  run: (todayStr: string) => Promise<void>;
+  /** The day's work. A throw leaves the day open for the next tick. Its
+   *  returned line is logged after the day is safely marked. */
+  run: (todayStr: string) => Promise<string | void>;
 }
 
 export function dailyCron(cron: DailyCron): { start: () => void; stop: () => void } {
@@ -53,10 +54,11 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
       // re-runs the day (US-28 AC3, AC6). The lock row names this machine, so
       // its re-acquire wins.
       lastRunDate = todayStr;
-      await cron.run(todayStr).catch((runError: unknown) => {
+      const completed = await cron.run(todayStr).catch((runError: unknown) => {
         lastRunDate = null;
         throw runError;
       });
+      if (completed) console.log(completed);
     } catch (error) {
       console.error(`${cron.label} error:`, safeErrorFields(error));
       Sentry.captureException(error, { tags: { feature: cron.feature } });
