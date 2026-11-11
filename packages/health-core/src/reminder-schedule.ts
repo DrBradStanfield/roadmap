@@ -16,7 +16,7 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
-import { SCREENING_REFS, followupTrigger, inAges, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, followupTrigger, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -107,7 +107,7 @@ const FOLLOWUP_CHECKIN_MONTHS = 3;
 export type FollowupKind = 'organize' | 'checkin';
 
 function followupKindOf(r: ScreeningRule, result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
-  if (result !== followupTrigger(r) || !lastDate) return null;
+  if (!opensFollowup(r, result) || !lastDate) return null;
   if (!status || status === 'not_organized') return 'organize';
   return status === 'scheduled' ? 'checkin' : null;
 }

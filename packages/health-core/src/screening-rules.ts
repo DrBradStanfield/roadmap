@@ -349,6 +349,12 @@ export const ruleNotes = (r: ScreeningRule, age: number): string[] => r.notes.fl
 /** A row's result answer that opens its follow-up (abnormal; DEXA's osteoporosis). */
 export const followupTrigger = (r: ScreeningRule): string | undefined => r.result?.options.find((o) => o.followup)?.value;
 
+/** Whether this result opens the row's follow-up; never for a row with no result (prostate, endometrial). */
+export const opensFollowup = (r: ScreeningRule, result: string | undefined): boolean => {
+  const t = followupTrigger(r);
+  return !!t && result === t;
+};
+
 /** A row's result chain keys: the result, then the follow-up's status and date. */
 export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
 

@@ -1,5 +1,5 @@
 import type { InputLimits } from './lab-limits';
-import { LUNG_PACK_YEARS, followupTrigger, ruleOf, screeningMinAge, type ScreeningId } from './screening-rules';
+import { LUNG_PACK_YEARS, opensFollowup, ruleOf, screeningMinAge, type ScreeningId } from './screening-rules';
 
 /**
  * Health input data from user.
@@ -501,7 +501,7 @@ export function getPostFollowupDueDate(
   followupStatus: string | undefined,
   followupDate: string | undefined,
 ): Date | null {
-  if (result !== followupTrigger(ruleOf(type)) || followupStatus !== 'completed' || !followupDate) return null;
+  if (!opensFollowup(ruleOf(type), result) || followupStatus !== 'completed' || !followupDate) return null;
   const methodKey = method ? `${type}_${method}` : `${type}_other`;
   const months = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
   const [year, month] = followupDate.split('-').map(Number);

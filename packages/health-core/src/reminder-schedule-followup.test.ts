@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeNextDueDates, computeReminderSchedule, followupKinds } from './reminder-schedule';
 import { getPostFollowupDueDate, type ScreeningInputs } from './types';
-import { SCREENING_RULES, followupTrigger } from './screening-rules';
+import { SCREENING_RULES, followupTrigger, opensFollowup, ruleOf } from './screening-rules';
 import type { ReminderCategory } from './reminders';
 import { createEmptyFile } from './roadmap-file';
 
@@ -138,5 +138,12 @@ describe('US-17 AC15: follow-up reminders follow the follow-up card', () => {
       expect(followupKinds(f, NOW)[`screening_${r.id}` as ReminderCategory]?.kind).toBe(value === trigger ? 'organize' : undefined);
       expect(getPostFollowupDueDate(r.id, undefined, value, 'completed', '2026-10') !== null).toBe(value === trigger);
     }
+  });
+
+  // D8 adversary F1: a row with no result has no trigger, so an unset result never matches it.
+  it.each(['prostate', 'endometrial'] as const)('%s: no result row opens no follow-up, even completed and dated', (id) => {
+    expect(followupTrigger(ruleOf(id))).toBeUndefined();
+    expect(opensFollowup(ruleOf(id), undefined)).toBe(false);
+    expect(getPostFollowupDueDate(id, undefined, undefined, 'completed', '2026-10')).toBeNull();
   });
 });

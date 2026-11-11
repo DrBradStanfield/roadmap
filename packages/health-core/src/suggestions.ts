@@ -1,7 +1,7 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
-import { SCREENING_REFS, followupTrigger, inAges, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, followupTrigger, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -869,7 +869,7 @@ export function generateSuggestions(
       followupStatus: string | undefined,
       followupDate: string | undefined,
     ): Suggestion | null {
-      if (result !== followupTrigger(r)) return null;
+      if (!opensFollowup(r, result)) return null;
       const type = r.id;
       const info = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
 
