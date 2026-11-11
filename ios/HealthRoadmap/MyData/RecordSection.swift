@@ -32,7 +32,6 @@ private struct EraseView: View {
     @Environment(DataEraser.self) private var eraser
     @Environment(\.dismiss) private var dismiss
     @State private var confirming = false
-    @State private var outcome: DataEraser.Outcome?
 
     var body: some View {
         List {
@@ -54,17 +53,20 @@ private struct EraseView: View {
         }
         // Leaving mid-erase would reach Sync's Disconnect; CloudSync refuses it then too (review R2).
         .navigationBarBackButtonHidden(eraser.erasing)
+        // Nor may the Settings sheet be swiped shut; the words are held either way (US-25 AC16d).
+        .interactiveDismissDisabled(eraser.erasing)
         .navigationTitle(EraseText.title)
         .navigationBarTitleDisplayMode(.inline)
         .alert(EraseText.finalTitle, isPresented: $confirming) {
             Button(EraseText.deleteButton, role: .destructive) {
-                Task { outcome = await eraser.eraseAll() }
+                Task { await eraser.eraseAll() }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(EraseText.finalMessage)
         }
-        .alert(EraseText.title, isPresented: Binding(get: { outcome != nil }, set: { if !$0 { finish() } })) {
+        // The eraser's words, so an erase finished while this page was gone shows here next time.
+        .alert(EraseText.title, isPresented: Binding(get: { eraser.outcome != nil }, set: { if !$0 { finish() } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(words)
@@ -72,7 +74,7 @@ private struct EraseView: View {
     }
 
     private var words: String {
-        switch outcome {
+        switch eraser.outcome {
         case .erased(let text), .notSent(let text), .refused(let text): text
         case nil: ""
         }
@@ -81,10 +83,8 @@ private struct EraseView: View {
     /// After an erase, the new-user questions on the empty record (US-54 AC7);
     /// a refusal stays here to try again.
     private func finish() {
-        guard let shown = outcome else { return }
-        outcome = nil
-        if case .refused = shown { return }
-        dismiss()
-        eraser.erasedAndSeen()
+        guard eraser.outcome != nil else { return }
+        if eraser.awaitingDismissal { dismiss() }
+        eraser.seen()
     }
 }

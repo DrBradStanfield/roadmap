@@ -466,4 +466,69 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(rows(onDisk), 1, "the import is in the erased record, not written over")
         XCTAssertEqual(epoch(onDisk), 1)
     }
+
+    // MARK: The erase's words (US-25 AC16d, iOS survey S1)
+
+    func testThePhaseTable_US25_AC16d() {
+        let erased = DataEraser.Outcome.erased("Done.")
+        let rows: [(DataEraser.Phase, DataEraser.Event, DataEraser.Phase)] = [
+            (.idle, .started, .erasing),
+            (.idle, .finished(erased), .idle),
+            (.idle, .seen, .idle),
+            (.erasing, .started, .erasing),
+            (.erasing, .finished(erased), .done(erased)),
+            (.erasing, .seen, .erasing),
+            (.done(erased), .started, .erasing),
+            (.done(erased), .finished(.refused("x")), .done(erased)),
+            (.done(erased), .seen, .idle),
+        ]
+        for (phase, event, next) in rows {
+            XCTAssertEqual(DataEraser.transition(phase, event), next, "\(phase) + \(event)")
+        }
+    }
+
+    /// The page that shows the words went away mid-erase (the sheet swiped shut): the
+    /// words are still there to show, and the questions wait for them.
+    func testAnEraseWhosePageWentAwayKeepsItsWordsUntilSeen_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.eraser.eraseAll() // no page holds the answer
+        guard case .erased(let words) = app.eraser.outcome else { return XCTFail("the words were lost") }
+        XCTAssertFalse(words.isEmpty)
+        XCTAssertTrue(app.eraser.awaitingDismissal, "nothing covers words not yet seen")
+        XCTAssertEqual(app.eraser.startsOver, 0, "the questions wait for the words")
+
+        app.eraser.seen()
+        XCTAssertNil(app.eraser.outcome)
+        XCTAssertEqual(app.eraser.startsOver, 1, "seen, the questions start again")
+        // RootView.recordChanged's guard: a later erase from another device is heard.
+        XCTAssertFalse(app.eraser.erasing)
+        XCTAssertFalse(app.eraser.awaitingDismissal)
+    }
+
+    func testARefusedEraseHoldsNothingBack_US25_AC16d() async throws {
+        try Data("{ not a record".utf8).write(to: phoneFile)
+        let app = try app(connected: false)
+        await app.eraser.eraseAll()
+        guard case .refused = app.eraser.outcome else { return XCTFail("the refusal's words are kept to show") }
+        XCTAssertFalse(app.eraser.awaitingDismissal, "a refusal changed nothing, so an erase from elsewhere is heard")
+        app.eraser.seen()
+        XCTAssertNil(app.eraser.outcome)
+        XCTAssertEqual(app.eraser.startsOver, 0, "a refusal does not restart the questions")
+    }
+
+    /// EraseView's `.interactiveDismissDisabled(eraser.erasing)`: true for the whole erase.
+    func testTheSheetHoldsWhileTheEraseRuns_US25_AC16d() async throws {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        let app = try app(connected: true)
+        await app.sync.start()
+        dropbox.downloadDelay = 0.3
+        XCTAssertEqual(app.eraser.phase, .idle)
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertTrue(app.eraser.erasing, "the sheet cannot be swiped shut")
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertFalse(app.eraser.erasing)
+        guard case .done(.erased) = app.eraser.phase else { return XCTFail("the words are held") }
+    }
 }
