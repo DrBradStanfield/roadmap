@@ -56,6 +56,12 @@ describe('US-02 AC6c: a value edited back during the wait to one that does not m
     wait(900);
     expect(at()).toBe(box);
   });
+  it('5 ft, inches "1", then the feet made "6" within the wait: the feet box hands back to inches, which keeps the focus', () => {
+    usHeight();
+    typeAll($('#heightInches'), ['1']); wait(300);
+    typeAll($('#heightFeet'), ['6']); wait(900);
+    expect(at()).toBe('heightInches');
+  });
 });
 
 describe('US-02 AC6, AC6c: what still moves, and the callers this does not change', () => {

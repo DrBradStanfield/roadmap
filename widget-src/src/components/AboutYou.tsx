@@ -167,6 +167,7 @@ export function HeightField(props: HeightFieldProps) {
               } else {
                 updateField('heightCm', undefined);
               }
+              advanceToWeight(null); // a feet edit cancels the inches wait (US-02 AC6c)
               if (val.length === 1) {
                 focusById('heightInches');
               }
