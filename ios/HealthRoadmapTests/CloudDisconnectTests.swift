@@ -64,8 +64,8 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
     }
 
     /// Dropbox connected and open; its Disconnect meets a Keychain that refuses to delete, so
-    /// Dropbox's token is left. The Keychain then works again.
-    private func dropboxTokenLeftByADisconnect() async throws -> CloudSync {
+    /// Dropbox's token is left. The Keychain still refuses deletes; the caller switches it back.
+    private func dropboxTokenLeftByADisconnect() async throws -> (CloudSync, OAuthClient) {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         try write("dbid:A", "sync-account")
         var keeping = tokens!
@@ -75,9 +75,8 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         await sync.start()
         _ = await sync.disconnectOutcome()
         XCTAssertNil(sync.provider)
-        XCTAssertNotNil(tokens.load(.dropbox), "the Keychain kept it")
-        oauth.tokens.failsDeletes = false
-        return sync
+        XCTAssertTrue(tokens.load(.dropbox) != nil, "the Keychain kept it")
+        return (sync, oauth)
     }
 
     /// The next launch: a fresh engine, store and CloudSync on the same folder and Keychain.
@@ -249,22 +248,64 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
     }
 
     /// Codex and adversary, round 2 on PR 1350: a token left by a failed delete never outlives
-    /// the next cloud. Connect Google Drive, then Disconnect it: no token of either is left.
+    /// the next cloud. Google Drive connects while deletes still fail, so its sweep cannot remove
+    /// Dropbox's token; then Drive's Disconnect, with deletes working, removes every cloud's.
     func testATokenLeftByAFailedDeleteGoesWithTheNextCloudsDisconnect_US25_AC11m() async throws {
-        let sync = try await dropboxTokenLeftByADisconnect()
+        let (sync, oauth) = try await dropboxTokenLeftByADisconnect()
         try await connectDrive(sync)
+        XCTAssertTrue(tokens.load(.dropbox) != nil, "the connect's sweep met the same refusal")
+        oauth.tokens.failsDeletes = false
         _ = await sync.disconnectOutcome()
         XCTAssertNil(sync.provider)
-        XCTAssertNil(tokens.load(.dropbox), "Dropbox's left token is gone")
-        XCTAssertNil(tokens.load(.googleDrive), "and Drive's")
+        XCTAssertTrue(tokens.load(.dropbox) == nil, "Drive's Disconnect removed Dropbox's left token")
+        XCTAssertTrue(tokens.load(.googleDrive) == nil, "and Drive's")
+    }
+
+    /// The primary check of Disconnect's sweep (owner, round 2): Google Drive is connected and a
+    /// leftover Dropbox token is planted in the Keychain with no connect after it, so no connect's
+    /// sweep can have removed it. Drive's Disconnect removes every cloud's tokens.
+    func testDisconnectRemovesALeftoverTokenOfAnotherCloud_US25_AC11m() async throws {
+        tokens.delete(.dropbox)
+        try write("google-drive", "sync-provider")
+        try tokens.save(OAuthTokens(accessToken: "token-g", refreshToken: "r-g", expiresAt: .distantFuture), for: .googleDrive)
+        let (_, sync) = try app(connected: false)
+        XCTAssertEqual(sync.provider, .googleDrive)
+        try tokens.save(OAuthTokens(accessToken: "token-1", refreshToken: "r", expiresAt: .distantFuture), for: .dropbox)
+        _ = await sync.disconnectOutcome()
+        XCTAssertNil(sync.provider)
+        XCTAssertTrue(tokens.load(.dropbox) == nil, "the leftover Dropbox token is gone")
+        XCTAssertTrue(tokens.load(.googleDrive) == nil, "and Drive's")
     }
 
     /// The same, sooner: once Google Drive's connect has kept its tokens, Dropbox's left token goes.
     func testATokenLeftByAFailedDeleteGoesOnceAnotherCloudConnects_US25_AC11m() async throws {
-        let sync = try await dropboxTokenLeftByADisconnect()
+        let (sync, oauth) = try await dropboxTokenLeftByADisconnect()
+        oauth.tokens.failsDeletes = false
         try await connectDrive(sync)
-        XCTAssertNil(tokens.load(.dropbox), "Dropbox's left token is gone")
-        XCTAssertNotNil(tokens.load(.googleDrive), "Drive's is kept")
+        XCTAssertTrue(tokens.load(.dropbox) == nil, "Dropbox's left token is gone")
+        XCTAssertTrue(tokens.load(.googleDrive) != nil, "Drive's is kept")
+    }
+
+    /// A first connect whose keep fails goes back to the phone and removes every cloud's tokens,
+    /// a stale one of another cloud included (the unkeep).
+    func testAFailedFirstConnectRemovesEveryCloudsTokens_US25_AC11m() async throws {
+        var refusing = tokens!
+        refusing.failsSaves = true
+        let (_, sync) = try app(connected: false, tokens: refusing)
+        XCTAssertTrue(tokens.load(.dropbox) != nil, "a stale token with no cloud on file")
+        answerGoogleToo()
+        let drive = heldSignIn()
+        drive.release()
+        do {
+            try await sync.connect(.googleDrive, authenticate: drive.authenticate)
+            XCTFail("a sign-in the Keychain refused cannot connect")
+        } catch {
+            XCTAssertTrue(error is KeychainError, "\(error)")
+        }
+        XCTAssertNil(sync.provider)
+        XCTAssertTrue(tokens.load(.dropbox) == nil, "the stale token went with the unkeep")
+        XCTAssertTrue(tokens.load(.googleDrive) == nil)
+        XCTAssertFalse(exists("sync-account"), "every delete worked, so the mark went")
     }
 
     /// A connect's sweep never touches the connected cloud's token: with a stale Dropbox token
