@@ -200,4 +200,17 @@ export async function resolve(specifier, context, next) {
     expect(at.status, at.stderr).toBe(0);
     expect(manifest().minAppBuild).toBe(11);
   }, 240_000);
+
+  // PR 1218 R3: a floor file the build cannot read as a whole number fails closed, never passes.
+  it('refuses a floor file without a whole-number minAppBuild, and keeps the last manifest', () => {
+    const before = manifestBytes();
+    for (const [i, bad] of [{}, { minAppBuild: '11' }, { minAppBuild: 11.5 }, { minAppBuild: null }].entries()) {
+      const file = join(work, `bad-floor-${i}.json`);
+      writeFileSync(file, JSON.stringify(bad));
+      const run = build(`2026-10-22T09:0${i}:00Z`, ['--floor', file, '--min-app-build', '11']);
+      expect(run.status, JSON.stringify(bad)).not.toBe(0);
+      expect(run.stderr).toContain('must hold minAppBuild as a whole number');
+      expect(manifestBytes().equals(before)).toBe(true);
+    }
+  }, 480_000);
 });

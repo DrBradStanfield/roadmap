@@ -74,6 +74,7 @@ struct HealthSyncMemory {
     /// The delete still owed (US-72 AC10), by sync id and version: what an erase found written
     /// (`oweWritten`) and any save that landed after it. Never a live sample: a Connect that
     /// comes before the delete succeeds starts a new written list beside it (edge 1).
+    /// A pass never writes an owed id; it is written again once its delete is paid.
     var owed: [String: Int64] { versions("appleHealth.owed") }
 
     /// An erase disconnected Apple Health: every value written is owed.

@@ -416,10 +416,11 @@ final class AppleHealthSync {
     /// it is tried again next time, and the first refusal is reported after the others.
     /// Each save starts only while the pass holds. One that lands is listed at once: as written,
     /// or, once an erase has disconnected Health, as owed, so the delete covers it (`deleteOwed`).
+    /// A pass never writes an owed id; it is written again once its delete is paid.
     private func writeTyped(on pass: Pass) async throws {
         let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
         var refused: Error?
-        for write in writes where write.version > memory.writtenVersion(write.syncId) {
+        for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed[write.syncId] == nil {
             guard let kind = write.kind, client.canWrite(kind) else { continue }
             try still(pass)
             do {

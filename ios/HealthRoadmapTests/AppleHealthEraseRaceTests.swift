@@ -386,6 +386,9 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
     /// The owed list's two invariants: an id is in at most one of written and owed, and an id
     /// leaves owed only on its own successful delete at the version snapshotted for it.
+    /// The first is checked on a live pass too, after a Connect whose owed delete failed
+    /// (`testASurvivingRowIsNeverDeletedByAnOwedRetryAfterReconnect_US72_AC10`), and after
+    /// every step of the sequences in `testNoIdIsEverWrittenAndOwedAtOnce_US72_AC10`.
     func testTheOwedListInvariants_US72_AC10() {
         let memory = memory
         func disjoint() -> Bool { memory.owed.keys.allSatisfy { memory.writtenVersion($0) == 0 } }
@@ -533,6 +536,160 @@ final class AppleHealthEraseRaceTests: XCTestCase {
 
         XCTAssertEqual(liveStore.latestCalls - start, 2 * perRead, "the held read, then the queued one, once")
         XCTAssertFalse(live.cards.isEmpty, "the queued refresh drew the cards")
+    }
+
+    // MARK: Codex round 3: an owed id is never written (Option S)
+
+    /// No id is in both written and owed.
+    private var disjoint: Bool {
+        let memory = memory
+        return memory.owed.keys.allSatisfy { memory.writtenVersion($0) == 0 }
+    }
+
+    /// The sync id's samples in Health, by version.
+    private func savedVersions(_ syncId: String) -> [Int64] {
+        health.saved.filter { $0.syncId == syncId }.map(\.version)
+    }
+
+    /// An erase from another device made on the record as it was before K was typed: it lists
+    /// no row of ours, so K's row survives it (merge.ts, US-09 AC23) and keeps its sync id.
+    private func remoteEraseSparingTheRow(_ app: App, to epoch: Int = 1) async throws {
+        dropbox.put(erased(try webRecord(), to: epoch))
+        await app.sync.syncNow()
+    }
+
+    /// Connected with K written; a remote erase that spares K's row, whose delete fails; then
+    /// Connect, whose owed delete fails too. Returns K.
+    private func reconnectedWithKOwed() async throws -> (App, String) {
+        let (app, written) = try await connectedInTheCloud()
+        let k = try XCTUnwrap(written.first)
+        XCTAssertEqual(written, [k])
+        health.deleteFails = true
+        try await remoteEraseSparingTheRow(app)
+        await until("the erase disconnects Apple Health") { !app.health.connected }
+        await until("the erase's delete was tried") { health.deleteAttempts == 1 }
+        await app.health.connect()
+        return (app, k)
+    }
+
+    /// Codex round 3: a row that survives a remote erase keeps its sync id. Written again after
+    /// Connect while its old sample's delete was still owed, the next owed retry would delete the
+    /// new sample and leave it listed as written, so it was never exported again.
+    func testASurvivingRowIsNeverDeletedByAnOwedRetryAfterReconnect_US72_AC10() async throws {
+        let (app, k) = try await reconnectedWithKOwed()
+
+        XCTAssertNotNil(app.store.myData?.vitals.first?.latest, "the row survived the erase")
+        XCTAssertEqual(savedVersions(k), [1], "only the old sample, whose delete failed: K was not written again")
+        XCTAssertEqual(memory.owed[k], 1)
+        XCTAssertEqual(memory.writtenVersion(k), 0)
+        XCTAssertTrue(disjoint, "the pass after Connect wrote no owed id")
+
+        health.deleteFails = false
+        await app.health.foreground()
+
+        XCTAssertEqual(health.deletedSyncIds.last, [k])
+        XCTAssertEqual(savedVersions(k), [1], "written again once, after its delete was paid")
+        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertEqual(memory.writtenVersion(k), 1)
+    }
+
+    /// The same, with the row corrected while its delete is owed: the correction waits, and goes
+    /// to Health at its own version once the delete is paid.
+    func testACorrectionOfAnOwedRowIsWrittenOnlyOnceItsDeleteIsPaid_US72_AC10() async throws {
+        let (app, k) = try await reconnectedWithKOwed()
+        let rowId = try XCTUnwrap(app.store.myData?.vitals.first?.latest?.id)
+        await XCTAssertSaved(await app.store.apply(.correct(id: rowId, value: 81)))
+        await app.health.refresh()
+
+        XCTAssertEqual(savedVersions(k), [1], "no new K while it is owed")
+        XCTAssertEqual(memory.owed[k], 1)
+
+        health.deleteFails = false
+        await app.health.foreground()
+
+        XCTAssertEqual(savedVersions(k), [2], "the correction alone, once the delete is paid")
+        XCTAssertTrue(memory.owed.isEmpty)
+    }
+
+    /// A pass that runs while the owed delete is in flight (it took the samples but has not
+    /// returned) writes no owed id; the refresh after the delete writes it once.
+    func testAPassDuringAnOwedDeleteInFlightWritesNoOwedId_US72_AC10() async throws {
+        let (app, k) = try await reconnectedWithKOwed()
+        health.deleteFails = false
+        var reached = false, released = false
+        health.deleteHold = { [health] in
+            health?.deleteHold = nil
+            reached = true
+            for _ in 0..<500 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+        let foreground = Task { await app.health.foreground() }
+        await until("the owed delete is in flight") { reached }
+
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        XCTAssertEqual(savedVersions(k), [], "the pass wrote no owed id")
+        XCTAssertNotNil(health.saved.first { $0.kind == .waist }, "the pass ran")
+
+        released = true
+        await foreground.value
+        XCTAssertEqual(savedVersions(k), [1], "the refresh after the delete wrote K once")
+        XCTAssertTrue(memory.owed.isEmpty)
+    }
+
+    private enum Step {
+        case connect, write
+        /// A remote erase sparing the rows; its delete fails or not.
+        case erase(fails: Bool)
+        /// The next foreground: the owed delete succeeds, or fails.
+        case pay, failPay
+    }
+
+    /// Fable: no id is ever in both written and owed, after any step of any sequence of
+    /// connect, write, erase, pay and failed pay.
+    func testNoIdIsEverWrittenAndOwedAtOnce_US72_AC10() async throws {
+        let sequences: [[Step]] = [
+            [.erase(fails: true), .connect, .write, .failPay, .pay, .write],
+            [.erase(fails: false), .connect, .write, .erase(fails: true), .failPay, .connect, .pay],
+            [.write, .erase(fails: true), .write, .connect, .erase(fails: true), .connect, .write, .pay, .write],
+            [.erase(fails: true), .connect, .erase(fails: true), .connect, .failPay, .write, .pay],
+        ]
+        for (index, sequence) in sequences.enumerated() {
+            if index > 0 {
+                try await tearDown()
+                try await setUp()
+            }
+            let (app, _) = try await connectedInTheCloud()
+            var epoch = 0, day = 1
+            XCTAssertTrue(disjoint, "sequence \(index), start")
+            for (number, step) in sequence.enumerated() {
+                switch step {
+                case .connect:
+                    await app.health.connect()
+                case .write:
+                    day += 1
+                    await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: String(format: "2026-10-%02d", day))))
+                    await app.health.refresh()
+                case .erase(let fails):
+                    health.deleteFails = fails
+                    let wasConnected = app.health.connected
+                    epoch += 1
+                    // What the phone holds goes up first (a merged earlier erase), so the erase is
+                    // the only change the next sync meets.
+                    await app.sync.syncNow()
+                    try await remoteEraseSparingTheRow(app, to: epoch)
+                    if wasConnected { await until("sequence \(index) step \(number): disconnected") { !app.health.connected } }
+                    await settle()
+                case .pay:
+                    health.deleteFails = false
+                    await app.health.foreground()
+                case .failPay:
+                    health.deleteFails = true
+                    await app.health.foreground()
+                }
+                await settle()
+                XCTAssertTrue(disjoint, "sequence \(index), step \(number) (\(step)): an id is written and owed at once")
+            }
+        }
     }
 
     /// F6: an erase lands between a pass's last check and its save's turn in the store's line.

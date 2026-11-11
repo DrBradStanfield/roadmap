@@ -54,12 +54,14 @@ whose `minAppBuild` is below it, so the automatic release after a Deploy (below)
 passes no `--min-app-build`, fails until you release once from your Mac with
 `--min-app-build 11`; `--min-app-build` then carries over to later releases (the last
 manifest's value). **From that release on, builds below 11 get no engine updates until
-they install the next app build.** Raise the floor file, never lower it. Build 11 must be cut
-from a commit that contains PR 1218 (the floor assumes it); the UI thread confirmed on
-2026-11-11 that build 10 is the highest uploaded and no 11 has been archived. **Before
-signing the first engine after PR 1218:** confirm in App Store Connect that the highest
-uploaded build is 10. If an 11 exists that was cut before this PR, raise
-`ios/engine-floor.json` to the next unused number first.
+they install the next app build.** Raise the floor file, never lower it. Brad confirmed on
+2026-11-11 that the highest uploaded build is 10, so the floor of 11 stands.
+
+Cutting build 11:
+
+- [ ] Build 11 is cut from a commit that contains PR 1218 (the floor assumes it).
+- [ ] The owed-delete kind fix (lead H29) is on main. A false 'Health not erased' on every erase must not ship.
+- [ ] The Health Records panel fix is on main: results contained in a DiagnosticReport are read, and the lab rules version goes to 3.
 
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
