@@ -557,6 +557,10 @@ final class AppleHealthEraseTests: XCTestCase {
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
         XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
         XCTAssertTrue(memory.owedUnreadable, "a waist sample may still be in Health")
+        // Settings closed on the words: RootView's held words say it too (US-25 AC16d).
+        app.eraser.settingsClosed()
+        XCTAssertTrue(app.eraser.held?.words.hasSuffix(EraseText.healthNotErased) == true)
+        app.eraser.seen()
 
         health.writable = Set(HealthKind.allCases)
         guard case .erased(let again) = await app.eraser.eraseAll() else { return XCTFail("the second erase was refused") }
