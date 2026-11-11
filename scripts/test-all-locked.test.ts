@@ -159,11 +159,13 @@ describe('the real script (US-71 AC1-AC3)', () => {
   });
   // A failed waitFor skips the test's own kill: SIGKILL any wrapper still up and each fake vitest's
   // group (it runs detached, so its pid is its group), or both run forever. Runs before base is removed.
+  // Only after a failure: a passing test reaped its own, and a logged pid may since name another process.
   const spawned: ReturnType<typeof spawn>[] = [];
   const pids = () => path.join(base, 'vitest-pids.txt');
-  afterEach(() => {
+  afterEach((ctx) => {
+    if (ctx.task.result?.state !== 'fail') { spawned.splice(0); return; }
     const kill = (pid: number) => {
-      try { process.kill(pid, 'SIGKILL'); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ESRCH') throw e; }
+      try { process.kill(pid, 'SIGKILL'); } catch (e) { if (!['ESRCH', 'EPERM'].includes((e as NodeJS.ErrnoException).code ?? '')) throw e; }
     };
     for (const c of spawned.splice(0)) if (c.exitCode === null && c.signalCode === null) kill(c.pid!);
     // The fake notes its pid as it boots; the wrapper's owner.json names it from spawn, before that.
