@@ -113,10 +113,11 @@ enum CloudConnection: Equatable {
         case showCloud(HealthEngine.CloudView)
         /// The record was synced with this cloud (review A3).
         case remember(CloudProvider)
-        /// Run the open the state names.
-        case open
-        /// Close the engine's session without a copy down.
-        case closeSession
+        /// Run the open the state names, if the connection is still at this attempt: an effect
+        /// runs after the step that decided it, and a later step may have moved on (review R1).
+        case open(attempt: Int)
+        /// Close the engine's session without a copy down, if still at this attempt.
+        case closeSession(attempt: Int)
     }
 
     struct Step: Equatable {
@@ -207,38 +208,37 @@ enum CloudConnection: Equatable {
             case .phone(let attempt):
                 guard key == attempt else { return Step(next: state, effects: [.cancel]) }
                 return Step(next: .opening(Opening(provider: provider, attempt: attempt + 1, connectedAt: attempt + 1, firstConnect: true)),
-                            effects: [.keep, .open])
+                            effects: [.keep, .open(attempt: attempt + 1)])
             case .closed(let now):
                 if let refused = refuse(state, key: key, provider: provider, otherAccount: otherAccount) { return refused }
                 return Step(next: .opening(Opening(provider: now.provider, attempt: now.attempt + 1, connectedAt: now.connectedAt, firstConnect: false)),
-                            effects: [.keep, .open])
+                            effects: [.keep, .open(attempt: now.attempt + 1)])
             // The open in flight may have asked with the old grant and would fail asking for a
             // second sign-in: it restarts under the new tokens (owner, design item 3; AC11j).
             case .opening(let now):
                 if let refused = refuse(state, key: key, provider: provider, otherAccount: otherAccount) { return refused }
                 return Step(next: .opening(Opening(provider: now.provider, attempt: now.attempt + 1, connectedAt: now.connectedAt, firstConnect: now.firstConnect)),
-                            effects: [.keep, .open])
+                            effects: [.keep, .open(attempt: now.attempt + 1)])
             case .open(let now):
                 if let refused = refuse(state, key: key, provider: provider, otherAccount: otherAccount) { return refused }
                 return Step(next: .opening(Opening(provider: now.provider, attempt: now.attempt + 1, connectedAt: now.connectedAt, firstConnect: false)),
-                            effects: [.keep, .showPhone, .open])
+                            effects: [.keep, .showPhone, .open(attempt: now.attempt + 1)])
             case .closing: return Step(next: state, effects: [.cancel])
             }
 
         case let .keepFailed(attempt, problem, onFile):
             switch state {
-            case .opening(let now) where now.attempt == attempt:
-                return keepFailed(now.provider, attempt: attempt, connectedAt: now.connectedAt, problem, onFile: onFile)
-            case .open(let now) where now.attempt == attempt:
-                return keepFailed(now.provider, attempt: attempt, connectedAt: now.connectedAt, problem, onFile: onFile)
-            case .phone, .closed, .opening, .open, .closing: return stay
+            case .opening, .open:
+                guard state.attempt == attempt else { return stay }
+                return keepFailed(state.provider!, attempt: attempt, connectedAt: state.signInKey, problem, onFile: onFile)
+            case .phone, .closed, .closing: return stay
             }
 
         case .openStarted:
             switch state {
             case .closed(let now):
                 return Step(next: .opening(Opening(provider: now.provider, attempt: now.attempt + 1, connectedAt: now.connectedAt, firstConnect: false)),
-                            effects: [.open])
+                            effects: [.open(attempt: now.attempt + 1)])
             // Opening: single flight, the open in flight is joined. Open: a foreground re-reads,
             // it never reopens (pinned by testForegroundWithASessionReReadsWithoutReopening).
             case .phone, .opening, .open, .closing: return stay
@@ -333,7 +333,9 @@ enum CloudConnection: Equatable {
             switch state {
             case .closed, .opening, .open:
                 return Step(next: .closing(Closing(provider: state.provider!, attempt: state.attempt + 1)))
-            case .phone, .closing: return stay
+            // A Disconnect already closing: this one is dropped, and closes nothing (Codex C1).
+            case .closing: return Step(next: state, effects: [.cancel])
+            case .phone: return stay
             }
 
         case .disconnectEnded(let attempt):
@@ -364,8 +366,14 @@ enum CloudConnection: Equatable {
     /// A sign-in returning to a connected cloud: another cloud is refused with words, one
     /// begun under an older connection is dropped, and another account is refused (A6).
     private static func refuse(_ state: CloudConnection, key: Int, provider: CloudProvider, otherAccount: Bool) -> Step? {
+        if key != state.signInKey {
+            // Begun on the phone just before this connection was made, for another cloud: the
+            // backstop refuses it with words (AC11l). Begun under a connection a Disconnect
+            // ended: dropped silently, whatever cloud is connected now (Codex C3).
+            if key == state.signInKey - 1, state.provider != provider { return refuseAnother(state, provider) }
+            return Step(next: state, effects: [.cancel])
+        }
         if state.provider != provider { return refuseAnother(state, provider) }
-        if key != state.signInKey { return Step(next: state, effects: [.cancel]) }
         if otherAccount {
             return Step(next: state, effects: [.refuse("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")])
         }
@@ -377,7 +385,7 @@ enum CloudConnection: Equatable {
     private static func keepFailed(_ provider: CloudProvider, attempt: Int, connectedAt: Int, _ problem: SyncProblem, onFile: Bool) -> Step {
         guard onFile else { return Step(next: .phone(attempt: attempt), effects: [.unkeep(provider)]) }
         return Step(next: .closed(Closed(provider: provider, attempt: attempt, connectedAt: connectedAt, problem: problem)),
-                    effects: [.closeSession, .showPhone])
+                    effects: [.closeSession(attempt: attempt), .showPhone])
     }
 
     /// The handover: shown when no edit landed while the open ran, with what the session held.
@@ -395,13 +403,13 @@ enum CloudConnection: Equatable {
             // Edits kept arriving: close the last try's session, so nothing polls behind the
             // phone's record; the next foreground tries again.
             return Step(next: .closed(Closed(provider: now.provider, attempt: now.attempt, connectedAt: now.connectedAt, problem: SyncProblem(kind: .busy))),
-                        effects: [.closeSession])
+                        effects: [.closeSession(attempt: now.attempt)])
         }
         var again = now
         again.attempt += 1
         again.tries += 1
         again.editsSince = 0
         again.firstConnect = false
-        return Step(next: .opening(again), effects: [.open])
+        return Step(next: .opening(again), effects: [.open(attempt: again.attempt)])
     }
 }

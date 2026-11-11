@@ -824,8 +824,9 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
     /// A Try again whose open is still reading when "Use a different cloud" runs lands
     /// after it and changes nothing. The engine supersedes it: Disconnect's cloudClose moves
     /// `latest` on (ios/engine/cloud.ts:521) and the late cloudOpen throws 'superseded'
-    /// (:167-171), so only CloudSync.open's catch-path generation check runs here. Its
-    /// success-path checks (in and after the handover) are pinned by CloudConnectionPinsTests
+    /// (:167-171), so only the catch path runs here: its `openFailed` names an attempt that
+    /// has ended, and the transition drops it (US-25 AC11m). The success path (in and after
+    /// the handover) is pinned by CloudConnectionPinsTests
     /// testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins.
     func testAnOpenLandingAfterUseADifferentCloudChangesNothing_US54_AC2d() async throws {
         let (store, sync, drive) = try await driveFailedAtLaunch()

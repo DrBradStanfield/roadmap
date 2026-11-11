@@ -61,9 +61,9 @@ final class CloudConnectionTests: XCTestCase {
             row(.phone(attempt: 0), .launched(nil), .phone(attempt: 0)),
             row(.phone(attempt: 0), .launched(.dropbox), closedWith(nil, attempt: 0, connectedAt: 0)),
             row(phone, .signInReturned(key: 4, provider: .dropbox, otherAccount: false),
-                .opening(.init(provider: .dropbox, attempt: 5, connectedAt: 5, firstConnect: true)), [.keep, .open]),
+                .opening(.init(provider: .dropbox, attempt: 5, connectedAt: 5, firstConnect: true)), [.keep, .open(attempt: 5)]),
             row(phone, .signInReturned(key: 4, provider: .dropbox, otherAccount: true),
-                .opening(.init(provider: .dropbox, attempt: 5, connectedAt: 5, firstConnect: true)), [.keep, .open]),
+                .opening(.init(provider: .dropbox, attempt: 5, connectedAt: 5, firstConnect: true)), [.keep, .open(attempt: 5)]),
             row(phone, .signInReturned(key: 3, provider: .dropbox, otherAccount: false), phone, [.cancel]), // S21
         ]
 
@@ -74,11 +74,15 @@ final class CloudConnectionTests: XCTestCase {
                               .disconnectEnded(attempt: 4), .closeFailed(attempt: 4)])
         rows += [
             row(closed, .signInStarted(.googleDrive), closed, [.refuse(another)]), // AC11l
-            row(closed, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .open]),
+            row(closed, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .open(attempt: 5)]),
             row(closed, .signInReturned(key: 2, provider: .googleDrive, otherAccount: false), closed, [.refuse(another)]),
             row(closed, .signInReturned(key: 1, provider: .dropbox, otherAccount: false), closed, [.cancel]),
+            // Begun on the phone just before this connection: another cloud is refused with words (AC11l's backstop).
+            row(closed, .signInReturned(key: 1, provider: .googleDrive, otherAccount: false), closed, [.refuse(another)]),
+            // Begun under a connection a Disconnect ended: dropped silently, whatever is connected (Codex C3).
+            row(closed, .signInReturned(key: 0, provider: .googleDrive, otherAccount: false), closed, [.cancel]),
             row(closed, .signInReturned(key: 2, provider: .dropbox, otherAccount: true), closed, [.refuse(otherAccount)]), // A6
-            row(closedWith(p), .openStarted, trying(attempt: 5), [.open]),
+            row(closedWith(p), .openStarted, trying(attempt: 5), [.open(attempt: 5)]),
             row(closed, .disconnectStarted, .closing(.init(provider: .dropbox, attempt: 5))),
         ]
 
@@ -91,17 +95,17 @@ final class CloudConnectionTests: XCTestCase {
         rows += [
             row(opening, .signInStarted(.googleDrive), opening, [.refuse(another)]), // AC11j
             // Owner's item 3: the open restarts under the new tokens.
-            row(opening, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .open]),
-            row(trying(first: true), .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5, first: true), [.keep, .open]),
+            row(opening, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .open(attempt: 5)]),
+            row(trying(first: true), .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5, first: true), [.keep, .open(attempt: 5)]),
             row(opening, .signInReturned(key: 2, provider: .googleDrive, otherAccount: false), opening, [.refuse(another)]),
-            row(opening, .keepFailed(attempt: 4, p, onFile: true), closedWith(p), [.closeSession, .showPhone]),
+            row(opening, .keepFailed(attempt: 4, p, onFile: true), closedWith(p), [.closeSession(attempt: 4), .showPhone]),
             row(opening, .keepFailed(attempt: 4, p, onFile: false), .phone(attempt: 4), [.unkeep(.dropbox)]),
             row(opening, .edited, trying(edits: 1)),
             row(opening, .opened(attempt: 4, session: 9, at: t1), openWith(.clean(t1), session: 9), [.remember(.dropbox)]),
             row(trying(held: held), .opened(attempt: 4, session: 9, at: t1), openWith(.failed(full), session: 9), [.showCloud(view), .remember(.dropbox)]),
-            row(trying(edits: 1), .opened(attempt: 4, session: 9, at: t1), trying(attempt: 5, tries: 2), [.open]),
-            row(trying(first: true, edits: 1), .opened(attempt: 4, session: 9, at: t1), trying(attempt: 5, tries: 2), [.open]),
-            row(trying(tries: 3, edits: 1), .opened(attempt: 4, session: 9, at: t1), closedWith(SyncProblem(kind: .busy)), [.closeSession]),
+            row(trying(edits: 1), .opened(attempt: 4, session: 9, at: t1), trying(attempt: 5, tries: 2), [.open(attempt: 5)]),
+            row(trying(first: true, edits: 1), .opened(attempt: 4, session: 9, at: t1), trying(attempt: 5, tries: 2), [.open(attempt: 5)]),
+            row(trying(tries: 3, edits: 1), .opened(attempt: 4, session: 9, at: t1), closedWith(SyncProblem(kind: .busy)), [.closeSession(attempt: 4)]),
             row(opening, .openFailed(attempt: 4, p), closedWith(p)),
             row(opening, .news(session: 9, .failed(full), at: t1), trying(held: .init(failures: [9: full]))),
             row(trying(held: held), .news(session: 9, .synced, at: t1), trying(held: .init(news: [9: view]))),
@@ -116,9 +120,9 @@ final class CloudConnectionTests: XCTestCase {
                             .eraseEnded(session: 9, .done, at: t1), .disconnectEnded(attempt: 4), .closeFailed(attempt: 4)])
         rows += [
             row(open, .signInStarted(.googleDrive), open, [.refuse(another)]), // AC11l
-            row(open, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .showPhone, .open]),
+            row(open, .signInReturned(key: 2, provider: .dropbox, otherAccount: false), trying(attempt: 5), [.keep, .showPhone, .open(attempt: 5)]),
             row(open, .signInReturned(key: 2, provider: .googleDrive, otherAccount: false), open, [.refuse(another)]),
-            row(open, .keepFailed(attempt: 4, p, onFile: true), closedWith(p), [.closeSession, .showPhone]),
+            row(open, .keepFailed(attempt: 4, p, onFile: true), closedWith(p), [.closeSession(attempt: 4), .showPhone]),
             row(open, .edited, openWith(.saving)),
             row(open, .news(session: 7, .saving, at: t1), openWith(.saving)),
             row(openWith(.saving), .news(session: 7, .saved, at: t1), openWith(.clean(t1))),
@@ -139,9 +143,10 @@ final class CloudConnectionTests: XCTestCase {
         rows += drop(closing, [.launched(.dropbox), .keepFailed(attempt: 4, p, onFile: true), .openStarted, .edited,
                                .opened(attempt: 3, session: 9, at: t1), .openFailed(attempt: 3, p), .news(session: 7, .synced, at: t1),
                                .syncStarted, .syncEnded(session: 7, .done, at: t1), .eraseEnded(session: 7, .done, at: t1),
-                               .disconnectStarted, .disconnectEnded(attempt: 3), .closeFailed(attempt: 3)])
+                               .disconnectEnded(attempt: 3), .closeFailed(attempt: 3)])
         rows += [
             row(closing, .signInStarted(.dropbox), closing, [.cancel]), // S22
+            row(closing, .disconnectStarted, closing, [.cancel]), // Codex C1: no second close
             row(closing, .signInReturned(key: 4, provider: .dropbox, otherAccount: false), closing, [.cancel]),
             row(closing, .disconnectEnded(attempt: 4), .phone(attempt: 4)),
             row(closing, .closeFailed(attempt: 4), closedWith(nil, attempt: 4, connectedAt: 4), [.showPhone]),
@@ -252,7 +257,9 @@ final class CloudConnectionTests: XCTestCase {
             for effect in effects {
                 switch effect {
                 // cloudOpen closes the session it replaces; a close supersedes an open in flight.
-                case .open: (engineSession, running) = (nil, state.attempt)
+                // The model runs an effect at once, so the attempt it names is always current:
+                // the delay between a step and its effect is tested in CloudSyncTests (R1).
+                case .open(let attempt): (engineSession, running) = (nil, attempt)
                 case .closeSession: (engineSession, running) = (nil, nil)
                 case .unkeep(let provider): tokens.remove(provider)
                 case .refuse, .cancel, .keep, .showPhone, .showCloud, .remember: break

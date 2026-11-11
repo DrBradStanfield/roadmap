@@ -60,8 +60,12 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         try? FileManager.default.setAttributes([.immutable: on], ofItemAtPath: path)
     }
 
-    /// A relaunch reads the provider `sync` names, and opens exactly when it can.
+    /// A relaunch reads the provider `sync` names, finds the tokens beside its provider file,
+    /// and opens exactly when it can.
     private func assertARelaunchReadsTheSame(_ sync: CloudSync, opens: Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
+        if let onFile = text("sync-provider").flatMap(CloudProvider.init(rawValue:)) {
+            XCTAssertNotNil(tokens.load(onFile), "never a provider file without tokens", file: file, line: line)
+        }
         let next = try relaunch()
         XCTAssertEqual(next.provider, sync.provider, "a relaunch reads the same cloud", file: file, line: line)
         await next.start()
@@ -179,6 +183,25 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
     private func arrive(_ expectation: XCTestExpectation, file: StaticString = #filePath, line: UInt = #line) async {
         let result = await XCTWaiter().fulfillment(of: [expectation], timeout: 10)
         XCTAssertEqual(result, .completed, expectation.description, file: file, line: line)
+    }
+
+    /// The owner's ruling (2026-11-12): a copy-down that fails never stops Disconnect. With a
+    /// session open and the cloud unreachable, the engine's copy answers 'unreachable';
+    /// Disconnect goes on, ends on the phone and answers `copied: false`, for which Sync shows
+    /// its existing words ("<cloud> could not be reached, so changes made on other devices…").
+    func testACopyDownThatFailsStillEndsOnThePhone_US25_AC11m() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync) = try app()
+        await sync.start()
+        XCTAssertTrue(sync.recordOpen)
+        dropbox.online = false
+        let outcome = await sync.disconnectOutcome()
+        XCTAssertEqual(outcome, .done(copied: false))
+        XCTAssertNil(sync.provider)
+        XCTAssertEqual(sync.status, .onPhone)
+        XCTAssertNil(store.cloudErase)
+        XCTAssertFalse(exists("sync-provider"))
+        XCTAssertNil(tokens.load(.dropbox))
     }
 
     // MARK: Connect

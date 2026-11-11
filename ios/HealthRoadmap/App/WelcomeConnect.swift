@@ -32,10 +32,9 @@ enum WelcomeConnect {
         // .connecting in the same turn; saving and synced need an open session). No
         // open is implied, so the taps start one.
         case .onPhone, .synced, .saving: return .opening
-        // A Disconnect closing ("Use a different cloud"): it ends on the phone, choosing, as
-        // the screen showed before the closing had a state of its own. A Connect tapped while
-        // it closes is dropped silently (US-25 AC11m).
-        case .disconnecting: return .choosing
+        // A Disconnect closing ("Use a different cloud"): the spinner shows and the Connect rows
+        // stay hidden, since a connect is dropped while it closes; choosing follows (owner, R2 b).
+        case .disconnecting: return .opening
         }
     }
 

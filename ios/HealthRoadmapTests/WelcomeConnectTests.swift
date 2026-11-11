@@ -12,8 +12,8 @@ final class WelcomeConnectTests: XCTestCase {
     func testEveryStatusHasAPhase_US54_AC2b() {
         let statuses: [CloudSync.Status] = [.onPhone, .connecting, .synced(.now), .saving, .problem(unreachable), .disconnecting]
         // With a cloud and no open record: an open shows as opening, a failure as failed,
-        // a Disconnect closing as choosing, where it ends (US-25 AC11m).
-        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable), .choosing]
+        // a Disconnect closing as opening: the spinner, no Connect rows (US-25 AC11m, owner R2 b).
+        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable), .opening]
         for (status, expected) in zip(statuses, connected) {
             XCTAssertEqual(WelcomeConnect.phase(provider: .dropbox, status: status, recordOpen: false), expected, "\(status)")
             // An open record wins over any status.

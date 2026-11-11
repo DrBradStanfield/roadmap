@@ -605,7 +605,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   retries.
   Second re-check (Codex, same day): an open takes its number before any await, so the
   order of the calls decides which open wins, never the order their awaits finish in.
-  "Synced" has one rule (`CloudSync.settled`, since S3 `CloudConnection.status`): the pending marker is clear. The marker is
+  "Synced" has one rule (`CloudConnection.status`; `CloudSync.settled` before S3): the pending marker is clear. The marker is
   set before every edit is taken and cleared by the session only when a save has landed
   and verified, and the engine says 'synced' at that moment; until then the app says
   "Saving…", on open, after a write and after Sync now.
@@ -632,7 +632,13 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   says "Couldn't disconnect from <cloud>. Try again." A late `opened` is only dropped, not
   closed: the engine has already closed its session, since any newer open or close supersedes
   it (cloud.ts); the one case with no newer engine call, a failed keep, closes the session
-  itself. Not yet (PR 2): `erasing` is still a boolean beside the union; it moves to
+  itself. An effect runs after the step that decided it (after the store's handover, say), so
+  each open or close names its attempt and is skipped once the connection moved on (review R1).
+  A second Disconnect while one closes is a table cell that closes nothing; each Disconnect
+  step after an await checks its attempt (Codex C1). The account file stays until the Keychain
+  has deleted the tokens, so launch cleanup retries from it (C2). A sign-in voided by a
+  Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
+  Disconnect (owner): nothing is lost and the existing words show. Not yet (PR 2): `erasing` is still a boolean beside the union; it moves to
   `DataEraser.phase`, and a one-step cloud switch replaces "Disconnect from <cloud> first".
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free

@@ -59,9 +59,12 @@ struct TokenStore: Sendable {
         return attributes[kSecAttrAccessible as String] as? String
     }
 
-    func delete(_ provider: CloudProvider) {
-        guard !failsDeletes else { return }
-        SecItemDelete(baseQuery(provider) as CFDictionary)
+    /// True once no item is left for the provider.
+    @discardableResult
+    func delete(_ provider: CloudProvider) -> Bool {
+        guard !failsDeletes else { return false }
+        let status = SecItemDelete(baseQuery(provider) as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
 
     private func baseQuery(_ provider: CloudProvider) -> [String: Any] {

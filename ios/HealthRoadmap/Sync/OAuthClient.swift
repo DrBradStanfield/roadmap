@@ -149,7 +149,9 @@ final class OAuthClient {
     }
 
     /// Forget the tokens. The cloud file is untouched.
-    func signOut(_ provider: CloudProvider) {
+    /// True once the Keychain holds no tokens for the provider.
+    @discardableResult
+    func signOut(_ provider: CloudProvider) -> Bool {
         tokens.delete(provider)
     }
 

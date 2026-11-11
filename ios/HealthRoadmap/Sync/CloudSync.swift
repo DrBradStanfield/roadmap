@@ -26,7 +26,7 @@ final class CloudSync: CloudPort {
     enum DisconnectOutcome: Equatable {
         /// On the phone. `copied`: the cloud record was merged down first.
         case done(copied: Bool)
-        /// An erase is running: nothing changed.
+        /// An erase or another Disconnect is running: nothing changed.
         case refused
         /// The provider file could not be removed: still connected, nothing else touched.
         case failed
@@ -186,18 +186,16 @@ final class CloudSync: CloudPort {
     /// copy; the phone keeps what it already held.
     func disconnectOutcome() async -> DisconnectOutcome {
         guard let provider else { return .done(copied: true) }
-        guard !erasing else { return .refused }
-        send(.disconnectStarted)
-        // Already closing: that Disconnect answers.
-        guard case .closing(let closing) = connection else { return .done(copied: true) }
+        guard !erasing, send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
+        // Each step after an await checks this Disconnect still owns the connection (Codex C1).
+        guard connection.attempt == closing.attempt else { return .refused }
         guard removeProviderFile() else {
             await run(send(.closeFailed(attempt: closing.attempt)))
             await run(send(.openStarted))
             return .failed
         }
-        oauth.signOut(provider)
-        files.remove(files.account)
+        signOut(provider)
         forgetEmail()
         files.remove(files.pending)
         let shown = store.showPhone()
@@ -237,8 +235,9 @@ final class CloudSync: CloudPort {
     /// Runs a step's effects in order: those that need no wait now, then the rest.
     private func run(_ effects: [CloudConnection.Effect]) async {
         for effect in runNow(effects) {
-            if effect == .open { await open() }
-            if effect == .closeSession { _ = try? await engine.cloudClose(copyDown: false) }
+            // Each runs only while the connection is at the attempt that decided it (review R1).
+            if case .open(let attempt) = effect, connection.attempt == attempt { await open() }
+            if case .closeSession(let attempt) = effect, connection.attempt == attempt { _ = try? await engine.cloudClose(copyDown: false) }
         }
     }
 
@@ -253,8 +252,7 @@ final class CloudSync: CloudPort {
                 syncedBefore = provider
                 try? files.write(provider.rawValue, to: files.history)
             case .unkeep(let provider):
-                oauth.signOut(provider)
-                files.remove(files.account)
+                signOut(provider)
                 forgetEmail()
             case .open, .closeSession: later.append(effect)
             // connect's own: it throws, or keeps, before the rest run.
@@ -314,13 +312,18 @@ final class CloudSync: CloudPort {
 
     /// With no provider file, the sync files are leftovers of a Disconnect or a connect that
     /// failed partway, removed at launch so a relaunch reads one state. An account file marks
-    /// tokens that may be left too: a connect writes it before the tokens, and Disconnect
-    /// removes it after them.
+    /// tokens that may be left too: a connect writes it before the tokens, and it goes only
+    /// once the Keychain has deleted them (`signOut`), so a launch retries from it (Codex C2).
     private func removeLeftovers() {
-        if files.exists(files.account) { CloudProvider.allCases.forEach(oauth.signOut) }
-        files.remove(files.account)
+        if files.exists(files.account), CloudProvider.allCases.map(oauth.signOut).allSatisfy({ $0 }) { files.remove(files.account) }
         files.remove(files.email)
         files.remove(files.pending)
+    }
+
+    /// Deletes a cloud's tokens; the account file, the mark that tokens may be left, goes only
+    /// once the Keychain has deleted them.
+    private func signOut(_ provider: CloudProvider) {
+        if oauth.signOut(provider) { files.remove(files.account) }
     }
 
     private func forgetEmail() {
