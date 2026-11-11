@@ -47,7 +47,7 @@ extension AppleHealthSync {
     /// have read the owed list before them (lead H33): the erase waits it out, then pays its own,
     /// joining only a pay claimed after it. Its drain shares the erase's deadline (lead H34).
     @discardableResult
-    func deleteOwed(erasing deadline: ContinuousClock.Instant? = nil) async -> Bool {
+    func deleteOwed(erasing deadline: ContinuousClock.Instant? = nil) async -> Bool { // internal only for AppleHealthSync+Owed.swift
         if let paying {
             let paid = await paying.value
             guard deadline != nil else { return paid }
@@ -76,7 +76,7 @@ extension AppleHealthSync {
             }
         } ?? [:]
         memory.paid(settled)
-        owedFooter = memory.owed.showsFooter
+        refreshOwedFooter()
         return settled.count == owed.count
     }
 
@@ -89,7 +89,7 @@ extension AppleHealthSync {
     /// call returns. A call that hangs past the bound is left running: a sample it saves later
     /// is owed (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
     /// The deadline is its own task, so a cancelled caller still waits for it, never spins.
-    func drained(by deadline: ContinuousClock.Instant) async {
+    func drained(by deadline: ContinuousClock.Instant) async { // internal only for AppleHealthSync+Owed.swift
         guard running, deadline > .now else { return }
         let id = UUID()
         let timer = Task { [weak self] in

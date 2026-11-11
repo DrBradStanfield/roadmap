@@ -119,6 +119,42 @@ final class AppleHealthOwedTests: XCTestCase {
         XCTAssertFalse(EraseText.healthOwed.contains(where: \.isNumber), "no count, no reading")
     }
 
+    /// Fable's ruling (b): `owedFooter` is derived, never kept by hand. After each writer of owed
+    /// (init from a stored value, owe, an erase's oweWritten, a failed pay, a paid one) it equals
+    /// `memory.owed.showsFooter`, and it does change along the way.
+    func testTheFooterFlagFollowsEveryWriterOfOwed_US72_AC16() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let health = FakeHealthStore()
+        let memory = memory
+        memory.owe(1, for: "a")
+        memory.paid([:])
+        memory.paid([:])
+        let sync = AppleHealthSync(store: store, engine: engine, client: health, memory: memory)
+        func pinned(_ step: String, shows: Bool, line: UInt = #line) {
+            XCTAssertEqual(sync.owedFooter, memory.owed.showsFooter, step, line: line)
+            XCTAssertEqual(sync.owedFooter, shows, step, line: line)
+        }
+        pinned("init from a stored value", shows: true)
+
+        memory.owe(3, for: "b")
+        pinned("owe", shows: true)
+
+        memory.setWritten(1, for: "c")
+        health.deleteRefusal = CocoaError(.fileWriteNoPermission)
+        _ = await sync.erased(wasConnected: false)
+        XCTAssertEqual(memory.owed.failedPays, 1, "the erase reset the count, then its own pay failed")
+        pinned("oweWritten, then a failed pay", shows: false)
+
+        await sync.foreground()
+        pinned("a failed pay", shows: true)
+
+        health.deleteRefusal = nil
+        await sync.foreground()
+        XCTAssertTrue(memory.owed.ids.isEmpty)
+        pinned("a paid one", shows: false)
+    }
+
     /// Brad's text (2026-11-12): the footer and the erase's words name the same Settings path,
     /// built in one place (`LiveFooter.healthPath`), and the system's button label, curly quotes and all.
     func testTheFooterAndTheEraseWordsNameOneSettingsPathAndTheButton_US72_AC16() {

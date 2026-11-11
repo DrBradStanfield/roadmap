@@ -46,25 +46,26 @@ final class AppleHealthSync {
     /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
     /// A cache of `memory.owed`, so every writer of owed that can change it must refresh it: init,
     /// `pay` and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
-    var owedFooter: Bool
+    /// Set only by `refreshOwedFooter`.
+    private(set) var owedFooter = false
 
-    let store: RecordStore
+    let store: RecordStore // internal only for AppleHealthSync+Owed.swift
     private let engine: HealthEngine
-    let client: HealthStoreClient
-    let memory: HealthSyncMemory
+    let client: HealthStoreClient // internal only for AppleHealthSync+Owed.swift
+    let memory: HealthSyncMemory // internal only for AppleHealthSync+Owed.swift
     /// US-56's cards, read as soon as the sheet is answered (`connect`).
     private let live: LiveHealth?
-    var running = false
+    var running = false // internal only for AppleHealthSync+Owed.swift
     /// The connection generation of the one rule above: moves on every erase disconnect.
     private var generation = 0
     private var again = false
     /// Who waits for the running pass to end: a refresh asked for during it, an erase's `drained`.
-    var waiting: [UUID: CheckedContinuation<Void, Never>] = [:]
+    var waiting: [UUID: CheckedContinuation<Void, Never>] = [:] // internal only for AppleHealthSync+Owed.swift
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
     /// The owed delete in flight, the one claim every caller awaits (`deleteOwed`).
-    var paying: Task<Bool, Never>?
+    var paying: Task<Bool, Never>? // internal only for AppleHealthSync+Owed.swift
     /// Where the two Health Records events go (US-72 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
@@ -81,10 +82,13 @@ final class AppleHealthSync {
         self.live = live
         self.reread = reread
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
-        owedFooter = memory.owed.showsFooter
+        refreshOwedFooter()
         // After an erase disconnected Health, the cards read nothing until Connect (US-72 AC10).
         live?.connection = { [weak self] in self?.connection }
     }
+
+    /// The one writer of `owedFooter` (US-72 AC16): its rule, read from what is owed.
+    func refreshOwedFooter() { owedFooter = memory.owed.showsFooter }
 
     /// The generation a read may start under; nil while an erase has Apple Health disconnected.
     var connection: Int? { memory.connected || memory.eraseSeen == nil ? generation : nil }
@@ -270,10 +274,10 @@ final class AppleHealthSync {
     /// Disconnected by an erase: nothing is observed or read, and every anchor resets, so
     /// the next Connect reads everything from the start. Every value written is owed a delete.
     /// What Health showed is kept (`labResultsAsked`), so that Connect asks nothing again.
-    func disconnect() {
+    func disconnect() { // internal only for AppleHealthSync+Owed.swift
         generation += 1
         memory.oweWritten()
-        owedFooter = memory.owed.showsFooter
+        refreshOwedFooter()
         guard memory.connected else { return }
         memory.connected = false
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
