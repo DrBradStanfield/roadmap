@@ -92,7 +92,15 @@ final class CloudSync: CloudPort {
         // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
         try refuseAnotherCloud(provider)
         let begun = generation
-        let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        let signedIn: OAuthClient.SignedIn
+        do {
+            signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        } catch {
+            // A sign-in that failed after a Disconnect is voided too: its error would show for
+            // a sign-in the person walked away from. Otherwise the error stands unchanged.
+            if generation != begun { throw OAuthClient.Failure.cancelled }
+            throw error
+        }
         // A Disconnect while the sign-in ran voids it: nothing of it is kept or merged, and its
         // tokens die here, in memory (US-25 AC11l, Codex on PR 1329). Cancelled shows nothing.
         guard generation == begun else { throw OAuthClient.Failure.cancelled }

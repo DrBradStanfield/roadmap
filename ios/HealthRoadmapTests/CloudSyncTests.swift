@@ -708,11 +708,50 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:A")
         let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
         for await _ in asked { break }
+        await sync.foreground() // a foreground while the sign-in runs must not void it
         gate.open()
         try await connecting.value
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the sign-in is kept")
         XCTAssertTrue(sync.recordOpen)
+    }
+
+    /// The token exchange fails after the Disconnect: the walked-away sign-in still shows
+    /// nothing, rather than the provider's error in the welcome sheet's alert.
+    func testASignInThatFailsAfterADisconnectIsDroppedSilently_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:B", tokenFails: true)
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        await sync.disconnect()
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a failed sign-in cannot connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .cancelled, "silent, not the provider's error")
+        }
+        let text = { (name: String) in try? String(contentsOf: self.folder.appending(path: name), encoding: .utf8) }
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNil(text("sync-account"))
+        XCTAssertNil(text("sync-account-email"))
+        XCTAssertNil(tokens.load(.dropbox))
+        XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
+    }
+
+    /// The twin, with no Disconnect: the provider's error shows exactly as before.
+    func testASignInThatFailsWithNoDisconnectShowsItsError_US25_AC11l() async throws {
+        let (sync, gate, asked) = try await dropboxFailedWithHeldToken(account: "dbid:A", tokenFails: true)
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
+        for await _ in asked { break }
+        gate.open()
+        do {
+            try await connecting.value
+            XCTFail("a failed sign-in cannot connect")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, .unreachable("Dropbox sign-in failed (500). Try again."))
+            XCTAssertEqual(error.localizedDescription, "Dropbox sign-in failed (500). Try again.", "the alert's words")
+        }
+        XCTAssertEqual(sync.provider, .dropbox, "still connected; the failed sign-in changed nothing")
     }
 
     /// Calls to Dropbox's files, counted by `dropboxFailedWithHeldToken`'s handler.
@@ -726,8 +765,9 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
     }
 
     /// Dropbox account A on file, holding a record, whose launch open failed; then Dropbox is
-    /// back. Sign-ins come back as `account`, and their token answer waits on the gate.
-    private func dropboxFailedWithHeldToken(account: String) async throws -> (CloudSync, StubHTTP.Gate, AsyncStream<Void>) {
+    /// back. Sign-ins come back as `account`, and their token answer waits on the gate;
+    /// with `tokenFails` that answer is a 500.
+    private func dropboxFailedWithHeldToken(account: String, tokenFails: Bool = false) async throws -> (CloudSync, StubHTTP.Gate, AsyncStream<Void>) {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         try Data("dbid:A".utf8).write(to: folder.appending(path: "sync-account"))
         dropbox.online = false
@@ -744,6 +784,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
             var answer = fake.answer(request)
             if request.url.path == "/oauth2/token" {
                 ask.yield()
+                if tokenFails { answer = .init(status: 500) }
                 answer.gate = gate
             }
             return answer
