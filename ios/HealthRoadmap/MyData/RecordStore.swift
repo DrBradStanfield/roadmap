@@ -81,8 +81,7 @@ final class RecordStore {
             Screen(erase: erase, units: units, choices: choices, lpaUnit: lpaUnit)
         }
     }
-    /// Read by save all's stop rule (US-52 AC8b), which checks what each save is checked against.
-    private(set) var pinned: Screen?
+    private(set) var pinned: Screen?  // read by save all's stop rule (US-52 AC8b)
     private var pins = 0
     /// The last change asked for: each waits for the one before (`chain`). Released when
     /// it finishes, so its result is not kept; nothing is left to wait for then.
