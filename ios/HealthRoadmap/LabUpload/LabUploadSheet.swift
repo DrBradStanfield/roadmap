@@ -11,7 +11,12 @@ struct LabUploadSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     /// The sheet's one named state, moved only by `send(_:)` (LabUploadFlow).
-    @State private var step = LabUploadFlow.Step.choose
+    @State private var step = Self.firstStep
+    #if DEBUG
+    private static var firstStep: LabUploadFlow.Step { LabSaveAllDemo.step ?? .choose }
+    #else
+    private static let firstStep = LabUploadFlow.Step.choose
+    #endif
     @State private var importing = false
     @State private var scanning = false
     @State private var picking = false
@@ -89,7 +94,8 @@ struct LabUploadSheet: View {
             LabReviewView(engine: engine, store: store, result: result, position: (index + 1, results.count), saving: $reviewSaving,
                           tryAgain: result.retry == nil ? nil : { retry(results, at: index) },
                           held: Binding(get: { held[result.id] }, set: { held[result.id] = $0 }),
-                          saveAll: from == nil && waiting >= 2 ? ("Save all (\(waiting) reports)", { saveAll(results, from: index) }) : nil) {
+                          saveAll: from == nil && waiting >= 2 ? ("Save all (\(waiting) reports)", { saveAll(results, from: index) }) : nil,
+                          leaveTitle: from == nil ? nil : "Back to summary") {
                 send(.next(saved: $0))
             }
             .id(result.id)

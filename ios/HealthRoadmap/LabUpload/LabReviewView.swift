@@ -21,6 +21,9 @@ struct LabReviewView: View {
     @Binding var held: LabChoices?
     /// Save all, while two or more reports wait (US-52 AC8b); nil: not offered.
     var saveAll: (title: String, action: () -> Void)? = nil
+    /// The leave button's words when it does not go on to the next report (a review opened
+    /// from the save-all summary goes back to it, AC8b); nil: Skip, Next report or Done.
+    var leaveTitle: String? = nil
     /// Skip, Next report or Done; true when this report's own Save ran.
     let onDone: (Bool) -> Void
 
@@ -53,19 +56,27 @@ struct LabReviewView: View {
                 if outcome == nil, let review, review.isLabReport, result.failure == nil {
                     let count = choices.wrappedValue.ticked.count
                     Button("Save \(count) value\(count == 1 ? "" : "s")") { Task { await save() } }
+                        .fontWeight(.semibold)
                         .disabled(saving || choices.wrappedValue.valuesWait(review) != nil)
                 }
                 if outcome == nil, review?.document != nil, result.failure == nil {
                     Button(choices.wrappedValue.keepDocument || !archiveOnly ? "Save the document" : "Save the original") { Task { await save() } }
+                        .fontWeight(.semibold)
                         .disabled(saving || !(choices.wrappedValue.keepDocument || archiveOnly))
-                }
-                if outcome == nil, let saveAll {
-                    Button(saveAll.title, action: saveAll.action).disabled(saving)
                 }
                 // Held while a save runs: leaving would drop its outcome, and a second save
                 // of the same file could start before this one has committed.
-                Button(outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done")) { onDone(outcome != nil) }
+                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(outcome != nil) }
                     .disabled(saving)
+            }
+            // Its own group under this report's Save: it acts on every waiting report, not this one.
+            if outcome == nil, let saveAll {
+                let after = position.1 - position.0
+                Section {
+                    Button(saveAll.title, action: saveAll.action).fontWeight(.semibold).disabled(saving)
+                } footer: {
+                    Text("Saves this report and the \(after == 1 ? "one" : "\(after)") after it, as they stand. A value with a question stays out unless you tick it.")
+                }
             }
         }
         // Values and documents are checked against the record this review opened on: an

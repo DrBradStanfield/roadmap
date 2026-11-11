@@ -8,7 +8,11 @@ struct SaveAllProgressView: View {
         VStack(spacing: 16) {
             ProgressView(value: Double(progress.done), total: Double(max(progress.total, 1)))
             Text("Saving \(progress.done + progress.inFlight.count) of \(progress.total)")
+            // Why Close is off.
+            Text("Keep this open until it finishes.")
+                .font(.footnote)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
         .padding()
     }
@@ -28,9 +32,17 @@ struct SaveAllSummaryView: View {
                 Section {
                     ForEach(summary.notSaved, id: \.index) { row in
                         Button { open(row.index) } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(results[row.index].name).foregroundStyle(Color.primary)
-                                Text(row.reason).font(.footnote).foregroundStyle(Color.secondary)
+                            // The chevron says the row opens that report's review.
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(results[row.index].name).foregroundStyle(Color.primary)
+                                    Text(row.reason).font(.footnote).foregroundStyle(Color.secondary)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Color(.tertiaryLabel))
+                                    .accessibilityHidden(true)
                             }
                         }
                     }
