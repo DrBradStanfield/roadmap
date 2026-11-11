@@ -156,11 +156,21 @@ describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', 
     // review R4: a bare name= destination
     'xcodebuild build -scheme App -destination name=iPhone',
     "xcodebuild build -scheme App -destination 'name=iPhone 18 Pro'",
+    // a destination the guard cannot expand counts as a simulator
+    'xcodebuild test -scheme App -parallel-testing-enabled NO -destination id=$UDID',
+    'xcodebuild build -scheme App -destination "$DEST"',
+    // more device commands (shutdown stays allowed: the demo cleanup)
+    'xcrun simctl terminate AAAA com.x',
+    'xcrun simctl status_bar AAAA override --time 9:41',
+    'xcrun simctl keychain AAAA reset',
+    'xcrun simctl addmedia AAAA pic.png',
   ])('denies %s, naming the wrapper', (cmd) => {
     const reason = decide(cmd, () => []);
     expect(reason).toContain('US-71 AC7');
     expect(reason).toContain('ios/scripts/sim-run.sh -- xcodebuild test');
+    expect(reason).toContain('use the demo device');
     expect(reason).not.toContain('ALLOW_EXTRA_SIMULATOR');
+    expect(reason).not.toContain('hold');
   });
 
   it.each([

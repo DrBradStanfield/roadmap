@@ -5,7 +5,7 @@
 //   2. Denies `simctl boot|create|clone` while MAX_BOOTED_SIMULATORS are already booted, unless the
 //      command sets ALLOW_EXTRA_SIMULATOR=other-device. Fails open when the booted check errors or times out.
 //   3. Denies any other simulator use outside ios/scripts/sim-run.sh (US-71 AC7): a simulator
-//      -destination (iOS Simulator, a simulator UUID, a bare name=), an xcodebuild test action with no
+//      -destination (iOS Simulator, a simulator UUID, a bare name=, a $VAR), an xcodebuild test action with no
 //      destination, and simctl's device commands (DOOR_SIMCTL). ALLOW_EXTRA_SIMULATOR=other-device lifts
 //      it, for a demo on another simulator.
 // A seat belt, not a wall: a best-effort warning layer, not a bash parser (PRs 805/930). One scan drops
@@ -183,15 +183,18 @@ function decide(cmd, lookup = bootedSimulators, depth = 0) {
 // wrapper as its command word, so invocation() never sees the xcodebuild or simctl inside.
 const DOOR_HINT = 'Run it through the shared simulator instead: `ios/scripts/sim-run.sh -- xcodebuild test ...` '
   + '(it adds the device and the test flags), or `ios/scripts/sim-run.sh -- xcrun simctl launch {udid} <bundle id>`. '
-  + 'For the iOS Simulator MCP tool, run `ios/scripts/sim-run.sh hold` first.';
+  + 'For the iOS Simulator MCP tool, use the demo device (ios/CLAUDE.md § xcodebuild and simulators).';
 const DOOR_ACTIONS = ['test', 'test-without-building', 'build-for-testing'];
-const DOOR_SIMCTL = ['boot', 'bootstatus', 'install', 'uninstall', 'launch', 'io', 'erase', 'delete', 'spawn', 'openurl', 'privacy'];
+// shutdown stays allowed: it is the demo device's cleanup command.
+const DOOR_SIMCTL = ['boot', 'bootstatus', 'install', 'uninstall', 'launch', 'terminate', 'io', 'erase', 'delete',
+  'spawn', 'openurl', 'privacy', 'status_bar', 'keychain', 'addmedia'];
 
 // A destination naming a simulator: "iOS Simulator" (not generic/, which boots nothing), a simulator's
 // UUID id (a phone's id has another shape), or a bare name=. Read from the raw word, quotes removed.
 const SIM_ID = /(^|,)id=[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/;
 function simDestination(a) {
-  return !a.startsWith('generic/') && (/Simulator/.test(a) || SIM_ID.test(a) || /^name=/.test(a));
+  // A destination the guard cannot expand ($VAR, `cmd`) counts as a simulator.
+  return !a.startsWith('generic/') && (/Simulator/.test(a) || SIM_ID.test(a) || /^name=/.test(a) || /[$`]/.test(a));
 }
 
 // simctl's device commands; xcodebuild with a simulator destination, or a test action with no destination

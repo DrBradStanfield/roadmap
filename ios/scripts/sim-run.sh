@@ -106,12 +106,13 @@ ensure_device() {
 
 device_state() { xcrun simctl list devices | sed -n -E "s/.*\($1\) \(([A-Za-z]+)\).*/\1/p" | head -1; }
 
-# The index in "$@" of the real tool, past words that pass a command on: env (its options and
-# VAR=value), time, nohup, exec, command, nice and xcrun with their options. exec and command are
-# shell builtins, so the command line drops them.
+# The index in "$@" of the real tool, past words that pass a command on: VAR=value, env (its options
+# and VAR=value), time, nohup, exec, command, nice and xcrun with their options. exec and command are
+# shell builtins, so the command line drops them; a leading VAR=value goes through env.
 tool_index() {
   local i=1 n=$#
   while [ "$i" -le "$n" ]; do
+    [[ "${!i}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && { i=$((i + 1)); continue; }
     case "$(basename "${!i}")" in
       env) i=$((i + 1))
         while [ "$i" -le "$n" ]; do case "${!i}" in -u|-P|-S) i=$((i + 2));; -*|*=*) i=$((i + 1));; *) break;; esac; done;;
@@ -126,9 +127,9 @@ tool_index() {
   echo "$i"
 }
 
-# A direct xcodebuild runs on the shared device by id. A destination must be id=<the shared UDID>,
-# generic/..., or a physical device (platform=iOS,id=...); a name= form or another simulator is
-# refused. Tests get:
+# A direct xcodebuild runs on the shared device by id. A destination must be id=<the shared UDID>
+# (or platform=iOS Simulator,id=<it>), generic/..., or a physical device (platform=iOS,id=...); a
+# name= form or another simulator is refused. Tests get:
 #   -parallel-testing-enabled NO: parallel testing clones the simulator per test runner; the clones
 #     fill the disk and the process table (docs/gotchas.md 2026-10-24, 2026-10-26).
 #   -maximum-concurrent-test-simulator-destinations 1: never test on two simulators at once. Xcode
@@ -139,7 +140,7 @@ prepare_xcodebuild() {
     case "$prev" in
       -destination) dests=$((dests + 1))
         case "$a" in
-          "id=$UDID") sims=$((sims + 1));;
+          "id=$UDID"|"platform=iOS Simulator,id=$UDID") sims=$((sims + 1));;
           generic/*) ;;
           platform=iOS,id=*) case "$a" in *,name=*) die "refused -destination '$a': name a device by id" 64;; esac;;
           *) die "runs on the shared simulator only: drop -destination '$a' (sim-run adds id=$UDID)" 64;;
@@ -170,7 +171,14 @@ inner() {
   set -- "${args[@]}"
   i=$(tool_index "$@")
   CMD=() NEEDS_BOOT=1
-  for a in "${@:1:i-1}"; do case "$(basename "$a")" in exec|command) ;; *) CMD+=("$a");; esac; done
+  local envd=0
+  for a in "${@:1:i-1}"; do
+    case "$(basename "$a")" in
+      exec|command) ;;
+      env) envd=1; CMD+=("$a");;
+      *) [[ "$a" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && [ "$envd" = 0 ] && { CMD+=(env); envd=1; }; CMD+=("$a");;
+    esac
+  done
   case "$(basename "${!i:-}")" in
     xcodebuild) prepare_xcodebuild "${@:i}"; CMD+=("${XCB[@]}");;
     bash|sh|zsh|dash)

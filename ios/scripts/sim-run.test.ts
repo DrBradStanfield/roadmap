@@ -225,7 +225,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 sim-run.sh (macOS: loc
       ['platform=iOS,id=00008110-001A2B3C4D5E801E', true],
       ['name=iPhone 18 Pro', false],
       ['platform=iOS Simulator,name=iPhone 17 Pro', false],
-      ['platform=iOS Simulator,id={udid}', false],
+      ['platform=iOS Simulator,id={udid}', true],
       ['platform=iOS,name=Brad iPhone', false],
       ['platform=iOS,id=00008110-001A2B3C4D5E801E,name=X', false],
       [`id=${OTHER}`, false],
@@ -261,6 +261,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 sim-run.sh (macOS: loc
     // review A5: xcodebuild behind words that pass a command on still gets the device and the flags.
     it.each([
       [['env', 'FOO=1', 'xcodebuild', 'test']],
+      [['FOO=1', 'BAR=2', 'xcodebuild', 'test']],
       [['/usr/bin/env', '-u', 'BAR', 'xcodebuild', 'test']],
       [['time', '-p', 'xcodebuild', 'test']],
       [['nohup', 'xcodebuild', 'test']],
