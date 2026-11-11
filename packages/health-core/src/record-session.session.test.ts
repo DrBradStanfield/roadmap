@@ -1321,3 +1321,87 @@ describe('RecordSession: a save asked for while a landed save still adopts (US-1
     expect(answered).toBe(true);
   });
 });
+
+describe("RecordSession: an edit made while another device's erase is taken in (US-11 AC7)", () => {
+  /** A saved row 'a', then another device erases it: the next save or re-read takes the erase in. */
+  async function erasedElsewhere(tier: 'device' | 'cloud' = 'cloud') {
+    const store = new TestStore();
+    const fake = fakeHost(store, tier);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const before = stored(store.cloud).meta.eraseEpoch ?? 0;
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud), tier).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    return { store, fake, session, before, erased: other.eraseIdentity };
+  }
+
+  /** The save that takes the erase in makes an edit and a flush from its off-file clear. */
+  async function editInsideTheClear() {
+    const run = await erasedElsewhere();
+    let inner: Promise<void> | null = null;
+    run.fake.host.clearOffFileData = () => {
+      run.fake.host.clearOffFileData = () => {};
+      expect(add(run.session, 'c', 82, '2026-10-03')).toBe(true);
+      inner = run.session.flush();
+    };
+    add(run.session, 'b', 81, '2026-10-02');
+    await run.session.flush();
+    expect(inner).not.toBeNull();
+    await inner;
+    return run;
+  }
+
+  it('keeps the edit in the working copy, and the next save writes it', async () => {
+    const { store, session } = await editInsideTheClear();
+    expect(ids(session.file)).toContain('c');
+    await session.flush();
+    expect(ids(stored(store.cloud))).toContain('c');
+  });
+
+  it('lands the edit on the erased copy: no pre-erase row comes back, and the epoch only moves on', async () => {
+    const { store, session, before, erased } = await editInsideTheClear();
+    await session.flush();
+    const record = stored(store.cloud);
+    expect(session.eraseIdentity).toBe(erased);
+    expect(record.meta.eraseEpoch ?? 0).toBeGreaterThan(before);
+    expect(JSON.stringify([record.meta.eraseEpoch ?? 0, record.meta.erasedAt ?? null])).toBe(erased);
+    expect(ids(record)).not.toContain('a');
+    expect(ids(session.file)).not.toContain('a');
+    expect(ids(record)).toContain('c');
+  });
+
+  describe('a clear that throws keeps the erased copy, and surfaces as before', () => {
+    const boom = () => { throw new Error('clear refused'); };
+
+    it('through a save: the flush fails and the failure is reported', async () => {
+      const { fake, session, erased } = await erasedElsewhere();
+      fake.host.clearOffFileData = boom;
+      add(session, 'b', 81, '2026-10-02');
+      await expect(session.flush()).rejects.toThrow(/Cloud sync failed/);
+      expect(fake.reports).toEqual([{ cause: undefined, repeat: false }]);
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).not.toContain('a');
+    });
+
+    it('through a re-read: the re-read rejects with the error', async () => {
+      const { fake, session, erased } = await erasedElsewhere();
+      fake.host.clearOffFileData = boom;
+      await expect(session.refreshFromRemote()).rejects.toThrow('clear refused');
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).not.toContain('a');
+    });
+
+    it('through a page hide: nothing throws to the page, and no save is left to run', async () => {
+      const { fake, session, erased } = await erasedElsewhere('device');
+      fake.host.clearOffFileData = boom;
+      add(session, 'b', 81, '2026-10-02');
+      expect(() => session.flushSync()).not.toThrow();
+      expect(session.saveStatus).toBe('saved');
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).not.toContain('a');
+    });
+  });
+});

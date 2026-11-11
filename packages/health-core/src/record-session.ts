@@ -581,8 +581,10 @@ export class RecordSession {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
     const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
-    if (erasedElsewhere) this.clearOffFile(merged);
+    // Taken in before the clear: an edit the host makes from it lands on the
+    // merge, and a clear that throws never leaves the pre-erase copy (US-11 AC7).
     this.current = merged;
+    if (erasedElsewhere) this.clearOffFile(merged);
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);
     return visibleContentOf(merged) === seen ? null : { erase: erasedElsewhere ? eraseIdentityOf(merged) : null };
