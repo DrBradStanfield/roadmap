@@ -346,9 +346,9 @@ export class RecordSession {
     let erased = false;
     try {
       this.cancelDebounce();
-      this.erasing = true;
       this.saveWarning = undefined;
       this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
+      this.erasing = true; // after the build: one that throws leaves edits accepted
       this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
         if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);

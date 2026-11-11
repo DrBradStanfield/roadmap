@@ -13,6 +13,13 @@ import type { RecordHost } from './record-host';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 import { stampProfile } from './state-edits';
+import { buildErasedFile } from './erase';
+
+// The real build, which one test makes throw once (US-16 AC2a).
+vi.mock('./erase', async (original) => {
+  const real = await original<typeof import('./erase')>();
+  return { ...real, buildErasedFile: vi.fn(real.buildErasedFile) };
+});
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
 class TestStore extends MemoryAdapter {
@@ -1194,6 +1201,17 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     await session.flush();
     store.failWrites = true;
     expect((await session.erase()).success).toBe(false);
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
+  it('after an erase whose build throws, refuses() is false and an edit is accepted (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    vi.mocked(buildErasedFile).mockImplementationOnce(() => { throw new Error('build failed'); });
+    expect(await session.erase()).toEqual({ success: false, error: 'build failed' });
     expect(session.refuses()).toBe(false);
     expect(add(session, 'after')).toBe(true);
   });
