@@ -60,7 +60,8 @@ final class LabSaveAllTests: XCTestCase {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
-        XCTAssertEqual(await store.saveDocument(extractionJSON: letter, choice: choice, original: nil), .saved(count: 1, stored: nil, unstored: 0, stale: false))
+        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
+        XCTAssertEqual(filed, .saved(count: 1, stored: nil, unstored: 0, stale: false))
 
         let results = [
             LabResult(name: "Labs.pdf", truncated: false, extractionJSON: dated, failure: nil),

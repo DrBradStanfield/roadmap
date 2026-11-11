@@ -22,7 +22,7 @@ struct LabUploadSheet: View {
     @State private var work: Task<Void, Never>?
     /// Each report's choices on its review, by report (US-52 AC8b): kept when the review goes,
     /// so save all saves what the person chose; a Try again's new answer starts fresh.
-    @State private var held: [LabResult.ID: LabChoices] = [:]
+    @State private var held: [UUID: LabChoices] = [:]
 
     /// Close and swipe-down wait for a save, or for save all (AC8b).
     private var closeHeld: Bool {
