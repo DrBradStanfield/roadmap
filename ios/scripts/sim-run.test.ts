@@ -78,6 +78,8 @@ beforeEach(() => {
 });
 // Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
 // Whatever a test leaves running (a failed assertion included) is released and stopped here.
+// Keep it that way: a waiter queued behind a holder that ignores the release file (a plain sleep)
+// would block cleanup, because bash defers SIGTERM while the wrapper waits in lockf.
 const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');
@@ -589,10 +591,17 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('lists the demo device, its age and the command to shut it down', () => {
       run(['--', 'true']);
       writeFileSync(join(fake, 'xcrun'), XCRUN.replace('echo "== Devices =="', `echo "== Devices =="; echo "    HR Demo iPhone (${OTHER}) (Booted) "`), { mode: 0o755 });
-      writeFileSync(join(home, 'demo-booted'), String(Math.floor(Date.now() / 1000) - 125));
+      const before = Math.floor(Date.now() / 1000);
+      writeFileSync(join(home, 'demo-booted'), String(before - 125));
       const r = run(['status']);
-      // The script reads its own clock, so a slow start may cross a second boundary.
-      expect(r.stdout).toMatch(new RegExp(`Demo device: HR Demo iPhone \\(${OTHER}\\) Booted for 2m[56]s`));
+      const after = Math.floor(Date.now() / 1000);
+      // The script reads its own clock after several fake xcrun calls, so under load the age can run
+      // past 125 s by up to the time status took.
+      const m = r.stdout.match(new RegExp(`Demo device: HR Demo iPhone \\(${OTHER}\\) Booted for (\\d+)m(\\d+)s`));
+      expect(m).not.toBeNull();
+      const age = Number(m![1]) * 60 + Number(m![2]);
+      expect(age).toBeGreaterThanOrEqual(125);
+      expect(age).toBeLessThanOrEqual(125 + (after - before) + 1);
       expect(r.stdout).toContain(`xcrun simctl shutdown ${OTHER}`);
     });
   });
