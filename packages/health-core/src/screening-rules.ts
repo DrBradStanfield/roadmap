@@ -1,7 +1,7 @@
 /**
  * The one screening-rules table (audit A2-1). The rules lived in five copies; each
  * PR moves one copy onto this table, with screening-rules.golden.test.ts proving
- * nothing changed. F and S read it (steps 3 and 4); Q, R and M still keep their own copies.
+ * nothing changed. F, S and R read it (steps 3 to 5); Q and M still keep their own copies.
  *   S  plan cards     suggestions.ts (cancer screening and DEXA)
  *   F  form data      input-form.ts screeningForm, screeningWrites
  *   Q  web JSX        ScreeningQuestions.tsx, BoneDensity.tsx
