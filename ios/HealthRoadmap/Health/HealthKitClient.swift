@@ -90,6 +90,10 @@ final class HealthKitClient: HealthStoreClient {
         let mine = HKQuery.predicateForObjects(from: HKSource.default())
         var asked: Set<HealthKind> = []
         for kind in HealthKind.allCases where kind != .height && canWrite(kind) {
+            // Blood pressure: by source, deleting our systolic and diastolic halves also removes
+            // their HKCorrelation (verified in the iOS 27.2 simulator, 2026-11-12: correlation,
+            // systolic and diastolic counts all 0 after the delete), so the correlation type need
+            // not be named here.
             for type in Self.quantityTypes(kind) {
                 _ = try await store.deleteObjects(of: type, predicate: mine)
             }
@@ -113,6 +117,8 @@ final class HealthKitClient: HealthStoreClient {
                 var found: [HKObject] = []
                 for sample in try await HKSampleQueryDescriptor(predicates: [.sample(type: type, predicate: ours)], sortDescriptors: []).result(for: store) {
                     found.append(sample)
+                    // By sync id we find the HKCorrelation by its metadata, so we delete it and
+                    // add its halves by hand.
                     if let pair = sample as? HKCorrelation { found += pair.objects }
                 }
                 if !found.isEmpty { try await store.delete(found) }
