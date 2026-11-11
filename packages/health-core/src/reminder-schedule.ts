@@ -64,6 +64,8 @@ export const ANNUAL_CHECKIN_LABEL = 'Annual health check-in';
  * screening table's (screening-rules.ts reminder.label and a method's reminderLabel).
  */
 export const SCHEDULE_LABELS: Record<ReminderCategory, readonly string[]> = {
+  // The cast hides a missing category from tsc; reminder-schedule.test.ts (every category has labels)
+  // and screening-rules.test.ts (the SCHEDULE_LABELS literal pin) catch one at test time.
   ...(screeningScheduleLabels() as Record<Extract<ReminderCategory, `screening_${string}`>, string[]>),
   blood_test_lipids: ['Lipid panel blood test'],
   blood_test_hba1c: ['HbA1c blood test'],

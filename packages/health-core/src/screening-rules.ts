@@ -287,14 +287,14 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
   },
 ];
 
-/** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
- *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
- *  gates; the golden pin guards the prose. */
 /** Breast: mammography moves from optional to recommended at 45 (the start card's priority and
  *  text, and the by-age note), and the note's annual or biennial interval starts at 55. */
 export const BREAST_RECOMMENDED_FROM = 45;
 export const BREAST_ANNUAL_OR_BIENNIAL_FROM = 55;
 
+/** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
+ *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
+ *  gates; the golden pin guards the prose. */
 export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
   & { readonly [K in NoteRef]: (age: number) => string }
   & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } } = {
