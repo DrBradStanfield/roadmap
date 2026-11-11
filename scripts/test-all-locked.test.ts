@@ -167,10 +167,14 @@ const note = (m) => fs.appendFileSync(${JSON.stringify(log)}, m + '\\n');
 note('start ' + process.argv.slice(2).join(' ') + ' lock=' + fs.existsSync(lock));
 ${body}`, { mode: 0o755 });
   };
-  const run = (args: string[] = [], env: Record<string, string> = {}) =>
-    spawn(process.execPath, [script, ...args], { cwd: proj, env: { ...process.env, CI: '', ...env }, stdio: 'ignore' });
+  const run = (args: string[] = [], env: Record<string, string> = {}, nodeArgs: string[] = []) =>
+    spawn(process.execPath, [...nodeArgs, script, ...args], { cwd: proj, env: { ...process.env, CI: '', ...env }, stdio: 'ignore' });
   const exited = (c: ReturnType<typeof spawn>) => new Promise<number | null>((r) => c.once('exit', (code) => r(code)));
-  const waitFor = async (f: () => boolean) => { for (let i = 0; i < 200 && !f(); i++) await new Promise((r) => setTimeout(r, 25)); };
+  /** Polls up to 5 s, then fails the test naming what never came. */
+  const waitFor = async (what: string, f: () => boolean) => {
+    for (let i = 0; i < 200; i++) { if (f()) return; await new Promise((r) => setTimeout(r, 25)); }
+    throw new Error(`timed out waiting for ${what}; the log holds: ${JSON.stringify(logText())}`);
+  };
   const logText = () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '');
 
   it('passes the exit code through, locally and in CI, and caps workers locally only', async () => {
@@ -186,17 +190,33 @@ ${body}`, { mode: 0o755 });
   it('keeps the lock until the child has exited', async () => {
     fakeVitest("setTimeout(() => { note('end lock=' + fs.existsSync(lock)); process.exit(0); }, 400);");
     const c = run();
-    await waitFor(() => logText().includes('start'));
+    await waitFor("the fake vitest's 'start' line", () => logText().includes('start'));
     expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(true);
     expect(await exited(c)).toBe(0);
     expect(logText()).toContain('end lock=true');
     expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(false);
   });
 
+  it('a SIGTERM landing the moment vitest is spawned still reaches the handler (exits 143, not killed)', async () => {
+    // A preload makes the wrapper signal itself as spawn() returns: the instant a busy wrapper
+    // may be descheduled while vitest boots and the caller signals. No handler yet = killed.
+    const hook = path.join(base, 'term-after-spawn.mjs');
+    fs.writeFileSync(hook, `import cp from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
+const real = cp.spawn;
+cp.spawn = (...a) => { const c = real(...a); process.kill(process.pid, 'SIGTERM'); return c; };
+syncBuiltinESMExports();`);
+    // Exits on SIGTERM (default action or handler); a safety exit if the wrapper died without forwarding.
+    fakeVitest("process.on('SIGTERM', () => process.exit(0)); setTimeout(() => process.exit(1), 5000);");
+    expect(await exited(run([], {}, ['--import', hook]))).toBe(143);
+    expect(fs.existsSync(path.join(proj, '.git', 'test-all.lock'))).toBe(false);
+  });
+
   it('SIGTERM stops the child, exits 143 and releases the lock', async () => {
-    fakeVitest("process.on('SIGTERM', () => setTimeout(() => { note('child-term'); process.exit(0); }, 200)); setInterval(() => {}, 1000);");
+    // 'ready' comes after the child's handler, and the wrapper's handlers precede the spawn.
+    fakeVitest("process.on('SIGTERM', () => setTimeout(() => { note('child-term'); process.exit(0); }, 200)); note('ready'); setInterval(() => {}, 1000);");
     const c = run();
-    await waitFor(() => logText().includes('start'));
+    await waitFor("'ready' (the fake vitest's SIGTERM handler installed)", () => logText().includes('ready'));
     c.kill('SIGTERM');
     expect(await exited(c)).toBe(143);
     expect(logText()).toContain('child-term');
@@ -206,10 +226,10 @@ ${body}`, { mode: 0o755 });
   it('a later signal (over 1 s on) force-kills a child that ignores SIGTERM', async () => {
     fakeVitest("process.on('SIGTERM', () => note('sigterm ' + process.pid)); note('pid ' + process.pid); setInterval(() => {}, 1000);");
     const c = run();
-    await waitFor(() => logText().includes('pid '));
+    await waitFor("'pid <n>' (the fake vitest's SIGTERM handler installed)", () => logText().includes('pid '));
     const pid = Number(/pid (\d+)/.exec(logText())![1]);
     c.kill('SIGTERM');
-    await waitFor(() => logText().includes('sigterm'));
+    await waitFor("'sigterm <pid>' (the wrapper forwarded the first SIGTERM)", () => logText().includes('sigterm'));
     expect(logText()).toContain('sigterm ' + pid);
     await new Promise((r) => setTimeout(r, 1200));
     c.kill('SIGTERM');
@@ -219,9 +239,9 @@ ${body}`, { mode: 0o755 });
   });
 
   it('two SIGINTs 10 ms apart (npm) let vitest stop gracefully', async () => {
-    fakeVitest("process.on('SIGINT', () => setTimeout(() => { note('graceful'); process.exit(0); }, 300)); setInterval(() => {}, 1000);");
+    fakeVitest("process.on('SIGINT', () => setTimeout(() => { note('graceful'); process.exit(0); }, 300)); note('ready'); setInterval(() => {}, 1000);");
     const c = run();
-    await waitFor(() => logText().includes('start'));
+    await waitFor("'ready' (the fake vitest's SIGINT handler installed)", () => logText().includes('ready'));
     c.kill('SIGINT');
     await new Promise((r) => setTimeout(r, 10));
     c.kill('SIGINT');
@@ -241,7 +261,7 @@ ${body}`, { mode: 0o755 });
   it('two concurrent runs serialize', async () => {
     fakeVitest("note('begin'); setTimeout(() => { note('finish'); process.exit(0); }, 500);");
     const a = run();
-    await waitFor(() => logText().includes('begin'));
+    await waitFor("the first run's 'begin' line", () => logText().includes('begin'));
     const b = run();
     await Promise.all([exited(a), exited(b)]);
     const ev = logText().split('\n').filter((l) => l === 'begin' || l === 'finish');
