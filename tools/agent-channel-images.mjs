@@ -80,7 +80,8 @@ function webpSize(b) {
 
 /** [width, height] from the header of a file whose signature is `format`, or null when it cannot be read. */
 function sizeOf(format, b) {
-  if (format === 'png') return b.length >= 24 && b.toString('latin1', 12, 16) === 'IHDR' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null;
+  // PNG: the signature, then an IHDR chunk of exactly 13 bytes, all present (8 + 8 + 13).
+  if (format === 'png') return b.length >= 29 && b.readUInt32BE(8) === 13 && b.toString('latin1', 12, 16) === 'IHDR' ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null;
   if (format === 'gif') return b.length >= 10 ? [b.readUInt16LE(6), b.readUInt16LE(8)] : null;
   return format === 'jpeg' ? jpegSize(b) : webpSize(b);
 }
@@ -99,6 +100,8 @@ export function bytesProblem(ext, bytes, att) {
   const [w, h] = size;
   if (![w, h].every((v) => v >= 1 && v <= MAX_SIDE)) return `the image is ${w}x${h}; each side must be 1 to ${MAX_SIDE}; not saved`;
   const [dw, dh] = [declaredSide(att.width), declaredSide(att.height)];
-  if ((dw !== null && dw !== w) || (dh !== null && dh !== h)) return `the declared width or height contradicts the file's header (${w}x${h}); not saved`;
+  const fits = (a, b) => (dw === null || dw === a) && (dh === null || dh === b);
+  // A declared pair may also be the header swapped: Discord reports an Exif-rotated photo as displayed.
+  if (!fits(w, h) && !(dw !== null && dh !== null && fits(h, w))) return `the declared width or height contradicts the file's header (${w}x${h}); not saved`;
   return null;
 }

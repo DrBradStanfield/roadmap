@@ -489,4 +489,14 @@ describe('US-63 AC9: the state file holds counts, never text', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(existsSync(join(home, '.health-roadmap'))).toBe(true);
   });
+  it('a damaged count (negative, fractional, text, past the safe range) stops every command with no request (review R5)', async () => {
+    mkdirSync(join(home, '.health-roadmap'), { recursive: true });
+    for (const key of ['reads', 'messages_read', 'posts', 'refused', 'history_reads', 'downloads']) {
+      for (const bad of [-1, 1.5, 'x', null, Number.MAX_SAFE_INTEGER + 2]) {
+        writeFileSync(join(home, '.health-roadmap', 'agent-channel-state.json'), JSON.stringify({ cursor: null, post_times: [], [key]: bad }));
+        for (const argv of [['read'], ['post', 'hi']]) expect((await go(argv)).stderr, `${key}=${bad}`).toContain('not a valid state file');
+      }
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

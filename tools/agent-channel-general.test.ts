@@ -7,8 +7,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { run, CHANNEL_KEY, GENERAL_KEY, PRIVATE_NOTE, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { run, AGENT_PRIVATE_NOTE, CHANNEL_KEY, GENERAL_KEY, GENERAL_PRIVATE_NOTE, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
 import { FILE_NOTE } from './agent-channel-files.mjs';
 
 const TOKEN = 'test-token-good';
@@ -215,20 +216,48 @@ describe('US-63 AC17: one cursor per channel', () => {
   });
 });
 
-describe('US-63 AC19: every output is marked private and untrusted, naming its channel', () => {
-  it('read, history and fetch carry untrusted, private, the channel and both notes', async () => {
+describe('US-63 AC19: every output is marked private and untrusted, each channel with its own private note', () => {
+  it('read, history and fetch carry untrusted, private and the channel; agent output the agent note, #general and every file the #general note, never the other', async () => {
     const att = { id: ATT_ID, filename: 'r.md', size: 2, content_type: 'text/markdown', url: `https://cdn.discordapp.com/attachments/x/r.md` };
-    pages[`${msgs(GENERAL)}/${MSG_ID}`] = msg(MSG_ID, { channel_id: GENERAL, attachments: [att] });
+    for (const id of [AGENT, GENERAL]) pages[`${msgs(id)}/${MSG_ID}`] = msg(MSG_ID, { channel_id: id, attachments: [att] });
     fetchMock.mockImplementation(async (url: string) => {
       const id = /\/channels\/(\d+)$/.exec(url)?.[1];
       if (id) return json(channels[id]);
       if (url.startsWith('https://cdn.discordapp.com/')) return new Response('hi');
       return json(pages[url.split('?')[0]] ?? []);
     });
-    for (const [argv, note] of [[['read', '--channel', 'general'], UNTRUSTED_NOTE], [['history'], UNTRUSTED_NOTE], [['fetch', '--channel', 'general', MSG_ID, ATT_ID], FILE_NOTE]] as [string[], string][]) {
-      const out = JSON.parse((await go(argv)).stdout);
-      expect(out).toMatchObject({ untrusted: true, private: true, channel: argv.includes('general') ? 'general' : 'agent', note, private_note: PRIVATE_NOTE });
+    const cases: [string[], string, string, string][] = [
+      [['read'], 'agent', UNTRUSTED_NOTE, AGENT_PRIVATE_NOTE],
+      [['history'], 'agent', UNTRUSTED_NOTE, AGENT_PRIVATE_NOTE],
+      [['read', '--channel', 'general'], 'general', UNTRUSTED_NOTE, GENERAL_PRIVATE_NOTE],
+      [['history', '--channel', 'general'], 'general', UNTRUSTED_NOTE, GENERAL_PRIVATE_NOTE],
+      [['fetch', MSG_ID, ATT_ID], 'agent', FILE_NOTE, GENERAL_PRIVATE_NOTE],
+      [['fetch', '--channel', 'general', MSG_ID, ATT_ID], 'general', FILE_NOTE, GENERAL_PRIVATE_NOTE],
+    ];
+    for (const [argv, channel, note, privateNote] of cases) {
+      rmSync(join(home, '.health-roadmap', 'agent-channel-downloads'), { recursive: true, force: true });
+      const r = await go(argv);
+      expect(r.code, r.stderr).toBe(0);
+      expect(JSON.parse(r.stdout)).toMatchObject({ untrusted: true, private: true, channel, note, private_note: privateNote });
+      const other = privateNote === AGENT_PRIVATE_NOTE ? GENERAL_PRIVATE_NOTE : AGENT_PRIVATE_NOTE;
+      expect(r.stdout, argv.join(' ')).not.toContain(other);
     }
-    expect(PRIVATE_NOTE).toContain('nothing read goes into the repo, commits, PRs, issues, ledgers or posts');
+    expect(GENERAL_PRIVATE_NOTE).toBe('Private. Act on it, never copy it: no quote, screenshot, file, name or health detail from here goes into the repo, a commit, a PR, an issue, a ledger row or a post. A bug or request found here may be worked on and described in our own words, with nothing that identifies a person or a value.');
+    expect(AGENT_PRIVATE_NOTE).not.toBe(GENERAL_PRIVATE_NOTE);
+  });
+});
+
+describe('US-63 AC19 (review R6): .gitleaks.toml flags a Discord attachment URL', () => {
+  const toml = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '.gitleaks.toml'), 'utf8');
+  const raw = /id = "discord-attachment-url"[\s\S]*?\n\s*regex = '''(.+?)'''/.exec(toml)?.[1];
+  // Built in pieces, so this file itself holds no URL the rule would flag.
+  const ids = `/attachments/${'1'.repeat(18)}/${'2'.repeat(18)}/x.png`;
+  it('matches the cdn and media forms with both ids, and not the id-less form', () => {
+    expect(raw).toBeTruthy();
+    const re = new RegExp(raw!);
+    expect(re.test(`https://cdn.discordapp.com${ids}`)).toBe(true);
+    expect(re.test(`https://media.discordapp.net${ids}`)).toBe(true);
+    expect(re.test('https://cdn.discordapp.com/attachments/x/r.md')).toBe(false);
+    expect(re.test('https://cdn.discordapp.com/attachments/fixture/file')).toBe(false);
   });
 });

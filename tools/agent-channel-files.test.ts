@@ -6,11 +6,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { run, CHANNEL_KEY, PRIVATE_NOTE, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
-import { FILE_NOTE, MAX_DOWNLOAD } from './agent-channel-files.mjs';
+import { run, CHANNEL_KEY, GENERAL_PRIVATE_NOTE, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
+import { FILE_NOTE, MAX_DOWNLOAD, resolved } from './agent-channel-files.mjs';
 
 const TOKEN = 'test-token-good';
 const CHANNEL = '123456789012345678';
@@ -117,7 +117,7 @@ describe('US-63 AC15: fetch downloads one text attachment, its URL from the API 
     const r = await go(['fetch', MSG_ID, ATT_ID]);
     expect(r.code).toBe(0);
     const out = JSON.parse(r.stdout);
-    expect(out).toEqual({ untrusted: true, private: true, channel: 'agent', note: FILE_NOTE, private_note: PRIVATE_NOTE, path: saved(), bytes: 11, sha256: createHash('sha256').update('hello world').digest('hex') });
+    expect(out).toEqual({ untrusted: true, private: true, channel: 'agent', note: FILE_NOTE, private_note: GENERAL_PRIVATE_NOTE, path: saved(), bytes: 11, sha256: createHash('sha256').update('hello world').digest('hex') });
     expect(readFileSync(saved(), 'utf8')).toBe('hello world');
     expect(statSync(saved()).mode & 0o777).toBe(0o600);
     expect(statSync(downloads()).mode & 0o777).toBe(0o700);
@@ -324,5 +324,19 @@ describe('US-63 AC16: the downloads folder is a real folder of ours, tightened t
     serve();
     expect((await go(['fetch', MSG_ID, ATT_ID])).stderr).toContain('Remove old files from it by hand');
     expect(urls()).toEqual([`${URL_ONLY}/${MSG_ID}`]);
+  });
+});
+
+describe('US-63 AC16 (review R3): a missing path resolves whole, a relative one too', () => {
+  it('keeps every character of a relative name whose parent is "."', () => {
+    const cwd = realpathSync(process.cwd());
+    expect(resolved('zz-agent-channel-missing')).toBe(join(cwd, 'zz-agent-channel-missing'));
+    expect(resolved('zz-agent-channel-missing/a/b')).toBe(join(cwd, 'zz-agent-channel-missing', 'a', 'b'));
+  });
+  it('resolves an absolute missing path through its existing, symlinked ancestor', () => {
+    const real = realpathSync(home);
+    const link = join(root, 'link');
+    symlinkSync(home, link);
+    expect(resolved(join(link, 'x', 'y'))).toBe(join(real, 'x', 'y'));
   });
 });

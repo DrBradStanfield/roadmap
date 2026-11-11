@@ -4,7 +4,7 @@
 // token (the bot token goes only to discord.com/api). Imported by tools/agent-channel.mjs; docs/agent-channel.md.
 import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, linkSync, lstatSync, mkdirSync, openSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { bytesProblem, capOf, declaredProblem, extensionProblem } from './agent-channel-images.mjs';
 
 /** A refusal: printed on stderr as is, exit 1. Its text never holds a value or a URL. */
@@ -78,9 +78,9 @@ async function fetchCapped(url, deps, cap) {
 }
 
 /** `p` with its deepest existing ancestor resolved through any symlinks. */
-function resolved(p) {
+export function resolved(p) {
   try { return realpathSync(p); } catch (e) { if (e?.code !== 'ENOENT' || dirname(p) === p) throw e; }
-  return join(resolved(dirname(p)), p.slice(dirname(p).length));
+  return join(resolved(dirname(p)), basename(p));
 }
 
 /** Refused when `dir` resolves inside any of `repos` (the main checkout, the tool's own top level): AC19. */

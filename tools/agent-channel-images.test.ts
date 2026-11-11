@@ -136,6 +136,9 @@ describe('US-63 AC18: the header decides the dimensions, at most 8192 a side', (
     ['cut.png', png(1, 1).subarray(0, 20)], ['noihdr.png', Buffer.concat([png(1, 1).subarray(0, 12), Buffer.from('JUNK'), Buffer.alloc(17)])],
     ['sos.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0])], ['junk.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 1, 7, 7])],
     ['odd.webp', webp('XXXX', () => {})], ['badvp8l.webp', webp('VP8L', () => {})], ['short.gif', Buffer.from('GIF89a')],
+    // Codex R1: an IHDR chunk whose length is not 13, and one whose 13 bytes are not all there.
+    ['len0.png', Buffer.from('89504e470d0a1a0a00000000494844520000000100000001', 'hex')],
+    ['len14.png', (() => { const b = png(1, 1); b.writeUInt32BE(14, 8); return b; })()], ['cutihdr.png', png(1, 1).subarray(0, 28)],
   ] as [string, Buffer][]) {
     it(`refuses ${filename}: the header cannot be read`, async () => {
       serve(filename, bytes);
@@ -145,6 +148,18 @@ describe('US-63 AC18: the header decides the dimensions, at most 8192 a side', (
   it('refuses a declared width or height that contradicts the header, after the download', async () => {
     serve('shot.png', REAL_PNG, { width: 5, height: 1 });
     await refused('declared width or height contradicts', true);
+  });
+  it('R2: the declared pair must equal the header, or the header swapped (an Exif-rotated photo)', async () => {
+    for (const [filename, bytes, width, height] of [['photo.jpg', REAL_JPEG, 3, 2], ['tall.png', png(10, 20), 20, 10], ['tall.png', png(10, 20), 10, 20]] as [string, Buffer, number, number][]) {
+      rmSync(downloads(), { recursive: true, force: true });
+      serve(filename, bytes, { width, height });
+      expect((await go()).code, filename).toBe(0);
+    }
+    rmSync(downloads(), { recursive: true, force: true });
+    for (const [width, height] of [[3, 3], [2, 2], [20, 20]]) {
+      serve('tall.png', png(10, 20), { width, height });
+      await refused('declared width or height contradicts', true);
+    }
   });
   it('refuses a declared side over 8192, or a declared type for another format, before any download', async () => {
     serve('shot.png', REAL_PNG, { width: 9000, height: 1 });
