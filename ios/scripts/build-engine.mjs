@@ -119,6 +119,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const count = checkParity(engineOut, fixtures);
   // The upload decisions table both clients pin (UploadDecisionPinsTests.swift; the web's upload-decisions pins).
   copyFileSync(join(repo, 'packages/health-core/src/__fixtures__/upload-decisions.json'), join(fixtures, 'upload-decisions.json'));
+  // The chat turns table both clients pin (ChatTurnPinsTests.swift; the web's chat-turns pins).
+  copyFileSync(join(repo, 'packages/health-core/src/__fixtures__/chat-turns.json'), join(fixtures, 'chat-turns.json'));
   const facts = bundleFacts(engineOut);
   const sidecar = { bridge: bridgeId(), schemaVersion: facts.schemaVersion, version: facts.engineVersion };
   writeFileSync(join(dirname(engineOut), 'health-engine.json'), JSON.stringify(sidecar) + '\n');

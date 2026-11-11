@@ -1,0 +1,264 @@
+{
+  "_about": [
+    "Chat PR 1: golden pins of one chat turn on the web and the phone today (no behaviour change).",
+    "Read by widget-src/src/hooks/chat-turns.pins.test.tsx and ios/HealthRoadmapTests/ChatTurnPinsTests.swift",
+    "(copied into the test bundle by ios/scripts/build-engine.mjs). A later move into a shared reducer keeps every row green, unedited.",
+    "A value that is an object with both `web` and `phone` keys holds each client's value; `decision` names the survey's",
+    "D-number (chat-survey.md section 4) and `changedBy` the PR that may change it. Any other value is what both clients do.",
+    "A step's `line` is one NDJSON line from the server: an object (sent as JSON) or a string (sent as it is).",
+    "`pending` is the words under the conversation while the answer is written (null once the turn ends); `text` the answer",
+    "as it streams; `sources` the articles read so far. Keys a step leaves out are not checked at that step.",
+    "`clients` lists who runs a row (default both). Synthetic questions and answers only, no health values."
+  ],
+
+  "afterAsk": { "pending": "Thinking…", "text": "" },
+
+  "turns": [
+    {
+      "id": "thinking-status-sources-text-done",
+      "question": "What is ApoB?",
+      "steps": [
+        { "line": { "type": "thinking", "text": "Weighing the entry" }, "pending": "Thinking…", "text": "" },
+        { "line": { "type": "status", "text": "Reading your question" }, "pending": "Reading your question…", "text": "" },
+        { "line": { "type": "thinking", "text": " and the guide" }, "pending": "Reading your question…" },
+        { "line": { "type": "sources", "titles": ["ApoB explained", 7] }, "pending": "Reading your question…", "sources": ["ApoB explained"] },
+        { "line": { "type": "text", "text": "ApoB counts " }, "pending": "Answering…", "text": "ApoB counts " },
+        { "line": { "type": "text", "text": "particles." }, "pending": "Answering…", "text": "ApoB counts particles." },
+        { "line": { "type": "done", "success": true, "conversationId": "c1", "messageId": "m1", "content": "ApoB counts the particles.", "isFallback": false }, "pending": null }
+      ],
+      "end": "done",
+      "after": {
+        "transcript": [{ "role": "user", "text": "What is ApoB?" }, { "role": "assistant", "text": "ApoB counts the particles." }],
+        "box": "",
+        "error": null,
+        "retry": null,
+        "sources": ["ApoB explained"],
+        "thinking": { "web": "Weighing the entry and the guide", "phone": null, "decision": "AC6g (by design: the phone drops draft notes)", "changedBy": "none" }
+      }
+    },
+    {
+      "id": "status-restart-clears-preamble",
+      "question": "Is my LDL OK?",
+      "steps": [
+        { "line": { "type": "status", "text": "Writing the answer" }, "pending": "Writing the answer…" },
+        { "line": { "type": "text", "text": "Let me run those numbers. " }, "pending": "Answering…", "text": "Let me run those numbers. " },
+        { "line": { "type": "status", "text": "Running your numbers through the roadmap" }, "pending": "Running your numbers through the roadmap…", "text": "" },
+        { "line": { "type": "text", "text": "Your LDL is above target." }, "pending": "Answering…", "text": "Your LDL is above target." },
+        { "line": { "type": "done", "success": true, "conversationId": "c1", "messageId": "m2", "content": "Your LDL is above target.", "isFallback": false }, "pending": null }
+      ],
+      "end": "done",
+      "after": {
+        "transcript": [{ "role": "user", "text": "Is my LDL OK?" }, { "role": "assistant", "text": "Your LDL is above target." }],
+        "box": "",
+        "error": null,
+        "retry": null,
+        "sources": [],
+        "thinking": { "web": "", "phone": null, "decision": "AC6g (by design)", "changedBy": "none" }
+      }
+    },
+    {
+      "id": "fallback-answer",
+      "question": "Tell me something odd",
+      "steps": [
+        { "line": { "type": "sources", "titles": ["Statins"] }, "pending": "Thinking…", "sources": ["Statins"] },
+        { "line": { "type": "thinking", "text": "Not sure" }, "pending": "Thinking…" },
+        { "line": { "type": "text", "text": "partial" }, "pending": "Answering…", "text": "partial" },
+        { "line": { "type": "done", "success": true, "conversationId": "c1", "messageId": "m3", "content": "I can't help with that request.", "isFallback": true }, "pending": null }
+      ],
+      "end": "done",
+      "after": {
+        "transcript": [{ "role": "user", "text": "Tell me something odd" }, { "role": "assistant", "text": "I can't help with that request." }],
+        "box": "",
+        "error": null,
+        "retry": null,
+        "sources": { "web": [], "phone": ["Statins"], "decision": "D8", "changedBy": "a D8 PR after the shared reducer (survey section 5, step 5)" },
+        "thinking": { "web": "", "phone": null, "decision": "AC6g (by design); the web drops it on a fallback", "changedBy": "none" }
+      }
+    },
+    {
+      "id": "cut-off",
+      "_note": "The stream ends with no done line.",
+      "question": "What is Lp(a)?",
+      "steps": [
+        { "line": { "type": "status", "text": "Writing the answer" }, "pending": "Writing the answer…" },
+        { "line": { "type": "text", "text": "Lp(a) is a" }, "pending": "Answering…", "text": "Lp(a) is a" }
+      ],
+      "end": "cutOff",
+      "after": {
+        "transcript": {
+          "web": [],
+          "phone": [{ "role": "user", "text": "What is Lp(a)?", "failed": true }, { "role": "assistant", "text": "Lp(a) is a", "failed": true }],
+          "decision": "D3", "changedBy": "a D3 PR after the shared reducer"
+        },
+        "box": { "web": "What is Lp(a)?", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": { "web": "Network error", "phone": "The answer was cut off. Please try again.", "decision": "D6", "changedBy": "a D6 PR after the shared reducer" },
+        "retry": { "web": null, "phone": "What is Lp(a)?", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "non-json-line-mid-stream",
+      "_note": "Survey section 1 marks this row as differing but gives it no D-number; the shared reducer's `other` event (PR 3/4) decides it.",
+      "question": "What is HbA1c?",
+      "steps": [
+        { "line": { "type": "status", "text": "Writing the answer" }, "pending": "Writing the answer…" },
+        { "line": "<html>proxy page</html>", "pending": { "web": null, "phone": "Writing the answer…", "decision": "none yet (survey section 1, non-JSON line)", "changedBy": "chat PR 3/4 (shared reducer)" } },
+        { "line": { "type": "text", "text": "HbA1c is an average." }, "pending": { "web": null, "phone": "Answering…", "decision": "none yet", "changedBy": "chat PR 3/4" } },
+        { "line": { "type": "done", "success": true, "conversationId": "c1", "messageId": "m4", "content": "HbA1c is an average.", "isFallback": false }, "pending": null }
+      ],
+      "end": "done",
+      "after": {
+        "transcript": {
+          "web": [],
+          "phone": [{ "role": "user", "text": "What is HbA1c?" }, { "role": "assistant", "text": "HbA1c is an average." }],
+          "decision": "none yet (survey section 1, non-JSON line)", "changedBy": "chat PR 3/4 (shared reducer)"
+        },
+        "box": { "web": "What is HbA1c?", "phone": "", "decision": "none yet", "changedBy": "chat PR 3/4" },
+        "error": { "web": "Network error", "phone": null, "decision": "none yet", "changedBy": "chat PR 3/4" },
+        "retry": null
+      }
+    },
+    {
+      "id": "non-json-first-line",
+      "_note": "A 200 whose body is not NDJSON: the web stops reading at once; the phone skips the line, then the stream ends with no done.",
+      "question": "What is eGFR?",
+      "steps": [
+        { "line": "<html>Bad gateway</html>", "pending": { "web": null, "phone": "Thinking…", "decision": "none yet (survey section 1, non-JSON line)", "changedBy": "chat PR 3/4 (shared reducer)" } }
+      ],
+      "end": "cutOff",
+      "after": {
+        "transcript": { "web": [], "phone": [{ "role": "user", "text": "What is eGFR?", "failed": true }], "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "box": { "web": "What is eGFR?", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": { "web": "Failed to send message", "phone": "The answer was cut off. Please try again.", "decision": "D6", "changedBy": "a D6 PR after the shared reducer" },
+        "retry": { "web": null, "phone": "What is eGFR?", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "done-not-successful",
+      "question": "What is a statin?",
+      "steps": [
+        { "line": { "type": "status", "text": "Writing the answer" }, "pending": "Writing the answer…" },
+        { "line": { "type": "done", "success": false, "error": "The answer could not be finished." }, "pending": null }
+      ],
+      "end": "done",
+      "after": {
+        "transcript": { "web": [], "phone": [{ "role": "user", "text": "What is a statin?", "failed": true }], "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "box": { "web": "What is a statin?", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": "The answer could not be finished.",
+        "retry": { "web": null, "phone": "What is a statin?", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "failed-rate-limit",
+      "_note": "Refused before any line. The web shows its own words whatever the body says; the phone shows the app gate's words (app/lib/app-gate.server.ts overLimit).",
+      "question": "One more question",
+      "failure": {
+        "web": { "status": 429, "body": { "success": false, "error": "Too many requests." } },
+        "phone": { "server": { "status": 429, "message": "Daily limit reached. Please try again tomorrow." } }
+      },
+      "after": {
+        "transcript": { "web": [], "phone": [{ "role": "user", "text": "One more question", "failed": true }], "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "box": { "web": "One more question", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": { "web": "Chat limit reached. Please try again later.", "phone": "Daily limit reached. Please try again tomorrow.", "decision": "D7", "changedBy": "a D7 PR after the shared reducer" },
+        "retry": { "web": null, "phone": "One more question", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "failed-timeout",
+      "_note": "The web sets no timeout, so it has no such failure; the phone's request gives up after 120 s.",
+      "clients": ["phone"],
+      "question": "A slow question",
+      "failure": { "phone": { "url": "timedOut" } },
+      "after": {
+        "transcript": [{ "role": "user", "text": "A slow question", "failed": true }],
+        "box": "",
+        "error": "The chat took too long to answer. Please try again.",
+        "retry": "A slow question"
+      }
+    },
+    {
+      "id": "failed-network",
+      "question": "Are you there?",
+      "failure": {
+        "web": { "reject": "Failed to fetch" },
+        "phone": { "url": "notConnectedToInternet" }
+      },
+      "after": {
+        "transcript": { "web": [], "phone": [{ "role": "user", "text": "Are you there?", "failed": true }], "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "box": { "web": "Are you there?", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": { "web": "Network error", "phone": "The chat could not be reached. Check your connection, then try again.", "decision": "D6", "changedBy": "a D6 PR after the shared reducer" },
+        "retry": { "web": null, "phone": "Are you there?", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "failed-server",
+      "question": "Hello?",
+      "failure": {
+        "web": { "status": 500, "body": { "success": false, "error": "The server could not answer just now." } },
+        "phone": { "server": { "status": 500, "message": "The server could not answer just now." } }
+      },
+      "after": {
+        "transcript": { "web": [], "phone": [{ "role": "user", "text": "Hello?", "failed": true }], "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "box": { "web": "Hello?", "phone": "", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" },
+        "error": "The server could not answer just now.",
+        "retry": { "web": null, "phone": "Hello?", "decision": "D3", "changedBy": "a D3 PR after the shared reducer" }
+      }
+    },
+    {
+      "id": "stopped-mid-answer",
+      "_note": "The web has no Stop (ChatSection.tsx); survey D10 leaves it per client.",
+      "clients": ["phone"],
+      "question": "What is ApoB?",
+      "steps": [
+        { "line": { "type": "status", "text": "Writing the answer" }, "pending": "Writing the answer…" },
+        { "line": { "type": "text", "text": "ApoB counts" }, "pending": "Answering…", "text": "ApoB counts" }
+      ],
+      "end": "stop",
+      "after": { "transcript": [], "box": "What is ApoB?", "error": null, "retry": null }
+    },
+    {
+      "id": "stopped-after-done",
+      "_note": "Once done is in, Stop is too late: the turn stays answered and nothing comes back (review R3).",
+      "clients": ["phone"],
+      "question": "What is ApoB?",
+      "steps": [
+        { "line": { "type": "text", "text": "ApoB counts" }, "pending": "Answering…", "text": "ApoB counts" },
+        { "line": { "type": "done", "success": true, "conversationId": "c1", "messageId": "m5", "content": "ApoB counts particles.", "isFallback": false }, "pending": null }
+      ],
+      "end": "stop",
+      "after": {
+        "transcript": [{ "role": "user", "text": "What is ApoB?" }, { "role": "assistant", "text": "ApoB counts particles." }],
+        "box": "", "error": null, "retry": null
+      }
+    }
+  ],
+
+  "notPinnable": [
+    { "id": "erased-mid-turn", "why": "No pure seam on either client. Web: useChatState has no erase input; the transcript stays (survey D9). Phone: ChatView clears the transcript in an onChange of store.erasures (ChatView.swift) and send() drops the turn through its live() guard; both are view code. The shared reducer's `erased` event (chat PR 3/4) makes it pinnable." },
+    { "id": "phone-cut-off-detection", "why": "The phone's 'no done line means cut off' rule and its words live in ChatView.send (private). The phone pins replay that one throw; the words in the cut-off rows are pinned, the detection is not." },
+    { "id": "phone-done-not-successful", "why": "ChatView.send turns a done line with an error into Failure.server(500, error); the pins replay that throw. ChatStreamEvent.parse's part (the error words) is pinned." }
+  ],
+
+  "history": {
+    "_note": "What goes back as history with the next question: how many earlier lines, all of them unfailed. The web sends the last 20 (chat-api.ts MAX_HISTORY_MESSAGES); the phone sends every unfailed line (the server cuts to 20, app/routes/api.chat.ts).",
+    "rows": [
+      { "id": "first-question", "answered": 0, "count": 0 },
+      { "id": "two-answered", "answered": 2, "count": 4 },
+      { "id": "eleven-answered", "answered": 11, "count": { "web": 20, "phone": 22, "decision": "D4", "changedBy": "a D4 PR after the shared reducer" } },
+      { "id": "failed-turn-left-out", "answered": 2, "thenFailed": true, "count": 4 },
+      { "id": "stopped-turn-left-out", "clients": ["phone"], "answered": 1, "thenStopped": true, "count": 2 }
+    ]
+  },
+
+  "question": {
+    "_note": "A question longer than 8000 characters. The web cuts it in the box and says so; the phone sends it whole (the server refuses it with its own words).",
+    "rows": [
+      {
+        "id": "over-the-cap",
+        "typed": [{ "repeat": "a", "times": 8001 }],
+        "sentLength": { "web": 8000, "phone": 8001, "decision": "D5", "changedBy": "a D5 PR after the shared reducer" },
+        "notice": { "web": "Your message was cut at 8,000 characters.", "phone": null, "decision": "D5", "changedBy": "a D5 PR after the shared reducer" }
+      },
+      { "id": "at-the-cap", "typed": [{ "repeat": "a", "times": 8000 }], "sentLength": 8000, "notice": null }
+    ]
+  }
+}
