@@ -80,7 +80,8 @@ const TABLE: Record<string, Record<string, Row>> = {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
     landed: same(held(6, 4)), failed: same(held(6, 4)),
     synced: [clean(6), []], hold: same(held(6, 4)),
-    eraseStarted: [erasing(held(7, 4)), []], eraseEnded: same(held(6, 4)),
+    // an erase that ended before eraseStarted (beforeErase threw): held settles
+    eraseStarted: [erasing(held(7, 4)), []], eraseEnded: [failed(6, 4), []],
   },
   erasingSaving: {
     edited: same(erasing(saving(7, 4, 6))), // refused: refuses() answers the caller
@@ -95,7 +96,8 @@ const TABLE: Record<string, Record<string, Row>> = {
     edited: same(erasing(held(7, 6))), save: [erasing(saving(7, 6, 7)), [pass(7)]],
     landed: same(erasing(held(7, 6))), failed: same(erasing(held(7, 6))),
     synced: [erasing(clean(7)), []], hold: same(erasing(held(7, 6))),
-    eraseStarted: [erasing(held(8, 6)), []], eraseEnded: [held(7, 6), []],
+    // the erase's write threw (say a non-Conflict error): held settles, nothing left running
+    eraseStarted: [erasing(held(8, 6)), []], eraseEnded: [failed(7, 6), []],
   },
   erasingClean: {
     edited: same(erasing(clean(7))), save: same(erasing(clean(7))),
@@ -143,6 +145,16 @@ describe('save-state transition table (A1)', () => {
     expect(transition(saving(6, 6, 6), EVENTS.failed)).toEqual({ state: clean(6), effects: [] });
     // a pass landing under an armed debounce leaves it armed, over nothing unsaved
     expect(transition(saving(6, 4, 6, true), EVENTS.landed)).toEqual({ state: waiting(6, 6), effects: [] });
+    // held over nothing unsaved settles to clean when the erase ends
+    expect(transition(held(5, 5), EVENTS.eraseEnded)).toEqual({ state: clean(5), effects: [] });
+    expect(transition(erasing(held(5, 5)), EVENTS.eraseEnded)).toEqual({ state: clean(5), effects: [] });
+  });
+
+  it('held never outlives an erase, aborted or failed', () => {
+    // beforeErase threw after hold: no eraseStarted ever comes
+    expect(run(waiting(6, 5), [EVENTS.hold, EVENTS.eraseEnded]).state).toEqual(failed(6, 5));
+    // the erase's synchronous write threw: no save, no synced
+    expect(run(clean(5), [EVENTS.eraseStarted, EVENTS.eraseEnded]).state).toEqual(failed(6, 5));
   });
 
   it('erasing over waiting, or over an armed pass, is unreachable by eraseStarted or hold', () => {
@@ -171,6 +183,8 @@ describe('derived answers', () => {
     ['erasing over saving', erasing(saving(7, 4, 6)), true, true, false, 'saving'],
     ['erasing over clean', erasing(clean(7)), false, false, false, 'saved'],
     ['erasing over failed', erasing(failed(7, 4)), true, false, false, 'not-saved'],
+    // an erase whose sync write failed: eraseStarted, then eraseEnded with no synced
+    ['after a failed erase write', run(clean(5), [EVENTS.eraseStarted, EVENTS.eraseEnded]).state, true, false, false, 'not-saved'],
   ];
   for (const [name, s, u, w, a, status] of rows) {
     it(name, () => {

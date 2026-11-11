@@ -21,16 +21,20 @@
  * - saving: a pass runs; `armed` when an edit during it re-armed the debounce.
  * - failed: a pass failed; its changes wait for the next edit or save.
  * - held: an erase put the debounce aside while it reads, or swapped the
- *   erased copy in before its write starts. Moves as failed does.
+ *   erased copy in before its write starts. Moves as failed does, and never
+ *   outlives the erase: eraseEnded settles it to failed, or clean.
  * - erasing: the erase's swap to the end of its write, over the save state
  *   `under` it. Erasing while a pass runs is erasing over saving. An edit is
  *   refused here; RecordSession.refuses() gives the caller that answer.
  *
- * Where step (c) dispatches, in saveLoop:
- * - `passFailed` where its catch sets `running = null`, before the awaited mirror write.
- * - `passLanded` where it sets `savedChanges = saving`, before `adopt()`; run
- *   the pass effect it returns after `adopt()`.
- * - read `debounceArmed(state)` before dispatching `hold`.
+ * Where step (c) dispatches:
+ * - saveLoop: `passFailed` where its catch sets `running = null`, before the
+ *   awaited mirror write.
+ * - saveLoop: `passLanded` where it sets `savedChanges = saving`, before
+ *   `adopt()`; run the pass effect it returns after `adopt()`.
+ * - erase(): read `debounceArmed(state)` before dispatching `hold`.
+ * - erase(): `eraseEnded` in a finally that covers the whole erase from `hold`
+ *   on, so an aborted erase (beforeErase threw) leaves held too.
  */
 
 export type SaveBase =
@@ -125,7 +129,10 @@ function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' }>): { sta
 
 /** The only way the save state changes. */
 export function transition(s: SaveState, e: SaveEvent): SaveStep {
-  if (e.type === 'eraseEnded') return { state: s.mode === 'erasing' ? s.under : s, effects: [] };
+  if (e.type === 'eraseEnded') { // held never outlives the erase, even one that ended before eraseStarted
+    const b = s.mode === 'erasing' ? s.under : s;
+    return { state: b.mode === 'held' ? settle(b.changes, b.saved, false) : b, effects: [] };
+  }
   if (s.mode !== 'erasing' && e.type !== 'eraseStarted') return base(s, e);
   if (s.mode === 'erasing' && e.type === 'edited') return { state: s, effects: [] }; // refused
   const step = base(s.mode === 'erasing' ? s.under : s, e);
