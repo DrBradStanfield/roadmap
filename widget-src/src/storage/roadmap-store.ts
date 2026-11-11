@@ -24,7 +24,7 @@
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
-import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove, type LabUnitRefusal, type MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
@@ -66,7 +66,7 @@ export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncP
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
-import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, LatestMeasurementsResult } from '../lib/api-types';
+import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkLabValuesResult, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
@@ -85,20 +85,6 @@ export interface BirthRefusal { birthYear: number; birthMonth: number | undefine
 export type ProfileRangeRefusal = Partial<Record<keyof HealthInputs, string>>;
 /** `added`: the rows the save inserted as new, never a correction or a refused number (US-07 AC11's usage signal). */
 export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; added: ApiMeasurement[]; refused?: ProfileRangeRefusal };
-export interface BulkSaveResult {
-  saved: ApiMeasurement[];
-  skippedDuplicates: number;
-  errorCount: number;
-  refused: MeasurementRefusal[];
-}
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  skippedDuplicates: number;
-  errorCount: number;
-  refused: LabUnitRefusal[];
-  /** Core values (a core test's name, US-66 AC6) refused for their number. */
-  measurementRefusals?: MeasurementRefusal[];
-}
 /** One reviewed upload row. `correctsId` is set only when the reviewer ticked
  *  "Replace" on a slot another writer (a connector, another device) already
  *  holds — it turns the write into a FHIR correction instead of a skip. */
