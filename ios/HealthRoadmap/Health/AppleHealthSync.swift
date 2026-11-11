@@ -44,8 +44,8 @@ final class AppleHealthSync {
 
     private(set) var status: Status
     /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
-    /// Read again after every pay and every erase, the two steps that change it: a save owed
-    /// meanwhile keeps the count, so it never does.
+    /// A cache of `memory.owed`, so every writer of owed that can change it must refresh it: init,
+    /// `pay` and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
     private(set) var owedFooter: Bool
 
     private let store: RecordStore
@@ -125,7 +125,10 @@ final class AppleHealthSync {
         await drained(by: deadline)
         do {
             let paid = await deleteOwed(erasing: deadline)
-            try await client.deleteOwnSamples()
+            let asked = try await client.deleteOwnSamples()
+            // An unreadable owed value goes only once every kind the app writes was asked (AC16 F1).
+            guard memory.owedUnreadable else { return paid }
+            guard asked.isSuperset(of: HealthDeletion.kinds) else { return false }
             memory.forgetUnreadableOwed()
             return paid
         } catch {

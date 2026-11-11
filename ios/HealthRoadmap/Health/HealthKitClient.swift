@@ -84,15 +84,18 @@ final class HealthKitClient: HealthStoreClient {
         return (result.addedSamples, try NSKeyedArchiver.archivedData(withRootObject: result.newAnchor, requiringSecureCoding: true))
     }
 
-    func deleteOwnSamples() async throws {
+    func deleteOwnSamples() async throws -> Set<HealthKind> {
         // Ours by source, which every sample we saved carries; each with a
-        // `healthroadmap:` sync id (D6). A kind never allowed for writing holds none.
+        // `healthroadmap:` sync id (D6). A kind whose write access is off is not asked.
         let mine = HKQuery.predicateForObjects(from: HKSource.default())
+        var asked: Set<HealthKind> = []
         for kind in HealthKind.allCases where kind != .height && canWrite(kind) {
             for type in Self.quantityTypes(kind) {
                 _ = try await store.deleteObjects(of: type, predicate: mine)
             }
+            asked.insert(kind)
         }
+        return asked
     }
 
     func deleteSamples(syncIds: [String]) async throws -> HealthDeletion {

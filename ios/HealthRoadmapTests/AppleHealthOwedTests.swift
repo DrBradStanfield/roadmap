@@ -170,4 +170,40 @@ final class AppleHealthOwedTests: XCTestCase {
         defaults.set("a string", forKey: "appleHealth.owed")
         XCTAssertTrue(memory.owedUnreadable, "any other type is unreadable too")
     }
+
+    /// Review F3: a second unreadable value never overwrites one already kept aside.
+    func testAnOlderUnreadableValueKeptAsideIsNeverOverwritten_US72_AC16() {
+        let first = Data("first".utf8)
+        defaults.set(first, forKey: "appleHealth.owed")
+        memory.owe(1, for: "a")
+        defaults.set("second", forKey: "appleHealth.owed")
+        memory.owe(2, for: "b")
+        XCTAssertEqual(defaults.data(forKey: "appleHealth.owedUnreadable"), first)
+        XCTAssertEqual(memory.owed, Owed(ids: ["b": 2], failedPays: 0))
+    }
+
+    /// Review F2, accepted: a refused delete already running when an erase lands counts toward the
+    /// new erase's attempts, so the erase's own refused pay is the second and shows the line.
+    func testAPayInFlightAcrossAnEraseCountsTowardItsAttempts_US72_AC16() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let health = FakeHealthStore()
+        let memory = memory
+        memory.owe(1, for: "a")
+        // The kind of "a" is not known and waist cannot be written: Health leaves it, a failed pay.
+        health.writable = [.weight, .bloodPressure]
+        health.deleteBegin = { try? await Task.sleep(for: .milliseconds(400)) }
+        let sync = AppleHealthSync(store: store, engine: engine, client: health, memory: memory)
+
+        let running = Task { await sync.foreground() }
+        for _ in 0..<300 where health.deleteAttempts == 0 { try? await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(health.deleteAttempts, 1, "a pay is in flight")
+        let erased = await sync.erased(wasConnected: false)
+        XCTAssertFalse(erased)
+        await running.value
+
+        XCTAssertEqual(health.deleteAttempts, 2, "the erase paid its own after the one in flight")
+        XCTAssertEqual(memory.owed.failedPays, 2, "the pay in flight counts after the erase's reset")
+        XCTAssertTrue(sync.owedFooter)
+    }
 }

@@ -125,10 +125,11 @@ struct HealthSyncMemory {
         }
     }
 
-    /// The one write: nothing owed removes the key. An unreadable value is moved aside first.
+    /// The one write: nothing owed removes the key. An unreadable value is moved aside first,
+    /// never over an older one kept there (review F3).
     private func setOwed(_ owed: Owed) {
         let stored = defaults.object(forKey: Self.owedKey)
-        if Self.unreadable(stored) { defaults.set(stored, forKey: Self.owedAside) }
+        if Self.unreadable(stored), defaults.object(forKey: Self.owedAside) == nil { defaults.set(stored, forKey: Self.owedAside) }
         defaults.set(owed.ids.isEmpty ? nil : try? JSONEncoder().encode(owed), forKey: Self.owedKey)
     }
 

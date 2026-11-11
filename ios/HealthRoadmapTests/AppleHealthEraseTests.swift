@@ -543,4 +543,22 @@ final class AppleHealthEraseTests: XCTestCase {
         XCTAssertEqual(health.deletedSyncIds, [written], "only the app's own sync ids are asked for")
         XCTAssertEqual(health.saved, [theirs], "the sample the app did not write stays in Health")
     }
+
+    /// US-72 AC16, review F1 (Codex R1): an unreadable owed value is forgotten only after a delete
+    /// by source that asked about every kind the app writes. With waist write access off, its
+    /// samples stay, so the value is kept and the erase says Health was not erased.
+    func testAnUnreadableOwedValueIsKeptWhileAKindCannotBeDeleted_US72_AC16() async throws {
+        defaults.set(Data("not json".utf8), forKey: "appleHealth.owed")
+        let app = try app(cloud: false)
+        health.writable = [.weight, .bloodPressure]
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
+        XCTAssertTrue(memory.owedUnreadable, "a waist sample may still be in Health")
+
+        health.writable = Set(HealthKind.allCases)
+        guard case .erased(let again) = await app.eraser.eraseAll() else { return XCTFail("the second erase was refused") }
+        XCTAssertFalse(again.hasSuffix(EraseText.healthNotErased), again)
+        XCTAssertFalse(memory.owedUnreadable, "every kind asked: forgotten")
+    }
 }
