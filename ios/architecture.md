@@ -1656,7 +1656,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
-    `WelcomeView`, `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
+    `WelcomeView` and `WelcomeConnect` (its cloud connect derives its phase from CloudSync
+    each time and keeps no copy, so a relaunch waits on the launch open; US-54 AC2b), `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
     the original road-to-heart icon, our own drawing, redrawn as Shapes on 2026-10-25; never an
     SF Symbol, traced or not, US-25 AC10), `Analytics` (Clarity, masked, D9), `Colors` (the app-wide colour helpers)
     and `MessageAlert` (the one-button alert every tab uses).

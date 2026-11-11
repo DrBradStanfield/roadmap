@@ -50,7 +50,7 @@ For a page you can keep, print, or take to an appointment:
 
 The HTML is one self-contained file. It loads nothing from the internet, so it still reads years from now.
 
-The plan needs your height and sex to compute anything. Without them it stops and tells you.
+The plan needs your height to compute anything. Without it the command stops and tells you. Sex is optional: without it the plan still prints, but it leaves out the parts that depend on sex (the ideal weight and protein target, an eGFR worked out from creatinine, the low-HDL suggestion, and the sex-specific screening steps) and says which parts it left out.
 
 ## Start from numbers
 
@@ -62,7 +62,7 @@ echo '{"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.
 
 It prints the same plan as above (add `--json` or `--html <out>` as before). The record exists only in memory: nothing is written, nothing is sent, and the numbers are gone when the command ends.
 
-`sex` and `heightCm` are required. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
+`heightCm` is required. `sex` is optional: without it the plan leaves out the parts that depend on sex, as above. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
 
 ## Add a value
 

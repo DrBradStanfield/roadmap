@@ -16,7 +16,7 @@ final class LiveHealth {
     /// only through `LiveAccess.transition`.
     private(set) var access: LiveAccess = .unknown
     /// Each metric's latest reading; a metric with none is left out (AC6). Kept while the views
-    /// read it; lead M6 removes it once they switch on `access`.
+    /// read it; lead S15 removes it once they switch on `access`.
     var cards: [LiveMetric: LiveCard] { access.cards }
     /// Counts returns to the app and unlocks: an open page reads again on each (Codex R1).
     private(set) var wakes = 0

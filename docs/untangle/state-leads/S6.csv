@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S6,iPhone state,Onboarding's saving and connecting-Health flags are independent: a lost weight is skipped silently and a double tap may save twice,lead,not started,"ios/HealthRoadmap/Onboarding/OnboardingView.swift:18,31-43,295,349-369; replaceWeight returns silently (:507); allowHealth not under saving. Distinct from I-8. Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S6",,no
