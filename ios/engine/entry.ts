@@ -22,6 +22,7 @@ import { NOT_OPEN, open } from './cloud';
 import { failed } from './cloud-adapters';
 import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
+import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -191,6 +192,19 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
  *  contract, so an app reaches it only through HealthEngine.optionalCall. */
 export function labSearchJson(text: string): string {
   return JSON.stringify(labSearch(text));
+}
+
+/** The upload's verdicts for one pick on the phone, as JSON (health-core upload-rules, US-52 AC7):
+ *  `request` {files: [{name, bytes}], zipMembers: [path]} answers {limits, files: [verdict],
+ *  zipMembers: [verdict]}, in order, each "keep", "tooLarge", "unsupported" or "hidden". An optional
+ *  door: an app reaches it only through HealthEngine.optionalCall and keeps its Swift rules without it. */
+export function uploadVerdictsJson(request: string): string {
+  const { files = [], zipMembers = [] } = JSON.parse(request) as { files?: Array<{ name: string; bytes: number }>; zipMembers?: string[] };
+  return JSON.stringify({
+    limits: UPLOAD_LIMITS.phone,
+    files: files.map(({ name, bytes }) => fileVerdict({ name, bytes, platform: 'phone' })),
+    zipMembers: zipMembers.map((path) => zipMemberVerdict(path, 'phone')),
+  });
 }
 
 /** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View

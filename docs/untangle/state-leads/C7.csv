@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C7,lab import,"app route timeout exception still carries pageCount/pageTypes: does the app route still need them now the slow event carries the duration?",lead,not started,"app/lib/lab-extract-one.server.ts captureException (feature lab_import_v2, extra pageCount, pageTypes), sent on both routes; the app route's slow event is US-52 AC7d",,no

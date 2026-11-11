@@ -76,6 +76,11 @@ describe('bridge contract (US-25 AC18)', () => {
   const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true }> = {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
+    uploadVerdictsJson: {
+      args: ['request'],
+      call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
+      shape: { limits: { fileBytes: 'number', zipBytes: 'number', zipMembers: 'number', folderBytes: 'number' }, files: ['string'], zipMembers: ['string'] },
+    },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
   function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {

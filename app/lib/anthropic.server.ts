@@ -117,7 +117,7 @@ function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): Unif
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; documentMode?: DocumentPromptMode } = {},
+  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; documentMode?: DocumentPromptMode; onRetry?: () => void } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -137,7 +137,7 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts, readJson, opts.oneDeadline && until), documentMode);
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts, readJson, opts.oneDeadline && until, opts.onRetry), documentMode);
     if (parsed) return parsed;
     // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
     if (call >= 2) throw new Error('extraction returned malformed JSON');

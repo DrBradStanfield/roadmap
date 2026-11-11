@@ -932,7 +932,7 @@ export function generateSuggestions(
     }
 
     if (ruleTakes(BREAST, BREAST.cardAges, age, sex)) {
-      if (notStarted(BREAST, screenings.breastFrequency)) pushStart(BREAST, age >= 45 ? 'attention' : 'info');
+      if (notStarted(BREAST, screenings.breastFrequency)) pushStart(BREAST, SCREENING_REFS.breastStart(age).priority);
       else if (screenings.breastLastDate) pushStarted(BREAST, screenings.breastFrequency!, screenings.breastLastDate,
         screenings.breastResult, screenings.breastFollowupStatus, screenings.breastFollowupDate);
     }

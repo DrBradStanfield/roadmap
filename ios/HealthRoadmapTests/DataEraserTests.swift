@@ -466,4 +466,143 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(rows(onDisk), 1, "the import is in the erased record, not written over")
         XCTAssertEqual(epoch(onDisk), 1)
     }
+
+    // MARK: The erase's words (US-25 AC16d, iOS survey S1)
+
+    func testThePhaseTable_US25_AC16d() {
+        let erased = DataEraser.Outcome.erased("Done.")
+        let refused = DataEraser.Outcome.refused("No.")
+        let rows: [(DataEraser.Phase, DataEraser.Event, DataEraser.Phase)] = [
+            (.idle, .started, .erasing),
+            (.idle, .finished(erased), .idle),
+            (.idle, .settingsClosed, .idle),
+            (.idle, .seen, .idle),
+            (.erasing, .started, .erasing),
+            (.erasing, .finished(erased), .done(erased)),
+            (.erasing, .settingsClosed, .erasingClosed),
+            (.erasing, .seen, .erasing),
+            // The sheet closed mid-erase: the words go to RootView (re-check R1).
+            (.erasingClosed, .started, .erasingClosed),
+            (.erasingClosed, .finished(erased), .held(erased)),
+            (.erasingClosed, .finished(refused), .held(refused)),
+            (.erasingClosed, .settingsClosed, .erasingClosed),
+            (.erasingClosed, .seen, .erasingClosed),
+            // Unseen erase words are never dropped by a second erase (adversary F4).
+            (.done(erased), .started, .done(erased)),
+            (.done(erased), .finished(refused), .done(erased)),
+            (.done(erased), .settingsClosed, .held(erased)),
+            (.done(erased), .seen, .idle),
+            // A refusal changed nothing: the person may try again at once.
+            (.done(refused), .started, .erasing),
+            (.done(refused), .settingsClosed, .held(refused)),
+            (.held(erased), .started, .held(erased)),
+            (.held(erased), .settingsClosed, .held(erased)),
+            (.held(erased), .seen, .idle),
+            (.held(refused), .started, .erasing),
+        ]
+        for (phase, event, next) in rows {
+            XCTAssertEqual(DataEraser.transition(phase, event), next, "\(phase) + \(event)")
+        }
+    }
+
+    /// The page that shows the words went away mid-erase: the words are still there to
+    /// show, and the questions wait for them.
+    func testAnEraseWhosePageWentAwayKeepsItsWordsUntilSeen_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.eraser.eraseAll() // no page holds the answer
+        guard case .erased(let words) = app.eraser.outcome else { return XCTFail("the words were lost") }
+        XCTAssertFalse(words.isEmpty)
+        XCTAssertTrue(app.eraser.holdsRemoteErases, "nothing covers words not yet seen")
+        XCTAssertEqual(app.eraser.startsOver, 0, "the questions wait for the words")
+
+        app.eraser.seen()
+        XCTAssertNil(app.eraser.outcome)
+        XCTAssertEqual(app.eraser.startsOver, 1, "seen, the questions start again")
+        XCTAssertFalse(app.eraser.holdsRemoteErases, "RootView.recordChanged hears a later erase from another device")
+    }
+
+    /// F1: the Settings sheet closed with the words unseen. RootView shows them (`held`), and
+    /// seeing them there restarts the questions, so nothing waits past the sheet closing.
+    func testWordsLeftWhenSettingsClosesAreHeldForRootView_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.eraser.eraseAll()
+        XCTAssertNil(app.eraser.held, "the Delete page shows them while Settings is open")
+        app.eraser.settingsClosed()
+        guard case .erased = app.eraser.held else { return XCTFail("RootView shows the words once Settings closes") }
+        app.eraser.seen()
+        XCTAssertNil(app.eraser.held)
+        XCTAssertEqual(app.eraser.startsOver, 1)
+        XCTAssertFalse(app.eraser.holdsRemoteErases)
+
+        app.eraser.settingsClosed() // a later close with nothing held shows nothing
+        XCTAssertNil(app.eraser.held)
+    }
+
+    /// R1: the sheet closed while the erase still ran; its words show at RootView when it ends.
+    func testAnEraseThatEndsAfterSettingsClosedIsHeldForRootView_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        app.engine.queue.async { Thread.sleep(forTimeInterval: 0.3) } // the erase waits on the engine
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        app.eraser.settingsClosed()
+        XCTAssertTrue(app.eraser.erasing, "still erasing")
+        guard case .erased = await erase.value else { return XCTFail("the erase was refused") }
+        guard case .erased = app.eraser.held else { return XCTFail("RootView shows the words, the Delete page is gone") }
+        app.eraser.seen()
+        XCTAssertEqual(app.eraser.startsOver, 1)
+    }
+
+    func testARefusalLeftWhenSettingsClosesIsShownButRestartsNothing_US25_AC16d() async throws {
+        try Data("{ not a record".utf8).write(to: phoneFile)
+        let app = try app(connected: false)
+        await app.eraser.eraseAll()
+        app.eraser.settingsClosed()
+        guard case .refused = app.eraser.held else { return XCTFail("the refusal's words are shown too") }
+        app.eraser.seen()
+        XCTAssertNil(app.eraser.held)
+        XCTAssertEqual(app.eraser.startsOver, 0, "a refusal does not restart the questions")
+    }
+
+    /// F3: an erase from another device that lands while this phone's own erase runs waits;
+    /// if the own erase is refused, the hold lifts as it ends, which is RootView's cue
+    /// (`.onChange(of: eraser.holdLifts)`) to look at the record again.
+    func testARefusedEraseLiftsTheHoldAsItEnds_US25_AC16d() async throws {
+        try Data("{ not a record".utf8).write(to: phoneFile)
+        let app = try app(connected: false)
+        app.engine.queue.async { Thread.sleep(forTimeInterval: 0.3) } // the erase waits on the engine
+        let erase = Task { await app.eraser.eraseAll() }
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertTrue(app.eraser.holdsRemoteErases, "a remote erase waits while this one runs")
+        XCTAssertEqual(app.eraser.holdLifts, 0)
+        guard case .refused = await erase.value else { return XCTFail("an unreadable record refuses") }
+        XCTAssertFalse(app.eraser.holdsRemoteErases, "the refusal changed nothing, so the remote erase is heard now")
+        XCTAssertEqual(app.eraser.holdLifts, 1, "RootView's cue to look at the record again, as the erase ends")
+        guard case .refused = app.eraser.outcome else { return XCTFail("its words wait to be seen") }
+        app.eraser.seen()
+        XCTAssertEqual(app.eraser.holdLifts, 1, "seeing a refusal's words lifts nothing more")
+    }
+
+    /// F3's other side: an erase that lands keeps the hold until its words are seen, then lifts it once.
+    func testAnErasesHoldLiftsOnlyWhenItsWordsAreSeen_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.eraser.eraseAll()
+        XCTAssertEqual(app.eraser.holdLifts, 0, "the words come first")
+        app.eraser.settingsClosed()
+        XCTAssertEqual(app.eraser.holdLifts, 0, "held for RootView, still unseen")
+        app.eraser.seen()
+        XCTAssertEqual(app.eraser.holdLifts, 1)
+    }
+
+    /// F4: a second erase never drops the first one's unseen words.
+    func testASecondEraseWaitsForTheFirstOnesWords_US25_AC16d() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+        guard case .refused = await app.eraser.eraseAll() else { return XCTFail("a second erase must wait for the words") }
+        XCTAssertEqual(app.eraser.outcome, .erased(words), "the first erase's words are kept")
+    }
 }

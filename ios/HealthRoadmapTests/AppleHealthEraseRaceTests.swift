@@ -173,7 +173,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         await until("the read begun before the disconnect landed nothing") { live.cards.isEmpty }
         await settle()
         XCTAssertTrue(live.cards.isEmpty, "and draws nothing later")
-        XCTAssertFalse(live.hasRead)
+        XCTAssertFalse(live.access.isRead, "not read since the erase")
     }
 
     func testHistoryReadsWhileDisconnectedReadNothing_US72_AC10_R1() async throws {

@@ -193,11 +193,12 @@ export interface ReadControl { began(): void; idle: AbortController }
  * has been read (`began` not called).
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
  * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and a retry starts only
- * with a useful window, 5 s after its 1 s wait (US-52 AC7c).
+ * with a useful window, 5 s after its 1 s wait (US-52 AC7c). `onRetry` is told each retry (US-52 AC7d).
  */
 export async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
   read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson, deadline?: number,
+  onRetry?: () => void,
 ): Promise<AnthropicResult> {
   const left = () => (deadline === undefined ? Infinity : deadline - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -221,6 +222,7 @@ export async function fetchAnthropicRaw(
           // Discard provider bodies: errors may echo uploaded or chat content.
           await response.body?.cancel();
           console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
+          onRetry?.();
           await sleep(RETRY_DELAY_MS);
           continue;
         }
@@ -242,6 +244,7 @@ export async function fetchAnthropicRaw(
       if (!began && isNetworkOrTimeoutError(err) && retry()) {
         const e = err as Error;
         console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${maxAttempts}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
+        onRetry?.();
         await sleep(RETRY_DELAY_MS);
         continue;
       }

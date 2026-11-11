@@ -6,6 +6,7 @@
  * US-22 — a weight typed on My health jumps to the email box at its foot.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { RoadmapStore } from '../storage/roadmap-store';
@@ -21,8 +22,8 @@ vi.mock('../lib/server-api', async original => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: (edits: ProposedEdit[]) => void }) => {
-    chat.proposeEdit = onProposeEdit;
+  ChatEmbed: ({ onProposeEdit }: { onProposeEdit: ChatEditTarget }) => {
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     return null;
   },
 }));

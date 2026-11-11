@@ -284,6 +284,7 @@ final class AppleHealthEraseTests: XCTestCase {
         // The store's neutral mark (renamed from ChatMark; chat and health both use it): taken
         // before the erase, it refuses in-turn after it.
         let before: RecordStore.Mark = app.store.mark
+        app.eraser.seen() // the first erase's words, as the page shows them (US-25 AC16d)
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the second erase was refused") }
         let late = await app.store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-02"), on: before)
         XCTAssertNil(late, "an edit marked before the erase was not saved after it, and says nothing (F6)")
@@ -382,6 +383,7 @@ final class AppleHealthEraseTests: XCTestCase {
         XCTAssertEqual(health.labRequests, 0, "no lab results sheet of its own")
 
         // Never granted: a second erase, then a Connect where Health hands over nothing.
+        app.eraser.seen() // the first erase's words, as the page shows them (US-25 AC16d)
         guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the second erase was refused") }
         await app.health.connect()
         await app.health.foreground()

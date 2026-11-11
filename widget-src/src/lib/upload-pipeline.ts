@@ -5,7 +5,7 @@ import { UNIT_DEFS, reportedToCanonical, type UnitSystem } from '@roadmap/health
 import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
-import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
@@ -97,7 +97,7 @@ export const KEY_ERROR_MESSAGES = {
   no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
 };
 
-export const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
+export const BATCH_THRESHOLD = UPLOAD_LIMITS.web.batchFrom; // Use batch API for 20+ files; pipeline for fewer
 const POLL_INTERVAL = 5000;
 const FAKE_TICK_INTERVAL = 500;
 const EXTRACT_TIMEOUT = 30_000;
@@ -120,7 +120,8 @@ const PROGRESS_MESSAGES = [
   'Reviewing scan results...',
 ];
 
-export const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
+/** The size cap readPages applies through fileVerdict; kept by name for the golden pins (upload-decisions.pins.test.tsx). */
+export const MAX_FILE_SIZE = UPLOAD_LIMITS.web.fileBytes;
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
 export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled'>;
@@ -152,7 +153,7 @@ export interface ReadInput { fileName: string; getFile: () => Promise<File> }
 async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
   try {
     const file = await getFile();
-    if (file.size > MAX_FILE_SIZE) {
+    if (fileVerdict({ name, bytes: file.size, kind: 'file', platform: 'web' }) === 'tooLarge') {
       notices.push({ name, reason: 'tooLarge' });
       return { pages: [] };
     }
@@ -161,7 +162,7 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
       if (truncated) notices.push({ name, reason: 'truncated' });
       if (pages.length > 0) return { pages, file };
     } else if (upload.isImage(file)) {
-      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
+      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, UPLOAD_LIMITS.web.photoPx)), mimeType: 'image/jpeg' }], file };
     } else if (isDocx(file)) {
       const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
       if (truncated) notices.push({ name, reason: 'truncated' });

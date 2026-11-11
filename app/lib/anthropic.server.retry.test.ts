@@ -302,6 +302,22 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       expect(Date.now() - start).toBeLessThan(100_000);
     });
 
+    // US-52 AC7d: the slow-import report says whether this retry ran; a malformed answer's re-send is not it.
+    it.each([
+      { name: 'a 529 then an answer', replies: [after(10_000, () => errResponse(529)), ok], retries: 1 },
+      { name: 'a dropped connection then an answer', replies: [async () => { throw new TypeError('fetch failed'); }, ok], retries: 1 },
+      { name: 'a malformed answer then its re-send', replies: [() => anthropicMessage('not json'), ok], retries: 0 },
+      { name: 'one clean answer', replies: [ok], retries: 0 },
+    ])('US-52 AC7d: onRetry is told of each HTTP retry: $name', async ({ replies, retries }) => {
+      const fetchMock = vi.fn();
+      for (const r of replies) fetchMock.mockImplementationOnce(r);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      const onRetry = vi.fn();
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true, onRetry }))
+        .resolves.toMatchObject({ classification: 'lab_report' });
+      expect(onRetry).toHaveBeenCalledTimes(retries);
+    });
+
     it('the website keeps its retry of a timed-out attempt, in a fresh window', async () => {
       const fetchMock = vi.fn(hangs);
       global.fetch = fetchMock as unknown as typeof fetch;
