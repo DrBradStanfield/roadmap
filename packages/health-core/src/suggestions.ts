@@ -1,7 +1,7 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
-import { SCREENING_REFS, followupTrigger, inAges, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -869,7 +869,7 @@ export function generateSuggestions(
       followupStatus: string | undefined,
       followupDate: string | undefined,
     ): Suggestion | null {
-      if (result !== followupTrigger(r)) return null;
+      if (!opensFollowup(r, result)) return null;
       const type = r.id;
       const info = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
 
@@ -893,7 +893,7 @@ export function generateSuggestions(
         };
       }
 
-      const nextDue = getPostFollowupDueDate(type, method, 'abnormal', followupStatus, followupDate);
+      const nextDue = getPostFollowupDueDate(type, method, result, followupStatus, followupDate);
       if (nextDue) {
         const nextDueLabel = monthLabel(nextDue);
         if (now > nextDue) {
@@ -948,7 +948,7 @@ export function generateSuggestions(
     const lungSmoker = inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(screenings);
     if (lungSmoker && (!inAges(LUNG.cardAges, age, sex) || !SCREENING_REFS.lungPackYears(screenings))) {
       const followup = screenings.lungScreening && !notStarted(LUNG, screenings.lungScreening) && screenings.lungLastDate
-        && screenings.lungResult === followupTrigger(LUNG) && screenings.lungFollowupStatus !== 'completed'
+        && opensFollowup(LUNG, screenings.lungResult) && screenings.lungFollowupStatus !== 'completed'
         && screeningFollowup(LUNG, screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
       if (followup) suggestions.push(followup);
     } else if (lungSmoker) {
@@ -1000,7 +1000,7 @@ export function generateSuggestions(
     if (ruleTakes(DEXA, DEXA.cardAges, age, sex)) {
       if (notStarted(DEXA, screenings.dexaScreening)) {
         pushStart(DEXA, 'attention');
-      } else if (screenings.dexaResult === followupTrigger(DEXA)) {
+      } else if (opensFollowup(DEXA, screenings.dexaResult)) {
         // Osteoporosis — use follow-up pattern
         const followup = screeningFollowup(DEXA, 'dexa_scan', screenings.dexaResult, screenings.dexaFollowupStatus, screenings.dexaFollowupDate);
         if (followup) {
