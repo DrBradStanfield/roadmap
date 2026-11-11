@@ -12,6 +12,8 @@
  * real `trackProductEvent` runs, so the event tests read the POSTs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
@@ -37,7 +39,7 @@ vi.mock('../lib/chat-api', async original => ({
 // The chat column: what it was told about muting.
 const chat = vi.hoisted(() => ({ muted: [] as boolean[], proposeEdit: null as null | ((edits: unknown[]) => void) }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: (edits: unknown[]) => void }) => { chat.muted.push(!!muted); chat.proposeEdit = onProposeEdit; return null; },
+  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: ChatEditTarget }) => { chat.muted.push(!!muted); chat.proposeEdit = (edits) => onProposeEdit.take(edits as ProposedEdit[], onProposeEdit.ask()); return null; },
 }));
 // The desktop floating chat's panel: whether it is open and muted.
 const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));

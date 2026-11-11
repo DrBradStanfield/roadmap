@@ -47,8 +47,16 @@ interface UseChatStateOptions {
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onRemoteConversationSelected?: () => void;
-  /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  /** Where the form edits the model proposes via tool_use go (pre-fill / med update). */
+  onProposeEdit?: ChatEditTarget;
+}
+
+/** A reply's form edits (US-16): `ask` reads the erase the question is asked
+ *  under as it is sent; `take` gets the reply's edits with it, so they never
+ *  land on a record erased since (US-16 AC2a). */
+export interface ChatEditTarget {
+  ask: () => string;
+  take: (edits: ProposedEdit[], asked: string) => void;
 }
 
 /** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
@@ -302,6 +310,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
     // A throw before the request (reading the plan for context) is a failed
     // send like any other: the chat frees and the question goes back (US-15 AC17b).
+    const asked = onProposeEditRef.current?.ask() ?? ''; // the turn carries it to the reply (US-16 AC2a)
     const { result, error: sendError } = await (async () => sendMessage(
       trimmed,
       currentConvId,
@@ -368,7 +377,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.(result.proposedEdits);
+        onProposeEditRef.current?.take(result.proposedEdits, asked);
       }
       if (result.subscriptionCard) {
         const card = result.subscriptionCard;

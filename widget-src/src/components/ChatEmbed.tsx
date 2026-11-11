@@ -6,10 +6,9 @@
  * panel scrolls into view, giving the health widget priority on page load.
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -24,7 +23,7 @@ interface ChatEmbedProps {
   isLoggedIn: boolean;
   guestInputs?: ChatContextSource;
   muted?: boolean;
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  onProposeEdit?: ChatEditTarget;
 }
 
 export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: ChatEmbedProps) {

@@ -220,7 +220,7 @@ describe('US-15 AC38 — a status line clears the text streamed before it', () =
 });
 
 describe('US-15 AC19 — only the chat that applies edits asks for the tools', () => {
-  async function sendWith(onProposeEdit?: () => void) {
+  async function sendWith(onProposeEdit?: hookModule.ChatEditTarget) {
     const { sendMessage } = await import('../lib/chat-api');
     const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit }));
     act(() => hook.result.current.actions.handleInputChange('LDL 3.8 today'));
@@ -229,7 +229,7 @@ describe('US-15 AC19 — only the chat that applies edits asks for the tools', (
   }
 
   it('with onProposeEdit (the widget\'s own chat): canApplyEdits is true', async () => {
-    expect(await sendWith(() => {})).toBe(true);
+    expect(await sendWith({ ask: () => '', take: () => {} })).toBe(true);
   });
 
   it('without it (the blog bubble, the chatbot embed): false', async () => {
