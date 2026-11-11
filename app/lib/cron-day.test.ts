@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { transition, type CronDay, type CronDayEvent, type CronDayStep } from './cron-day';
+import { lockClock, STUCK_AFTER_HOURS, transition, type CronDay, type CronDayEvent, type CronDayStep } from './cron-day';
 
 // US-28 AC7: a daily cron's day, phase by event. Every pair has a row,
 // impossible ones included, so none is left to chance.
@@ -63,5 +63,18 @@ describe('US-28 AC7: cron day transition, phase by event', () => {
     }
     expect(decisions).toEqual(new Set(['skip', 'skip-and-report-stuck']));
     expect(transition(transition(day, finished).day, tick(NEXT, 49 * HOUR)).decision).toBe('try');
+  });
+});
+
+// US-28 AC9: one table of stuck limits. A tick reports a run stuck, and the
+// lock lets another machine take its day, at the same age.
+describe('US-28 AC9: the stuck limits, shared by the tick and the lock', () => {
+  it('one limit per lock name', () => {
+    expect(STUCK_AFTER_HOURS).toEqual({ trending_cron: 1, trending_cron_edu: 1, reminder_v2_cron: 6, chat_text_purge: 6 });
+  });
+  it("the lock's stuck cutoff is the tick's now less that cron's limit", () => {
+    const now = new Date(T0);
+    expect(lockClock('reminder_v2_cron', now)).toEqual({ now, stuckCutoff: new Date(T0 - 6 * HOUR) });
+    expect(lockClock('trending_cron', now)).toEqual({ now, stuckCutoff: new Date(T0 - HOUR) });
   });
 });
