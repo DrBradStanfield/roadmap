@@ -190,6 +190,23 @@ describe('US-04 — the saved-value editor', () => {
     expect(view.getByText('That value is outside the range this record takes.')).toBeTruthy();
   });
 
+  // US-04: a click away and back within the 150 ms window armed the
+  // click-away save; an Enter that failed left it armed, and it asked the
+  // correction a second time.
+  it('an Enter that fails asks the correction once, after a click away and back', async () => {
+    const { view, input, onCorrect } = editor();
+    onCorrect.mockResolvedValue('error');
+    fireEvent.change(input, { target: { value: '3.3' } });
+    fireEvent.blur(input);
+    fireEvent.focus(input);
+    await wait(50);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await wait(0);
+    await wait(1200);
+    expect(onCorrect).toHaveBeenCalledTimes(1);
+    expect(view.getByText('Could not save. Check your connection and try again.')).toBeTruthy();
+  });
+
   // US-04 AC1 (round 5): the correction names the row the editor opened
   // on, and the store refuses it if another writer has replaced that row.
   it('corrects the row it opened on, though the cell has since been given another', async () => {
