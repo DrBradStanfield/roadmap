@@ -660,6 +660,7 @@ final class AppleHealthEraseRaceTests: XCTestCase {
             }
             let (app, _) = try await connectedInTheCloud()
             var epoch = 0, day = 1
+            var lastSync = Date()
             XCTAssertTrue(disjoint, "sequence \(index), start")
             for (number, step) in sequence.enumerated() {
                 switch step {
@@ -673,10 +674,11 @@ final class AppleHealthEraseRaceTests: XCTestCase {
                     health.deleteFails = fails
                     let wasConnected = app.health.connected
                     epoch += 1
-                    // What the phone holds goes up first (a merged earlier erase), so the erase is
-                    // the only change the next sync meets.
-                    await app.sync.syncNow()
+                    // The session re-reads the cloud at most once per 5 s (record-session.ts:31, US-34).
+                    if Date().timeIntervalSince(lastSync) < 5 { try? await Task.sleep(for: .seconds(5.1)) }
                     try await remoteEraseSparingTheRow(app, to: epoch)
+                    lastSync = Date()
+                    await until("sequence \(index) step \(number): the erase was read") { app.store.myData?.eraseEpoch == epoch }
                     if wasConnected { await until("sequence \(index) step \(number): disconnected") { !app.health.connected } }
                     await settle()
                 case .pay:
