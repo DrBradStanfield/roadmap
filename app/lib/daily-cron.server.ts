@@ -18,6 +18,21 @@ export const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 
+let sharedLineLogged = false;
+
+/** Reminders and the chat purge share one `cron_lock` row across both Fly apps,
+ *  and run with the winning app's env, so they run only on health-tool-app
+ *  (US-28 AC8, US-23 AC14). Only the exact string 'true' (fly.toml [env]) turns
+ *  them on. Logs one fixed line, the first time a machine asks. */
+export function sharedCronsOn(): boolean {
+  const on = process.env.RUN_SHARED_CRONS === 'true';
+  if (!sharedLineLogged) {
+    sharedLineLogged = true;
+    console.log(on ? 'Shared crons (reminders, chat purge): on' : "Shared crons (reminders, chat purge): off (RUN_SHARED_CRONS is not 'true')");
+  }
+  return on;
+}
+
 /** One Sentry message, fixed text and tags (the cron, the hours), when a run
  *  outlasts its cron's stuck limit (US-28 AC7). No ids, no error text. */
 export function reportStuckRun(label: string, feature: string, startedAt: number, now: number): void {
@@ -32,6 +47,8 @@ export interface DailyCron {
   /** Sentry `feature` tag on a tick's error. */
   feature: string;
   lockName: CronLockName;
+  /** Its lock row is shared by both Fly apps: starts only where sharedCronsOn(). */
+  shared?: boolean;
   targetHour: number;
   /** Hours a run may take before a tick reports it stuck (US-28 AC7). */
   stuckAfterHours: number;
@@ -91,6 +108,7 @@ export function dailyCron(cron: DailyCron): { start: () => void; stop: () => voi
         console.log(`${cron.label} disabled in ${process.env.NODE_ENV}`);
         return;
       }
+      if (cron.shared && !sharedCronsOn()) return;
       console.log(cron.startLog);
       intervalId = setInterval(tick, CRON_INTERVAL_MS);
     },

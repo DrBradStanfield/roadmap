@@ -110,6 +110,8 @@ fly status -c fly.edu.toml  # health-tool-edu
 #     ask the live chatbot a question on microvitamin.com and on drstanfield.com.)
 ```
 
+**Shared crons run only on health-tool-app (US-28 AC8, US-23 AC14, 2026-11-11).** Reminders and the chat purge start only where `RUN_SHARED_CRONS = 'true'`, which only fly.toml sets. So health-tool-app must deploy successfully with the flag before or with the edu deploy (CI's deploy job runs fly.toml first). If its deploy fails, no machine runs the shared crons until it is fixed: health-tool-edu never takes them over. Fix it and redeploy the main app (6a), not edu. The day's reminders then run on the first hourly tick after the main app boots (any tick from 08:00 UTC to midnight catches up). A day the main app misses entirely goes out a day late: the next pass sends everything due on or before its date. Each machine logs one line at boot: `Shared crons (reminders, chat purge): on` on health-tool-app, `...: off (RUN_SHARED_CRONS is not 'true')` on edu. A missing day shows two ways: no `Reminder v2 cron: completed, sent N emails` line in `fly logs -c fly.toml` that day, and `cron_lock.lock_date` for `reminder_v2_cron` (and `chat_text_purge`) not advancing to today.
+
 **Single-app shortcut for a chatbot-knowledge-only change** (most common — e.g. a prompt or blog edit, no Dockerfile/dep change): commit the content change, run step 5a, then steps 6a → 6b. You do NOT need the Shopify-extension steps (1-4) unless the widget itself changed.
 
 **Record schemaVersion 2 ships everywhere at once (US-09 AC23, 2026-10-20).** An erase now writes `schemaVersion` 2, and older bundles and CLIs refuse that file. Ship the storefront extension, both Fly apps (the hosted MCP runs on health-tool-edu) and the GitHub Pages build in the same deploy window, or a user who erases on a new surface locks themselves out of an old one until it updates.
@@ -299,6 +301,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and
   YouTube bot tokens.
+- **`RUN_SHARED_CRONS` (fly.toml `[env]`, health-tool-app only; not a secret):** `'true'` starts the reminder and chat-purge crons. Both apps share their `cron_lock` rows and the winning machine runs the job with its own app's env (reminder links from `SHOPIFY_APP_URL`, the purge's `CHAT_QUESTION_ARCHIVE`), so only the main app runs them. Anything but the exact string `'true'`, unset included, is off. Trending is per store and runs on both apps. Deploy order: § Deploy Workflow, "Shared crons".
 - **iPhone app gate (US-52, edu app only):** `APP_ATTEST_TEAM_ID` (unset = the app routes answer 503), `APP_ATTEST_BUNDLE_ID` (default `com.drstanfield.healthroadmap`), `APP_ATTEST_ALLOW_DEVELOPMENT=1` (accept Xcode-signed keys, off in production), `APP_CHAT_DAILY_CAP` (default 500 turns/machine/day), `APP_LAB_DAILY_CAP` (default 300 files/machine/day). `APP_ATTEST_DEV_BYPASS=1` is for a local server only; it is refused unless `NODE_ENV` is development or test. Run the App Attest section of `supabase/rls-policies.sql` first.
 - **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
   every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
@@ -345,4 +348,4 @@ Setup, rotation, verify sequence, ChatGPT/Claude publishing: [deploy-runbook-mcp
 
 **Database connections**: Supabase JS client uses HTTP/REST via PostgREST (already pooled internally). Only `SESSION_DATABASE_URL` (Shopify session storage) uses direct Postgres connections. Connection limits depend on Supabase plan (Free: ~50, Pro: ~200).
 
-**Reminder cron**: Processes opt-ins in batches of 50 with a concurrency limit (`reminder-v2-cron.server.ts`). Distributed lock (`cron_lock`) prevents multiple Fly.io machines from processing simultaneously.
+**Reminder cron**: Processes opt-ins in batches of 50 with a concurrency limit (`reminder-v2-cron.server.ts`). Distributed lock (`cron_lock`) prevents multiple Fly.io machines from processing simultaneously. It runs only on health-tool-app (`RUN_SHARED_CRONS`, § Environment variables).
