@@ -1,0 +1,208 @@
+// US-71 AC7: one shared simulator under a lease (ios/scripts/sim-run.sh). Fake xcrun and xcodebuild
+// on PATH, so nothing boots: the fakes keep the device's state in a file and log every call.
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+const SCRIPT = join(__dirname, 'sim-run.sh');
+const UDID = '11111111-2222-3333-4444-555555555555';
+const XCRUN = `#!/bin/bash
+echo "$*" >> "$FAKE/xcrun.log"
+[ "$1" = simctl ] || exit 0
+shift
+case "$1" in
+  list)
+    if [ "$2" = runtimes ]; then
+      echo "iOS 27.0 (27.0 - A) - com.apple.CoreSimulator.SimRuntime.iOS-27-0"
+      echo "iOS 27.2 (27.2 - B) - com.apple.CoreSimulator.SimRuntime.iOS-27-2"
+      echo "iOS 27.2 (27.2 - C) - com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4"
+      exit 0
+    fi
+    echo "== Devices =="
+    if [ -f "$FAKE/udid" ]; then
+      st=$(cat "$FAKE/state")
+      [ "\${3:-}" = booted ] && [ "$st" != Booted ] || echo "    HR Shared iPhone ($(cat "$FAKE/udid")) ($st) "
+    fi;;
+  create) echo ${UDID} > "$FAKE/udid"; echo Shutdown > "$FAKE/state"; echo ${UDID};;
+  bootstatus) echo Booted > "$FAKE/state";;
+  shutdown) echo Shutdown > "$FAKE/state";;
+esac
+`;
+const XCODEBUILD = '#!/bin/bash\necho "$*" >> "$FAKE/xcodebuild.log"\n';
+
+let dir: string, fake: string, home: string;
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'sim-run-test-'));
+  fake = join(dir, 'fake');
+  home = join(dir, 'home');
+  mkdirSync(fake);
+  writeFileSync(join(fake, 'xcrun'), XCRUN, { mode: 0o755 });
+  writeFileSync(join(fake, 'xcodebuild'), XCODEBUILD, { mode: 0o755 });
+});
+afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+const env = (extra: Record<string, string> = {}) => ({
+  ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
+  HR_SIM_POLL_SECONDS: '0.1', HR_SIM_IDLE_SECONDS: '0', ...extra,
+});
+const run = (args: string[], extra: Record<string, string> = {}) =>
+  spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8', env: env(extra), timeout: 20_000 });
+const start = (args: string[], extra: Record<string, string> = {}) => {
+  const p = spawn('bash', [SCRIPT, ...args], { env: env(extra) });
+  let err = '';
+  p.stderr.on('data', (d) => { err += d; });
+  const done = new Promise<{ code: number | null; err: string }>((res) => p.on('exit', (code) => res({ code, err })));
+  return { p, done };
+};
+const log = (name: string) => (existsSync(join(fake, name)) ? readFileSync(join(fake, name), 'utf8') : '');
+const lease = () => join(home, 'lease');
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const until = async (check: () => boolean, ms = 10_000) => {
+  for (const end = Date.now() + ms; Date.now() < end; await sleep(50)) if (check()) return;
+  throw new Error('timed out waiting');
+};
+const holder = (pid: number) => {
+  mkdirSync(lease(), { recursive: true });
+  writeFileSync(join(lease(), 'holder'), `pid=${pid}\nlstart=\ntoken=${pid}-1\nstarted=${Math.floor(Date.now() / 1000)}\ncwd=/elsewhere\ncommand=xcodebuild test\n`);
+};
+
+describe('US-71 AC7 lease', () => {
+  it('runs the command on the shared device, creating and booting it once, and frees the lease', () => {
+    const r = run(['--', 'sh', '-c', 'echo "udid=$SIM_UDID"; test -d "$HR_SIM_HOME/lease"']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain(`udid=${UDID}`);
+    expect(log('xcrun.log')).toContain('simctl create HR Shared iPhone com.apple.CoreSimulator.SimDeviceType.iPhone-18-Pro com.apple.CoreSimulator.SimRuntime.iOS-27-2\n');
+    expect(log('xcrun.log')).toContain(`simctl bootstatus ${UDID} -b`);
+    expect(existsSync(lease())).toBe(false);
+    expect(readFileSync(join(home, 'udid'), 'utf8').trim()).toBe(UDID);
+    // The second run reuses the booted device: no new create, no boot.
+    writeFileSync(join(fake, 'xcrun.log'), '');
+    expect(run(['--', 'true']).status).toBe(0);
+    expect(log('xcrun.log')).not.toMatch(/create|bootstatus/);
+  });
+
+  it('frees the lease when the command fails, and returns its exit code', () => {
+    const r = run(['--', 'sh', '-c', 'exit 3']);
+    expect(r.status).toBe(3);
+    expect(existsSync(lease())).toBe(false);
+  });
+
+  it('makes a second caller wait, naming the holder, then run', async () => {
+    const a = start(['--', 'sleep', '1']);
+    await until(() => existsSync(join(lease(), 'holder')));
+    const b = start(['--', 'true']);
+    const rb = await b.done;
+    expect(rb.code).toBe(0);
+    expect(rb.err).toMatch(/in use by pid \d+ for \d+m\d+s \(.*\): sleep 1/);
+    expect((await a.done).code).toBe(0);
+  });
+
+  it('gives up after the wait limit with exit 75, naming the holder', async () => {
+    const a = start(['--', 'sleep', '3']);
+    await until(() => existsSync(join(lease(), 'holder')));
+    const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' });
+    expect(r.status).toBe(75);
+    expect(r.stderr).toMatch(/gave up after 1s: the simulator is still held by pid \d+ .*: sleep 3/);
+    a.p.kill('SIGTERM');
+    await a.done;
+  });
+
+  it('takes over a lease whose holder has died', () => {
+    holder(spawnSync('true').pid!);
+    const r = run(['--', 'true']);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain('took over a stale lease');
+    expect(existsSync(lease())).toBe(false);
+  });
+
+  it('takes over a lease whose pid now belongs to another process (start time differs)', () => {
+    holder(process.pid);
+    writeFileSync(join(lease(), 'holder'), readFileSync(join(lease(), 'holder'), 'utf8').replace('lstart=', 'lstart=Thu Jan  1 00:00:00 1970'));
+    expect(run(['--', 'true']).stderr).toContain('took over a stale lease');
+  });
+
+  it('on SIGTERM stops the command and frees the lease', async () => {
+    const pidFile = join(dir, 'child.pid');
+    const a = start(['--', 'sh', '-c', `echo $$ > ${pidFile}; exec sleep 30`]);
+    await until(() => existsSync(pidFile) && existsSync(join(lease(), 'holder')));
+    a.p.kill('SIGTERM');
+    expect((await a.done).code).toBe(143);
+    expect(existsSync(lease())).toBe(false);
+    const child = Number(readFileSync(pidFile, 'utf8'));
+    await until(() => spawnSync('kill', ['-0', String(child)]).status !== 0, 3000);
+  });
+
+  it('a call from inside a run uses the lease it holds instead of waiting on itself', () => {
+    const r = run(['--', 'bash', SCRIPT, '--', 'sh', '-c', 'echo inner'], { HR_SIM_WAIT_SECONDS: '1' });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('inner');
+  });
+});
+
+describe('US-71 AC7 xcodebuild on the shared device', () => {
+  it('adds the device, no parallel testing, one destination and a time limit to a test run', () => {
+    expect(run(['--', 'xcodebuild', 'test', '-scheme', 'HealthRoadmap']).status).toBe(0);
+    expect(log('xcodebuild.log').trim()).toBe(
+      `test -scheme HealthRoadmap -destination id=${UDID} -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1`);
+  });
+
+  it('keeps the flags it is given and replaces {udid}', () => {
+    run(['--', 'xcodebuild', 'test-without-building', '-destination', 'id={udid}', '-parallel-testing-enabled', 'NO']);
+    expect(log('xcodebuild.log').trim()).toBe(
+      `test-without-building -destination id=${UDID} -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1`);
+  });
+
+  it.each([['-destination', 'platform=iOS Simulator,name=iPhone 17 Pro'], ['-parallel-testing-enabled', 'YES']])(
+    'refuses %s %s without running xcodebuild', (flag, value) => {
+      const r = run(['--', 'xcodebuild', 'test', flag, value]);
+      expect(r.status).toBe(64);
+      expect(log('xcodebuild.log')).toBe('');
+    });
+
+  it('build-for-testing does not boot the device', () => {
+    run(['--', 'xcodebuild', 'build-for-testing', '-scheme', 'HealthRoadmap']);
+    expect(log('xcrun.log')).not.toContain('bootstatus');
+  });
+
+  it('--reset-app uninstalls the app (bundle id from the project) before the command', () => {
+    run(['--reset-app', '--', 'xcrun', 'simctl', 'launch', '{udid}', 'x']);
+    expect(log('xcrun.log')).toMatch(new RegExp(`simctl uninstall ${UDID} com\\.drstanfield\\.healthroadmap\\n.*simctl launch ${UDID} x`, 's'));
+  });
+});
+
+describe('US-71 AC7 idle shutdown', () => {
+  it('shuts the device down after the idle time with no lease', async () => {
+    run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
+    await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 5000);
+    expect(existsSync(lease())).toBe(false);
+  });
+
+  it('leaves it booted when another run released since', async () => {
+    run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
+    run(['--', 'true']);
+    await sleep(2000);
+    expect(log('xcrun.log')).not.toContain('shutdown');
+  });
+
+  it('leaves it booted while a run holds the lease', async () => {
+    run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
+    holder(process.pid);
+    await sleep(2000);
+    expect(log('xcrun.log')).not.toContain('shutdown');
+    expect(readFileSync(join(lease(), 'holder'), 'utf8')).toContain(`pid=${process.pid}`);
+  });
+});
+
+describe('US-71 AC7 status', () => {
+  it('names the holder and kills nothing', () => {
+    holder(process.pid);
+    const r = run(['status']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain(`Lease: held by pid ${process.pid} (running)`);
+    expect(r.stdout).toContain('/elsewhere: xcodebuild test');
+    expect(r.stdout).toContain('Simulator-runtime processes:');
+    expect(existsSync(lease())).toBe(true);
+  });
+});

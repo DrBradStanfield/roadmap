@@ -2,8 +2,7 @@
 # Records the App Store videos' footage and builds both drafts (ios/app-store.md):
 #   1. an app preview, 886 × 1920, with a silent stereo track: 29 s with the Chat clip, 25 s without;
 #   2. the product-page header video, 3840 × 1646, plus its still and a 3:2 search still.
-# Like app-store-shots.sh: installs the app fresh on its own simulator ("Video iPhone 18 Pro",
-# made if missing), seeds the fictional sample record, skips welcome and onboarding, sets the
+# Like app-store-shots.sh: installs the app fresh on the shared simulator (sim-run.sh), seeds the fictional sample record, skips welcome and onboarding, sets the
 # 9:41 status bar. Then it adds a fictional lab report to Photos, starts the local lab reader
 # (app-store-video-lab-server.mts: the real extraction, the simulator's dev header, US-52 AC3),
 # records the screen while the AppStoreVideo UI test runs, and cuts the recording at the
@@ -26,16 +25,15 @@ mkdir -p "$WORK"
 SCRATCH="${TMPDIR:-/tmp}/app-store-video"
 mkdir -p "$SCRATCH"
 if [ "${1:-}" != "--compose-only" ]; then
-  DEVICE="Video iPhone 18 Pro"
+  # The shared simulator (an iPhone 18 Pro) under its lease (sim-run.sh, US-71 AC7).
+  [ -n "${HR_SIM_LEASE:-}" ] || exec scripts/sim-run.sh -- scripts/app-store-video.sh "$@"
   APP_ID=com.drstanfield.healthroadmap
   DERIVED="${TMPDIR:-/tmp}/HealthRoadmap-video-$(pwd | shasum | cut -c1-8)"
-  ID=$(xcrun simctl list devices available | grep -F "    $DEVICE (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
-  [ -n "$ID" ] || ID=$(xcrun simctl create "$DEVICE" com.apple.CoreSimulator.SimDeviceType.iPhone-18-Pro)
+  ID=$SIM_UDID
 
   node scripts/build-engine.mjs >/dev/null
   xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -destination "id=$ID" -derivedDataPath "$DERIVED" -quiet
-  xcrun simctl boot "$ID" 2>/dev/null || true
   xcrun simctl bootstatus "$ID" -b >/dev/null
   xcrun simctl uninstall "$ID" "$APP_ID" 2>/dev/null || true
   xcrun simctl install "$ID" "$DERIVED/Build/Products/Debug-iphonesimulator/HealthRoadmap.app"

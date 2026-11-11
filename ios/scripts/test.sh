@@ -2,11 +2,11 @@
 # Builds the engine and runs the iOS tests once per pinned time zone (US-25 AC1).
 # The zone is fixed at process launch because JavaScriptCore reads it once.
 # A skipped parity test fails the run: a skip would mean the zone pin was lost.
-#   ios/scripts/test.sh ["iPhone 17 Pro"]
+# Each zone's run takes the shared simulator's lease (sim-run.sh, US-71 AC7).
+#   ios/scripts/test.sh
 set -eu
 cd "$(dirname "$0")/.."
 node scripts/build-engine.mjs
-DEVICE="${1:-iPhone 17 Pro}"
 LOG="build/test-output.txt"
 # DerivedData outside the repo, one folder per checkout: a repo in an iCloud-synced
 # ~/Documents gets Finder xattrs on its build products, and codesign refuses them.
@@ -15,9 +15,9 @@ mkdir -p build
 trap scripts/clean-test-clones.sh EXIT
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
-  TEST_RUNNER_TZ="$ZONE" xcodebuild test \
+  # sim-run adds the shared device, -parallel-testing-enabled NO and a time limit.
+  TEST_RUNNER_TZ="$ZONE" scripts/sim-run.sh -- xcodebuild test \
     -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
-    -destination "platform=iOS Simulator,name=$DEVICE" \
     -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)" || true
   grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }

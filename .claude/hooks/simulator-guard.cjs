@@ -4,6 +4,9 @@
 //      (parallel testing clones simulators and fills the disk).
 //   2. Denies `simctl boot|create|clone` while MAX_BOOTED_SIMULATORS are already booted, unless the
 //      command sets ALLOW_EXTRA_SIMULATOR=1. Fails open when the booted check errors or times out.
+//   3. Denies any other simulator use outside ios/scripts/sim-run.sh (US-71 AC7): an xcodebuild test,
+//      test-without-building or build-for-testing, a simulator -destination, simctl boot, install,
+//      uninstall, launch or io. ALLOW_EXTRA_SIMULATOR=1 lifts it.
 // A best-effort warning layer, not a bash parser (PRs 805/930): one scan drops comments, heredoc bodies and
 // quoted text, and the tool must be the command word of its segment (after VAR=1, env, timeout N,
 // perl -e '...' N or xcrun). A malformed command is also checked as raw text, so it can only be denied.
@@ -120,20 +123,42 @@ function decide(cmd, lookup = bootedSimulators) {
     const flagged = args.some((a, j) => a === '-parallel-testing-enabled' && args[j + 1] === 'NO');
     if (!flagged) {
       return 'xcodebuild test without `-parallel-testing-enabled NO` clones simulators and has overloaded this Mac '
-        + '(US-71 AC6). Add `-parallel-testing-enabled NO` and a time limit: '
+        + `(US-71 AC6). ${DOOR_HINT} With ALLOW_EXTRA_SIMULATOR=1, add \`-parallel-testing-enabled NO\` and a time limit: `
         + "`perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild ...`.";
     }
   }
-  const boots = calls.filter((c) => c.tool === 'simctl' && ['boot', 'create', 'clone'].includes(c.args[0]));
-  if (!boots.length) return null;
   // The escape hatch counts only as a real, unquoted assignment: a leading VAR=value of a segment, or after `export`.
-  if (segs.some(setsEscapeHatch)) return null;
-  const booted = lookup();
-  if (!booted || booted.length < MAX_BOOTED_SIMULATORS) return null;
-  const list = booted.map((d) => `${d.name} (${d.udid})`).join(', ');
-  return `${booted.length} simulators are already booted: ${list}. This Mac takes at most ${MAX_BOOTED_SIMULATORS} `
-    + '(US-71 AC6). Reuse one with `-destination id=<udid>`, or shut one down first with '
-    + '`xcrun simctl shutdown <udid>`. For a demo, prefix the command with ALLOW_EXTRA_SIMULATOR=1.';
+  const hatch = segs.some(setsEscapeHatch);
+  const boots = calls.filter((c) => c.tool === 'simctl' && ['boot', 'create', 'clone'].includes(c.args[0]));
+  if (boots.length && !hatch) {
+    const booted = lookup();
+    if (booted && booted.length >= MAX_BOOTED_SIMULATORS) {
+      const list = booted.map((d) => `${d.name} (${d.udid})`).join(', ');
+      return `${booted.length} simulators are already booted: ${list}. This Mac takes at most ${MAX_BOOTED_SIMULATORS} `
+        + '(US-71 AC6). Reuse one with `-destination id=<udid>`, or shut one down first with '
+        + '`xcrun simctl shutdown <udid>`. For a demo, prefix the command with ALLOW_EXTRA_SIMULATOR=1.';
+    }
+  }
+  if (!hatch && calls.some((c) => usesSimulator(c, cmd))) return `This runs on a simulator outside the shared one (US-71 AC7). ${DOOR_HINT}`;
+  return null;
+}
+
+// US-71 AC7: the one door to the simulator is ios/scripts/sim-run.sh. A command run through it has the
+// wrapper as its command word, so invocation() never sees the xcodebuild or simctl inside.
+const DOOR_HINT = 'Run it through ios/scripts/sim-run.sh, the shared simulator with a lease: '
+  + '`ios/scripts/sim-run.sh -- xcodebuild test ...` (it adds the device and the test flags) or '
+  + '`ios/scripts/sim-run.sh -- xcrun simctl launch {udid} <bundle id>`. For a demo on another simulator, '
+  + 'prefix the command with ALLOW_EXTRA_SIMULATOR=1.';
+const DOOR_ACTIONS = ['test', 'test-without-building', 'build-for-testing'];
+const DOOR_SIMCTL = ['boot', 'install', 'uninstall', 'launch', 'io'];
+
+// A test action, or a destination naming a simulator (not generic/, which boots nothing). A quoted
+// destination reads as QUOTED, so the raw command is checked for it.
+function usesSimulator({ tool, args }, cmd) {
+  if (tool === 'simctl') return DOOR_SIMCTL.includes(args[0]);
+  if (args.some((a) => DOOR_ACTIONS.includes(a))) return true;
+  return args.some((a, j) => args[j - 1] === '-destination' && (a.includes('QUOTED')
+    ? /(^|[^/])platform=iOS Simulator/.test(cmd) : /Simulator/.test(a) && !a.startsWith('generic/')));
 }
 
 module.exports = { decide, MAX_BOOTED_SIMULATORS };

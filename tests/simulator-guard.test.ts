@@ -41,16 +41,22 @@ describe('US-71 AC6 rule 1: xcodebuild test needs -parallel-testing-enabled NO',
     expect(reason).toContain("perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild");
   });
 
+  // With the flag, rule 1 passes them; outside the escape hatch rule 3 (AC7) then sends them to sim-run.sh.
   it.each([
     "perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild test -scheme App -parallel-testing-enabled NO",
     'xcodebuild -scheme App \\\n  -parallel-testing-enabled NO \\\n  test-without-building',
+    'xcodebuild test -scheme App -parallel-testing-enabled "NO"',
+    "(cd ios; perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild -scheme App test -parallel-testing-enabled NO) | tail",
+  ])('rule 1 passes %s', (cmd) => {
+    expect(decide(`ALLOW_EXTRA_SIMULATOR=1 ${cmd}`, never)).toBeNull();
+    expect(decide(cmd, never)).toContain('US-71 AC7');
+  });
+
+  it.each([
     'xcodebuild build -scheme App',
-    'xcodebuild build-for-testing -scheme App',
     'pgrep -fl xcodebuild',
     'npm test && xcodebuild build -scheme App',
     'grep xcodebuild test.log',
-    'xcodebuild test -scheme App -parallel-testing-enabled "NO"',
-    "(cd ios; perl -e 'alarm shift; exec @ARGV' 1200 xcodebuild -scheme App test -parallel-testing-enabled NO) | tail",
     // text, not commands (review F1/R2)
     'git commit -m "Run xcodebuild test with the flag"',
     'git commit -F - <<EOF\nworkers run xcodebuild test -scheme App\nEOF',
@@ -81,9 +87,10 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
     expect(decide(cmd, never)).toBeNull();
   });
 
-  it('allows a boot with one booted or none', () => {
-    expect(decide('xcrun simctl boot BBBB', one)).toBeNull();
-    expect(decide('xcrun simctl boot BBBB', () => [])).toBeNull();
+  it('the cap passes a boot with one booted or none; rule 3 then sends it to sim-run.sh', () => {
+    expect(decide('xcrun simctl boot BBBB', one)).toContain('US-71 AC7');
+    expect(decide('xcrun simctl boot BBBB', () => [])).toContain('US-71 AC7');
+    expect(decide('xcrun simctl create Demo iPhone-18-Pro', one)).toBeNull();
   });
 
   it('allows the escape hatch ALLOW_EXTRA_SIMULATOR=1 without asking simctl', () => {
@@ -91,7 +98,7 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
   });
 
   it('fails open when the booted check fails or times out', () => {
-    expect(decide('xcrun simctl boot CCCC', () => null)).toBeNull();
+    expect(decide('xcrun simctl create Demo iPhone-18-Pro', () => null)).toBeNull();
   });
 
   it('never asks simctl for commands that do not boot, create or clone', () => {
@@ -103,6 +110,46 @@ describe(`US-71 AC6 rule 2: no new simulator once ${MAX_BOOTED_SIMULATORS} are b
 
   it('the escape hatch does not lift rule 1', () => {
     expect(decide('ALLOW_EXTRA_SIMULATOR=1 xcodebuild test -scheme App', never)).toContain('-parallel-testing-enabled NO');
+  });
+});
+
+describe('US-71 AC7 rule 3: the simulator only through ios/scripts/sim-run.sh', () => {
+  it.each([
+    'xcodebuild build-for-testing -scheme App',
+    'xcodebuild build -scheme App -destination "platform=iOS Simulator,name=iPhone 18 Pro"',
+    "cd ios && xcodebuild -scheme App -destination 'platform=iOS Simulator,id=AAAA' build",
+    'xcodebuild build -scheme App -destination platform=iOS\\ Simulator,name=X',
+    'xcrun simctl install AAAA build/App.app',
+    'xcrun simctl launch AAAA com.drstanfield.healthroadmap',
+    'xcrun simctl io AAAA screenshot shot.png',
+    'xcrun simctl uninstall AAAA com.drstanfield.healthroadmap',
+    'ls && simctl boot AAAA',
+  ])('denies %s, naming the wrapper', (cmd) => {
+    const reason = decide(cmd, () => []);
+    expect(reason).toContain('US-71 AC7');
+    expect(reason).toContain('ios/scripts/sim-run.sh -- xcodebuild test');
+    expect(reason).toContain('ALLOW_EXTRA_SIMULATOR=1');
+  });
+
+  it.each([
+    'ios/scripts/sim-run.sh -- xcodebuild test -project HealthRoadmap.xcodeproj -scheme HealthRoadmap',
+    'cd ios && scripts/sim-run.sh --reset-app -- xcrun simctl launch {udid} com.drstanfield.healthroadmap',
+    'ios/scripts/sim-run.sh -- xcrun simctl io {udid} screenshot shot.png',
+    'ios/scripts/sim-run.sh status',
+    'ios/scripts/test.sh',
+    "xcodebuild archive -scheme App -destination 'generic/platform=iOS'",
+    'xcodebuild build -scheme App -destination "generic/platform=iOS Simulator"',
+    'xcrun simctl list devices booted',
+    'xcrun simctl shutdown AAAA',
+    'ALLOW_EXTRA_SIMULATOR=1 xcrun simctl launch AAAA com.x',
+    'ALLOW_EXTRA_SIMULATOR=1 xcodebuild build-for-testing -destination "platform=iOS Simulator,name=iPad"',
+  ])('allows %s', (cmd) => {
+    expect(decide(cmd, () => [])).toBeNull();
+  });
+
+  it('a quoted or commented hatch does not lift it', () => {
+    expect(decide('echo ALLOW_EXTRA_SIMULATOR=1; xcrun simctl launch AAAA com.x', () => [])).toContain('US-71 AC7');
+    expect(decide('xcrun simctl launch AAAA com.x # ALLOW_EXTRA_SIMULATOR=1', () => [])).toContain('US-71 AC7');
   });
 });
 

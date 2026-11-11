@@ -6,24 +6,23 @@
 # Last, app-store-compose.swift frames them with their headlines in
 # ios/build/app-store-assets/screenshots/ (Chat's capture comes from a real iPhone: see there;
 # "5 chat tab bar.png" gives it the current tab bar, app-store-drop-in.swift).
-# Uninstalls the app from that simulator first.
-#   ios/scripts/app-store-shots.sh ["iPhone 18 Pro"]  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
+# Runs on the shared simulator (an iPhone 18 Pro) under its lease (sim-run.sh, US-71 AC7),
+# and uninstalls the app there first.
+#   ios/scripts/app-store-shots.sh                  (App Store Connect's iPhone slot takes 1206 × 2622, 2026-10-26)
 #   ios/scripts/app-store-shots.sh --compose-only    (frames the captures already taken)
 set -eu
 cd "$(dirname "$0")/.."
 compose() { swift scripts/app-store-compose.swift build/app-store-shots build/app-store-assets/screenshots; }
 if [ "${1:-}" = "--compose-only" ]; then compose; exit; fi
-DEVICE="${1:-iPhone 18 Pro}"
+[ -n "${HR_SIM_LEASE:-}" ] || exec scripts/sim-run.sh -- scripts/app-store-shots.sh
 APP_ID=com.drstanfield.healthroadmap
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 OUT=build/app-store-shots
-ID=$(xcrun simctl list devices available | grep -F "    $DEVICE (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
-[ -n "$ID" ] || { echo "No simulator named $DEVICE"; exit 1; }
+ID=$SIM_UDID
 
 node scripts/build-engine.mjs >/dev/null
 xcodebuild build-for-testing -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
   -destination "id=$ID" -derivedDataPath "$DERIVED" -quiet
-xcrun simctl boot "$ID" 2>/dev/null || true
 xcrun simctl bootstatus "$ID" -b >/dev/null
 xcrun simctl uninstall "$ID" "$APP_ID" 2>/dev/null || true
 xcrun simctl install "$ID" "$DERIVED/Build/Products/Debug-iphonesimulator/HealthRoadmap.app"
