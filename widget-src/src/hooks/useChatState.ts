@@ -20,6 +20,7 @@ import {
 import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
 import { useOffline } from './useOffline';
+import { useShownChat } from './useShownChat';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -78,19 +79,13 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
   return e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229;
 }
 
-/** The chat on screen, carrying the server's `id` as data. Its `key` is the identity a reply is
- *  checked against (US-67 AC2): a new chat mints a fresh one, so two unsaved chats never match;
- *  a saved thread's is its own, so reopening it mid-send still shows its reply (US-15 AC7a). */
-let chatSeq = 0;
-const mintChat = (id: string | null) => ({ key: id === null ? `new:${++chatSeq}` : `thread:${id}`, id });
-
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
-  const [shownChat, setShownChat] = useState(() => mintChat(prefetchedData?.activeConversationId ?? null));
+  // The chat on screen and its turns, each with its one writer (hooks/useShownChat).
+  const { shownChat, shownChatRef, messages, messagesRef, showMessages, openChat } = useShownChat(prefetchedData);
   const activeConversationId = shownChat.id;
-  const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
   // isLocalSender: true only on the instance that triggered the send — controls animation
   const [isLocalSender, setIsLocalSender] = useState(false);
@@ -121,8 +116,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // Refs for current values needed inside async callbacks and subscriptions
   const conversationsRef = useRef(conversations);
-  const shownChatRef = useRef(shownChat);
-  const messagesRef = useRef(messages);
   const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
   // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
@@ -134,11 +127,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     conversationsRef.current = conversations;
     inputTextRef.current = inputText;
   }, [conversations, inputText]);
-  /** The shown chat's turns, ref and state in one call, as openChat does for the chat itself. */
-  const showMessages = useCallback((list: ChatMessage[]) => { messagesRef.current = list; setMessages(list); }, []);
-  /** The ONE writer of the chat shown (US-67 AC2): the ref a landing reply reads and the state, in one
-   *  call, so a reply resolving before the next render never sees the chat it left as shown. */
-  const openChat = useCallback((id: string | null) => { shownChatRef.current = mintChat(id); setShownChat(shownChatRef.current); }, []);
 
   // Deltas collect in a ref and render at most once per animation frame.
   // A status line starts a new phase: text streamed before it was not the
