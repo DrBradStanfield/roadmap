@@ -4843,8 +4843,8 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
-    "summary": "Brad: get calcium from food (dairy, leafy greens, fish), not pills. Pooled trials found no fewer fractures with supplements, which are linked to more heart attacks and may add to kidney stones. Talk to your doctor first, especially if you take thyroid or antibiotic medicines.",
-    "reviewed": "2026-10-22"
+    "summary": "Brad: get calcium from food (dairy, leafy greens, fish), not pills. Pooled trials found no fewer fractures with supplements, which are linked to more heart attacks and may add to kidney stones. Talk to your doctor before stopping prescribed calcium, or if you take thyroid, antibiotic or GLP-1 drugs.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Cocoa Flavanols: Benefits, Best Sources, Dosing, and Side Effects",
@@ -5318,8 +5318,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/glucosamine-chondroitin-joint-supplements",
     "type": "reference",
-    "summary": "Reference on glucosamine, chondroitin, boswellia and related joint supplements. Knee osteoarthritis trials are inconsistent, and the ACR and OARSI guidelines advise against both; chondroitin may help hand osteoarthritis. Talk to your doctor first if you take warfarin or other blood thinners.",
-    "reviewed": "2026-10-23"
+    "summary": "Brad uses the GAIT trial as an example of the placebo effect: knee pain eased almost as often on placebo as on glucosamine plus chondroitin. Most guidelines advise against both for knee arthritis. Talk to your doctor first if you take a blood thinner, have dementia or have a shellfish allergy.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Glycine: Benefits, Forms, Dosing, and Side Effects",
@@ -5360,8 +5360,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-supplement-guide-benefits-forms-dosage-and-side-effects",
     "type": "reference",
-    "summary": "Reference on glycine. Brad's view: in three small trials, 3 g before bed improved rated sleep quality, sleep onset and next-day tiredness; no trial showed fewer wake-ups. GlyNAC corrected glutathione deficiency in older adults. Talk to your doctor first if pregnant or on clozapine.",
-    "reviewed": "2026-10-20"
+    "summary": "Brad's view: in three small trials, 3 g of glycine before bed improved rated sleep quality, sleep onset and next-day tiredness; he calls it real but modest and plans GlyNAC from age 45. Do not combine it with clozapine; ask your doctor first if pregnant or on anti-seizure or blood pressure drugs.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Green Coffee Bean Extract: Benefits, Forms, Dosing, and Side Effects",
@@ -5530,8 +5530,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-supplements-evidence-dosing-forms-and-safety",
     "type": "reference",
-    "summary": "Reference on melatonin. Brad's view: it may shorten the time it takes to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 3 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Talk to your doctor first if pregnant, or on fluvoxamine, blood thinners, sedatives or diabetes medicines.",
-    "reviewed": "2026-11-01"
+    "summary": "Reference on melatonin. Brad: it may shorten time to fall asleep, but dose and timing matter; he keeps to 1 mg or less, 3 to 4 hours before sleep, and calls the 2025 heart failure link flawed. Do not use it if pregnant or nursing; talk to your doctor first if epileptic, or on blood thinners, sedatives or diabetes medicines.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Milk Thistle: Benefits, Best Forms, Dosing, and Side Effects",
@@ -5722,8 +5722,8 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/protein-powder-guide",
     "type": "reference",
-    "summary": "Reference on protein powders. Brad's view: pea protein powder can help when whole foods fall short; his own target is 1.2 g/kg of ideal body weight a day, and with resistance training extra benefit shrinks after 1.3 g/kg. Covers whey, casein, plant types. Kidney disease? Talk to your doctor first.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on protein powders. Brad uses pea protein powder and judges lead against FDA limits; powder complements whole foods. His target is 1.2 g/kg of ideal body weight a day, with gains tapering after 1.3 g/kg. Kidney disease, allergy or a metabolic disorder? Talk to your doctor first.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Quercetin: Benefits, Forms, Dosing, and Side Effects",
@@ -6579,8 +6579,8 @@
     "publishedAt": "2025-04-29T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-fish-oil-guide",
     "type": "reference",
-    "summary": "Reference on omega-3 fish oil. Brad takes about 1 g a day for heart and brain health (VITAL: 28% fewer heart attacks) and avoids higher doses linked to atrial fibrillation. Covers forms, major trials, triglycerides and safety. Talk to your doctor first, especially if you take blood thinners.",
-    "reviewed": "2026-10-22"
+    "summary": "Brad takes about 1 g of omega-3 a day for heart and brain health and avoids higher doses linked to atrial fibrillation. Trials are mixed: fewer heart attacks in some analyses, no fall in major events in VITAL. Talk to your doctor first if you take a blood thinner or have atrial fibrillation.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Weight Loss Supplements: Benefits, Evidence, and Safety",
@@ -6778,8 +6778,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence-dosing",
     "type": "reference",
-    "summary": "Reference on cholesterol-lowering supplements. Plant sterols/stanols and psyllium have the best evidence for lowering LDL, though less than statins. Red yeast rice acts like a statin; niacin is no longer recommended. Talk to your doctor first, especially if taking a statin or blood thinner.",
-    "reviewed": "2026-10-20"
+    "summary": "Cholesterol supplements reference. Brad: no supplement unclogs arteries; for high LDL he uses rosuvastatin, then ezetimibe. Plant sterols (about 2 g a day) lower LDL about 9% but lack outcome trials; policosanol does not work. Talk to your doctor first, especially on a statin or blood thinner.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Garcinia Cambogia: Benefits, Forms, Dosing, and Side Effects",
@@ -7147,8 +7147,8 @@
     "publishedAt": "2025-04-22T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-benefits-forms-dosing",
     "type": "reference",
-    "summary": "Reference on potassium. Brad's view: most people fall short; get 3,500 to 5,000 mg daily from food with healthy kidneys and use a potassium-enriched salt substitute; pills are optional. Talk to your doctor first if you have kidney disease or take ACE inhibitors, ARBs or potassium-sparing diuretics.",
-    "reviewed": "2026-10-20"
+    "summary": "Reference on potassium. Brad's view: get it from food, 3,500 to 5,000 mg a day when kidneys work well, and consider a potassium-enriched salt substitute; do not self-prescribe pills. Talk to your doctor first if you have kidney disease or take ACE inhibitors, ARBs or potassium-sparing diuretics.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Vitamin C: Benefits, Best Forms, Dosing, and Side Effects",
@@ -7408,8 +7408,8 @@
     "publishedAt": "2025-04-15T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on berberine. Trials show modest drops in blood sugar and LDL cholesterol, mainly in type 2 diabetes, and little weight loss. Brad considers it only a last resort for cholesterol, and not for healthy adults. Talk to your doctor first if pregnant, breastfeeding or on prescription medicines.",
-    "reviewed": "2026-10-22"
+    "summary": "Reference on berberine. Modest drops in blood sugar and LDL, mainly in type 2 diabetes. Brad sees it as a last resort for cholesterol, not for healthy adults. Case reports tie it to dangerous heart rhythms. Talk to your doctor first if pregnant, breastfeeding, on medicines or with a heart condition.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "Boron: Benefits, Forms, Dosing, and Side Effects",
@@ -7727,8 +7727,8 @@
     "publishedAt": "2025-04-08T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-forms-benefits-dosing",
     "type": "reference",
-    "summary": "Reference on magnesium. Brad's view: many people fall short and a normal blood test can miss it; reach the RDA (420 mg men, 320 mg women) from food first, with a low-dose top-up. He favours glycinate or taurate over oxide. Sleep evidence is modest. Ask your doctor about medicines or kidney disease.",
-    "reviewed": "2026-10-20"
+    "summary": "Magnesium reference. Brad's view: many people fall short and a normal blood test can miss it; reach the RDA (420 mg men, 320 mg women) from food first, then top up. Favours glycinate or taurate over oxide. Sleep evidence is modest. Ask your doctor first if you take medicines or have kidney disease.",
+    "reviewed": "2026-11-12"
   },
   {
     "title": "The World’s #1 Anti-Aging Cream (Sunscreen) Just Got Updated",
