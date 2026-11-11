@@ -47,7 +47,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
    carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
-   merge with it on, when you merge by hand.
+   merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review.
 4. **Merge** it yourself when the work is done and its gates have passed (CI green on the PR, adversary +
    Codex where required, clinical citation numbering). The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;

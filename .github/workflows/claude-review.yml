@@ -49,13 +49,28 @@ name: Claude Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    # labeled: adding 'hold' cancels a review already running (the lane below).
+    # Removing 'hold' starts nothing, as before.
+    types: [opened, synchronize, labeled]
+
+# A newer push to the same PR, or adding 'hold', cancels the older review. Auto
+# Ship runs only on a review that ended in success, so a cancelled review ships
+# nothing. Adding any other label gets a lane of its own, so it never cancels a
+# review.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && github.event.label.name != 'hold' && github.run_id || 'pr' }}
+  cancel-in-progress: true
 
 jobs:
   review:
+    # Only pushes run a review, never a label event. Skipped while the PR
+    # carries 'hold': its owner merges it by hand after a fresh adversary
+    # (and Codex where required), and auto-ship never ships it.
     if: >
       startsWith(github.event.pull_request.head.ref, 'claude/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize') &&
+      !contains(github.event.pull_request.labels.*.name, 'hold')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
