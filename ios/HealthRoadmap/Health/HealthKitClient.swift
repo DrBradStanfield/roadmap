@@ -97,9 +97,9 @@ final class HealthKitClient: HealthStoreClient {
 
     func deleteSamples(syncIds: [String]) async throws {
         guard !syncIds.isEmpty else { return }
-        // By our sync ids alone: weight and waist samples carry them, a blood pressure's
-        // correlation does and its halves go with it.
-        let ours = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: syncIds.map { Self.syncPrefix + $0 })
+        // Weight and waist samples carry the sync ids, a blood pressure's correlation does and
+        // its halves go with it.
+        let ours = Self.deletePredicate(syncIds: syncIds)
         let types: [HKSampleType] = [HKQuantityType(.bodyMass), HKQuantityType(.waistCircumference), HKCorrelationType(.bloodPressure)]
         var found: [HKObject] = []
         do {
@@ -113,6 +113,15 @@ final class HealthKitClient: HealthStoreClient {
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
             throw HealthStoreError.locked
         }
+    }
+
+    /// What a remote erase deletes (US-72 AC10): our sync ids AND this app as the source, so a
+    /// sample another app saved with a matching id stays.
+    static func deletePredicate(syncIds: [String]) -> NSPredicate {
+        NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier, allowedValues: syncIds.map { syncPrefix + $0 }),
+            HKQuery.predicateForObjects(from: HKSource.default()),
+        ])
     }
 
     func characteristics() -> HealthCharacteristics {

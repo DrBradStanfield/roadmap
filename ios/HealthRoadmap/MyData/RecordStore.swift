@@ -45,8 +45,9 @@ final class RecordStore {
     /// (US-09 AC4). Read when the edit's turn comes: an edit asked for before a first
     /// connect, landing after it, is marked too. Set by CloudSync; nil with no cloud.
     @ObservationIgnored var marksPending: PhoneFiles?
-    /// The connected cloud's name, set by CloudSync with `marksPending`; nil with no cloud.
-    @ObservationIgnored var cloudName: String?
+    /// The connected cloud's provider and account, from CloudSync; `draw` sets `cloudName` from it with `cloudErase`.
+    @ObservationIgnored var cloudAccount: String?
+    @ObservationIgnored private(set) var cloudName: String?
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
@@ -227,7 +228,7 @@ final class RecordStore {
         display(shown)
         publish(choices)
         problem = nil
-        cloudErase = view.erase
+        (cloudErase, cloudName) = (view.erase, cloudAccount)
         cloudSession = view.session
         return true
     }
@@ -236,7 +237,7 @@ final class RecordStore {
     @discardableResult
     func showPhone() -> Task<Void, Never> {
         chain {
-            self.cloudErase = nil
+            (self.cloudErase, self.cloudName) = (nil, nil)
             let (file, deviceId, units) = (self.file, self.deviceId, self.unitChoices.json)
             do {
                 self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
@@ -430,8 +431,7 @@ final class RecordStore {
     /// make it refuse. It still takes the same path: in the cloud, the session, the
     /// merge and the erase guard.
     /// Its turn in line decides "now": the screen is read when the edits before it have landed.
-    /// `mark`: the record the edit was read from (an Apple Health batch, US-72 AC10); an erase
-    /// since then refuses it in its turn.
+    /// `mark`: the record an Apple Health batch was read from (US-72 AC10); an erase since refuses it in its turn.
     func applyNow(_ edit: RecordEdit, on mark: Mark? = nil) async -> ApplyResult {
         await chain {
             if let mark, !mark.holds(at: self.mark) {

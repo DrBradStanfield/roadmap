@@ -66,7 +66,7 @@ final class CloudSync: CloudPort {
         phone = PhoneFiles(record: store.file, pending: files.pending)
         provider = files.read(files.provider).flatMap(CloudProvider.init(rawValue:))
         if provider != nil { store.marksPending = phone }
-        store.cloudName = provider?.rawValue
+        store.cloudAccount = provider.map { [files] in Self.source($0, account: files.read(files.account)) }
         syncedBefore = files.read(files.history).flatMap(CloudProvider.init(rawValue:))
         accountEmail = provider == nil ? nil : files.read(files.email)
         // Queued, not waited for: the engine's queue runs it before any call made after this.
@@ -103,7 +103,7 @@ final class CloudSync: CloudPort {
         accountEmail = signedIn.email
         self.provider = provider
         store.marksPending = phone
-        store.cloudName = provider.rawValue
+        store.cloudAccount = Self.source(provider, account: signedIn.account)
         await open(firstConnect: first)
     }
 
@@ -181,7 +181,7 @@ final class CloudSync: CloudPort {
         shownSession = nil
         self.provider = nil
         store.marksPending = nil
-        store.cloudName = nil
+        store.cloudAccount = nil
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         oauth.signOut(provider)
         files.remove(files.provider)
@@ -255,6 +255,12 @@ final class CloudSync: CloudPort {
     private func forgetEmail() {
         files.remove(files.email)
         accountEmail = nil
+    }
+
+    /// The record's source for Apple Health's erase gate (US-72 AC10): the provider and the
+    /// account, so another account on the same provider is a new source.
+    private static func source(_ provider: CloudProvider, account: String?) -> String {
+        provider.rawValue + (account.map { ":" + $0 } ?? "")
     }
 
     /// The one rule for "Synced": nothing waits on the phone, the pending marker

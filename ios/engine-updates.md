@@ -44,6 +44,15 @@ the floor, so no phone runs anything older (use it to kill a bad release);
 highest version each phone accepted also live in its Keychain, so a damaged state
 file on the phone cannot lower them.
 
+**Required floor: PR 1218 (US-72 AC10).** The first engine release built from a `main` that
+holds PR 1218 MUST pass `--min-app-build <N>`, where N is the first app build that
+contains PR 1218's Apple Health disconnect. That engine drops the importers' `erasedAt`
+checks: the app now disconnects Apple Health on an erase instead. An older build running
+it would read pre-erase Health readings back into an erased record. `--min-app-build`
+carries over to later releases (the last manifest's value), so this is needed once. No
+script checks it, and the automatic release after a Deploy (below) passes no
+`--min-app-build`: do not approve that run's signing; release from your Mac with the flag.
+
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.

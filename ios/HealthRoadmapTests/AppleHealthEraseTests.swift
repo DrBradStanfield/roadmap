@@ -472,7 +472,7 @@ final class AppleHealthEraseTests: XCTestCase {
         XCTAssertTrue(app.health.connected, "a new source adopts its erase")
         XCTAssertEqual(health.stops, 0)
         XCTAssertNotNil(memory.anchor(for: .weight))
-        XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 2, source: "dropbox"))
+        XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 2, source: "dropbox:dbid:A"), "the provider and the account signed in (F5)")
     }
 
     // MARK: Live cards (US-56)

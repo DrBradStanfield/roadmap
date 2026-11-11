@@ -37,7 +37,8 @@ protocol HealthStoreClient: AnyObject {
     /// Readings other apps and devices wrote stay: they are not ours to delete.
     func deleteOwnSamples() async throws
     /// Another device's erase (US-72 AC10): deletes the samples with these sync ids, the ones
-    /// this phone remembers writing (`HealthSyncMemory.writtenIds`), never a query by source.
+    /// this phone remembers writing (`HealthSyncMemory.writtenIds`), and only where this app
+    /// is their source: never a query by source alone.
     func deleteSamples(syncIds: [String]) async throws
     /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
     /// when not allowed or not set. Read on demand, never stored by this call.

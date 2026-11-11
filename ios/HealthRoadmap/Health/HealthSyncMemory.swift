@@ -59,7 +59,8 @@ struct HealthSyncMemory {
         nonmutating set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: "appleHealth.eraseSeen") }
     }
 
-    /// The sync ids of every value this app wrote to Health (US-72 AC10: what a remote erase deletes).
+    /// The sync ids of every value this app wrote to Health (US-72 AC10: what a remote erase
+    /// deletes). While an erase has Health disconnected, a list not empty is a delete still owed.
     var writtenIds: [String] {
         defaults.dictionary(forKey: "appleHealth.written").map { Array($0.keys) } ?? []
     }
@@ -68,9 +69,11 @@ struct HealthSyncMemory {
         (defaults.dictionary(forKey: "appleHealth.written")?[syncId] as? NSNumber)?.int64Value ?? 0
     }
 
-    /// After an erase deleted our samples from Health: nothing is written any more.
-    func forgetWritten() {
-        defaults.removeObject(forKey: "appleHealth.written")
+    /// After an erase deleted these samples from Health; the last one gone removes the list.
+    func forget(_ syncIds: [String]) {
+        var written = defaults.dictionary(forKey: "appleHealth.written") ?? [:]
+        for id in syncIds { written[id] = nil }
+        defaults.set(written.isEmpty ? nil : written, forKey: "appleHealth.written")
     }
 
     func setWritten(_ version: Int64, for syncId: String) {

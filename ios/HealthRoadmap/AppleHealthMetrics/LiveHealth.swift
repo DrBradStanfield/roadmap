@@ -23,8 +23,9 @@ final class LiveHealth {
     private(set) var wakes = 0
     /// A metric page is on screen, for Clarity's fixed screen name "Apple Health metric" (usage signal).
     var pagesOpen = 0
-    /// False while an erase has Apple Health disconnected: nothing is read (US-72 AC10). AppleHealthSync sets it.
-    @ObservationIgnored var mayRead: @MainActor () -> Bool = { true }
+    /// The connection generation a read may start under, nil while an erase has Apple Health
+    /// disconnected (US-72 AC10, AppleHealthSync's one rule). AppleHealthSync sets it.
+    @ObservationIgnored var connection: @MainActor () -> Int? = { 0 }
 
     @ObservationIgnored let store: any LiveHealthStore
     @ObservationIgnored let now: @Sendable () -> Date
@@ -95,20 +96,20 @@ final class LiveHealth {
     /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
     /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1).
     func refresh(force: Bool = false) async {
-        guard available, mayRead() else { return }
+        guard available, let begun = ticket() else { return }
         if let started {
             if force || ContinuousClock.now - started >= .seconds(2) { again = true }
             return
         }
         started = .now
         defer { started = nil }
-        let begun = generation
+        let store = reader(begun)
         repeat {
             again = false
             // A check that fails keeps what was known, so the Turn On row never flashes (adversary R4).
             let due = (try? await store.needsRequest()) ?? needsAccess
-            // Erased meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
-            guard !Task.isCancelled, begun == generation else { return }
+            // Erased or disconnected meanwhile: this refresh, and any asked for during it, keep nothing (Codex R1).
+            guard holds(begun) else { return }
             if needsAccess != due { needsAccess = due }
             // Access reset: the sheet is due again, so the kept readings and histories go (AC2).
             if due == true {
@@ -119,7 +120,7 @@ final class LiveHealth {
             guard due == false else { continue }
             do {
                 let (read, absent) = try await Self.readCardsNoting(store, now: now(), calendar: calendar)
-                guard !Task.isCancelled, begun == generation else { return }
+                guard holds(begun) else { return }
                 // Unchanged readings are not written, so nothing redraws (E5). An empty read always
                 // removes the file, even one the launch could not read (adversary R3).
                 if cards != read || read.isEmpty { keep(read) }
@@ -148,6 +149,28 @@ final class LiveHealth {
         if hasRead { hasRead = false }
         await history.removeAll()
         removed(LiveMetric.allCases)
+    }
+
+    /// What a read began under: the connection generation and the `forget()`s so far.
+    struct Ticket: Equatable {
+        let connection: Int
+        let forgets: Int
+    }
+
+    /// The ticket a read starts under now; nil while an erase has Apple Health disconnected.
+    func ticket() -> Ticket? {
+        connection().map { Ticket(connection: $0, forgets: generation) }
+    }
+
+    /// The read may go on and land: not cancelled, not forgotten, still on its connection.
+    func holds(_ ticket: Ticket) -> Bool {
+        !Task.isCancelled && self.ticket() == ticket
+    }
+
+    /// Health as one read sees it (the cards, a page): each call checks `ticket` before it
+    /// starts and after it returns, and throws `CancellationError` once it no longer holds.
+    func reader(_ ticket: Ticket) -> any LiveHealthStore {
+        GatedLiveStore(base: store) { [weak self] in await self?.holds(ticket) ?? false }
     }
 
     private func removed(_ metrics: [LiveMetric]) {
@@ -271,9 +294,11 @@ final class LiveHealth {
 
     /// What a page draws before its history is brought up to date (AC7a): the kept days, else
     /// (a first visit) 400 days read now.
-    func firstDays(_ metric: LiveMetric, reaching reading: Date?) async -> [LivePoint]? {
-        if let kept = await history.keptDays(metric) { return kept }
-        return try? await Self.readDays(store, metric, reaching: reading, now: now(), calendar: calendar)
+    /// Under `ticket` (nil: one taken now); nothing while disconnected or once it no longer holds.
+    func firstDays(_ metric: LiveMetric, reaching reading: Date?, under ticket: Ticket? = nil) async -> [LivePoint]? {
+        guard let ticket = ticket ?? self.ticket() else { return nil }
+        if let kept = await history.keptDays(metric) { return holds(ticket) ? kept : nil }
+        return try? await Self.readDays(reader(ticket), metric, reaching: reading, now: now(), calendar: calendar)
     }
 
     /// A metric page's first visit (AC7, AC7a): 400 days to now, back further to the card's

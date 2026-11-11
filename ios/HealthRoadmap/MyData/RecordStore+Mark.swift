@@ -21,6 +21,7 @@ extension RecordStore {
     var mark: Mark { Mark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
 
     /// Which record is shown, for Apple Health's erase gate (US-72 AC10): "phone", the cloud's
-    /// name once its record is open, nil while a connected cloud's record is not open yet.
+    /// provider and account once its record is open, nil while a connected cloud's record is
+    /// not open yet.
     var recordSource: String? { cloudErase != nil ? cloudName : marksPending == nil ? "phone" : nil }
 }

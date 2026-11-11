@@ -487,8 +487,12 @@ final class FakeHealthStore: HealthStoreClient {
     var characteristicsGiven = HealthCharacteristics.none
     func characteristics() -> HealthCharacteristics { characteristicsGiven }
 
+    /// Runs before a save lands: a test holds it there, or fails it (US-72 AC10 R2).
+    var saveHold: (@MainActor () async throws -> Void)?
+
     func save(_ write: HealthWrite) async throws {
         if locked { throw HealthStoreError.locked }
+        if let saveHold { try await saveHold() }
         if refusing.contains(write.syncId) { throw CocoaError(.validationNumberTooLarge) }
         saved.append(write)
     }
@@ -523,8 +527,14 @@ final class FakeHealthStore: HealthStoreClient {
     /// k2: the sync ids a remote erase asked Health to delete, one list per call,
     /// taken from the written-versions memory (never a query by source).
     private(set) var deletedSyncIds: [[String]] = []
+    /// Every call, refused or not (US-72 AC10 R3: a refused delete is not retried in a loop).
+    private(set) var deleteAttempts = 0
+    /// The delete fails with this, as HealthKit refuses one once write access is off.
+    var deleteRefusal: Error?
     func deleteSamples(syncIds: [String]) async throws {
+        deleteAttempts += 1
         if deleteFails { throw HealthStoreError.locked }
+        if let deleteRefusal { throw deleteRefusal }
         deletedSyncIds.append(syncIds.sorted())
         saved.removeAll { syncIds.contains($0.syncId) }
     }
