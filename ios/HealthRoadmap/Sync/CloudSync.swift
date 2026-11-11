@@ -91,7 +91,11 @@ final class CloudSync: CloudPort {
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
         try refuseAnotherCloud(provider)
+        let begun = generation
         let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        // A Disconnect while the sign-in ran voids it: nothing of it is kept or merged, and its
+        // tokens die here, in memory (US-25 AC11l, Codex on PR 1329). Cancelled shows nothing.
+        guard generation == begun else { throw OAuthClient.Failure.cancelled }
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         // The backstop: a sign-in begun with no cloud may return after another connect set one.
