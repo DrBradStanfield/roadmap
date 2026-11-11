@@ -177,7 +177,7 @@ No trial has set a target daily amount of valerenic acid. An analysis of 14 comm
 
 ### How to Read a Supplement Label
 
-Valerian supplements are made from the roots, rhizomes and stolons of *Valeriana officinalis* [11]. Labels may state a valerenic acid content, but amounts measured in commercial products often differ from label claims [34]. Composition can also vary between manufacturing lots [11]. Independent testers such as ConsumerLab.com and Labdoor publish product test results.
+Valerian supplements are made from the roots, rhizomes and stolons of *Valeriana officinalis* [11]. Labels may state a valerenic acid content, but amounts measured in commercial products often differ from label claims [34]. Composition can also vary between manufacturing lots [11]. Independent testers such as Labdoor publish product test results.
 
 ### Comparison with Evidence-Based Sleep Alternatives
 

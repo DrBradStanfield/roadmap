@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-7,"S1 tools, scripts, CI",One HTML-escape helper for scripts and tools,done,"tools/escape-html.mjs escapeHtml (& < > "" '); all ten copies import it (scripts/build-*.mjs, build-user-stories-html.ts, publish-guides.mjs, tools/md-artifact.mjs, get-plan.ts, chat-audit-pull.ts, youtube-comment-dryrun.ts)",1199,tools/escape-html.test.ts (fails if a file under scripts/ or tools/ replaces & with &amp; itself),no

@@ -13,6 +13,7 @@ import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
 import { stripFrontmatter } from './frontmatter';
 import { buildYouTubePlatformContext, loadedHandles } from './youtube-context';
+import { YOUTUBE_SAVED_CHAT, savedChatBlock } from './chat-save-answers';
 import {
   buildSystemBlocks,
   buildConversationMessages,
@@ -285,7 +286,7 @@ export async function runPipeline(
   // Master views skip only masters that actually loaded, not ones the cap skipped (US-50 AC6).
   const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, loadedHandles(routed.handles, matched), isFollowUp);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
-  const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
+  const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(YOUTUBE_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
   const tBeforeLlm = Date.now();
   // No form here to apply an edit to, so no tools (US-15 AC19).

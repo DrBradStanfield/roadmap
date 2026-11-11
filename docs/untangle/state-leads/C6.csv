@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C6,reminders,"Reminder sends have no time limit, so one hung send keeps the run going and blocks reminders on that machine until a restart (a Sentry warning after 6 h)",lead,not started,app/lib/reminder-v2-cron.server.ts sends; cron-day.ts stuck limit (US-28 AC7),,no

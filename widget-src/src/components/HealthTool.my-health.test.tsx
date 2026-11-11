@@ -11,13 +11,16 @@ import {
   addMeasurement,
   bulkSaveDocuments,
   bulkSaveLabValues,
+  deleteUserData,
   flushRoadmapStore,
+  saveChangedMeasurements,
   saveMedication,
   saveScreening,
   saveSupplement,
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
-import { openSettings } from '../testing/settings';
+import { deleteButton, openSettings } from '../testing/settings';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -565,6 +568,61 @@ describe('US-62 AC28: Save as PDF prints the plan as it always has', () => {
     expect(doc.querySelector('.health-disclaimer')!.textContent).toMatch(/^Disclaimer: This tool is for educational purposes only/);
     expect(doc.querySelector('.privacy-notice-link a')!.getAttribute('href')).toBe('https://drstanfield.com/pages/connector-privacy');
     expect(doc.querySelectorAll('button, input, select, textarea, .hr-guide-card, .feedback-form, .reminders-section')).toHaveLength(0);
+  });
+});
+
+// US-09 AC19, US-62 AC28: the erase HealthTool shows reaches the plan. The
+// ResultsPanel tests make up their own erase id, so only a whole-page test
+// fails if HealthTool stops handing usePlanView its shownErase.
+describe('US-09 AC19, US-62 AC28: any erase the screen shows closes the reasons opened on screen', () => {
+  const record = { sex: 'male' as const, heightCm: 175, unitSystem: 'si' as const };
+  const values: Array<[string, number]> = [['weight', 115], ['waist', 115], ['ldl', 4.9]];
+  /** The same record again, written after the erase and re-read as from another device. */
+  async function refill(view: RenderResult) {
+    await act(async () => {
+      await saveChangedMeasurements(record, {});
+      for (const [metric, value] of values) await addMeasurement(metric, value, DAY);
+      await flushRoadmapStore();
+      window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
+    });
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).not.toBeNull(), { timeout: 3000 });
+  }
+  /** A reason opened on the first card that has one; its title. */
+  function openReason(view: RenderResult): string {
+    const card = [...view.container.querySelectorAll('.mh-card')].find(c => c.querySelector('.evidence-toggle'))!;
+    fireEvent.click(card.querySelector('.evidence-toggle')!);
+    expect(card.querySelector('.evidence-content')).not.toBeNull();
+    return card.querySelector('.suggestion-title')!.textContent!;
+  }
+  const cardTitled = (view: RenderResult, title: string) =>
+    [...view.container.querySelectorAll('.mh-card')].find(c => c.querySelector('.suggestion-title')?.textContent === title);
+
+  it("this tab's Delete all my data: the same plan comes back with its reason closed", async () => {
+    const view = await show(() => seedGuest(record, values, [], DAY));
+    const title = openReason(view);
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', () => {});
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).toBeNull(), { timeout: 3000 });
+    await refill(view);
+    const card = cardTitled(view, title)!;
+    expect(card.querySelector('.evidence-toggle')!.getAttribute('aria-expanded')).toBe('false');
+    expect(view.container.querySelector('.evidence-content')).toBeNull();
+  });
+
+  it("another device's erase, once re-read: the same plan comes back with its reason closed", async () => {
+    const view = await show(() => seedGuest(record, values, [], DAY));
+    const title = openReason(view);
+    vi.stubGlobal('alert', () => {});
+    // deleteUserData is the erase as another writer of this record makes it;
+    // the page learns of it through its re-read.
+    await act(async () => { await deleteUserData(); });
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(view.container.querySelector('.mh-card .evidence-toggle')).toBeNull(), { timeout: 3000 });
+    await refill(view);
+    const card = cardTitled(view, title)!;
+    expect(card.querySelector('.evidence-toggle')!.getAttribute('aria-expanded')).toBe('false');
+    expect(view.container.querySelector('.evidence-content')).toBeNull();
   });
 });
 

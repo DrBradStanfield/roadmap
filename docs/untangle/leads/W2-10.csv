@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-10,"S7 web data layer, upload, standalone",Name the host-page contracts once,cannot tell,"Report gives no locations; data-attribute reads remain spread over assistant-config.ts, site-chat.tsx, chatbot-embed.tsx, upload-bundle.ts",,,no

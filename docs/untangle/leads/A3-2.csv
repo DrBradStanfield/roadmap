@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A3-2,S4 privacy scrub and vocabularies,One home for the free-text health-value vocabulary shared by the scrubber and the feedback guard,partial,"The guard's email check is built from sentry-scrub.ts EMAIL_SOURCE (US-32 AC58). Left: units, metric words and the value-near-name rule are still separate in mcp-feedback.ts and sentry-scrub.ts",1193,packages/health-core/src/mcp-tools.test.ts (US-32 AC58: guard and scrubber agree on a table of addresses),yes

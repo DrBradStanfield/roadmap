@@ -65,7 +65,15 @@ vi.mock('./supabase.server', async () => {
         else if (key === 'order') order = raw.split(',').map((o) => ({ col: o.split('.')[0], asc: !o.includes('.desc') }));
         else if (key === 'offset') offset = Number(raw);
         else if (key === 'limit') limit = Number(raw);
-        else preds.push(predicate(key, raw));
+        else if (key === 'or') {
+          // The day-stamp guard (US-23 AC15): `(col.is.null,col.lt.value)`.
+          const terms = raw.replace(/^\(|\)$/g, '').split(',').map((t) => {
+            const [column, ...rest] = t.split('.');
+            const op = rest.join('.');
+            return op === 'is.null' ? (r: R) => r[column] == null : ((p) => (r: R) => r[column] != null && p(r))(predicate(column, op));
+          });
+          preds.push((r) => terms.some((t) => t(r)));
+        } else preds.push(predicate(key, raw));
       }
     } catch (e) {
       return new Response(JSON.stringify({ message: (e as Error).message }), { status: 400 });
@@ -135,6 +143,8 @@ vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 import { processV2Reminders } from './reminder-v2-cron.server';
 import { sendReminderEmail } from './email.server';
 import { deleteByEmail } from './reminder-v2.server';
+/** The fence (US-23 AC15): this pass keeps its lock. */
+const held = async () => true;
 
 // Each test is its own day: the cron emails an optin at most once a day per
 // process (US-28 AC3), and these tests reuse the same ids.
@@ -174,7 +184,7 @@ describe('US-23: the daily pass reads every opt-in once while rows are deleted',
     db.table = rows.map((r) => ({ ...r }));
     db.rowsAtStart = rows.length;
 
-    expect(await processV2Reminders(TODAY)).toBe(120);
+    expect(await processV2Reminders(TODAY, held)).toBe(120);
     expect(emailed()).toEqual(allEmails(rows));
     expect([...db.readIds].sort()).toEqual(rows.map((r) => r.id).sort());
   });
@@ -186,7 +196,7 @@ describe('US-23: the daily pass reads every opt-in once while rows are deleted',
     // The 4th and 8th rows enrolled: on the first page in either order.
     db.bouncing.add(rows[3].email).add(rows[7].email);
 
-    await processV2Reminders(TODAY);
+    await processV2Reminders(TODAY, held);
     expect(emailed()).toEqual(allEmails(rows)); // the bounced two were emailed once, then deleted
     expect(new Set(db.readIds).size).toBe(db.readIds.length); // nobody read twice
     expect(db.table).toHaveLength(118);
@@ -206,7 +216,7 @@ describe('US-23: the daily pass reads every opt-in once while rows are deleted',
       return true;
     });
 
-    await processV2Reminders(TODAY);
+    await processV2Reminders(TODAY, held);
     const expected = allEmails(rows).filter((e) => e !== erased);
     expect(emailed()).toEqual(expected);
   });
@@ -216,7 +226,7 @@ describe('US-23: the daily pass reads every opt-in once while rows are deleted',
     db.table = rows.map((r) => ({ ...r }));
     db.rowsAtStart = rows.length;
 
-    expect(await processV2Reminders(TODAY)).toBe(50);
+    expect(await processV2Reminders(TODAY, held)).toBe(50);
     expect(db.readIds).toHaveLength(50);
   });
 });

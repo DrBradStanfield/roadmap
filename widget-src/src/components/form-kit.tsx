@@ -12,6 +12,9 @@ export const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnc
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
 
+/** Focuses an element by id on the next frame, once React has drawn it. */
+export const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
+
 /** Option data (health-core's input-form) as <option> elements. */
 export const optionElements = (options: FormOption[]) =>
   options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);

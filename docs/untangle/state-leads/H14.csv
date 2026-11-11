@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H14,composition,"A hold with no end: a refused out-of-range profile value is kept, so another writer's profile change stays unshown until the person repairs that field, with no sign on the page",bug,not started,"HealthTool.record-read-pins.test.tsx US-34 AC4a: height 400 left, then a remote birthYear 1981 stays held until the height is repaired",,no

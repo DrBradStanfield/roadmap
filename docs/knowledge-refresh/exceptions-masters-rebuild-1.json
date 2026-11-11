@@ -1,0 +1,1450 @@
+[
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"6\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The egg yolk study was funded by a company that employs two of its authors [25]. In a crossover study of 6 healthy me...\" | \"## 6. Drug Interactions\"",
+  "reason": "Tokeniser: source writes 'in six healthy adult men' mid-sentence (number word three words before the noun) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"550 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"The egg yolk study was funded by a company that employs two of its authors [25]. In a crossover study of 6 healthy me...\" | \"The AI for choline is 450 mg a day during pregnancy and 550 mg during breastfeeding, and most pregnant women fall sho...\" | \"| Food | Serving | Choline (mg) | % DV (550 mg) |\"",
+  "reason": "Tokeniser: source writes '550 mg/d choline equivalent' (per-day form); body writes 550 mg of choline (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"5000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a North Carolina trial, 140 pregnant women took 750 mg of choline a day, as about 5 g of phosphatidylcholine, or a...\"",
+  "reason": "Derived per review ruling (Codex R2): methods give six 833 mg phosphatidylcholine gel caps (4,998 mg); no source writes 5 g (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"450 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a 2-month study, choline bisulfate supplying about 450 mg of choline a day raised fasting TMAO more than 10-fold i...\"",
+  "reason": "Tokeniser: source writes '~450mg total choline/day' (per-day form); body writes 450 mg of choline a day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current evidence position",
+  "reason": "Heading replaced by the current view heading, which carries the new review date (view_kind current-view) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Comparison of Choline-Containing Ingredients",
+  "reason": "Heading renamed per review (wording too close to a source table title); now '### Choline Forms at a Glance' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[466] raw_quote shares no number with its body_line: - **Bone density loss:** 4,000 and 10,000 IU a day for 3 years lowered forearm bone density compa...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[467] raw_quote shares no number with its body_line: - **Bone density loss:** 4,000 and 10,000 IU a day for 3 years lowered forearm bone density compa...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[468] raw_quote shares no number with its body_line: - **Falls:** In one trial, women whose levels reached 38 to 46 ng/mL fell most often [41]. In ano...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[469] raw_quote shares no number with its body_line: - **All-cause mortality:** In Copenhagen, mortality was higher at 140 nmol/L than at 50 nmol/L (h...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[470] raw_quote shares no number with its body_line: - **All-cause mortality:** In Copenhagen, mortality was higher at 140 nmol/L than at 50 nmol/L (h...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[471] raw_quote shares no number with its body_line: - **All-cause mortality:** In Copenhagen, mortality was higher at 140 nmol/L than at 50 nmol/L (h...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[472] raw_quote shares no number with its body_line: - **Cancer-related mortality:** In an exploratory analysis of D-Health, monthly 60,000 IU went wi...",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives every list item a < comparator, so the bullet's numbers never match the quote (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[569] number cited to a primary study without its abstract in reach: **Pregnancy:** The guideline suggests vitamin D in pregnancy [9]. The RDA is 600 IU a day and the...",
+  "reason": "Ruled wording (Fable R8) joins Brad's post figure and the guideline [9] clause with a semicolon; the figure is quoted verbatim from the post (POST: entry) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[570] number cited to a primary study without its abstract in reach: **Prediabetes:** The guideline suggests vitamin D for people with high-risk prediabetes [9]. In t...",
+  "reason": "Ruled wording (Fable R8) joins Brad's post figure and the guideline [9] clause with a semicolon; the figure is quoted verbatim from the post (POST: entry) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"70 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad reports that the latest Endocrine Society guideline found no clear evidence that vitamin D supplements improve h...\" | \"**Healthy adults (19 to 74):** Follow the recommended dietary allowance: 600 IU a day up to age 70 and 800 IU from 71...\"",
+  "reason": "Tokeniser: 'up to age 70 and 800 IU' reads as a 70 to 800 IU range; source puts a comma after 70 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10000 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- For adults the tolerable upper intake level is 4,000 IU a day [1]. In a 3-year trial, 4,000 and 10,000 IU a day low...\" | \"**Multiple sclerosis:** In observational studies, low 25(OH)D goes with higher MS risk; Finnish women below 30 nmol/L...\" | \"- **Bone density loss:** 4,000 and 10,000 IU a day for 3 years lowered forearm bone density compared with 400 IU a da...\"",
+  "reason": "Tokeniser: source writes 10 000 IU (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤70 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 7 Aug 2026, [NASA Found How To Stop Osteoporosis](https://drstanfield.com/blogs/articles/nasa-found-how-to-stop-ost...\"",
+  "reason": "Tokeniser: 'up to 70 and 800 IU' reads as a range with a comparator; source puts a comma after 70 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤800 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 7 Aug 2026, [NASA Found How To Stop Osteoporosis](https://drstanfield.com/blogs/articles/nasa-found-how-to-stop-ost...\"",
+  "reason": "Tokeniser: 'up to 70 and 800 IU' reads as a range with a comparator; source writes 800 IU from 71 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"47.3\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In a crossover study, a single 20,000 IU dose taken as gummies gave a higher peak blood level of vitamin D3 than the ...\"",
+  "reason": "Tokeniser: body '47.3 vs 23.4 ng/mL' gives 47.3 no unit; source writes 47.3 ng/mL (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \">8 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A skin patch containing cholecalciferol phosphate did not meaningfully raise 25(OH)D3 over 8 weeks in a placebo-contr...\"",
+  "reason": "Tokeniser: body 'over 8 weeks' (a duration) reads as >8; source writes 'at 8 weeks' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"153902\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Overall evidence:** An 81-trial meta-analysis found no effect on total fracture, hip fracture or falls, and no clin...\"",
+  "reason": "Tokeniser: source writes 153 902 (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1600\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Finnish trial (2026):** In 2,495 men aged 60 and over and women aged 65 and over, most of whom had enough vitamin D...\"",
+  "reason": "Tokeniser: body 'neither 1,600 nor 3,200 IU a day' gives 1,600 no unit; source writes 1600 IU/day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1600 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Finnish trial (2026):** In 2,495 men aged 60 and over and women aged 65 and over, most of whom had enough vitamin D...\"",
+  "reason": "Tokeniser: source writes 1600 IU/day; body 'the 1,600 IU group' has no per-day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"3200 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Finnish trial (2026):** In 2,495 men aged 60 and over and women aged 65 and over, most of whom had enough vitamin D...\"",
+  "reason": "Tokeniser: source writes 3200 IU/day; body 'the 3,200 IU group' has no per-day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥4000 IU\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Synthesis:** In people with enough vitamin D, large trials show no fracture benefit, and in one trial daily doses o...\"",
+  "reason": "Tokeniser: body '4,000 IU or more' adds ≥; source writes 4000 IU per day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21315\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Mortality:** NIH reports that three meta-analyses found 12% to 13% lower cancer mortality with vitamin D, mostly wi...\"",
+  "reason": "Tokeniser: the cited D-Health abstract writes 21 315 (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"62.5 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Colorectal cancer:** In a pooled analysis of 17 cohorts, levels below 30 nmol/L went with 31% higher colorectal can...\"",
+  "reason": "Tokeniser: source writes '50-<62.5 nmol/L'; the embedded < makes it <62.5 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"140 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Overall mortality from all causes:** In a meta-analysis of trials, D3 lowered overall mortality (relative risk 0.89...\" | \"- **All-cause mortality:** In Copenhagen, mortality was higher at 140 nmol/L than at 50 nmol/L (hazard ratio 1.42) [5...\"",
+  "reason": "Tokeniser: source writes 140 nmol/liter; unit not recognised (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"80 ng/mL\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**TARGET-D trial:** In 630 people after a heart attack, doses were adjusted to keep 25(OH)D within a target of above ...\"",
+  "reason": "Tokeniser: source writes '>40-80 ng/mL' (>80 ng/mL); body 'above 40 to 80 ng/mL' drops the comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"18353\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Clinical trials, mostly negative:** A meta-analysis of nine trials with 4,923 adults found no significant reduction...\"",
+  "reason": "Tokeniser: source writes 18 353 (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"10000 IU/week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In people with benign paroxysmal positional vertigo and levels below 20 ng/mL, vitamin D with calcium reduced repeat ...\"",
+  "reason": "Tokeniser: source writes 10 000 IU weekly (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<140 nmol/L\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives the list item a < comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"<60000 IU\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Tokeniser: lead line 'Even below classic toxicity thresholds' gives the list item a < comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤400 IU/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Infants:** The American Academy of Pediatrics advises 400 IU a day for breastfed infants [1], and 1,000 IU a day is...\"",
+  "reason": "Tokeniser: FDA source writes 'more than 400 international units (IUs) of vitamin D a day'; spelled-out unit not read as IU (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"940 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Black Americans:** In a US study, total 25(OH)D was 15.6 ng/mL in Black and 25.8 ng/mL in White participants, yet b...\"",
+  "reason": "Tokeniser: body '0.94 g per square centimetre' becomes 940 mg; source writes 0.94±0.01 g (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "token \"21.8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Anticonvulsants and rifampicin | Long-term phenobarbital or rifampicin can cause vitamin D deficiency or osteomalac...\"",
+  "reason": "Tokeniser: body '21.8 vs 28.0 ng/mL' gives 21.8 no unit; source writes 21.8 ng/mL (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50 ng/mL\": An international conference on vitamin D tests judged levels of 20 to 50 ng/mL safe and sufficient for bone health in...",
+  "reason": "Tokeniser: source writes 'between 20 ng ml-1 and 50 ng ml-1'; unit ng ml-1 not recognised (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60 year\": Finnish trial (2026): In 2,495 men aged 60 and over and women aged 65 and over, most of whom had enough vitamin D, ne...",
+  "reason": "Tokeniser: source writes 'men ≥60 years'; body 'aged 60 and over' tokenises without the comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60 nmol/L\": U-shaped relationship: In 1,662 men aged 70 to 97, fracture risk was higher both at 36 nmol/L or less (hazard ratio 3...",
+  "reason": "Tokeniser: source writes '25OHD ≥60 to ≤72 nmol/L'; comparators keep 60 from pairing (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3200 IU/day\": Falls, U-shaped dose response: In a 12-month trial in older women with low vitamin D, falls decreased on 1,600 to 3,2...",
+  "reason": "Tokeniser: source lists doses '1600, 2400,3200 IU' without per-day; body says 1,600 to 3,200 IU a day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60000 IU\": Mortality: NIH reports that three meta-analyses found 12% to 13% lower cancer mortality with vitamin D, mostly with d...",
+  "reason": "Tokeniser: source writes 60 000 IU (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50 nmol/L\": Colorectal cancer: In a pooled analysis of 17 cohorts, levels below 30 nmol/L went with 31% higher colorectal cancer ...",
+  "reason": "Tokeniser: source writes '(50-<62.5 nmol/L)'; the embedded < splits the range (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \">75\", \"50 nmol/L\": Overall mortality from all causes: In a meta-analysis of trials, D3 lowered overall mortality (relative risk 0.89) an...",
+  "reason": "Tokeniser: sources write 'older than 75 years' (>75 year) and '50 nmol/liter' (unit not recognised) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4000 IU/day\": Clinical trials, mostly negative: A meta-analysis of nine trials with 4,923 adults found no significant reduction in ...",
+  "reason": "Tokeniser: source writes '100 μg (4000 IU) ... daily'; per-day not paired across the parenthesis (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60000 IU\": No cognitive benefit in other trials: A 2-year trial in older adults with mild to moderate deficiency found no improv...",
+  "reason": "Tokeniser: source writes '60,000 international units'; the spelled-out unit is not read as IU (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60000 IU\", \"20 mcg\": Respiratory infections: A meta-analysis of individual data from 25 trials found that vitamin D lowered the risk of ac...",
+  "reason": "Tokeniser: source writes '60 000 IU' (space thousands) and '20 µg/d' (per-day); body has 60,000 IU and 20 µg a day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"400 IU/day\": Breastfed infants: The American Academy of Pediatrics advises 400 IU a day for breastfed infants, starting shortly af...",
+  "reason": "Tokeniser: NIH writes '10 mcg (400 IU)/day'; the parenthesis breaks the per-day pairing (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"60000 IU\": Avoid bolus dosing: For nonpregnant people older than 50 years who need vitamin D, the guideline suggests daily doses...",
+  "reason": "Tokeniser: source writes 60 000 IU (space thousands separator) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1200 mg\": The combination of high calcium intake (about 2,100 mg a day) with moderate vitamin D (about 765 IU a day) raised kid...",
+  "reason": "Tokeniser: source writes 1200 mg/day; body '1,200 mg of calcium' has no per-day (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (20 October -> 10 November 2026) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Common Side Effects",
+  "reason": "Heading renamed per review (step 4b ruling R1/R2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Adverse Effects at Levels of 30-50 ng/mL",
+  "reason": "Heading renamed per review (step 4b ruling R1/R2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "report says product mentions 1 -> 1, recomputed 5 -> 4",
+  "reason": "Recomputed count includes 'Omega-3' in a dropped sentence that is not the product (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host webarchive.library.unt.edu: [116] US Food and Drug Administration. Infant Overdose Risk With Liquid Vitamin D. Consumer Updat...",
+  "reason": "Official public source host not on the allow-list: UNT web archive capture of the 2010 FDA page (fda.gov original offline) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[574] number cited to a primary study without its abstract in reach: **Long-term use and dementia:** In Taiwanese insurance records, older adults without dementia who...",
+  "reason": "Quote is from the open-access full text (fix-5.md, Europe PMC); the PubMed abstract for [74] writes '146 days/year' and does not give the capsule dose (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"76\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- 11 Nov 2025, [Dementia Rates PLUNGED in Study of 1 Million People](https://drstanfield.com/blogs/articles/dementia-...\"",
+  "reason": "Tokeniser: body writes 'ages 66 to 76' (bare numbers); the post writes 'aged 66–76', read as years (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"14.8 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| Creatine nitrate | Raised blood and muscle creatine more in one trial | A blend of creatine nitrate and creatinine ...\"",
+  "reason": "Tokeniser: source writes 14.8 ± 7.7% (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"4.5 %\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Stability in solution:** Dissolved creatine slowly turns into creatinine, faster in acidic drinks. After 3 days at ...\"",
+  "reason": "Tokeniser: body 'pH 4.5 and 21%' reads 4.5 as a percent; source [1] writes '12% at pH 4.5' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"63\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Body composition effects:** In 63 adults, 5 g a day added 0.51 kg of lean mass in a 7-day run-in before training; o...\"",
+  "reason": "Tokeniser: source writes 'Sixty-three (34 females, ...) participants'; the number word before a bracket is not read (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"0.51 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Body composition effects:** In 63 adults, 5 g a day added 0.51 kg of lean mass in a 7-day run-in before training; o...\"",
+  "reason": "Tokeniser: source writes 0.51 ± 1.79 kg (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">5000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Body composition effects:** In 63 adults, 5 g a day added 0.51 kg of lean mass in a 7-day run-in before training; o...\"",
+  "reason": "Tokeniser: source writes 'higher than 5 g/day'; 'higher than' is not read as a comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"≥5000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Postmenopausal women:** A meta-analysis of 7 trials in 608 postmenopausal women found small gains in lean mass (0.3...\" | \"**Dose for muscle gain:** In postmenopausal women, gains were seen at 5 g a day or more with resistance training, not...\" | \"**Women:** Women have 70 to 80% lower creatine stores than men [58]. In muscle meta-analyses, women's gains were smal...\"",
+  "reason": "Tokeniser: source writes '≥ 5 g·day⁻¹' (superscript per-day not read as /day) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"32\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Older adults:** In 36 perimenopausal and menopausal women, creatine HCl at 1,500 mg a day for 8 weeks improved reac...\"",
+  "reason": "Derived: abstract gives groups of n = 15 and n = 17 (32 in all) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"60 mg/kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bed rest:** In 19 middle-aged adults on 14 days of bed rest, leucine (0.06 g per kg of body weight with each meal) ...\"",
+  "reason": "Tokeniser: source writes '0.06 g ∙ kg(-1) ∙ meal(-1)' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">3 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Bed rest:** In 19 middle-aged adults on 14 days of bed rest, leucine (0.06 g per kg of body weight with each meal) ...\"",
+  "reason": "Tokeniser: body 'over 3 days' reads a comparator; source writes '3 d of unilateral knee immobilization' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"≥4 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Loading-free protocol:** 3 g a day gave the same 20% rise more gradually, across 28 days [84]. Without loading, 3 t...\"",
+  "reason": "Tokeniser: source writes 'a minimum of 4 weeks'; 'a minimum of' is not read as a comparator (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"27\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 5 g of crea...\"",
+  "reason": "Product section (Brad's): 27 other ingredients = docs/products.md v9 25 core + 3 additions, less creatine; no source line states 27 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \">10000 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Kidney-harming medicines and high doses:** A 2004 review found that in people with kidney disease, or who take medi...\"",
+  "reason": "Tokeniser: source writes 'exceeding 10 gm/day'; gm/day is not read as a unit (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"40\": Creatine ethyl ester | Beat it in one 4-week trial | Larger gains in 40 soccer players [21]. Raised blood creatinine ...",
+  "reason": "Tokeniser: source writes 'A total of forty collegiate young soccer players' (number word mid-sentence) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\", \"100 mg/kg\": Creatine comes mainly from red meat and seafood [1]. In one study, muscle creatine at the start was 117 mmol/kg in ve...",
+  "reason": "Tokeniser: source writes 'Twenty physically active vegan adults' (plural four words on) and '0.1 g·kg⁻¹·day⁻¹' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3000 mg/day\": Positive trials: In adults over 65, 5 g a day with resistance training for 14 weeks raised fat-free mass and some mea...",
+  "reason": "Tokeniser: source writes 'Creatine was consumed daily (3 g)' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 day\": Trials with no added benefit: In older men, 12 months of creatine (0.1 g/kg a day) with supervised training gave no m...",
+  "reason": "Tokeniser: source writes 'for 10 consecutive days' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≤3000 mg/day\": Postmenopausal women: A meta-analysis of 7 trials in 608 postmenopausal women found small gains in lean mass (0.37 kg...",
+  "reason": "Tokeniser: source writes '≤ 3 g·day⁻¹' (superscript per-day not read as /day) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg/day\": Regulators and earlier reviews: In 2024 the European Food Safety Authority concluded that a cause-and-effect link bet...",
+  "reason": "Tokeniser: source writes '5 g d(-1) for six weeks' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20000 mg/day\": Selective benefits after mental fatigue: In 14 young adults, 20 g a day for 7 days improved accuracy on a long, tirin...",
+  "reason": "Tokeniser: source writes '20 g·d' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"12\": Creatine has been studied in heart and brain ischemia [1]. A meta-analysis of 8 trials found no effect on total, LDL ...",
+  "reason": "Tokeniser: source writes 'twelve sedentary, healthy older adults' (lower-case number word mid-sentence) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"70 year\": Older adults and sarcopenia: In 145 adults aged 70 or older with sarcopenia, leucine 2.5 g three times a day did not ...",
+  "reason": "Tokeniser: body '70 or older' is not read as ≥70; source writes 'aged ≥ 70 years' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Bed rest: In 19 middle-aged adults on 14 days of bed rest, leucine (0.06 g per kg of body weight with each meal) limi...",
+  "reason": "Our own count of the two cited immobilization trials [111][112]; no source states it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"≤3000 mg/day\": Dose for muscle gain: In postmenopausal women, gains were seen at 5 g a day or more with resistance training, not at ...",
+  "reason": "Tokeniser: source writes '≤ 3 g·day⁻¹' (superscript per-day not read as /day) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"19\": Timing: Taking creatine every day matters more than the time of day. In a 4-week study of 19 male bodybuilders, 5 g r...",
+  "reason": "Tokeniser: source writes 'Nineteen healthy recreational male bodybuilders' (plural four words on) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg/day\": EFSA: In 2004, a European Food Safety Authority panel judged that up to 3 g a day of high-purity supplemental creatin...",
+  "reason": "Brad's 5 g a day is cited to his post [2]; the same sentence cites ISSN [1], so the checker wants PubMed text for it (post quote verbatim: 'I recommend 5 g a day to my patients') (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20\": Creatinine levels: Creatine raises blood creatinine, a marker used to judge kidney function. In a meta-analysis of 20...",
+  "reason": "Derived: abstract counts 19 RCTs and one crossover study (20 in all) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"5000 mg/day\": Airways and allergies: In 19 elite youth soccer players (loading for 1 week, then 5 g a day for 7 weeks), creatine sh...",
+  "reason": "Tokeniser: source writes '5 g·d for 7 wk' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10000 mg/day\": In healthy people, creatine does not appear to harm the kidneys. Long-term users (10 months to 5 years) had normal ki...",
+  "reason": "Tokeniser: source writes 'approximately 10 g day(-1)' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"20000 mg/day\": Kidney-harming medicines and high doses: A 2004 review found that in people with kidney disease, or who take medicine...",
+  "reason": "Tokeniser: source writes '20 gm/day'; gm/day is not read as a unit (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"7 week\": If you take prescription medicines, check with your doctor or pharmacist before starting BCAAs. In people with Parkin...",
+  "reason": "Derived: source gives 7 days before and 6 weeks after surgery (about 7 weeks) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 22 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host clinicaltrials.gov: [121] ClinicalTrials.gov. Mechanisms to Reduce Mental and Physical Fatigue Following Exercise Tra...",
+  "reason": "Official public source host not on the allow-list (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "product section changed: ### Creatine in MicroVitamin+ Powder",
+  "reason": "Product section: em dash replaced per review (ruling R7); ingredient count updated to products.md v9 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Middle-Aged and Older Adults",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Younger People",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Attention in Adolescents",
+  "reason": "Heading removed per review (memory trials regrouped by trial size); trials now under '#### Larger Trials' and '#### Smaller Trials' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "token \"35 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The US upper limit for supplemental niacin, which covers nicotinic acid and nicotinamide, is 35 mg a day for adults...\" | \"The doses below are those used in studies, not a recommendation. Brad would not take NR or NMN ([Brad, 29 Oct 2026](h...\" | \"All NAD boosters are sources of vitamin B3. In the United States, the upper limit for vitamin B3 from supplements is ...\"",
+  "reason": "Tokeniser: NIH UL table writes \"35 mg\" with no per-day unit; body says \"35 mg a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mg\": Dementia (n=19, uncontrolled): In a 3-month open-label study, 25 people with mild to moderate Alzheimer's, vascular o...",
+  "reason": "Tokeniser: source writes \"10 mg/day NADH\"; body says \"10 mg of NADH a day\", which tokenises as 10 mg (quote entered in addendum-2 and addendum-4) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Chronic Fatigue Syndrome (CFS) — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Alzheimer's Disease and Cognitive Function — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Parkinson's Disease — NADH",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Raising NAD+ Levels — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Energy and Physical Performance — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Peripheral Artery Disease — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Alzheimer's Disease — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Cholesterol — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Blood Sugar and Insulin Resistance — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Long COVID — Nicotinamide Riboside",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Raising NAD+ Levels — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Insulin Sensitivity — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Exercise Performance — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Muscle Strength and Physical Function in Older Adults — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Sleep — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Anti-Aging Claims — NMN",
+  "reason": "Heading renamed per review (em dash to colon; \"Anti-Aging\" replaced, combined-round ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Preclinical Evidence — NMN (Animal Studies)",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Kidney Concerns — NMN",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[583] number cited to a primary study without its abstract in reach: **Children and teens (1 to 18 years):** The guideline suggests vitamin D for this age group [9]. ...",
+  "reason": "Ruled wording (clean-up ruling 1) joins Brad's post figure and the guideline [9] clause with a semicolon; the figure is quoted verbatim from the post (POST: entry) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "token \"7.6 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Vascular calcification is one of the risk factors for coronary heart disease because it reduces aortic and arterial e...\"",
+  "reason": "Tokeniser: source writes '7.6 (max = 9.0) years' (abstract and full text), so 7.6 never pairs with years (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥50 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In 15 healthy volunteers taking acenocoumarol, a warfarin-like drug, daily MK-7 doses of 10 and 20 mcg lowered the IN...\"",
+  "reason": "Tokeniser: PubMed abstract writes '50 mug/d or more' (mug for µg); full text not in PMC, journal site blocks fetch (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin K1 (Phylloquinone) — Plant Sources",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin K2 (Menaquinones) — Animal and Fermented Sources",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "product mentions rose 3 -> 4",
+  "reason": "False positive: reference [36] title 'VITamin D and OmegA-3 TriaL' (VITAL) counts as an Omega-3 mention; product section unchanged at 3 (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"48\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Newer trials (2026):** Results are split. In adults aged 45 to 65, selected cognitive and memory markers improved, ...\"",
+  "reason": "Tokeniser: abstract runs 'MethodsForty-eight women' together, so 48 is not read (found-in text changed: Newer trials sentences reordered, ruling 2) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "taurine-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2000 mg\": Cirrhosis-related muscle cramps: A crossover trial tested taurine in people with chronic liver disease who had three ...",
+  "reason": "Tokeniser: source writes \"2 g taurine/d\" (reads 2000 mg/day); body \"2 g of taurine a day\" reads 2000 mg; verbatim quote already entered (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "taurine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (10 November 2026) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "taurine-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Taurine in Energy Drinks — Safety Considerations",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[11] number cited to a primary study without its abstract in reach: - 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)](https://drstanfield.com/blogs/artic...",
+  "reason": "Full-text figure: 4000 ppm target is in the full text of the cited 2024 paper (PMC10828146); its abstract (PMID 38041783) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[49] number cited to a primary study without its abstract in reach: In the US Interventions Testing Program, astaxanthin started at 12 months extended median male mo...",
+  "reason": "Full-text figure: 4000 ppm and 46% are in the Europe PMC full text; cited abstract (PMID 38041783) lacks them (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[51] number cited to a primary study without its abstract in reach: In the US Interventions Testing Program, astaxanthin started at 12 months extended median male mo...",
+  "reason": "Full-text figure: 880 ppm at 11 and 16 months is in the Europe PMC full text; cited abstract (PMID 41843349) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[118] number cited to a primary study without its abstract in reach: **Hill et al., 2023 (combination product):** A 12-week randomized, double-blind trial in 100 peop...",
+  "reason": "Full-text figure: p-value correction 0.02635 to 0.2635 is in the PMC correction text; its PubMed record (38931329) has no abstract (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[120] number cited to a primary study without its abstract in reach: - **Red stools:** In a study of healthy adults given a single 48 mg dose, red-coloured stools wer...",
+  "reason": "Full-text figure: single 48 mg dose is in the J-STAGE full text of Okada 2009; the abstract (PMID 19734684) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"2\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"## 2. Forms and Bioavailability\" | \"Adults aged 45 to 64 took 8 mg of astaxanthin a day (28 people) or a placebo (26 people) for 8 weeks; blood astaxanth...\" | \"**Hill et al., 2023 (combination product):** A 12-week randomized, double-blind trial in 100 people with mild knee or...\"",
+  "reason": "Section number in heading \"## 2.\" and number word \"Two of the authors\"; no source digit to pair (tokeniser skips lowercase \"two servings\" in the salmon abstract) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"16\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Meta-analyses:** A 2021 meta-analysis of randomized trials found that oral astaxanthin improved skin moisture (SMD ...\"",
+  "reason": "Full-text figure: participant range 16 to 65 is in the Europe PMC full text; cited abstract (PMID 34578794) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Tominaga et al., 2017:** In 65 healthy women given 6 mg or 12 mg of astaxanthin or a placebo for 16 weeks, wrinkle ...\" | \"## 8. Frequently Asked Questions\"",
+  "reason": "Section number in heading \"## 8.\" and \"week 8\" from the Europe PMC full text; cited abstract (PMID 28751807) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"22\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Ito et al., 2018:** In a 10-week placebo-controlled trial in 23 healthy Japanese adults, 4 mg of astaxanthin a day ...\"",
+  "reason": "Full-text figure: 22 participants analysed is in the Europe PMC full text; cited abstract (PMID 29941810) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "token \"8 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Adults aged 45 to 64 took 8 mg of astaxanthin a day (28 people) or a placebo (26 people) for 8 weeks; blood astaxanth...\" | \"- **Blood pressure and diabetes medicines:** In 44 adults with type 2 diabetes, 8 mg of astaxanthin a day for 8 weeks...\"",
+  "reason": "Tokeniser: abstract writes \"8 mg astaxanthin/day\" (read as 8 mg/day), body \"8 mg of astaxanthin a day\" (read as 8 mg); quote entered (PMID 29610561) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"24\": 9 Apr 2026, [The Anti-Aging Supplement Scam (New Evidence)](https://drstanfield.com/blogs/articles/the-anti-aging-sup...",
+  "reason": "Date of a Brad post (\"24 Oct 2026 post\"), not a clinical number (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"65\": Meta-analyses: A 2021 meta-analysis of randomized trials found that oral astaxanthin improved skin moisture (SMD = 0....",
+  "reason": "Full-text figure: participant range 16 to 65 is in the Europe PMC full text; cited abstract (PMID 34578794) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"11 month\", \"16 month\": In the US Interventions Testing Program, astaxanthin started at 12 months extended median male mouse lifespan by 12%;...",
+  "reason": "Full-text figure: 880 ppm at 11 and 16 months is in the Europe PMC full text; cited abstract (PMID 41843349) lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 23 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "astaxanthin-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Storage and Stability",
+  "reason": "Subsection removed per re-check: licensed-source heading with no public evidence of its own (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"1.3 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad's view is that the dose decides: reaching the recommended intake of a vitamin is one thing, megadosing is an ent...\"",
+  "reason": "Tokeniser: Brad's post writes \"daily amount is only 1.3 mg\" (no per-day token) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \">10 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Brad's view is that the dose decides: reaching the recommended intake of a vitamin is one thing, megadosing is an ent...\" | \"- 19 Aug 2026, [Multivitamins Are No Longer \"Expensive Urine\"](https://drstanfield.com/blogs/articles/multivitamins-a...\"",
+  "reason": "Tokeniser: Brad's post writes \"more than 10 mg of B6 a day\" (words between dose and \"a day\") (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≥10 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Too much vitamin B6 can damage nerves, reported even with a 6 mg multivitamin. Health Canada found a possible link ...\" | \"**Warning, high-dose B6 causes neuropathy:** Too much pyridoxine can cause the same nerve damage that B6 deficiency p...\"",
+  "reason": "Tokeniser: Health Canada writes \"daily doses of 10 mg or higher\" (no per-day token) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"0.4 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Other trials:** In older people with mild cognitive impairment and raised homocysteine, methylcobalamin 500 µg and ...\"",
+  "reason": "Tokeniser: abstract writes \"0.4 mg/tablet\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"12243\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Niacin and blood pressure:** In a cohort of 12,243 Chinese adults, dietary niacin had a J-shaped link with new high...\"",
+  "reason": "Tokeniser: PubMed writes thousands with a narrow no-break space (12 243) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"6000 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Warning, high-dose B6 causes neuropathy:** Too much pyridoxine can cause the same nerve damage that B6 deficiency p...\"",
+  "reason": "Tokeniser: NIH writes \"1-6 g oral pyridoxine per day\" (per-day token); body has words before \"a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"13108\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"In an Australian placebo-controlled trial of 386 people who had had at least two non-melanoma skin cancers in the pre...\"",
+  "reason": "Tokeniser: PubMed writes thousands with a narrow no-break space (13 108) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "token \"≤200 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Regulation:** Australia's medicines regulator will make oral preparations with more than 50 mg but not more than 20...\"",
+  "reason": "Tokeniser: TGA writes \"per recommended daily dose\" (per-day token) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 %\", \"3000 mg/day\": A 2017 Cochrane review of 23 niacin trials found that niacin did not reduce overall mortality (risk ratio 1.05, 95% C...",
+  "reason": "NIH figure (1-3 g/day, 10% higher) in a sentence that also cites the PubMed review, whose abstract lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1000 mg\": Warning, high-dose B6 causes neuropathy: Too much pyridoxine can cause the same nerve damage that B6 deficiency produ...",
+  "reason": "Tokeniser: NIH writes \"1-6 g oral pyridoxine per day\" (per-day token); body has words before \"a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"4\": Caution against excessive folate in pregnancy: In a Chinese cohort, women who used 800 mcg a day or more of folic aci...",
+  "reason": "Tokeniser: abstract writes \"4-5 y\" (age with unit); body writes \"age 4 to 5\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3000 mg/day\": In a small 2-month trial in people with treated open-angle glaucoma, nicotinamide with pyruvate improved more visual ...",
+  "reason": "Tokeniser: [80]'s abstract gives \"nicotinamide (1000 to 3000 mg)\" without a per-day token (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1 mg\": B12 for deficiency correction: Injections are the usual treatment, especially for pernicious anemia and severe defici...",
+  "reason": "Tokeniser: abstract writes \"1000 μg/d\" (per-day token); body has words before \"a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"1 mg\", \"1000 mg\": The Daily Value for vitamin B6 on US labels is 1.7 mg for adults and children aged 4 years and older [16]. Remember t...",
+  "reason": "Unit conversion line (1,000 mcg = 1 mg), not a sourced figure (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"3000 mg/day\": Glucose control: At 1,000 to 3,000 mg a day, nicotinic acid can impair glucose tolerance [12]; in HPS2-THRIVE, niacin...",
+  "reason": "NIH figure in a sentence that also cites HPS2-THRIVE (PubMed), whose abstract lacks it (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"10 mg\": Migraine: A case report describes a woman with long-standing, well-controlled migraine who developed daily severe mig...",
+  "reason": "Tokeniser: abstract writes \"10,000 mcg once daily\" (per-day token); body has words before \"a day\" (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Thiamine (B1) — DV: 1.2 mg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Riboflavin (B2) — DV: 1.3 mg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Niacin (B3) — DV: 16 mg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Pantothenic Acid (B5) — DV: 5 mg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin B6 — DV: 1.7 mg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Biotin (B7) — DV: 30 mcg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Folate (B9) — DV: 400 mcg DFE",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Vitamin B12 — DV: 2.4 mcg",
+  "reason": "Heading renamed per review (em dash to colon) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "b-vitamins-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host canada.ca: [5] Health Canada. Health Product InfoWatch: June 2026. https://www.canada.ca/en/health-canada/se...",
+  "reason": "Official public source host not on the allow-list (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "changed_tokens[112] number cited to a primary study without its abstract in reach: Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, ...",
+  "reason": "Product sentence cites [15] for zinc only; carotenoid doses are products.md facts quoted verbatim, not study numbers (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "changed_tokens[113] number cited to a primary study without its abstract in reach: Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, ...",
+  "reason": "Product sentence cites [15] for zinc only; carotenoid doses are products.md facts quoted verbatim, not study numbers (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"50 year\": Observational data: In the NIH-AARP study of 489,640 people aged 50-71, men who took 1 or more multivitamins daily ha...",
+  "reason": "Tokeniser: abstract writes 'ages 50-71'; the age pattern reads only 'aged' (quote entered in addendum-6) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"90 mcg\": Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) is a low-dose, evidence-based multi...",
+  "reason": "Product sentence cites [15] for zinc only; K2 90 mcg is the products.md:74 dose, so a products.md quote cannot pair (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "product mentions rose 5 -> 6",
+  "reason": "Videos list title 'Your Brain on Omega-3' (Brad's own video) counts as a product mention; product block itself unchanged in count (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "report says product mentions 5 -> 5, recomputed 5 -> 6",
+  "reason": "Videos list title 'Your Brain on Omega-3' (Brad's own video) counts as a product mention; product block itself unchanged in count (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "reference line has unknown host who.int: [92] World Health Organization. New WHO guidelines: up to 45% of dementia risk could be prevented...",
+  "reason": "Official public source host not on the allow-list (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+  "match": "product section changed: ### Product Mention — MicroVitamin",
+  "reason": "Product block edited per review rulings R1, R2, R4 using products.md wording (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Two branded forms rest on one small study each. A liposomal calcium ascorbate set in a fenugreek gel was tested by it...",
+  "reason": "Number word counts the two studies cited in the sentence; neither source states the count (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"2\": Two large trials tested the same intravenous dose, 50 mg/kg every 6 hours for up to 96 hours [165][166].",
+  "reason": "Number word counts the two cited trials; neither abstract states the count (a quote from Brad's post is refused for a PubMed-cited sentence) (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"45\": Shingles can leave lasting nerve pain, called post-herpetic neuralgia. In a Taiwanese study, people with this pain mo...",
+  "reason": "Tokeniser: source writes '≤ 45·0 μmol/l' (one comparator token), body writes '45 micromoles/L or below' (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ## Current view (reviewed 20 October 2026)",
+  "reason": "Current view heading carries the new review date (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC7",
+  "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host cancer.gov: [168] National Cancer Institute. Intravenous Vitamin C (PDQ), patient version. https://www.cancer...",
+  "reason": "Official public source host (cancer.gov, NCI PDQ) not on the allow-list (masters-rebuild-1, per-master fixer; checked by a fresh adversary re-check)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ },
+ {
+  "check": "AC4",
+  "handle": "choline-benefits-best-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Egg Consumption and Alzheimer's Risk",
+  "reason": "Renamed '#### Egg Consumption and Alzheimer's Dementia': the subsection is an observational benefit association, not a safety caution, and 'Risk' made the US-41 AC8 connector cut test treat it as a risk section (masters-rebuild-1, CI fix)",
+  "by": "orchestrator",
+  "date": "2026-11-10"
+ }
+]

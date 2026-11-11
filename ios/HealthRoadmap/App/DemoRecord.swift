@@ -30,6 +30,12 @@ enum DemoRecord {
         return defaults
     }
 
+    /// With `--slow-erase`, an erase waits 4 s first, so a UI test can swipe at Settings mid-erase (US-25 AC16d).
+    static func slowErase() async {
+        guard ProcessInfo.processInfo.arguments.contains("--slow-erase") else { return }
+        try? await Task.sleep(for: .seconds(4))
+    }
+
     /// A Keychain service no sign-in ever wrote: the cloud's tokens are never read.
     static let tokens = TokenStore(service: "com.drstanfield.healthroadmap.oauth.demo")
 }
@@ -46,7 +52,9 @@ final class NoHealth: HealthStoreClient {
     func canWrite(_ kind: HealthKind) -> Bool { false }
     func save(_ write: HealthWrite) async throws {}
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void) {}
+    func stopObserving() {}
     func deleteOwnSamples() async throws {}
+    func deleteSamples(syncIds: [String]) async throws -> HealthDeletion { HealthDeletion(deleted: [], asked: []) }
     func characteristics() -> HealthCharacteristics { .none }
 }
 

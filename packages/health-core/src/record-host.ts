@@ -7,6 +7,20 @@
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
 
+/** What `remoteChanged` tells the page: the erase a merge brought in, if any (US-16 AC2a). */
+export interface RemoteChange { erase: string | null }
+
+/** Two changes taken in before the page hears of them (a save loop's passes),
+ *  as one: a later change that brings no erase keeps the earlier one's. */
+export function laterChange(prior: RemoteChange | null, next: RemoteChange | null): RemoteChange | null {
+  return next ? { erase: next.erase ?? prior?.erase ?? null } : prior;
+}
+
+/** Tell the page of a change taken in, when there is one. */
+export function announce(host: RecordHost, change: RemoteChange | null): void {
+  if (change) host.remoteChanged(change);
+}
+
 /** A store that reads and writes synchronously (localStorage, a local file).
  *  Lets a page's last-ditch save land before the page goes (US-10 AC5), and a
  *  returning page skip a re-read when nothing moved (US-34 AC6). */
@@ -76,8 +90,10 @@ interface HostBase {
   /** The engine's only timers (JavaScriptCore has none of its own). Called at
    *  each use, never captured, so a test's fake timers apply. */
   timers: { set(run: () => void, ms: number): unknown; clear(handle: unknown): void };
-  /** A re-read or a save brought in something a person would see (US-34). */
-  remoteChanged(): void;
+  /** A re-read or a save brought in something a person would see (US-34).
+   *  `erase`: the erase identity it moved the record to, when it carried
+   *  another writer's erase; null for any other change. */
+  remoteChanged(change: RemoteChange): void;
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;

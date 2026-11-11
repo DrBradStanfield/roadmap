@@ -18,6 +18,7 @@
  * or what the page shows.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { render, cleanup, fireEvent, waitFor, within, act, type RenderResult } from '@testing-library/react';
 import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
 import { localDay } from '@roadmap/health-core/merge';
@@ -66,9 +67,9 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: () => Record<string, unknown> | null; onProposeEdit: (edits: ProposedEdit[]) => void }) => {
+  ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: () => Record<string, unknown> | null; onProposeEdit: ChatEditTarget }) => {
     chat.context = guestInputs(); // what a message sent now would carry
-    chat.proposeEdit = onProposeEdit;
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     return null;
   },
 }));
@@ -88,7 +89,8 @@ vi.mock('./UploadModal', () => ({
   },
 }));
 
-import { ERASE_DONE, HealthTool } from './HealthTool';
+import { HealthTool } from './HealthTool';
+import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
 
 const TODAY = localDay(new Date());

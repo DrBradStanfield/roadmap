@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-7,S8 web big components,One ChatPanel shared by ChatEmbed and ChatSection,partial,Auto-scroll shared via hooks/useFollowLatest.ts (US-15 AC55). Left: no ChatPanel; message list and input bar still in both ChatEmbed.tsx and ChatSection.tsx,870,none,no

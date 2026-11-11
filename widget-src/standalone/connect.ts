@@ -9,11 +9,8 @@ import { useState } from 'react';
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
-  DropboxAdapter,
   DriveGrantRefusedError,
   GoogleDriveAdapter,
-  GitHubAdapter,
-  WebDavAdapter,
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
@@ -21,9 +18,8 @@ import {
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
-import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
-import { googleDriveConfig } from './google-config';
+import { PROVIDERS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
@@ -99,15 +95,6 @@ export function storageState(backend: Backend, reconnect?: Exclude<Backend, 'loc
   return backend === 'local' ? 'guest' : 'cloud';
 }
 
-/** Human-readable provider names. Shared by the sync status line and the
- *  backend picker's log-off copy so the two surfaces never drift. */
-export const PROVIDER_LABELS: Record<Exclude<Backend, 'local'>, string> = {
-  dropbox: 'Dropbox',
-  'google-drive': 'Google Drive',
-  github: 'GitHub',
-  'self-host': 'your own server',
-};
-
 /**
  * Lift existing on-device data into a freshly-connected cloud (first connect),
  * by health-core's lift (record-transfer.ts): a plain merge, so against an
@@ -154,11 +141,11 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
  *  return value is the fixed line the page shows (US-09 AC1a): before, the
  *  page opened as if nothing had been tried. */
 export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'google-drive'): string {
-  console.warn(`${PROVIDER_LABELS[backend]} connect failed`);
+  console.warn(`${PROVIDERS[backend].label} connect failed`);
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
     tags: { area: 'cloud-connect', backend, ...failureTags(error) },
   });
-  return `${PROVIDER_LABELS[backend]} did not connect, so nothing changed. Please try again.`;
+  return `${PROVIDERS[backend].label} did not connect, so nothing changed. Please try again.`;
 }
 
 /**
@@ -168,11 +155,11 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
  * app.tsx on return), so they don't go through here.
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: Backend): Promise<void> {
+export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend): Promise<void> {
   await adapter.connect();
   await liftLocalInto(adapter, backend);
   rememberBackend(backend);
-  trackProductEvent('cloud_connect_success', { provider: backend === 'self-host' ? 'webdav' : backend });
+  trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
   location.reload();
 }
 
@@ -198,18 +185,7 @@ export function useBusyRun() {
 
 /** The adapter for a connected cloud backend (null for the on-device tier). */
 export function adapterFor(backend: Backend): StorageAdapter | null {
-  switch (backend) {
-    case 'dropbox':
-      return new DropboxAdapter(dropboxConfig());
-    case 'google-drive':
-      return new GoogleDriveAdapter(googleDriveConfig());
-    case 'github':
-      return new GitHubAdapter();
-    case 'self-host':
-      return new WebDavAdapter();
-    default:
-      return null;
-  }
+  return providerOf(backend)?.adapter() ?? null;
 }
 
 /** The remembered choice, from a browser that may block storage: a blocked
@@ -322,7 +298,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     console.warn('Copy-down before switch failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
     throw new Error(
-      `${PROVIDER_LABELS[current]} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,
+      `${PROVIDERS[current].label} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,
     );
   }
   await adapter.disconnect();

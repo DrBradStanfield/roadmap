@@ -438,14 +438,17 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
 });
 
 describe('US-30 AC1 — nothing that could reach the network is imported', () => {
-  it('imports only health-core sources and node builtins', () => {
+  it('imports only health-core sources, node builtins and the import-free HTML escaper (US-64 AC30)', () => {
     const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'get-plan.ts'), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(5);
     for (const spec of specifiers) {
-      expect(spec).toMatch(/^(zod|node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+)$/);
+      expect(spec).toMatch(/^(zod|node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+|\.\/escape-html\.mjs)$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|https?:\/\/[^\s'"]*\/(api|v1))\b/);
+    // The escaper is allowed only while it imports nothing itself (US-64 AC30).
+    const escaper = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'escape-html.mjs'), 'utf8');
+    expect(escaper).not.toMatch(/\bimport\b|\brequire\s*\(|\bfrom\s+['"]/);
   });
 });
 

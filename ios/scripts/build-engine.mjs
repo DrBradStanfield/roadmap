@@ -15,7 +15,7 @@
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
@@ -117,6 +117,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const version = process.env.ENGINE_VERSION ? Number(process.env.ENGINE_VERSION) : commitVersion();
   await bundleEngine(engineOut, version);
   const count = checkParity(engineOut, fixtures);
+  // The upload decisions table both clients pin (UploadDecisionPinsTests.swift; the web's upload-decisions pins).
+  copyFileSync(join(repo, 'packages/health-core/src/__fixtures__/upload-decisions.json'), join(fixtures, 'upload-decisions.json'));
   const facts = bundleFacts(engineOut);
   const sidecar = { bridge: bridgeId(), schemaVersion: facts.schemaVersion, version: facts.engineVersion };
   writeFileSync(join(dirname(engineOut), 'health-engine.json'), JSON.stringify(sidecar) + '\n');

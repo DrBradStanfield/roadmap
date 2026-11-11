@@ -10,7 +10,7 @@ import { render, cleanup } from '@testing-library/react';
 vi.mock('../lib/roadmap-data', async original => ({
   ...(await original<typeof import('../lib/roadmap-data')>()),
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(),
-  getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
@@ -19,7 +19,7 @@ vi.mock('../lib/server-api', async original => ({
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
-import { GuestEmailCapture } from './ResultsPanel';
+import { GuestEmailCapture } from './PlanPdf';
 import { InputPanel } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
@@ -44,12 +44,12 @@ describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
     const inputs = { sex: 'male' as const, heightCm: 180, weightKg: 80 };
     const props = {
       ...MY_HEALTH_PROPS,
-      inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const, onUnitSystemChange: vi.fn(),
+      inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
       labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
       onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
       onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-      fieldsSaved: 2, hasApiResponse: true, formStage: 3 as const, reached: 3 as const, fullForm: false, wasDone: false, aboutYouLow: false, planBasis: {}, grading: {},
+      fieldsSaved: 2, hasApiResponse: true, onboarding: { stage: 3 as const, reached: 3 as const, fullForm: false, aboutYouLow: false }, planBasis: {}, grading: {},
     };
     const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
     expect(container.querySelector('#heightCm')).not.toBeNull();

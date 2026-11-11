@@ -12,7 +12,7 @@ import { toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import type { HealthInputs } from '@roadmap/health-core/types';
 
 vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));

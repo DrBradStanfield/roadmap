@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+I-3,S3 cloud storage and sync,Name the cloud failure kinds in the bridge and test the Swift enum,not started,Kinds typed in ios/engine/cloud-adapters.ts:222 and SyncProblem.swift:6 with no shared list or parity test,,,no

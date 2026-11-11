@@ -46,9 +46,9 @@ describe('US-50 AC7 static: a rewritten master needs sources', () => {
     expect(fails.map((f) => f.handle).sort()).toEqual(['m1', 'm2', 'm3', 'm4']);
     expect(new Set(rules(fails))).toEqual(new Set(['master-front']));
   });
-  it('fails a source name outside consumerlab, nih-ods, brad-video and pubmed', () => {
+  it('fails a source name outside nih-ods, brad-video and pubmed', () => {
     const { fails } = staticMasterFindings([master('n', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-10-20', 'NIH ODS')}`])], '', CFG);
-    expect(fails.map((f) => f.detail)).toEqual(['item 0 name must be one of consumerlab, nih-ods, brad-video, pubmed']);
+    expect(fails.map((f) => f.detail)).toEqual(['item 0 name must be one of nih-ods, brad-video, pubmed']);
   });
   it('fails a frontmatter key that appears twice, and a reference with a view heading but no reviewed', () => {
     const dup = master('d1', [`reviewed: "2026-10-20"`, `sources: ${SRC()}`, `reviewed: "2026-10-21"`]);
@@ -191,7 +191,7 @@ describe('US-70 AC1 static: condition guides (guide-shape)', () => {
       expect.stringMatching(/^guide-shape: a red flag lacks the exact emergency line .*: - Chest pain/)]);
   });
   it('fails bad keys: a licensed source name, no thresholds, a malformed threshold, a bad reviewed date', () => {
-    expect(items(SOUND.replace('"name":"guideline"', '"name":"consumerlab"'))).toEqual(['guide-shape: sources: item 0 name must be one of guideline, label, pubmed, nih-ods, brad-video']);
+    expect(items(SOUND.replace('"name":"guideline"', `"name":"${['consumer', 'lab'].join('')}"`))).toEqual(['guide-shape: sources: item 0 name must be one of guideline, label, pubmed, nih-ods, brad-video']);
     expect(items(SOUND.replace(/^thresholds:.*\n/m, ''))).toEqual(['guide-shape: thresholds: must be a single-line, non-empty JSON array']);
     expect(items(SOUND.replace('"value":180', '"value":"180"'))).toEqual(['guide-shape: thresholds: item 0 needs {"ref": "CONSTANT.key", "value": <number>}']);
     expect(items(SOUND.replace('reviewed: "2026-11-02"', 'reviewed: 2026-11-02'))).toEqual(['guide-shape: reviewed: must be a quoted valid date, "YYYY-MM-DD"']);
@@ -232,7 +232,7 @@ describe('US-50 AC7 weekly checks (date-dependent, never in test:all)', () => {
     const es = [master('m', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-09-15')}`])];
     expect(weeklyMasterFindings(es, '2026-10-20', null, CFG, none)).toEqual([]);
     expect(rules(weeklyMasterFindings(es, '2026-10-21', null, CFG, none))).toEqual(['source-stale']);
-    const cl = [master('m', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-09-15', 'consumerlab')}`])];
+    const cl = [master('m', [`reviewed: "2026-10-20"`, `sources: ${SRC('2026-09-15', 'nih-ods')}`])];
     expect(rules(weeklyMasterFindings(cl, '2026-10-21', null, CFG, none))).toEqual(['source-stale']);
   });
   it('never flags a brad-video source as stale: it is dated by its post, not fetched', () => {

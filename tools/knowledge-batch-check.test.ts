@@ -8,6 +8,8 @@ import {
   type Report, type Result, REPORT_SCHEMA, applyAddenda, exampleReport, isGuideText, keySafetyErrors, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
+// The licensed supplement-testing site, built from parts so this public repo never spells it (Brad 2026-11-09).
+const TESTER_HOST = [["consumer", "lab"].join(""), "com"].join(".");
 
 // Story: US-42 "Knowledge refresh" (docs/user-stories.md); each describe names its AC.
 // Synthetic fixtures only (tools/fixtures/knowledge-batch/). No real raw text, no model calls.
@@ -785,8 +787,12 @@ describe("US-42 AC2/AC7 reference batch rules", () => {
     withRefs("[3] Foo B. Study. https://evil.example.com/x");
     expect(fails(run().AC7).join()).toContain("unknown host evil.example.com");
   });
+  it("refuses a licensed testing site as a reference host", () => {
+    withRefs(`[3] Foo B. Review. https://www.${TESTER_HOST}/x`);
+    expect(fails(run().AC7).join()).toMatch(/unknown host/);
+  });
   it("allows the listed hosts and hosts already in the base references", () => {
-    withRefs("[3] Foo B. Study. [link](https://www.consumerlab.com/x) https://doi.org/10.1/x https://ods.od.nih.gov/y");
+    withRefs("[3] Foo B. Study. [link](https://dailymed.nlm.nih.gov/x) https://doi.org/10.1/x https://ods.od.nih.gov/y https://medlineplus.gov/z");
     expect(fails(run().AC7).filter((f) => /host|bare/.test(f))).toEqual([]);
     put("docs/blog/alpha.md", fx("alpha.base.md").replace("[2] Jones B. Synthetic safety review. 2020.", "[2] Jones B. Review. https://known.example.org/a"));
     sh(["add", "-A"]); sh(["commit", "-q", "-m", "base2"]);
@@ -1258,7 +1264,7 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`));
   });
   const flagged = () => fails(run().AC2).join("\n");
-  it("fails a ConsumerLab-only quote for a number whose sentence cites a PubMed record", () => {
+  it("fails a raw-only quote for a number whose sentence cites a PubMed record", () => {
     expect(flagged()).toContain("number cited to a primary study without its abstract in reach");
   });
   it("accepts a quote from the cited PMID's abstract", () => {
@@ -1273,7 +1279,7 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     reps.alpha.changed_tokens[0].raw_quote = "NIH: participants took 300 mg in adults every day";
     expect(flagged()).toContain("without its abstract in reach");
   });
-  it("lets a number whose own sentence has no [n] quote ConsumerLab", () => {
+  it("lets a number whose own sentence has no [n] quote the main raw", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Trials used 300 mg in adults [1].", "Trials used 300 mg in adults.").replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`));
     expect(flagged()).not.toContain("without its abstract");
   });
@@ -1470,6 +1476,113 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
   });
 });
 
+describe("US-42 AC12 one number in different forms pairs; a different number never does (masters-rebuild-1, 2026-11-10)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  const pairs = (forms: string[], want: string[]) => { for (const f of forms) expect(t(f), f).toEqual(want); };
+  it("reads hyphenated and abbreviated units as the spaced plural", () => {
+    pairs(["12-week", "12 weeks"], ["12 week"]);
+    pairs(["21.9-y", "21.9 y", "21.9 years", "21.9 yrs"], ["21.9 year"]);
+    pairs(["10 and 12 mo", "10 and 12 months"], ["10 month", "12 month"]);
+  });
+  it("carries one unit to both numbers of an 'or', 'and' or 'to' pair", () => {
+    pairs(["11 or 16 months"], ["11 month", "16 month"]);
+    pairs(["6 or 12 mg a day", "6 or 12 mg per day"], ["12 mg/day", "6 mg/day"]);
+    pairs(["aged 45 to 64", "aged 45-64 years", "aged 45 and 64"], ["45 year", "64 year"]);
+  });
+  it("infers years after 'aged', 'younger than' or 'older than' only when no unit follows (review R3)", () => {
+    pairs(["younger than 6 wk", "younger than 6-week"], ["<6 week"]);
+    pairs(["older than 72 h", "older than 72 hours"], [">72 hour"]);
+    pairs(["Infants aged 6 to 12 wks"], ["12 week", "6 week"]);
+    pairs(["aged 45 or 64 kg"], ["45 kg", "64 kg"]);
+    pairs(["aged 48 hours", "aged 48-h"], ["48 hour"]);
+    pairs(["aged 12-mo"], ["12 month"]);
+  });
+  it("keeps the leading comparator on the first number of an 'or' pair (review R5)", () => {
+    pairs(["over 12 or 24 hours"], ["24 hour", ">12 hour"]);
+    pairs(["over 12 to 72 hours"], ["12 hour", "72 hour"]);
+  });
+  it("reads every per-day spelling as one /day token", () => {
+    pairs(["12 mg a day", "12 mg per day", "12 mg/day", "12 mg/d", "12 mg daily", "12 mg astaxanthin/day", "12 mg astaxanthin/d"], ["12 mg/day"]);
+    pairs(["550 mg/d"], ["550 mg/day"]);
+  });
+  it("reads a middle-dot decimal as a point", () => {
+    pairs(["1·03", "1.03"], ["1.03"]);
+    pairs(["HR 0·87 (95% CI 0·80 to 0·95)"], ["0.8", "0.87", "0.95", "95 %"]);
+    for (const f of ["4·10⁹/L", "4·10^9/L", "4·10⁻³"]) expect(t(f).filter((k) => /^4\.1/.test(k)), f).toEqual([]); // times ten to the power, not 4.10
+  });
+  it("reads scientific notation as one number, and only with an exponent (review re-check)", () => {
+    pairs(["4·10⁹/L", "4×10⁹/L", "4 x 10^9/L", "4·10^9"], ["4000000000"]);
+    pairs(["1·5×10⁻³"], ["0.0015"]);
+    pairs(["4·10"], ["4.1"]);
+    pairs(["4 × 10 mg"], ["10 mg", "4"]);
+    pairs(["Ne10"], []);
+    for (const f of ["type 2e", "strain 2e5 grew"]) expect(t(f).filter((k) => /e|00/.test(k)), f).toEqual([]); // a plain "e" is never an exponent
+    const apart = (a: string, b: string) => expect(t(a).filter((k) => t(b).includes(k)), `${a} | ${b}`).toEqual([]);
+    apart("4·10⁹", "4·10⁶"); apart("4·10⁹", "4"); apart("4·10⁹", "10");
+  });
+  it("reads a number word opening a sentence before an irregular plural or a short adjective run", () => {
+    pairs(["Seventy adults took it.", "Seventy men took it."], ["70"]);
+    pairs(["Six healthy adult men took it.", "six healthy adult men", "Six healthy volunteers took it."], ["6"]);
+    pairs(["Twenty-four RCTs were included."], ["24"]);
+    pairs(["Ninety-six subjects took part."], ["96"]);
+    pairs(["One study shows benefit.", "One healthy man took it.", "We saw six healthy men."], []);
+  });
+  it("reads thousands written with a comma as one number; a space never groups digits (review R1)", () => {
+    pairs(["4000 IU", "4,000 IU"], ["4000 IU"]);
+    pairs(["2 500 mg tablets"], ["2", "500 mg"]);
+    pairs(["2\u2009500 mg tablets"], ["2", "500 mg"]);
+  });
+  it("pairs comparator words with their symbols", () => {
+    pairs(["<55 years", "younger than 55", "younger than 55 years"], ["<55 year"]);
+    pairs([">65 years", "older than 65"], [">65 year"]);
+    pairs(["≥ 20 mg", "20 mg or more"], ["≥20 mg"]);
+  });
+  it("keeps a number beside a month name: a date is not stripped outside a master's own date positions (review R2, R4)", () => {
+    pairs(["In May 12 participants withdrew.", "By March 12 patients had died."], ["12"]);
+    pairs(["Dec 2 to 4 mg"], ["2 mg", "4 mg"]);
+    pairs(["Up to 4 May cause harm."], ["≤4"]);
+    pairs(["Adults aged 24 may benefit."], ["24 year"]);
+  });
+  it("keeps a different number, unit or magnitude apart", () => {
+    const apart = (a: string, b: string) => {
+      const x = t(a), y = t(b);
+      expect(x.length > 0 && y.length > 0, `${a} | ${b}`).toBe(true);
+      expect(x.filter((k) => y.includes(k)), `${a} | ${b}`).toEqual([]);
+    };
+    apart("1.03", "1.3"); apart("1·03", "1.3"); apart("12 weeks", "12 months"); apart("12-week", "12 mo"); apart("6 mg", "60 mg");
+    apart("6 or 12 mg a day", "60 mg a day"); apart("Seventy adults took it.", "17"); apart("Seventy adults took it.", "Seventeen adults took it.");
+    apart("12 mg", "12 mcg"); apart("4,000 IU", "400 IU"); apart("4 000 IU", "400 IU"); apart("<55 years", ">55 years"); apart("younger than 55", "older than 55");
+    apart("21.9-y", "21.9 months"); apart("12 mg astaxanthin/day", "12 mg/week");
+    apart("Take 2 500 mg tablets daily.", "2500 mg a day"); apart("1 500 mg", "1500 mg");
+    for (const f of ["2 mg twice/day", "2 mg twice a day", "2 mg twice daily", "2 mg three times a day", "2 mg three times daily", "2 mg every 12 hours"]) apart(f, "2 mg a day");
+    apart("younger than 6 wk", "younger than 6 years"); apart("older than 72 h", "older than 72 years"); apart("Infants aged 6 to 12 wks", "aged 6 to 12");
+    apart("aged 48 hours", "aged 48"); apart("over 12 or 24 hours", "12 hours");
+  });
+  const addLine = (line: string, quote: string) => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", `${line}\nTake it with food`));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, participants took 12 mg astaxanthin/day over a 12-week period with no harms.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: line, raw_quote: quote });
+  };
+  it("passes a body line whose numbers the quote writes in another form", () => {
+    addLine("Participants took 12 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("fails a quote cropped inside a space-grouped number: '500 mg' cut from '1 500 mg' (review R1)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Adults took 500 mg every day with breakfast.\nTake it with food"));
+    const raw = `${fx("alpha.raw.txt")}\nIn the second arm, adults took 1 500 mg every day with breakfast for a year.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "Adults took 500 mg every day with breakfast.", raw_quote: "500 mg every day with breakfast for a year" });
+    expect(fails(run().AC2).join("\n")).toContain("raw_quote: its numbers are not whole tokens in the raw: Adults took 500 mg every day");
+  });
+  it("fails a body line whose dose differs from the quote's", () => {
+    addLine("Participants took 60 mg a day for 12 weeks.", "participants took 12 mg astaxanthin/day over a 12-week period");
+    expect(fails(run().AC2).join("\n")).toContain('"60 mg/day"');
+  });
+});
+
 // ---- US-50 AC1 / US-42 AC1 amended: topic-master batches (--masters) ----
 
 describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
@@ -1565,9 +1678,9 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
     master([`reviewed: "2026-10-20"`, "sources: []"]);
     expect(f1(mrun())).toContain("sources");
   });
-  it("rejects a source name outside consumerlab, nih-ods, brad-video and pubmed", () => {
+  it("rejects a source name outside nih-ods, brad-video and pubmed", () => {
     master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "NIH ODS")}`]);
-    expect(f1(mrun())).toContain("name must be one of consumerlab, nih-ods, brad-video, pubmed");
+    expect(f1(mrun())).toContain("name must be one of nih-ods, brad-video, pubmed");
   });
   it("accepts a pubmed source, for a master with no NIH sheet and no post", () => {
     master([`reviewed: "2026-10-20"`, `sources: ${SRC.replace("nih-ods", "pubmed")}`]);
@@ -1729,6 +1842,33 @@ describe("US-50 AC1 topic-master frontmatter (US-42 AC1 amended)", () => {
         expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
         basis(`POSITION:docs/products.md: ${Q}`, "Some other sentence (Brad's current guidance, 9 Oct 2026).");
         expect(fails(mrun().MASTER).join()).toContain("no current_view_basis entry");
+      });
+      it("accepts one uncited scope sentence beside a cited one (Brad rulings B5, B8, 2026-11-10)", () => {
+        pos(`${SENT} The video discusses ordinary honey; Brad has not spoken about alpha specifically.`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(fails(mrun().MASTER)).toEqual([]);
+      });
+      it("rejects a second scope sentence", () => {
+        pos(`${SENT} Brad has not spoken about alpha. He has not spoken about alpha itself.`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("more than one uncited scope sentence");
+      });
+      it("rejects a view that holds only a scope sentence", () => {
+        pos("Brad has not spoken about alpha specifically."); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("only a scope sentence");
+      });
+      // Adversary round 1 (2026-11-10): advice before or after the phrase, a link, another topic, a number or a citation.
+      it.each([
+        "Take two tablespoons a day for ulcers; Brad has not spoken about alpha.",
+        "Brad has not spoken about alpha, but it cures stomach ulcers and you should stop your antibiotics.",
+        "Brad has not spoken about alpha; Brad recommends taking it daily.",
+        "Brad has not spoken about alpha, but collagen reduces wrinkles.",
+        "He has not spoken about alpha, see https://example.com/alpha-cures.",
+        "Brad has not spoken about manuka specifically.",
+        "Brad has not spoken about alpha cures.",
+        "Brad has not spoken about alpha, but take 5 g a day.",
+        "Brad has not spoken about alpha (Brad's current guidance, 9 Oct 2026).",
+      ])("rejects a sentence outside the fixed scope shape: %s", (bad) => {
+        pos(`${SENT} ${bad}`); basis(`POSITION:docs/products.md: ${Q}`);
+        expect(masterFails()).toContain("no current_view_basis entry");
       });
       it("fails when the path is not an extra_raw at base", () => {
         pos(); basis(`POSITION:docs/products.md: ${Q}`); reps.alpha.extra_raw = [];
@@ -2288,7 +2428,7 @@ describe("US-70 AC1 condition guides: --guides", () => {
     expect(grun().GUIDE.status).toBe("PASS");
   });
   // Review A6: guide batches run AC7's citation-integrity and identifier checks, with guide sources: public guideline
-  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never ConsumerLab.
+  // and label hosts named in the guide's own sources:, PubMed and DOI, NIH ODS and Brad's video posts; never the licensed testing site (TESTER_HOST).
   it("runs AC7's reference checks on a guide: citations, hosts, link text", () => {
     const refs = (lines: string) => SOUND.replace("1. Example guideline. https://example.org/guideline", lines);
     addGuide();
@@ -2297,16 +2437,16 @@ describe("US-70 AC1 condition guides: --guides", () => {
     expect(fails(grun().AC7)).toEqual(["FAIL g: reference lines never cited: 1"]);
     addGuide(refs("1. A guideline on an unlisted site. https://unlisted.example.com/g"));
     expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host unlisted\.example\.com: /)]);
-    addGuide(refs("1. ConsumerLab review. https://www.consumerlab.com/reviews/x"));
-    expect(fails(grun().AC7)).toEqual([expect.stringMatching(/^FAIL g: reference line has unknown host consumerlab\.com: /)]);
+    addGuide(refs(`1. Testing-site review. https://www.${TESTER_HOST}/reviews/x`));
+    expect(fails(grun().AC7)).toEqual([expect.stringMatching(new RegExp(`^FAIL g: reference line has unknown host ${TESTER_HOST.replace(".", "\\.")}: `))]);
     addGuide(refs("1. Trial. [PMID 12345678](https://pubmed.ncbi.nlm.nih.gov/87654321/)"));
     expect(fails(grun().AC7).join("\n")).toContain("PMID link text 12345678 differs from its URL id 87654321");
   });
-  // Re-check R1: a ConsumerLab URL in the guide's own sources: never makes consumerlab.com an allowed reference host.
-  it("refuses a ConsumerLab reference even when the guide's sources: lists a consumerlab.com URL", () => {
-    const g = SOUND.replaceAll("https://example.org/guideline", "https://www.consumerlab.com/reviews/x");
+  // Re-check R1: a testing-site URL in the guide's own sources: never makes that site an allowed reference host.
+  it("refuses a testing-site reference even when the guide's sources: lists its URL", () => {
+    const g = SOUND.replaceAll("https://example.org/guideline", `https://www.${TESTER_HOST}/reviews/x`);
     addGuide(g);
-    expect(fails(grun().AC7).join("\n")).toMatch(/unknown host consumerlab\.com/);
+    expect(fails(grun().AC7).join("\n")).toContain(`unknown host ${TESTER_HOST}`);
   });
   it("takes a guide's reference to a host its sources: names, DailyMed, doi.org and Brad's video posts", () => {
     put("docs/blog/other.md", "---\ntitle: \"O\"\n---\n\nA video post.\n");

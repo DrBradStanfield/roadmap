@@ -15,7 +15,7 @@ import { BatchDateCell, BloodTestTimeline } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';
 import type { ApiLabValue } from '../lib/api-types';
-import { pickDraftDate } from '../testing/matrix-gestures';
+import { pickDraftDate, turnFrom } from '../testing/matrix-gestures';
 
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
@@ -54,7 +54,7 @@ function Page({ onMove, unitSystem, bloodTestHistory, labValues }: {
   const api = { preview: (from: string, to: string) => planBloodTestMove(file, from, to, { now: NOW, latestDay: '2026-10-30' }), move: onMove };
   const move = useMoveTest({ api, unitSystem, unitOverrides: {}, bloodTestHistory, labValues });
   return <>
-    <BloodTestTimeline bloodTestHistory={bloodTestHistory} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}}
+    <BloodTestTimeline bloodTestHistory={bloodTestHistory} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={turnFrom(unitSystem)}
       onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} move={move.headers}
       onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse/>
     {move.panel}

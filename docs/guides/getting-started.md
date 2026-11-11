@@ -8,7 +8,7 @@ stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 
 The code behind this tool is public, under the MIT licence, at [github.com/DrBradStanfield/roadmap](https://github.com/DrBradStanfield/roadmap). Anyone can read it and run it.
 
-Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. There is no account to create and no key to fetch, because there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
+Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. You do not sign up for anything, and there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
 
 We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI running on your own computer.
 

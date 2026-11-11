@@ -227,7 +227,7 @@ When choosing a cranberry supplement, look for:
 1. **PAC content per serving**: the 2024 dose-response analysis linked benefit to a daily PAC intake of at least 36 mg [21].
 2. **Measurement method**: PAC figures depend on the assay standard, so numbers from different methods are not directly comparable [70].
 3. **Source material**: a juice-extract supplement held more soluble PACs and gave higher urinary anti-adhesion activity than a whole-cranberry blend [11].
-4. **Independent testing**: you can check product testing at consumerlab.com or Labdoor.
+4. **Independent testing**: you can check product testing at Labdoor.
 
 ## 5. Safety and Side Effects
 

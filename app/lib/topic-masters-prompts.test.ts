@@ -13,6 +13,7 @@ vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
 import { MASTER_VIEWS_HEADING } from './youtube-context';
 import { loadBlogIndex } from './blog-index.server';
 import { buildSystemBlocks, DOCTOR_POSTURE, BRAND_POSTURE } from './chat.server';
+import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
 
 const system = readFileSync('app/lib/chat-system-prompt.md', 'utf-8');
 const youtube = readFileSync('app/lib/chat-youtube-prompt.md', 'utf-8');
@@ -125,9 +126,9 @@ describe('omega-3 brand (US-50 AC11)', () => {
   });
 
   it('the assembled doctor prompt carries the exception and the disclosure in every layer; the brand prompt keeps criteria only', () => {
-    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE }).map(b => b.text).join('\n\n');
+    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     for (const text of [OMEGA_RULE, DOCTOR_EXCEPTION, `say: "${DISCLOSURE}"`]) expect(doctorPrompt).toContain(text);
-    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE }).map(b => b.text).join('\n\n');
+    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     expect(brandPrompt).not.toContain(DOCTOR_EXCEPTION);
     expect(brandPrompt).toContain("On the brand surface, Brad's personal routine is never an endorsement: give the criteria only, with no brand name or link.");
   });
@@ -238,5 +239,20 @@ describe('rules are applied silently (US-15 AC49)', () => {
 
   it('the doctor posture says the naming check is silent', () => {
     expect(doctor).toContain("Make this check silently: never say that the user's message named the product, or that you can answer because it did.");
+  });
+});
+
+// US-45 AC4 (changed 2026-11-10, Brad: "drstanfield can talk about potassium-fiber drink because it's a drink with no
+// health claims"): the doctor posture's second exception, and the YouTube ownership line exempt from the reply caps.
+describe('Potassium Fiber Drink on the doctor surfaces (US-45 AC4)', () => {
+  const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
+  const OWNERSHIP = 'Brad owns the company that sells it and profits from its sale.';
+  it('the doctor posture allows it only when the user names it, and never brings it up beside a condition', () => {
+    expect(doctor).toContain("when the user's message names it, you may name and describe it from the PRODUCTS section and link https://potassiumfiber.com");
+    expect(doctor).toContain('If a question that does not name the drink names a condition or symptom (blood pressure, constipation, kidney disease and the like), or the reply discusses outcome research, do not bring the drink up.');
+    expect(doctor).toContain('never steer to it, never recommend it');
+  });
+  it('a YouTube reply naming the drink carries the exact ownership sentence, outside the sentence and word limits', () => {
+    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** when a reply names or discusses the drink, it must include this exact sentence: "${OWNERSHIP}" This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
   });
 });

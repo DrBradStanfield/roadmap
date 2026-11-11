@@ -17,15 +17,17 @@
  */
 import { EXTRACTION_STOP_CODES } from '@roadmap/health-core/models';
 import { parseJsonResponse, PROXY_PATH } from './server-api';
-import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
+import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
 const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 
-export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
+export async function checkLabImportQuota(): Promise<QuotaCheck> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL);
-    if (!response.ok) return { allowed: false, remaining: 0 };
-    return (await parseJsonResponse<{ allowed: boolean; remaining: number }>(response)) ?? { allowed: true, remaining: 0 };
+    if (!response.ok) return { allowed: true, remaining: 0 }; // optimistic — the POST enforces
+    const data = await parseJsonResponse<{ allowed: boolean; remaining: number }>(response);
+    if (data && !data.allowed) return { allowed: false, remaining: data.remaining, reason: 'quota' };
+    return { allowed: true, remaining: data?.remaining ?? 0 };
   } catch {
     return { allowed: true, remaining: 0 }; // optimistic — the POST enforces
   }

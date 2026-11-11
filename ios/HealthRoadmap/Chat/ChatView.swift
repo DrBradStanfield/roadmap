@@ -14,7 +14,6 @@ struct ChatView: View {
     @State private var conversationId = UUID().uuidString.lowercased()
     @State private var transcript = ChatTranscript()
     @State private var draft = ""
-    @State private var status: String?
     /// The turn in flight, for Stop (US-52 AC6d).
     @State private var turn: Task<Void, Never>?
     @State private var showingHistory = false
@@ -56,7 +55,7 @@ struct ChatView: View {
             conversationId = UUID().uuidString.lowercased()
         }
         // An erase here or by sync drops an unanswered banner and the Undo (US-67 AC5).
-        .onChange(of: store.chatMark) { edits.follow(store.chatMark) }
+        .onChange(of: store.mark) { edits.follow(store.mark) }
         .onAppear { edits.send = { [analytics] in analytics?.event($0) } }
     }
 
@@ -104,7 +103,7 @@ struct ChatView: View {
                         }
                         ForEach(transcript.shown) { ChatBubble(line: $0) }
                         ChatEditBanners(edits: edits)
-                        if let status { Label(status, systemImage: "ellipsis").foregroundStyle(.secondary).font(.footnote) }
+                        if let pending = transcript.pending { ChatPendingLine(words: pending.words) }
                         if let error = transcript.error {
                             Text(error).foregroundStyle(.red).font(.footnote)
                             #if DEBUG
@@ -212,7 +211,7 @@ struct ChatView: View {
         // this turn is dropped, never indexed into the new lines or saved (review R1).
         let erasures = store.erasures
         // The record it is asked on: a reply's edits apply only to it (US-67 AC5).
-        let asked = store.chatMark
+        let asked = store.mark
         turn = Task { await send(question, earlier: earlier, answerIndex: answerIndex, erasures: erasures, asked: asked) }
     }
 
@@ -223,19 +222,18 @@ struct ChatView: View {
         guard !transcript.finished else { return }
         turn?.cancel()
         turn = nil
-        status = nil
         if let question = transcript.stop(), draft.isEmpty { draft = question }
     }
 
-    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int, asked: RecordStore.ChatMark) async {
+    private func send(_ question: String, earlier: [ChatClient.Turn], answerIndex: Int, erasures: Int, asked: RecordStore.Mark) async {
         let isNew = earlier.isEmpty
         let conversation = conversationId
         let askedAt = ChatHistoryStore.erasures
         // A stopped or erased turn changes nothing more on screen.
         func live() -> Bool { store.erasures == erasures && !Task.isCancelled }
         asking = false
-        // A stopped turn leaves these to Stop, and to the turn that may follow it.
-        defer { if !Task.isCancelled { turn = nil; status = nil } }
+        // A stopped turn leaves this to Stop, and to the turn that may follow it.
+        defer { if !Task.isCancelled { turn = nil } }
 
         do {
             let context = try await engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
@@ -245,19 +243,14 @@ struct ChatView: View {
             var finished = false
             for try await event in ChatClient().ask(body: body) {
                 guard live() else { return }
-                switch event {
-                case .status(let text): status = text
-                case .text(let text): transcript.lines[answerIndex].text += text
-                case .sources(let titles): transcript.lines[answerIndex].sources = titles
-                case .done(let content, let isFallback, let failure, let proposed):
+                transcript.stream(event, into: answerIndex)
+                if case .done(let content, let isFallback, let failure, let proposed) = event {
                     if let failure { throw AppAttestClient.Failure.server(status: 500, message: failure) }
                     // The answer is in: Stop goes, and it is saved (review R3).
                     let answer = transcript.finish(answerIndex, content: content)
                     finished = true
-                    status = nil
                     await history.record(ChatExchange(conversationId: conversation, isNew: isNew, userText: question, assistantText: answer, isFallback: isFallback), askedAt: askedAt)
                     if let proposed, live() { await edits.take(proposed, asked: asked) }
-                case .other: break
                 }
             }
             // A stream that ended with no `done` line was cut off: never history.

@@ -332,7 +332,7 @@ Decolorized aloe has had activated carbon treatment to remove the toxic anthraqu
 ### Quality Concerns
 
 - Controlled decolorization markedly reduces aloin and potential allergens [24]
-- Independent testers such as ConsumerLab.com publish product test results
+- Independent testers such as Labdoor publish product test results
 
 ### The Aloe Vera Plant
 

@@ -140,14 +140,27 @@ CREATE POLICY "Users can read own audit logs"
 GRANT SELECT ON audit_logs TO authenticated;
 
 -- ===== Cron lock table =====
--- Coordinates the reminder cron job across multiple Fly.io machines.
--- Atomic UPDATE ... WHERE lock_date != today ensures only one machine runs per day.
+-- Coordinates the daily crons (one row per lock name) across Fly.io machines.
+-- An atomic UPDATE whose filter admits only a row free to this machine for
+-- today (US-28 AC9: seed, an earlier day with no live run, its own failed or
+-- dead row, or a run past its stuck limit), then a separate verify SELECT,
+-- ensures only one machine runs a day; run_state records how the run ended.
 CREATE TABLE IF NOT EXISTS cron_lock (
   lock_name TEXT PRIMARY KEY,
   locked_by TEXT,
   locked_at TIMESTAMPTZ,
   lock_date TEXT
 );
+
+-- 2026-11-11 (US-28, cron lock follow-up, Brad's yes): the run's end, so a
+-- finished day is refused to every machine (the one that ran it included) and
+-- a live run blocks the next day. run_state: 'running', 'finished' or 'failed';
+-- NULL means a legacy row (taken before this column existed), read as finished.
+-- No CHECK: old and new code overlap during a rolling deploy; the code validates.
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS run_state TEXT;
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+-- Applied to production 2026-11-11 (about 05:54 UTC, after merge be06b043); verified
+-- from information_schema: both nullable, no default, RLS on.
 
 -- lock_date is seeded with a sentinel past date (not NULL) because
 -- `WHERE lock_date != today` evaluates to NULL on NULL rows (not true), so a
@@ -165,10 +178,6 @@ ON CONFLICT DO NOTHING;
 -- and only one store's metafield would be written per day.
 INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('trending_cron_edu', NULL, NULL, '1970-01-01')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
-VALUES ('youtube_bot_summary', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
 
 -- ===== Enable RLS on infrastructure tables =====
@@ -644,6 +653,12 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- 2026-11-11 (reminders, Brad's yes): the day a reminder pass stamped before
+-- sending to this row. A later re-run the same day (after a restart) reads it and
+-- skips the send. Not a mutex: the cron lock decides who runs. NULL = never stamped.
+ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
+-- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
 
 -- Only the Google-verified lane upserts on email (an owner may replace their
 -- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as

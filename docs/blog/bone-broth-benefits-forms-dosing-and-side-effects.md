@@ -6,475 +6,374 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["bone broth", "collagen", "collagen peptides", "gelatin", "glycine", "proline", "glutamine", "amino acids", "joint health", "gut health", "skin", "wrinkles", "osteoarthritis", "inflammation", "muscle", "sarcopenia", "bone density", "osteoporosis", "hyaluronic acid", "aging", "longevity", "sleep", "protein", "calcium", "magnesium", "potassium", "sodium", "iron", "zinc", "phosphorus", "creatine", "taurine", "fiber", "gut health", "microbiome"]
-summary: "Reference on bone broth: joint pain, skin wrinkles, muscle mass, sleep (glycine). Most evidence is for collagen peptides, not broth directly. Liquid/powder/capsule; 2-3 cups/day for joints. High sodium content; caution in kidney disease. Always discuss with your doctor."
+summary: "Bone broth reference. No trials test broth itself; claims rest on collagen trials (2.5 to 15 g a day) for joints, skin, bone and muscle. Broth gave significantly lower collagen amino acids than a 20 g dose. Poor calcium source; lead low. Ask your doctor first if you take spironolactone or levodopa."
+reviewed: "2026-11-10"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31096622/","checked":"2026-11-09","fingerprint":"sha256:6f3f88206d86ce21b9c51bb92cb6419cb0c4cfcec5332dd2ee4b925d26c9b3a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29893587/","checked":"2026-11-09","fingerprint":"sha256:8a2dfc4d8c8f8f2d40a60f33da30fa95af1b1925593654d9824a849edd107e67"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30368550/","checked":"2026-11-09","fingerprint":"sha256:85de9a492f34598bfd7d6a3a7d59cd2e30b774f2212fde7b8be75c592d1179a9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22521757/","checked":"2026-11-09","fingerprint":"sha256:51b149861f6875ff7728eb6f54b23a95fccb9301b686f846a03297cb9359ab8c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28804437/","checked":"2026-11-09","fingerprint":"sha256:48796efb691f69dc0ad7ecd93d7153e618b585e75e119ca1d017d2ee721d317d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37355689/","checked":"2026-11-09","fingerprint":"sha256:111eb8b191b3be7816d92cf87e090562129411878c7d80d5adf4f7f28e7732ce"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23375414/","checked":"2026-11-09","fingerprint":"sha256:200308b583b8a23a9c86083161123018a92a6f676231a1891587d54181e98587"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22500661/","checked":"2026-11-09","fingerprint":"sha256:82201198da45326050f433eddfc9dcc43f3dd82e513bb5ad5d84714e40baf920"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26822714/","checked":"2026-11-09","fingerprint":"sha256:05c58278bc22b5b9b4e2ab9a93b9182423776ee4c4a7fc77eff6ff1d01eae8d0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10498764/","checked":"2026-11-09","fingerprint":"sha256:a4141c335f8e50d11f21ad86d67878d32bad9b9a02878a2c9014b0dd1862f78e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24852756/","checked":"2026-11-09","fingerprint":"sha256:057e6eb05f4ebec44707ced94d1b6fe4dbcf75eee6140d4e4558ed440f8e9035"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20401752/","checked":"2026-11-09","fingerprint":"sha256:59f594583855b8664ce8264f0e338df4c37904686cbcf8adddf9d60c6d9340e7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9485087/","checked":"2026-11-09","fingerprint":"sha256:1a3154e68f572bebe48d4c585a6ff7f396dad6e712f55b55f3e56a4b29711005"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18576295/","checked":"2026-11-09","fingerprint":"sha256:3217b76ef50272de45abdbce22c707e46791d10ab72e8198279fe8c371fc3212"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18416885/","checked":"2026-11-09","fingerprint":"sha256:3910c6fc1181a2b4faf0693fb32658544774991718f026ed773c193d30ffbd0e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29769831/","checked":"2026-11-09","fingerprint":"sha256:f5e4d8a99abb710a02393185158650222b6ba509bd12322d7f2c1947670fe20e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27852613/","checked":"2026-11-09","fingerprint":"sha256:e918f1bb162cbbdbf5b7c4aafa38925ff21bc7c4156c28207d3296798950fb58"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29337906/","checked":"2026-11-09","fingerprint":"sha256:e8de7af7aeee8bd34d409bb51cb92acacfc907b7c239ee1db0cb9412932e86b9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8625373/","checked":"2026-11-09","fingerprint":"sha256:71b69b6f93a910c2bf36001f6c3f4d2c631cfbae4227960dc7cd03b18873a074"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26353786/","checked":"2026-11-09","fingerprint":"sha256:023c83a76763697858c875489a88ebf04272b5188d62f7e9b514c2b55323c722"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24401291/","checked":"2026-11-09","fingerprint":"sha256:a50188fd764c1bff5eaf46a0ae1f3721979375c1956e0d239b553b87721f262f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23949208/","checked":"2026-11-09","fingerprint":"sha256:fc52e5e37df7085d02c9a0a423adc35ded4dc33f5932676d88fbfcabaf678e7d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24131075/","checked":"2026-11-09","fingerprint":"sha256:ae389eaf7e62aae5b5c13f48ae732e532dd19a016b14101dba7080e6dfef923d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33742704/","checked":"2026-11-09","fingerprint":"sha256:35e47625e19fd0479988c94c35b0fe0ca5edf21ccbe9e86eed96ef79abfd057d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28786550/","checked":"2026-11-09","fingerprint":"sha256:aad488ab2c4fd7c53d3b0a64f2a29b53a04db26dec11f4486174974086a082e4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/11035691/","checked":"2026-11-09","fingerprint":"sha256:522a93f146f03a98705d95eca14510f982f2205dce3b41f1946493ecd0eafa46"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/359266/","checked":"2026-11-09","fingerprint":"sha256:84e9720ad27caad5ff8e3ed94ba3c8e1fff51529a9bd7eb81d493d4750bd0466"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22629114/","checked":"2026-11-09","fingerprint":"sha256:c8438bb51264d4ecb0496892fd03f0d0839c97ead750ac9665c09f9caa721872"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24918016/","checked":"2026-11-09","fingerprint":"sha256:8834d01d4faca56c0dbfd89d881ff5ae773e9086edbf19c9b921e2435f2276ca"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28448477/","checked":"2026-11-09","fingerprint":"sha256:318cfae4f72bec8be08e42dec406e05b785b3a462f07d4c631fdb8eaf03c0a2d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31272969/","checked":"2026-11-09","fingerprint":"sha256:fc695d039309100e9927c99b45997c67dcf9a719074e1f537f7e3664026627a7"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/14600124/","checked":"2026-11-09","fingerprint":"sha256:083fd10554dfbe6dbc5eb2b9c1eb4b209e0224f0c5376eea9afffebe8c0eac5b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22293292/","checked":"2026-11-09","fingerprint":"sha256:e8e805dfda2113f8775fb190386b4a0071700f4234e1cf9721759656560084e9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22529837/","checked":"2026-11-09","fingerprint":"sha256:e4b3b2645b7d6b7590ec2a72233b48dcb9bcf0f8feff4782b72ec79879dc28a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25533534/","checked":"2026-11-09","fingerprint":"sha256:a1021ca605ef16f2b5163c292499cf486a319e36b54ee3db31814db3d96073fe"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40180691/","checked":"2026-11-09","fingerprint":"sha256:9134b8a4aeb015fa02f19c35bac08c3ca787b54b8d0c30ce10ca31167c002c14"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42342959/","checked":"2026-11-09","fingerprint":"sha256:aa03333e4c264aa23b6e509ad49b9f744eaeb6c80770a13addf6b74ccaa92a0d"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing","checked":"2026-11-09","fingerprint":"publishedAt:2026-10-15"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/bone-broth-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/bone-broth-benefits-forms-dosing-and-side-effects)*
 
+## Current view (reviewed 10 November 2026)
+
+Brad's video is about collagen supplements; he has not spoken about bone broth itself. He says a 2026 meta-analysis published in July gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but it found no effect on wrinkles, and longer studies are likely needed ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). For joints and muscle, he says a 2026 umbrella review found a modest reduction in osteoarthritis pain with collagen and a gain in lean mass ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). But where trials matched the protein, collagen did not come out ahead, and whey protein raises muscle-building signals more than collagen does ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad notes his own conflict of interest: he sells a supplement that contains collagen, so you should weigh what he says with that in mind ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)).
+
+## Key safety points
+
+- If you take prescription medicines, or have been told to limit salt, potassium or fluids, check with your doctor or pharmacist before starting. The spironolactone label advises people who take it to avoid potassium supplements and foods high in potassium, and warns that ACE inhibitors and angiotensin receptor blockers raise the risk of high potassium [6].
+- If you have kidney disease or are on dialysis, ask your kidney team first. MedlinePlus advises people with chronic kidney disease to limit salt and potassium, and people on dialysis to count soups in their daily fluid [39].
+- If you take warfarin, a broth made with leafy greens such as spinach, kale or parsley counts toward the foods MedlinePlus says to keep steady from day to day [38].
+- If you take levodopa for Parkinson's disease, dietary protein can reduce its absorption [7]. Bone broth and collagen add protein, though neither has been studied with levodopa.
+- Bones store lead: a small test found organic chicken bone broths held several times the lead of the water used to make them [8], though another study judged lead levels of a few micrograms per serving a minimal risk [5].
+- The most reported side effects of collagen supplements in osteoarthritis trials were mild to moderate stomach and bowel complaints [4]. In two trials, side effects did not differ from placebo or the comparison treatment [9][10].
+
+## Brad's videos on this topic
+
+- 15 Oct 2026, [The Collagen Peptides for Skin Story is Changing](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing): collagen peptides may improve skin hydration and elasticity, with no effect on wrinkles; the video is about collagen supplements, not bone broth.
+
 ## 1. Overview
 
-Bone broth is a savory, nutrient-rich liquid made by simmering animal bones — often with attached connective tissue, cartilage, and sometimes residual meat — in water for an extended period, typically 12 to 48 hours, along with vegetables, aromatics, herbs, and spices [1][2][3]. This prolonged cooking process extracts collagen from the bones and connective tissues, which converts into gelatin during simmering, along with minerals, amino acids, and other compounds [1][4]. The resulting liquid contains significant amounts of protein (typically 8-10 grams per cup), potassium, and sodium, with smaller amounts of other minerals such as calcium, magnesium, phosphorus, and zinc [1][2][5].
+Bone broth is made by simmering animal bones, often with connective tissue, for many hours. It is promoted as a source of collagen and of the amino acids collagen is built from, such as glycine, proline and hydroxyproline [2].
 
-The most nutritionally significant component of bone broth is collagen, the main structural protein found in bone and connective tissue. Approximately 40 to 80% of the total protein in bone broth consists of collagen, with beef-based broths tending toward the higher end of this range [1][6]. Collagen breaks down into gelatin during the simmering process, which in turn supplies key amino acids including glycine, proline, hydroxyproline, arginine, and glutamine [2][5]. Glycine content, for example, can range from 500 to 1,700 mg per cup depending on preparation [5].
+The amount of these amino acids varies widely. One analysis of commercial and home-made broths found large differences between broths made to non-standardised recipes, with the highest levels in café-made broths. Commercial broths were lower in all amino acids than home-made broths made to the same recipe [2].
 
-Bone broth differs from regular broth and stock in important ways. Standard chicken or beef "broth" is made by simmering meat (on or off the bone) for a shorter period — typically 30 minutes to 6 hours — yielding a lighter liquid. Stock focuses on bones simmered for 4 to 12 hours. Bone broth extends the cooking time to 12-48 hours, maximizing gelatin and nutrient extraction [3][7][8]. The term "bone broth" emerged as a distinct marketing term in the early 2010s, driven by the paleo and keto diet movements, though the preparation itself is essentially a traditional stock [3][7][9].
+The same analysis found that broth made to a standard recipe gave significantly lower levels of hydroxyproline, glycine, proline, hydroxylysine, leucine and lysine than a potentially therapeutic 20 g dose of collagen supplement. The authors concluded that bone broth is unlikely to be a consistently reliable source of these amino acids [2].
 
-Despite widespread popularity and numerous health claims — from boosting immune function and healing the gut to reducing joint pain and improving skin — the direct scientific evidence for bone broth itself is limited. Most supporting research involves isolated components (collagen hydrolysate, gelatin, glycine, or specific amino acids) rather than bone broth as a whole food [1][2][10]. No official recommended daily amount for bone broth has been established by any major health authority [10].
-
-The consumption of bone-based broths traces back to prehistoric times. Evidence from the Stone Age indicates that early humans prepared broths by simmering animal bones using heated rocks dropped into animal hides or stomachs [11][12]. Traditional Chinese Medicine incorporated bone broths as short decoctions (2-3 hours) for everyday nourishment or long decoctions (12-24 hours) for restorative purposes [13]. European traditions ranged from Bronze Age bouillon-like preparations to medieval consommés and peasant stocks [13]. Jewish chicken soup, Japanese tonkotsu, and French consommé all represent culturally distinct bone broth traditions that persist today [14].
-
-Bone broth is sold commercially as a liquid (ready-to-drink, frozen, or shelf-stable in cartons), as a powder that can be mixed with water, or as powder encapsulated in pill form [1]. The bone broth market expanded rapidly in the mid-2010s, with more than six times as many products marketed as containing bone broth in 2017 compared to 2015 [15].
+We found no clinical trials of bone broth itself for joint, skin, bone, muscle or gut health. The trials usually cited for bone broth tested collagen supplements, gelatin, glycine or chicken soup instead, and the sections below describe them as such.
 
 ## 2. Forms and Bioavailability
 
 ### Collagen in Bone Broth vs. Supplemental Collagen
 
-The collagen obtained from bone broth is primarily in the form of gelatin — collagen that has been partially hydrolyzed by the prolonged heat of simmering but not broken down as completely as enzymatically hydrolyzed collagen (collagen peptides) [1]. This distinction matters because the form of collagen determines how it is absorbed and utilized.
+Collagen products fall into three groups: undenatured collagen, gelatin and collagen hydrolysate [4]. They are used at very different doses. Trials of undenatured type II collagen used 40 mg a day for knee osteoarthritis [10], while trials of collagen hydrolysate or collagen peptides used grams a day (see Recommended Dosing).
 
-There are three main forms of supplemental collagen [1][16]:
-
-- **Gelatin** — Collagen that has been denatured by heat. This is the dominant form in bone broth. Gelatin dissolves in hot water and forms a gel when cooled. It contains large polypeptide chains that must be broken down further during digestion.
-- **Collagen hydrolysate (collagen peptides)** — Collagen that has been enzymatically broken down into smaller peptides (typically 2,000-5,000 daltons). This is the most commonly studied supplemental form. Studies in mice suggest that absorption may be greater with hydrolyzed collagen compared to gelatin, due to its smaller molecular size [1][16].
-- **Undenatured (native) collagen** — Collagen in its intact, native triple-helix structure. Used at much lower doses (typically 10-40 mg/day) with a proposed mechanism involving immune tolerance rather than providing structural amino acids [1].
-
-Although undenatured collagen, gelatin, and collagen hydrolysate may all be broken down in the gut to yield absorbable amino acids, the bioavailability differs. Collagen hydrolysate has the smallest molecular size and is therefore likely absorbed most efficiently [1][16]. Gelatin from bone broth undergoes further breakdown during digestion but may not achieve the same level of absorption as pre-hydrolyzed peptides.
+In mice, 95% of an oral dose of gelatin hydrolysate was absorbed within the first 12 hours, and it built up in cartilage to more than twice the level seen after a labelled proline control [11]. This was an animal study and did not compare gelatin hydrolysate with intact gelatin.
 
 ### Collagen Types
 
-Collagen is classified by type based on its tissue of origin [1][2][16]:
-
-- **Type I collagen** — Most abundant in the body, found primarily in skin, bone, tendons, and other connective tissue. The most common source of collagen hydrolysate supplements. Beef bone broth is generally richer in type I and type III collagen [17].
-- **Type II collagen** — Found most abundantly in cartilage. Chicken bone broth, particularly when made with chicken feet, may contain higher proportions of type II collagen [17][18].
-- **Type III collagen** — Found in skin, blood vessels, and internal organs. Often co-occurs with type I collagen.
+We found no public study that measured which types of collagen bone broth contains. The undenatured type II collagen in the trials below came from chicken sternum cartilage [10].
 
 ### Liquid vs. Powder vs. Capsule Forms
 
-| Form | Protein per serving | Collagen content | Convenience | Notes |
-|------|:-:|:-:|:-:|------|
-| Liquid bone broth | 6-10 g per cup | ~40-80% of protein | Low (refrigeration, heating) | Most traditional form. Gelling when cooled indicates high gelatin content [1][6]. |
-| Powdered bone broth | 10-20 g per serving | Variable | High (shelf-stable, portable) | Higher concentrated protein due to dehydration. Gentle dehydration preserves most amino acids [19]. |
-| Bone broth capsules | 1-3 g per serving | Variable | Highest | Very low doses compared to liquid or powder. Difficult to achieve therapeutic collagen doses [1]. |
-| Collagen hydrolysate (peptides) | 10-20 g per serving | ~100% collagen | High | Not bone broth, but the form most studied in clinical trials. Smaller molecular size, likely better absorbed [1][16]. |
-
-Powdered forms typically lack the gelling property of quality liquid broth, as dehydration disrupts gelatin structure [19]. Nutrient retention varies: gentle dehydration preserves most amino acids (glycine, proline, etc.), but high-heat processing can partially denature proteins or reduce bioavailability [19].
+We found no public study that compared liquid, powdered and capsule bone broth for protein, collagen or nutrient content.
 
 ### Factors Affecting Nutrient Content
 
-The nutrient composition of bone broth varies widely depending on preparation methods [20][21][22]:
+- **Acidity:** Lowering broth pH from 8.38 to 5.32 increased calcium and magnesium extraction by factors of 17.4 and 15.3 [5].
+- **Cooking time:** Cooking for more than 8 hours extracted significantly more calcium and magnesium than shorter times [5].
+- **Bone type and species:** Leg and rib bones released metals differently, and the differences between species were larger than those within a species [5].
+- **Recipe and maker:** Amino acid levels varied widely between non-standardised recipes, and commercial broths were lower than home-made broths made to the same recipe. Batches made to one standard recipe did not differ [2].
 
-- **Cooking time:** Longer cooking times (12-48 hours) increase mineral extraction and collagen breakdown. Calcium and magnesium levels rise significantly after 8 hours compared to shorter durations [20]. Shorter simmering (6-12 hours) favors gelatin retention (firmer gel), while longer times (24+ hours) promote further hydrolysis into smaller peptides with potentially greater bioavailability but reduced gelling capacity [5][13].
-- **Acidification:** Adding vinegar or other acid substantially enhances mineral extraction. One study found acidification increased calcium extraction by factors of 10.6 to 23.6 and magnesium by 5.8 to 20.6 compared to unacidified broth [20]. Acid also facilitates collagen-to-gelatin conversion [2].
-- **Bone type:** Bones with higher connective tissue and joint content yield more gelatin. Rib bones (with more cancellous structure) provide higher initial extraction of calcium, magnesium, and certain trace elements due to greater surface area, whereas long bones like femurs support more sustained calcium release over time [20].
-- **Animal source:** A study in Australia found that amino acid content was significantly higher when broth was made from beef rather than chicken, from long bones (marrow-containing) rather than small bones, and when fat was not removed. The addition of vinegar did not influence amino acid content [22].
-- **Fat removal:** Retaining fat in the broth may preserve some fat-soluble nutrients and increase amino acid content [22].
+The home-made and commercial broths tested stayed under 5% of daily recommended calcium and magnesium levels per serving (see Dietary Sources) [5].
 
 ## 3. Evidence for Benefits
 
 ### Joint Health and Osteoarthritis
 
-There are no published clinical studies on the use of bone broth products specifically for arthritis or joint pain [1]. However, bone broth is a source of collagen and gelatin, and several studies suggest these components may be beneficial when taken in supplemental form.
+The joint evidence comes from trials of collagen supplements, not broth.
 
-**Collagen hydrolysate for osteoarthritis:**
+**Systematic reviews:** A systematic review of eight trials (six on collagen hydrolysate, two on gelatin, one on undenatured collagen) found that collagen hydrolysate did not significantly reduce WOMAC pain scores compared with placebo (pooled mean difference -0.49, 95% CI -1.10 to 0.12). Gelatin was superior to placebo and to other treatments for pain. The review judged the evidence insufficient to recommend collagen hydrolysate for osteoarthritis in daily practice, with overall quality moderate to very low [4].
 
-One of the largest studies with collagen hydrolysate enrolled patients with joint pain of the hip, knee, elbow, shoulder, hand, or lumbar spine. After 3 months, collagen hydrolysate was not more effective than placebo in reducing joint pain. However, after 6 months there was a statistically significant difference: 51.6% of people taking the collagen (Genacol) reported a reduction in pain compared to 36.5% of those taking placebo (Bruyere et al., *Complement Ther Med*, 2012) [23]. This suggests that collagen supplementation for joint pain requires at least 6 months to show benefit.
+A later meta-analysis of placebo-controlled trials found that collagen reduced the total WOMAC score (weighted mean difference -8.00) and the VAS pain score (-16.57). The WOMAC pain subscore did not change significantly [3].
 
-A smaller study in people with knee osteoarthritis found that taking 5 grams of collagen hydrolysate (collagen peptide) dissolved in a cup of water or milk in the morning and at night after food for 13 weeks significantly improved symptoms compared to placebo (Kumar et al., *J Sci Food Agric*, 2014) [24].
+In his October 2026 collagen video, Brad noted that a 2026 umbrella review found a modest reduction in osteoarthritis pain with collagen, but that where trials matched the protein, collagen did not come out ahead ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)).
 
-One study directly compared collagen hydrolysate to glucosamine sulfate and suggested greater benefit with collagen hydrolysate (Trc et al., *Int Orthop*, 2011) [25].
+**Collagen hydrolysate trials:** In a 6-month trial of 200 adults aged at least 50 with joint pain, collagen hydrolysate 1200 mg/day gave more clinical responders than placebo at 6 months (51.6% vs 36.5%), but there was no significant difference at 3 months (44.1% vs 39.6%) [9].
 
-A meta-analysis of studies on hydrolyzed collagen supplements found reduced pain, improved mobility, and better function in osteoarthritis patients across randomized controlled trials [10]. Undenatured type II collagen has also shown reductions in pain and stiffness compared to placebo in some trials [10].
+In a 13-week trial in knee osteoarthritis, collagen peptides from pork skin or bovine bone lowered WOMAC, VAS and quality-of-life scores significantly more than placebo [12].
 
-There is very limited evidence that collagen may help for rheumatoid arthritis [1].
+In a trial in adults with knee osteoarthritis, 10 g of enzymatic hydrolysed collagen daily for 90 days was compared with 1.5 g of glucosamine sulphate. Patients rated efficacy as good or ideal in 80.8% of the collagen group and 46.6% of the glucosamine group [13].
 
-**Important caveat:** Supplements with collagen hydrolysate (typically 10 to 12 grams per day) or gelatin may help reduce pain associated with osteoarthritis when taken for several months (preferably at least 6 months), but larger studies are needed to confirm this effect [1]. Most of these studies used specific forms of hydrolyzed collagen, and most bone broth products do not list the form or amount of collagen they contain. Dietary collagen from bone broth is broken down into amino acids during digestion, and there is a lack of robust evidence that consuming bone broth directly confers the same joint benefits as purified collagen supplements [10].
+**Undenatured type II collagen:** In a knee osteoarthritis trial, 40 mg a day of undenatured type II collagen for 180 days reduced the overall WOMAC score more than placebo (p = 0.002) and more than glucosamine plus chondroitin (p = 0.04) [10].
+
+**Rheumatoid arthritis:** Evidence is weak and mixed. In a trial in which patients took oral type II collagen at 20 to 2,500 micrograms a day for 24 weeks, only the lowest dose beat placebo, and only on one of three sets of response criteria [14]. In a trial of 236 patients, chicken type II collagen worked less well than methotrexate: 68.57% vs 83.02% met the ACR20 response criteria at 24 weeks [15].
+
+**Caveat:** These trials used defined collagen products at known doses. Bone broth gave significantly lower levels of collagen amino acids than a 20 g supplement dose in the one analysis we found [2], so these results cannot be assumed to apply to broth.
 
 ### Exercise-Related Joint Pain
 
-Collagen may also help reduce joint pain associated with physical activity in healthy active adults.
+In a 24-week trial of 147 athletes with activity-related joint pain, 25 mL of a liquid containing 10 g of collagen hydrolysate daily reduced several joint pain scores compared with placebo. Data from 97 of the 147 could be evaluated [16].
 
-A study among 97 young men and women (average age 20) who were members of a college varsity team or sports club and who had joint pain or discomfort due to joint stress, injury, surgical outcome, or trauma, found that 10 grams of liquid collagen hydrolysate taken daily for approximately 5 months significantly reduced joint pain at rest (as assessed by a physician) and self-reported joint pain when running and walking compared to placebo. The study was funded by the maker of the collagen used (GELITA Health GmbH, Germany) (Clark et al., *Curr Med Res Opin*, 2008) [26].
+In 50 athletes with chronic ankle instability, 5 g of specific collagen peptides daily for six months improved self-reported ankle stability compared with placebo, and the three-month follow-up found fewer ankle injuries. Ankle stiffness measured with a device did not differ between groups [17].
 
-Another study funded by GELITA found that 5 grams of collagen peptides taken daily for six months by male and female athletes (average age 27) with chronic ankle instability (pain, weakness, and general instability as a result of ankle sprains) led to improved self-reported ankle stability and function, and decreased pain and swelling, compared to placebo. The number of athletes reporting ankle sprains during a three-month follow-up period was also lower in the collagen group compared to placebo (9 vs. 24) (Dressler et al., *J Sports Sci Med*, 2018) [27].
+In a small crossover study of healthy men, taking 15 g of vitamin C-enriched gelatin 1 hour before exercise doubled a blood marker of collagen synthesis [18].
 
 ### Bone Health and Osteoporosis
 
-In animal models, peptides from collagen hydrolysate accumulate preferentially in cartilage and bone after intestinal absorption, and collagen hydrolysate supplementation has been found to have beneficial effects on bone and to increase bone mineral density (Fanaro et al., *Rev Bras Geriatr Gerontol*, 2016) [28].
+Rodent and lab studies have suggested that specific collagen peptides may support bone formation [19].
 
-Human evidence is limited. A single study in the Czech Republic among 97 postmenopausal women (over 40 years old) with radiologic evidence of osteoporosis and bone mineral density of less than 80% found that taking 10 grams of collagen hydrolysate daily, in addition to treatment with calcitonin (a hormone that can modestly increase bone mass), for approximately six months was more effective in inhibiting bone collagen breakdown than calcitonin alone. However, this did not lead to statistically significant increases in bone mineral density (Adam et al., *Cas Lek Cesk*, 1996) [29].
+In 131 postmenopausal women with low bone mineral density, 5 g of specific collagen peptides daily for 12 months increased spine and femoral neck bone density compared with placebo. A marker of bone formation rose in the collagen group [19].
+
+In an older Czech study of 108 women with postmenopausal osteoporosis treated with calcitonin for 24 weeks, the 49 who also took 10 g of collagen hydrolysate daily had larger falls in urinary markers of bone breakdown. Bone mineral density rose only 1.8%, which was not significant [20].
 
 ### Muscle Mass and Sarcopenia
 
-There is evidence that collagen may help build muscle and increase muscle strength in older adults when combined with exercise.
+In older men with sarcopenia (mean age 72.2) who did 12 weeks of resistance training three times a week, 15 g a day of collagen peptides increased fat-free mass more than placebo (+4.2 kg vs +2.9 kg) and improved quadriceps strength more (+16.5 Nm vs +7.3 Nm) [21].
 
-In a study among older men (average age 72) with sarcopenia (age-related muscle loss) who participated in a strength training program 3 days per week for 3 months, those who consumed a daily drink containing 15 grams of collagen peptides (BODYBALANCE, GELITA AG) had significantly greater increases in lean muscle mass and muscle strength compared to those who consumed a placebo drink (Zdzieblik et al., *Br J Nutr*, 2015) [30]. This finding is notable because it suggests collagen peptides — even though they are not a complete protein — can support muscle anabolism in older adults when paired with resistance exercise. There are also many studies with other protein supplements showing similar benefits when combined with exercise [1].
+Collagen lacks the essential amino acid tryptophan, so it counts as an incomplete protein [1]. In his collagen video, Brad noted that whey protein raises muscle-building signals more than collagen does ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)).
 
 ### Skin Health, Wrinkles, and Nails
 
-The best evidence supporting the use of collagen for aging skin comes from studies using VERISOL (Gelita AG), a collagen peptide made of hydrolyzed, porcine-derived type I collagen. Several studies have been conducted, all using VERISOL as a powder mixed with water.
+**Meta-analyses:** An earlier meta-analysis of 19 trials and 1,125 participants reported benefits of hydrolysed collagen for skin hydration, elasticity and wrinkles [25]. In his October 2026 video, Brad said that a 2026 meta-analysis gives reasonable evidence that collagen peptides may improve skin hydration and elasticity, but that it found no effect on wrinkles, and longer studies are likely needed ([Brad, 15 Oct 2026](https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing)). Brad's current guidance gives the collagen doses used in skin trials as 0.5 to 10 g a day (Brad's current guidance, 2 Nov 2026).
 
-**Wrinkle reduction:** The most notable study focused on crow's feet wrinkles around the eyes of women ages 45 to 65. At 4 weeks of treatment with 2.5 grams of VERISOL daily, eye wrinkle volume was reduced by 7.2% compared to placebo and, at 8 weeks, by 20.1%. Even 4 weeks after treatment ended, wrinkle volume had decreased 11.5% more than placebo. In addition, fluid extracted from skin showed that procollagen type I content increased by 65% compared to placebo after 8 weeks, and elastin increased by 18%. All findings were statistically significant (Proksch, Schunck, *Skin Pharmacol Physiol*, 2014) [31].
+**Wrinkles:** In women aged 45 to 65, 2.5 g a day of a specific collagen peptide (VERISOL) for 8 weeks reduced eye wrinkle volume compared with placebo (20% at 8 weeks), with an effect still seen 4 weeks after stopping. Procollagen type I was 65% higher and elastin 18% higher than with placebo [22].
 
-**Skin elasticity:** Another study among women (average age 48) found that those who took 2.5 grams or 5.0 grams of VERISOL daily for two months had a modest improvement in skin elasticity of the inner forearms, but no improvement in skin roughness or increase in hydration, compared to placebo. Among those who took collagen, increased skin elasticity was greatest in women over age 50; both doses were equally effective (Proksch, Segger, *Skin Pharmacol Physiol*, 2014) [32].
+**Skin elasticity:** In 69 women aged 35 to 55, 2.5 g or 5.0 g a day for 8 weeks improved skin elasticity compared with placebo. Changes in skin moisture did not reach statistical significance [23].
 
-**Skin hydration:** A small study among men and women in Japan found that 3 grams of collagen peptides taken daily for three months modestly improved skin hydration and elasticity compared to placebo. The addition of 500 mg of vitamin C to the collagen peptides did not enhance these effects (Choi et al., *J Cosmet Laser Ther*, 2014) [33].
+**Skin hydration:** In a small trial in South Korea, 3 g of collagen peptide daily for 12 weeks improved skin hydration and elasticity. Adding 500 mg of vitamin C gave no extra benefit [24].
 
-**Nail health:** A study in Brazil examined brittle nails but lacked a placebo control, making findings questionable. Women consumed 2.5 grams per day of bioactive collagen peptides (VERISOL) dissolved in water for 24 weeks. Nail growth was reported to have increased by 12% and the frequency of broken nails decreased by 42% compared to the period before collagen treatment. There was no significant change in nail roughness (Hexsel et al., *J Cosmet Dermatol*, 2017) [34].
+**Nails:** In an open-label study without a placebo group, 25 participants took 2.5 g a day of a specific collagen peptide for 24 weeks. Nail growth rate rose 12% and broken nails fell 42% [26]. Without a control group, these results are hard to interpret.
 
 ### Immune Function
 
-Bone broth is often promoted for boosting the immune system or helping reduce cold symptoms. However, these claims appear to be based on two very preliminary studies that used chicken soup, not bone broth specifically [1].
+We found no trials of bone broth and immunity. The two studies usually cited tested chicken soup.
 
-**Laboratory study:** One small laboratory study (frequently cited as evidence of the immune "boosting" benefits of bone broth protein) found that traditional chicken soup (including vegetables) inhibited the movement of neutrophils (a type of white blood cell). This neutrophil migration is normally part of the immune system's inflammatory response, suggesting a possible anti-inflammatory effect — but not an immune "boosting" effect (Rennard et al., *Chest*, 2000) [35].
+In 15 healthy people, sipping hot water raised nasal mucus speed from 6.2 to 8.4 mm per min, and sipping hot chicken soup from 6.9 to 9.2 mm per min. All values were back to baseline by 30 minutes [28].
 
-**Nasal mucus study:** A study among 15 healthy young adults without a respiratory infection found that compared to sipping cold water, sipping either hot (149 degrees F) water or chicken soup increased the movement of nasal mucus. The chicken soup was slightly more effective than hot water alone, but the effect lasted for less than 30 minutes (Saketkhoo et al., *Chest*, 1978) [36].
-
-Neither study used bone broth specifically, and neither provides strong evidence for the immune-boosting claims commonly attributed to bone broth.
+In a lab dish, a traditional chicken soup inhibited the migration of neutrophils (a type of white blood cell). The authors suggested a mild anti-inflammatory effect as one way the soup might ease cold symptoms [27].
 
 ### Gut Health and Digestive Disorders
 
-Bone broth is frequently promoted for healing the gut and treating various digestive disorders, including "leaky gut syndrome" (increased intestinal permeability). The evidence is largely preclinical [1][10].
+We found no clinical trials of bone broth or collagen in inflammatory bowel disease or so-called leaky gut. The nearest human evidence comes from gelatin tannate, which is gelatin combined with tannic acid.
 
-**Gelatin tannate:** Laboratory and animal studies suggest that a combination of gelatin and tannic acids (gelatin tannate) may help reinforce the mucous lining of the gut and reduce symptoms of colitis (Frasca et al., *Clin Exp Gastroenterol*, 2012; Scaldaferri et al., *United European Gastroenterol J*, 2014) [37][38]. However, it is unclear whether gelatin or collagen taken alone without tannic acid would produce the same effect [1].
+**Diarrhoea in children:** In one trial, 103 children given gelatin tannate plus oral rehydration solution had fewer watery stools at 12 hours than 100 children given rehydration plus placebo (59.2% vs 77.0%) [31]. A later meta-analysis of three trials (276 children) found no difference from placebo in the duration of diarrhoea [32].
 
-**Diarrhea in children:** Gelatin tannate, in combination with proper rehydration, has been shown to effectively treat diarrhea in children and is sold in some countries for this use (Cagan et al., *Med Sci Monit*, 2017) [39].
+**Lab and animal studies:** Gelatin tannate reduced inflammatory signals in human gut cells in the lab [29] and reduced the severity of colitis in mice [30]. These studies tested gelatin with tannic acid added, not broth.
 
-**Collagen levels in IBD:** A study found that people with ulcerative colitis and Crohn's disease tended to have lower blood levels of collagen compared to healthy individuals (Koutroubakis et al., *J Clin Pathol*, 2003) [40]. However, it is unclear whether supplementing collagen would address this difference.
-
-**Amino acids and gut barrier:** A recent review highlights that amino acids and minerals abundant in bone broth may support intestinal barrier integrity, reduce permeability, alleviate inflammation, and aid conditions like inflammatory bowel disease, drawing from animal studies and limited human data on component nutrients [10]. Glutamine, an amino acid present in bone broth, has been studied for its role in intestinal mucosal repair, though direct evidence from bone broth consumption is lacking.
-
-There does not appear to be any published clinical research on the effects of bone broth or collagen supplementation in people with leaky gut syndrome, ulcerative colitis, Crohn's disease, or other digestive conditions [1][10].
+**Collagen levels in IBD:** People with ulcerative colitis and Crohn's disease had lower blood levels of collagen IV than healthy controls (72.8 and 71.0 vs 79.8 ng/ml) [33]. This does not show that eating collagen would change those levels.
 
 ### Cardiovascular Considerations
 
-Bone broth has minimal direct impact on LDL cholesterol, as it is low in saturated fat and cholesterol [2]. Its primary nutritional contribution is protein (approximately 9-10 grams per cup, largely from collagen) and amino acids.
-
-Some preliminary studies indicate that certain peptides derived from collagen and hemoglobin in bone broth may exhibit mild ACE-inhibitor-like activity, potentially supporting blood pressure regulation [2]. However, evidence is limited and does not outweigh the sodium-related risks for people managing high blood pressure.
-
-The high sodium content of many commercial bone broths (200-450 mg or more per cup, sometimes exceeding 500 mg) is a significant concern for cardiovascular health and blood pressure management [2][4].
+We found no trials of bone broth for blood pressure, cholesterol or heart disease. MedlinePlus advises people with high blood pressure to limit sodium to no more than 2,300 mg a day [37]. The sodium in bone broth varies by product, so check the label (see Sodium Content).
 
 ### Sleep
 
-Glycine, an abundant amino acid derived from collagen in bone broth (500-1,700 mg per cup), has been studied for its effects on sleep quality [5]. Glycine acts as an inhibitory neurotransmitter that lowers core body temperature at bedtime — a critical signal for sleep onset [41]. Three randomized controlled trials have demonstrated that supplemental glycine (3 g before bed) improves subjective sleep quality, helps with falling asleep faster, and decreases next-day fatigue [42][43][44].
+Glycine is one of the amino acids in bone broth [2]. In small human trials, glycine taken before bedtime improved subjective sleep quality in people with insomniac tendencies [34], and 3 g of glycine before bed reduced next-day fatigue in people whose sleep was restricted [35]. In rats, glycine lowered core body temperature, which may be how it aids sleep [34][36].
 
-However, the glycine content of a single cup of bone broth (typically 500-1,700 mg) is below the 3,000 mg dose used in clinical trials. Consuming 2-3 cups of bone broth in the evening could approach therapeutic glycine levels, but this has not been directly studied.
+We found no study of bone broth and sleep, and no source that measured whether a serving of broth provides the glycine doses used in these trials.
 
 ## 4. Recommended Dosing
 
 ### No Established Daily Requirement
 
-There is no Recommended Dietary Allowance (RDA), Adequate Intake (AI), or Tolerable Upper Intake Level (UL) established for bone broth, gelatin, or collagen by any major health authority [1][10]. The following dosing guidance is derived from clinical trials on collagen and gelatin rather than bone broth specifically.
+We found no public source that sets a recommended daily amount for bone broth, gelatin or collagen.
+
+The doses below come from trials of collagen supplements and gelatin, not bone broth.
 
 ### Clinical Trial Dosages for Collagen
 
 | Indication | Dose | Duration | Form Used | Key Study |
 |-----------|:-:|:-:|:-:|------|
-| Osteoarthritis pain | 10-12 g/day | 6+ months | Collagen hydrolysate | Bruyere 2012 [23], Kumar 2014 [24] |
-| Exercise-related joint pain | 5-10 g/day | 5-6 months | Collagen hydrolysate/peptides | Clark 2008 [26], Dressler 2018 [27] |
-| Skin wrinkles | 2.5-5 g/day | 8-12 weeks | Collagen peptides (VERISOL) | Proksch 2014 [31][32] |
-| Skin hydration/elasticity | 3-5 g/day | 12 weeks | Collagen peptides | Choi 2014 [33] |
-| Muscle mass (sarcopenia) | 15 g/day | 12 weeks + exercise | Collagen peptides (BODYBALANCE) | Zdzieblik 2015 [30] |
-| Bone collagen breakdown | 10 g/day | 6 months | Collagen hydrolysate | Adam 1996 [29] |
-| Nail health | 2.5 g/day | 24 weeks | Collagen peptides (VERISOL) | Hexsel 2017 [34] |
+| Joint pain, adults 50 and over | 1200 mg/day | 6 months | Collagen hydrolysate | Bruyère [9] |
+| Knee osteoarthritis | 10 g/day | 90 days | Enzymatic hydrolysed collagen | Trč [13] |
+| Knee osteoarthritis | 40 mg/day | 180 days | Undenatured type II collagen | Lugo [10] |
+| Activity-related joint pain | 10 g/day | 24 weeks | Collagen hydrolysate (liquid) | Clark [16] |
+| Chronic ankle instability | 5 g/day | six months | Specific collagen peptides | Dressler [17] |
+| Eye wrinkles | 2.5 g/day | 8 weeks | Collagen peptides (VERISOL) | Proksch [22] |
+| Skin elasticity | 2.5 g or 5.0 g/day | 8 weeks | Collagen hydrolysate | Proksch [23] |
+| Skin hydration and elasticity | 3 g/day | 12 weeks | Collagen peptide | Choi [24] |
+| Muscle mass with resistance training (sarcopenia) | 15 g/day | 12 weeks | Collagen peptides | Zdzieblik [21] |
+| Bone mineral density | 5 g/day | 12 months | Specific collagen peptides | König [19] |
+| Bone breakdown markers (with calcitonin) | 10 g/day | 24 weeks | Collagen hydrolysate | Adam [20] |
+| Brittle nails (open-label) | 2.5 g/day | 24 weeks | Collagen peptides (VERISOL) | Hexsel [26] |
+
+A review of this research described effective amounts of collagen peptides as 2.5 to 15 g per day [1].
 
 ### Practical Bone Broth Dosing
 
-A typical cup (240 mL) of bone broth provides approximately 6-10 grams of protein, of which about 40-80% is collagen — yielding roughly 2.5-8 grams of collagen per cup [1][6]. To achieve the 10-15 grams of collagen per day used in most clinical trials for joint health, consider consuming 2-3 cups of bone broth daily [1].
-
-For skin benefits, which have been demonstrated at lower collagen doses (2.5-5 grams), a single cup of a high-quality bone broth may provide sufficient collagen.
-
-When purchasing bone broth, look for products that list protein content of at least 6-10 grams per cup (8 fl oz / 240 mL). Verify that the broth is made with bone, joint, or cartilage, as these are the collagen-rich sources [1].
+We found no study that measured how much bone broth would supply the collagen doses used in these trials. In the one analysis we found, broth made to a standard recipe gave significantly lower levels of collagen amino acids than a 20 g supplement dose [2]. Bone broth cannot be relied on to match trial doses.
 
 ### Product Context
 
-Dr Brad Stanfield's MicroVitamin+ Powder includes 12.5 g of collagen peptides alongside 5 g of creatine monohydrate and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder)).
+Dr Brad Stanfield's MicroVitamin+ Powder includes 10 g of collagen peptides alongside 5 g of creatine monohydrate, 5 g of acacia fiber and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://microvitamin.com/products/microvitamin-plus)).
 
 ### Timing and Administration
 
-No specific timing recommendations exist for bone broth consumption. For joint health, consistent daily intake for at least 6 months appears necessary based on clinical trial data [23]. Bone broth can be consumed warm as a beverage at any time of day, used as a cooking base, or incorporated into soups and stews.
-
-For sleep-related glycine benefits, consuming bone broth in the evening before bed may be reasonable given the mechanism of action (core body temperature reduction), though this has not been studied directly [41].
+In the 6-month joint pain trial, collagen hydrolysate beat placebo at 6 months but not at 3 months [9]. In the gelatin study, the dose was taken 1 hour before exercise [18]. The glycine sleep trials gave glycine before bedtime [34][35].
 
 ## 5. Safety and Side Effects
 
 ### General Safety
 
-Bone broth is generally quite safe to consume for most people [1]. It has been part of the human diet for thousands of years across virtually all cultures [11][12][13].
+In collagen supplement trials, side effects were similar to placebo or the comparison treatment [9][13][10]. One skin trial noted no side effects [23].
 
 ### Gastrointestinal Effects
 
-Mild to moderate gastrointestinal complaints have occasionally been reported in people taking collagen-based products, including [50]:
-
-- Nausea
-- Upset stomach
-- Diarrhea
-- Gas and bloating
-
-These effects tend to be mild and typically resolve with continued use or dose adjustment.
+The most reported side effects of collagen derivatives in osteoarthritis trials were mild to moderate stomach and bowel complaints [4].
 
 ### Other Reported Side Effects
 
-Additional side effects reported with collagen or gelatin supplementation have been generally mild and include [51]:
+In rheumatoid arthritis trials of oral type II collagen, one found no treatment-related adverse events [14]. Another found stomach and bowel symptoms common with both chicken type II collagen and methotrexate, with fewer and milder side effects in the collagen group [15].
 
-- Headache
-- Dizziness
-- Insomnia
-- Loss of appetite
-- Itchy or pustular skin rash
-- Canker sores
-
-Rarely, liver function abnormalities such as elevated levels of liver enzymes have been reported in studies using undenatured type II collagen (Zhang et al., *Arthritis Rheum*, 2008) [51].
+Twenty-five randomised trials of hydrolysed collagen, reviewed in 2026, found it generally well tolerated, with a low incidence of adverse events [42]. Older reports of other mild effects and of raised liver enzymes with type II collagen could not be confirmed in public sources.
 
 ### Sodium Content
 
-Many commercial bone broths contain high levels of sodium — typically 200-450 mg or more per cup, with some brands exceeding 500 mg per serving [2][4]. A typical serving may provide around 20% of the recommended daily sodium value. Individuals with high blood pressure, kidney disease, or those following sodium-restricted diets should carefully check product labels and choose low-sodium varieties (ideally 140 mg or less per cup) or prepare homemade versions without added salt [1][4].
+Our sources did not measure sodium in bone broth. If you have been told to limit salt, check the sodium on the nutrition label and ask your doctor.
+
+MedlinePlus advises people with high blood pressure to limit sodium to no more than 2,300 mg a day [37]. For people with chronic kidney disease, it advises checking labels and looking for products with less than 100 mg of salt per serving [39].
 
 ### Heavy Metal Contamination
 
-A concern unique to bone broth is the potential for heavy metal contamination, particularly lead. Bones sequester environmental lead accumulated during the animal's lifetime, and prolonged simmering can leach small amounts into the broth [53][20].
+Bones store lead, which can be released from them [8]. A small blinded test of three organic chicken broths found lead concentrations of 9.5 and 7.01 μg per litre in two of them, compared with 0.89 μg per litre in tap water treated the same way [8].
 
-A 2013 study on organic chicken bone broth found elevated lead concentrations — some preparations contained lead levels over ten times higher than tap water, with certain servings exceeding some threshold levels for lead [53]. However, absolute amounts remained low, and hazard quotients indicated minimal health risks under typical consumption patterns [20].
+A study of home-made and commercial broths judged the risk from lead and cadmium minimal, because levels were a few micrograms per serving [5].
 
-More recent independent testing of commercial bone broth products found no concerning amounts of lead or other heavy metals such as arsenic, cadmium, or mercury [54].
-
-To minimize heavy metal exposure [2][53]:
-
-- Choose bones from grass-fed or pasture-raised animals
-- Select products that are third-party tested for heavy metals
-- Rotate bone sources (beef, chicken, fish) rather than relying on a single animal source
-- Consider that powdered forms may have concentrated contaminant levels due to dehydration
+Choose a product that an independent lab has tested.
 
 ### Special Populations
 
-**Kidney disease:** Individuals with kidney disease should consult with their physician before consuming bone broth due to the high amounts of sodium and potassium in some products [1][55].
+We found no public source that tested bone broth in people with kidney disease, on dialysis, or in pregnancy. If you have kidney disease or are on dialysis, or have been told to limit salt, potassium or fluids, ask your doctor before drinking bone broth regularly.
 
-**Dialysis patients:** Those on dialysis who have fluid intake restrictions should consult with their physician before consuming liquid bone broth (Gimbar et al., *J Ren Nutr*, 2017) [55].
+**Kidney disease and dialysis:** MedlinePlus advises people with chronic kidney disease to limit salt, potassium and phosphorus, and not to use salt substitutes because they contain potassium. People on dialysis need to watch how much liquid they take in, and soups count toward it [39]. One review lists potassium and phosphorus among the minerals in bone broth [40].
 
-**Pregnancy:** Bone broth is generally considered safe during pregnancy as a whole-food source of protein and nutrients. However, standard precautions about sodium intake and heavy metal exposure apply.
+**Pregnancy and children:** MedlinePlus notes that lead is much more harmful to children than to adults, and that unborn children are the most vulnerable [41]. If you are pregnant, or plan to give bone broth to a child regularly, keep the lead findings above in mind and ask your doctor or midwife first.
 
-**Histamine sensitivity:** Bone broth that has been simmered for long periods may contain elevated levels of histamine, which could be problematic for individuals with histamine intolerance. No formal studies have quantified this effect.
+**Histamine intolerance:** Long-simmered bone broth is sometimes said to be high in histamine. We found no public source that measured this. If you have histamine intolerance, ask your doctor first.
 
 ## 6. Drug Interactions
 
-There are no well-documented clinically significant drug interactions specific to bone broth consumption. However, several considerations apply:
+We found no studies of drug interactions with bone broth itself. If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Sodium and Antihypertensive Medications
 
-The high sodium content of many commercial bone broths may counteract the effects of antihypertensive medications (ACE inhibitors, ARBs, diuretics, calcium channel blockers). Patients on blood pressure medications should monitor sodium intake from bone broth and choose low-sodium options [1][4].
+A low-salt diet helps lower blood pressure, and MedlinePlus advises limiting sodium to no more than 2,300 mg a day [37]. If you take blood pressure medicine, check the sodium on the label and count it in your daily total.
 
 ### Potassium and Potassium-Sparing Diuretics
 
-Some bone broths contain significant amounts of potassium (200-500 mg per cup). Patients taking potassium-sparing diuretics (spironolactone, amiloride, eplerenone) or potassium supplements should be aware of this additional potassium source to avoid hyperkalemia [1].
+The spironolactone (Aldactone) label warns that a diet rich in potassium, potassium supplements or potassium-containing salt substitutes may lead to severe hyperkalaemia, and advises patients to avoid potassium supplements and foods high in potassium [6]. The label adds that the risk is higher with impaired kidney function or with drugs that raise potassium, such as ACE inhibitors and angiotensin receptor blockers [6]. If you take another potassium-sparing diuretic, ask your doctor first. We found no public source for the potassium content of bone broth, so check the nutrition label and ask your doctor.
 
 ### Warfarin and Anticoagulants
 
-Bone broth itself does not contain significant amounts of vitamin K. However, bone broth made with vitamin K-rich vegetables (e.g., leafy greens) could potentially affect INR in patients taking warfarin. This is a theoretical concern rather than a documented interaction.
+Some foods can change how warfarin works. MedlinePlus advises people taking warfarin not to change, from day to day or week to week, how much they eat of foods such as broccoli, spinach, parsley, kale and other leafy greens [38]. A broth made with these vegetables counts. We found no study of bone broth and warfarin.
 
 ### Collagen Supplements and Medications
 
-For those taking collagen supplements alongside bone broth, the same general cautions apply as with any protein-rich supplement. High protein intake may theoretically affect the absorption of certain medications (e.g., levodopa for Parkinson's disease), though this has not been specifically studied with collagen or bone broth.
+Dietary protein is a major factor that can reduce levodopa absorption in Parkinson's disease, and low-protein or protein redistribution diets are sometimes used for people with motor fluctuations [7]. Bone broth and collagen add protein, though neither has been studied with levodopa.
 
 ### Renal Medications
 
-Patients with chronic kidney disease who are on phosphate binders, potassium binders, or fluid restrictions should discuss bone broth consumption with their nephrologist, as the mineral and fluid content may complicate management [55].
+If you have chronic kidney disease and take medicines or follow limits for potassium, phosphorus or fluid, ask your kidney team before drinking bone broth regularly. MedlinePlus lists limits on fluids, salt, potassium and phosphorus as common diet changes in chronic kidney disease [39].
 
 ## 7. Dietary Sources
 
 ### Amino Acid Profile of Bone Broth
 
-The nutritional value of bone broth derives primarily from the amino acids released during collagen breakdown. The dominant amino acids include [2][5]:
-
-| Amino Acid | Approximate Amount per Cup | Biological Role |
-|-----------|:-:|------|
-| Glycine | 500-1,700 mg | Inhibitory neurotransmitter, collagen synthesis, glutathione production, bile acid conjugation, core body temperature regulation [5][41] |
-| Proline | 300-1,000 mg | Collagen and elastin synthesis, wound healing, antioxidant defense [5] |
-| Hydroxyproline | 200-800 mg | Unique to collagen; provides structural stability to collagen fibrils [5] |
-| Glutamine | Variable | Fuel for intestinal epithelial cells, immune cell function, conditionally essential during stress [5] |
-| Arginine | Variable | Nitric oxide precursor, wound healing, immune function [5] |
-| Alanine | Variable | Gluconeogenesis, energy metabolism [5] |
+One analysis measured glycine, lysine, proline, leucine, hydroxyproline and hydroxylysine in bone broths. Levels were lower than in a 20 g dose of collagen supplement and varied widely between recipes [2].
 
 ### Nutritional Profile Per Cup (240 mL)
 
-| Nutrient | Typical Range | Notes |
-|----------|:-:|------|
-| Protein | 6-10 g | Higher in beef than chicken broth [1][2][5] |
-| Collagen (as gelatin) | 2.5-8 g | ~40-80% of total protein [1][6] |
-| Calories | 30-80 kcal | Varies with fat and protein content |
-| Sodium | 50-500+ mg | Highly variable; commercial broths often 200-450 mg [2][4] |
-| Potassium | 200-500 mg | Significant source [1] |
-| Calcium | 9-70 mg | Very low — poor calcium source [2][5][20] |
-| Magnesium | 5-20 mg | Low — modest contribution [2][20] |
-| Phosphorus | 30-100 mg | Moderate amounts [2][5] |
-| Iron | Trace | Small amounts [2] |
-| Zinc | Trace | Small amounts [2] |
+We found no public source that measured the full nutrient content of a cup of bone broth. One review lists glutamine, glycine, proline, histidine and arginine among its amino acids, and calcium, phosphorus, potassium, magnesium and zinc among its minerals [40]. Amounts vary with the recipe and the maker [2][5], so check the nutrition label.
 
 ### Calcium: A Common Misconception
 
-Despite popular claims, bone broth is a poor source of calcium [2][5][20]. Calcium content is typically only 9-70 mg per cup, with USDA data often reporting 9-14 mg per cup for common commercial or homemade broths. This is far below the 1,000-1,200 mg daily requirement for most adults.
-
-For comparison, eating edible bones directly provides much higher amounts: canned sardines with bones offer about 325 mg of calcium per 3-ounce serving, and canned salmon with bones about 180 mg per 3-ounce serving. The mineral-rich bone matrix (primarily calcium phosphate) is consumed whole rather than being minimally leached into broth during simmering [2][45].
+Bone broth is a poor source of calcium and magnesium. A study of home-made and commercial broths found levels no higher than low tenths of a milligram per serving, under 5% of daily recommended levels [5].
 
 ### Bone Broth Is Not a Complete Protein
 
-Bone broth's primary protein comes from collagen, which lacks sufficient amounts of all essential amino acids — particularly tryptophan and branched-chain amino acids — in the proportions needed to qualify as a complete protein [46]. Bone broth should not be relied upon as a sole protein source but rather as a supplement to a diet that includes complete protein sources (meat, fish, eggs, dairy, or complementary plant proteins).
+Collagen, the protein bone broth is promoted for, lacks the essential amino acid tryptophan, so it is an incomplete protein [1].
 
 ### Comparison of Bone Types
 
-The type of bone used significantly affects the broth's nutritional profile [17][18][22]:
-
-| Animal Source | Flavor Profile | Collagen Type | Key Characteristics |
-|-------------|-------------|:-:|------|
-| Beef | Bold, hearty, rich | Type I, III | Higher overall collagen and gelatin. Denser bones require longer simmering. Higher amino acid content [17][22]. |
-| Chicken | Light, mild, versatile | Type II (esp. with feet) | Shorter cooking time. Traditional cold/flu remedy. Higher type II collagen from cartilage [17][18]. |
-| Pork | Rich, gelatinous | Type I, III | Extra-gelatinous texture, especially with pigs' feet. Substantial collagen extraction [18]. |
-| Fish | Delicate, light | Type I | Shortest preparation time. Contains omega-3 fatty acids and iodine [5][47]. |
+In one study, leg and rib bones released metals differently, and the differences between species were larger than those within a species [5]. We found no public study that compared beef, chicken, pork and fish broths for collagen or amino acids.
 
 ### Other Dietary Sources of Collagen and Gelatin
 
-Bone broth is not the only dietary source of collagen. Other sources include:
-
-- **Collagen peptide supplements** — Provide pre-hydrolyzed collagen in standardized doses (typically 10-20 g per serving). Most studied form.
-- **Gelatin** — Derived from collagen but not broken down as completely. Used in cooking and as a thickener.
-- **Chicken feet** — Extremely rich in type II collagen and gelatin.
-- **Pig skin (pork rinds/chicharrones)** — High in collagen.
-- **Fish skin** — Rich in type I collagen.
-- **Organ meats** — Contain collagen and other connective tissue proteins.
-- **Slow-cooked meats with bone and connective tissue** — Pot roasts, osso buco, braised short ribs.
+Collagen supplements in the trials above came from several sources, including pork skin and bovine bone [12] and chicken sternum cartilage for undenatured type II collagen [10].
 
 ### Supporting Collagen Synthesis
 
-The body's own collagen production requires several cofactors. Consuming these nutrients alongside collagen or bone broth may support endogenous collagen synthesis:
-
-- **Vitamin C** — Essential cofactor for prolyl hydroxylase and lysyl hydroxylase, enzymes required for collagen cross-linking. Deficiency causes scurvy (collagen breakdown).
-- **Zinc** — Required for collagen synthesis and wound healing.
-- **Copper** — Cofactor for lysyl oxidase, which cross-links collagen fibers.
-- **Manganese** — Involved in proteoglycan synthesis in cartilage.
-
-Note that the study by Choi et al. (2014) found that adding 500 mg of vitamin C to collagen peptides did not enhance skin hydration or elasticity effects beyond collagen peptides alone [33].
+In one small trial, adding 500 mg of vitamin C to 3 g of collagen peptide did not enhance its effects on skin [24]. The gelatin used in the exercise study was enriched with vitamin C [18].
 
 ### Optimizing Homemade Bone Broth
 
-Based on available research, the following practices maximize nutrient extraction [20][22]:
-
-- Use bones with high connective tissue content (knuckles, joints, feet, marrow bones)
-- Add 1-2 tablespoons of acid (apple cider vinegar or wine) to enhance mineral extraction [20]
-- Simmer for at least 12 hours; 24 hours for beef bones [20]
-- Prefer beef bones over chicken for higher amino acid content [22]
-- Use long/marrow-containing bones rather than small bones [22]
-- Do not remove fat until after straining (retains more amino acids) [22]
-- Roast bones first at 400-450 degrees F for 30-60 minutes for deeper flavor [48]
+In experiments, adding acid and cooking for more than 8 hours raised calcium and magnesium extraction [5]. The home-made and commercial broths tested stayed a poor source of both [5]. Amino acid levels in home-made broth made to a standard recipe were higher than in commercial broth made the same way [2].
 
 ### Storage
 
-Most bone broths need only be refrigerated after opening. Some products should be kept frozen and thawed prior to use [1]. Homemade bone broth remains safe in the refrigerator for 3-4 days and can be frozen for 2-3 months at best quality (safe indefinitely when frozen) [49]. A layer of fat on top when chilled is normal and can help seal the broth but does not extend safe refrigerator time beyond 3-4 days [49].
+There is no public source on bone broth storage in our evidence. Follow the storage directions on the product label.
 
 ## 8. References
 
-[1] ConsumerLab. "Bone Broth Review." Accessed 2025. [https://www.consumerlab.com/reviews/bone-broth-review/bone-broth/](https://www.consumerlab.com/reviews/bone-broth-review/bone-broth/)
+[1] Paul C et al. Significant Amounts of Functional Collagen Peptides Can Be Incorporated in the Diet While Maintaining Indispensable Amino Acid Balance. Nutrients. 2019. PMID: 31096622. https://pubmed.ncbi.nlm.nih.gov/31096622/
 
-[2] Grokipedia. "Bone Broth." [https://grokipedia.com/page/Bone_Broth](https://grokipedia.com/page/Bone_Broth)
+[2] Alcock RD et al. Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared With Supplemental Sources of Collagen Used in Collagen Research. Int J Sport Nutr Exerc Metab. 2019. PMID: 29893587. https://pubmed.ncbi.nlm.nih.gov/29893587/
 
-[3] Ruhlman M. "Stock, Broth, and Bone Broth: A Primer." Referenced in Grokipedia sources.
+[3] García-Coronado JM et al. Effect of collagen supplementation on osteoarthritis symptoms: a meta-analysis of randomized placebo-controlled trials. Int Orthop. 2019. PMID: 30368550. https://pubmed.ncbi.nlm.nih.gov/30368550/
 
-[4] Hsu DJ, Lee CW, Tsai WC, Chien YC. "Essential and toxic metals in animal bone broths." *Food Nutr Res*. 2017;61(1):1347478. doi: [10.1080/16546628.2017.1347478](https://doi.org/10.1080/16546628.2017.1347478)
+[4] Van Vijven JP et al. Symptomatic and chondroprotective treatment with collagen derivatives in osteoarthritis: a systematic review. Osteoarthritis Cartilage. 2012. PMID: 22521757. https://pubmed.ncbi.nlm.nih.gov/22521757/
 
-[5] Mar-Solís LM, Soto-Domínguez A, Rodríguez-Tovar LE, et al. "Bone broth amino acid content and mineral composition." Referenced in multiple Grokipedia sources.
+[5] Hsu DJ et al. Essential and toxic metals in animal bone broths. Food Nutr Res. 2017. PMID: 28804437. https://pubmed.ncbi.nlm.nih.gov/28804437/
 
-[6] ConsumerLab. Product analysis: approximately 40-80% of protein in bone broths was collagen. Referenced in ConsumerLab Review 2025.
+[6] ALDACTONE (spironolactone) tablets, prescribing information. DailyMed, US National Library of Medicine. https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=0fed2822-3a03-4b64-9857-c682fcd462bc
 
-[7] Alcock RD, Shaw GC, Burke LM. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared with Supplemental Sources of Collagen Used in Collagen Research." *Int J Sport Nutr Exerc Metab*. 2019;29(3):265-272. doi: [10.1123/ijsnem.2018-0139](https://doi.org/10.1123/ijsnem.2018-0139)
+[7] Rusch C et al. To restrict or not to restrict? Practical considerations for optimizing dietary protein interactions on levodopa absorption in Parkinson's disease. NPJ Parkinsons Dis. 2023. PMID: 37355689. https://pubmed.ncbi.nlm.nih.gov/37355689/
 
-[8] McGee H. *On Food and Cooking: The Science and Lore of the Kitchen*. Scribner, 2004.
+[8] Monro JA et al. The risk of lead contamination in bone broth diets. Med Hypotheses. 2013. PMID: 23375414. https://pubmed.ncbi.nlm.nih.gov/23375414/
 
-[9] Ruhlman M. "Bone Broth Is Just Stock." 2015.
+[9] Bruyère O et al. Effect of collagen hydrolysate in articular pain: a 6-month randomized, double-blind, placebo controlled study. Complement Ther Med. 2012. PMID: 22500661. https://pubmed.ncbi.nlm.nih.gov/22500661/
 
-[10] Mar-Solís LM, Soto-Domínguez A, et al. "Bone broth and its potential health benefits: a review." Referenced in Grokipedia scientific evidence section.
+[10] Lugo JP et al. Efficacy and tolerability of an undenatured type II collagen supplement in modulating knee osteoarthritis symptoms: a multicenter randomized, double-blind, placebo-controlled study. Nutr J. 2016. PMID: 26822714. https://pubmed.ncbi.nlm.nih.gov/26822714/
 
-[11] Stiner MC, Kuhn SL, Weiner S, Bar-Yosef O. "Differential Burning, Recrystallization, and Fragmentation of Archaeological Bone." *J Archaeol Sci*. 1995;22:223-237.
+[11] Oesser S et al. Oral administration of (14)C labeled gelatin hydrolysate leads to an accumulation of radioactivity in cartilage of mice (C57/BL). J Nutr. 1999. PMID: 10498764. https://pubmed.ncbi.nlm.nih.gov/10498764/
 
-[12] Fallon Morell S. *Nourishing Broth*. Grand Central Publishing, 2014.
+[12] Kumar S et al. A double-blind, placebo-controlled, randomised, clinical study on the effectiveness of collagen peptide on osteoarthritis. J Sci Food Agric. 2015. PMID: 24852756. https://pubmed.ncbi.nlm.nih.gov/24852756/
 
-[13] Historical references compiled from Grokipedia. Traditional Chinese Medicine decoctions, Bronze Age Hallstatt preparations, Celtic and Roman traditions.
+[13] Trč T, Bohmová J. Efficacy and tolerance of enzymatic hydrolysed collagen (EHC) vs. glucosamine sulphate (GS) in the treatment of knee osteoarthritis (KOA). Int Orthop. 2011. PMID: 20401752. https://pubmed.ncbi.nlm.nih.gov/20401752/
 
-[14] Regional and cultural bone broth traditions. Japanese tonkotsu, Jewish chicken soup, French consommé. Grokipedia cultural sections.
+[14] Barnett ML et al. Treatment of rheumatoid arthritis with oral type II collagen. Results of a multicenter, double-blind, placebo-controlled trial. Arthritis Rheum. 1998. PMID: 9485087. https://pubmed.ncbi.nlm.nih.gov/9485087/
 
-[15] Market growth data: more than six times as many bone broth products in 2017 vs. 2015. Grokipedia modern revival section.
+[15] Zhang LL et al. A randomized, double-blind, multicenter, controlled clinical trial of chicken type II collagen in patients with rheumatoid arthritis. Arthritis Rheum. 2008. PMID: 18576295. https://pubmed.ncbi.nlm.nih.gov/18576295/
 
-[16] Oesser S, Adam M, Babel W, Seifert J. "Oral administration of (14)C labeled gelatin hydrolysate leads to an accumulation of radioactivity in cartilage of mice (C57/BL)." *J Nutr*. 2000;130(10):2313-2316. doi: [10.1093/jn/130.10.2313](https://doi.org/10.1093/jn/130.10.2313)
+[16] Clark KL et al. 24-Week study on the use of collagen hydrolysate as a dietary supplement in athletes with activity-related joint pain. Curr Med Res Opin. 2008. PMID: 18416885. https://pubmed.ncbi.nlm.nih.gov/18416885/
 
-[17] Leon-Lopez A, Morales-Penaloza A, Martinez-Juarez VM, et al. "Hydrolyzed Collagen — Sources and Applications." *Molecules*. 2019;24(22):4031. doi: [10.3390/molecules24224031](https://doi.org/10.3390/molecules24224031)
+[17] Dressler P et al. Improvement of Functional Ankle Properties Following Supplementation with Specific Collagen Peptides in Athletes with Chronic Ankle Instability. J Sports Sci Med. 2018. PMID: 29769831. https://pubmed.ncbi.nlm.nih.gov/29769831/
 
-[18] Alcock RD, Shaw GC, Burke LM. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared with Supplemental Sources of Collagen Used in Collagen Research." *Int J Sport Nutr Exerc Metab*. 2019;29(3):265-272. doi: [10.1123/ijsnem.2018-0139](https://doi.org/10.1123/ijsnem.2018-0139)
+[18] Shaw G et al. Vitamin C-enriched gelatin supplementation before intermittent activity augments collagen synthesis. Am J Clin Nutr. 2017. PMID: 27852613. https://pubmed.ncbi.nlm.nih.gov/27852613/
 
-[19] Commercial forms and nutrient retention data. Grokipedia commercial preparations section.
+[19] König D et al. Specific Collagen Peptides Improve Bone Mineral Density and Bone Markers in Postmenopausal Women-A Randomized Controlled Study. Nutrients. 2018. PMID: 29337906. https://pubmed.ncbi.nlm.nih.gov/29337906/
 
-[20] Hsu DJ, Lee CW, Tsai WC, Chien YC. "Essential and toxic metals in animal bone broths." *Food Nutr Res*. 2017;61(1):1347478. doi: [10.1080/16546628.2017.1347478](https://doi.org/10.1080/16546628.2017.1347478)
+[20] Adam M et al. Postmenopausal osteoporosis. Treatment with calcitonin and a diet rich in collagen proteins (article in Czech). Cas Lek Cesk. 1996. PMID: 8625373. https://pubmed.ncbi.nlm.nih.gov/8625373/
 
-[21] McCance RA, Sheldon W, Widdowson EM. "Bone and vegetable broth." *Arch Dis Child*. 1934;9(52):251-258. doi: [10.1136/adc.9.52.251](https://doi.org/10.1136/adc.9.52.251)
+[21] Zdzieblik D et al. Collagen peptide supplementation in combination with resistance training improves body composition and increases muscle strength in elderly sarcopenic men: a randomised controlled trial. Br J Nutr. 2015. PMID: 26353786. https://pubmed.ncbi.nlm.nih.gov/26353786/
 
-[22] Alcock RD, Shaw GC, Burke LM. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors." *Int J Sport Nutr Exerc Metab*. 2019;29(3):265-272. doi: [10.1123/ijsnem.2018-0139](https://doi.org/10.1123/ijsnem.2018-0139)
+[22] Proksch E et al. Oral intake of specific bioactive collagen peptides reduces skin wrinkles and increases dermal matrix synthesis. Skin Pharmacol Physiol. 2014. PMID: 24401291. https://pubmed.ncbi.nlm.nih.gov/24401291/
 
-[23] Bruyere O, Zegels B, Leonori L, et al. "Effect of collagen hydrolysate in articular pain: a 6-month randomized, double-blind, placebo controlled study." *Complement Ther Med*. 2012;20(3):124-130. doi: [10.1016/j.ctim.2011.12.007](https://doi.org/10.1016/j.ctim.2011.12.007)
+[23] Proksch E et al. Oral supplementation of specific collagen peptides has beneficial effects on human skin physiology: a double-blind, placebo-controlled study. Skin Pharmacol Physiol. 2014. PMID: 23949208. https://pubmed.ncbi.nlm.nih.gov/23949208/
 
-[24] Kumar S, Sugihara F, Suzuki K, Inoue N, Venkateswarathirukumara S. "A double-blind, placebo-controlled, randomised, clinical study on the effectiveness of collagen peptide on osteoarthritis." *J Sci Food Agric*. 2015;95(4):702-707. doi: [10.1002/jsfa.6752](https://doi.org/10.1002/jsfa.6752)
+[24] Choi SY et al. Effects of collagen tripeptide supplement on skin properties: a prospective, randomized, controlled study. J Cosmet Laser Ther. 2014. PMID: 24131075. https://pubmed.ncbi.nlm.nih.gov/24131075/
 
-[25] Trc T, Bohmova J. "Efficacy and tolerance of enzymatic hydrolysed collagen (EHC) vs. glucosamine sulphate (GS) in the treatment of knee osteoarthritis (KOA)." *Int Orthop*. 2011;35(3):341-348. doi: [10.1007/s00264-010-1010-z](https://doi.org/10.1007/s00264-010-1010-z)
+[25] de Miranda RB et al. Effects of hydrolyzed collagen supplementation on skin aging: a systematic review and meta-analysis. Int J Dermatol. 2021. PMID: 33742704. https://pubmed.ncbi.nlm.nih.gov/33742704/
 
-[26] Clark KL, Sebastianelli W, Flechsenhar KR, et al. "24-Week study on the use of collagen hydrolysate as a dietary supplement in athletes with activity-related joint pain." *Curr Med Res Opin*. 2008;24(5):1485-1496. doi: [10.1185/030079908X291967](https://doi.org/10.1185/030079908X291967)
+[26] Hexsel D et al. Oral supplementation with specific bioactive collagen peptides improves nail growth and reduces symptoms of brittle nails. J Cosmet Dermatol. 2017. PMID: 28786550. https://pubmed.ncbi.nlm.nih.gov/28786550/
 
-[27] Dressler P, Gehring D, Zdzieblik D, Oesser S, Gollhofer A, Konig D. "Improvement of Functional Ankle Properties Following Supplementation with Specific Collagen Peptides in Athletes with Chronic Ankle Instability." *J Sports Sci Med*. 2018;17(2):298-304. PMID: [29769831](https://pubmed.ncbi.nlm.nih.gov/29769831/)
+[27] Rennard BO et al. Chicken soup inhibits neutrophil chemotaxis in vitro. Chest. 2000. PMID: 11035691. https://pubmed.ncbi.nlm.nih.gov/11035691/
 
-[28] Fanaro GB, Marques MR. "Collagen hydrolysate and its relationship with bone metabolism." *Rev Bras Geriatr Gerontol*. 2016;19(1):153-164.
+[28] Saketkhoo K et al. Effects of drinking hot water, cold water, and chicken soup on nasal mucus velocity and nasal airflow resistance. Chest. 1978. PMID: 359266. https://pubmed.ncbi.nlm.nih.gov/359266/
 
-[29] Adam M, Spacek P, Hulejova H, Galianova A, Blahos J. "Postmenopausal osteoporosis: Treatment with calcitonin and a diet rich in collagen proteins." *Cas Lek Cesk*. 1996;135(3):74-78. PMID: [8646552](https://pubmed.ncbi.nlm.nih.gov/8646552/)
+[29] Frasca G et al. Gelatin tannate reduces the proinflammatory effects of lipopolysaccharide in human intestinal epithelial cells. Clin Exp Gastroenterol. 2012. PMID: 22629114. https://pubmed.ncbi.nlm.nih.gov/22629114/
 
-[30] Zdzieblik D, Oesser S, Baumstark MW, Gollhofer A, Konig D. "Collagen peptide supplementation in combination with resistance training improves body composition and increases muscle strength in elderly sarcopenic men: a randomised controlled trial." *Br J Nutr*. 2015;114(8):1237-1245. doi: [10.1017/S0007114515002810](https://doi.org/10.1017/S0007114515002810)
+[30] Scaldaferri F et al. Gelatin tannate ameliorates acute colitis in mice by reinforcing mucus layer and modulating gut microbiota composition: Emerging role for 'gut barrier protectors' in IBD? United European Gastroenterol J. 2014. PMID: 24918016. https://pubmed.ncbi.nlm.nih.gov/24918016/
 
-[31] Proksch E, Schunck M, Zague V, Segger D, Degwert J, Oesser S. "Oral intake of specific bioactive collagen peptides reduces skin wrinkles and increases dermal matrix synthesis." *Skin Pharmacol Physiol*. 2014;27(3):113-119. doi: [10.1159/000355523](https://doi.org/10.1159/000355523)
+[31] Çağan E et al. Evaluation of Gelatin Tannate Against Symptoms of Acute Diarrhea in Pediatric Patients. Med Sci Monit. 2017. PMID: 28448477. https://pubmed.ncbi.nlm.nih.gov/28448477/
 
-[32] Proksch E, Segger D, Degwert J, Hartmann M, Lambers G, Stab F. "Oral supplementation of specific collagen peptides has beneficial effects on human skin physiology: a double-blind, placebo-controlled study." *Skin Pharmacol Physiol*. 2014;27(1):47-55. doi: [10.1159/000351376](https://doi.org/10.1159/000351376)
+[32] Florez ID et al. Gelatin tannate for acute diarrhoea and gastroenteritis in children: a systematic review and meta-analysis. Arch Dis Child. 2020. PMID: 31272969. https://pubmed.ncbi.nlm.nih.gov/31272969/
 
-[33] Choi SY, Ko EJ, Lee YH, et al. "Effects of collagen tripeptide supplement on skin properties: a prospective, randomized, controlled study." *J Cosmet Laser Ther*. 2014;16(3):132-137. doi: [10.3109/14764172.2013.854119](https://doi.org/10.3109/14764172.2013.854119)
+[33] Koutroubakis IE et al. Serum laminin and collagen IV in inflammatory bowel disease. J Clin Pathol. 2003. PMID: 14600124. https://pubmed.ncbi.nlm.nih.gov/14600124/
 
-[34] Hexsel D, Zague V, Schunck M, Siber C, Camozzato FO, Oesser S. "Oral supplementation with specific bioactive collagen peptides improves nail growth and reduces symptoms of brittle nails." *J Cosmet Dermatol*. 2017;16(4):520-526. doi: [10.1111/jocd.12393](https://doi.org/10.1111/jocd.12393)
+[34] Bannai M, Kawai N. New therapeutic strategy for amino acid medicine: glycine improves the quality of sleep. J Pharmacol Sci. 2012. PMID: 22293292. https://pubmed.ncbi.nlm.nih.gov/22293292/
 
-[35] Rennard BO, Ertl RF, Gossman GL, Robbins RA, Rennard SI. "Chicken soup inhibits neutrophil chemotaxis in vitro." *Chest*. 2000;118(4):1150-1157. doi: [10.1378/chest.118.4.1150](https://doi.org/10.1378/chest.118.4.1150)
+[35] Bannai M et al. The effects of glycine on subjective daytime performance in partially sleep-restricted healthy volunteers. Front Neurol. 2012. PMID: 22529837. https://pubmed.ncbi.nlm.nih.gov/22529837/
 
-[36] Saketkhoo K, Januszkiewicz A, Sackner MA. "Effects of drinking hot water, cold water, and chicken soup on nasal mucus velocity and nasal airflow resistance." *Chest*. 1978;74(4):408-410. doi: [10.1378/chest.74.4.408](https://doi.org/10.1378/chest.74.4.408)
+[36] Kawai N et al. The sleep-promoting and hypothermic effects of glycine are mediated by NMDA receptors in the suprachiasmatic nucleus. Neuropsychopharmacology. 2015. PMID: 25533534. https://pubmed.ncbi.nlm.nih.gov/25533534/
 
-[37] Frasca G, Cardile V, Puglia C, Bonina C, Bonina F. "Gelatin tannate reduces the proinflammatory effects of lipopolysaccharide in human intestinal epithelial cells." *Clin Exp Gastroenterol*. 2012;5:61-67. doi: [10.2147/CEG.S28792](https://doi.org/10.2147/CEG.S28792)
+[37] High blood pressure and diet. MedlinePlus Medical Encyclopedia, US National Library of Medicine. https://medlineplus.gov/ency/article/007483.htm
 
-[38] Scaldaferri F, Petito V, Lopetuso L, et al. "Gelatin tannate reduces symptoms of colitis in an animal model." *United European Gastroenterol J*. 2014;2(suppl 1).
+[38] Taking warfarin (Coumadin). MedlinePlus Medical Encyclopedia, US National Library of Medicine. https://medlineplus.gov/ency/patientinstructions/000292.htm
 
-[39] Cagan E, Ceylan S, Mengi S, Sik G. "Gelatin tannate for acute diarrhea in children." *Med Sci Monit*. 2017;23:2029-2034. doi: [10.12659/MSM.903150](https://doi.org/10.12659/MSM.903150)
+[39] Diet - chronic kidney disease. MedlinePlus Medical Encyclopedia, US National Library of Medicine. https://medlineplus.gov/ency/article/002442.htm
 
-[40] Koutroubakis IE, Petinaki E, Dimoulios P, et al. "Serum laminin and collagen IV in inflammatory bowel disease." *J Clin Pathol*. 2003;56(11):817-820. doi: [10.1136/jcp.56.11.817](https://doi.org/10.1136/jcp.56.11.817)
+[40] Matar A et al. Bone Broth Benefits: How Its Nutrients Fortify Gut Barrier in Health and Disease. Dig Dis Sci. 2025. PMID: 40180691. https://pubmed.ncbi.nlm.nih.gov/40180691/
 
-[41] Bannai M, Kawai N. "New therapeutic strategy for amino acid medicine: glycine improves the quality of sleep." *J Pharmacol Sci*. 2012;118(2):145-148. doi: [10.1254/jphs.11R04FM](https://doi.org/10.1254/jphs.11R04FM)
+[41] Lead poisoning. MedlinePlus Medical Encyclopedia, US National Library of Medicine. https://medlineplus.gov/ency/article/002473.htm
 
-[42] Inagawa K, Hiraoka T, Kohda T, Yamadera W, Takahashi M. "Subjective effects of glycine ingestion before bedtime on sleep quality." *Sleep Biol Rhythms*. 2006;4(1):75-77. doi: [10.1111/j.1479-8425.2006.00193.x](https://doi.org/10.1111/j.1479-8425.2006.00193.x)
-
-[43] Yamadera W, Inagawa K, Chiba S, Bannai M, Takahashi M, Nakayama K. "Glycine ingestion improves subjective sleep quality in human volunteers, correlating with polysomnographic changes." *Sleep Biol Rhythms*. 2007;5(2):126-131. doi: [10.1111/j.1479-8425.2007.00262.x](https://doi.org/10.1111/j.1479-8425.2007.00262.x)
-
-[44] Bannai M, Kawai N, Ono K, Nakahara K, Murakami N. "The Effects of Glycine on Subjective Daytime Performance in Partially Sleep-Restricted Healthy Volunteers." *Front Neurol*. 2012;3:61. doi: [10.3389/fneur.2012.00061](https://doi.org/10.3389/fneur.2012.00061)
-
-[45] U.S. Department of Agriculture, FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
-
-[46] Guzman F. "Collagen as an incomplete protein." Referenced in nutritional analyses of bone broth protein quality.
-
-[47] Mosquera M, Gimenez B, da Silva IM, et al. "Nanoencapsulation of an active peptidic fraction from sea bream scales collagen." *Food Chem*. 2014;156:144-150. doi: [10.1016/j.foodchem.2014.02.011](https://doi.org/10.1016/j.foodchem.2014.02.011)
-
-[48] Traditional bone broth preparation: roasting at 400-450 degrees F for Maillard reaction. Grokipedia traditional methods section.
-
-[49] USDA Food Safety and Inspection Service. Homemade broth storage: 3-4 days refrigerated, 2-3 months frozen at best quality.
-
-[50] Vijven JPJ, Luijsterburg PA, Verhagen AP, van Osch GJ, Kloppenburg M, Bierma-Zeinstra SM. "Symptomatic and chondroprotective treatment with collagen derivatives in osteoarthritis: a systematic review." *Osteoarthritis Cartilage*. 2012;20(8):809-821. doi: [10.1016/j.joca.2012.04.008](https://doi.org/10.1016/j.joca.2012.04.008)
-
-[51] Zhang Y, et al. "Treatment of early rheumatoid arthritis with minocycline versus placebo." *Arthritis Rheum*. 2008. Referenced in ConsumerLab Concerns and Cautions section.
-
-[52] Barnett ML, et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-R)
-
-[53] Monro JA, Leon R, Puri BK. "The risk of lead contamination in bone broth diets." *Med Hypotheses*. 2013;80(4):389-390. doi: [10.1016/j.mehy.2012.12.026](https://doi.org/10.1016/j.mehy.2012.12.026)
-
-[54] Recent independent testing of commercial bone broth products finding no concerning heavy metal amounts. Referenced in Grokipedia potential concerns section.
-
-[55] Gimbar RP, Friedman AN. "Renal considerations in bone broth diets." *J Ren Nutr*. 2017;27(4):e23-e25. doi: [10.1053/j.jrn.2017.01.024](https://doi.org/10.1053/j.jrn.2017.01.024)
+[42] Bassila C et al. Efficacy and safety of hydrolyzed collagen supplementation on skin health outcomes: a systematic literature review of randomized controlled trials. Eur J Clin Nutr. 2026. PMID: 42342959. https://pubmed.ncbi.nlm.nih.gov/42342959/

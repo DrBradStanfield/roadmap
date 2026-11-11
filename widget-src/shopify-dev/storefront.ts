@@ -141,8 +141,11 @@ export function themeShell(liveHtml: string, rootId = 'health-tool-root'): Theme
 /** Brad's server, wherever widget source names it absolutely (the Google token
  *  exchange, reminders). The dev build rewrites these to a local prefix that the
  *  dev server stubs, so nothing reaches production. The production builds never
- *  load this file. */
-const BRAD_SERVER = /https:\/\/(?:health-tool-(?:app|edu)\.fly\.dev|mcp\.drstanfield\.com)(?=\/)/g;
+ *  load this file. A path or a closing quote may follow: the bare origin in
+ *  standalone/server-origin.ts must be caught too. Not global, so the test can
+ *  share it. */
+export const BRAD_SERVER_PATTERN = /https:\/\/(?:health-tool-(?:app|edu)\.fly\.dev|mcp\.drstanfield\.com)(?=[/'"`])/;
+const BRAD_SERVER = new RegExp(BRAD_SERVER_PATTERN.source, 'g');
 export const LOCAL_BRAD_SERVER = '/__brad-server';
 
 export function localiseBradServer(code: string): string {

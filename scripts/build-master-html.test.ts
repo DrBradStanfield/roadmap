@@ -474,10 +474,10 @@ describe('build-master-html (US-50 AC9)', () => {
   it("US-50 AC9: commerce drops other pointers to the dropped section, such as \"Brad's view above\"", () => {
     const md = MASTER.replace('Magnesium matters, p < 0.05 [1].', "Quercetin is studied as a senolytic [1]. Brad's view above concerns that use against ageing. Other uses are limited (see Brad's view below).");
     const c = build(md, { store: 'commerce' });
-    const text = c.html.replace(/<[^>]+>/g, '');
+    const text = c.html.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'"); // the builder escapes apostrophes
     expect(text).toContain('Quercetin is studied as a senolytic [1]. Other uses are limited.');
     expect(text).not.toMatch(/Brad's view|concerns that use/);
-    expect(build(md, { store: 'edu' }).html).toContain("Brad's view above concerns");
+    expect(build(md, { store: 'edu' }).html).toContain('Brad&#39;s view above concerns');
   });
 
   it('US-50 AC9: adjacent product sentences on separate physical lines all go, not every other one (Codex R1, 2026-11-02)', () => {
@@ -486,6 +486,19 @@ describe('build-master-html (US-50 AC9)', () => {
     const text = c.html.replace(/<[^>]+>/g, '');
     expect(text).not.toMatch(/has (8|9|10) mg/);
     expect(c.html).toContain('<p>Independent evidence remains.</p>');
+  });
+
+  it('US-50 AC9: commerce drops a "Product Context" section and a microvitamin.com product link; edu keeps both (Codex, 2026-11-10)', () => {
+    const md = MASTER
+      .replace('Magnesium matters, p < 0.05 [1].', 'Magnesium matters [1]. A drink exists ([shop it](https://microvitamin.com/products/potassium-fiber-drink)).')
+      .replace('### Sleep', '### Product Context\n\nBrad owns the company that sells it. One scoop gives 500 mg ([shop the drink](https://www.microvitamin.com/products/potassium-fiber-drink)).\n\n### Sleep');
+    const c = build(md, { store: 'commerce' }).html;
+    expect(c).not.toMatch(/shop it|shop the drink|One scoop|A drink exists/);
+    expect(c).toContain('Magnesium matters');
+    expect(c).toContain('No single form.');
+    const e = build(md, { store: 'edu' }).html;
+    expect(e).toContain('shop it');
+    expect(e).toContain('One scoop gives 500 mg');
   });
 
   it('US-50 AC9: a Potassium Fiber Drink card links its product under its own eyebrow, not "From the MicroVitamin range"', () => {

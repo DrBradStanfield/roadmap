@@ -80,6 +80,16 @@ export function getEraseIdentity(): string {
 export function getShownErase(): string {
   return store?.shownErase ?? '';
 }
+/** The erase a request is asked under: the one the page shows (US-16 AC2a). */
+export const askedUnder = getShownErase;
+/** Whether the record is still at the erase `asked` names, and the page still
+ *  shows it. Whole identities, never epochs: a merge can move the identity
+ *  within one epoch (US-16 AC2a). The record half refuses while an erase still
+ *  writes, since the erase swaps the copy before it flushes; the shown half
+ *  covers the gap between the record moving and the screen showing it. */
+export function stillShown(asked: string): boolean {
+  return asked === getEraseIdentity() && asked === getShownErase();
+}
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
@@ -119,8 +129,8 @@ export function holdsUnreadableMedication(key: string, answered = false): boolea
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(): boolean {
-  return store?.markReportEmailCaptured() ?? false;
+export function markReportEmailCaptured(erase?: string): boolean {
+  return store?.markReportEmailCaptured(erase) ?? false;
 }
 
 // --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
@@ -256,8 +266,8 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
   return result;
 }
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
-export async function addLabValue(input: AddLabValueRequest): Promise<AddLabValueResult | null> {
-  const result = store ? store.addLabValue(input) : null;
+export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
+  const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }

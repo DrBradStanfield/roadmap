@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A3-3,S4 privacy scrub and vocabularies,MCP layer gets its own closed vocabulary module,not started,No mcp-vocab.ts; MCP tool names and OAuth reasons still live in product-events.ts,,,no

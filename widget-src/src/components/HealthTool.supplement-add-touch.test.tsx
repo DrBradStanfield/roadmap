@@ -57,6 +57,23 @@ describe('US-62 AC30e: the supplement search on a touch screen', () => {
     expect(document.activeElement).toBe(row()); // AC30c: the focus back on the row
   });
 
+  it('AC30g: a press on the empty search\'s list that blurs the search first still adds (real iPhone)', async () => {
+    // On a real iPhone the search lost the focus before the tap's click; an empty search
+    // closed on that blur, the card below moved up under the finger and took the click.
+    for (const pointerType of ['mouse', 'touch'] as const) {
+      const { option, names, view } = await open();
+      const creatine = option('Creatine')!;
+      fireEvent.pointerDown(creatine, { pointerType, isPrimary: true });
+      fireEvent.blur(view.container.querySelector('.supplement-add input')!, { relatedTarget: null });
+      expect(view.container.querySelector('.supplement-dropdown')).not.toBeNull(); // still there to be tapped
+      if (pointerType === 'touch') fireEvent.touchEnd(creatine, { changedTouches: [{ clientX: 1, clientY: 1 }] });
+      else fireEvent.click(creatine);
+      expect(names()).toContain('Creatine');
+      view.unmount();
+      localStorage.clear();
+    }
+  });
+
   it('a touch that scrolls the list (pointercancel) adds nothing', async () => {
     const { option, names, search } = await open();
     const first = option('Creatine')!;

@@ -51,7 +51,7 @@
  *                             phrase list cannot pin down, such as whose order a first step belongs to.
  *                             A regex that does not compile exits the harness before any API call.
  *   surface?: 'doctor' | 'brand' | 'youtube'  answer check only: the posture block, or for 'youtube'
- *                             the YouTube bot's whole prompt, with youtube_video (tools/chatbot-surfaces.ts).
+ *                             the YouTube bot's whole prompt, with youtube_video; saved_chat? (C1). See tools/chatbot-surfaces.ts.
  *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
  *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
  *                             It goes through production's resolveChatContext, and the answer call
@@ -95,6 +95,11 @@
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
  *   npx tsx tools/test-chatbot-matching.ts --fixed-handles-only   # only the answer_handles checks (implies --answer-check)
  *   npx tsx tools/test-chatbot-matching.ts --model <router id> [--thinking-off | --effort-low] --answer-model <answer id>
+ *   npx tsx tools/test-chatbot-matching.ts <any flags above> --estimate   # price the run, make no API call
+ *
+ * Every live run costs money from the same credits as production. Brad 2026-11-10: no run without
+ * his yes, and give him the --estimate figure first. A run prints SUMMARY lines with the actual
+ * cost: one for the router, one for the answer calls.
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
  * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
@@ -110,8 +115,8 @@
  *     cheaper per iteration. Only run the full suite at end-of-session.
  *   - DEFAULT TO --answer-check-runs 1 WHEN ITERATING. The default 3 triples
  *     answer-check cost. Only use 3 for the final verification.
- *   - READ THE BOT'S RESPONSE BEFORE RE-EDITING TESTS. Use --verbose and look at
- *     what the bot actually produced. Rewriting must_mention/must_not_mention
+ *   - READ THE BOT'S RESPONSE BEFORE RE-EDITING TESTS. A failing answer check
+ *     prints the last run's answer in full; never rerun just to see it. Rewriting must_mention/must_not_mention
  *     blindly leads to multiple re-runs that each cost real money.
  *   - EDITING THE SYSTEM PROMPT INVALIDATES THE 1-HOUR ANTHROPIC PROMPT CACHE.
  *     Every re-run after a prompt edit pays cache-write price (2x base) instead
@@ -128,11 +133,12 @@ import {
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
-import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
+import { toolOnlyAck } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, preferMasters, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
-import { loadPostures, loadYouTubeVideos, youtubeTurn, type YouTubeVideo } from './chatbot-surfaces';
+import { loadSurfaces, youtubeTurn } from './chatbot-surfaces';
+import { claimed, estimateRunCost, plain, profileEditFailures } from './harness-answers';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
@@ -171,16 +177,18 @@ const fixedHandlesOnly = args.includes('--fixed-handles-only');
 const includePending = args.includes('--include-pending');
 const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
 const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
+// --estimate: price the run and exit before any API call (Brad 2026-11-10).
+const estimateOnly = args.includes('--estimate');
 
 // Prefer ANTHROPIC_TEST_API_KEY if set — keeps harness spend isolated from
 // production billing. Falls back to ANTHROPIC_API_KEY for backward compatibility.
 const apiKey = process.env.ANTHROPIC_TEST_API_KEY || process.env.ANTHROPIC_API_KEY;
-if (!apiKey) {
+if (!apiKey && !estimateOnly) {
   console.error('Error: ANTHROPIC_TEST_API_KEY or ANTHROPIC_API_KEY must be set');
   process.exit(1);
 }
 const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
-console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
+if (!estimateOnly) console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
@@ -229,6 +237,7 @@ if (answerCheckMode) {
 const ROUTER_MODEL = getArg('--model', PRODUCTION_ROUTER_MODEL);
 const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
+const answerStats: CallStat[] = [];
 
 // --index <path> overrides the index the ROUTER sees, so an experimental index
 // (e.g. summary-capped) can be A/B'd against production without touching
@@ -386,6 +395,7 @@ interface TestQuery {
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand' | 'youtube'; // answer check adds that surface's posture block (see the header)
+  saved_chat?: 'none' | 'question-rows' | 'transcript' | 'discord' | 'youtube'; // and its SAVED-CHAT block (see the header)
   youtube_video?: string;      // with surface 'youtube': the video's companion post (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
   expect_no_plan?: true;       // user_context makes no plan: no usable height (see the header)
@@ -424,9 +434,7 @@ if (unknownForbidden.length > 0) {
   process.exit(1);
 }
 // A surface the harness cannot load, or a YouTube fixture production could never send, would score a prompt production never builds.
-const POSTURES = loadPostures(REPO_ROOT, ALL_QUERIES);
-const YOUTUBE_VIDEOS = loadYouTubeVideos(ALL_QUERIES);
-for (const problem of [POSTURES, YOUTUBE_VIDEOS]) if (typeof problem === 'string') { console.error(problem); process.exit(1); }
+const { postures: POSTURES, videos: YOUTUBE_VIDEOS, savedChats: SAVED_CHATS } = loadSurfaces(REPO_ROOT, ALL_QUERIES);
 // A payload that makes no plan, or silently loses a key or a value, would score a context the fixture never meant.
 const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
 const USER_CONTEXTS = new Map<TestQuery, string>();
@@ -493,6 +501,25 @@ if (suite.length === 0) {
   process.exit(1);
 }
 
+/** Under --answer-check, a case whose answer is also scored (when its routing passes). */
+function hasAnswerCheck(q: TestQuery): boolean {
+  return answerCheckMode && !!(q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length
+    || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit);
+}
+
+if (estimateOnly) {
+  // Routed cases are priced as if routing passes and loads their expected handles.
+  const answerCallChars = suite.filter(hasAnswerCheck).flatMap(q => {
+    const chars = ANSWER_SYSTEM_CONTEXT.length + q.query.length
+      + (loadMatchedContent(Array.isArray(q.expected) ? q.expected : q.answer_handles!).content ?? '').length;
+    return Array<number>(answerCheckRuns).fill(chars);
+  });
+  const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
+  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCallChars });
+  console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCallChars.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
+  process.exit(0);
+}
+
 // ---------------------------------------------------------------------------
 // Run each query N times and compute intersection of handles
 // ---------------------------------------------------------------------------
@@ -513,45 +540,6 @@ interface QueryResult {
   passed: boolean;
 }
 
-const NEGATION = /\b(no|not|never|cannot|without|nor|nothing|none|neither)\b|n't\b/;
-// A negation only excuses a phrase from inside its own clause.
-const CLAUSE_BREAK = /[;—–]|\bbut\b|\band\b/g;
-// Idioms that hold a negation word but affirm ("there is no doubt it can …").
-const AFFIRMING = /\b(no doubt|not only|no wonder|no question|without (a )?doubt|none other than)\b/g;
-
-/** The answer as must_not_claim and the regex checks see it: lower case, straight quotes, no markdown * or _. */
-const plain = (response: string) => response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
-
-/** Phrases stated as fact: no negation in the up-to-12 words before them, within their clause. */
-function claimed(response: string, phrases: string[]): string[] {
-  const text = plain(response);
-  const sentences = text.split(/(?<=[.!?])\s+|\n+/);
-  return phrases.filter(p => sentences.some(s => {
-    const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
-    for (let at = s.indexOf(phrase); at !== -1; at = s.indexOf(phrase, at + 1)) {
-      const clause = s.slice(0, at).split(CLAUSE_BREAK).pop() ?? '';
-      // Mask each idiom word in place, so the 12-word window keeps its true span.
-      const masked = clause.replace(AFFIRMING, m => m.split(/\s+/).map(() => '_').join(' '));
-      const window = masked.trim().split(/\s+/).slice(-12).join(' ');
-      if (!NEGATION.test(window)) return true;
-    }
-    return false;
-  }));
-}
-
-/** US-16 AC2: why a reply's profile proposal is not the expected one, merged as the widget merges it. */
-function profileEditFailures(expected: NonNullable<TestQuery['expect_profile_edit']>, edits: ProposedEdit[]): string[] {
-  const profiles = edits.filter((e): e is ProposedProfileEdit => e.kind === 'profile');
-  if (profiles.length === 0) return ['no propose_profile_edit'];
-  const sex = profiles.reduce<string | null>((a, e) => e.sex ?? a, null);
-  const heightCm = profiles.reduce<number | null>((a, e) => e.heightCm ?? a, null);
-  return [
-    ...(expected.sex !== undefined && sex !== expected.sex ? [`proposed sex ${sex ?? 'none'}, not ${expected.sex}`] : []),
-    ...(expected.heightCm !== undefined && (heightCm === null || Math.abs(heightCm - expected.heightCm) > 0.1)
-      ? [`proposed height ${heightCm ?? 'none'} cm, not ${expected.heightCm}`] : []),
-  ];
-}
-
 /** A failed answer call: its label (a status or a fetch error) and any detail. */
 class AnswerApiError extends Error {
   constructor(readonly label: string, detail?: string) { super(detail ? `${label}: ${detail}` : label); }
@@ -561,16 +549,17 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   const { query, surface, max_length_chars: maxLengthChars } = q;
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
-  const video = (YOUTUBE_VIDEOS as Map<TestQuery, YouTubeVideo>).get(q);
+  const video = YOUTUBE_VIDEOS.get(q);
   const youtube = video && youtubeTurn(video, matchedHandles, query, q.history ?? [], FULL_INDEX);
   const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(matchedHandles).content;
-  // Production order (buildSystemBlocks): products, then the surface posture, then articles.
-  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${(POSTURES as Map<string, string>).get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  // Production order (buildSystemBlocks): products, then the surface posture and its SAVED-CHAT block, then articles.
+  const savedChat = SAVED_CHATS.get(q);
+  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}${savedChat ? `\n\n---\n\n${savedChat}` : ''}` : ANSWER_SYSTEM_CONTEXT;
   const userContextJson = USER_CONTEXTS.get(q);
-  // The YouTube bot's platform context sits where the widget's user data does (runPipeline).
+  // The YouTube bot's platform context sits where the widget's user data does (runPipeline). Both carry a SAVED-CHAT block (SAVED_CHAT_DEFAULT).
   const platformContext = youtube ? youtube.platformContext : userContextJson;
   const system = platformContext !== undefined
-    ? buildSystemBlocks(platformContext, { surfaceContext: surface && (POSTURES as Map<string, string>).get(surface), blogArticles: matchedContent || null })
+    ? buildSystemBlocks(platformContext, { surfaceContext: surface && POSTURES.get(surface), savedChat: savedChat!, blogArticles: matchedContent || null })
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;
@@ -585,6 +574,7 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
   const send = async (fields: object) => {
     for (let retry = true; ; retry = false) {
+      const t0 = Date.now();
       const res = await postMessages({ ...body, ...fields }, 60_000);
       if (typeof res === 'string') throw new AnswerApiError(res);
       if (res.status === 429 && retry) {
@@ -597,7 +587,8 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
         const text = await res.text().catch(() => '');
         throw new AnswerApiError(String(res.status), text.slice(0, 200).replace(/\s+/g, ' '));
       }
-      const data = await res.json() as { content?: ChatContentBlock[]; stop_reason?: string; stop_details?: { category?: string } | null };
+      const data = await res.json() as { content?: ChatContentBlock[]; stop_reason?: string; stop_details?: { category?: string } | null; usage?: Parameters<typeof toStat>[1] };
+      answerStats.push(toStat(Date.now() - t0, data.usage));
       return { contentBlocks: data.content ?? [], stopReason: data.stop_reason, category: data.stop_details?.category };
     }
   };
@@ -665,7 +656,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit)) {
+  if (routingPassed && hasAnswerCheck(q)) {
     const answerRuns: AnswerCheckResult[] = [];
     // As production: routed older posts give way to their masters (US-50 AC14); fixed handles load as given.
     const answerHandles = fixed ? intersection : preferMasters(intersection, FULL_INDEX, q.query).handles;
@@ -783,6 +774,9 @@ if (results.length > 0) {
   console.log(`Variance:    ${BOLD}${(varRate * 100).toFixed(1)}%${RESET} ${varOk ? `${GREEN}✓${RESET}` : `${RED}✗ max ${(varianceThreshold * 100).toFixed(0)}%${RESET}`}`);
   console.log(summaryLine('router', ROUTER_MODEL, thinkingOff, passed.length, results.length, callStats, apiErrorCount));
 }
+// The answer calls' own line, so a run's whole cost is on screen (Brad 2026-11-10).
+const checked = allResults.filter(r => r.answerCheck);
+if (answerStats.length > 0) console.log(summaryLine('answer', ANSWER_MODEL, false, checked.filter(r => r.answerCheck!.passed).length, checked.length, answerStats, apiErrorCount));
 if (fixedResults.length > 0) {
   const n = fixedResults.filter(r => r.passed).length;
   console.log(`Fixed-handle answer checks: ${BOLD}${n}/${fixedResults.length}${RESET} ${fixedOk ? `${GREEN}✓${RESET}` : fixedHandlesOnly ? `${RED}✗ all must pass${RESET}` : `${YELLOW}✗ reported, not gating (gates under --fixed-handles-only)${RESET}`}`);
@@ -823,9 +817,8 @@ if (failedAll.length > 0) {
       for (const f of r.answerCheck.failures) {
         console.log(`      ${RED}→ ${f}${RESET}`);
       }
-      if (verbose) {
-        console.log(`    Response:     ${GREY}${r.answerCheck.response.slice(0, 300)}...${RESET}`);
-      }
+      // In full, every time: a rerun just to read the answer costs money (Brad 2026-11-10).
+      console.log(`    Response (last run):\n${GREY}${r.answerCheck.response.replace(/^/gm, '      ')}${RESET}`);
     }
     if (r.query.notes) console.log(`    Notes:        ${GREY}${r.query.notes}${RESET}`);
   }

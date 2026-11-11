@@ -75,7 +75,7 @@ When choosing a rhodiola supplement, look for:
 - **Species:** *Rhodiola rosea* on the label, not just "Rhodiola". Rosavin is the marker that sets *R. rosea* apart from related species [5].
 - **Plant part:** The trials used extracts of the root or rhizome [7][11].
 
-Independent testers such as consumerlab.com and Labdoor publish product test results.
+Independent testers such as Labdoor publish product test results.
 
 ### Adulteration Concerns
 

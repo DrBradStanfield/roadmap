@@ -27,8 +27,11 @@ const supplementSearchRef = useRef<HTMLInputElement>(null);
 const supplementAddRef = useRef<HTMLButtonElement>(null);
 /** A finger is down on the list and has not scrolled it (a scroll is a pointercancel). */
 const supplementTouch = useRef(false);
+/** A press, by finger or pointer, is down on the list: an iPhone blurs the search before its click (AC30g). */
+const pressInList = useRef(false);
 /** Back to the "+ Add another supplement" row, the focus on it when asked. */
 const closeSupplementAdd = (refocus: boolean) => {
+  pressInList.current = false;
   setShowSupplementDropdown(false);
   flushSync(() => setAddingSupplement(false));
   if (refocus) supplementAddRef.current?.focus();
@@ -47,6 +50,7 @@ useEffect(() => {
   // mousedown comes later, where WebKit's tap adjustment puts it (US-62 AC30e).
   const handleClickOutside = (e: PointerEvent) => {
     if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
+      pressInList.current = false;
       setShowSupplementDropdown(false);
     }
   };
@@ -138,7 +142,8 @@ useEffect(() => {
         <div className="supplement-add mh-add-test" ref={supplementDropdownRef} onBlur={e => {
           // Focus leaving the search and its list empty, by Tab or a tap elsewhere: back to the row (#985).
           // Escape in either goes back too, the focus on the row (keydown below).
-          if (addingSupplement && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
+          // A press in the list blurs it first on an iPhone; closing then moved the next card under the finger (AC30g).
+          if (addingSupplement && !pressInList.current && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
         }} onKeyDown={e => { if (e.key === 'Escape' && addingSupplement) { setSupplementSearch(''); closeSupplementAdd(true); } }}>
           {!addingSupplement ? (
             <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
@@ -175,8 +180,8 @@ useEffect(() => {
             // default prevented, no mousedown or click follows to land where WebKit's tap
             // adjustment or the closing keyboard puts it (iPhone: nothing was added, AC30e).
             <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}
-              onPointerDown={e => { supplementTouch.current = e.pointerType === 'touch'; }}
-              onPointerCancel={() => { supplementTouch.current = false; }}
+              onPointerDown={e => { supplementTouch.current = e.pointerType === 'touch'; pressInList.current = true; }}
+              onPointerCancel={() => { supplementTouch.current = false; pressInList.current = false; }}
               onTouchEnd={e => {
                 const option = (e.target as Element).closest('button');
                 if (!supplementTouch.current || !option) return;

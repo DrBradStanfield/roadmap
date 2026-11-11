@@ -29,13 +29,13 @@ import {
 import { EXTRACTION_MODEL, extractionStopCode, modelParams } from '@roadmap/health-core/models';
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirectRaw, type ByokErrorCode } from './byok-anthropic';
-import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
+import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
 const NO_KEY_MESSAGE =
   'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';
 
-export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
-  if (!getAnthropicKey()) return { allowed: false, remaining: 0, message: NO_KEY_MESSAGE };
+export async function checkLabImportQuota(): Promise<QuotaCheck> {
+  if (!getAnthropicKey()) return { allowed: false, remaining: 0, reason: 'no-key', message: NO_KEY_MESSAGE };
   // The user's own key — any limits are theirs, enforced by Anthropic per call.
   return { allowed: true, remaining: Number.MAX_SAFE_INTEGER };
 }

@@ -51,8 +51,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 // drstanfield.com product handle -> microvitamin.com product handle. Its values are the products a card may link.
 const COMMERCE_PRODUCTS = { microvitamin: 'microvitamin', 'microvitamin-powder': 'microvitamin-plus', 'microvitamin-plus': 'microvitamin-plus', sleep: 'sleep', 'potassium-fiber-drink': 'potassium-fiber-drink' };
@@ -407,8 +406,8 @@ const handlesOf = (meta) => [meta.url, meta.commerceUrl].filter(Boolean).map((u)
 // drstanfield.com product page loses everything from the sentence holding that
 // link to its end, and goes whole when nothing comes before it. Caveat
 // sentences in the dropped part stay (see caveatsOf).
-const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
-const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?drstanfield\.com\/products\/[a-z0-9-]+\/?\)/i;
+const COMMERCE_DROP_HEADING = /^(?:current view\b|current evidence position\b|brad['\u2019]s videos on this topic$|product (?:mention|note|context)\b)|\bmicrovitamin\b|\bsleep by dr brad\b|\bdr brad stanfield['\u2019]s products?\b/i;
+const PRODUCT_LINK = /\[[^\]]*\]\(https?:\/\/(?:www\.)?(?:drstanfield|microvitamin)\.com\/products\/[a-z0-9-]+\/?\)/i;
 const SENTENCE_END = /[.!?](?:\*\*?|\))?\s+/g;
 // Pointers to the dropped sections, and unlinked product sentences, go too, so the
 // sentences left still read: "(see the Current view above)", "; Brad's view is in the Current view.",

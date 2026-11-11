@@ -6,9 +6,14 @@
 // SHOPIFY_EDU_ACCESS_TOKEN (write_content) in the environment. Drops the
 // header paragraph, the internal blockquote and "Items to verify"; refuses em
 // dashes, [VERIFY] markers and relative links, so nothing internal reaches the page.
-//   node scripts/build-privacy-page.mjs [connector|app] [--out file] [--publish]
+// The page opens with "Last updated <date>", the UTC day it is built; --date sets
+// that clock for tests and is refused with --publish. The Last updated date is the
+// publish day, so publish only when the notice text changed; republishing unchanged
+// text would claim an update that did not happen.
+//   node scripts/build-privacy-page.mjs [connector|app] [--out file] [--publish] [--date iso]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { requireMergedCode } from '../tools/write-gate.mjs';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 // `start`: the first line of the public body. `id`: a page that exists; `handle`: found or created.
 const PAGES = {
@@ -19,7 +24,6 @@ const arg = process.argv[2];
 const page = PAGES[arg && !arg.startsWith('--') ? arg : 'connector'];
 if (!page) throw new Error('which page? ' + Object.keys(PAGES).join(' or '));
 const md = readFileSync(new URL(`../docs/${page.md}`, import.meta.url), 'utf8');
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const inline = (s) => {
   const held = [];
   let t = s.replace(/`([^`]+)`/g, (_, c) => `\u0000${held.push(`<code>${esc(c)}</code>`) - 1}\u0000`);
@@ -37,7 +41,12 @@ const end = md.indexOf('\n## Items still to verify');
 if (start < 0 || end < 0) throw new Error('addendum shape changed');
 const body = md.slice(start, end).trim();
 
-const out = [`<h2>${page.heading}</h2>`];
+const dateIdx = process.argv.indexOf('--date');
+if (dateIdx !== -1 && process.argv.includes('--publish')) throw new Error('--date is for tests; a publish dates itself');
+const builtOn = dateIdx !== -1 ? new Date(process.argv[dateIdx + 1]) : new Date();
+if (Number.isNaN(builtOn.getTime())) throw new Error('bad --date: ' + process.argv[dateIdx + 1]);
+const updated = builtOn.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const out = [`<h2>${page.heading}</h2>`, `<p>Last updated ${updated}</p>`];
 for (const raw of body.split(/\n\n+/)) {
   const b = raw.trim();
   if (!b || b === '---') continue;

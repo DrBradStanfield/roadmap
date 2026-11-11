@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-8,"S1 tools, scripts, CI",worktree-done reads the package folder list from worktree-guard,done,"tools/worktree-done.sh reads PACKAGE_DIRS from `worktree-guard.cjs --package-dirs` and refuses when it cannot; merge-batch.mjs:168 and worktree-new.sh:36 still keep their own copies",1197,tests/worktree-guard.test.ts (worktree-done.sh reads the package folders from the guard),no

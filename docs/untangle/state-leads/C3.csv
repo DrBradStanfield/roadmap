@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C3,chat purge,"A row that did not blank was held again on every later batch, so one run kept repeat copies of its question",bug,done,"app/lib/chat-purge-cron.server.ts: held questions deduped by row id in memory for the run (Held.ids), rows selected again counted and reported once per run to Sentry (reportDidNotBlank, count tag only) and in the summary log line, and purgeInBatches stops on a batch with no new row. Tests: chat-purge-cron.server.test.ts US-15 AC60 (failing first). US-15 AC60",,no

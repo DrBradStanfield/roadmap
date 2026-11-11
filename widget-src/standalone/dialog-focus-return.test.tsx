@@ -30,7 +30,6 @@ vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
   storageState: (backend: string) => (backend === 'local' ? 'guest' : 'cloud'),
-  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox', github: 'GitHub', 'self-host': 'your own server' },
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,

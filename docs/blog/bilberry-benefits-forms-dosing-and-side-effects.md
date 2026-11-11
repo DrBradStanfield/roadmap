@@ -83,7 +83,7 @@ Anthocyanins follow a different path through the body from other flavonoids [15]
 
 ### Species Confusion
 
-Check that the label names *Vaccinium myrtillus*. Bilberries are expensive, and testing has found supplements falsified with anthocyanins from other sources [44], in one study mainly mulberry and chokeberry [43]. In one study, 45% of bilberry supplements were of unacceptable quality, including products with no bilberry at all [44]. Independent testers such as ConsumerLab.com and Labdoor publish product testing.
+Check that the label names *Vaccinium myrtillus*. Bilberries are expensive, and testing has found supplements falsified with anthocyanins from other sources [44], in one study mainly mulberry and chokeberry [43]. In one study, 45% of bilberry supplements were of unacceptable quality, including products with no bilberry at all [44]. Independent testers such as Labdoor publish product testing.
 
 ## 3. Evidence for Health Benefits
 

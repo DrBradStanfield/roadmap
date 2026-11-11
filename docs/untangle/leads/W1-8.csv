@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-8,S8 web big components,One chat state-publish helper; failed send restores the question,done,useChatState.ts:55 postState used for every state payload; question restore from 1020,1103;1020,useChatState.test.tsx:134 (restore); none for the single helper,no

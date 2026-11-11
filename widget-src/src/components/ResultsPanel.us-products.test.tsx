@@ -15,6 +15,7 @@ import { US_SUPPLEMENT_DESCRIPTIONS } from '@roadmap/health-core/suggestions';
 import { US_SUPPLEMENT_REFERENCES } from '@roadmap/health-core/evidence';
 import { US_OWNERSHIP_LINE, US_PRODUCT_LINES, type UsPlanSection } from '@roadmap/health-core/us-products';
 import { resolveMarketCountry } from '../lib/market-country';
+import { cascaded, parseRules, STYLES } from '../testing/css-cascade';
 
 const mocks = vi.hoisted(() => ({
   trackProductEvent: vi.fn(),
@@ -24,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   overlay: { value: null as null | ((...args: unknown[]) => UsPlanSection[] | null) },
 }));
 vi.mock('../lib/roadmap-data', () => ({
-  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; }, LOCAL_FIRST: true }));
@@ -210,8 +211,17 @@ describe('US-61 AC7: one ownership line', () => {
   it('the blocks and the line are never printed, on paper or in the PDF clone', () => {
     const { container } = show();
     for (const el of container.querySelectorAll('.us-product, .us-ownership')) expect(el.classList.contains('no-print')).toBe(true);
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    expect(css).toMatch(/@media print\s*\{\s*\.us-product,\s*\.us-ownership\s*\{\s*display:\s*none !important;/);
+    // !important: a more specific rule that shows them does not bring them back on paper.
+    const rival = [...STYLES, ...parseRules('.us-product:not(#x), .us-ownership:not(#x) { display: block }')];
+    const blocks = container.querySelectorAll('.us-product, .us-ownership');
+    expect(blocks.length).toBeGreaterThan(1);
+    for (const el of blocks) {
+      for (const width of [600, 768, 1280]) { // a printed page is narrower than a desktop screen
+        expect(cascaded(el, 'display', { width, print: true }), `${el.className} @${width}`).toBe('none');
+        expect(cascaded(el, 'display', { width, print: true }, rival), `${el.className} @${width}`).toBe('none');
+      }
+      expect(cascaded(el, 'display', 1280), el.className).toBeUndefined(); // shown on screen
+    }
   });
 });
 

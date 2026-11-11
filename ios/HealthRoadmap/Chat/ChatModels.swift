@@ -34,7 +34,9 @@ enum ChatStreamEvent: Equatable, Sendable {
     /// The final reply: the whole answer, which replaces what streamed. `edits`: the
     /// server's `proposedEdits` (US-67), as received; the engine alone reads them.
     case done(content: String?, isFallback: Bool, error: String?, edits: OpaqueJSON? = nil)
-    /// A line this app does not use (thinking, and anything newer): skipped.
+    /// The model is thinking. Its draft notes are dropped: the phone shows "Thinking…" alone (US-52 AC6g).
+    case thinking
+    /// A line this app does not use (anything newer): skipped.
     case other
 
     /// Reads one line; nil if it is not JSON with a `type`.
@@ -47,6 +49,7 @@ enum ChatStreamEvent: Equatable, Sendable {
         switch type {
         case "status": return .status(object["text"] as? String ?? "")
         case "text": return .text(object["text"] as? String ?? "")
+        case "thinking": return .thinking
         case "sources": return .sources((object["titles"] as? [Any] ?? []).compactMap { $0 as? String })
         case "done":
             let success = object["success"] as? Bool ?? false

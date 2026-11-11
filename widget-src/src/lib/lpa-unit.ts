@@ -23,7 +23,7 @@ export function effectiveLpaUnit(saved: unknown, legacy: unknown, unitSystem: Un
   return recordLpaUnit(saved, unitSystem);
 }
 
-/** The old build's toggle for the Lp(a) field, in HealthTool's per-field overrides. */
+/** The old build's toggle for the Lp(a) field, in the per-field overrides (hooks/useUnits.ts, the same key). */
 function legacyToggle(): unknown {
   try {
     return JSON.parse(safeGetItem('health_roadmap_unit_overrides') ?? '{}')?.lpa;

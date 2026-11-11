@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-10,S8 web big components,Explicit refs or callbacks replace cross-component DOM selectors,not started,"HealthTool.tsx:258,559-613 (.mh-title), :327 (.psa-inline-row), :473-474 (.bt-input-active); hooks/useTabs.ts:34 (.chat-embed); none of the named handles exist",,,no

@@ -1,0 +1,4 @@
+{
+  "minAppBuild": 11,
+  "why": "PR 1218 (US-72 AC10): engines from here on drop the importers' erasedAt checks; the app disconnects Apple Health on an erase instead. Build 10 (0.2, commit 305725de, 'iOS: build 10 (0.2) for TestFlight and App Store review') is the highest uploaded and lacks the disconnect, so 11 is the first build that has it. The Health Records panel fix (US-72 AC15: PR 1253 and its follow-up) also needs build 11: it raises the lab rules version to 3 in HealthSyncMemory.swift, so a phone reads Health Records again. ios/engine-updates.md."
+}

@@ -32,9 +32,10 @@ Part of [Health by Dr Brad — Architecture (v2, local-first)](../architecture-v
 
 Each worker **auto-starts on module import** at the bottom of its own file; [entry.server.tsx](../../app/entry.server.tsx) imports the `stop*` functions (which triggers the start) and wires them to SIGTERM. There is no central registry.
 
-- [reminder-v2-cron.server.ts](../../app/lib/reminder-v2-cron.server.ts) — daily; emails due reminders from `reminder_optin_v2`
-- [trending-cron.server.ts](../../app/lib/trending-cron.server.ts) — daily; trending articles → shop metafield
-- [youtube-bot.server.ts](../../app/lib/youtube-bot.server.ts) (+ summary cron) — 30-min comment auto-replier
+- [reminder-v2-cron.server.ts](../../app/lib/reminder-v2-cron.server.ts) — daily; emails due reminders from `reminder_optin_v2`. health-tool-app only (`RUN_SHARED_CRONS = 'true'` in fly.toml; US-23 AC14)
+- [chat-purge-cron.server.ts](../../app/lib/chat-purge-cron.server.ts) — daily; blanks chat text past 30 days. health-tool-app only, same flag (US-28 AC8)
+- [trending-cron.server.ts](../../app/lib/trending-cron.server.ts) — daily; trending articles → shop metafield. Both apps, a lock per store
+- [youtube-bot.server.ts](../../app/lib/youtube-bot.server.ts) — 30-min comment auto-replier
 - [discord-bot.server.ts](../../app/lib/discord-bot.server.ts) — gateway WebSocket (gated on token + `FLY_APP_NAME`)
 
 > **The v1 reminder cron is gone.** `reminder-cron.server.ts` and its `cleanupGuestProfiles()` were retired (commit `e97fa24`) — that cleanup used to cascade-delete guest profiles *and their chat*, which would have destroyed the chat history the business decided to keep. It was deployed before the data purge for exactly that reason.

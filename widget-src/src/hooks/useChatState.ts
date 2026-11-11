@@ -17,7 +17,8 @@ import {
   type ChatMessage,
   type ChatPending,
 } from '../lib/chat-api';
-import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
+import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
+import { useChatBusy } from './useChatBusy';
 import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
@@ -46,15 +47,27 @@ interface UseChatStateOptions {
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onRemoteConversationSelected?: () => void;
-  /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  /** Where the form edits the model proposes via tool_use go (pre-fill / med update). */
+  onProposeEdit?: ChatEditTarget;
 }
+
+/** A reply's form edits (US-16): `ask` reads the erase the question is asked
+ *  under as it is sent; `take` gets the reply's edits with it, so they never
+ *  land on a record erased since (US-16 AC2a). `leave`: the conversation
+ *  switched (New chat, or a saved chat opened). */
+export interface ChatEditTarget {
+  ask: () => string;
+  /** `stayed`: the thread the question was sent from is still on screen. */
+  take: (edits: ProposedEdit[], asked: string, stayed: boolean) => void;
+  leave: () => void;
+}
+
+/** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
+const postState = (instanceId: string, payload: SyncState) => postSync({ instanceId, type: 'state', payload, ts: Date.now() });
 
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
-/** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
-export const REMOTE_PENDING_MS = 5 * 60_000;
 
 /** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
  *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
@@ -69,7 +82,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   // isLocalSender: true only on the instance that triggered the send — controls animation
   const [isLocalSender, setIsLocalSender] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +115,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const messagesRef = useRef(messages);
   const inputTextRef = useRef(inputText);
   const isLoadingConvsRef = useRef(false);
-  const ownSendRef = useRef(false); // this tab's own send is in flight (US-15 AC17a)
-  const isLoadingRef = useRef(isLoading);
+  // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
+  const { isLoading, busyNow, ownSending, startOwnSend, endOwnSend, onRemote } = useChatBusy();
   // Bumped by each thread load and by a reply landing on screen: a load that
   // started before either is stale (US-15 AC7a).
   const loadGenRef = useRef(0);
@@ -113,8 +125,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = activeConversationId;
     messagesRef.current = messages;
     inputTextRef.current = inputText;
-    isLoadingRef.current = isLoading;
-  }, [conversations, activeConversationId, messages, inputText, isLoading]);
+  }, [conversations, activeConversationId, messages, inputText]);
 
   // Offline detection
   useEffect(() => {
@@ -152,8 +163,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
-    // A tab closed mid-reply never says the reply ended (US-15 AC17a).
-    let remotePending: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = subscribeSync((msg) => {
       if (msg.instanceId === instanceId) return;
 
@@ -169,18 +178,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         const { payload } = msg;
         if (payload.activeConversationId !== activeConversationIdRef.current) {
           onRemoteConversationSelected?.();
+          onProposeEditRef.current?.leave();
         }
         setConversations(payload.conversations);
         setActiveConversationId(payload.activeConversationId);
         setMessages(payload.messages);
-        // This tab's own send ends only with its own reply (US-15 AC17b).
-        const loading = payload.isLoading || ownSendRef.current;
-        setIsLoading(loading);
-        isLoadingRef.current = loading; // a load landing before the re-render says what this message said (US-15 AC7a)
-        clearTimeout(remotePending);
-        // The expiry never ends this tab's own send.
-        if (payload.isLoading) remotePending = setTimeout(() => { if (!ownSendRef.current) { setIsLoading(false); isLoadingRef.current = false; } }, REMOTE_PENDING_MS);
-        if (!ownSendRef.current) setIsLocalSender(false);
+        // That tab's own send, tracked apart from this tab's (US-15 AC17c).
+        onRemote(msg.instanceId, payload.sending, payload.isLoading);
+        if (!ownSending()) setIsLocalSender(false);
         setError(payload.error);
         return;
       }
@@ -189,6 +194,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setActiveConversationId(null);
         setMessages([]);
         setError(null);
+        onProposeEditRef.current?.leave();
         return;
       }
 
@@ -198,18 +204,20 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         if (activeConversationIdRef.current === id) {
           setActiveConversationId(null);
           setMessages([]);
+          onProposeEditRef.current?.leave();
         }
         return;
       }
     });
-    return () => { unsubscribe(); clearTimeout(remotePending); };
-  }, [instanceId, onRemoteConversationSelected]);
+    return unsubscribe;
+  }, [instanceId, onRemoteConversationSelected, onRemote]);
 
   const dropThread = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
     if (activeConversationIdRef.current === id) {
       setActiveConversationId(null);
       setMessages([]);
+      onProposeEditRef.current?.leave();
     }
   }, []);
 
@@ -240,6 +248,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     activeConversationIdRef.current = id;
     setActiveConversationId(id);
     setError(null);
+    onProposeEditRef.current?.leave();
     const gen = ++loadGenRef.current;
     const msgs = await loadConversation(id);
     // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
@@ -247,17 +256,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
     if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
     setMessages(msgs);
-    postSync({
-      instanceId,
-      type: 'state',
-      payload: {
-        conversations: conversationsRef.current,
-        activeConversationId: id,
-        messages: msgs,
-        isLoading: isLoadingRef.current, // a reply still in flight is not over (US-15 AC7a)
-        error: null,
-      },
-      ts: Date.now(),
+    postState(instanceId, {
+      conversations: conversationsRef.current,
+      activeConversationId: id,
+      messages: msgs,
+      isLoading: busyNow(), // for older bundles: a reply still in flight is not over (US-15 AC7a)
+      sending: ownSending(),
+      error: null,
     });
   }, [instanceId, dropThread]);
 
@@ -265,13 +270,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setActiveConversationId(null);
     setMessages([]);
     setError(null);
+    onProposeEditRef.current?.leave();
     inputRef.current?.focus();
     postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
   }, [instanceId]);
 
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || busyNow()) return; // read now: a second press before the re-render sends nothing
     if (trimmed.length > MAX_CHARS) return;
     if (isOffline) { setError("You're offline. Check your connection and try again."); return; }
 
@@ -291,21 +297,17 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setInputText('');
     inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
     postInputSync(instanceId, '');
-    setIsLoading(true);
+    startOwnSend();
     setIsLocalSender(true);
     setSendingConversationId(currentConvId);
 
-    postSync({
-      instanceId,
-      type: 'state',
-      payload: {
-        conversations: currentConvs,
-        activeConversationId: currentConvId,
-        messages: optimisticMessages,
-        isLoading: true,
-        error: null,
-      },
-      ts: Date.now(),
+    postState(instanceId, {
+      conversations: currentConvs,
+      activeConversationId: currentConvId,
+      messages: optimisticMessages,
+      isLoading: true,
+      sending: true,
+      error: null,
     });
 
     // Always send the plan as chat context: local-first (v2) means the server
@@ -315,9 +317,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     // blog bubble and the chatbot embed from the widget's saved copy. The
     // reader runs here, so each message carries what is saved now, even a save
     // made after the page loaded (US-15 AC10). None degrades to the empty context.
-    ownSendRef.current = true;
     // A throw before the request (reading the plan for context) is a failed
     // send like any other: the chat frees and the question goes back (US-15 AC17b).
+    const asked = onProposeEditRef.current?.ask() ?? ''; // the turn carries it to the reply (US-16 AC2a)
     const { result, error: sendError } = await (async () => sendMessage(
       trimmed,
       currentConvId,
@@ -330,7 +332,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
       return { result: null, error: { error: 'Something went wrong. Please try again.' } };
     });
-    ownSendRef.current = false;
+    endOwnSend(); // another tab's send may still be in flight (US-15 AC17c)
     const approach = endStream();
     // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
     // on screen, and the reply stays with the thread it was sent from.
@@ -349,20 +351,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         postInputSync(instanceId, trimmed);
       }
       setError(sendError.error);
-      setIsLoading(false);
-      isLoadingRef.current = false; // a load landing before the re-render must not say in flight (US-15 AC7a)
       setIsLocalSender(false);
-      postSync({
-        instanceId,
-        type: 'state',
-        payload: {
-          conversations: convsNow,
-          activeConversationId: shownId,
-          messages: withoutOptimistic,
-          isLoading: false,
-          error: sendError.error,
-        },
-        ts: Date.now(),
+      postState(instanceId, {
+        conversations: convsNow,
+        activeConversationId: shownId,
+        messages: withoutOptimistic,
+        isLoading: false,
+        sending: false,
+        error: sendError.error,
       });
       return;
     }
@@ -381,6 +377,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       const restarted = currentConvId !== null && result.conversationId !== currentConvId;
       const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
       if (stayed) loadGenRef.current++; // a load started before the reply would replace it
+      if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
       setMessages(finalMessages);
       if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
         setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
@@ -390,7 +387,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.(result.proposedEdits);
+        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
       }
       if (result.subscriptionCard) {
         const card = result.subscriptionCard;
@@ -410,23 +407,17 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         setConversations(finalConversations);
       }
 
-      setIsLoading(false);
-      isLoadingRef.current = false; // as in the error path (US-15 AC7a)
       setIsLocalSender(false);
-      postSync({
-        instanceId,
-        type: 'state',
-        payload: {
-          conversations: finalConversations,
-          activeConversationId: finalConvId,
-          messages: finalMessages,
-          isLoading: false,
-          error: null,
-        },
-        ts: Date.now(),
+      postState(instanceId, {
+        conversations: finalConversations,
+        activeConversationId: finalConvId,
+        messages: finalMessages,
+        isLoading: false,
+        sending: false,
+        error: null,
       });
     }
-  }, [inputText, isLoading, isOffline, instanceId, guestInputs, handleDelta, endStream]);
+  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

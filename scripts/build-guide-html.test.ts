@@ -65,7 +65,7 @@ Read my health record.
   });
 
   it('renders a generic fenced block as code, not a paragraph of backticks', () => {
-    expect(html).toContain('<pre><code>npm run build &amp; test "x"</code></pre>');
+    expect(html).toContain('<pre><code>npm run build &amp; test &quot;x&quot;</code></pre>');
     expect(html).not.toContain('```sh');
   });
 
@@ -80,7 +80,7 @@ Read my health record.
   });
 
   it('leaves quotes inside an inline code span straight', () => {
-    expect(html).toContain('<code>--out "plan.html"</code>');
+    expect(html).toContain('<code>--out &quot;plan.html&quot;</code>');
     expect(html).not.toContain('“plan.html”');
   });
 

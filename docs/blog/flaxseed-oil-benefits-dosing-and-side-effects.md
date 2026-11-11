@@ -64,7 +64,7 @@ The GLA trials in this article used evening primrose oil, borage oil, or GLA as 
 
 ### Product Considerations
 
-Polyunsaturated oils break down with heat, light and air, so keep them sealed, cool and dark. For independent testing of specific products, see consumerlab.com or Labdoor.
+Polyunsaturated oils break down with heat, light and air, so keep them sealed, cool and dark. For independent testing of specific products, see Labdoor.
 
 ### Whole Flaxseed vs. Flaxseed Oil
 

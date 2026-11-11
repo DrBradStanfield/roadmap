@@ -15,7 +15,6 @@ export const NO_PLAN: PlanView = {
   pdf: null,
   foot: null,
   attention: false,
-  onErased: () => {},
   report: null,
 };
 

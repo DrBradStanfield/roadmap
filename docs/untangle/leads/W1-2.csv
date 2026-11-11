@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-2,S8 web big components,Split InputPanel into section components plus a value-page hook,partial,"Done: AboutYou (1079), ScreeningQuestions (1071), LipidMedications (1073), WeightMedications (1075), BoneDensity (1077), SupplementsSection (1047), lib/useValuePage (1088). Left: My data table still inside InputPanel.tsx (1,114 lines)",1047;1071;1073;1075;1077;1079;1088,"file-size ratchet (scripts/file-size-baseline.json, US-64 AC23) stops regrowth; no check against copies",no

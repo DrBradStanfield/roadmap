@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 
 // US-28: a transient DB error during cron-lock acquisition must fail
-// distinguishably (throw) — never the same `false` that means "another
-// machine won", which every caller treats as "day done" and skips the job.
+// distinguishably (throw) — never a not-won answer (then `false`, now
+// 'closed' or 'busy') meaning "another machine won", which every caller treats as "day done" and skips the job.
 // Origin: Sentry JAVASCRIPT-REMIX-66/68 (PGRST303 platform fault made one
 // machine silently skip reminder_v2_cron / trending_cron for the day).
 
@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vites
 // cron_lock queries through this controllable stub.
 const db = {
   updateError: null as { message: string } | null,
-  verify: undefined as { locked_by: string; lock_date: string } | null | undefined,
+  verify: undefined as { locked_by: string; lock_date: string; run_state: string; locked_at: string } | null | undefined,
   verifyError: null as { message: string } | null,
 };
 
@@ -34,8 +34,9 @@ vi.mock('@supabase/supabase-js', () => ({
 // The module builds its admin client once at load; the mocked client reads
 // the shared `db` state live on every call, so one import serves every test.
 let tryAcquireCronLock: typeof import('./supabase.server').tryAcquireCronLock;
+const CLOCK = { now: new Date('2026-08-28T08:00:00.000Z'), stuckCutoff: new Date('2026-08-28T02:00:00.000Z') };
 
-describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results stay boolean', () => {
+describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results stay answers', () => {
   beforeAll(async () => {
     vi.stubEnv('SUPABASE_URL', 'https://stub.supabase.co');
     vi.stubEnv('SUPABASE_SERVICE_KEY', 'stub-service-key');
@@ -51,50 +52,50 @@ describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results
 
   beforeEach(() => {
     db.updateError = null;
-    db.verify = { locked_by: 'machine-a', lock_date: '2026-08-28' };
+    db.verify = { locked_by: 'machine-a', lock_date: '2026-08-28', run_state: 'running', locked_at: '2026-08-28T08:00:00+00:00' };
     db.verifyError = null;
   });
 
-  it('rejects when the lock UPDATE errors (never resolves false)', async () => {
+  it('rejects when the lock UPDATE errors (never a not-won answer)', async () => {
     db.updateError = { message: 'PGRST303: JWT issued at future' };
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'reminder_v2_cron'),
+      tryAcquireCronLock('machine-a', '2026-08-28', 'reminder_v2_cron', CLOCK),
     ).rejects.toThrow(/cron lock acquire failed \(reminder_v2_cron\)/);
   });
 
-  it('rejects when the verify SELECT errors (never resolves false)', async () => {
+  it('rejects when the verify SELECT errors (never a not-won answer)', async () => {
     db.verifyError = { message: 'PGRST303: JWT issued at future' };
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'trending_cron'),
+      tryAcquireCronLock('machine-a', '2026-08-28', 'trending_cron', CLOCK),
     ).rejects.toThrow(/cron lock verify failed \(trending_cron\)/);
   });
 
-  it('resolves true when this machine owns today\'s lock', async () => {
+  it('resolves won when this machine owns today\'s lock', async () => {
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
-    ).resolves.toBe(true);
+      tryAcquireCronLock('machine-a', '2026-08-28', 'chat_text_purge', CLOCK),
+    ).resolves.toBe('won');
   });
 
-  it('resolves false when another machine won the race', async () => {
-    db.verify = { locked_by: 'machine-b', lock_date: '2026-08-28' };
+  it('resolves busy when another machine won the race and is running today (US-28 AC9)', async () => {
+    db.verify = { ...db.verify!, locked_by: 'machine-b' };
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
-    ).resolves.toBe(false);
+      tryAcquireCronLock('machine-a', '2026-08-28', 'chat_text_purge', CLOCK),
+    ).resolves.toBe('busy');
   });
 
-  // A missing seed row used to resolve false, which every caller reads as
+  // A missing seed row used to resolve false (not won), which every caller reads as
   // "another machine won" — so the job was skipped for the day, forever,
   // silently. It is a permanent misconfig and must be loud.
-  it('rejects when the seed row is missing (never resolves false)', async () => {
+  it('rejects when the seed row is missing (never a not-won answer)', async () => {
     db.verify = null;
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
-    ).rejects.toThrow(/cron lock row missing \(youtube_bot_summary\)/);
+      tryAcquireCronLock('machine-a', '2026-08-28', 'chat_text_purge', CLOCK),
+    ).rejects.toThrow(/cron lock row missing \(chat_text_purge\)/);
   });
 
-  it('resolves false on a malformed date literal (guard, not transient)', async () => {
+  it('resolves closed on a malformed date literal (guard, not transient)', async () => {
     await expect(
-      tryAcquireCronLock('machine-a', 'not-a-date,or.injection', 'youtube_bot_summary'),
-    ).resolves.toBe(false);
+      tryAcquireCronLock('machine-a', 'not-a-date,or.injection', 'chat_text_purge', CLOCK),
+    ).resolves.toBe('closed');
   });
 });

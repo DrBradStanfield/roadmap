@@ -10,10 +10,12 @@
  * own UI are stubbed. Assertions read the record file through its adapter.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
 import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { rowRootIds } from '@roadmap/health-core/merge';
@@ -44,8 +46,8 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: (edits: ProposedEdit[]) => void; guestInputs: () => unknown }) => {
-    chat.proposeEdit = onProposeEdit;
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: ChatEditTarget; guestInputs: () => unknown }) => {
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     chat.context = guestInputs;
     return null;
   },
@@ -57,7 +59,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onCom
   return null;
 } }));
 
-import { ERASE_DONE_CHAT_UNREAD, HealthTool, WRITE_REFUSED } from './HealthTool';
+import { HealthTool } from './HealthTool';
+import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
 
 /** The guest's record as this browser holds it, after every pending save. */
@@ -769,8 +772,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(stored.profile).not.toHaveProperty('heightCm');
     // Nor in the plan's inputs or the chat's copy. (The field's own typed
     // text can stay on screen until it is edited; it reaches nothing.)
-    expect(JSON.stringify(chat.context!())).not.toContain('191');
-    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('191');
+    expect(numberPaths(chat.context!(), 191)).toEqual([]);
+    expect(numberPaths(localStorage.getItem(MIRROR_KEY) ?? '', 191)).toEqual([]);
   });
 
   it('after an erase whose write failed, the screen shows the erased copy the store holds, and the next chat reply shows its banners', async () => {
@@ -851,7 +854,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     adapter.open();
     await wait(600);
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
-    expect(JSON.stringify(chat.context!())).not.toContain('3.2');
+    expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
   });
 
   it('a medication save scheduled before this tab\'s erase does not land in the erased record', async () => {
@@ -896,7 +899,7 @@ describe('US-11 AC3b / AC8: an erase whose device cleanup fails still clears the
     fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledOnce());
     window.removeEventListener(MIRROR_CHANGED_EVENT, embedNotified);
-    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('180');
+    expect(numberPaths(localStorage.getItem(MIRROR_KEY) ?? '', 180)).toEqual([]);
     expect(embedNotified).toHaveBeenCalled();
     expect(alert.mock.calls[0][0]).toContain('deleted');
     expect(alert.mock.calls[0][0]).toContain('Could not complete on-device history cleanup.');

@@ -22,13 +22,11 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-/** Prefix for relative links, so a copy served away from docs/ (Pages) still resolves them. */
+/** Prefix for relative links, so a copy served away from docs/ (Pages) still resolves them. HTML-escaped once, where it is set. */
 let linkBase = '';
-
-const esc = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Inline markdown: code, bold, links (applied after escaping). */
 function inline(s: string): string {
@@ -44,7 +42,7 @@ function inline(s: string): string {
       const scheme = href.match(/^([a-z][a-z0-9+.-]*):/i)?.[1].toLowerCase();
       if (scheme && !['http', 'https', 'mailto'].includes(scheme)) return text;
       const url = linkBase && !scheme && !/^[#/]/.test(href) ? linkBase + href : href;
-      return `<a href="${url.replace(/"/g, '&quot;')}">${text}</a>`;
+      return `<a href="${url}">${text}</a>`; // href and linkBase are both escaped, quotes included
     });
 }
 
@@ -127,7 +125,7 @@ function main(): void {
     return i < 0 ? undefined : (args.splice(i, 2)[1] ?? ''); // a flag with no value is an empty one, never absent
   };
   const against = option('--check-against');
-  linkBase = option('--link-base') ?? '';
+  linkBase = esc(option('--link-base') ?? '');
   const SRC = args[0] ?? join(root, 'docs', 'user-stories.md');
   const OUT = args[1] ?? join(root, 'docs', 'user-stories.html');
   const md = readFileSync(SRC, 'utf8');

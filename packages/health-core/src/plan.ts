@@ -135,7 +135,7 @@ export function derivePlanInputs(file: RoadmapFile, now = new Date()): PlanInput
     ),
     unitSystem: unitSystemOf(file.profile),
     medications: medicationsToInputs(file.medications),
-    screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
+    screenings: screeningsToInputs(fileScreeningRows(file.screenings), now),
     currentRows,
   };
 }

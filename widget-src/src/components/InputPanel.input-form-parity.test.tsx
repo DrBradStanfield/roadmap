@@ -42,14 +42,14 @@ function renderPanel(state: State): HTMLElement {
   const inputs = { sex: state.sex, heightCm: 178, birthYear: 1970, birthMonth: 1, ...state.inputs };
   const props = {
     ...MY_HEALTH_PROPS,
-    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si', onUnitSystemChange: vi.fn(),
+    inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
     medications: medicationRows(state.medications), onMedicationChange: vi.fn(),
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
-    hasApiResponse: false, formStage: 4 as const, reached: 4 as const, fullForm: true, wasDone: true, aboutYouLow: true, planBasis: state.basis, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: state.basis, grading: {},
   };
   return render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />).container;
 }
