@@ -613,7 +613,7 @@ final class CloudSyncTests: XCTestCase {
         for await _ in drive.shown { break }
         dropbox.onDownload = { drive.release() } // Dropbox's open is reading when the sign-in returns
         let opening = Task { await sync.foreground() }
-        await assertRefusedWhileOpening(connecting)
+        await assertRefused(connecting, "Disconnect from Dropbox first, then connect Google Drive.") // AC11l's words since 2026-11-12
         download.open() // only now does Dropbox's read answer, and its open land
         await opening.value
         assertStillOnDropbox(sync, store: store, account: nil)
@@ -634,7 +634,7 @@ final class CloudSyncTests: XCTestCase {
         dropbox.downloadGate = download
         dropbox.onDownload = { drive.release() }
         let first = Task { try await sync.connect(.dropbox, authenticate: signIn()) }
-        await assertRefusedWhileOpening(second)
+        await assertRefused(second, "Disconnect from Dropbox first, then connect Google Drive.") // AC11l's words since 2026-11-12
         download.open()
         try await first.value
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
@@ -797,15 +797,6 @@ final class CloudSyncTests: XCTestCase {
             return URL(string: "\(redirect)?code=c&state=\(state)")!
         }
         return (authenticate, shown, { release.yield() })
-    }
-
-    private func assertRefusedWhileOpening(_ connecting: Task<Void, Error>, file: StaticString = #filePath, line: UInt = #line) async {
-        do {
-            try await connecting.value
-            XCTFail("a second cloud must not take over the opening record", file: file, line: line)
-        } catch {
-            XCTAssertEqual(error as? OAuthClient.Failure, .refused("Wait for your record to finish opening, then connect."), file: file, line: line)
-        }
     }
 
     private func assertRefused(_ connecting: Task<Void, Error>, _ words: String, file: StaticString = #filePath, line: UInt = #line) async {

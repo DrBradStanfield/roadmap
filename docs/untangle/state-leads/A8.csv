@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A8,web sync,"Drive reconnect popup open during a provider switch: check what is left after disconnect; security class, detail private until traced.",lead,"not started, unverified",widget-src/standalone/sync-control.tsx useReconnect; backend-picker.tsx choose; owner UI thread,,yes
