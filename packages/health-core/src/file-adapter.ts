@@ -175,6 +175,18 @@ export class FileAdapter implements StorageAdapter {
     signal?.throwIfAborted();
     this.only(fileName);
     const lock = await this.lock();
+    // Once the replace lands the write has happened, and nothing after it may
+    // report it as failed: a cleanup step that throws becomes a warning.
+    let version: string | undefined;
+    const unfinished = new Set<string>();
+    const step = (name: string, run: () => void) => {
+      if (version === undefined) return run();
+      try {
+        run();
+      } catch {
+        unfinished.add(name);
+      }
+    };
     try {
       const current = this.bytes();
       if (stampOf(current) !== expectedVersion) {
@@ -196,15 +208,27 @@ export class FileAdapter implements StorageAdapter {
         );
       }
       this.replace(next, mode);
-      this.pruneErased(body);
-      return { version: stampOf(next) };
+      version = stampOf(next);
+      step('prune old backups', () => this.pruneErased(body));
     } finally {
       try {
-        if (this.ownsLock(lock)) rmSync(this.lockPath);
+        step('remove the lock file', () => {
+          if (this.ownsLock(lock)) rmSync(this.lockPath);
+        });
       } finally {
-        closeSync(lock);
+        step('close the lock file', () => closeSync(lock));
       }
     }
+    return unfinished.size ? { version, warning: this.unfinished([...unfinished]) } : { version };
+  }
+
+  /** The warning for a landed write: the steps that failed, never their error text. */
+  private unfinished(steps: string[]): string {
+    const name = basename(this.path);
+    const left = steps.includes('remove the lock file')
+      ? ` The lock file ${name}.lock was left in place; remove it only when no other writer is running.`
+      : '';
+    return `${name} was saved, but cleanup did not finish: could not ${steps.join(', ')}.${left}`;
   }
 
   private get lockPath(): string {

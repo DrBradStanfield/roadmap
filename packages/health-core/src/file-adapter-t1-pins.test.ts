@@ -65,7 +65,7 @@ afterEach(() => {
 });
 
 describe('lead T1 — cleanup after a landed replace', () => {
-  it('pruneErased throwing after the replace: the raw error escapes save, though the file holds the new bytes — today (lead T1 step b changes this)', async () => {
+  it('pruneErased throwing after the replace: save resolves with a warning naming the prune step, and the file holds the new bytes (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const adapter = new FileAdapter(path);
@@ -75,12 +75,11 @@ describe('lead T1 — cleanup after a landed replace', () => {
       throw fault;
     });
     try {
-      const error = await failureOf(recordSync(adapter, CTX.deviceId, NOW).save(marked()));
-      // SyncManager rethrows as-is: `mayHaveWritten` is set only after
-      // adapter.write returns, and write never returned.
-      expect(error).toBe(fault);
-      expect(isStorageFailure(error)).toBe(false);
-      // Yet the replace landed: the record holds the bytes write produced.
+      const saved = await recordSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not prune old backups.`);
+      // No error text and no folder: the warning names the step and the file only.
+      expect(saved.warning).not.toMatch(/EACCES|permission|\//);
+      // The replace landed: the record holds the bytes write produced.
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
@@ -91,7 +90,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
     }
   });
 
-  it('rmSync(lockPath) throwing in the finally after the replace: the raw error escapes save, though the file holds the new bytes — today (lead T1 step b changes this)', async () => {
+  it('rmSync(lockPath) throwing in the finally after the replace: save resolves with a warning that the lock file was left in place, and the file holds the new bytes (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     // `rmSync` is a named ESM import of node:fs, which vi.spyOn cannot
@@ -111,12 +110,14 @@ describe('lead T1 — cleanup after a landed replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(
+        `${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not remove the lock file. ` +
+        `The lock file ${ROADMAP_FILE_NAME}.lock was left in place; remove it only when no other writer is running.`,
+      );
+      expect(saved.warning).not.toMatch(/EBUSY|busy|\//);
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
@@ -129,7 +130,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
     }
   });
 
-  it('closeSync(lock) throwing in the finally after the replace: the raw error escapes save, though the file holds the new bytes and the lock is gone — today (lead T1 step b changes this)', async () => {
+  it('closeSync(lock) throwing in the finally after the replace: save resolves with a warning naming the close step, the file holds the new bytes and the lock is gone (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     vi.resetModules();
@@ -153,12 +154,11 @@ describe('lead T1 — cleanup after a landed replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was saved, but cleanup did not finish: could not close the lock file.`);
+      expect(saved.warning).not.toMatch(/EIO|\//);
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);

@@ -481,10 +481,10 @@ async function runImport(
     if ('refusal' in opened) return { text: opened.refusal, isError: true, reason: 'import' };
     const outcome = importDocumentsCommit(file, opened, request.commit, now, surface.client);
     if (outcome.status !== 'ok') return refusalAnswer(outcome);
-    if (outcome.file) await sync.save(outcome.file, signal);
+    const saved = outcome.file ? await sync.save(outcome.file, signal) : null;
     await surface.discard(opened, deadline);
     return {
-      text: outcome.file && options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text,
+      text: saved && options.savedNote ? `${outcome.text}\n${options.savedNote(saved.warning)}` : outcome.text,
       isError: false,
       structured: outcome.data,
     };
@@ -654,8 +654,8 @@ export interface RunToolOptions {
    * does not know ARE the falsification attack (design §3).
    */
   beforeCall?(file: RoadmapFile): GuardRefusal | null;
-  /** Appended to a successful save — where the bytes landed. */
-  savedNote?(): string;
+  /** Appended to a successful save — where the bytes landed, and the adapter's warning. */
+  savedNote?(warning?: string): string;
   /**
    * Lets `report_feedback` actually file the issue. A surface that holds a
    * GitHub token passes one; a surface that does not passes nothing and the
@@ -736,11 +736,11 @@ export async function runToolOverSync(
   // The rows the text names were never saved: the write that follows assigns its own ids.
   if (options.dryRun) return { text: `${outcome.text}\n(Row ids are assigned when it is written.)`, isError: false, structured: outcome.data, pendingWrite: true };
 
-  await sync.save(outcome.file);
+  const saved = await sync.save(outcome.file);
   // The note is for the person reading along; the structured answer is the
   // tool's own, and where the bytes landed is not part of what it returns.
   return {
-    text: options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text,
+    text: options.savedNote ? `${outcome.text}\n${options.savedNote(saved.warning)}` : outcome.text,
     isError: false,
     structured: outcome.data,
   };
