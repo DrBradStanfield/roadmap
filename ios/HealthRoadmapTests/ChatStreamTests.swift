@@ -33,4 +33,42 @@ final class ChatStreamTests: XCTestCase {
         XCTAssertEqual(transcript.lines.last?.sources, ["ApoB explained"])
         XCTAssertEqual(transcript.lines.last?.text, "Answer")
     }
+
+    /// US-52 AC6g: the line under the conversation, step by step, in the web's words
+    /// (ChatPendingReply.tsx, `status ? status… : Thinking…`, then "Answering…" once text arrives):
+    /// "Thinking…" from Send; a status, with "…", keeps priority over thinking; "Answering…" until
+    /// `done`. Draft notes never show.
+    func testThePendingLineFollowsTheStream_US52_AC6g() {
+        var transcript = ChatTranscript()
+        let index = transcript.ask("Is my LDL OK?")
+        XCTAssertEqual(transcript.pending?.words, "Thinking…", "from Send, before any event")
+        let steps: [(ChatStreamEvent, String?)] = [
+            (.thinking, "Thinking…"),
+            (.status("Writing the answer"), "Writing the answer…"),
+            (.thinking, "Writing the answer…"),
+            (.thinking, "Writing the answer…"),
+            (.text("Your LDL is above target."), "Answering…"),
+            (.thinking, "Answering…"),
+            (.done(content: "Your LDL is above target.", isFallback: false, error: nil), nil),
+        ]
+        for (event, words) in steps {
+            transcript.stream(event, into: index)
+            XCTAssertEqual(transcript.pending?.words, words, "after \(event)")
+        }
+        XCTAssertEqual(transcript.shown.map(\.text), ["Is my LDL OK?", "Your LDL is above target."], "no draft notes in the answer")
+    }
+
+    /// US-52 AC6g: a restart status goes back to its own words (with "…"), and a stopped or failed turn leaves no line.
+    func testARestartShowsTheStatusAndAnEndedTurnClearsTheLine_US52_AC6g() {
+        var transcript = streamed([.thinking, .text("Let me run those numbers. "), .status("Running your numbers through the roadmap")])
+        XCTAssertEqual(transcript.pending?.words, "Running your numbers through the roadmap…")
+        transcript.stream(.text("Your LDL"), into: transcript.lines.count - 1)
+        XCTAssertEqual(transcript.pending?.words, "Answering…")
+        _ = transcript.stop()
+        XCTAssertNil(transcript.pending)
+
+        var failed = streamed([.thinking])
+        failed.fail(URLError(.timedOut))
+        XCTAssertNil(failed.pending)
+    }
 }
