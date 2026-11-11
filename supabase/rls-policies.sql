@@ -156,6 +156,8 @@ CREATE TABLE IF NOT EXISTS cron_lock (
 -- No CHECK: old and new code overlap during a rolling deploy; the code validates.
 ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS run_state TEXT;
 ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+-- Applied to production 2026-11-11 (about 05:54 UTC, after merge be06b043); verified
+-- from information_schema: both nullable, no default, RLS on.
 
 -- lock_date is seeded with a sentinel past date (not NULL) because
 -- `WHERE lock_date != today` evaluates to NULL on NULL rows (not true), so a
@@ -653,6 +655,7 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
 -- sending to this row. A later re-run the same day (after a restart) reads it and
 -- skips the send. Not a mutex: the cron lock decides who runs. NULL = never stamped.
 ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
+-- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
 
 -- Only the Google-verified lane upserts on email (an owner may replace their
 -- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as

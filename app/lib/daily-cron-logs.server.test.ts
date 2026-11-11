@@ -51,6 +51,8 @@ interface LogCase {
   label: string;
   feature: string;
   startLine: string;
+  /** Lock-shared (US-23 AC14): the shared-crons line logs before the startup line. */
+  shared: boolean;
   completedLine: string;
 }
 
@@ -61,6 +63,7 @@ const crons: LogCase[] = [
     ok: async () => ({ admin: okAdmin }),
     label: 'Trending cron',
     feature: 'trending_cron',
+    shared: false,
     startLine: 'Trending cron started (will run on first tick ≥ 3:00 NZ daily, machine: pin-machine, shop: microvitamin.myshopify.com, lock: trending_cron)',
     completedLine: 'Trending cron: completed, wrote 0 entries' },
   { name: 'reminder v2',
@@ -69,6 +72,7 @@ const crons: LogCase[] = [
     ok: async () => [],
     label: 'Reminder v2 cron',
     feature: 'reminder_v2_cron',
+    shared: true,
     startLine: 'Reminder v2 cron started (first tick ≥ 8:00 UTC daily, machine: pin-machine)',
     completedLine: 'Reminder v2 cron: completed, sent 0 emails' },
 ];
@@ -87,6 +91,7 @@ async function load(c: LogCase, nodeEnv: string) {
   vi.stubEnv('SHOPIFY_SHOP_DOMAIN', '');
   const cron = await c.load();
   vi.stubEnv('NODE_ENV', nodeEnv);
+  vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-23 AC14)
   const { tryAcquireCronLock } = await import('./supabase.server');
   const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue(true);
   const Sentry = await import('@sentry/react-router');
@@ -113,7 +118,7 @@ describe.each(crons)('$name cron logs (untangle S-4 pins, US-28)', (c) => {
   it('logs its exact startup line once and starts the hourly interval', async () => {
     const { cron, log } = await load(c, 'production');
     cron.start();
-    expect(lines(log)).toEqual([c.startLine]);
+    expect(lines(log)).toEqual(c.shared ? ['Shared crons (reminders, chat purge): on', c.startLine] : [c.startLine]);
     expect(vi.getTimerCount()).toBe(1);
   });
 

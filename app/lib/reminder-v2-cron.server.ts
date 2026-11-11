@@ -51,6 +51,7 @@ const cron = dailyCron({
   label: 'Reminder v2 cron',
   feature: 'reminder_v2_cron',
   lockName: 'reminder_v2_cron',
+  shared: true,
   targetHour: TARGET_HOUR_UTC,
   // A pass sends 5 emails at a time, 50 opt-ins a page, and grows with the
   // opt-in count; the sends have no time limit of their own. At about a second

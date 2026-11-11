@@ -17,6 +17,8 @@ primary_region = 'iad'
 [env]
   HOST = '0.0.0.0'
   PORT = '3000'
+  # Reminders and the chat purge share one cron_lock row with health-tool-edu: they run only here (US-28 AC8).
+  RUN_SHARED_CRONS = 'true'
 
 [processes]
   app = 'npm run start'

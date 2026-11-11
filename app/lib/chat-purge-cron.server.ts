@@ -35,13 +35,14 @@
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a
  * `< target hour` catch-up check so a deploy can't skip the day, and the
- * shared `cron_lock` row so only one machine runs it (both Fly apps share this
- * Supabase project).
+ * shared `cron_lock` row so only one machine runs it. It starts only on
+ * health-tool-app (`RUN_SHARED_CRONS`, US-28 AC8), since both Fly apps share
+ * this Supabase project and the winner would run with its own app's env.
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { archiveQuestions, type ArchiveCounts, type Held } from './chat-question-archive.server';
-import { MACHINE_ID, reportStuckRun } from './daily-cron.server';
+import { MACHINE_ID, reportStuckRun, sharedCronsOn } from './daily-cron.server';
 import { transition, type CronDay } from './cron-day';
 import { recordServerEvent } from './product-events.server';
 import { safeErrorFields } from './safe-error-fields.server';
@@ -391,6 +392,7 @@ export function startChatPurgeCron(): void {
     console.log(`Chat text purge cron disabled in ${process.env.NODE_ENV}`);
     return;
   }
+  if (!sharedCronsOn()) return;
 
   console.log(`Chat text purge cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
 
