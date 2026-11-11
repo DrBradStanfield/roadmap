@@ -1,6 +1,7 @@
 # Independent reviewer for agent-authored PRs (Tier 3 "ship" pipeline).
 #
-# Fires on same-repo PRs from claude/* branches: a FRESH-context Claude reviews
+# Fires when a push opens or updates a same-repo PR from a claude/* branch that
+# does not carry the 'hold' label (US-46 AC18): a FRESH-context Claude reviews
 # the diff adversarially with a correctness-only mandate and posts its verdict
 # as a comment. It is not advisory: auto-ship.yml merges a claude/* PR on this
 # reviewer's APPROVE verdict for the head sha, a green 'test' check and its

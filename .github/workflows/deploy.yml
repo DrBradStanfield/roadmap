@@ -288,6 +288,10 @@ jobs:
       - run: npm ci
 
       - name: Full test suite (final gate on the exact deployed commit)
+        # The PR ran the suite in UTC only (US-64 AC22); this is the
+        # zone-behind-UTC run before production.
+        env:
+          TZ: America/Los_Angeles
         run: npm run test:all
 
       - name: Typecheck (widget-src + health-core + server + iPhone engine)

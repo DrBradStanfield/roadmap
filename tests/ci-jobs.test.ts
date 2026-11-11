@@ -67,7 +67,7 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(job('unit')).not.toMatch(/continue-on-error/);
   });
 
-  it('a newer push to a PR cancels its older run; main, manual and nightly runs each get their own lane', () => {
+  it('a newer push to a PR cancels its older run; main, manual and nightly runs each get their own lane (US-46 AC18)', () => {
     const lane = (event_name: string, number?: number) =>
       interpolate(ciYaml.concurrency!.group, {
         github: { event_name, run_id: '777', event: number ? { pull_request: { number } } : {} },
@@ -77,7 +77,7 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     for (const event of ['push', 'workflow_dispatch', 'schedule']) expect(lane(event), event).toBe('ci-777');
   });
 
-  it('every job has a time limit, so a hung runner frees its slot', () => {
+  it('every job has a time limit, so a hung runner frees its slot (US-46 AC18)', () => {
     for (const [name, j] of Object.entries(ciYaml.jobs)) {
       expect(j['timeout-minutes'], name).toBeGreaterThan(0);
     }
@@ -107,12 +107,12 @@ describe('ci.yml jobs (US-64 AC12)', () => {
 });
 
 /**
- * Claude Review volume (Brad 2026-11-12): no review while a PR carries `hold`.
+ * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review while a PR carries `hold`.
  * Adding `hold` cancels a running review through the shared lane; a label
  * event never runs one; any other label gets its own lane, so it cancels
  * nothing. Removing `hold` does nothing, as before (no `unlabeled` trigger).
  */
-describe('claude-review.yml triggers and lane', () => {
+describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const review = yaml.load(readFileSync(join(ROOT, '.github/workflows/claude-review.yml'), 'utf8')) as Workflow;
   const ctx = (action: string, labels: string[] = [], label?: string) => ({
     github: {
