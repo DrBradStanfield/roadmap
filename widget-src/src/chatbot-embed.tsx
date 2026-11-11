@@ -45,7 +45,7 @@ function ChatEmbedRoot({ isLoggedIn }: { isLoggedIn: boolean }) {
   }, []);
 
   // The chat context, read as each message is sent: see useChatState.
-  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={loadGuestInputs} muted={formStage < 4} />;
+  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={loadGuestInputs} muted={formStage < 4} erase={null} />;
 }
 
 function mount() {

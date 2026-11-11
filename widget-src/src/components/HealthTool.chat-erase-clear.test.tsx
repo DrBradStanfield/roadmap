@@ -24,6 +24,8 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { sendMessage } from '../lib/chat-api';
+import { CHAT_CLEARED_BY_REMOTE_ERASE, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/observe-visibility', () => ({ observeVisibility: (_el: Element, onChange: (v: boolean) => void) => { onChange(true); return () => {}; } }));
@@ -208,11 +210,11 @@ describe('US-15 AC62: an erase clears the web chat\'s conversation', () => {
 });
 
 describe('US-15 AC62: another tab\'s conversation from before the erase is not mirrored in', () => {
-  const otherTabState = (erase?: string) => ({
+  const otherTabState = (erase?: string | null, content = 'First question from the other tab') => ({
     instanceId: 'other-tab', type: 'state', ts: Date.now(),
     payload: {
       conversations: [{ id: 'conv-1', title: 'First', updatedAt: 'x', createdAt: 'x' }], activeConversationId: 'conv-1',
-      messages: [{ id: 'q', role: 'user', content: 'First question from the other tab', createdAt: 'x' }],
+      messages: [{ id: 'q', role: 'user', content, createdAt: 'x' }],
       isLoading: false, sending: false, error: null, ...(erase !== undefined ? { erase } : {}),
     },
   });
@@ -226,6 +228,31 @@ describe('US-15 AC62: another tab\'s conversation from before the erase is not m
     const next = await ask(view, 'A question after the erase');
     expect(next.conversationId).toBeUndefined();
     expect(JSON.stringify(next.history ?? [])).not.toContain('other tab');
+  });
+
+  // The site bubble and the chatbot embed send erase: null (older bundles send none): the
+  // bubble B mirrored this tab T, T erases, B types and sends from its erased conversation.
+  for (const [label, erase] of [['null, as the bubble and the embed send it', null], ['absent, as an older bundle sends it', undefined]] as const) {
+    it(`a surface with no erase (${label}): after this tab's erase, its conversation stays out`, async () => {
+      const view = await userOnStatin();
+      act(() => sync.hear!(otherTabState(erase)));
+      await wait(100);
+      expect(chatText(view)).toContain('First question from the other tab');
+      await eraseHere();
+      act(() => sync.hear!(otherTabState(erase, 'First question from the other tab, and the bubble asks again')));
+      await wait(100);
+      expect(chatText(view)).not.toContain('First question from the other tab');
+      const next = await ask(view, 'A question after the erase');
+      expect(next.conversationId).toBeUndefined();
+      expect(JSON.stringify(next.history ?? [])).not.toContain('other tab');
+    });
+  }
+
+  it('control: with no erase since this tab loaded, a surface with no erase (null) is mirrored', async () => {
+    const view = await userOnStatin();
+    act(() => sync.hear!(otherTabState(null)));
+    await wait(100);
+    expect(chatText(view)).toContain('First question from the other tab');
   });
 
   it('control: an older bundle\'s state, which names no erase, is mirrored as before', async () => {
@@ -271,5 +298,98 @@ describe('US-15 AC62 (C9): after an erase, no saved chat thread shows a reply cl
     await answer('conv-1', 'Done, I have updated your statin.', true);
     expect(chatText(view)).toContain('Done, I have updated your statin.');
     expect(await savedChat()).toContain('updated your statin');
+  });
+});
+
+describe('US-15 AC62: while this tab\'s erase runs, no question is sent and none is saved', () => {
+  const sendButton = (view: RenderResult) => chatPanel(view).querySelector<HTMLButtonElement>('[aria-label="Send"]')!;
+
+  it('Send is disabled from the confirm to the erase\'s result; typing still works', async () => {
+    const view = await userOnStatin();
+    await ask(view, 'An earlier synthetic question');
+    await answer('conv-0', 'An earlier synthetic answer.');
+    const held = adapter.hold();
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await held.reached;
+    fireEvent.change(chatPanel(view).querySelector('textarea')!, { target: { value: 'Typed while the erase runs' } });
+    await wait(50);
+    expect(chatPanel(view).querySelector<HTMLTextAreaElement>('textarea')!.value).toBe('Typed while the erase runs');
+    expect(sendButton(view).disabled).toBe(true);
+    fireEvent.keyDown(chatPanel(view).querySelector('textarea')!, { key: 'Enter' });
+    await wait(50);
+    expect(server.bodies.length).toBe(1);
+    held.release();
+    await waitFor(() => expect(vi.mocked(window.alert)).toHaveBeenCalled());
+    await wait(1500);
+    expect(sendButton(view).disabled).toBe(false);
+  });
+
+  it('a question sent after the confirm whose reply lands before the record swap is not saved', async () => {
+    const view = await userOnStatin();
+    await ask(view, 'An earlier synthetic question');
+    await answer('conv-0', 'An earlier synthetic answer.');
+    const held = adapter.hold();
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await held.reached;
+    // Another surface on this page sends mid-erase (the widget's own Send is disabled).
+    const sent = act(async () => { await sendMessage('I switched to atorvastatin 20 mg', null, null, [], () => {}, true); });
+    await waitFor(() => expect(server.bodies.length).toBe(2));
+    await answer('conv-1', 'Done, I have updated your statin.', true);
+    await sent;
+    held.release();
+    await waitFor(() => expect(vi.mocked(window.alert)).toHaveBeenCalled());
+    expect(await savedChat()).not.toContain('updated your statin');
+    expect(view.container).toBeTruthy();
+  });
+});
+
+describe('US-15 AC62: another device\'s erase says why the chat emptied; this tab\'s own erase says nothing in the chat', () => {
+  const count = (text: string) => (document.body.textContent ?? '').split(text).length - 1;
+
+  it('another device\'s erase shows the words once, and they go at the next send', async () => {
+    const view = await userOnStatin();
+    await ask(view, 'First question about my synthetic LDL');
+    await answer('conv-1', 'First synthetic answer.');
+    await otherDeviceErases();
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(1);
+    await ask(view, 'A question after the erase');
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(0);
+  });
+
+  it('the words dismiss, and do not block typing', async () => {
+    const view = await userOnStatin();
+    await otherDeviceErases();
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(1);
+    fireEvent.change(chatPanel(view).querySelector('textarea')!, { target: { value: 'Still typing' } });
+    expect(chatPanel(view).querySelector<HTMLTextAreaElement>('textarea')!.value).toBe('Still typing');
+    fireEvent.click(chatPanel(view).querySelector('[aria-label="Dismiss"]')!);
+    await wait(50);
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(0);
+  });
+
+  it('this tab\'s own erase shows no chat words', async () => {
+    const view = await userOnStatin();
+    await ask(view, 'First question about my synthetic LDL');
+    await answer('conv-1', 'First synthetic answer.');
+    await eraseHere();
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(0);
+    expect(chatText(view)).not.toContain('First synthetic answer.');
+  });
+
+  it('a second remote erase does not stack the words twice', async () => {
+    await userOnStatin();
+    await otherDeviceErases();
+    await otherDeviceErases();
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(1);
+  });
+
+  it('one notice at a time: a refused reply under the emptied chat leaves only the remote-erase words', async () => {
+    const view = await userOnStatin();
+    await ask(view, 'I switched to atorvastatin 20 mg');
+    await otherDeviceErases();
+    await answer('conv-1', 'Done, I have updated your statin.', true);
+    expect(count(CHAT_CLEARED_BY_REMOTE_ERASE)).toBe(1);
+    expect(count(RECORD_CHANGED_SINCE_ASKED)).toBe(0);
+    expect(chatText(view)).not.toContain('Done, I have updated your statin.');
   });
 });

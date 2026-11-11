@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget, type ChatErase } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -24,8 +24,8 @@ interface ChatEmbedProps {
   guestInputs?: ChatContextSource;
   muted?: boolean;
   onProposeEdit?: ChatEditTarget;
-  /** The erase the page shows: a move clears the conversation (US-15 AC62). */
-  erase?: string;
+  /** The erase the page shows, and this tab's erase running; null off the widget (US-15 AC62). */
+  erase?: ChatErase | null;
 }
 
 export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, erase }: ChatEmbedProps) {
@@ -149,6 +149,12 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, erase
             <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}
           {state.error && <div className="chat-error">{state.error}</div>}
+          {state.notice && (
+            <div className="chat-med-undo" role="status">
+              <span className="chat-med-undo-text">{state.notice}</span>
+              <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={actions.dismissNotice}>✕</button>
+            </div>
+          )}
           {showScrollBtn && (
             <button
               className="chat-scroll-btn"
@@ -173,7 +179,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, erase
             <button
               className="chat-send-btn"
               onClick={actions.handleSend}
-              disabled={state.isLoading || !state.inputText.trim()}
+              disabled={state.isLoading || state.erasing || !state.inputText.trim()}
               aria-label="Send"
             >↑</button>
           </div>

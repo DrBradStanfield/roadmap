@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
-import { chatMark, getChatHistory } from './chat-history-access';
+import { chatMark, getChatHistory, stillMarked } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -318,8 +318,10 @@ export async function sendMessage(
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
+  // Taken as the question is first sent, and kept by the resend below: an erase
+  // since keeps the turn out of the history file (US-15 AC62).
+  mark = chatMark(),
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
-  const mark = chatMark(); // an erase since the question keeps the turn out of the history file (US-15 AC62)
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -367,7 +369,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, mark);
     }
 
     if (response.status === 429) {
@@ -399,7 +401,7 @@ export async function sendMessage(
     // history must never block or fail the chat itself.
     void cloudHistory()
       .then((store) =>
-        (chatMark() === mark ? store : null)?.recordExchange({
+        (stillMarked(mark) ? store : null)?.recordExchange({
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,

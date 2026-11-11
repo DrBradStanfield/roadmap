@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 const store = vi.hoisted(() => ({ recordExchange: vi.fn(async () => {}) }));
-vi.mock('./chat-history-access', () => ({ chatMark: () => '', getChatHistory: () => Promise.resolve(store) }));
+vi.mock('./chat-history-access', () => ({ chatMark: () => '', stillMarked: () => true, getChatHistory: () => Promise.resolve(store) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import { sendMessage, type ChatDelta } from './chat-api';

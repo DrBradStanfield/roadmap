@@ -11,7 +11,7 @@ import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedul
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { beginChatErase, getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
+import { beginChatErase, getChatHistory, openChatHistory, setChatHistoryFactory, whileErasing } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
@@ -336,7 +336,7 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   });
   // A reply to a question asked before this point is never saved (US-15 AC62).
   const chat = () => { beginChatErase(); return open(); };
-  const result = await store.deleteAllData({ teardown: preEraseHook ?? undefined, chat });
+  const result = await whileErasing(() => store!.deleteAllData({ teardown: preEraseHook ?? undefined, chat }));
   return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;
 }
 

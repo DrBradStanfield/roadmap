@@ -186,6 +186,7 @@ function ChatBubble({ isLoggedIn, fabLabel }: ChatBubbleProps) {
         startExpanded
         onClose={() => setOpen(false)}
         guestInputs={loadGuestInputs}
+        erase={null}
       />
     );
   }

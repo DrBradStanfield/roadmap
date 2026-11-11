@@ -14,7 +14,7 @@ const store = vi.hoisted(() => ({
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));
-vi.mock('./chat-history-access', () => ({ chatMark: () => '', getChatHistory: () => Promise.resolve(store) }));
+vi.mock('./chat-history-access', () => ({ chatMark: () => '', stillMarked: () => true, getChatHistory: () => Promise.resolve(store) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {},

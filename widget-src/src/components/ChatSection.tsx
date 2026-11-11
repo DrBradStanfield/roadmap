@@ -13,7 +13,7 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget, type ChatErase } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
@@ -56,8 +56,8 @@ interface ChatSectionProps {
   onProposeEdit?: ChatEditTarget;
   /** Before the onboarding is done: the general wording, as ChatEmbed's. */
   muted?: boolean;
-  /** The erase the page shows: a move clears the conversation (US-15 AC62). */
-  erase?: string;
+  /** The erase the page shows, and this tab's erase running; null off the widget (US-15 AC62). */
+  erase?: ChatErase | null;
 }
 
 export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted, erase }: ChatSectionProps) {
@@ -195,6 +195,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}
             {state.error && <div className="chat-error">{state.error}</div>}
+            {state.notice && (
+              <div className="chat-med-undo" role="status">
+                <span className="chat-med-undo-text">{state.notice}</span>
+                <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={actions.dismissNotice}>✕</button>
+              </div>
+            )}
             {showScrollBtn && (
               <button
                 className="chat-scroll-btn"
@@ -222,7 +228,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             <button
               className="chat-send-btn"
               onClick={actions.handleSend}
-              disabled={state.isLoading || !state.inputText.trim()}
+              disabled={state.isLoading || state.erasing || !state.inputText.trim()}
               aria-label="Send"
             >↑</button>
           </div>

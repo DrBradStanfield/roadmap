@@ -24,7 +24,7 @@ import { toolOnlyAck, type ProposedEdit } from '@roadmap/health-core/chat-edits'
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
-import { chatMark, getChatHistory } from './chat-history-access';
+import { chatMark, getChatHistory, stillMarked } from './chat-history-access';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -204,7 +204,7 @@ export async function sendMessage(
   const assistantId = `a-${Date.now()}`;
   void storePromise
     .then((store) =>
-      (chatMark() === mark ? store : null)?.recordExchange({
+      (stillMarked(mark) ? store : null)?.recordExchange({
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

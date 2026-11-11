@@ -69,14 +69,29 @@ let erasures = 0;
 export function beginChatErase(): void {
   erasures += 1;
 }
+/** This page's erase is running, from the confirm to its result. */
+let erasing = false;
+export async function whileErasing<T>(run: () => Promise<T>): Promise<T> {
+  erasing = true;
+  try {
+    return await run();
+  } finally {
+    erasing = false;
+  }
+}
 /**
- * Where the chat stands as a question is sent. A reply is saved to the history
- * file only if the mark is unchanged when it lands: an erase begun here since,
- * or another device's taken in, would otherwise save a turn it erased, perhaps
- * one claiming a change the erased record does not hold (US-15 AC62).
+ * Where the chat stands as a question is sent; null while this page's erase
+ * runs, and a null mark never saves. A reply is saved to the history file only
+ * if the mark is unchanged when it lands: an erase begun here since, or another
+ * device's taken in, would otherwise save a turn it erased, perhaps one
+ * claiming a change the erased record does not hold (US-15 AC62).
  */
-export function chatMark(): string {
-  return `${erasures}|${eraseIdentity()}`;
+export function chatMark(): string | null {
+  return erasing ? null : `${erasures}|${eraseIdentity()}`;
+}
+/** Whether a reply asked under `mark` may still be saved. */
+export function stillMarked(mark: string | null): boolean {
+  return mark !== null && mark === chatMark();
 }
 
 /** The cloud chat-history store, or null (production build, no data layer, or

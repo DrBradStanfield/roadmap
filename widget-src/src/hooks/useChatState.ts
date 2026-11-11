@@ -13,9 +13,7 @@ import {
   deleteConversation,
   type ChatApproach,
   type ChatConversation,
-  type ChatDelta,
   type ChatMessage,
-  type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
 import { useChatBusy } from './useChatBusy';
@@ -23,6 +21,8 @@ import { cutText } from '@roadmap/health-core/chat-history';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { useSubscriptionCards } from './useSubscriptionCards';
+import { NO_PENDING, useChatStream } from './useChatStream';
+import { CHAT_CLEARED_BY_REMOTE_ERASE } from '@roadmap/health-core/erase';
 export type { SubscriptionCardState } from './useSubscriptionCards';
 
 export interface ChatPrefetchData {
@@ -41,10 +41,15 @@ interface UseChatStateOptions {
   onRemoteConversationSelected?: () => void;
   /** Where the form edits the model proposes via tool_use go (pre-fill / med update). */
   onProposeEdit?: ChatEditTarget;
-  /** The erase the page shows. A move, this tab's erase or another device's,
-   *  clears the conversation, and a reply to a question asked before it is
-   *  dropped (US-15 AC62). Undefined off the widget: nothing to follow. */
-  erase?: string;
+  /** The erase the page shows, and whether this tab's erase runs (US-15
+   *  AC62). A move clears the conversation and drops a reply asked before it.
+   *  Null off the widget (the bubble, the embed): no erase to follow. */
+  erase?: ChatErase | null;
+}
+
+export interface ChatErase {
+  shown: string;
+  erasing: boolean;
 }
 
 /** A reply's form edits (US-16): `ask` reads the erase the question is asked
@@ -60,11 +65,10 @@ export interface ChatEditTarget {
 
 /** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
 const postState = (instanceId: string, erase: string | undefined, payload: SyncState) =>
-  postSync({ instanceId, type: 'state', payload: { ...payload, erase }, ts: Date.now() });
+  postSync({ instanceId, type: 'state', payload: { ...payload, erase: erase ?? null }, ts: Date.now() });
 
 export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
-const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
 
 /** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
  *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
@@ -74,10 +78,21 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit, erase }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
-  // The erase the conversation belongs to, and the thread on screen when the
-  // last erase cleared it (US-15 AC62).
-  const eraseRef = useRef(erase);
+  // The erase the conversation belongs to, the one it loaded with, the thread on
+  // screen when the last erase cleared it, and whether this tab's erase has run
+  // since the last move: a move it made is its own, said by its alert (US-15 AC62).
+  const shown = erase?.shown;
+  const erasing = erase?.erasing ?? false;
+  const eraseRef = useRef(shown);
+  const loadedErase = useRef(shown);
   const clearedFrom = useRef<string | null>(null);
+  const ownRun = useRef(false);
+  const erasingRef = useRef(erasing);
+  erasingRef.current = erasing;
+  // Another device's erase cleared the chat: said once, until dismissed or the next send.
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeRef = useRef(notice);
+  noticeRef.current = notice;
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
@@ -87,9 +102,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [isLocalSender, setIsLocalSender] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasLoadedRef = useRef(!!prefetchedData);
-  // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending
-  // instance only; other tabs show the dots.
-  const [pending, setPending] = useState(NO_PENDING);
+  // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending instance only (hooks/useChatStream).
+  const { pending, handleDelta, endStream } = useChatStream();
   // The thread the reply in flight was sent from: the stream shows only there (US-15 AC7a).
   const [sendingConversationId, setSendingConversationId] = useState<string | null>(null);
   // A landed answer's thinking summary and articles read, by message id, for
@@ -98,7 +112,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
   // US-59: subscription change cards, by assistant message id, this tab only (hooks/useSubscriptionCards).
   const { cardsById, setCardsById, confirmSubscription, dismissSubscription } = useSubscriptionCards();
-  const streamRef = useRef({ ...NO_PENDING, frame: 0 });
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -136,31 +149,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
   }, []);
 
-  // Deltas collect in a ref and render at most once per animation frame.
-  // A status line starts a new phase: text streamed before it was not the
-  // answer (a run_roadmap round's preamble, US-15 AC38), so it is cleared.
-  const handleDelta = useCallback((delta: ChatDelta) => {
-    const stream = streamRef.current;
-    if (delta.type === 'sources') stream.sources = delta.titles;
-    else if (delta.type === 'status') { stream.status = delta.text; stream.text = ''; }
-    else stream[delta.type] += delta.text;
-    if (stream.frame) return;
-    stream.frame = requestAnimationFrame(() => {
-      stream.frame = 0;
-      setPending({ thinking: stream.thinking, text: stream.text, status: stream.status, sources: stream.sources });
-    });
-  }, []);
-
-  /** Ends the stream; returns the thinking summary and the articles read it collected. */
-  const endStream = useCallback((): ChatApproach => {
-    const stream = streamRef.current;
-    cancelAnimationFrame(stream.frame);
-    const { thinking, sources } = stream;
-    streamRef.current = { ...NO_PENDING, frame: 0 };
-    setPending(NO_PENDING);
-    return { thinking, sources };
-  }, []);
-
   // BroadcastChannel subscription — sync state from other instances
   useEffect(() => {
     const unsubscribe = subscribeSync((msg) => {
@@ -176,8 +164,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
       if (msg.type === 'state') {
         const { payload } = msg;
-        // A tab at another erase: its busy state counts, its conversation is not this one (US-15 AC62).
-        if (payload.erase !== undefined && eraseRef.current !== undefined && payload.erase !== eraseRef.current) {
+        // A tab at another erase, or one with none (the bubble, the embed) once this
+        // tab's erase moved: its busy state counts, its conversation is not this one (US-15 AC62).
+        const theirs = payload.erase ?? undefined;
+        const mine = eraseRef.current;
+        if (mine !== undefined && (theirs === undefined ? mine !== loadedErase.current : theirs !== mine)) {
           onRemote(msg.instanceId, payload.sending, payload.isLoading);
           return;
         }
@@ -252,8 +243,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // so none shows or goes back as history, and the list is read again (US-15
   // AC62). The edits' notice stays: it outlasts the erase it reports (US-16 AC2e).
   useEffect(() => {
-    if (erase === eraseRef.current) return;
-    eraseRef.current = erase;
+    if (erasing) ownRun.current = true;
+    const own = ownRun.current;
+    if (!erasing) ownRun.current = false; // this tab's erase ended, moved or refused
+    if (shown === eraseRef.current) return;
+    eraseRef.current = shown;
+    // Another device's erase says why the chat emptied, in place of a refused reply's notice (US-16 AC2e).
+    if (!own) onProposeEditRef.current?.leave();
+    setNotice(own ? null : CHAT_CLEARED_BY_REMOTE_ERASE);
     clearedFrom.current = activeConversationIdRef.current;
     activeConversationIdRef.current = null;
     messagesRef.current = [];
@@ -266,7 +263,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     setError(null);
     hasLoadedRef.current = false;
     void loadConversationsIfNeeded();
-  }, [erase, loadConversationsIfNeeded, setCardsById]);
+  }, [shown, erasing, loadConversationsIfNeeded, setCardsById]);
 
   const selectConversation = useCallback(async (id: string) => {
     // Set now, not after render: dropThread below reads it after the await.
@@ -302,11 +299,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   const handleSend = useCallback(async () => {
     const trimmed = inputText.trim();
-    if (!trimmed || busyNow()) return; // read now: a second press before the re-render sends nothing
+    if (!trimmed || busyNow() || erasingRef.current) return; // read now: a second press before the re-render sends nothing
     if (trimmed.length > MAX_CHARS) return;
     if (isOffline) { setError("You're offline. Check your connection and try again."); return; }
 
     setError(null);
+    setNotice(null);
     const currentConvId = activeConversationIdRef.current;
     const eraseAtSend = eraseRef.current;
     const currentConvs = conversationsRef.current;
@@ -415,8 +413,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       // here (handleSend runs on the instance that sent), so the pre-fill /
       // med-update fires once, not once per open tab.
       if (result.proposedEdits && result.proposedEdits.length > 0) {
-        // Erased: refused, and said in the thread the erase cleared, unless it had been left (US-16 AC2e).
-        onProposeEditRef.current?.take(result.proposedEdits, asked, erased ? clearedFrom.current === currentConvId : stayed);
+        // Erased: refused, and said in the thread the erase cleared, unless it had been left or
+        // another device's erase is said there already: one notice at a time (US-16 AC2e, US-15 AC62).
+        onProposeEditRef.current?.take(result.proposedEdits, asked, erased ? clearedFrom.current === currentConvId && !noticeRef.current : stayed);
       }
       if (result.subscriptionCard && !erased) {
         const card = result.subscriptionCard;
@@ -480,8 +479,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       approachById,
       cardsById,
       isOffline,
+      erasing,
+      notice,
     },
     actions: {
+      dismissNotice: () => setNotice(null),
       confirmSubscription,
       dismissSubscription,
       handleInputChange,
