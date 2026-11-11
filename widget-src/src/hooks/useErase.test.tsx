@@ -282,6 +282,26 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(alerts).toEqual([ERASE_FAILED]);
   });
 
+  it('US-16 AC2f: a second erase asked while one writes is refused, asks nothing and leaves the lock to the first', async () => {
+    const { result } = setup();
+    const confirm = vi.fn(() => true);
+    vi.stubGlobal('confirm', confirm);
+    let finish!: () => void;
+    const next = vi.fn(() => new Promise<Record<string, unknown>>(r => { finish = () => { store.identity = 'e2'; r({ success: true, chatErased: true }); }; }));
+    store.next = next;
+    let first!: Promise<boolean>;
+    let second!: Promise<boolean>;
+    act(() => { first = result.current.eraseAll(); second = result.current.eraseAll(); });
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(await second).toBe(false);
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(result.current.erasing).toBe(true); // the form stays refused (fieldset disabled={isDeleting})
+    expect(alerts).toEqual([]);
+    await act(async () => { finish(); expect(await first).toBe(true); });
+    expect(result.current.erasing).toBe(false);
+    expect(alerts).toEqual([ERASE_DONE]);
+  });
+
   it('a cancelled confirm erases nothing', async () => {
     vi.stubGlobal('confirm', () => false);
     store.next = vi.fn();

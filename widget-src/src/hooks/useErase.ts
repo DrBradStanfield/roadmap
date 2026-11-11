@@ -99,7 +99,8 @@ export function useErase(props: EraseDoorProps): Erase {
   }, [store]);
 
   const eraseAll = useCallback(async () => {
-    if (!window.confirm(ERASE_CONFIRM)) return false;
+    // One erase at a time: the machine answers synchronously, so a second asked in the same turn is refused unasked (US-16 AC2f).
+    if (store.getSnapshot().phase === 'erasing' || !window.confirm(ERASE_CONFIRM)) return false;
     const before = getEraseIdentity();
     store.dispatch({ type: 'own-start' });
     // A throw is a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
