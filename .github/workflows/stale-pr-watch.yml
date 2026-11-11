@@ -84,6 +84,8 @@ jobs:
             }
       # tests/stale-prs.test.ts runs this script too, with a stub GitHub client (12 h).
       - name: Warn when an engine sign approval has waited over 12 h
+        # Runs even if the stale-PR step failed, so that failure cannot hide this warning.
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |
@@ -100,7 +102,7 @@ jobs:
               if (open) await github.rest.issues.update({ owner, repo, issue_number: open.number, state: 'closed' });
               return;
             }
-            const body = 'A waiting sign holds the release queue; every later engine release is blocked until it is approved or rejected.\n\n' +
+            const body = 'An engine release has waited over 12 hours for signing approval. Approve or reject it: Actions → the run → Review deployments.\n\n' +
               runs.map(r => `- ${r.html_url} (since ${r.created_at})`).join('\n');
             if (open) await github.rest.issues.update({ owner, repo, issue_number: open.number, body });
             else await github.rest.issues.create({ owner, repo, title: TITLE, body, assignees: ['DrBradStanfield'] });

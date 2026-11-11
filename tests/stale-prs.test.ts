@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import yaml from 'js-yaml';
 
 const YML = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '.github/workflows/stale-pr-watch.yml'), 'utf8');
 // The n-th `script: |` block, de-indented.
@@ -125,6 +126,10 @@ describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches 
   }
   const mine = { number: 11, title: TITLE, user: { login: 'github-actions[bot]' } };
 
+  it('runs even when the stale-PR step failed', () => {
+    const steps = (yaml.load(YML) as { jobs: { watch: { steps: Array<{ name?: string; if?: string }> } } }).jobs.watch.steps;
+    expect(steps.find((s) => s.name?.startsWith('Warn when an engine sign'))!.if).toBe('always()');
+  });
   it('asks only for waiting engine-release runs', async () => {
     const { asked } = await runSign([]);
     expect(asked).toEqual([expect.objectContaining({ workflow_id: 'engine-release.yml', status: 'waiting' })]);
@@ -144,6 +149,7 @@ describe('stale-pr-watch.yml: an engine sign approval waiting over 12 h reaches 
     expect(updated).toEqual([]);
     expect(created).toHaveLength(1);
     expect(created[0]).toMatchObject({ title: TITLE, assignees: ['DrBradStanfield'] });
+    expect(created[0].body).toMatch(/^An engine release has waited over 12 hours for signing approval\. Approve or reject it: Actions → the run → Review deployments\.\n\n- https:/);
     expect(created[0].body).toContain('/actions/runs/2');
     expect(created[0].body).not.toContain('/actions/runs/1 ');
   });
