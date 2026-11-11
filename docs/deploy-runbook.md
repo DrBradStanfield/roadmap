@@ -8,11 +8,12 @@
 
 **Preferred path (since 2026-08-10): the CI pipeline.** `.github/workflows/deploy.yml`
 runs the whole sequence below deterministically — gate → GitHub Pages WebKit smoke →
-full test suite → tsc typecheck (widget-src + health-core) → builds → Sentry maps → Shopify deploy ×2 → Fly deploy ×2
+full test suite (in America/Los_Angeles; PRs test in UTC only) → tsc typecheck (widget-src + health-core) → builds → Sentry maps → Shopify deploy ×2 → Fly deploy ×2
 (`--strategy canary`) → health gates → live WebKit verify — with all deploy
 credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
 fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose
-surfaces), or by auto-ship, which dispatches it on `main` after its own
+surfaces; main's CI must be green first: it is the only UTC run of a merged
+tree), or by auto-ship, which dispatches it on `main` after its own
 reviewer, green checks and 30-minute veto window (the Tier 3 loop pipeline,
 docs/loops/deploy-pipeline-proposal.md). There is no PR-merge trigger since
 2026-11-02 (US-46 AC13). **The gate is the only check in this workflow:** it
