@@ -8,8 +8,9 @@ extension Array: SheetHeld where Element: Equatable {}
 /// A sheet's save, with the engine off the main thread (US-25 AC21). One named state
 /// (US-25 AC21e, iPhone survey S5), changed only by `transition`: editing (with the
 /// engine's last words), saving, finding the day's rows after a refusal names one,
-/// asking to replace them, done. A sheet closes only on a save; otherwise the engine's
-/// words show. An edit made outside a sheet shows them in `refusalAlert`.
+/// asking to replace them, declined (the question dismissed), done. A sheet closes
+/// only on a save; otherwise the engine's words show. An edit made outside a sheet
+/// shows them in `refusalAlert`.
 ///
 /// `tapped` is the synchronous claim: it moves editing to saving in the same turn as the
 /// tap, so a second tap sees saving before the sheet redraws (US-25 AC21d); no ref or
@@ -17,9 +18,11 @@ extension Array: SheetHeld where Element: Equatable {}
 /// cannot be read show the engine's words, so a replace never names no rows. `done` is
 /// terminal: a closed sheet ignores every later event; a save that leaves its screen open
 /// (`closes: false`) goes back to editing instead. "Replace it" sends `confirmed` with the
-/// rows it was shown, so it is taken from asking, or from editing(nil) when the dialog's
-/// dismissal (`declined`) landed first: no order of the two drops the tap. An event a
-/// state does not list leaves it as it is.
+/// rows it was shown, so it is taken from asking, or from declined when the dialog's
+/// dismissal landed first, and only for those rows: no order of the two drops the tap.
+/// An edit, a unit choice or a Save leaves declined as it leaves editing, so a late
+/// "Replace it" after a change is ignored (owner's ruling N1). An event a state does not
+/// list leaves it as it is.
 @MainActor
 enum SheetSave {
     enum State<Held: SheetHeld>: Equatable {
@@ -76,8 +79,10 @@ enum SheetSave {
 
     nonisolated static func transition<Held>(_ state: State<Held>, _ event: Event<Held>) -> State<Held> {
         switch (state, event) {
-        case (.editing, .tapped), (.editing, .unitChosen), (.asking, .confirmed), (.editing(message: nil), .confirmed): return .saving
-        case (.editing, .wordsStale), (.asking, .declined): return .editing(message: nil)
+        case (.editing, .tapped), (.editing, .unitChosen), (.declined, .tapped), (.declined, .unitChosen): return .saving
+        case (.asking(let held), .confirmed(let shown)) where held == shown, (.declined(let held), .confirmed(let shown)) where held == shown: return .saving
+        case (.editing, .wordsStale), (.declined, .wordsStale): return .editing(message: nil)
+        case (.asking(let held), .declined): return .declined(held)
         case (.saving, .landed(.saved, let closes, _)): return closes ? .done : .editing(message: nil)
         case (.saving, .landed(.refused(let words, let row), _, let asks)):
             guard let row else { return .editing(message: words) }
