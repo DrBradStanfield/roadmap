@@ -33,11 +33,14 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
  *
  * | reason   | read   | flushes the waiting save | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
  * |----------|--------|--------------------------|-------------|-------------------------------------------------------------------------------------|------------------------|-------------|------------------------------|-------------|
- * | upload   | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
- * | remote   | record | unless held              | unless held | a clean arrival ends it; a dirty one starts or keeps it                             | unless held            | unless held | unless held                  | unless held |
- * | refused  | record | yes                      | yes         | yes                                                                                 | yes (spent)            | yes         | if it ends a hold            | yes         |
- * | left     | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold            | yes         |
+ * | upload   | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold (**)       | yes         |
+ * | remote   | record | unless held              | unless held | a clean arrival ends it; a dirty one starts or keeps it                             | unless held            | unless held | unless held (**)             | unless held |
+ * | refused  | record | yes                      | yes         | yes                                                                                 | yes (spent)            | yes         | if it ends a hold (**)       | yes         |
+ * | left     | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold (**)       | yes         |
  * | own-save | values | no                       | no          | no                                                                                  | no                     | no          | no                           | no          |
+ *
+ * (**) Never for the late echo of the erase the screen shows: its hold ends and
+ * clears the answer mark like any other, and counts nothing (fix 4 2b-3 R1, F1).
  *
  * (*) Before the page has shown its first read (lib/remote-replay.ts, loading),
  * no re-read ends a hold: `remote` waits for that read (loading-held), and

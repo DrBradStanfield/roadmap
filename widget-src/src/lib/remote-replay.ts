@@ -54,9 +54,11 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean, counts?: boo
      *  Not before the first read is shown: that read would overwrite this one, so a waiting change waits for it. */
     reread(): T {
       if (loading()) return apply(false);
-      const remote = state.phase === 'held' && state.counts;
+      // Ending a hold and counting are two things: an echo's hold ends here too, as another writer's change, uncounted.
+      const held = state.phase === 'held';
+      const counts = state.phase === 'held' && state.counts;
       state = { phase: 'idle' };
-      return apply(remote);
+      return held ? applyRemote(counts) : apply(false);
     },
     /** The erase machine's read (another writer's erase, which never enters here): it shows a waiting change
      *  too, so the wait ends, uncounted; the machine counts the erase. Before the first read is shown it stays loading. */
