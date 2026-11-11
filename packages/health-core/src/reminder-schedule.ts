@@ -16,7 +16,7 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
-import { SCREENING_REFS, inAges, ruleOf, ruleTakes, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -60,15 +60,11 @@ export const ANNUAL_CHECKIN_LABEL = 'Annual health check-in';
  * own verified address, but a typed enrolment names someone else's inbox, so a
  * free-text label field would let an attacker put an arbitrary 80-char string
  * into a victim's email. Every label the schedule builders below use MUST be
- * listed here (a health-core test enforces it).
+ * listed here (a health-core test enforces it). The screening labels are the
+ * screening table's (screening-rules.ts reminder.label and a method's reminderLabel).
  */
 export const SCHEDULE_LABELS: Record<ReminderCategory, readonly string[]> = {
-  screening_colorectal: ['Colonoscopy', 'Colorectal screening'],
-  screening_breast: ['Mammogram'],
-  screening_cervical: ['Cervical screening'],
-  screening_lung: ['Lung screening (low-dose CT)'],
-  screening_prostate: ['PSA test'],
-  screening_dexa: ['DEXA bone density scan'],
+  ...(screeningScheduleLabels() as Record<Extract<ReminderCategory, `screening_${string}`>, string[]>),
   blood_test_lipids: ['Lipid panel blood test'],
   blood_test_hba1c: ['HbA1c blood test'],
   blood_test_creatinine: ['Creatinine blood test'],
@@ -142,17 +138,19 @@ function screeningSchedule(
   if (!s) return;
   const { age, sex } = profile;
 
-  const push = (category: ReminderCategory, label: string, due: Date | null): void => {
-    if (due) items.push({ category, group: getCategoryGroup(category), label, dueAt: localDay(due) });
-  };
   // Each reminder's age and sex gate is its row's cardAges (screening-rules.ts), the plan card's.
   const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, DEXA] =
     (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'dexa'] as const).map(ruleOf);
+  // The row's reminder: its category, and the chosen method's label, else the row's.
+  const push = (r: ScreeningRule, method: string | undefined, due: Date | null): void => {
+    const { category, label } = r.reminder!;
+    const own = r.choice.options.find((o) => o.value === method)?.reminderLabel;
+    if (due) items.push({ category, group: getCategoryGroup(category), label: own ?? label, dueAt: localDay(due) });
+  };
   const takes = (r: ScreeningRule) => ruleTakes(r, r.cardAges, age, sex);
 
   if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
-    const label = s.colorectalMethod === 'colonoscopy_10yr' ? 'Colonoscopy' : 'Colorectal screening';
-    push('screening_colorectal', label, earliest(
+    push(COLORECTAL, s.colorectalMethod, earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
       getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
       followupDueDate(s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
@@ -160,7 +158,7 @@ function screeningSchedule(
   }
 
   if (takes(BREAST) && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
-    push('screening_breast', 'Mammogram', earliest(
+    push(BREAST, s.breastFrequency, earliest(
       getScreeningNextDueDate(s.breastLastDate, s.breastFrequency),
       getPostFollowupDueDate('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
       followupDueDate(s.breastResult, s.breastFollowupStatus, s.breastLastDate),
@@ -168,7 +166,7 @@ function screeningSchedule(
   }
 
   if (takes(CERVICAL) && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
-    push('screening_cervical', 'Cervical screening', earliest(
+    push(CERVICAL, s.cervicalMethod, earliest(
       getScreeningNextDueDate(s.cervicalLastDate, s.cervicalMethod),
       getPostFollowupDueDate('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
       followupDueDate(s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate),
@@ -184,7 +182,7 @@ function screeningSchedule(
     ((inAges(LUNG.cardAges, age, sex) && SCREENING_REFS.lungPackYears(s)) || lungFollowupCard) &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
-    push('screening_lung', 'Lung screening (low-dose CT)', earliest(
+    push(LUNG, s.lungScreening, earliest(
       getScreeningNextDueDate(s.lungLastDate, s.lungScreening),
       getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate),
       followupDueDate(s.lungResult, s.lungFollowupStatus, s.lungLastDate),
@@ -193,7 +191,7 @@ function screeningSchedule(
 
   // Prostate (elected to screen)
   if (takes(PROSTATE) && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
-    push('screening_prostate', 'PSA test', getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
+    push(PROSTATE, s.prostateDiscussion, getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
   }
 
   // DEXA bone density; result-based interval
@@ -214,7 +212,7 @@ function screeningSchedule(
     } else {
       due = getScreeningNextDueDate(s.dexaLastDate, s.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal');
     }
-    push('screening_dexa', 'DEXA bone density scan', due);
+    push(DEXA, s.dexaScreening, due);
   }
 }
 
