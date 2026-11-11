@@ -1023,7 +1023,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     return { store, fake, session };
   }
 
-  it('a background cloud save that rejects sets the pending marker, and no save is tried again until an edit (US-09 AC4, US-10 AC5)', async () => {
+  it('a background cloud save that rejects sets the pending marker (US-09 AC4), and no save is tried again until an edit', async () => {
     try {
       const { store, fake, session } = await failedBackgroundSave();
       await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS * 50);
@@ -1032,8 +1032,10 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
       expect(fake.pending.value).toBe(true);
 
       add(session, 'b', 81, '2026-10-02');
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS - 1);
       expect(store.writes).toBe(1); // the edit waits on the debounce
-      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS);
+      expect(fake.pending.value).toBe(true);
+      await vi.advanceTimersByTimeAsync(1);
       expect(store.writes).toBe(2);
       expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
       expect(fake.pending.value).toBe(false); // the cloud save that lands clears it
@@ -1042,7 +1044,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     }
   });
 
-  it.each(['flush', 'flushSync'] as const)('after that failure, a %s tries the save again (US-10 AC5)', async (trigger) => {
+  it.each(['flush', 'flushSync'] as const)('after that failure, a %s tries the save again (US-10 AC5a)', async (trigger) => {
     try {
       const { store, session } = await failedBackgroundSave();
       if (trigger === 'flush') await session.flush();
@@ -1055,7 +1057,23 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     }
   });
 
-  it('no pending marker while an edit waits on the debounce, nor while its save is in flight (US-09 AC30)', async () => {
+  it('after that failure, refreshFromRemote still reads and merges: an unsaved change does not hold it back', async () => {
+    try {
+      const { store, session } = await failedBackgroundSave();
+      const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+      add(other, 'theirs', 81, '2026-10-02');
+      await other.flush();
+      clock += 60_000;
+      const reads = vi.spyOn(store, 'read');
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(reads).toHaveBeenCalledTimes(1);
+      expect(ids(session.file)).toEqual(['a', 'theirs']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('today (step d of lead A1 changes this, US-09 AC30): no pending marker while an edit waits on the debounce, nor while its save is in flight', async () => {
     const store = new TestStore();
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
@@ -1085,10 +1103,11 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     await session.flush();
     expect(store.writes).toBe(3); // the edit in the pass ran a second one
     expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
-    // The debounce that edit armed finds nothing left to save.
-    fake.timers.at(-1)!.run();
+    // Whatever timers remain find nothing left to save.
+    for (const t of [...fake.timers]) t.run();
     await session.flush();
     expect(store.writes).toBe(3);
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
   });
 
   it('a flush during a save joins it and resolves when it lands, with no write of its own (US-10 AC5a, US-11 AC7)', async () => {
@@ -1096,8 +1115,16 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
     add(session, 'a');
+    const held = holdNext(store, 'write');
     fake.timers[0].run(); // the background save starts
-    await expect(session.flush()).resolves.toBeUndefined();
+    await held.reached;
+    let landed = false;
+    const flushing = session.flush();
+    void flushing.then(() => { landed = true; });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(landed).toBe(false); // still waiting on the held write
+    held.release();
+    await expect(flushing).resolves.toBeUndefined();
     expect(store.writes).toBe(1);
     expect(ids(stored(store.cloud))).toEqual(['a']);
   });
@@ -1128,11 +1155,12 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(reads).not.toHaveBeenCalled();
 
     const held = holdNext(store, 'write');
+    const atStart = reads.mock.calls.length;
     fake.timers[0].run();
     await held.reached;
-    expect(reads).toHaveBeenCalledTimes(1); // the save's own read
+    expect(reads).toHaveBeenCalledTimes(atStart + 1); // the save's own read
     expect(await session.refreshFromRemote()).toBe(false); // in flight
-    expect(reads).toHaveBeenCalledTimes(1);
+    expect(reads).toHaveBeenCalledTimes(atStart + 1);
     held.release();
     await session.flush();
 
@@ -1159,6 +1187,17 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(add(session, 'after')).toBe(true);
   });
 
+  it('after an erase whose write rejects, refuses() is false and an edit is accepted (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    store.failWrites = true;
+    expect((await session.erase()).success).toBe(false);
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
   it("today, refuses() is still false before the erase's stored read answers (lead A6; a later PR may change it)", async () => {
     const store = new TestStore();
     const session = await RecordSession.open(fakeHost(store).host);
@@ -1167,6 +1206,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     const held = holdNext(store, 'read');
     const erasing = session.erase();
     await held.reached;
+    // Lead A6 may flip this in a later PR.
     expect(session.refuses()).toBe(false);
     expect(add(session, 'during-read')).toBe(true); // an edit is let in
     held.release();

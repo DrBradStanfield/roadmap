@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * US-09 AC30, through the real record store and pending marker: what the
- * storage line says as a cloud save waits, runs and fails. Pinned before the
+ * What the storage line says as a cloud save waits, runs and fails, through
+ * the real record store and pending marker. Pinned before the
  * save mode becomes one union (lead A1, step a); storage-bar.test.tsx pins the
  * label against a mocked marker.
  */
@@ -54,8 +54,8 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); });
 
-describe('US-09 AC30 — the storage line through a real cloud save (lead A1)', () => {
-  it('a cloud save that rejects says Saving…, and tries no second save until an edit (US-09 AC4)', async () => {
+describe('the storage line through a real cloud save (lead A1)', () => {
+  it('a cloud save that rejects says Saving… (US-09 AC4), and tries no second save until an edit', async () => {
     const cloud = new TestCloud(new MemoryCloud());
     const store = await RoadmapStore.create(cloud);
     vi.useFakeTimers();
@@ -79,7 +79,7 @@ describe('US-09 AC30 — the storage line through a real cloud save (lead A1)', 
     expect(line()).toBe('Synced to Dropbox');
   });
 
-  it('says Synced to the provider while an edit waits on the debounce and while its save is in flight', async () => {
+  it('today (step d of lead A1 changes this, US-09 AC30): says Synced to the provider while an edit waits on the debounce and while its save is in flight', async () => {
     const cloud = new TestCloud(new MemoryCloud());
     const store = await RoadmapStore.create(cloud);
     vi.useFakeTimers();
@@ -88,8 +88,10 @@ describe('US-09 AC30 — the storage line through a real cloud save (lead A1)', 
     let release!: () => void;
     cloud.held = new Promise<void>((resolve) => { release = resolve; });
     store.addMeasurement('weight', 80, '2026-06-01');
+    await advance(PERSIST_DEBOUNCE_MS - 1);
+    expect(cloud.writes).toBe(0);
     expect(line()).toBe('Synced to Dropbox'); // on the debounce
-    await advance(PERSIST_DEBOUNCE_MS);
+    await advance(1);
     expect(cloud.writes).toBe(1);
     expect(line()).toBe('Synced to Dropbox'); // in flight
     release();
