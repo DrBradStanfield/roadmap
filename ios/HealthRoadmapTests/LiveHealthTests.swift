@@ -72,11 +72,11 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: true)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
-        XCTAssertEqual(live.needsAccess, true)
+        XCTAssertEqual(live.access, .needsAccess)
         XCTAssertTrue(live.cards.isEmpty)
         XCTAssertEqual(store.reads, 0, "nothing is read before access")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: true), .turnOn)
-        XCTAssertEqual(LiveShown.shown(fitness, connected: false, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: true), .nothing,
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: live.access, keepsReconnect: true), .turnOn)
+        XCTAssertEqual(LiveShown.shown(fitness, connected: false, access: live.access, keepsReconnect: true), .nothing,
                        "not connected: My data's Apple Health row is the way in")
         let action = await LiveReconnectRow.action(turnOn: true) { XCTFail("no fresh check for Turn On"); return false }
         XCTAssertEqual(action, .connect)
@@ -101,8 +101,8 @@ final class LiveHealthTests: XCTestCase {
         var readWhileImporting = false
         health.hold = {
             health.hold = nil
-            for _ in 0..<200 where !live.hasRead { try? await Task.sleep(for: .milliseconds(10)) }
-            readWhileImporting = live.hasRead
+            for _ in 0..<200 where !live.access.isRead { try? await Task.sleep(for: .milliseconds(10)) }
+            readWhileImporting = live.access.isRead
         }
         await sync.connect()
         XCTAssertTrue(sync.connected)
@@ -144,7 +144,7 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(Set(launch.cards.keys), [.sleep, .steps], "sleep and steps from the file, before any read")
         XCTAssertEqual(launch.cards[.sleep]?.value, 27000)
         XCTAssertEqual(launch.cards[.steps]?.value, 9000)
-        XCTAssertTrue(launch.hasRead)
+        XCTAssertEqual(launch.access, .read(launch.cards), "kept cards count as read")
         let rewritten = try String(contentsOf: kept, encoding: .utf8)
         XCTAssertFalse(rewritten.contains("heartRate"), "heart rate's reading is gone from the file")
         XCTAssertTrue(rewritten.contains("steps"), "the others stay")
@@ -326,9 +326,9 @@ final class LiveHealthTests: XCTestCase {
         let launch = LiveHealth(store: store, now: { later }, calendar: utc, kept: kept)
         XCTAssertEqual(store.reads, reads, "nothing read yet")
         XCTAssertEqual(launch.cards, first.cards, "the cards are there in the first frame")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: launch.needsAccess, hasRead: launch.hasRead, cards: launch.cards, keepsReconnect: true),
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: launch.access, keepsReconnect: true),
                        .cards(fitness), "the cards, never the Turn On or Reconnect row")
-        XCTAssertEqual(LiveShown.shown(sleep, connected: true, needsAccess: launch.needsAccess, hasRead: launch.hasRead, cards: launch.cards, keepsReconnect: false),
+        XCTAssertEqual(LiveShown.shown(sleep, connected: true, access: launch.access, keepsReconnect: false),
                        .cards(sleep))
         // The day is worked out when drawn: a card kept three days ago no longer says Today.
         let card = try XCTUnwrap(launch.cards[.steps])
@@ -437,8 +437,7 @@ final class LiveHealthTests: XCTestCase {
             try Data(text.utf8).write(to: kept)
             let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
             XCTAssertTrue(live.cards.isEmpty, text)
-            XCTAssertNil(live.needsAccess, text)
-            XCTAssertFalse(live.hasRead, text)
+            XCTAssertEqual(live.access, .unknown, text)
         }
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
         await live.refresh()
@@ -459,7 +458,7 @@ final class LiveHealthTests: XCTestCase {
         await live.forget()
         await refresh.value
         XCTAssertTrue(live.cards.isEmpty, "no cards")
-        XCTAssertFalse(live.hasRead)
+        XCTAssertEqual(live.access, .granted, "not read since the erase")
         XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)), "no file")
         store.delay = nil
         await live.refresh()
@@ -488,7 +487,7 @@ final class LiveHealthTests: XCTestCase {
         await live.refresh()
         await live.forget()
         XCTAssertTrue(live.cards.isEmpty)
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: live.needsAccess, hasRead: live.hasRead, cards: live.cards, keepsReconnect: true), .nothing,
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: live.access, keepsReconnect: true), .nothing,
                        "no Reconnect row until the next read")
         XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path(percentEncoded: false)))
     }
@@ -514,7 +513,7 @@ final class LiveHealthTests: XCTestCase {
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
         XCTAssertFalse(live.available)
-        XCTAssertNil(live.needsAccess)
+        XCTAssertEqual(live.access, .unknown)
     }
 
     /// AC7, adversary R6: the page reads 400 days by day, and D one day by hour.
@@ -920,14 +919,15 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
-        XCTAssertEqual(live.needsAccess, false)
+        let drawn = live.cards
+        XCTAssertEqual(live.access, .read(drawn))
         store.statusFails = true
         await live.refresh()
-        XCTAssertEqual(live.needsAccess, false, "no Turn On row")
+        XCTAssertEqual(live.access, .read(drawn), "no Turn On row")
         XCTAssertFalse(live.cards.isEmpty, "the cards stay")
         let fresh = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await fresh.refresh()
-        XCTAssertNil(fresh.needsAccess, "unknown stays unknown: no Turn On row")
+        XCTAssertEqual(fresh.access, .unknown, "unknown stays unknown: no Turn On row")
     }
 
     /// Adversary R2: one calendar, following the phone's zone, for LiveHealth and the store's anchor.
@@ -969,7 +969,7 @@ final class LiveHealthTests: XCTestCase {
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
         await live.refresh()
         let changed = Changed()
-        withObservationTracking { _ = (live.cards, live.needsAccess, live.hasRead) } onChange: { changed.fire() }
+        withObservationTracking { _ = live.access } onChange: { changed.fire() }
         await live.refresh()
         XCTAssertFalse(changed.fired, "no write, no redraw")
     }
@@ -979,17 +979,17 @@ final class LiveHealthTests: XCTestCase {
     /// calm Reconnect row in Vitals, never an error or a greyed "no data" line; nothing while unknown.
     func testWhatEachPlaceShows_AC5b() {
         let card = LiveCard(value: 60, date: now, trend: [])
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: true, hasRead: false, cards: [:], keepsReconnect: true), .turnOn)
-        XCTAssertEqual(LiveShown.shown(sleep, connected: true, needsAccess: true, hasRead: false, cards: [:], keepsReconnect: false), .nothing, "the Turn On row is said once, in Fitness")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: nil, hasRead: false, cards: [:], keepsReconnect: true), .nothing, "unknown: nothing flashes")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: false, hasRead: false, cards: [:], keepsReconnect: true), .nothing, "not read yet")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: false, hasRead: true, cards: [:], keepsReconnect: true), .reconnect, "declined or empty: Reconnect")
-        XCTAssertEqual(LiveShown.shown(sleep, connected: true, needsAccess: false, hasRead: true, cards: [:], keepsReconnect: false), .nothing)
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card, .steps: card], keepsReconnect: true), .cards([.steps]))
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card], keepsReconnect: true), .nothing,
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .needsAccess, keepsReconnect: true), .turnOn)
+        XCTAssertEqual(LiveShown.shown(sleep, connected: true, access: .needsAccess, keepsReconnect: false), .nothing, "the Turn On row is said once, in Fitness")
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .unknown, keepsReconnect: true), .nothing, "unknown: nothing flashes")
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .granted, keepsReconnect: true), .nothing, "not read yet")
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .read([:]), keepsReconnect: true), .reconnect, "declined or empty: Reconnect")
+        XCTAssertEqual(LiveShown.shown(sleep, connected: true, access: .read([:]), keepsReconnect: false), .nothing)
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .read([.sleep: card, .steps: card]), keepsReconnect: true), .cards([.steps]))
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: .read([.sleep: card]), keepsReconnect: true), .nothing,
                        "only a sleep card: Fitness shows nothing, so its heading hides (US-73 AC2)")
-        XCTAssertEqual(LiveShown.shown(sleep, connected: true, needsAccess: false, hasRead: true, cards: [.steps: card], keepsReconnect: false), .nothing)
-        XCTAssertEqual(LiveShown.shown(sleep, connected: true, needsAccess: false, hasRead: true, cards: [.sleep: card, .steps: card], keepsReconnect: false), .cards([.sleep]))
+        XCTAssertEqual(LiveShown.shown(sleep, connected: true, access: .read([.steps: card]), keepsReconnect: false), .nothing)
+        XCTAssertEqual(LiveShown.shown(sleep, connected: true, access: .read([.sleep: card, .steps: card]), keepsReconnect: false), .cards([.sleep]))
     }
 
     /// AC5b: Reconnect asks again while Apple's sheet would still show; once it has been
@@ -1055,9 +1055,31 @@ final class LiveHealthTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         first.cancel()
         await first.value
-        XCTAssertFalse(fresh.hasRead, "nothing was read")
-        XCTAssertEqual(LiveShown.shown(fitness, connected: true, needsAccess: fresh.needsAccess, hasRead: fresh.hasRead, cards: fresh.cards, keepsReconnect: true), .nothing,
+        XCTAssertEqual(fresh.access, .granted, "nothing was read")
+        XCTAssertEqual(LiveShown.shown(fitness, connected: true, access: fresh.access, keepsReconnect: true), .nothing,
                        "no Reconnect row from a cancelled read")
+    }
+
+    /// AC5d (iPhone survey S4): after an access reset and a re-allow, a first read that fails
+    /// (the phone locked) shows no row. Before the fix the read flag outlived the reset, so the
+    /// empty cards drew the Open Settings row as if the person had tapped Don't Allow.
+    func testAFailedFirstReadAfterAnAccessResetShowsNoRow_US56_AC5d() async {
+        let store = FakeLiveStore(due: false)
+        store.fill(now: now)
+        let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        await live.refresh()
+        XCTAssertEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .cards(fitness))
+        store.due = true
+        await live.refresh()
+        XCTAssertTrue(live.cards.isEmpty, "the reset clears the cards")
+        store.due = false
+        store.locked = true
+        await live.refresh()
+        XCTAssertNotEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .reconnect, "no Open Settings row from a failed read")
+        XCTAssertEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .nothing)
+        store.locked = false
+        await live.refresh()
+        XCTAssertEqual(LiveShown.shown(fitness, keepsReconnect: true, live: live, health: nil), .cards(fitness), "the next good read draws the cards")
     }
 
     /// N2: the sheet's answer always reads again, even within 2 s of a running read.
@@ -1192,6 +1214,11 @@ private final class Changed: @unchecked Sendable {
 }
 
 /// A HealthKit stand-in with a fortnight of each metric.
+extension LiveAccess {
+    /// A read has landed since access (tests only).
+    var isRead: Bool { if case .read = self { true } else { false } }
+}
+
 final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     private let lock = NSLock()
     private var state = State()
