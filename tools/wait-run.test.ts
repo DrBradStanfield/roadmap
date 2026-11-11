@@ -21,6 +21,8 @@ beforeAll(() => {
 echo "$*" | tr "\\n" " " >> "$STATE.calls"; echo >> "$STATE.calls"
 [ -n "\${GH_FAIL:-}" ] && exit 1
 [ -n "\${GH_SLEEP:-}" ] && exec /bin/sleep "$GH_SLEEP" # one process, as the real gh is
+# Like Go's gh: deaf to ALRM and TERM, so only a SIGKILL ends it.
+[ -n "\${GH_HANG:-}" ] && { trap '' ALRM TERM; exec /bin/sleep 30; }
 n=$(cat "$STATE" 2>/dev/null || echo 0)
 # Poll and rate-limit calls answer with fixture JSON, run through the script's own --jq filter as gh would.
 jqf=; prev=
@@ -154,6 +156,11 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('cuts off a gh call that hangs, so the time limit still holds', () => {
     const t = Date.now();
     expect(run(['deploy', '123'], { GH_SLEEP: '30', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
+    expect(Date.now() - t).toBeLessThan(10_000);
+  });
+  it('US-64 AC26: kills a hung gh that ignores ALRM and TERM (as Go does), so the time limit still holds', () => {
+    const t = Date.now();
+    expect(run(['deploy', '123'], { GH_HANG: '1', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
     expect(Date.now() - t).toBeLessThan(10_000);
   });
   it('gives up with exit 3 at the time limit', () => {

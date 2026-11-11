@@ -24,6 +24,7 @@ beforeAll(() => {
   // filtered by their --status and --limit, as the API does.
   writeFileSync(join(S, 'gh'), `#!/bin/sh
 printf '%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
+[ -n "\${GH_PARENT:-}" ] && ps -o args= -p "$PPID" >> "$GH_PARENT"
 case "$*" in *"\${GH_FAIL:-@@none@@}"*) echo "gh: HTTP 502" >&2; exit 1 ;; esac
 case "$*" in *"\${GH_HANG:-@@none@@}"*) trap '' ALRM TERM; sleep 30; exit 0 ;; esac
 jqf=; prev=; st=; lim=20
@@ -34,12 +35,28 @@ case "$*" in
   *"pr view"*changedFiles*) json "$FILES" ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
   *"run list"*ci.yml*) json "$CIRUNS" ;;
-  *"run list"*deploy.yml*) json "$(printf '%s\\n' "$RUNS" | jq -c --arg s "$st" --argjson n "$lim" '[.[] | select(.status == $s)] | .[0:$n]')" ;;
+  *"run list"*deploy.yml*) runs=$RUNS
+    # FLIP=<id>:<k>: in the status-filtered reads, run <id> is pending for the first k and in_progress after.
+    if [ -n "$st" ] && [ -n "\${FLIP:-}" ]; then n=$(( $(cat "$LOG.flip" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$LOG.flip"
+      to=pending; [ "$n" -gt "\${FLIP#*:}" ] && to=in_progress
+      runs=$(printf '%s\\n' "$RUNS" | jq -c --argjson id "\${FLIP%%:*}" --arg to "$to" 'map(if .databaseId == $id then .status = $to else . end)'); fi
+    json "$(printf '%s\\n' "$runs" | jq -c --arg s "$st" --argjson n "$lim" '[.[] | select($s == "" or .status == $s)] | .[0:$n]')" ;;
   *"pr merge"*) echo "merged"; exit "\${MERGE_RC:-0}" ;;
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
 esac
 `);
   chmodSync(join(S, 'gh'), 0o755);
+  // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none.
+  writeFileSync(join(S, 'git'), `#!/bin/sh
+printf 'git\\t%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
+case "$1" in
+  fetch) [ -z "\${GIT_FETCH_FAIL:-}" ] || { echo "fatal: unable to access origin" >&2; exit 128; } ;;
+  show) [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
+    cat "$MAIN_COPY" ;;
+  *) echo "unexpected git call: $*" >&2; exit 1 ;;
+esac
+`);
+  chmodSync(join(S, 'git'), 0o755);
 });
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
@@ -53,12 +70,10 @@ const ciRun = (databaseId: number, createdAt: string, conclusion = 'success', st
 const CI_GREEN = [ciRun(43112784472, '2026-11-11T22:33:40Z')];
 const FILES = { changedFiles: 2, files: [{ path: 'tools/wait-run.sh' }, { path: 'docs/git-workflow.md' }] };
 
-function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}, stdin?: string) {
+function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}) {
   const log = join(S, `log-${Math.random()}`);
-  const argv = stdin === undefined ? [SCRIPT, ...args] : ['-s', '--', ...args];
-  const r = spawnSync('sh', argv, {
+  const r = spawnSync('sh', [SCRIPT, ...args], {
     encoding: 'utf8',
-    input: stdin,
     env: {
       ...process.env, PATH: `${S}:${process.env.PATH}`, LOG: log,
       PR: JSON.stringify(fx.pr ?? { state: 'OPEN', headRefOid: SHA }),
@@ -71,7 +86,8 @@ function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<stri
   });
   const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map((l) => l.replace(/\t$/, '').split('\t')) : [];
   const merges = calls.filter((c) => c[0] === 'pr' && c[1] === 'merge');
-  return { ...r, calls, merges };
+  const gits = calls.filter((c) => c[0] === 'git');
+  return { ...r, calls, merges, gits };
 }
 const MERGE_ARGV = ['pr', 'merge', '123', '--merge', '--match-head-commit', SHA];
 
@@ -113,19 +129,52 @@ describe('US-64 AC32 merge-gated.sh', () => {
     }
   });
 
-  describe('a PR that changes tools/merge-gated.sh', () => {
+  describe("a PR that changes a gate file (tools/merge-gated.sh or .github/workflows/ci.yml) is judged by main's copy", () => {
     const self = { changedFiles: 2, files: [{ path: 'tools/merge-gated.sh' }, { path: 'tools/merge-gated.test.ts' }] };
-    it('refuses it (16) and names the main-copy command', () => {
-      const r = gate(['123', SHA], { files: self });
-      expect(r.status).toBe(16);
-      expect(r.stderr).toContain(`git show origin/main:tools/merge-gated.sh | sh -s -- 123 ${SHA}`);
-      expect(r.stderr).toContain('git fetch origin main');
-      expect(r.merges).toEqual([]);
+    const ciPr = { changedFiles: 2, files: [{ path: '.github/workflows/ci.yml' }, { path: 'docs/x.md' }] };
+    const NOTE = /changes \.github\/workflows\/ci\.yml, so its own CI result came from the PR's workflow/g;
+    const fakeMain = (code: number) => {
+      const f = join(S, `main-${Math.random()}.sh`);
+      writeFileSync(f, `echo "main copy: marker=$MERGE_GATED_FROM_MAIN args=$*" >&2; exit ${code}\n`);
+      return f;
+    };
+    it('a plain PR never touches git', () => {
+      expect(gate(['123', SHA]).gits).toEqual([]);
     });
-    it("main's copy run from stdin judges it on the other gates and merges", () => {
-      const r = gate(['123', SHA], { files: self }, {}, readFileSync(SCRIPT, 'utf8'));
+    it("fetches main, runs main's copy with the marker and the same arguments, and exits with its code", () => {
+      for (const code of [0, 9]) {
+        const r = gate(['123', SHA, '--commit-checks'], { files: self }, { MAIN_COPY: fakeMain(code) });
+        expect(r.status).toBe(code);
+        expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA} --commit-checks`);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show']);
+        expect(r.merges).toEqual([]);
+      }
+    });
+    it("main's real copy judges it on the other gates: merges when green, refuses when CI failed", () => {
+      const ok = gate(['123', SHA], { files: self }, { MAIN_COPY: SCRIPT });
+      expect(ok.status).toBe(0);
+      expect(ok.merges).toEqual([MERGE_ARGV]);
+      const red = gate(['123', SHA], { files: self, ci: [ciRun(9, '2026-11-12T01:00:00Z', 'failure')] }, { MAIN_COPY: SCRIPT });
+      expect(red.status).toBe(15);
+      expect(red.merges).toEqual([]);
+    });
+    it('refuses 16 when main has no copy, the copy is empty, or the fetch fails; never merges', () => {
+      const empty = join(S, 'empty.sh');
+      writeFileSync(empty, '');
+      for (const env of [{}, { MAIN_COPY: empty }, { MAIN_COPY: SCRIPT, GIT_FETCH_FAIL: '1' }]) {
+        const r = gate(['123', SHA], { files: self }, env);
+        expect(r.status).toBe(16);
+        expect(r.stderr).toMatch(/the owner merges this PR by hand/);
+        expect(r.merges).toEqual([]);
+      }
+    });
+    it("a ci.yml PR is gated by main's copy too, which notes once that its CI ran the PR's own workflow", () => {
+      const r = gate(['123', SHA], { files: ciPr }, { MAIN_COPY: SCRIPT });
       expect(r.status).toBe(0);
+      expect(r.stderr.match(NOTE)).toHaveLength(1);
       expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(gate(['123', SHA], { files: ciPr }).status).toBe(16);
+      expect(gate(['123', SHA]).stderr).not.toMatch(NOTE);
     });
     it('refuses a PR whose file list gh truncated at 100 (17), or 16 if the part it sees holds the script', () => {
       const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
@@ -243,6 +292,32 @@ describe('US-64 AC32 merge-gated.sh', () => {
       }
     });
 
+    it('a Deploy run that moves on between the status reads is still caught (Codex re-check)', () => {
+      // Pending in the first status-filtered reads, in_progress after: the old per-status order missed it.
+      for (const k of [1, 2, 3, 4, 5]) {
+        const r = gate(['123', SHA], { runs: [{ databaseId: 77, status: 'pending' }, { databaseId: 1, status: 'completed' }] }, { FLIP: `77:${k}` });
+        expect(r.status).toBe(12);
+        expect(r.merges).toEqual([]);
+      }
+    });
+
+    it('one unfiltered snapshot of the newest 100 Deploy runs comes first', () => {
+      const r = gate(['123', SHA], { runs: [{ databaseId: 77, status: 'in_progress' }] });
+      expect(r.status).toBe(12);
+      const first = r.calls.find((c) => c.includes('deploy.yml'));
+      expect(first).not.toContain('--status');
+      expect(first?.join(' ')).toContain('--limit 100');
+    });
+
+    it('a flipping Deploy run older than the newest 100 is caught by the per-status reads, run twice', () => {
+      const done = Array.from({ length: 100 }, (_, i) => ({ databaseId: 1000 - i, status: 'completed' }));
+      for (const k of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) {
+        const r = gate(['123', SHA], { runs: [...done, { databaseId: 77, status: 'pending' }] }, { FLIP: `77:${k}` });
+        expect(r.status).toBe(12);
+        expect(r.merges).toEqual([]);
+      }
+    });
+
     it('finds an in-progress Deploy behind more than 20 newer finished runs', () => {
       const done = Array.from({ length: 25 }, (_, i) => ({ databaseId: 1000 - i, status: 'completed' }));
       const r = gate(['123', SHA], { runs: [...done, { databaseId: 77, status: 'in_progress' }] });
@@ -272,6 +347,14 @@ describe('US-64 AC32 merge-gated.sh', () => {
     expect(r.status).toBe(4);
     expect(Date.now() - t).toBeLessThan(5000);
     expect(r.merges).toEqual([]);
+  });
+
+  it('a zero, empty or non-numeric MERGE_GATED_GH_TIMEOUT falls back to 60 s, never disables the limit', () => {
+    for (const [v, want] of [['abc', '60'], ['0', '60'], ['', '60'], ['-5', '60'], ['1x', '60'], ['5', '5']]) {
+      const parent = join(S, `parent-${Math.random()}`);
+      expect(gate(['123', SHA], {}, { MERGE_GATED_GH_TIMEOUT: v, GH_PARENT: parent }).status).toBe(0);
+      expect(readFileSync(parent, 'utf8')).toMatch(new RegExp(` ${want} gh pr view 123 `));
+    }
   });
 
   it('a merge that hangs is killed at the timeout: exit 13, outcome unknown', () => {

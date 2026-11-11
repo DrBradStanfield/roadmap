@@ -10,9 +10,9 @@
 # children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
 # With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
 # MAC_SLOT_POLL_SECONDS (30); after MAC_SLOT_LOAD_WAIT_MIN (60) it starts anyway with a one-line warning (the
-# slots still bound what runs at once). An unreadable load does not wait. TERM or INT while it waits exits 143 or
-# 130 at once. Then it execs the command, so the exit code is the command's. Waiting for a slot has no limit:
-# holders end and the kernel frees their slot. Exit 64: usage.
+# slots still bound what runs at once). An unreadable load does not wait. TERM or INT while it waits, for a slot
+# or for the load, exits 143 or 130 at once. Then it execs the command unchanged, so the exit code is the
+# command's. Waiting for a slot has no limit: holders end and the kernel frees their slot. Exit 64: usage.
 # MAC_SLOT_CODEX_MAX, MAC_SLOT_TESTS_MAX and MAC_SLOT_LOAD_CMD (prints the load) are for the test suite.
 # Off a shared Mac (not macOS, no lockf, or CI set and not false/0) it runs the command directly: no queue.
 # Tests: tools/mac-slot.test.ts (macOS only: lockf).
@@ -86,11 +86,13 @@ fi
 
 MAX=$(slots "$kind")
 CMDLINE=$(printf '%s ' "$@" | tr '\n' ' ' | cut -c1-200)
-# Takes slot $1 on fd 9, waiting up to $2 seconds; on failure fd 9 is closed again.
+# Takes slot $1 on fd 9, waiting up to $2 seconds; on failure fd 9 is closed again. lockf runs in the background
+# under `wait`, so TERM and INT end a slot wait at once; the lock it takes stays with the shell's fd 9.
 take() {
   exec 9>>"$DIR/$kind.$1"
-  lockf -s -t "$2" 9 && { SLOT=$1; return 0; }
-  exec 9>&-
+  lockf -s -t "$2" 9 & lk=$!
+  wait "$lk" && { lk=""; SLOT=$1; return 0; }
+  lk=""; exec 9>&-
   return 1
 }
 # `status` can only probe a slot by locking it for an instant (lockf has no test-only mode), so a slot that
@@ -105,14 +107,14 @@ scan() {
   return 1
 }
 
-SLOT=""
+SLOT="" lk=""
 if ! scan; then
   echo "mac-slot: waiting for a $kind slot ($MAX/$MAX held): $(holders "$kind" "$MAX" | sed 's/ (slot [0-9]*)//' | paste -sd ';' - | sed 's/;/; /g')" >&2
   WFILE="$DIR/waiting.$kind.$$"
   echo "$CMDLINE" > "$WFILE"
   trap 'rm -f "$WFILE"' EXIT
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
+  trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 130' INT
+  trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 143' TERM
   # Waiters spread over the slots: each blocks on slot (pid mod N)+1 for POLL seconds, then re-scans every slot
   # without blocking, then blocks on the next one. When a slot frees, the kernel gives it to one process only, so
   # waiters never all start at once; a waiter blocked on another slot finds it on its next scan. The kernel's

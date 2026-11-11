@@ -172,6 +172,20 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(started('a')).toBe(false);
   });
 
+  it('TERM while waiting for a slot exits promptly with 143 and drops its waiting entry', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', hold('b'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    const t = Date.now();
+    w.p.kill('SIGTERM');
+    expect(await w.done).toBe(143);
+    expect(Date.now() - t).toBeLessThan(3000);
+    expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
+    expect(started('b')).toBe(false);
+  });
+
   it('honours MAC_SLOT_MAX_LOAD', async () => {
     setLoads('9.00');
     const r = bg('tests', ['true'], { MAC_SLOT_MAX_LOAD: '10' });
