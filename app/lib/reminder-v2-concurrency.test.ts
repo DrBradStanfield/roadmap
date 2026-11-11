@@ -222,8 +222,14 @@ async function lockstep<T>(callers: Callers<T>): Promise<T[]> {
   for (let round = 0; round < 50; round++) {
     await settle();
     if (done.size === Object.keys(callers).length) break;
+    // Exactly one waiting query per caller still running: a caller that is late
+    // to the table would otherwise drop out of the round and run alone.
+    const live = Object.keys(callers).filter((tag) => !done.has(tag)).sort();
     const batch = db.pending.splice(0);
-    if (batch.length === 0) throw new Error('a caller is waiting on something other than the table');
+    const waiting = batch.map((op) => op.tag ?? '?').sort();
+    if (JSON.stringify(waiting) !== JSON.stringify(live)) {
+      throw new Error(`round ${round}: waiting ${waiting.join(',') || 'none'}, running ${live.join(',')}`);
+    }
     for (const op of batch) op.run();
   }
   db.auto();
@@ -374,6 +380,22 @@ describe('US-17 AC16: two verified opt-ins for one address at once', () => {
     expect(await updateScheduleByToken('tok-squat', SCHEDULE)).toBe(false);
     expect(await updateScheduleByToken(a.token!, SCHEDULE)).toBe(true);
     expect(db.row(OWNER)).toMatchObject({ provider: 'google-drive', last_sent: { blood_test_lipids: '2026-08-01' } });
+  });
+
+  it("over another lane's row, one caller finishing before the other's rotation: the late rotation changes nothing", async () => {
+    db.seed({ email: OWNER, provider: 'typed', token: 'tok-squat', schedule: SCHEDULE });
+
+    // a: insert (23505), rotate, refresh, read-back; only then b's rotation.
+    const settled = await scripted({
+      a: () => upsertVerifiedOptin(OWNER, SCHEDULE),
+      b: () => upsertVerifiedOptin(OWNER, SCHEDULE),
+    }, ['a', 'b', 'a', 'a', 'a', 'b']);
+    const [a, b] = values(settled);
+
+    expect(a.token).toBeDefined();
+    expect(a.token).not.toBe('tok-squat');
+    expect(b.token).toBe(a.token);
+    expect(db.row(OWNER)?.token).toBe(a.token);
   });
 
   it('at the route (US-17 AC10): two 200s with one token, one plan-ready email, one reminder_optin', async () => {
