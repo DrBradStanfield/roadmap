@@ -75,12 +75,13 @@ nap() {
 }
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
 # GitHub recomputes mergeability after a push, so one CONFLICTING read can be stale: a conflict is final only on
-# two reads in a row, one poll interval apart; any other read resets the count.
+# two conflict reads with no other successful read between them; any other successful read, done included,
+# resets the count (a gh error neither adds nor resets).
 poll() {
   while :; do
     if state=$("$@" 2>/dev/null); then
       errors=0
-      [ "$state" = done ] && return 0
+      [ "$state" = done ] && { conflicts=0; return 0; }
       if [ "$state" = conflict ]; then conflicts=$((conflicts + 1)); else conflicts=0; fi
       if [ "$conflicts" -ge 2 ]; then echo "PR conflicts with main; merge main in (no new CI runs on a conflicting head)"; exit 1; fi
     else
