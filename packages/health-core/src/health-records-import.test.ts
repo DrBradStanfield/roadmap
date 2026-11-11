@@ -1286,7 +1286,7 @@ describe('US-72 AC15: a DiagnosticReport panel, edges', () => {
     expect(run(run(empty(), [v1]).file, [v2], LATER).counts).toEqual({ ...NONE, corrected: 1, notRead: 0 });
   });
 
-  it('a result keeps its own status unless the report was withdrawn, whatever else the report says', () => {
+  it('a result keeps its own status unless the report was withdrawn or cancelled', () => {
     const status = (rs: string, os: string) => run(empty(), [report(panel([ldl('r1', { status: os })], { status: rs }))]).file.labValues[0]?.externalId;
     expect(status('final', 'amended')).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||amended|4.6||mmol/L`);
     expect(status('preliminary', 'final')).toBe(`${SOURCE}|DiagnosticReport|panel-1|r1#2026-10-22T10:00:00Z||final|4.6||mmol/L`);
@@ -1360,5 +1360,107 @@ describe('US-72 AC15: a DiagnosticReport panel, edges', () => {
   it('two contained resources with one id: the first is read', () => {
     const p = panel([ldl('r1'), inner('2085-9', 1.3, 'mmol/L', 'r1')], { result: [{ reference: '#r1' }] });
     expect(run(empty(), [report(p)]).file.labValues.map((l) => [l.metricName, l.value])).toEqual([['ldl', 4.6]]);
+  });
+});
+
+describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 1253 follow-up)', () => {
+  const report = (p: object) => rec(p, { resourceType: 'DiagnosticReport', fhirVersion: DSTU2 });
+  const ldl = (id = 'r1', fields: Record<string, unknown> = {}) => inner('13457-7', 4.6, 'mmol/L', id, fields);
+  const NONE = { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 0 };
+  const active = (f: RoadmapFile) => f.labValues.filter((l) => l.status === 'active').map((l) => [l.metricName, l.value]);
+
+  it('a malformed report-level period or meta is one not-read, never a result on the report\'s release', () => {
+    const { effectiveDateTime: _d, ...undated } = ldl();
+    for (const fields of [
+      { effectivePeriod: { start: 20261021 } },
+      { effectivePeriod: { start: `2026-10-21T08:00:00Z${'0'.repeat(60)}` } },
+      { meta: { lastUpdated: `2026-10-22T10:00:00Z${'0'.repeat(60)}` } },
+    ]) {
+      const p = panel([undated], fields);
+      delete p.effectiveDateTime;
+      const { file, counts } = run(empty(), [report(p)]);
+      expect(counts).toEqual({ ...NONE, notRead: 1 });
+      expect(file.labValues).toEqual([]);
+    }
+  });
+
+  // One row per report status, each report holding one `final` result, on an empty record.
+  it.each([
+    ['registered', { ...NONE, notRead: 1 }],
+    ['partial', { ...NONE, added: 1 }],
+    ['preliminary', { ...NONE, added: 1 }],
+    ['final', { ...NONE, added: 1 }],
+    ['amended', { ...NONE, added: 1 }],
+    ['corrected', { ...NONE, added: 1 }],
+    ['appended', { ...NONE, added: 1 }],
+    ['unknown', { ...NONE, added: 1 }],
+    ['cancelled', { ...NONE, notRead: 1 }],
+    // Nothing of it in the record, so nothing to withdraw (AC7).
+    ['entered-in-error', { ...NONE, notRead: 1 }],
+  ])('a %s report with a final result', (status, counts) => {
+    expect(run(empty(), [report(panel([ldl()], { status }))]).counts).toEqual(counts);
+  });
+
+  it('a cancelled report lands nothing and withdraws nothing, whatever its results say', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    const later = { meta: { lastUpdated: '2026-10-25T10:00:00Z' }, status: 'cancelled' };
+    for (const result of [ldl(), inner('13457-7', 4.1, 'mmol/L', 'r1'), ldl('r1', { status: 'entered-in-error' })]) {
+      const { file, counts } = run(v1, [report(panel([result], later))], LATER);
+      // Residual (AC15): a result imported as final keeps its row when the report is later cancelled.
+      expect(counts).toEqual({ ...NONE, notRead: 1 });
+      expect(active(file)).toEqual([['ldl', 4.6]]);
+    }
+  });
+
+  it('a cancelled or registered re-send whose stamp is not newer than the row\'s is already in the record (re-check N1)', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    for (const status of ['cancelled', 'registered']) {
+      // The row's own stamp (2026-10-22T10:00:00Z): the stale rule runs before the status rule.
+      const { file, counts } = run(v1, [report(panel([inner('13457-7', 4.1, 'mmol/L', 'r1')], { status }))], LATER);
+      expect(counts).toEqual({ ...NONE, alreadyInRecord: 1 });
+      expect(active(file)).toEqual([['ldl', 4.6]]);
+      expect(file.labValues).toHaveLength(1);
+    }
+  });
+
+  it('a registered report lands nothing; the same report later final, in a newer version, lands its result once', () => {
+    const registered = report(panel([ldl()], { status: 'registered' }));
+    const final = report(panel([ldl()], { meta: { lastUpdated: '2026-10-25T10:00:00Z' } }));
+    const first = run(empty(), [registered]);
+    expect(first.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(first.file.labValues).toEqual([]);
+    const second = run(first.file, [final], LATER);
+    expect(second.counts).toEqual({ ...NONE, added: 1 });
+    // Both again: the older registered copy is stale (AC5) and the final one known, so nothing lands twice.
+    expect(run(second.file, [registered, final], LATER).counts).toEqual({ ...NONE, alreadyInRecord: 2 });
+    expect(active(second.file)).toEqual([['ldl', 4.6]]);
+  });
+
+  it('a withdrawn report with no results withdraws nothing (re-check R5)', () => {
+    const v1 = run(empty(), [report(panel([ldl()]))]).file;
+    const gone = { status: 'entered-in-error', meta: { lastUpdated: '2026-10-25T10:00:00Z' } };
+    const noResults = run(v1, [report(panel([], gone))], LATER);
+    expect(noResults.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(active(noResults.file)).toEqual([['ldl', 4.6]]);
+    const emptied = run(v1, [report(panel([ldl()], { ...gone, contained: [] }))], LATER);
+    expect(emptied.counts).toEqual({ ...NONE, notRead: 1 });
+    expect(active(emptied.file)).toEqual([['ldl', 4.6]]);
+  });
+
+  it('re-check R3: three re-sent copies of a 30-result panel write a marker only for each result the map reads', () => {
+    const mapped = [
+      inner('13457-7', 4.6, 'mmol/L', 'm1'), inner('2085-9', 1.3, 'mmol/L', 'm2'), inner('2160-0', 122, 'umol/L', 'm3'),
+      inner('2093-3', 5.2, 'mmol/L', 'm4'), inner('2571-8', 1.4, 'mmol/L', 'm5'), inner('1884-6', 0.9, 'g/L', 'm6'),
+      inner('4548-4', 5.5, '%', 'm7'), inner('2857-1', 1.2, 'ng/mL', 'm8'), inner('2276-4', 80, 'ug/L', 'm9'),
+      inner('3016-3', 2.1, 'mIU/L', 'm10'),
+    ];
+    const unmapped = Array.from({ length: 20 }, (_, i) => inner(`9999${i}-0`, 10 + i, 'g/L', `u${i}`));
+    const copy = (lastUpdated: string) => report(panel([...mapped, ...unmapped], { meta: { lastUpdated } }));
+    const first = run(empty(), [copy('2026-10-22T10:00:00Z')]);
+    expect(first.counts).toEqual({ ...NONE, added: 10, notRead: 20 });
+    const again = run(first.file, ['2026-10-23T10:00:00Z', '2026-10-24T10:00:00Z', '2026-10-25T10:00:00Z'].map(copy), LATER);
+    expect(again.counts).toEqual({ ...NONE, alreadyInRecord: 30, notRead: 60 });
+    expect(again.file.labValues.filter(isVersionMarker)).toHaveLength(30);
+    expect(again.file.labValues).toHaveLength(40);
   });
 });

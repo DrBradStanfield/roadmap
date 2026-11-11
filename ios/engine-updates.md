@@ -61,7 +61,8 @@ Cutting build 11:
 
 - [ ] Build 11 is cut from a commit that contains PR 1218 (the floor assumes it).
 - [ ] The owed-delete kind fix (lead H29) is on main. A false 'Health not erased' on every erase must not ship.
-- [ ] The Health Records panel fix is on main: results contained in a DiagnosticReport are read, and the lab rules version goes to 3.
+- [ ] The PR 1253 follow-up is merged (the panel fix: report-level dates strict, cancelled reports not read). '1253 merged' alone is not the signal.
+- [ ] The contributor confirms on build 11 that his own labs import.
 - [ ] Leads H33 and H34 are fixed on main: a remote erase that joins a pay already running must also pay the ids it just owed, and an erase waits on at most one 2 s drain.
 
 **What only an app update can change** (the app refuses these in a download): the
