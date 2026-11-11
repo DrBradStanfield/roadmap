@@ -3,12 +3,13 @@
 # onboarding runs from its first screen (Brad 2026-10-23). It removes the app,
 # its settings and its privacy answers (Health, camera, photos), and resets the
 # simulator's whole keychain (every app's, on that simulator only), then installs
-# and launches, on the shared simulator under its lease (sim-run.sh, US-71 AC7). The
-# device then stays booted for the demo (no idle shutdown until the next run's release).
+# and launches, on the shared simulator under its lease (sim-run.sh, US-71 AC7). The lease
+# is freed when this returns; the device stays booted for the demo, marked as one in
+# `sim-run.sh status`, with no idle shutdown until the next lease.
 # Usage: ios/scripts/fresh-sim.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-[ -n "${HR_SIM_LEASE:-}" ] || HR_SIM_IDLE_MIN=0 exec scripts/sim-run.sh -- scripts/fresh-sim.sh
+[ -n "${HR_SIM_LEASE:-}" ] || HR_SIM_DEMO=1 exec scripts/sim-run.sh -- scripts/fresh-sim.sh
 
 device=$SIM_UDID
 bundle=com.drstanfield.healthroadmap

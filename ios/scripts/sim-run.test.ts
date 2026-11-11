@@ -41,7 +41,13 @@ beforeEach(() => {
   writeFileSync(join(fake, 'xcrun'), XCRUN, { mode: 0o755 });
   writeFileSync(join(fake, 'xcodebuild'), XCODEBUILD, { mode: 0o755 });
 });
-afterEach(() => rmSync(dir, { recursive: true, force: true }));
+afterEach(() => {
+  // A test's hold keeper must not outlive it.
+  const h = join(home, 'lease', 'holder');
+  const pid = existsSync(h) && readFileSync(h, 'utf8').includes('command=hold') && readFileSync(h, 'utf8').match(/^pid=(\d+)/m)?.[1];
+  if (pid) try { process.kill(Number(pid), 'SIGTERM'); } catch { /* gone */ }
+  rmSync(dir, { recursive: true, force: true });
+});
 
 const env = (extra: Record<string, string> = {}) => ({
   ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
@@ -148,6 +154,18 @@ describe('US-71 AC7 xcodebuild on the shared device', () => {
       `test -scheme HealthRoadmap -destination id=${UDID} -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1`);
   });
 
+  it('pins the command line test.sh gets: -parallel-testing-enabled NO and -maximum-concurrent-test-simulator-destinations 1, once each', () => {
+    run(['--', 'xcodebuild', 'test', '-project', 'HealthRoadmap.xcodeproj', '-scheme', 'HealthRoadmap',
+      '-skip-testing:HealthRoadmapUITests', '-derivedDataPath', '/tmp/dd']);
+    run(['--', 'xcodebuild', 'test-without-building', '-scheme', 'HealthRoadmap', '-maximum-concurrent-test-simulator-destinations', '1']);
+    expect(log('xcodebuild.log').trim().split('\n')).toEqual([
+      'test -project HealthRoadmap.xcodeproj -scheme HealthRoadmap -skip-testing:HealthRoadmapUITests -derivedDataPath /tmp/dd '
+        + `-destination id=${UDID} -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1`,
+      'test-without-building -scheme HealthRoadmap -maximum-concurrent-test-simulator-destinations 1 '
+        + `-destination id=${UDID} -parallel-testing-enabled NO`,
+    ]);
+  });
+
   it('keeps the flags it is given and replaces {udid}', () => {
     run(['--', 'xcodebuild', 'test-without-building', '-destination', 'id={udid}', '-parallel-testing-enabled', 'NO']);
     expect(log('xcodebuild.log').trim()).toBe(
@@ -176,7 +194,8 @@ describe('US-71 AC7 idle shutdown', () => {
   it('shuts the device down after the idle time with no lease', async () => {
     run(['--', 'true'], { HR_SIM_IDLE_SECONDS: '1' });
     await until(() => log('xcrun.log').includes(`simctl shutdown ${UDID}`), 5000);
-    expect(existsSync(lease())).toBe(false);
+    // The sleeper holds the lease while it shuts the device down, then frees it.
+    await until(() => !existsSync(lease()), 3000);
   });
 
   it('leaves it booted when another run released since', async () => {
@@ -192,6 +211,78 @@ describe('US-71 AC7 idle shutdown', () => {
     await sleep(2000);
     expect(log('xcrun.log')).not.toContain('shutdown');
     expect(readFileSync(join(lease(), 'holder'), 'utf8')).toContain(`pid=${process.pid}`);
+  });
+});
+
+describe('US-71 AC7 hold and release (for the iOS Simulator MCP tool)', () => {
+  const field = (name: string) => readFileSync(join(lease(), 'holder'), 'utf8').match(new RegExp(`^${name}=(.*)$`, 'm'))?.[1];
+  const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status === 0;
+
+  it('hold boots the device, prints its UDID and leaves a live keeper holding the lease; others wait; release frees it', async () => {
+    const h = run(['hold']);
+    expect(h.status).toBe(0);
+    expect(h.stdout.trim()).toBe(UDID);
+    expect(log('xcrun.log')).toContain(`simctl bootstatus ${UDID} -b`);
+    const keeper = Number(field('pid'));
+    expect(keeper).not.toBe(h.pid);
+    expect(alive(keeper)).toBe(true);
+    expect(field('command')).toMatch(/^hold/);
+    const w = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' });
+    expect(w.status).toBe(75);
+    expect(w.stderr).toMatch(new RegExp(`held by pid ${keeper} .*: hold`));
+    const r = run(['release']);
+    expect(r.status).toBe(0);
+    expect(existsSync(lease())).toBe(false);
+    await until(() => !alive(keeper), 3000);
+  });
+
+  it('a keeper killed without releasing is taken over like any dead holder', async () => {
+    run(['hold']);
+    const keeper = Number(field('pid'));
+    process.kill(keeper, 'SIGKILL');
+    await until(() => !alive(keeper), 3000);
+    const r = run(['--', 'true']);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain(`took over a stale lease (pid ${keeper} is gone)`);
+  });
+
+  it('a forgotten hold frees itself after HR_SIM_HOLD_SECONDS', async () => {
+    run(['hold'], { HR_SIM_HOLD_SECONDS: '1' });
+    expect(existsSync(lease())).toBe(true);
+    await until(() => !existsSync(lease()), 5000);
+  });
+
+  it('release refuses a running command\'s lease and another folder\'s hold (unless --force)', () => {
+    holder(process.pid);
+    expect(run(['release']).stderr).toContain('it frees itself when that ends');
+    expect(existsSync(lease())).toBe(true);
+    rmSync(lease(), { recursive: true });
+    run(['hold']);
+    const elsewhere = spawnSync('bash', [SCRIPT, 'release'], { encoding: 'utf8', env: env(), cwd: dir });
+    expect(elsewhere.status).toBe(1);
+    expect(elsewhere.stderr).toContain('release it there, or add --force');
+    expect(spawnSync('bash', [SCRIPT, 'release', '--force'], { encoding: 'utf8', env: env(), cwd: dir }).status).toBe(0);
+    expect(existsSync(lease())).toBe(false);
+  });
+
+  it('release with nothing held says so and succeeds', () => {
+    const r = run(['release']);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain('no lease is held');
+  });
+});
+
+describe('US-71 AC7 demo (fresh-sim.sh)', () => {
+  it('frees the lease, keeps the device booted with no idle shutdown, and status says so; the next lease clears it', async () => {
+    const r = run(['--', 'true'], { HR_SIM_DEMO: '1', HR_SIM_IDLE_SECONDS: '1' });
+    expect(r.status).toBe(0);
+    expect(existsSync(lease())).toBe(false);
+    expect(run(['status']).stdout).toContain('kept booted for a demo');
+    await sleep(2000);
+    expect(log('xcrun.log')).not.toContain('shutdown');
+    run(['--', 'true']);
+    expect(existsSync(join(home, 'demo'))).toBe(false);
+    expect(run(['status']).stdout).not.toContain('kept booted for a demo');
   });
 });
 

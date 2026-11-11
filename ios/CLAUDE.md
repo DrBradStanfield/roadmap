@@ -40,6 +40,10 @@ This file adds only what is specific to the iPhone app.
   `-parallel-testing-enabled NO` and a time limit, keeps the device booted, and shuts it down after
   20 idle minutes. Check your work, then release by finishing the command; never hold it while coding.
 - `--reset-app` uninstalls the app first, so one session's data cannot leak into the next.
+- The iOS Simulator MCP tool is outside the guard. A session using it takes the lease first with
+  `ios/scripts/sim-run.sh hold` (it prints the UDID) and gives it back with `sim-run.sh release`.
+- A lease wait can last 30 minutes, longer than the Bash tool's 10-minute limit, which would kill it.
+  Run a sim-run command that may wait in the background (`run_in_background`).
 - `ios/scripts/sim-run.sh status`: the device, the lease holder, leftover simulator processes, and
   the cleanup command for Brad to run (never kill simulator processes yourself).
 - Any other `xcodebuild` (archive, plain build): `pgrep -fl xcodebuild` first; if one runs, report
@@ -50,7 +54,7 @@ This file adds only what is specific to the iPhone app.
   booted (`ALLOW_EXTRA_SIMULATOR=1` for a demo on another simulator). It cannot see inside scripts.
 - Scripts (all through sim-run.sh): `test.sh` (engine, then unit tests in two time zones),
   `ui-test.sh` (UI tests, each on a fresh install), `fresh-sim.sh` (a true new install, onboarding
-  from the start; the device stays booted for the demo). Test scripts run `clean-test-clones.sh` on exit.
+  from the start; it frees the lease and leaves the device booted for the demo). Test scripts run `clean-test-clones.sh` on exit.
 
 ## Devices and data
 
