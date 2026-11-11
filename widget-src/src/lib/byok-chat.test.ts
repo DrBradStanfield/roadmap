@@ -31,6 +31,7 @@ vi.mock('./byok-anthropic', () => ({
 }));
 
 import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core/chat-context';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { sendMessage } from './byok-chat';
 
 const SNAPSHOT = {
@@ -127,7 +128,7 @@ describe('BYOK chat context — per-field sanitizing', () => {
 
   it('never puts the invalid value anywhere in the request', async () => {
     await contextSent({ ...SNAPSHOT, ldlC: 9999 });
-    expect(JSON.stringify(state.sent)).not.toContain('9999');
+    expect(numberPaths(state.sent, 9999)).toEqual([]);
   });
 
   it('US-15 AC11: the Pages chat reads the context through the same builder as the website chat', async () => {

@@ -13,6 +13,7 @@ vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
 import { MASTER_VIEWS_HEADING } from './youtube-context';
 import { loadBlogIndex } from './blog-index.server';
 import { buildSystemBlocks, DOCTOR_POSTURE, BRAND_POSTURE } from './chat.server';
+import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
 
 const system = readFileSync('app/lib/chat-system-prompt.md', 'utf-8');
 const youtube = readFileSync('app/lib/chat-youtube-prompt.md', 'utf-8');
@@ -125,9 +126,9 @@ describe('omega-3 brand (US-50 AC11)', () => {
   });
 
   it('the assembled doctor prompt carries the exception and the disclosure in every layer; the brand prompt keeps criteria only', () => {
-    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE }).map(b => b.text).join('\n\n');
+    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     for (const text of [OMEGA_RULE, DOCTOR_EXCEPTION, `say: "${DISCLOSURE}"`]) expect(doctorPrompt).toContain(text);
-    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE }).map(b => b.text).join('\n\n');
+    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     expect(brandPrompt).not.toContain(DOCTOR_EXCEPTION);
     expect(brandPrompt).toContain("On the brand surface, Brad's personal routine is never an endorsement: give the criteria only, with no brand name or link.");
   });

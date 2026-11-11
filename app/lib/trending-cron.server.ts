@@ -10,21 +10,18 @@
  * The storefront (Liquid section blog-newspaper-header) reads the metafield
  * to render a "Trending" sidebar.
  *
- * Mirrors the architecture of reminder-v2-cron.server.ts: setInterval at hourly
- * cadence, processes on first tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
+ * Runs on the shared daily runner (daily-cron.server.ts): hourly tick, first
+ * tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
-import * as Sentry from '@sentry/react-router';
 import { unauthenticated } from '../shopify.server';
-import { tryAcquireCronLock, type CronLockName } from './supabase.server';
+import type { CronLockName } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
-import { safeErrorFields } from './safe-error-fields.server';
+import { dailyCron, MACHINE_ID } from './daily-cron.server';
 
-const CRON_INTERVAL_MS = 60 * 60 * 1000;
 // 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
 // lock_date is NZ-local so the day boundary matches NZ midnight, not UTC.
 const TARGET_HOUR_NZ = 3;
-const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
 
 // The education store runs as a SEPARATE Fly app (`health-tool-edu`) from the
@@ -68,62 +65,22 @@ const QUERY_PRIOR_BASELINE =
 const METAFIELD_NAMESPACE = 'health_roadmap';
 const METAFIELD_KEY = 'trending_articles';
 
-let lastRunDate: string | null = null;
-let cronIntervalId: ReturnType<typeof setInterval> | null = null;
-
-export function startTrendingCron(): void {
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-    console.log(`Trending cron disabled in ${process.env.NODE_ENV}`);
-    return;
-  }
-
-  console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`);
-
-  cronIntervalId = setInterval(async () => {
-    try {
-      const now = new Date();
-      const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
-      // Run on the first tick at or after 3am NZ each day. Using `<` instead of
-      // `!==` makes the cron resilient to deploys: if a restart shifts the
-      // setInterval offset past the target hour, the next tick still fires
-      // today via the lock guard, rather than waiting 24 hours. todayStr is
-      // NZ-local date so the day boundary matches NZ midnight.
-      if (nzHour < TARGET_HOUR_NZ) return;
-
-      if (lastRunDate === todayStr) return;
-
-      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
-      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, TRENDING_LOCK_NAME);
-      if (!acquired) {
-        lastRunDate = todayStr;
-        return;
-      }
-
-      // Marked while the run goes, so a slow run is not started twice here;
-      // released if it fails, so the next tick re-runs the day (US-28 AC6).
-      // The lock row names this machine, so its re-acquire wins.
-      lastRunDate = todayStr;
-
-      console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
-      const ranked = await computeAndWriteTrending().catch((runError: unknown) => {
-        lastRunDate = null;
-        throw runError;
-      });
-      console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
-    } catch (error) {
-      console.error('Trending cron error:', safeErrorFields(error));
-      Sentry.captureException(error, { tags: { feature: 'trending_cron' } });
-    }
-  }, CRON_INTERVAL_MS);
-}
-
-export function stopTrendingCron(): void {
-  if (cronIntervalId) {
-    clearInterval(cronIntervalId);
-    cronIntervalId = null;
-    console.log('Trending cron stopped');
-  }
-}
+const cron = dailyCron({
+  label: 'Trending cron',
+  feature: 'trending_cron',
+  lockName: TRENDING_LOCK_NAME,
+  targetHour: TARGET_HOUR_NZ,
+  // NZ-local date, so the day boundary matches NZ midnight.
+  clock: nzNowParts,
+  startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`,
+  run: async () => {
+    console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
+    const ranked = await computeAndWriteTrending();
+    return `Trending cron: completed, wrote ${ranked.length} entries`;
+  },
+});
+export const startTrendingCron = cron.start;
+export const stopTrendingCron = cron.stop;
 
 interface UrlViewRow {
   url: string;

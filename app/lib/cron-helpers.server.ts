@@ -19,6 +19,11 @@ export function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, label
   });
 }
 
+/** Current UTC hour (0-23) and date (YYYY-MM-DD) at `now`. */
+export function utcNowParts(now: Date = new Date()): { hour: number; dateStr: string } {
+  return { hour: now.getUTCHours(), dateStr: now.toISOString().slice(0, 10) };
+}
+
 const NZ_TIMEZONE = 'Pacific/Auckland';
 
 /**

@@ -34,3 +34,5 @@ back, so whether it is `on` is in Fly, not here.
 
 To switch it off: set the secret to anything else. Copies already kept stay
 until deleted; the policies must keep describing them while any remain.
+
+The chatbot's saved-chat answers (`app/lib/chat-save-answers.ts`) and the where-your-data-lives guide state the copy as fact: change both if `CHAT_QUESTION_ARCHIVE` is ever turned off.

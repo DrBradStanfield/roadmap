@@ -3644,6 +3644,7 @@ describe('US-32 AC29 — a refusal says why, in a closed vocabulary', () => {
 // US-21 phase 3 — the receipt and the commit read ONE name
 // ---------------------------------------------------------------------------
 import { labSlotKey } from './lab-catalog';
+import { numberPaths } from './number-leak.test-helpers';
 
 /**
  * The bug this pins: the dry run that builds the receipt resolved the PRINTED
@@ -3868,7 +3869,7 @@ describe('US-65 AC3 — write tools never echo a hidden value', () => {
     for (const [name, value, unit, id] of [['ferritin', 210, 'ug/L', 'h2'], ['vitamin_b12', 300, 'pmol/L', 'h3']] as const) {
       const { payload } = prepareImport(file, bundleOf([extracted(`${name}.pdf`, answer(name, value, unit))]), IMPORT_CTX);
       expect(payload.candidates[0].slot).toEqual({ state: 'held_different', existingRowId: id, replaceable: false });
-      expect(JSON.stringify(payload)).not.toContain('777');
+      expect(numberPaths(payload, 777)).toEqual([]);
     }
   });
 

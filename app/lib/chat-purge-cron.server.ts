@@ -42,12 +42,12 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
 import { withTimeout } from './cron-helpers.server';
+import { MACHINE_ID } from './daily-cron.server';
 import { recordServerEvent } from './product-events.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
-const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
 /** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
@@ -57,7 +57,7 @@ const BATCH_SIZE = 100;
 
 /** Platforms whose transcripts are private text on a 30-day clock. YouTube is
  *  absent on purpose: those turns are public comments. */
-const PURGED_PLATFORMS = ['shopify', 'discord'];
+export const PURGED_PLATFORMS = ['shopify', 'discord'];
 
 /** What a reader sees where a purged message used to be. The row is still
  *  there — the words are not. Anything rendering a transcript substitutes it. */
@@ -71,7 +71,7 @@ const ARCHIVE_WRITE_RESERVE_MS = 20_000;
 /** Questions held in memory per run; past it they count as skipped. */
 export const ARCHIVE_MAX_QUESTIONS = 200;
 /** Web chat surfaces and labels whose questions are copied (US-15 AC44). */
-const ARCHIVED_PLATFORMS = ['shopify', 'widget'];
+export const ARCHIVED_PLATFORMS = ['shopify', 'widget'];
 const ARCHIVED_CLASSIFICATIONS = ['ROUTE', 'MEASUREMENT'];
 
 /** The archive step's counts. Working means eligible = kept + skipped. */
