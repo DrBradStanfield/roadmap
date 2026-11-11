@@ -103,7 +103,7 @@ async function release(work) {
   if (!Number.isSafeInteger(minAppBuild) || minAppBuild < 1) throw new Error('--min-app-build must be a whole number of at least 1.');
   // The committed floor (ios/engine-floor.json): an app build below it must never run this engine.
   const floor = JSON.parse(readFileSync(opts.floor, 'utf8')).minAppBuild;
-  if (!Number.isSafeInteger(floor)) throw new Error(`${opts.floor} must hold minAppBuild as a whole number.`);
+  if (!Number.isSafeInteger(floor) || floor < 1) throw new Error(`${opts.floor} must hold minAppBuild as a whole number of at least 1.`);
   if (minAppBuild < floor) throw new Error(`--min-app-build ${minAppBuild} is below the floor ${floor} in ${opts.floor}: pass --min-app-build ${floor} or higher.`);
 
   const issuedAt = new Date(Math.floor(now.getTime() / 60000) * 60000);

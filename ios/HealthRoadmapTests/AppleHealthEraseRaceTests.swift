@@ -757,4 +757,203 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         XCTAssertTrue(rows(object(app.store.recordJSON), source: "apple_health").isEmpty, "the batch did not land")
         XCTAssertEqual(app.health.status, .notConnected, "no failure shown: the next pass met the erase")
     }
+
+    // MARK: Leads H29, H33, H34 (PR 1218 follow-ups)
+    // HealthKit authorization is not modelled by the simulator: FakeHealthStore's `writable`
+    // stands in for it, and its deleteSamples mirrors HealthKitClient's.
+
+    /// Lead H29: waist write access off, and the weight sample the app wrote deleted in Health by
+    /// the person. Health finds no sample for the weight's id under a kind it could write: the id
+    /// is paid, not owed, and the erase does not say Health kept samples.
+    func testAWritableKindsIdHealthDidNotFindIsPaid_US72_AC10_H29() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        health.writable.remove(.waist)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.health.refresh()
+        let weight = try XCTUnwrap(health.saved.first?.syncId)
+        health.saved.removeAll()
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertEqual(health.deletedSyncIds.last, [weight], "the delete asked for it")
+        XCTAssertTrue(memory.owed.isEmpty, "not found under a writable kind: paid")
+        XCTAssertFalse(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// Lead H29, re-export: the same id, its row spared by a remote erase, is paid, so Connect
+    /// writes it to Health again (Option S skips an owed id for as long as it stays owed).
+    func testAPaidIdNotFoundIsExportedAgain_US72_AC10_H29() async throws {
+        let (app, written) = try await connectedInTheCloud()
+        let k = try XCTUnwrap(written.first)
+        health.writable.remove(.waist)
+        health.saved.removeAll()
+        try await remoteEraseSparingTheRow(app)
+        await until("the erase disconnects Apple Health") { !app.health.connected }
+        await until("the erase's delete was tried") { health.deleteAttempts == 1 }
+        await settle()
+        XCTAssertTrue(memory.owed.isEmpty, "not found under a writable kind: paid")
+
+        await app.health.connect()
+
+        XCTAssertNotNil(app.store.myData?.vitals.first?.latest, "the row survived the erase")
+        XCTAssertEqual(savedVersions(k), [1], "written to Health again")
+        XCTAssertEqual(memory.writtenVersion(k), 1)
+    }
+
+    /// Lead H29, the other side: an id of a kind whose write access is off stays owed (its sample
+    /// is still in Health). Once the kind is writable again, it is deleted, then written again.
+    func testAnUnwritableKindsIdStaysOwedUntilWritableThenIsExportedAgain_US72_AC10_H29() async throws {
+        let (app, _) = try await connectedInTheCloud()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        let waist = try XCTUnwrap(health.saved.first { $0.kind == .waist }?.syncId)
+        health.writable.remove(.waist)
+        try await remoteEraseSparingTheRow(app)
+        await until("the erase disconnects Apple Health") { !app.health.connected }
+        await until("the erase's delete was tried") { health.deleteAttempts == 1 }
+        await settle()
+        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "its sample is still in Health")
+        XCTAssertEqual(health.saved.map(\.syncId), [waist])
+
+        await app.health.connect()
+        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "still unwritable at Connect")
+        health.writable.insert(.waist)
+        await app.health.foreground()
+
+        XCTAssertTrue(memory.owed.isEmpty)
+        XCTAssertEqual(savedVersions(waist), [1], "deleted, then written again")
+        XCTAssertEqual(memory.writtenVersion(waist), 1)
+    }
+
+    /// PR 1256 review R1: waist write access is turned off while the delete runs (after weight's
+    /// query began). Health never asked about waist, so the waist id stays owed: write access read
+    /// before the delete must not count it as paid.
+    func testAKindRevokedDuringTheDeleteKeepsItsIdOwed_US72_AC10_H29() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        let waist = try XCTUnwrap(health.saved.first { $0.kind == .waist }?.syncId)
+        health.deleteBegin = { [health] in
+            health?.deleteBegin = nil
+            health?.writable.remove(.waist)
+        }
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "its sample is still in Health")
+        XCTAssertEqual(health.saved.map(\.syncId), [waist])
+        XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// PR 1256 review R2: an exported row stops being listed for Health (another device flipped
+    /// it to entered-in-error) before the erase. Its kind is kept while it is written, so with
+    /// waist blocked and its sample deleted in Health by the person, the erase pays it.
+    func testAWrittenIdNoLongerListedKeepsItsKind_US72_AC10_H29() async throws {
+        let (app, written) = try await connectedInTheCloud()
+        let k = try XCTUnwrap(written.first)
+        var record = dropbox.record
+        var meta = record["meta"] as? [String: Any] ?? [:]
+        meta["lamport"] = ((meta["lamport"] as? Int) ?? 0) + 10
+        meta["updatedAt"] = Date().formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+        record["meta"] = meta
+        record["measurements"] = (record["measurements"] as? [[String: Any]] ?? []).map { row in
+            var row = row
+            if row["metricType"] as? String == "weight" { row["status"] = "entered-in-error" }
+            return row
+        }
+        // The session re-reads the cloud at most once per 5 s (record-session.ts:31, US-34).
+        try? await Task.sleep(for: .seconds(5.1))
+        dropbox.put(record)
+        await app.sync.syncNow()
+        await until("the row is no longer active") { app.store.myData?.vitals.first?.latest == nil }
+        await app.health.refresh()
+        XCTAssertEqual(memory.writtenVersion(k), 1, "still listed as written")
+        XCTAssertEqual(memory.kind(k), .weight, "and its kind kept")
+
+        health.writable.remove(.waist)
+        health.saved.removeAll()
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertTrue(memory.owed.isEmpty, "not found under a kind Health was asked about: paid")
+        XCTAssertFalse(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// PR 1256 review R3: an owed id whose kind is not known (written before kinds were kept),
+    /// not found while one kind is unwritable, may be that kind's: it stays owed.
+    func testAnOwedIdOfUnknownKindStaysOwedWhileAKindIsBlocked_US72_AC10_H29() async throws {
+        let app = try app(cloud: false)
+        health.writable.remove(.waist)
+        memory.owe(1, for: "written-by-build-10")
+        XCTAssertNil(memory.kind("written-by-build-10"))
+
+        await app.health.connect()
+
+        XCTAssertEqual(health.deletedSyncIds.last, ["written-by-build-10"], "Connect tried the owed delete")
+        XCTAssertEqual(memory.owed, ["written-by-build-10": 1], "it may be a waist sample still in Health")
+    }
+
+    /// Lead H33: K's owed delete is in flight (its snapshot holds K alone) when a remote erase
+    /// owes L. The erase waits that pay out, then pays L itself, with no other trigger.
+    func testARemoteEraseDuringAPayInFlightPaysWhatItOwed_US72_AC10_H33() async throws {
+        let (app, k) = try await reconnectedWithKOwed()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        let l = try XCTUnwrap(health.saved.first { $0.kind == .waist }?.syncId)
+        XCTAssertEqual(memory.writtenVersion(l), 1)
+        health.deleteFails = false
+        var held = false, released = false
+        health.deleteBegin = { [health] in
+            health?.deleteBegin = nil
+            held = true
+            for _ in 0..<1500 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+        let foreground = Task { await app.health.foreground() }
+        await until("K's delete is in flight") { held }
+        // The session re-reads the cloud at most once per 5 s (record-session.ts:31, US-34).
+        try? await Task.sleep(for: .seconds(5.1))
+        try await remoteEraseSparingTheRow(app, to: 2)
+        await until("the erase owes L") { memory.owed[l] != nil }
+
+        released = true
+        await foreground.value
+        await until("L is paid with no other trigger") { memory.owed.isEmpty }
+
+        XCTAssertEqual(Array(health.deletedSyncIds.suffix(2)), [[k], [l]], "K's pay, then the erase's own")
+        XCTAssertTrue(savedVersions(l).isEmpty, "L's sample left Health")
+    }
+
+    /// Lead H34: a correction of a written id hangs in HealthKit. A local erase drains once: the
+    /// Health delete begins within one `drainBound`, not two.
+    func testALocalEraseBeginsTheHealthDeleteWithinOneDrain_US72_AC10_H34() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await app.health.refresh()
+        XCTAssertEqual(health.saved.count, 1)
+        var reached = false, released = false
+        health.saveHold = { [health] in
+            health?.saveHold = nil
+            reached = true
+            for _ in 0..<1000 where !released { try? await Task.sleep(for: .milliseconds(10)) }
+        }
+        let rowId = try XCTUnwrap(app.store.myData?.vitals.first?.latest?.id)
+        await XCTAssertSaved(await app.store.apply(.correct(id: rowId, value: 81)))
+        await until("the correction is in HealthKit") { reached }
+        var began: ContinuousClock.Instant?
+        health.deleteBegin = { [health] in
+            health?.deleteBegin = nil
+            began = .now
+        }
+
+        let start = ContinuousClock.now
+        guard case .erased = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        let delay = try XCTUnwrap(began, "the owed delete ran") - start
+        XCTAssertLessThan(delay, AppleHealthSync.drainBound + .seconds(1), "one drain, not two")
+        released = true
+        await settle()
+    }
 }
