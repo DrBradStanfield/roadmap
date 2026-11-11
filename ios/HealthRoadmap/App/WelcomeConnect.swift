@@ -61,13 +61,15 @@ enum WelcomeConnect {
             Failure(words: "Signed in, but your record could not be opened yet. Check your connection, then try again.",
                     offersTryAgain: true)
         // Edits kept landing during the open; a fresh open may find them settled.
-        case .busy: Failure(words: problem.words(provider), offersTryAgain: true)
+        case .busy,
+             // The words say to free space; Try again checks it worked, and on a still-full
+             // cloud it only fails again (owner, review F2 of PR 1328).
+             .storageFull:
+            Failure(words: problem.words(provider), offersTryAgain: true)
         // Only signing in again helps: the Connect rows, which show at failed, are the remedy.
         case .signIn,
              // Only an app update helps.
-             .tooNew,
-             // Nothing goes up until space is freed in the cloud.
-             .storageFull:
+             .tooNew:
             Failure(words: problem.words(provider), offersTryAgain: false)
         }
     }
