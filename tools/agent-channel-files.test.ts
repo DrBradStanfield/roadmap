@@ -6,11 +6,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { run, CHANNEL_KEY, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
-import { FILE_NOTE, MAX_DOWNLOAD } from './agent-channel-files.mjs';
+import { run, CHANNEL_KEY, GENERAL_PRIVATE_NOTE, TOKEN_KEY, UNTRUSTED_NOTE } from './agent-channel.mjs';
+import { FILE_NOTE, MAX_DOWNLOAD, resolved } from './agent-channel-files.mjs';
 
 const TOKEN = 'test-token-good';
 const CHANNEL = '123456789012345678';
@@ -29,7 +29,9 @@ let fetchMock: ReturnType<typeof vi.fn>;
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const msg = (id: string, extra: Record<string, unknown> = {}) => ({ id, content: `m${id}`, timestamp: '2026-11-01T00:00:00Z', author: { id: HERMES, username: 'hermes', bot: true }, ...extra });
 const att = (extra: Record<string, unknown> = {}) => ({ id: ATT_ID, filename: 'report.md', size: 11, content_type: 'text/markdown; charset=utf-8', url: cdn(), proxy_url: `https://media.discordapp.net/x?ex=${QUERY_MARK}`, ...extra });
-const go = (argv: string[]) => run(argv, { env: {}, fetch: fetchMock, home, root, now: () => Date.UTC(2026, 10, 1), stdin: async () => '' });
+// AC17's channel check (GET /channels/<id>) is answered here as a text channel, so fetchMock sees only the other requests.
+const routed = (url: string, init: RequestInit) => (/\/channels\/\d+$/.test(url) ? json({ id: CHANNEL, guild_id: '100000000000000001', type: 0 }) : fetchMock(url, init));
+const go = (argv: string[]) => run(argv, { env: {}, fetch: routed, home, root, now: () => Date.UTC(2026, 10, 1), stdin: async () => '' });
 const statePath = () => join(home, '.health-roadmap', 'agent-channel-state.json');
 const state = () => JSON.parse(readFileSync(statePath(), 'utf8'));
 const urls = () => fetchMock.mock.calls.map((c) => String(c[0]));
@@ -115,7 +117,7 @@ describe('US-63 AC15: fetch downloads one text attachment, its URL from the API 
     const r = await go(['fetch', MSG_ID, ATT_ID]);
     expect(r.code).toBe(0);
     const out = JSON.parse(r.stdout);
-    expect(out).toEqual({ untrusted: true, note: FILE_NOTE, path: saved(), bytes: 11, sha256: createHash('sha256').update('hello world').digest('hex') });
+    expect(out).toEqual({ untrusted: true, private: true, channel: 'agent', note: FILE_NOTE, private_note: GENERAL_PRIVATE_NOTE, path: saved(), bytes: 11, sha256: createHash('sha256').update('hello world').digest('hex') });
     expect(readFileSync(saved(), 'utf8')).toBe('hello world');
     expect(statSync(saved()).mode & 0o777).toBe(0o600);
     expect(statSync(downloads()).mode & 0o777).toBe(0o700);
@@ -310,17 +312,31 @@ describe('US-63 AC16: the downloads folder is a real folder of ours, tightened t
     for (let i = 0; i < 50; i++) writeFileSync(join(downloads(), `old-${i}.md`), 'x');
     serve();
     const r = await go(['fetch', MSG_ID, ATT_ID]);
-    expect(r.stderr).toContain('the limit is under 50 files and 20 MB. Remove old files from it by hand');
+    expect(r.stderr).toContain('the limit is under 50 files and 60 MB. Remove old files from it by hand');
     expect(r.stderr).not.toContain('old-');
     expect(urls()).toEqual([`${URL_ONLY}/${MSG_ID}`]);
     rmSync(join(downloads(), 'old-0.md'));
     expect((await go(['fetch', MSG_ID, ATT_ID])).code).toBe(0);
   });
-  it('refuses at 20 MB in total, before downloading', async () => {
+  it('refuses at 60 MB in total, before downloading', async () => {
     mkdirSync(downloads(), { recursive: true });
-    writeFileSync(join(downloads(), 'big.txt'), Buffer.alloc(20 * 1024 * 1024));
+    writeFileSync(join(downloads(), 'big.txt'), Buffer.alloc(60 * 1024 * 1024));
     serve();
     expect((await go(['fetch', MSG_ID, ATT_ID])).stderr).toContain('Remove old files from it by hand');
     expect(urls()).toEqual([`${URL_ONLY}/${MSG_ID}`]);
+  });
+});
+
+describe('US-63 AC16 (review R3): a missing path resolves whole, a relative one too', () => {
+  it('keeps every character of a relative name whose parent is "."', () => {
+    const cwd = realpathSync(process.cwd());
+    expect(resolved('zz-agent-channel-missing')).toBe(join(cwd, 'zz-agent-channel-missing'));
+    expect(resolved('zz-agent-channel-missing/a/b')).toBe(join(cwd, 'zz-agent-channel-missing', 'a', 'b'));
+  });
+  it('resolves an absolute missing path through its existing, symlinked ancestor', () => {
+    const real = realpathSync(home);
+    const link = join(root, 'link');
+    symlinkSync(home, link);
+    expect(resolved(join(link, 'x', 'y'))).toBe(join(real, 'x', 'y'));
   });
 });
