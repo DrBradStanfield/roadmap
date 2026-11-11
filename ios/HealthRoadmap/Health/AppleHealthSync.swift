@@ -333,14 +333,15 @@ final class AppleHealthSync {
 
     /// Deletes `owed` by sync id. The ids Health deleted leave the list, each unless a newer
     /// version was saved meanwhile (Codex C-R1); true when none was left.
-    /// An id the client did not find under a kind it could write is gone, so it is paid (lead H29):
-    /// only an id of a kind it could not write, or of a kind not known, stays. Write access is read
-    /// before the delete asks Health.
+    /// An id not found is gone when Health was asked about its kind (lead H29); one whose kind is
+    /// not known, only when Health was asked about every kind.
     private func pay(_ owed: [String: Int64]) async throws -> Bool {
-        let writable = Set(HealthKind.allCases.filter { client.canWrite($0) })
-        let left = try await client.deleteSamples(syncIds: Array(owed.keys)).filter { memory.kind($0).map { !writable.contains($0) } ?? true }
-        memory.paid(owed.filter { !left.contains($0.key) })
-        return left.isEmpty
+        let done = try await client.deleteSamples(syncIds: Array(owed.keys))
+        let settled = owed.filter { id, _ in
+            done.deleted.contains(id) || memory.kind(id).map(done.asked.contains) ?? done.asked.isSuperset(of: HealthDeletion.kinds)
+        }
+        memory.paid(settled)
+        return settled.count == owed.count
     }
 
     /// How long an erase's Health delete waits for a running pass. The record's erase has

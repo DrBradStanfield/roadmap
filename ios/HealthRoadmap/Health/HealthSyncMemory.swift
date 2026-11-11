@@ -105,11 +105,12 @@ struct HealthSyncMemory {
         (defaults.dictionary(forKey: "appleHealth.kinds")?[syncId] as? String).flatMap(HealthKind.init)
     }
 
-    /// Each pass: the kinds of `writes`, and those of the ids still owed (an erase empties the record).
+    /// Each pass: the kinds of `writes`, kept for every id still written or owed, listed or not
+    /// (a row gone from the record still has its sample in Health).
     func learnKinds(_ writes: [HealthWrite]) {
         let stored = defaults.dictionary(forKey: "appleHealth.kinds") as? [String: String] ?? [:]
-        let owed = owed
-        let kinds = stored.filter { owed[$0.key] != nil }.merging(writes.compactMap { write in write.kind.map { (write.syncId, $0.rawValue) } }) { $1 }
+        let held = Set(owed.keys).union(versions("appleHealth.written").keys)
+        let kinds = stored.filter { held.contains($0.key) }.merging(writes.compactMap { write in write.kind.map { (write.syncId, $0.rawValue) } }) { $1 }
         guard kinds != stored else { return }
         defaults.set(kinds.isEmpty ? nil : kinds, forKey: "appleHealth.kinds")
     }

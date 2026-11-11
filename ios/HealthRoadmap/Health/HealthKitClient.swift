@@ -95,18 +95,18 @@ final class HealthKitClient: HealthStoreClient {
         }
     }
 
-    func deleteSamples(syncIds: [String]) async throws -> [String] {
-        guard !syncIds.isEmpty else { return [] }
+    func deleteSamples(syncIds: [String]) async throws -> HealthDeletion {
+        guard !syncIds.isEmpty else { return HealthDeletion(deleted: [], asked: []) }
         // Weight and waist samples carry the sync ids, a blood pressure's correlation does and
         // its halves go with it. A kind whose write access is off is not asked: its ids stay.
         let ours = Self.deletePredicate(syncIds: syncIds)
         let types: [(HealthKind, HKSampleType)] = [(.weight, HKQuantityType(.bodyMass)), (.waist, HKQuantityType(.waistCircumference)),
                                                    (.bloodPressure, HKCorrelationType(.bloodPressure))]
         var deleted: Set<String> = []
-        var blocked = false
+        var asked: Set<HealthKind> = []
         do {
             for (kind, type) in types {
-                guard canWrite(kind) else { blocked = true; continue }
+                guard canWrite(kind) else { continue }
                 var found: [HKObject] = []
                 for sample in try await HKSampleQueryDescriptor(predicates: [.sample(type: type, predicate: ours)], sortDescriptors: []).result(for: store) {
                     found.append(sample)
@@ -114,13 +114,14 @@ final class HealthKitClient: HealthStoreClient {
                 }
                 if !found.isEmpty { try await store.delete(found) }
                 deleted.formUnion(found.compactMap { ($0.metadata?[HKMetadataKeySyncIdentifier] as? String)?.dropFirst(Self.syncPrefix.count) }.map(String.init))
+                asked.insert(kind)
             }
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
             throw HealthStoreError.locked
         }
-        // With a kind not asked, an id not found may be that kind's: it is returned, and the sync
-        // keeps it owed only when its kind is one not asked (`AppleHealthSync.pay`, lead H29).
-        return blocked ? syncIds.filter { !deleted.contains($0) } : []
+        // Each kind counts as asked only once its own query and delete succeeded: an id not found
+        // is gone only for a kind asked (`AppleHealthSync.pay`, lead H29).
+        return HealthDeletion(deleted: deleted, asked: asked)
     }
 
     /// What a remote erase deletes (US-72 AC10): our sync ids AND this app as the source, so a

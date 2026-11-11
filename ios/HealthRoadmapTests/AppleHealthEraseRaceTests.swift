@@ -826,6 +826,75 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         XCTAssertEqual(memory.writtenVersion(waist), 1)
     }
 
+    /// PR 1256 review R1: waist write access is turned off while the delete runs (after weight's
+    /// query began). Health never asked about waist, so the waist id stays owed: write access read
+    /// before the delete must not count it as paid.
+    func testAKindRevokedDuringTheDeleteKeepsItsIdOwed_US72_AC10_H29() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        await XCTAssertSaved(await app.store.apply(.add(metric: "waist", value: 90, day: "2026-10-01")))
+        await app.health.refresh()
+        let waist = try XCTUnwrap(health.saved.first { $0.kind == .waist }?.syncId)
+        health.deleteBegin = { [health] in
+            health?.deleteBegin = nil
+            health?.writable.remove(.waist)
+        }
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertEqual(memory.owed.keys.sorted(), [waist], "its sample is still in Health")
+        XCTAssertEqual(health.saved.map(\.syncId), [waist])
+        XCTAssertTrue(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// PR 1256 review R2: an exported row stops being listed for Health (another device flipped
+    /// it to entered-in-error) before the erase. Its kind is kept while it is written, so with
+    /// waist blocked and its sample deleted in Health by the person, the erase pays it.
+    func testAWrittenIdNoLongerListedKeepsItsKind_US72_AC10_H29() async throws {
+        let (app, written) = try await connectedInTheCloud()
+        let k = try XCTUnwrap(written.first)
+        var record = dropbox.record
+        var meta = record["meta"] as? [String: Any] ?? [:]
+        meta["lamport"] = ((meta["lamport"] as? Int) ?? 0) + 10
+        meta["updatedAt"] = Date().formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+        record["meta"] = meta
+        record["measurements"] = (record["measurements"] as? [[String: Any]] ?? []).map { row in
+            var row = row
+            if row["metricType"] as? String == "weight" { row["status"] = "entered-in-error" }
+            return row
+        }
+        // The session re-reads the cloud at most once per 5 s (record-session.ts:31, US-34).
+        try? await Task.sleep(for: .seconds(5.1))
+        dropbox.put(record)
+        await app.sync.syncNow()
+        await until("the row is no longer active") { app.store.myData?.vitals.first?.latest == nil }
+        await app.health.refresh()
+        XCTAssertEqual(memory.writtenVersion(k), 1, "still listed as written")
+        XCTAssertEqual(memory.kind(k), .weight, "and its kind kept")
+
+        health.writable.remove(.waist)
+        health.saved.removeAll()
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase was refused") }
+
+        XCTAssertTrue(memory.owed.isEmpty, "not found under a kind Health was asked about: paid")
+        XCTAssertFalse(words.hasSuffix(EraseText.healthNotErased), words)
+    }
+
+    /// PR 1256 review R3: an owed id whose kind is not known (written before kinds were kept),
+    /// not found while one kind is unwritable, may be that kind's: it stays owed.
+    func testAnOwedIdOfUnknownKindStaysOwedWhileAKindIsBlocked_US72_AC10_H29() async throws {
+        let app = try app(cloud: false)
+        health.writable.remove(.waist)
+        memory.owe(1, for: "written-by-build-10")
+        XCTAssertNil(memory.kind("written-by-build-10"))
+
+        await app.health.connect()
+
+        XCTAssertEqual(health.deletedSyncIds.last, ["written-by-build-10"], "Connect tried the owed delete")
+        XCTAssertEqual(memory.owed, ["written-by-build-10": 1], "it may be a waist sample still in Health")
+    }
+
     /// Lead H33: K's owed delete is in flight (its snapshot holds K alone) when a remote erase
     /// owes L. The erase waits that pay out, then pays L itself, with no other trigger.
     func testARemoteEraseDuringAPayInFlightPaysWhatItOwed_US72_AC10_H33() async throws {
