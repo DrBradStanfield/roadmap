@@ -44,6 +44,7 @@ struct BloodPressureSheet: View {
                 }
                 if correcting == nil {
                     DatePicker("Day", selection: $day, in: ...Date.now, displayedComponents: .date)
+                        .onChange(of: day) { SheetSave.send(&state, .wordsStale) }
                 }
             }
             .navigationTitle(correcting.map { "Correct \(DayText.short($0.day))" } ?? "Blood pressure")

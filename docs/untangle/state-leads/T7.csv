@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-T7,tooling,scripts/test-all-locked.test.ts signal tests fail under runner load (US-71 AC1-AC3),bug,not started,CI run 43105067257; twice more in the 10-11 Nov window. Owner: tooling,,no
+T7,tooling,"Two test files fail when test order is shuffled: app/lib/outbound-fetch-deadline.test.ts and widget-src/src/components/HealthTool.list-departure.test.tsx share state or fake timers between cases",bug,not started,"Adversary review of screening Change 1, 2026-11-12: passes 37/37 in order, fails 4 cases under --sequence.shuffle; review-note issue 1333",,no
