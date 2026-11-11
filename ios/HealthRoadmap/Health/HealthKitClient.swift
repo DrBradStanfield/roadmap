@@ -118,7 +118,8 @@ final class HealthKitClient: HealthStoreClient {
         } catch let error as HKError where error.code == .errorDatabaseInaccessible {
             throw HealthStoreError.locked
         }
-        // With a kind not asked, an id not found may be that kind's: it stays owed.
+        // With a kind not asked, an id not found may be that kind's: it is returned, and the sync
+        // keeps it owed only when its kind is one not asked (`AppleHealthSync.pay`, lead H29).
         return blocked ? syncIds.filter { !deleted.contains($0) } : []
     }
 
