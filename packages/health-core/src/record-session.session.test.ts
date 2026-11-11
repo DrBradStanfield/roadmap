@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
 import type { RecordHost } from './record-host';
+import type { SaveEvent, SaveState } from './save-state';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 import { stampProfile } from './state-edits';
@@ -1285,14 +1286,14 @@ describe("RecordSession: two erases on one session (US-16 AC2a)", () => {
 });
 
 describe('RecordSession: a save asked for while a landed save still adopts (US-11 AC7)', () => {
-  it('starts no pass beside that save, so a later flush joins the pass that carries the change', async () => {
+  it('starts no pass beside that save, so a later flush joins the one pass that carries the change', async () => {
     const store = new TestStore();
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
     add(session, 'a');
     await session.flush();
     // Another device erases: this session's next save merges the erase in, and
-    // its adopt() clears the off-file data after the pass settled the mode.
+    // its adopt() clears the off-file data after the pass and its claim ended.
     const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
     clock += 60_000;
     expect((await other.erase()).success).toBe(true);
@@ -1309,16 +1310,20 @@ describe('RecordSession: a save asked for while a landed save still adopts (US-1
     add(session, 'b', 81, '2026-10-02');
     await session.flush();
     expect(inner).not.toBeNull();
-    // The flush made inside adopt() joined that save. A pass started there
-    // would leave `running` cleared by the save it ran beside, and this flush
-    // would answer before its write lands (adversary R2).
+    // The flush made inside adopt() started the pass that carries 'c', after
+    // the landed pass's claim ended. The old save never clears that newer
+    // claim, so this flush joins it: it answers only once that write lands,
+    // and adds no write of its own (adversary R2).
     let answered = false;
     const late = session.flush().then(() => { answered = true; });
     await new Promise((r) => setTimeout(r, 0));
     expect(answered).toBe(false);
+    const writes = store.writes;
     release();
     await Promise.all([inner, late]);
     expect(answered).toBe(true);
+    expect(store.writes - writes).toBe(1);
+    expect(ids(stored(store.cloud))).toContain('c');
   });
 });
 
@@ -1342,22 +1347,23 @@ describe("RecordSession: an edit made while another device's erase is taken in (
   async function editInsideTheClear() {
     const run = await erasedElsewhere();
     let inner: Promise<void> | null = null;
+    let storedWhenAnswered: string[] = [];
     run.fake.host.clearOffFileData = () => {
       run.fake.host.clearOffFileData = () => {};
       expect(add(run.session, 'c', 82, '2026-10-03')).toBe(true);
-      inner = run.session.flush();
+      inner = run.session.flush().then(() => { storedWhenAnswered = ids(stored(run.store.cloud)); });
     };
     add(run.session, 'b', 81, '2026-10-02');
     await run.session.flush();
     expect(inner).not.toBeNull();
     await inner;
-    return run;
+    return { ...run, storedWhenAnswered };
   }
 
-  it('keeps the edit in the working copy, and the next save writes it', async () => {
-    const { store, session } = await editInsideTheClear();
+  it('keeps the edit, and the flush made with it answers only once a write carries it', async () => {
+    const { store, session, storedWhenAnswered } = await editInsideTheClear();
     expect(ids(session.file)).toContain('c');
-    await session.flush();
+    expect(storedWhenAnswered).toContain('c');
     expect(ids(stored(store.cloud))).toContain('c');
   });
 
@@ -1403,5 +1409,101 @@ describe("RecordSession: an edit made while another device's erase is taken in (
       expect(session.eraseIdentity).toBe(erased);
       expect(ids(session.file)).not.toContain('a');
     });
+  });
+});
+
+describe('RecordSession: a pass and its claim end together (lead A1)', () => {
+  type Inside = { mode: SaveState; running: Promise<boolean> | null; dispatch(event: SaveEvent): number | null };
+  const passRuns = (s: SaveState) => s.mode === 'saving' || (s.mode === 'erasing' && s.under.mode === 'saving');
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  /** Holds the store's next write until released. */
+  function holdWrite(store: TestStore) {
+    let release!: () => void; let reached!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const started = new Promise<void>((r) => { reached = r; });
+    const write = store.write.bind(store);
+    store.write = async (...args: Parameters<TestStore['write']>) => { store.write = write; reached(); await gate; return write(...args); };
+    return { started, release };
+  }
+
+  it('a pass runs exactly while the mode is saving (or erasing over saving), at every event', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    const inside = session as unknown as Inside;
+    const broken: string[] = [];
+    const seen = new Set<string>();
+    const check = (at: string) => {
+      if (passRuns(inside.mode) !== (inside.running !== null)) broken.push(`${at}: ${JSON.stringify(inside.mode)}, running ${inside.running !== null}`);
+    };
+    // Checked as each event arrives, and once the turn that dispatched it ends
+    // (a pass's claim is set just after the save that starts it, in that turn).
+    const dispatch = inside.dispatch.bind(session);
+    inside.dispatch = (event) => {
+      check(`before ${event.type}`);
+      seen.add(`${event.type}${passRuns(inside.mode) ? ' mid-pass' : ''}`);
+      const pass = dispatch(event);
+      queueMicrotask(() => check(`after ${event.type}`));
+      return pass;
+    };
+    const fireDebounce = () => fake.timers.splice(0).forEach((t) => t.run());
+    const midPass = async (during: () => void | Promise<void>) => {
+      const held = holdWrite(store);
+      add(session, `m${store.writes}`);
+      const save = session.flush();
+      await held.started;
+      await during();
+      held.release();
+      await save;
+    };
+
+    const steps: Array<[string, () => Promise<void>]> = [
+      ['a pass lands', async () => { add(session, 'a'); await session.flush(); }],
+      ['an edit, then the debounce firing, mid-pass', () => midPass(() => { add(session, 'b'); fireDebounce(); })],
+      ['a pass fails', async () => {
+        store.failWrites = true;
+        add(session, 'c');
+        await expect(session.flush()).rejects.toThrow();
+        store.failWrites = false;
+      }],
+      ['flushSync mid-pass', () => midPass(() => { add(session, 'd'); session.flushSync(); })],
+      ['an erase mid-pass', async () => {
+        let erase: Promise<unknown> | null = null;
+        await midPass(async () => {
+          erase = session.erase();
+          for (let i = 0; i < 50 && inside.mode.mode !== 'erasing'; i += 1) await tick();
+          expect(inside.mode.mode).toBe('erasing');
+        });
+        expect(await erase).toEqual({ success: true });
+      }],
+      ["a save asked for from adopt(), after another device's erase", async () => {
+        const other = await RecordSession.open(fakeHost(new TestStore(store.cloud), 'device').host);
+        clock += 60_000;
+        expect((await other.erase()).success).toBe(true);
+        clock += 60_000;
+        let inner: Promise<void> | null = null;
+        fake.host.clearOffFileData = () => {
+          fake.host.clearOffFileData = () => {};
+          add(session, 'e');
+          inner = session.flush();
+        };
+        add(session, 'f');
+        await session.flush();
+        await inner;
+      }],
+    ];
+    for (const [name, step] of steps) {
+      await step();
+      await tick();
+      check(`after step: ${name}`);
+    }
+
+    expect(broken).toEqual([]);
+    expect([...seen]).toEqual(expect.arrayContaining([
+      'passLanded mid-pass', 'passFailed mid-pass', 'edited mid-pass', 'save mid-pass', 'synced mid-pass', 'eraseStarted mid-pass',
+    ]));
+    expect(inside.running).toBeNull();
+    expect(session.saveStatus).toBe('saved');
   });
 });

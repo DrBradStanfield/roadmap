@@ -123,8 +123,8 @@ function deviceCopyRevision(host: RecordHost): string | null | undefined {
  */
 export class RecordSession {
   private current: RoadmapFile;
-  /** The save mode (lead A1), changed only by `dispatch`; below, its effects'
-   *  handles: the debounce, and the save a persist() call made meanwhile joins. */
+  /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
+   *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
   private persistTimer: unknown = null;
   private running: Promise<boolean> | null = null;
@@ -673,20 +673,23 @@ export class RecordSession {
     // Nothing to save writes nothing: a save always merges, and every merge
     // moves the lamport on. Covers an empty flush and the debounce left over
     // from an edit a save's own next pass already took (US-10 AC5a).
-    // A running save is joined, never doubled: `running` is the claim, and it
-    // outlives the pass that settled the mode (adopt() runs between), so a
-    // pass starts only when no save runs.
+    // A running save is joined, never doubled: `running` is the claim, set and
+    // cleared in the same turns as the saving mode.
     if (this.running) {
-      this.dispatch({ type: 'join' });
+      this.dispatch({ type: 'save' });
       return this.running;
     }
     const from = this.dispatch({ type: 'save' });
-    if (from !== null) this.running = this.saveLoop(from);
+    if (from !== null) {
+      const run: Promise<boolean> = this.saveLoop(from, () => this.running === run);
+      this.running = run;
+    }
     return this.running ?? Promise.resolve(true);
   }
 
-  /** Re-runs while edits land during the await. */
-  private async saveLoop(pass: number | null): Promise<boolean> {
+  /** Re-runs while edits land during the await. `owns`: `running` is still
+   *  this save's, never one a save asked for from adopt() started since. */
+  private async saveLoop(pass: number | null, owns: () => boolean): Promise<boolean> {
     // A remote change this save folds in is one refreshFromRemote() will never
     // find: it stands aside while a write is pending, and the merge below has
     // already taken the change into the working copy (US-34 AC1). Announce it
@@ -698,22 +701,24 @@ export class RecordSession {
         this.revisionSeen = result.version; // what it wrote, never what its verify read
         if (result.warning) this.saveWarning = result.warning;
         const next = this.dispatch({ type: 'passLanded', from: pass });
+        // The pass and its claim end together, before adopt() or a listener
+        // can ask for a save: that save starts its own pass, never joins this one.
+        if (next === null && owns()) this.running = null;
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
         remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
         pass = next;
       }
-      // Ended before anyone hears of it: a listener that saves again starts a
-      // new save, instead of joining this finished one.
-      this.running = null;
       announce(this.host, remoteFolded);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
       return true;
     } catch (error) {
-      this.running = null; // as above: ended before the marker is announced
-      this.dispatch({ type: 'passFailed' });
+      if (owns()) { // as above; an adopt() that threw after its pass ended fails no newer pass
+        this.dispatch({ type: 'passFailed' });
+        this.running = null;
+      }
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);

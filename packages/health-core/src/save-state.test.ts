@@ -20,7 +20,6 @@ const pass = (from: number): SaveEffect => ({ type: 'pass', from });
 const EVENTS: Record<string, SaveEvent> = {
   edited: { type: 'edited' },
   save: { type: 'save' },
-  join: { type: 'join' },
   landed: { type: 'passLanded', from: 6 },
   failed: { type: 'passFailed' },
   synced: { type: 'synced' },
@@ -52,7 +51,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     edited: [waiting(6, 5), [ARM]], save: same(clean(5)), landed: same(clean(5)), failed: same(clean(5)),
     synced: same(clean(5)), hold: same(clean(5)), eraseStarted: [erasing(held(6, 5)), []], eraseEnded: same(clean(5)),
     holdEnded: same(clean(5)),
-    join: same(clean(5)),
   },
   waiting: {
     edited: [waiting(7, 5), [ARM]], save: [saving(6, 5, 6), [CANCEL, pass(6)]],
@@ -60,7 +58,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [clean(6), [CANCEL]], hold: [held(6, 5), [CANCEL]],
     eraseStarted: [erasing(held(7, 5)), [CANCEL]], eraseEnded: same(waiting(6, 5)),
     holdEnded: same(waiting(6, 5)),
-    join: same(waiting(6, 5)),
   },
   saving: {
     edited: [saving(7, 4, 6, true), [ARM]], save: same(saving(6, 4, 6)), // joins, never a second pass
@@ -68,7 +65,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [saving(6, 6, 6), []], hold: same(saving(6, 4, 6)),
     eraseStarted: [erasing(saving(7, 4, 6)), []], eraseEnded: same(saving(6, 4, 6)),
     holdEnded: same(saving(6, 4, 6)),
-    join: same(saving(6, 4, 6)),
   },
   savingArmed: {
     edited: [saving(8, 4, 6, true), [ARM]], save: [saving(7, 4, 6), [CANCEL]],
@@ -79,7 +75,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [saving(7, 7, 6), [CANCEL]], hold: [saving(7, 4, 6), [CANCEL]],
     eraseStarted: [erasing(saving(8, 4, 6)), [CANCEL]], eraseEnded: same(saving(7, 4, 6, true)),
     holdEnded: same(saving(7, 4, 6, true)),
-    join: [saving(7, 4, 6), [CANCEL]],
   },
   failed: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
@@ -87,7 +82,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [clean(6), []], hold: same(failed(6, 4)),
     eraseStarted: [erasing(held(7, 4)), []], eraseEnded: same(failed(6, 4)),
     holdEnded: same(failed(6, 4)),
-    join: same(failed(6, 4)),
   },
   held: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
@@ -96,11 +90,9 @@ const TABLE: Record<string, Record<string, Row>> = {
     // an erase that ended before eraseStarted (beforeErase threw): held settles
     eraseStarted: [erasing(held(7, 4)), []], eraseEnded: [failed(6, 4), []],
     holdEnded: [failed(6, 4), []], // an erase that ended before eraseStarted settles its held
-    join: same(held(6, 4)),
   },
   erasingWaiting: {
     edited: same(erasing(waiting(7, 6))), save: [erasing(saving(7, 6, 7)), [CANCEL, pass(7)]],
-    join: same(erasing(waiting(7, 6))),
     landed: same(erasing(waiting(7, 6))), failed: same(erasing(waiting(7, 6))),
     synced: [erasing(clean(7)), [CANCEL]], hold: [erasing(held(7, 6)), [CANCEL]],
     eraseStarted: [erasing(held(8, 6)), [CANCEL]], eraseEnded: [waiting(7, 6), []],
@@ -115,7 +107,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     eraseStarted: [erasing(saving(8, 4, 6)), []],
     eraseEnded: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
     holdEnded: same(erasing(saving(7, 4, 6))), // another erase ending never unwraps this one (US-16 AC2a)
-    join: same(erasing(saving(7, 4, 6))),
   },
   erasingHeld: {
     edited: same(erasing(held(7, 6))), save: [erasing(saving(7, 6, 7)), [pass(7)]],
@@ -124,7 +115,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     // the erase's write threw (say a non-Conflict error): held settles, nothing left running
     eraseStarted: [erasing(held(8, 6)), []], eraseEnded: [failed(7, 6), []],
     holdEnded: same(erasing(held(7, 6))),
-    join: same(erasing(held(7, 6))),
   },
   erasingClean: {
     edited: same(erasing(clean(7))), save: same(erasing(clean(7))),
@@ -132,7 +122,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: same(erasing(clean(7))), hold: same(erasing(clean(7))),
     eraseStarted: [erasing(held(8, 7)), []], eraseEnded: [clean(7), []],
     holdEnded: same(erasing(clean(7))),
-    join: same(erasing(clean(7))),
   },
   erasingFailed: {
     edited: same(erasing(failed(7, 4))), save: [erasing(saving(7, 4, 7)), [pass(7)]],
@@ -141,7 +130,6 @@ const TABLE: Record<string, Record<string, Row>> = {
     eraseStarted: [erasing(held(8, 4)), []],
     eraseEnded: [failed(7, 4), []], // an erase whose write rejected never stays erasing
     holdEnded: same(erasing(failed(7, 4))),
-    join: same(erasing(failed(7, 4))),
   },
 };
 

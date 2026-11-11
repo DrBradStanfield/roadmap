@@ -1,13 +1,14 @@
 /**
  * The record session's save, as one named state (lead A1). Changed only
  * through the pure `transition`; what the session must do comes back as
- * effects. Nothing uses it yet: RecordSession moves onto it next.
+ * effects. RecordSession holds it and runs those effects.
  *
  * The timer handle and the promise a flush joins stay in the session, as the
- * handles of effects it runs: the state says whether a debounce is armed and
- * whether a pass runs, and the session holds the one handle each needs. A
- * handle inside the state would make it impure and its table test would need
- * fakes, for no gain: the state alone decides every next step.
+ * handles of effects it runs. A handle inside the state would make it impure
+ * and its table test would need fakes. The session's `running` is the
+ * synchronous claim that a pass runs: it is set in the turn a pass starts and
+ * cleared in the turn the pass ends, so it is non-null exactly while the mode
+ * is saving (or erasing over saving). persist() reads it to join that pass.
  *
  * Counting: every change to the working copy counts one (`changes`); `saved`
  * is the count the last landed write carried. A pass starts from `changes`
@@ -31,13 +32,15 @@
  *   `under` it. Erasing while a pass runs is erasing over saving. An edit is
  *   refused here; RecordSession.refuses() gives the caller that answer.
  *
- * Where step (c) dispatches:
- * - saveLoop: `passFailed` where its catch sets `running = null`, before the
- *   awaited mirror write.
- * - saveLoop: `passLanded` where it sets `savedChanges = saving`, before
- *   `adopt()`; run the pass effect it returns after `adopt()`.
- * - persist(): `join` while `running` is set, `save` only when it is null:
- *   a save's `running` outlives the passLanded that settled its mode.
+ * Where RecordSession dispatches:
+ * - saveLoop: `passFailed` in its catch, clearing `running` in the same turn,
+ *   before the awaited mirror write.
+ * - saveLoop: `passLanded` once a pass's write lands, before `adopt()`; when
+ *   it asks for no next pass, `running` clears in the same turn, so a save
+ *   asked for from `adopt()` starts its own pass. A next pass runs after
+ *   `adopt()`.
+ * - persist(): `save`. While a pass runs it only joins: it clears an armed
+ *   debounce and starts no pass.
  * - erase(): read `debounceArmed(state)` before dispatching `hold`.
  * - erase(): `eraseEnded` in a finally around the write, from `eraseStarted`.
  * - erase(): `holdEnded` in a finally that covers the whole erase from `hold`
@@ -56,8 +59,7 @@ export type SaveState = SaveBase | { mode: 'erasing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
-  | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback, with no save running
-  | { type: 'join' } // the same, while a save runs: never starts a pass
+  | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback; joins a pass that runs
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
   | { type: 'passFailed' }
   | { type: 'synced' } // a synchronous write landed the whole working copy
@@ -117,10 +119,8 @@ function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnd
   switch (e.type) {
     case 'edited':
       return { state: s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: true } : { mode: 'waiting', changes: s.changes + 1, saved }, effects: [{ type: 'arm' }] };
-    case 'join': // a pass that runs is joined, never doubled; anything else waits for its own debounce
-      return s.mode === 'saving' ? { state: { ...s, armed: false }, effects: cancel } : same;
     case 'save':
-      if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel };
+      if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel }; // joined, never doubled
       if (s.changes === saved) return { state: { mode: 'clean', changes: s.changes }, effects: cancel };
       return { state: { mode: 'saving', changes: s.changes, saved, from: s.changes, armed: false }, effects: [...cancel, { type: 'pass', from: s.changes }] };
     case 'passLanded':
