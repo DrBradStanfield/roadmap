@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A2-6,S4 privacy scrub and vocabularies,Generate the server scrubber word list from the catalogue,not started,Brad approved generating the server scrubber (2026-11-11). instrument-scrub.mjs:182 SCRUB_METRIC_WORDS is a pasted list; sentry-scrub.ts:237-241 derives it,,,no

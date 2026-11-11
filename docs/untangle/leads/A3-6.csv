@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A3-6,S5 clinical rules,Reminders and follow-ups read the plan screening predicates,not started,input-form.ts:374-398 and reminders restate ages; no screeningEligible/followupOf,,,yes

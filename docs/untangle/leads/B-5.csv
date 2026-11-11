@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-5,bug leads,YouTube main-model fallback alert fires only for refusals,done,youtube-bot-pipeline.server.ts completionOutcome counts every fallback mode; reportTickFallbacks sends one warning per tick (US-15 AC58),1022,app/lib/youtube-bot.server.test.ts:305-324,no

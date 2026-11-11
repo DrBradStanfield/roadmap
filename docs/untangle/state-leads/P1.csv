@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P1,plan view,The glow stuck when a change was undone mid-glow,bug,done,hooks/useHighlights.ts holds one Glow phase (US-07 AC3),1150;1169,no

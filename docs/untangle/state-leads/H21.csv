@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H21,composition,"The Lp(a) unit save carries no erase: it rides on the store's erase mark",hidden link,not started,"storage/roadmap-store.ts:577 setLpaUnit edits with no erase; caller lib/lpa-unit.ts:48. Fix 4 PR 3 end state: every writer's erase argument is required by the type, then the store mark goes",,no

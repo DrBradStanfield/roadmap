@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A3-1,S4 privacy scrub and vocabularies,Server pre-bundle scrubber generated at build time,not started,Brad approved generating the server scrubber (2026-11-11). instrument-scrub.mjs:1-14 is a hand copy held by instrument-scrub-parity.test.ts,,,no

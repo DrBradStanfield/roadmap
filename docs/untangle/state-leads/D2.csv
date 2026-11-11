@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+D2,onboarding,The answered mark outlived an erase,bug,done,The mark is per record in hooks/useOnboarding.ts,1117,no

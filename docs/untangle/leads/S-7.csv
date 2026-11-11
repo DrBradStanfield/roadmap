@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-7,S2 server,Remove the unused path that matches chat against health documents,not started,chat.server.ts:228 always sets healthDocuments to []; api.chat.ts:602-609 still matches against it,,,no

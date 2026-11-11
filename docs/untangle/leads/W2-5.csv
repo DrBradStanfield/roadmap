@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-5,"S7 web data layer, upload, standalone",Upload review data shapes move out of ReviewTable,done,"FileResult, DocumentToSave, ReviewedValue, ReviewedLabValue now in lib/upload-pipeline.ts:16-54 (not api-types.ts); ReviewTable.tsx:17 imports them",1034,none,no

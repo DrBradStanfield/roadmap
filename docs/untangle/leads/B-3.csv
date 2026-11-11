@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+B-3,bug leads,"Chatbot embed build is not marked as a Shopify surface, so one event is dropped",not started,widget-src/vite.config.chatbot.ts:18-21 define has no VITE_SHOPIFY_SURFACE (site-chat config has it at :27),,,yes

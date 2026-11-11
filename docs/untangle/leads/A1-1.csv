@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A1-1,S3 cloud storage and sync,Typed write outcome on StorageError instead of hint text,partial,"adapter.ts:67-69 has a typed reason (storage-full, not-found). Left: no mayHaveWritten on StorageError; sync-manager.ts:231 still tests hint.includes(landed)",1058,"packages/health-core/src/drive-rest.test.ts, dropbox-rest.test.ts, ios/engine/storage-reason.test.ts (reason only)",yes

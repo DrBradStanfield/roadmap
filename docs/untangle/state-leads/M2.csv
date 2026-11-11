@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M2,phone mirrors,"The 64-notification limit is written twice, Swift and engine, held equal only by tests",lead,not started,"ios/HealthRoadmap/Reminders/ReminderScheduler.swift:36 limit = 64 vs ios/engine/reminders.ts:12 PHONE_REMINDER_LIMIT; pinned by ios/engine/reminders.test.ts:88 and ReminderSchedulerTests.swift:85. Should come from the engine. Found during shared upload PR 1, 2026-11-11",,no

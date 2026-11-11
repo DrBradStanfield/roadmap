@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A1-2,S3 cloud storage and sync,Time and stamp primitives move from merge.ts to their own module,not started,"merge.ts:100-642 still holds dayOf, localDay, laterStamp, stampInstant, latestStamp; no record-time.ts",,,yes
