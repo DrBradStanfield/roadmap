@@ -31,7 +31,7 @@ U3,upload,"""Review, save failed"" had no name",implicit state,done,saveFailed i
 U4,upload,Connect panel could hide a read error,latent,not started,Not reachable today: the backend changes only on reload,,no
 U5,upload,Error-boundary Cancel does nothing during a save,latent,not started,Needs a render throw during a save,,no
 U6,upload,A quota refusal fires no upload_outcome,behaviour,done,UploadModal.outcome.test.tsx US-12 AC10 (U6); UploadModal.flow-pins.test.tsx US-12 AC10 refused quota,,no
-U7,upload,A session finished while hidden reopens on the done screen,behaviour,awaits Brad,,,yes
+U7,upload,A session finished while hidden reopens on the done screen,behaviour,decided: leave,Brad 2026-11-11: leave as is,,no
 U8,upload,A pick past 200 files drops the rest with no notice,known gap,done,UploadModal.outcome.test.tsx US-12 AC9 (U8) x3,,no
 U9,upload,Cancel during a read fires no upload_outcome,behaviour,done,UploadModal.outcome.test.tsx US-12 AC10 (U9); upload-flow-state.test.ts reading + cancel; product-events.server.test.ts US-12 AC10 cancelled,,no
 H4,composition,"A chat value revealed in a matrix on a phone saved on the next tap outside, without Save",bug,done,"lib/useSaveOnLeave.ts arms only on the user's own act: a press, typing or Tab (US-16 AC1a); checked by the US-16 AC1a tests in HealthTool.phone-handoffs.test.tsx",1187,no
