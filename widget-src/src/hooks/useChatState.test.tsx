@@ -749,3 +749,78 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false });
   });
 });
+
+// US-67 AC2 (Fable 2026-11-12): a reply belongs to the chat's local identity. A new
+// chat's identity hands over to its thread's when the first reply lands; a thread
+// deleted or dropped while its reply is in flight takes that reply with it.
+describe('US-67 AC2 — the chat identity a reply belongs to', () => {
+  const ldl = { kind: 'field' as const, field: 'ldlC' as const, displayValue: 3.2, unitSystem: 'si' as const, date: null };
+  const target = () => ({ ask: () => 'erase-1', take: vi.fn(), leave: () => {} });
+  const click = { stopPropagation: () => {} } as unknown as MouseEvent;
+  const texts = (hook: { result: { current: ReturnType<typeof useChatState> } }) => hook.result.current.state.messages.map(m => m.content);
+
+  /** Sends `text`; the send's promise is held in an object, so awaiting this does not wait for the reply. */
+  function sendFrom(hook: { result: { current: ReturnType<typeof useChatState> } }, text: string) {
+    act(() => hook.result.current.actions.handleInputChange(text));
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.actions.handleSend(); });
+    return { sending };
+  }
+
+  it('a new chat\'s first reply streams and lands in it, edits included; a second send there after the hand-over is not orphaned', async () => {
+    const api = await import('../lib/chat-api');
+    const onProposeEdit = target();
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit, prefetchedData: { conversations: [], messages: [], activeConversationId: null } }));
+    const { sending: first } = sendFrom(hook, 'Q1');
+    act(() => { send.onDelta!({ type: 'text', text: 'Part' }); });
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe('Part'));
+    expect(hook.result.current.state.isLocalSender).toBe(true);
+    await act(async () => { send.resolve!({ result: { conversationId: 'N', messageId: 'm1', content: 'R1', proposedEdits: [ldl] }, error: null }); await first; });
+    expect(hook.result.current.state.activeConversationId).toBe('N');
+    expect(texts(hook)).toEqual(['Q1', 'R1']);
+    expect(onProposeEdit.take).toHaveBeenLastCalledWith([ldl], 'erase-1', true, undefined);
+
+    const { sending: second } = sendFrom(hook, 'Q2');
+    expect(vi.mocked(api.sendMessage).mock.calls.at(-1)![1]).toBe('N');
+    act(() => { send.onDelta!({ type: 'text', text: 'More' }); });
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe('More'));
+    expect(hook.result.current.state.isLocalSender).toBe(true);
+    await act(async () => { send.resolve!({ result: { conversationId: 'N', messageId: 'm2', content: 'R2', proposedEdits: [ldl] }, error: null }); await second; });
+    expect(texts(hook)).toEqual(['Q1', 'R1', 'Q2', 'R2']);
+    expect(onProposeEdit.take).toHaveBeenCalledTimes(2);
+    expect(onProposeEdit.take).toHaveBeenLastCalledWith([ldl], 'erase-1', true, undefined);
+  });
+
+  const refusals = [{ part: 'review' as const, words: "The chat's suggested values could not be read, so none of them were saved." }];
+  const lateReply = { conversationId: 'A', messageId: 'm', content: 'Reply for A', proposedEdits: [ldl], editRefusals: refusals };
+
+  it('the sending thread deleted while its reply is in flight: the late reply shows nowhere, and the page hears it is not the chat shown', async () => {
+    const api = await import('../lib/chat-api');
+    vi.mocked(api.deleteConversation).mockResolvedValueOnce(true);
+    const onProposeEdit = target();
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit, prefetchedData: { conversations: [{ id: 'A', title: 'A', updatedAt: 'x', createdAt: 'x' }], messages: [], activeConversationId: 'A' } }));
+    const { sending } = sendFrom(hook, 'A follow-up');
+    await act(async () => { await hook.result.current.actions.handleDelete('A', click); });
+    act(() => { send.onDelta!({ type: 'text', text: 'Late words' }); });
+    expect(hook.result.current.state.isLocalSender).toBe(false);
+    await act(async () => { send.resolve!({ result: lateReply, error: null }); await sending; });
+    expect(hook.result.current.state.activeConversationId).toBeNull();
+    expect(texts(hook)).toEqual([]);
+    // The page is told the reply's chat is not the one shown, so ChatEdits applies and shows none of it (replyStanding).
+    expect(onProposeEdit.take).toHaveBeenCalledWith([ldl], 'erase-1', false, refusals);
+  });
+
+  it('the sending thread dropped (the server no longer knows it) while its reply is in flight: the late reply shows nowhere, and the page hears it is not the chat shown', async () => {
+    const api = await import('../lib/chat-api');
+    vi.mocked(api.loadConversation).mockResolvedValueOnce(null);
+    const onProposeEdit = target();
+    const hook = renderHook(() => useChatState({ isLoggedIn: false, onProposeEdit, prefetchedData: { conversations: [{ id: 'A', title: 'A', updatedAt: 'x', createdAt: 'x' }], messages: [], activeConversationId: 'A' } }));
+    const { sending } = sendFrom(hook, 'A follow-up');
+    await act(async () => { await hook.result.current.actions.selectConversation('A'); });
+    expect(hook.result.current.state.activeConversationId).toBeNull();
+    await act(async () => { send.resolve!({ result: lateReply, error: null }); await sending; });
+    expect(texts(hook)).toEqual([]);
+    // The page is told the reply's chat is not the one shown, so ChatEdits applies and shows none of it (replyStanding).
+    expect(onProposeEdit.take).toHaveBeenCalledWith([ldl], 'erase-1', false, refusals);
+  });
+});
