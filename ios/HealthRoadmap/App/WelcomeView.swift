@@ -12,6 +12,8 @@ struct WelcomeView: View {
     var connected: () -> Void = {}
     @State private var shown = false
     @State private var choosingCloud = false
+    /// A connect error from the sheet: held here, since its row can hide mid-sign-in (US-25 AC11j).
+    @State private var connectMessage: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
@@ -119,7 +121,7 @@ struct WelcomeView: View {
                     Section {
                         ForEach(CloudProvider.allCases) { provider in
                             // The phase change goes on, once; the button's own callback does not.
-                            ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
+                            ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
                                 Label("Connect \(provider.label)", systemImage: provider == .dropbox ? "shippingbox" : "externaldrive")
                             }
                         }
@@ -147,6 +149,7 @@ struct WelcomeView: View {
                     EmptyView()
                 }
             }
+            .messageAlert("Your record", $connectMessage)
             .navigationTitle("Your record")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

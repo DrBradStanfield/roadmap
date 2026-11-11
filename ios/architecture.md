@@ -574,7 +574,15 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   sign-in. The account a sign-in belongs to is kept (`sync-account`); signing in again as
   another account is refused, because merging would put one person's record into
   another's: the user disconnects first, then connects the other account (a fresh connect
-  then lifts the phone's record, as any first connect does). After a Disconnect,
+  then lifts the phone's record, as any first connect does). Connecting a different cloud
+  while an open is in flight is refused once the sign-in returns, before any token or file
+  is kept (US-25 AC11j, review of PR 1281, 2026-11-11): the open is single-flight, so the
+  connect would join the other cloud's open and leave the cloud on file naming one cloud
+  while the open session is the other's, with the new cloud's first-connect merge never run.
+  The cloud on file must match the open session. Signing in again to the same cloud joins its
+  open. The survey's S3 `CloudConnection` union will make the mismatch unrepresentable.
+  Connect errors show in the screen's alert, not the row's, since the welcome sheet hides its
+  rows while a record opens. After a Disconnect,
   `sync-history` remembers the cloud, and the words say a copy stays there. The background
   save has an expiration handler. Drive runs through the shim in Node against a fake
   Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
