@@ -1,7 +1,8 @@
 # Independent reviewer for agent-authored PRs (Tier 3 "ship" pipeline).
 #
-# Fires when a push opens or updates a same-repo PR from a claude/* branch that
-# does not carry the 'hold' label (US-46 AC18): a FRESH-context Claude reviews
+# Fires when a push opens or updates a same-repo PR from a claude/* branch, or
+# the PR is marked ready, while it is not a draft (US-46 AC19) and does not
+# carry the 'hold' label (US-46 AC18): a FRESH-context Claude reviews
 # the diff adversarially with a correctness-only mandate and posts its verdict
 # as a comment. It is not advisory: auto-ship.yml merges a claude/* PR on this
 # reviewer's APPROVE verdict for the head sha, a green 'test' check and its
@@ -51,8 +52,9 @@ name: Claude Review
 on:
   pull_request:
     # labeled: adding 'hold' cancels a review already running (the lane below).
-    # Removing 'hold' starts nothing, as before.
-    types: [opened, synchronize, labeled]
+    # Removing 'hold' starts nothing, as before. A draft is never reviewed
+    # (US-46 AC19); ready_for_review reviews it once it is marked ready.
+    types: [opened, synchronize, ready_for_review, labeled]
 
 # A newer push to the same PR, or adding 'hold', cancels the older review. Auto
 # Ship runs only on a review that ended in success, so a cancelled review ships
@@ -64,13 +66,14 @@ concurrency:
 
 jobs:
   review:
-    # Only pushes run a review, never a label event. Skipped while the PR
-    # carries 'hold': its owner merges it by hand after a fresh adversary
-    # (and Codex where required), and auto-ship never ships it.
+    # Only pushes and marking ready run a review, never a label event. Skipped
+    # on a draft, and while the PR carries 'hold': its owner merges it by hand
+    # after a fresh adversary (and Codex where required), and auto-ship never ships it.
     if: >
       startsWith(github.event.pull_request.head.ref, 'claude/') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      (github.event.action == 'opened' || github.event.action == 'synchronize') &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'ready_for_review') &&
+      !github.event.pull_request.draft &&
       !contains(github.event.pull_request.labels.*.name, 'hold')
     runs-on: ubuntu-latest
     timeout-minutes: 30

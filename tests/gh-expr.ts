@@ -2,8 +2,12 @@
  * A small evaluator for the GitHub Actions expressions our workflow tests pin.
  * It covers what those files use: context paths (with `.*.` for a list),
  * strings, numbers, true/false/null, ! == != && || and parentheses, and the
- * functions contains, startsWith and fromJSON. && and || return an operand,
- * as GitHub's do; == on strings ignores case, as GitHub's does.
+ * functions contains, startsWith and fromJSON, plus always(), which is true. && and || return an operand,
+ * as GitHub's do; == on strings ignores case, as GitHub's does. The other
+ * status functions (success, failure, cancelled) depend on the needed jobs'
+ * results, which this evaluator does not model, so they throw. An `if` with
+ * no status function gets GitHub's implicit success(): a caller that
+ * evaluates a job with `needs` must model that itself.
  * Anything else throws, so a test never passes on an expression it misread.
  */
 type Value = unknown;
@@ -44,6 +48,7 @@ const FUNCS: Record<string, (...a: Value[]) => Value> = {
     Array.isArray(hay) ? hay.some((x) => eq(x, needle)) : String(hay ?? '').toLowerCase().includes(String(needle).toLowerCase()),
   startsWith: (s, p) => String(s ?? '').toLowerCase().startsWith(String(p).toLowerCase()),
   fromJSON: (s) => JSON.parse(String(s)),
+  always: () => true,
 };
 
 export function evalExpr(src: string, ctx: Record<string, Value>): Value {

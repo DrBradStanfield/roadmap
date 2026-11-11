@@ -55,9 +55,9 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(config).toMatch(/setupFiles: \['\.\/tests\/setup-locale\.ts'\]/);
     expect(navigator.language).toBe('en-GB');
   });
-  it('`test` always runs and passes only when the checks and every shard succeeded', () => {
+  it('`test` always runs (but on a draft PR) and passes only when the checks and every shard succeeded', () => {
     const test = job('test');
-    expect(test).toMatch(/if: always\(\)/);
+    expect(test).toMatch(/if: always\(\) && /);
     expect(test).toMatch(/needs: \[checks, unit\]/);
     expect(test).toContain('CHECKS: ${{ needs.checks.result }}');
     expect(test).toContain('UNIT: ${{ needs.unit.result }}');
@@ -81,7 +81,6 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     for (const [name, j] of Object.entries(ciYaml.jobs)) {
       expect(j['timeout-minutes'], name).toBeGreaterThan(0);
     }
-    expect(ciYaml.jobs.test.if).toBe('always()');
     expect(ciYaml.jobs.test.needs).toEqual(['checks', 'unit']);
   });
 
@@ -107,6 +106,88 @@ describe('ci.yml jobs (US-64 AC12)', () => {
 });
 
 /**
+ * US-46 AC19 (Brad 2026-11-12): CI does not run on a draft PR. A session pushes
+ * to a draft as it goes; marking it ready (`ready_for_review`) starts the real
+ * run on the head sha. Converting a PR back to a draft joins the PR's lane, so
+ * it cancels a run in flight, and its own run skips every job. Pushes to main,
+ * manual and nightly runs are untouched.
+ */
+describe('ci.yml skips draft PRs (US-46 AC19)', () => {
+  type Case = { name: string; event_name: string; action?: string; draft?: boolean };
+  const ctx = (c: Case) => ({
+    github: {
+      event_name: c.event_name,
+      run_id: '777',
+      event:
+        c.event_name === 'pull_request'
+          ? { action: c.action, pull_request: { number: 42, draft: c.draft, head: { sha: 'abc123' } } }
+          : {},
+    },
+  });
+  const runs = (jobName: string, c: Case) => Boolean(evalExpr(ciYaml.jobs[jobName].if!, ctx(c)));
+  const real: Case[] = [
+    { name: 'push to main', event_name: 'push' },
+    { name: 'nightly', event_name: 'schedule' },
+    { name: 'manual', event_name: 'workflow_dispatch' },
+    { name: 'ready PR opened', event_name: 'pull_request', action: 'opened', draft: false },
+    { name: 'push to a ready PR', event_name: 'pull_request', action: 'synchronize', draft: false },
+    { name: 'reopened ready PR', event_name: 'pull_request', action: 'reopened', draft: false },
+    { name: 'draft marked ready', event_name: 'pull_request', action: 'ready_for_review', draft: false },
+  ];
+  const skipped: Case[] = [
+    { name: 'draft opened', event_name: 'pull_request', action: 'opened', draft: true },
+    { name: 'push to a draft', event_name: 'pull_request', action: 'synchronize', draft: true },
+    { name: 'reopened draft', event_name: 'pull_request', action: 'reopened', draft: true },
+    { name: 'converted to draft', event_name: 'pull_request', action: 'converted_to_draft', draft: true },
+  ];
+
+  it('fires on the PR events that change what is ready, and still on main, manual and nightly', () => {
+    expect((ciYaml.on.pull_request as { types: string[]; branches: string[] }).types).toEqual([
+      'opened',
+      'synchronize',
+      'reopened',
+      'ready_for_review',
+      'converted_to_draft',
+    ]);
+    expect((ciYaml.on.pull_request as { branches: string[] }).branches).toEqual(['main']);
+    expect(ciYaml.on.push).toEqual({ branches: ['main'] });
+    expect(ciYaml.on).toHaveProperty('workflow_dispatch');
+  });
+
+  for (const jobName of ['checks', 'unit', 'test']) {
+    it(`${jobName} runs on every non-draft event and on none of the draft ones`, () => {
+      for (const c of real) expect(runs(jobName, c), c.name).toBe(true);
+      for (const c of skipped) expect(runs(jobName, c), c.name).toBe(false);
+    });
+  }
+
+  it('`test` still runs after a failed or skipped check on a real run, so a red shard reads red', () => {
+    // always() keeps it running whatever `checks` and `unit` ended as; the draft
+    // test is the only other part, and its shell step still demands both succeeded.
+    expect(ciYaml.jobs.test.if).toMatch(/^always\(\) && \(/);
+    expect(ciYaml.jobs.test.if!.replace(/^always\(\) && /, '')).toBe(`(${ciYaml.jobs.checks.if})`);
+    expect(ciYaml.jobs.unit.if).toBe(ciYaml.jobs.checks.if);
+    expect(ciYaml.jobs.test.needs).toEqual(['checks', 'unit']);
+  });
+
+  it('a draft opened then marked ready with no push gets exactly one real run', () => {
+    // GitHub runs a pull_request run on the PR's head (its test merge), so the
+    // ready_for_review run tests the same commit the draft runs skipped.
+    const sequence = [skipped[0], real[6]];
+    for (const jobName of ['checks', 'unit', 'test']) {
+      expect(sequence.filter((c) => runs(jobName, c)).map((c) => c.name), jobName).toEqual(['draft marked ready']);
+    }
+  });
+
+  it('converting to a draft and marking ready share the PR lane, so the conversion cancels a run in flight', () => {
+    expect(ciYaml.concurrency!['cancel-in-progress']).toBe(true);
+    for (const c of [...real, ...skipped].filter((x) => x.event_name === 'pull_request')) {
+      expect(interpolate(ciYaml.concurrency!.group, ctx(c)), c.name).toBe('ci-42');
+    }
+  });
+});
+
+/**
  * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review while a PR carries `hold`.
  * Adding `hold` cancels a running review through the shared lane; a label
  * event never runs one; any other label gets its own lane, so it cancels
@@ -114,22 +195,50 @@ describe('ci.yml jobs (US-64 AC12)', () => {
  */
 describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const review = yaml.load(readFileSync(join(ROOT, '.github/workflows/claude-review.yml'), 'utf8')) as Workflow;
-  const ctx = (action: string, labels: string[] = [], label?: string) => ({
+  const ctx = (action: string, labels: string[] = [], label?: string, draft = false) => ({
     github: {
       run_id: '777',
       repository: 'o/r',
       event: {
         action,
         label: label ? { name: label } : undefined,
-        pull_request: { number: 42, head: { ref: 'claude/x', repo: { full_name: 'o/r' } }, labels: labels.map((name) => ({ name })) },
+        pull_request: {
+          number: 42,
+          draft,
+          head: { ref: 'claude/x', repo: { full_name: 'o/r' } },
+          labels: labels.map((name) => ({ name })),
+        },
       },
     },
   });
   const runs = (c: ReturnType<typeof ctx>) => Boolean(evalExpr(review.jobs.review.if!, c));
   const lane = (c: ReturnType<typeof ctx>) => interpolate(review.concurrency!.group, c);
 
-  it('fires on opened, synchronize and labeled only', () => {
-    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize', 'labeled']);
+  it('fires on opened, synchronize, ready_for_review and labeled only', () => {
+    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize', 'ready_for_review', 'labeled']);
+  });
+
+  it('never reviews a draft; reviews a ready PR on opened, synchronize and ready_for_review, unless held (US-46 AC19)', () => {
+    const actions = ['opened', 'synchronize', 'ready_for_review', 'labeled', 'converted_to_draft'];
+    const pushes = ['opened', 'synchronize', 'ready_for_review'];
+    for (const draft of [true, false]) {
+      for (const held of [true, false]) {
+        for (const action of actions) {
+          const labels = held ? ['hold'] : [];
+          const label = action === 'labeled' ? (held ? 'hold' : 'docs') : undefined;
+          const want = !draft && !held && pushes.includes(action);
+          expect(runs(ctx(action, labels, label, draft)), `draft=${draft} hold=${held} ${action}`).toBe(want);
+        }
+      }
+    }
+    // Opened as a draft, then marked ready with no push: one review.
+    expect([ctx('opened', [], undefined, true), ctx('ready_for_review')].filter(runs)).toHaveLength(1);
+    // The verdict pins the head sha of the event that ran it.
+    expect(JSON.stringify(review.jobs.review)).toContain('VERDICT: APPROVE ${{ github.event.pull_request.head.sha }}');
+  });
+
+  it('marking ready reviews in the PR lane, so a later push or hold cancels it', () => {
+    expect(lane(ctx('ready_for_review'))).toBe(lane(ctx('synchronize')));
   });
 
   it('reviews opened and synchronize, never a held PR, never a label event', () => {

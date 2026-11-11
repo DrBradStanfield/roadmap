@@ -39,7 +39,11 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    write new outputs in the worktree (cleanup copies them back). Bash writes (`sed -i`, `>`, `cp`) into the main
    checkout are not blocked by the hook: don't.
 3. **Every turn ends landed**: commit your own changes, `git push -u origin claude/<name>`, and have a PR
-   open (`gh pr create`; `--draft` while Brad is still deciding). The Stop hook blocks the turn's end, once,
+   open. **Open the PR as a draft (`gh pr create --draft`) and push as you go; mark it ready (`gh pr ready <n>`)
+   when it is ready for review and CI** (US-46 AC19, Brad 2026-11-12). CI and Claude Review skip drafts, so a
+   push to a draft costs nothing and needs no batching or holding back; marking it ready starts one CI run and
+   one review on the head, no new push needed. `hold` still stops auto-ship and Claude Review on a ready PR.
+   A draft that waits on Brad stays a draft. The Stop hook blocks the turn's end, once,
    until this is true. While a background subagent of your session is still running (Claude Code's
    `background_tasks`), uncommitted files are skipped: they are its half-written work, never yours to commit; the
    next turn's end checks again (US-64 AC25). Unpushed
@@ -60,7 +64,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
    is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
-   --run`, seconds). Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
+   --run`, seconds). Mark the PR ready first: on a draft every check is skipped, and `wait-run.sh` then exits 0
+   with nothing tested. Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
    counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
@@ -142,11 +147,11 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    Spawn reviewers and workers from the main checkout, never while the orchestrator sits in a session
    worktree: a spawned agent is pinned to the orchestrator's folder (2026-11-04 one lost its shell when that
    worktree was removed, and workers could not enter their own worktrees).
-   High-risk PRs are built into a group branch first (`claude/group-<area>`); open its PR with `hold` so CI
+   High-risk PRs are built into a group branch first (`claude/group-<area>`); open its PR with `hold`, not as a draft, so CI
    runs during review, and a fresh adversary plus Codex review that built branch (each PR's pinned head plus
    the conflict fixes). A group holds at most three PRs, grouped by the files they share, not by broad
    topic: on 2026-11-04 one rejected PR forced a hand rebuild of three groups out of five.
-4. **Open the batch PR with the `hold` label, always** (`gh pr create --label hold`). A `claude/` branch in this
+4. **Open the batch PR with the `hold` label, always** (`gh pr create --label hold`, not a draft: CI skips drafts). A `claude/` branch in this
    repo gets the CI reviewer and auto-ship, and auto-ship would merge contributor code after 30 minutes with
    no Codex and no human merge. The label stops it; Brad's session merges by hand, `hold` still on. List each
    PR and its reviewed SHA in the body.

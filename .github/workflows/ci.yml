@@ -3,6 +3,11 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    # No run on a draft PR (US-46 AC19, Brad 2026-11-12): sessions push to a
+    # draft as they go and mark it ready (`gh pr ready`) for CI and review.
+    # ready_for_review starts the real run; converted_to_draft joins the PR's
+    # lane below, cancelling a run in flight, and its own jobs all skip.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches: [main]
   workflow_dispatch:
@@ -38,6 +43,7 @@ concurrency:
 # Public repo: the extra 6 runners cost no minutes and run in parallel.
 jobs:
   checks:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -121,6 +127,7 @@ jobs:
       - run: npm run build:widget
 
   unit:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -144,8 +151,10 @@ jobs:
       # a sixth of the test files.
       - run: npm run test:all -- --shard=${{ matrix.shard }}/6
 
+  # Skipped on a draft too, so a draft shows no red 'test'. A skipped 'test' is
+  # not a pass: auto-ship and pages.yml accept only a successful one.
   test:
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     needs: [checks, unit]
     runs-on: ubuntu-latest
     timeout-minutes: 5
