@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M14,phone mirrors,"The eGFR trend uses the last 7 readings on both clients, against the 30-day rule recent-trend.ts states",lead,not started,"ios/HealthRoadmap/MyData/TopicPlan.swift:211 prefix(7); MyDataRows.tsx:327 slice(0, 7) copies the phone. Swift test only. Survey ruling R7 (owner's call): labs keep 7 readings and recent-trend.ts's header says so. iPhone survey 2026-11-11 (main fcc4ed9b) L11",,no

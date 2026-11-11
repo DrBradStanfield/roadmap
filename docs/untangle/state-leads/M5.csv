@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+M5,phone mirrors,"The supplement dose limit is two hand copies that disagree: 99999.99 on the phone, 99999 on the web",lead,not started,"ios/HealthRoadmap/TypedNumber.swift:18; SupplementSheet.swift:78 passes 0 to the engine (refused only by validation.ts:469); web SupplementsSection.tsx:101,112. The Swift test testADoseRunsToTheWebsLimit pins the wrong value. Survey ruling R1 (owner's call): one health-core constant, 99999. iPhone survey 2026-11-11 (main fcc4ed9b) L2",,no

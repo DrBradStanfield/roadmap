@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S4,iPhone state,"After Health access is reset and allowed again, a failed first read shows Open Settings as if the person had refused",lead,not started,"ios/HealthRoadmap/AppleHealthMetrics/LiveHealth.swift:17,21,35-43,124-152 (needsAccess and hasRead both true); LiveCards.swift:118-122. Verified in code, not at runtime. iPhone survey 2026-11-11 (main fcc4ed9b) S4",,no
