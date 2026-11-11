@@ -155,6 +155,7 @@ describe('US-52 AC7d: the slow-import envelope, header and body, field by field'
   });
 
   it('US-52 AC7d: with production\'s runtime env, no release travels, in the header or the body', async () => {
+    // If this fails, docs/privacy-app-addendum.md must change in the same PR as the change that made it fail.
     const { header, event, raw, types } = await slowImport();
     // One envelope, the event: no session envelope, which the SDK sends only with a release.
     expect(types).toEqual(['event']);
