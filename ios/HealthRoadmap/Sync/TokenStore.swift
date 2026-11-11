@@ -16,12 +16,15 @@ struct OAuthTokens: Codable, Equatable, Sendable {
 struct TokenStore: Sendable {
     /// The Keychain service; tests use their own.
     let service: String
+    /// Tests only: every save fails, as a refusing Keychain does (US-25 AC11m).
+    var failsSaves = false
 
     init(service: String = "com.drstanfield.healthroadmap.oauth") {
         self.service = service
     }
 
     func save(_ tokens: OAuthTokens, for provider: CloudProvider) throws {
+        guard !failsSaves else { throw KeychainError(status: errSecNotAvailable) }
         let data = try JSONEncoder().encode(tokens)
         let query = baseQuery(provider)
         let update: [String: Any] = [

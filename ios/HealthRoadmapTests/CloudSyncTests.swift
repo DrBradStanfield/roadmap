@@ -595,18 +595,30 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "Dropbox's first connect merged the phone's record up")
     }
 
-    /// Signing in again to the cloud whose open is running joins that open, as before.
-    func testSigningInAgainToTheSameCloudDuringItsOpenJoinsIt_US25_AC11j() async throws {
+    /// Signing in again to the cloud whose open is running keeps the new tokens and starts
+    /// the open again under them (owner's ruling on S3, US-25 AC11m): the open in flight may
+    /// already have asked with the old grant, and would end asking for a second sign-in.
+    /// The first open's result is dropped; the second open's record is shown.
+    func testSigningInAgainToTheSameCloudDuringItsOpenRestartsIt_US25_AC11j() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let download = StubHTTP.Gate()
         dropbox.downloadGate = download
         let (store, sync, _) = try app()
         let opening = Task { await sync.start() }
         let again = heldSignIn()
-        dropbox.onDownload = { again.release() }
-        try await sync.connect(.dropbox, authenticate: again.authenticate) // returns while the open is held: it joined
+        let second = XCTestExpectation(description: "a second open reads the record")
+        var reads = 0
+        dropbox.onDownload = {
+            reads += 1
+            if reads == 1 { again.release() } else { second.fulfill() }
+        }
+        let connecting = Task { try await sync.connect(.dropbox, authenticate: again.authenticate) }
+        let restarted = await XCTWaiter().fulfillment(of: [second], timeout: 10)
+        XCTAssertEqual(restarted, .completed, "the open restarted under the new tokens")
+        dropbox.onDownload = nil
         download.open()
         await opening.value
+        try await connecting.value
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r-dbid:A", "the new sign-in is kept")
         assertStillOnDropbox(sync, store: store, account: "dbid:A")
     }

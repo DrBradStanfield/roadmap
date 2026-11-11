@@ -189,8 +189,8 @@ struct WelcomeView: View {
             openRecord()
         case .open: openRecord()
         case .disconnect:
-            guard let sync else { return }
-            Task { await sync.disconnect() }
+            guard let sync, let provider = sync.provider else { return }
+            Task { if await sync.disconnectOutcome() == .failed { connectMessage = SyncStatusText.disconnectFailed(provider) } }
         case .nothing: break
         }
     }
