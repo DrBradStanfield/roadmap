@@ -6,7 +6,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // still going blocks the next tick. Each cron's day's work is routed to one
 // probe, `work`, so a test can make it succeed, fail or hang.
 
-const { work } = vi.hoisted(() => ({ work: vi.fn<() => Promise<unknown>>() }));
+const { work, db } = vi.hoisted(() => ({
+  work: vi.fn<() => Promise<unknown>>(),
+  // When set, the chat tables answer from this fake instead (the restart pin).
+  db: { from: null as null | ((table: string) => unknown) },
+}));
 
 // A query builder whose every method returns itself and whose await is `answer`.
 function chain(answer: () => Promise<unknown>): unknown {
@@ -22,7 +26,7 @@ const noRows = async () => ({ data: [], error: null });
 // Chat purge's run starts with the match-events pass, so that query is its probe.
 vi.mock('./supabase.server', () => ({
   tryAcquireCronLock: vi.fn(),
-  supabaseAdmin: { from: (table: string) => chain(table === 'chat_match_events' ? work : noRows) },
+  supabaseAdmin: { from: (table: string) => db.from?.(table) ?? chain(table === 'chat_match_events' ? work : noRows) },
 }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
 vi.mock('./reminder-v2.server', () => ({
@@ -70,7 +74,6 @@ interface CronCase {
   ineligibleOnThisClock: string; // hour clears target on the other clock (UTC vs NZ), not this one
   ok: () => Promise<unknown>;
   hang: () => Promise<unknown>;
-  blocksWhileRunning: boolean;
 }
 
 const crons: CronCase[] = [
@@ -78,22 +81,21 @@ const crons: CronCase[] = [
     load: async () => { const m = await import('./trending-cron.server'); return { start: m.startTrendingCron, stop: m.stopTrendingCron }; },
     lockName: 'trending_cron', beforeTarget: '2026-08-27T14:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-27T13:30:00Z',
-    ok: async () => ({ admin: okAdmin }), hang: HANG, blocksWhileRunning: true },
+    ok: async () => ({ admin: okAdmin }), hang: HANG },
   { name: 'reminder v2',
     load: async () => { const m = await import('./reminder-v2-cron.server'); return { start: m.startReminderV2Cron, stop: m.stopReminderV2Cron }; },
     lockName: 'reminder_v2_cron', beforeTarget: '2026-08-28T07:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-28T06:30:00Z',
-    ok: async () => [], hang: HANG, blocksWhileRunning: true },
+    ok: async () => [], hang: HANG },
   { name: 'chat purge',
     load: async () => { const m = await import('./chat-purge-cron.server'); return { start: m.startChatPurgeCron, stop: m.stopChatPurgeCron }; },
     lockName: 'chat_text_purge', beforeTarget: '2026-08-28T03:30:00Z', day: '2026-08-28', nextDay: '2026-08-29',
     ineligibleOnThisClock: '2026-08-28T02:30:00Z',
-    ok: noRows, hang: HANG,
-    blocksWhileRunning: false }, // marks its day only after the run returns
+    ok: noRows, hang: HANG }, // US-28 AC7
 ];
 
 let stop: (() => void) | null = null;
-afterEach(() => { stop?.(); stop = null; vi.unstubAllEnvs(); vi.useRealTimers(); });
+afterEach(() => { stop?.(); stop = null; db.from = null; vi.unstubAllEnvs(); vi.useRealTimers(); });
 
 // `onlyTheTick` fakes the hourly interval and the clock but leaves setTimeout
 // real, so a run's own withTimeout guards cannot end a hanging run mid-test.
@@ -169,15 +171,13 @@ describe.each(crons)('$name cron tick (untangle S-4 pins, US-28)', (c) => {
     await tick();
     expect(work).toHaveBeenCalledTimes(2);
   });
-  it(c.blocksWhileRunning ? 'a run still going blocks the next tick on this machine'
-    : "a run still going does not block the next tick (today's behaviour)", async () => {
+  it('a run still going blocks the next tick on this machine (US-28 AC3, AC6, AC7)', async () => {
     const { lock } = await boot(c, c.beforeTarget, true);
     lock.mockResolvedValue(true);
     work.mockImplementation(c.hang);
     await tick(); await tick();
-    const n = c.blocksWhileRunning ? 1 : 2;
-    expect(lock).toHaveBeenCalledTimes(n);
-    expect(work).toHaveBeenCalledTimes(n);
+    expect(lock).toHaveBeenCalledTimes(1);
+    expect(work).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -196,5 +196,77 @@ describe('trending cron lock per store', () => {
     m.startTrendingCron();
     await tick();
     expect(lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'trending_cron_edu');
+  });
+});
+
+// US-28 AC7, the restart case: the run mark lives in memory, so a process that
+// dies mid-purge loses it, and the lock row names the same FLY_MACHINE_ID, so
+// the new process wins it and runs the day again. That second run must not
+// archive the dead run's questions: they were held only in the dead process's
+// memory, their rows were blanked by the first pass, and the archive insert is
+// the last step, one statement, after every blanking pass.
+describe('chat purge restart mid-run (US-28 AC7)', () => {
+  interface Row { id: string; created_at: string; message: string | null; classification: string; router_context: Record<string, unknown>; conversation_id: null }
+  const old = (id: string): Row => ({
+    id, created_at: '2026-07-01T00:00:00Z', message: `question ${id}`, classification: 'ROUTE',
+    router_context: { platform: 'widget' }, conversation_id: null,
+  });
+
+  it('a fresh process re-runs the day and archives only questions still on their rows', async () => {
+    const events: Row[] = [old('dead-run-1'), old('dead-run-2')];
+    const inserts: { question: string }[][] = [];
+    const selectFilters: string[] = [];
+    let messagesPass: () => Promise<unknown> = HANG; // the first process dies here
+    db.from = (table) => {
+      const q: { op: string; payload?: any; id?: string } = { op: 'select' };
+      const answer = async (): Promise<unknown> => {
+        if (table === 'chat_match_events' && q.op === 'select') {
+          return { data: events.filter((r) => r.message !== null).map((r) => ({ ...r })), error: null };
+        }
+        if (table === 'chat_match_events' && q.op === 'update') {
+          Object.assign(events.find((r) => r.id === q.id)!, { message: q.payload.message });
+          return { error: null };
+        }
+        if (table === 'chat_question_archive') { inserts.push(q.payload); return { error: null }; }
+        if (table === 'chat_messages') return messagesPass();
+        return noRows();
+      };
+      const builder: unknown = new Proxy({}, {
+        get: (_t, key) => key === 'then'
+          ? (ok: (v: unknown) => unknown, fail: (e: unknown) => unknown) => answer().then(ok, fail)
+          : (...args: any[]) => {
+            if (key === 'update' || key === 'insert') { q.op = key; q.payload = args[0]; }
+            if (key === 'eq') q.id = args[1];
+            if (key === 'or' && table === 'chat_match_events') selectFilters.push(args[0]);
+            return builder;
+          },
+      });
+      return builder;
+    };
+
+    // Process one: wins the lock, blanks both rows, holds both questions, then hangs.
+    const first = await boot(crons[2], crons[2].beforeTarget, true);
+    vi.stubEnv('CHAT_QUESTION_ARCHIVE', 'on');
+    first.lock.mockResolvedValue(true);
+    await tick();
+    expect(events.map((r) => r.message)).toEqual([null, null]);
+    expect(inserts).toEqual([]);
+    stop?.(); // the process dies; its held questions die with it
+
+    // Process two, same machine, same day: a new row has aged past the window meanwhile.
+    events.push(old('still-held'));
+    messagesPass = noRows;
+    const second = await boot(crons[2], '2026-08-28T05:30:00Z', true);
+    vi.stubEnv('CHAT_QUESTION_ARCHIVE', 'on');
+    const { scrubQuestion } = await import('./chat-question-scrub.server');
+    vi.mocked(scrubQuestion).mockImplementation(async (text: string) => `scrubbed: ${text}`);
+    second.lock.mockResolvedValue(true);
+    await tick();
+    await vi.waitFor(() => expect(inserts).toHaveLength(1));
+
+    expect(second.lock).toHaveBeenCalledWith('pin-machine', '2026-08-28', 'chat_text_purge');
+    expect(selectFilters.every((f) => f.includes('message.not.is.null'))).toBe(true);
+    expect(vi.mocked(scrubQuestion).mock.calls.map(([text]) => text)).toEqual(['question still-held']);
+    expect(inserts[0].map((r) => r.question)).toEqual(['scrubbed: question still-held']);
   });
 });
