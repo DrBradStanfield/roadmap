@@ -60,6 +60,10 @@ const store = vi.hoisted(() => ({
   swallowFirstBlank: new Set<string>(),
   /** Row ids whose blank never commits. */
   neverBlank: new Set<string>(),
+  /** Row ids another writer deletes just before their update lands. */
+  vanishOnUpdate: new Set<string>(),
+  /** How many ids each select skipped with `.not('id', 'in', …)`, in the order sent. */
+  skipCounts: [] as number[],
   /** Reverse the row order on every other select (PostgREST promises no order without one). */
   flipOrder: false,
   /** Selects sent; past 200 the fake throws, so a spinning loop fails instead of hanging. */
@@ -120,9 +124,20 @@ const fakeAdmin = vi.hoisted(() => ({
         matches = () => prev().filter((r) => r[col] < value);
         return query;
       },
-      not: (col: string, _op: string, _value: null) => {
+      not: (col: string, op: string, value: null | string) => {
         const prev = matches;
-        matches = () => prev().filter((r) => r[col] !== null);
+        if (op === 'in') {
+          const ids = String(value).slice(1, -1).split(',');
+          store.skipCounts.push(ids.length);
+          matches = () => prev().filter((r) => !ids.includes(r[col]));
+        } else {
+          matches = () => prev().filter((r) => r[col] !== null);
+        }
+        return query;
+      },
+      is: (col: string, _value: null) => {
+        const prev = matches;
+        matches = () => prev().filter((r) => r[col] === null);
         return query;
       },
       // Only the shape the cron sends: "a.not.is.null,b.not.is.null,…".
@@ -151,6 +166,11 @@ const fakeAdmin = vi.hoisted(() => ({
       update: (patch: Record<string, unknown>) => {
         const apply = (ids: string[]) => {
           if (store.updateError || store.swallowUpdates === table) return;
+          for (const id of ids) {
+            if (!store.vanishOnUpdate.has(id)) continue;
+            rows.splice(rows.findIndex((r) => (r as { id: string }).id === id), 1);
+            ids = ids.filter((other) => other !== id);
+          }
           for (const id of ids) if (!store.swallowFirstBlank.delete(id) && !store.neverBlank.has(id)) Object.assign(rows.find((r) => (r as { id: string }).id === id)!, patch);
         };
         return {
@@ -240,6 +260,8 @@ beforeEach(() => {
   store.updateIdCounts = [];
   store.swallowFirstBlank = new Set();
   store.neverBlank = new Set();
+  store.vanishOnUpdate = new Set();
+  store.skipCounts = [];
   store.flipOrder = false;
   store.selects = 0;
   store.chat_match_events = [
@@ -744,6 +766,48 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     } finally {
       spies.forEach((s) => s.mockRestore());
     }
+  });
+
+  it('US-15 AC61: 120 stuck rows selected first do not hide the healthy rows behind them', async () => {
+    const stuckIds = Array.from({ length: 120 }, (_, i) => `stuck-${i}`);
+    store.chat_match_events = [
+      ...stuckIds.map((id) => row(id, 40, { platform: 'widget' })),
+      ...Array.from({ length: 150 }, (_, i) => row(`healthy-${i}`, 40, { platform: 'widget' })),
+    ];
+    store.neverBlank = new Set(stuckIds);
+    const counts = await purgeOldChatText(NOW);
+    expect(store.chat_match_events.filter((r) => r.id.startsWith('healthy-') && r.message !== null)).toEqual([]);
+    expect(counts.archive).toEqual({ eligible: 150, kept: 150, skipped: 0 });
+    expect(archived().filter((q) => String(q).includes('stuck-'))).toEqual([]);
+    expect(counts).toMatchObject({ didNotBlank: 120, messages: 3, conversations: 2 });
+    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+      ['Chat text purge: rows did not blank', { level: 'error', tags: { feature: 'chat_text_purge', stuck_rows: 120 } }],
+    ]);
+  });
+
+  it('US-15 AC61: past 150 skipped stuck ids the pass ends, the later passes run, and Sentry says the cap was reached', async () => {
+    const stuckIds = Array.from({ length: 260 }, (_, i) => `stuck-SENTINEL-${i}`);
+    store.chat_match_events = [
+      ...stuckIds.map((id) => row(id, 40, { platform: 'widget' }, { message: `SENTINEL ${id}` })),
+      ...Array.from({ length: 50 }, (_, i) => row(`healthy-${i}`, 40, { platform: 'widget' })),
+    ];
+    store.neverBlank = new Set(stuckIds);
+    const counts = await purgeOldChatText(NOW);
+    expect(Math.max(...store.skipCounts)).toBeLessThanOrEqual(150);
+    expect(counts).toMatchObject({ didNotBlank: 200, messages: 3, conversations: 2, archive: { eligible: 0, kept: 0, skipped: 0 } });
+    // The healthy rows sat behind the cap: left for the next day, and the tag says so.
+    expect(byId('healthy-0').message).toBe('question healthy-0');
+    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+      ['Chat text purge: rows did not blank', { level: 'error', tags: { feature: 'chat_text_purge', stuck_rows: 200, stuck_cap_reached: true } }],
+    ]);
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain('SENTINEL');
+  });
+
+  it('US-15 AC61: a row another writer deletes before its blank lands is not kept', async () => {
+    store.vanishOnUpdate = new Set(['widget-measure']);
+    const counts = await purgeOldChatText(NOW);
+    expect(archived()).toEqual(['scrubbed: question shopify-route']);
+    expect(counts.archive).toEqual({ eligible: 1, kept: 1, skipped: 0 });
   });
 
   it('US-15 AC61: the chat DELETE still throws when a row will not blank', async () => {

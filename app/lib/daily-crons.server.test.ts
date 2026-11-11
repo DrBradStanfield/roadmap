@@ -244,12 +244,15 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
     const selectFilters: string[] = [];
     let messagesPass: () => Promise<unknown> = HANG; // the first process dies here
     db.from = (table) => {
-      const q: { op: string; payload?: any; id?: string; holds?: string[] } = { op: 'select' };
+      const q: { op: string; payload?: any; id?: string; holds?: string[]; blank?: string[] } = { op: 'select' };
       const answer = async (): Promise<unknown> => {
         if (table === 'chat_match_events' && q.op === 'select') {
           // Honour the `.or()` the purge gave: a row qualifies if any named column holds text.
+          // The blank check's `.is(col, null)` filters instead: a row qualifies if every named column is null.
           const holds = q.holds ?? [];
-          const rows = events.filter((r) => holds.some((col) => (r as any)[col] != null));
+          const rows = q.blank
+            ? events.filter((r) => q.blank!.every((col) => (r as any)[col] == null))
+            : events.filter((r) => holds.some((col) => (r as any)[col] != null));
           return { data: rows.map((r) => ({ ...r })), error: null };
         }
         if (table === 'chat_match_events' && q.op === 'update') {
@@ -266,6 +269,7 @@ describe('chat purge restart mid-run (US-28 AC7)', () => {
           : (...args: any[]) => {
             if (key === 'update' || key === 'insert') { q.op = key; q.payload = args[0]; }
             if (key === 'eq') q.id = args[1];
+            if (key === 'is') q.blank = [...(q.blank ?? []), args[0]];
             if (key === 'or' && table === 'chat_match_events') {
               selectFilters.push(args[0]);
               q.holds = String(args[0]).split(',').map((f) => f.replace(/\.not\.is\.null$/, ''));
