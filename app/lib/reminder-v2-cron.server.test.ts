@@ -32,6 +32,7 @@ async function loadCron() {
   // no-op, THEN pose as production so the explicit start in the test runs.
   const cron = await import('./reminder-v2-cron.server');
   vi.stubEnv('NODE_ENV', 'production');
+  vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-23 AC14)
   const { tryAcquireCronLock } = await import('./supabase.server');
   const { getOptinsBatch } = await import('./reminder-v2.server');
   const { sendReminderEmail } = await import('./email.server');

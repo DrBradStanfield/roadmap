@@ -109,6 +109,7 @@ async function boot(c: CronCase, at: string, onlyTheTick = false) {
   vi.stubEnv('SHOPIFY_SHOP_DOMAIN', '');
   const cron = await c.load();            // NODE_ENV=test: self-start is a no-op
   vi.stubEnv('NODE_ENV', 'production');
+  vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-28 AC8, US-23 AC14)
   const { tryAcquireCronLock } = await import('./supabase.server');
   const lock = vi.mocked(tryAcquireCronLock).mockReset();
   work.mockReset().mockImplementation(c.ok);
