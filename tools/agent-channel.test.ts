@@ -30,8 +30,10 @@ let now: number;
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const msg = (id: string, content = `m${id}`, bot = true) => ({ id, content, timestamp: '2026-11-01T00:00:00Z', author: { id: HERMES, username: 'hermes', bot } });
 const env = (extra: Record<string, string> = {}) => ({ [TOKEN_KEY]: TOKEN, [CHANNEL_KEY]: CHANNEL, ...extra });
+// AC17's channel check (GET /channels/<id>) is answered here as a text channel, so fetchMock sees only message requests.
+const routed = (url: string, init: RequestInit) => (/\/channels\/\d+$/.test(url) ? json({ id: CHANNEL, guild_id: '100000000000000001', type: 0 }) : fetchMock(url, init));
 const go = (argv: string[], extra: Record<string, unknown> = {}) =>
-  run(argv, { env: env(), fetch: fetchMock, home, root, now: () => now, stdin: async () => '', ...extra });
+  run(argv, { env: env(), fetch: routed, home, root, now: () => now, stdin: async () => '', ...extra });
 const state = () => JSON.parse(readFileSync(join(home, '.health-roadmap', 'agent-channel-state.json'), 'utf8'));
 const urls = () => fetchMock.mock.calls.map((c) => String(c[0]));
 
@@ -407,7 +409,7 @@ describe('US-63 C3/R7: the cap holds across overlapping runs', () => {
     mkdirSync(join(home, '.health-roadmap'), { recursive: true });
     const mod = join(dirname(fileURLToPath(import.meta.url)), 'agent-channel.mjs');
     const child = `const { run } = await import(${JSON.stringify(`file://${mod}`)});
-      const deps = { env: {}, home: process.env.AC_HOME, root: process.env.AC_ROOT, stdin: async () => '', fetch: async () => new Response('[]') };
+      const deps = { env: {}, home: process.env.AC_HOME, root: process.env.AC_ROOT, stdin: async () => '', fetch: async (u) => new Response(/\\/channels\\/\\d+$/.test(u) ? JSON.stringify({ id: ${JSON.stringify(CHANNEL)}, guild_id: '100000000000000001', type: 0 }) : '[]') };
       let bad = 0;
       for (let i = 0; i < 15; i++) { const r = await run(['read', '--limit', '1'], deps); if (r.code) { bad++; process.stderr.write(r.stderr); } }
       process.exit(bad ? 1 : 0);`;
