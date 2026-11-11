@@ -89,14 +89,26 @@ final class CloudSync: CloudPort {
         guard !DemoRecord.isOn else { throw OAuthClient.Failure.refused("A demo record never syncs.") }
         #endif
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
-        let signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
+        try refuseAnotherCloud(provider)
+        let begun = generation
+        let signedIn: OAuthClient.SignedIn
+        do {
+            signedIn = try await oauth.signIn(provider, authenticate: authenticate)
+        } catch {
+            // A sign-in that failed after a Disconnect is voided too: its error would show for
+            // a sign-in the person walked away from. Otherwise the error stands unchanged.
+            if generation != begun { throw OAuthClient.Failure.cancelled }
+            throw error
+        }
+        // A Disconnect while the sign-in ran voids it: nothing of it is kept or merged, and its
+        // tokens die here, in memory (US-25 AC11l, Codex on PR 1329). Cancelled shows nothing.
+        guard generation == begun else { throw OAuthClient.Failure.cancelled }
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
         guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
-        // An open in flight is single-flight: this connect would join it, and the cloud on
-        // file would no longer be the open record's (US-25 AC11j). Nothing is kept yet.
-        if self.provider != provider, openingFor == generation {
-            throw OAuthClient.Failure.refused("Wait for your record to finish opening, then connect.")
-        }
+        // The backstop: a sign-in begun with no cloud may return after another connect set one.
+        // Nothing is kept yet.
+        try refuseAnotherCloud(provider)
         if self.provider == provider, let known = files.read(files.account), known != signedIn.account {
             throw OAuthClient.Failure.refused("That is a different \(provider.label) account from the one this iPhone syncs with. To use it, disconnect first, then connect it.")
         }
@@ -110,6 +122,14 @@ final class CloudSync: CloudPort {
         store.marksPending = phone
         store.cloudAccount = Self.source(provider, account: signedIn.account)
         await open(firstConnect: first)
+    }
+
+    /// One cloud at a time, in any state: a different cloud waits for Disconnect, so a
+    /// sign-in left over from an earlier tap never switches the record (US-25 AC11l, which took in AC11j).
+    private func refuseAnotherCloud(_ provider: CloudProvider) throws {
+        if let current = self.provider, current != provider {
+            throw OAuthClient.Failure.refused("Disconnect from \(current.label) first, then connect \(provider.label).")
+        }
     }
 
     /// The app came to the foreground: re-read, or try again to open.

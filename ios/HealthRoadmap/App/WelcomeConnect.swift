@@ -35,12 +35,21 @@ enum WelcomeConnect {
         }
     }
 
-    /// The Connect buttons hide while a record opens: a second cloud chosen mid-open would
-    /// set the provider while the first cloud's open hands over (review, PR 1281).
+    /// A Connect row for every cloud shows only with no cloud: with one connected, connect
+    /// refuses any other (US-25 AC11l), so at failed the sheet offers `showsRecovery` instead.
     static func showsConnect(_ phase: Phase) -> Bool {
         switch phase {
-        case .choosing, .failed: true
-        case .opening, .opened: false
+        case .choosing: true
+        case .opening, .failed, .opened: false
+        }
+    }
+
+    /// At failed, and only there: one row to sign in to the connected cloud again (the Sync
+    /// screen's own row) and "Use a different cloud", which disconnects it (US-54 AC2d).
+    static func showsRecovery(_ phase: Phase) -> Bool {
+        switch phase {
+        case .failed: true
+        case .choosing, .opening, .opened: false
         }
     }
 
@@ -66,7 +75,7 @@ enum WelcomeConnect {
              // cloud it only fails again (owner, review F2 of PR 1328).
              .storageFull:
             Failure(words: problem.words(provider), offersTryAgain: true)
-        // Only signing in again helps: the Connect rows, which show at failed, are the remedy.
+        // Only signing in again helps: the sign-in-again row, which shows at failed, is the remedy.
         case .signIn,
              // Only an app update helps.
              .tooNew:
@@ -82,6 +91,8 @@ enum WelcomeConnect {
         case phaseChanged
         /// The person closed a connect error's alert (US-25 AC11j).
         case alertDismissed
+        /// "Use a different cloud", at failed (US-54 AC2d).
+        case useDifferentCloud
     }
 
     enum Decision: Equatable {
@@ -92,6 +103,8 @@ enum WelcomeConnect {
         case showSheet
         case showSheetAndOpen
         case open
+        /// Disconnect the cloud on file; the sheet stays and shows choosing (US-54 AC2d).
+        case disconnect
         case nothing
     }
 
@@ -111,6 +124,8 @@ enum WelcomeConnect {
         case (.phaseChanged, _): .nothing
         case (.alertDismissed, .opened): sheetShown ? .goOn : .nothing
         case (.alertDismissed, _): .nothing
+        case (.useDifferentCloud, .failed): .disconnect
+        case (.useDifferentCloud, _): .nothing
         }
     }
 }
