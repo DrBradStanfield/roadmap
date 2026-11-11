@@ -382,9 +382,14 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
     expect(msg('msg-shopify-q').content).toBe('text msg-shopify-q');
   });
 
-  it('throws rather than spinning when the updates never land', async () => {
+  // US-15 AC61: a pass whose updates never land ends without spinning, counts
+  // its rows, and the passes after it still run.
+  it('ends a pass whose updates never land, and the next pass still runs', async () => {
     store.swallowUpdates = 'chat_messages';
-    await expect(purgeOldChatText(NOW)).rejects.toThrow(/no progress/i);
+    const counts = await purgeOldChatText(NOW);
+    expect(counts).toMatchObject({ didNotBlank: 3, conversations: 2 });
+    expect(msg('msg-shopify-q').content).toBe('text msg-shopify-q');
+    expect(conv('conv-shopify-old').title).toBeNull();
   });
 
   it('US-15 AC51: a 250-row backlog clears in batches of at most 100 ids', async () => {
@@ -635,7 +640,7 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
       const counts = await purgeWithLock('2026-09-10', NOW);
       expect(counts?.didNotBlank).toBe(2);
       expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
-        ['Chat text purge: rows did not blank', { level: 'warning', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
+        ['Chat text purge: rows did not blank', { level: 'error', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
       ]);
       const log = spies[0].mock.calls.join(' ');
       expect(log).toContain('questions archived: 152 eligible, 152 kept, 0 skipped; 2 rows did not blank');
@@ -668,11 +673,11 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     store.chat_match_events = [row('never-1', 40, { platform: 'widget' }), row('never-2', 40, { platform: 'widget' })];
     store.neverBlank = new Set(['never-1', 'never-2']);
     store.flipOrder = true;
-    await expect(purgeOldChatText(NOW)).rejects.toThrow('chat text purge made no progress');
-    expect(store.selects).toBe(2);
-    // Reported once even though the run threw, with the count only.
+    // US-15 AC61: the stopped pass ends the run normally; the later passes run.
+    expect(await purgeOldChatText(NOW)).toMatchObject({ didNotBlank: 2, messages: 3, conversations: 2 });
+    // Reported once, with the count only.
     expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
-      ['Chat text purge: rows did not blank', { level: 'warning', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
+      ['Chat text purge: rows did not blank', { level: 'error', tags: { feature: 'chat_text_purge', stuck_rows: 2 } }],
     ]);
     expect(store.archiveInserts).toEqual([]);
   });
@@ -684,6 +689,66 @@ describe('purgeOldChatText — US-15 AC44 question archive', () => {
     expect(counts).toMatchObject({ matchEvents: 250, didNotBlank: 0, archive: { eligible: 250, kept: 200, skipped: 50 } });
     expect(store.chat_match_events.every((r) => r.message === null)).toBe(true);
     expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+  });
+
+  // US-15 AC61: one row that never blanks no longer fails the run, and a
+  // question is copied only once its own row's blank has landed.
+  it('US-15 AC61: one permanently stuck row: the rest still blank and are copied, and the run ends without throwing', async () => {
+    store.chat_match_events.push(row('stuck-forever', 40, { platform: 'widget' }));
+    store.neverBlank = new Set(['stuck-forever']);
+    const counts = await purgeOldChatText(NOW);
+    expect(counts.didNotBlank).toBe(1);
+    expect(byId('stuck-forever').message).toBe('question stuck-forever');
+    const others = store.chat_match_events.filter((r) => r.created_at < daysAgo(30) && r.id !== 'stuck-forever');
+    expect(others.every((r) => r.message === null && r.router_raw === null)).toBe(true);
+    for (const id of ['msg-shopify-q', 'msg-shopify-a', 'msg-discord']) expect(msg(id).content).toBeNull();
+    expect(conv('conv-shopify-old').title).toBeNull();
+    expect(conv('conv-discord-old').title).toBeNull();
+    expect(archived()).toEqual(['scrubbed: question shopify-route', 'scrubbed: question widget-measure']);
+    expect(counts.archive).toEqual({ eligible: 2, kept: 2, skipped: 0 });
+  });
+
+  it('US-15 AC61: a row stuck for two days is never copied while stuck, and is copied once on the day it blanks', async () => {
+    store.chat_match_events = [row('stuck-days', 40, { platform: 'widget' })];
+    store.neverBlank = new Set(['stuck-days']);
+    const onDay = (n: number) => new Date(NOW.getTime() + n * 86400_000);
+    for (const n of [0, 1]) expect((await purgeOldChatText(onDay(n))).didNotBlank).toBe(1);
+    expect(store.archiveInserts.flat()).toEqual([]);
+    store.neverBlank = new Set();
+    await purgeOldChatText(onDay(2));
+    expect(byId('stuck-days').message).toBeNull();
+    expect(store.archiveInserts.flat().map((r) => r.question)).toEqual(['scrubbed: question stuck-days']);
+  });
+
+  it('US-15 AC61: a stuck row is a Sentry error with fixed tags only; no id or question text in any log, Sentry or event', async () => {
+    store.chat_match_events = [
+      row('stuck-SENTINEL', 40, { platform: 'shopify', first: 'SENTINEL first' }, { message: 'SENTINEL question', conversation_id: 'conv-shopify-old' }),
+      row('w0', 40, { platform: 'widget' }),
+    ];
+    store.neverBlank = new Set(['stuck-SENTINEL']);
+    const spies = (['log', 'error', 'warn'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    try {
+      expect((await purgeWithLock('2026-09-10', NOW))?.didNotBlank).toBe(1);
+      expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+        ['Chat text purge: rows did not blank', { level: 'error', tags: { feature: 'chat_text_purge', stuck_rows: 1 } }],
+      ]);
+      expect(spies[0].mock.calls.join(' ')).toContain('questions archived: 1 eligible, 1 kept, 0 skipped; 1 rows did not blank');
+      const seen = JSON.stringify([
+        spies.map((s) => s.mock.calls),
+        vi.mocked(Sentry.captureMessage).mock.calls,
+        vi.mocked(Sentry.captureException).mock.calls,
+        vi.mocked(recordServerEvent).mock.calls,
+        store.archiveInserts,
+      ]);
+      expect(seen).not.toContain('SENTINEL');
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
+
+  it('US-15 AC61: the chat DELETE still throws when a row will not blank', async () => {
+    store.neverBlank = new Set(['shopify-route']);
+    await expect(clearConversationMatchEvents('conv-shopify-old', 'user-1')).rejects.toThrow('deleted chat text purge made no progress');
   });
 
   it('a deleted conversation’s match events are blanked and never copied', async () => {
