@@ -89,6 +89,32 @@ describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
     expect(poll.error).toBeTruthy();
   });
 
+  it('a connection drop while the body streams answers error and keeps the poll token', async () => {
+    let n = 0;
+    stubFetch((call) => {
+      if (call.body && 'batch' in call.body) return jsonResponse({ success: true, batchId: 'batch_drop', pollToken: 'tok-drop' });
+      return n++ === 0
+        ? new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"status":')); c.error(new TypeError('synthetic connection drop')); } }),
+          { headers: { 'content-type': 'application/json' } })
+        : jsonResponse({ status: 'processing', completed: 3, total: 20 });
+    });
+    await labImportBatch(FILES);
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'error', completed: 0, total: 0 });
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'processing', completed: 3, total: 20 });
+    expect(calls[2].body).toEqual({ batchId: 'batch_drop', pollToken: 'tok-drop' });
+  });
+
+  it.each([
+    ['no `completed`', { status: 'processing', total: 20 }],
+    ['a NaN count (JSON carries it as null)', { status: 'processing', completed: NaN, total: 20 }],
+    ['a negative count', { status: 'error', completed: -1, total: 20 }],
+    ['a fractional count', { status: 'processing', completed: 1.5, total: 20 }],
+    ['an `ended` with neither results nor an error', { status: 'ended', completed: 20, total: 20 }],
+  ])('an answer with %s ends the watch with a server error', async (_, body) => {
+    stubFetch(() => jsonResponse(body));
+    expect(await pollBatchStatus('batch_abc')).toMatchObject({ status: 'ended', errorCode: 'server_error' });
+  });
+
   it('passes the server\'s own `error` answer through, its count kept', async () => {
     stubFetch(() => jsonResponse({ status: 'error', completed: 3, total: 20 }));
     expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 3, total: 20 });

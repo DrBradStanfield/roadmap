@@ -127,6 +127,20 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     expect(await (await call(batch)).json()).toEqual({ status: 'processing', completed: 5, total: 20 });
   });
 
+  it('US-12 AC24: every poll answer the route gives passes the widget\'s poll schema, where it enters', async () => {
+    const { batchPollAnswer } = await import('../../widget-src/src/lib/upload-api');
+    ended = false;
+    const batch = await upload();
+    const answers = [await (await call(batch)).json()];
+    await vi.advanceTimersByTimeAsync(2000);
+    fetchMock.mockImplementationOnce(async () => new Response('synthetic outage', { status: 529 }));
+    answers.push(await (await call(batch)).json());
+    ended = true;
+    answers.push(await (await call(batch)).json());
+    expect(answers.map(a => a.status)).toEqual(['processing', 'error', 'ended']);
+    for (const answer of answers) expect(batchPollAnswer.safeParse(answer).success, JSON.stringify(answer.status)).toBe(true);
+  });
+
   it.each([
     [{}, 1, 1, 1],
     [{ ownDates: true }, 2, 2, 2],

@@ -16,6 +16,7 @@
  *    → byok-upload.ts (the user's own Anthropic key, browser-direct).
  */
 import { EXTRACTION_STOP_CODES } from '@roadmap/health-core/models';
+import * as z from '@roadmap/health-core/zod';
 import { parseJsonResponse, PROXY_PATH } from './server-api';
 import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
@@ -105,14 +106,26 @@ export async function labImportBatch(
   }
 }
 
-/** A failed poll that can change (a 5xx, a network throw) answers `error` and the caller
- *  polls on. One that cannot (404, 401, 403, an answer that is not a poll) ends the watch (US-12 AC24). */
+const pollCount = z.number().int().nonnegative();
+/** A poll answer as the pipeline reads it, checked once where it enters (US-12 AC24): counts it can
+ *  show, and an end that says what ended. A result's own fields are read by the review, not here. */
+export const batchPollAnswer = z.union([
+  z.object({ status: z.enum(['processing', 'error']), completed: pollCount, total: pollCount }),
+  z.looseObject({ status: z.literal('ended'), completed: pollCount, total: pollCount,
+    results: z.array(z.looseObject({})).optional(), error: z.string().optional(), errorCode: z.string().optional() })
+    .refine(p => p.results !== undefined || p.error !== undefined || p.errorCode !== undefined),
+]);
+
+/** A failed poll that can change (a 5xx, a network throw, a drop while the body streams) answers
+ *  `error` and the caller polls on. One that cannot (404, 401, 403, an answer that is not a poll)
+ *  ends the watch (US-12 AC24). */
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
   const ended = (error: string, errorCode: UploadErrorCode): BatchPollResponse => {
     pollTokens.delete(batchId);
     return { status: 'ended', completed: 0, total: 0, error, errorCode };
   };
   let response: Response;
+  let text = '';
   try {
     const token = pollTokens.get(batchId) ?? '';
     // A POST so the token travels in the body: the server logs request URLs
@@ -121,14 +134,21 @@ export async function pollBatchStatus(batchId: string): Promise<BatchPollRespons
       method: 'POST',
       body: JSON.stringify({ batchId, pollToken: token }),
     });
+    // The body is part of the call: a drop while it streams can change, as a fetch throw can.
+    if (response.ok) text = await response.text();
   } catch {
     return { status: 'error', completed: 0, total: 0 };
   }
   if (response.status === 404) return ended('Batch not found — server may have restarted.', 'server_restart');
   if (response.status === 401 || response.status === 403) return ended('Batch poll refused', 'server_error');
   if (!response.ok) return { status: 'error', completed: 0, total: 0 };
-  const poll = await parseJsonResponse<BatchPollResponse>(response).catch(() => null);
-  if (!poll || !['processing', 'ended', 'error'].includes(poll.status)) return ended('Batch poll answer unreadable', 'server_error');
-  if (poll.status === 'ended') pollTokens.delete(batchId);
-  return poll;
+  let body: unknown = null;
+  try {
+    if ((response.headers.get('content-type') ?? '').includes('application/json')) body = JSON.parse(text);
+  } catch { /* malformed: refused below */ }
+  const poll = batchPollAnswer.safeParse(body);
+  if (!poll.success) return ended('Batch poll answer unreadable', 'server_error');
+  if (poll.data.status === 'ended') pollTokens.delete(batchId);
+  // The schema checks what the loop reads; each result's own shape is the review's to read.
+  return poll.data as BatchPollResponse;
 }

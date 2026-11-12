@@ -19,6 +19,10 @@ const ended = () => json({ status: 'ended', completed: N, total: N, results: Arr
   { index, classification: 'lab_report', reportDate: null, values: [], additionalValues: [], document: null })) });
 const status500 = () => json({ success: false, error: 'Failed to process request' }, 500);
 const networkThrow = () => { throw new TypeError('synthetic network failure'); };
+/** Headers arrive, then the connection drops while the body streams. */
+const bodyDrop = () => new Response(new ReadableStream({
+  start(c) { c.enqueue(new TextEncoder().encode('{"status":')); c.error(new TypeError('synthetic connection drop')); },
+}), { headers: { 'content-type': 'application/json' } });
 
 let polls: number;
 /** The batch POST is accepted; each poll gets the next scripted answer, the last one repeating. */
@@ -31,9 +35,11 @@ function script(...answers: Array<() => Response>) {
 }
 
 let shown: string[];
+let bar: number[];
 function run() {
   shown = [];
-  const outcome = processBatch(upload, queue, new AbortController(), p => shown.push(p.fileName), [] as FileNotice[]);
+  bar = [];
+  const outcome = processBatch(upload, queue, new AbortController(), p => { shown.push(p.fileName); bar.push(p.current); }, [] as FileNotice[]);
   outcome.catch(() => {});
   return outcome;
 }
@@ -50,6 +56,7 @@ describe('US-12 AC24: a poll failure that can change keeps the count and polls o
   it.each([
     ['a 500 from our route', status500],
     ['a network throw', networkThrow],
+    ['a connection drop while the body streams', bodyDrop],
   ])('3 of 20, then %s, then a good poll: the count never drops below 3 and the run returns results', async (_, failure) => {
     script(() => processing(3), failure, failure, ended);
     const outcome = run();
@@ -78,22 +85,39 @@ describe('US-12 AC24: a poll failure that cannot change ends the watch at once',
     ['a 403', () => json({ success: false, error: 'Forbidden' }, 403), 'server_error'],
     ['a 404 (unknown batch or bad poll token)', () => json({ error: 'Batch not found' }, 404), 'server_restart'],
     ['a malformed answer', () => new Response('<html>synthetic</html>', { headers: { 'content-type': 'text/html' } }), 'server_error'],
-  ] as const)('%s rejects after one poll and no more', async (_, failure, code) => {
+    ['an answer with no `completed`', () => json({ status: 'processing', total: N }), 'server_error'],
+    ['a NaN count (JSON carries it as null)', () => json({ status: 'processing', completed: NaN, total: N }), 'server_error'],
+    ['a negative count', () => json({ status: 'error', completed: -1, total: N }), 'server_error'],
+    ['an `ended` with neither results nor an error', () => json({ status: 'ended', completed: N, total: N }), 'server_error'],
+  ] as const)('%s rejects after one poll and no more, and the bar never reads NaN', async (_, failure, code) => {
     script(failure, () => processing(3));
-    const outcome = run();
+    let settled: unknown;
+    run().then(() => { settled = 'resolved'; }, (error: unknown) => { settled = error; });
     await vi.advanceTimersByTimeAsync(5000 + 100);
-    await expect(outcome).rejects.toMatchObject({ code });
+    expect(settled).toBeInstanceOf(UploadError);
+    expect(settled).toMatchObject({ code });
     await vi.advanceTimersByTimeAsync(60_000);
     expect(polls).toBe(1);
+    expect(bar.filter(Number.isNaN)).toEqual([]);
   });
 });
 
-describe('US-12 AC24: a widget from before the fix keeps polling on the new `error` answer', () => {
-  it('the server\'s 200 {status:"error"} is not an end: the next good poll still returns results', async () => {
-    script(() => processing(3), () => json({ status: 'error', completed: 3, total: N }), ended);
-    const outcome = run();
-    await vi.advanceTimersByTimeAsync(3 * 5000 + 100);
-    expect(await outcome).toHaveLength(N);
-    expect(polls).toBe(3);
+/**
+ * Stands in for one turn of processBatch's poll loop as shipped before this fix (24f52596^, upload-pipeline.ts
+ * :349-352): it set its count from every answer, threw on `error` text, finished on `ended` with results and
+ * polled on for anything else. Copied, not imported: the deploy window serves that widget against this server.
+ */
+function oldWidgetTurn(poll: { status: string; completed?: number; total?: number; error?: string; results?: unknown[] }, fake = 35) {
+  const realCompleted = poll.completed as number;
+  const next = poll.error ? 'throw' : poll.status === 'ended' && poll.results ? 'done' : 'poll';
+  return { next, realCompleted, bar: Math.round(Math.max(fake, (realCompleted / N) * 100)) };
+}
+
+describe('US-12 AC24: a widget from before the fix, given the server\'s new `error` answer', () => {
+  it('polls on with a count of 3, never NaN', () => {
+    expect(oldWidgetTurn({ status: 'error', completed: 3, total: N })).toEqual({ next: 'poll', realCompleted: 3, bar: 35 });
+  });
+  it('would read NaN were `completed` left out, which is why the server sends it', () => {
+    expect(oldWidgetTurn({ status: 'error', total: N }).bar).toBeNaN();
   });
 });

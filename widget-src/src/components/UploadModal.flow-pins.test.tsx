@@ -261,7 +261,8 @@ describe('US-12 AC6: Save', () => {
 });
 
 describe('US-12 AC24: a batch whose polls keep failing', () => {
-  it('US-12 AC24: polls on through `error` to the deadline, then shows the existing timeout sentence', async () => {
+  // Pins existing behaviour: base code also polled on and timed out here, so this never failed first.
+  it('US-12 AC24: polls on through `error` to the deadline, then shows the existing timeout sentence (pins existing behaviour)', async () => {
     vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
     vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'error', completed: 0, total: 0 });
     vi.useFakeTimers();
