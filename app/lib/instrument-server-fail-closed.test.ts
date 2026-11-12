@@ -32,9 +32,10 @@ const FIXED = (name: string) => `Sentry scrub failed (${name}); event dropped`;
 type Item = [{ type: string }, Record<string, any>];
 const envelopes: Array<[unknown, Item[]]> = [];
 const items = () => envelopes.flatMap(([, list]) => list);
-// A client report holds counts and reasons only (no event content); every
-// other item is content the SDK sent.
-const content = () => items().filter(([h]) => h.type !== 'client_report');
+// A client report holds counts and reasons only, and a session holds a status
+// and an error count (sent when a release is set, as GITHUB_SHA sets in CI);
+// neither carries event content. Every other item is content the SDK sent.
+const content = () => items().filter(([h]) => h.type !== 'client_report' && h.type !== 'session');
 const discarded = () => items().filter(([h]) => h.type === 'client_report')
   .flatMap(([, p]) => p.discarded_events as Array<{ category: string; reason: string }>);
 async function settle(until: () => void) {
