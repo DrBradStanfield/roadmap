@@ -8,11 +8,15 @@ import * as Sentry from '@sentry/react-router';
 vi.mock('@sentry/react-router', async (original) => ({
   ...await original<typeof import('@sentry/react-router')>(), init: vi.fn(),
 }));
-const mode = vi.hoisted(() => ({ throw: null as unknown, drop: false, outputs: [] as unknown[] }));
+const mode = vi.hoisted(() => ({ throw: null as unknown, drop: false, outputs: [] as unknown[], crumbThrow: null as unknown }));
 vi.mock('../../instrument-scrub.mjs', async (original) => {
   const real = await original<Record<string, any>>();
   return {
     ...real,
+    scrubBreadcrumbData: (data: unknown) => {
+      if (mode.crumbThrow !== null) throw mode.crumbThrow;
+      return real.scrubBreadcrumbData(data);
+    },
     scrubServerEvent: (event: unknown) => {
       if (mode.throw !== null) throw mode.throw;
       if (mode.drop) return null;
@@ -72,6 +76,7 @@ beforeEach(() => {
   internalCaptures.length = 0;
   mode.throw = null;
   mode.drop = false;
+  mode.crumbThrow = null;
   mode.outputs.length = 0;
   errorLog?.mockRestore();
   errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -112,6 +117,18 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
     expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('TypeError')]]);
+  });
+
+  it('beforeBreadcrumb: a throw drops the crumb, nothing crashes and nothing unscrubbed is sent', async () => {
+    mode.crumbThrow = failing();
+    // An outgoing call's crumb: addBreadcrumb has no catch of its own, so a throw here would reach its caller.
+    expect(() => Sentry.addBreadcrumb({ category: 'http', data: { url: `https://example.invalid/${SENTINEL}` } })).not.toThrow();
+    expect(errorLog.mock.calls).toEqual([[FIXED('TypeError')]]);
+    mode.crumbThrow = null;
+    Sentry.captureException(new Error('probe after crumb'));
+    await settle(() => expect(content().map(([h]) => h.type)).toEqual(['event']));
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
+    expect(internalCaptures).toEqual([]);
   });
 
   it('a hook that returns normally sends the same scrubbed event as before', async () => {

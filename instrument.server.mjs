@@ -75,7 +75,7 @@ Sentry.init({
   // Sampled transactions carry the request (headers, cookies) too, and
   // beforeSend never sees them.
   beforeSendTransaction: failClosed(scrubServerEvent),
-  beforeBreadcrumb(breadcrumb) {
+  beforeBreadcrumb: failClosed((breadcrumb) => {
     if (
       (breadcrumb.category === "fetch" ||
         breadcrumb.category === "xhr" ||
@@ -88,5 +88,5 @@ Sentry.init({
     // breadcrumb from anywhere else is dropped, not filtered.
     if (breadcrumb.category === "console") return null;
     return breadcrumb;
-  },
+  }),
 });

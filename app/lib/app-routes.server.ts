@@ -126,10 +126,19 @@ async function reportSlowImport(res: Response, ms: number, retried: boolean): Pr
     const duration = ms <= 60_000 ? '0-60' : ms < 75_000 ? '60-75' : ms < 90_000 ? '75-90' : '90+';
     const tags = { feature: 'app-lab-import', outcome, duration, retry: retried ? 'yes' : 'no' };
     Sentry.startNewTrace(() => Sentry.withScope((scope) => {
-      scope.addEventProcessor((e) => ({
-        event_id: e.event_id, timestamp: e.timestamp, level: e.level, message: e.message, fingerprint: e.fingerprint,
-        platform: e.platform, sdk: e.sdk, environment: e.environment, contexts: { trace: e.contexts?.trace }, tags,
-      }));
+      // A throw here must not reach the SDK's internal-error path: the same rule and
+      // line as failClosed in instrument.server.mjs, which cannot be imported (US-09 AC7i).
+      scope.addEventProcessor((e) => {
+        try {
+          return {
+            event_id: e.event_id, timestamp: e.timestamp, level: e.level, message: e.message, fingerprint: e.fingerprint,
+            platform: e.platform, sdk: e.sdk, environment: e.environment, contexts: { trace: e.contexts?.trace }, tags,
+          };
+        } catch (err) {
+          console.error(`Sentry scrub failed (${err instanceof Error ? err.name : typeof err}); event dropped`);
+          return null;
+        }
+      });
       Sentry.captureMessage('App lab import slow', { level: 'warning', fingerprint: ['app-lab-import', outcome] });
     }));
   } catch {
