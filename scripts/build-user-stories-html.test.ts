@@ -9,16 +9,16 @@
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, symlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { integrityProblems } from './build-user-stories-html';
+import { loadStories } from '../tools/stories.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(here, 'build-user-stories-html.ts');
 const TSX = join(here, '..', 'node_modules', '.bin', 'tsx');
-const REAL_MD = join(here, '..', 'docs', 'user-stories.md');
 
 const story = (n: number) => `### US-${String(n).padStart(2, '0')} · Story ${n}\nAs a user, I do thing ${n}.\n- Tests: ✅ pinned.\n`;
 const spec = (...ids: number[]) => `# User Stories\n\n## Epic A — Things\n\n${ids.map(story).join('\n')}`;
@@ -199,9 +199,59 @@ describe('build-user-stories-html.ts --check-against — the CI gate (US-64 AC11
   });
 });
 
+describe('the split stories (tools/stories.mjs): the build reads the reassembled text', () => {
+  // The source is an index; stories/ beside it holds one file per story.
+  const index = (...ids: number[]) =>
+    `# User Stories\n\n## Epic A — Things\n\n${ids.map((n) => `- [US-${String(n).padStart(2, '0')} · Story ${n}](stories/US-${String(n).padStart(2, '0')}.md)`).join('\n\n')}\n`;
+  const parts = (...ids: number[]) => (dir: string) => {
+    mkdirSync(join(dir, 'stories'), { recursive: true });
+    for (const n of ids) writeFileSync(join(dir, 'stories', `US-${String(n).padStart(2, '0')}.md`), story(n));
+  };
+
+  it('builds the same html from an index and its parts as from the monolith', () => {
+    const whole = build(spec(1, 2, 3));
+    const split = run(index(1, 2, 3), [], {}, parts(1, 2, 3));
+    expect(split.ok).toBe(true);
+    expect(split.html).toBe(whole.html);
+  });
+
+  it('--check-against reads a split base and names a story the source dropped', () => {
+    const r = run(spec(1, 2), ['--check-against', 'HEAD'], {}, (dir, src) => {
+      const git = (...a: string[]) => execFileSync('git', a, { cwd: dir, stdio: 'ignore' });
+      const working = readFileSync(src, 'utf8');
+      writeFileSync(src, index(1, 2, 3));
+      parts(1, 2, 3)(dir);
+      git('init', '-q');
+      git('add', '-A');
+      git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'base');
+      rmSync(join(dir, 'stories'), { recursive: true });
+      writeFileSync(src, working);
+    });
+    expect(r.ok).toBe(false);
+    expect(r.stderr).toContain('drops stories the base still defines: US-3');
+  });
+
+  it('--check-against fails closed when the base index links a part it does not hold', () => {
+    const r = run(spec(1, 2), ['--check-against', 'HEAD'], {}, (dir, src) => {
+      const git = (...a: string[]) => execFileSync('git', a, { cwd: dir, stdio: 'ignore' });
+      const working = readFileSync(src, 'utf8');
+      writeFileSync(src, index(1, 2, 3));
+      parts(1, 2)(dir);
+      git('init', '-q');
+      git('add', '-A');
+      git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'base');
+      writeFileSync(src, working);
+    });
+    expect(r.ok).toBe(false);
+    // The loader's own reason, not only "cannot read git ref" (adversary R3): the missing part, named.
+    expect(r.stderr).toContain('stories/US-03.md');
+    expect(r.stderr).not.toMatch(/\n\s+at /); // no stack
+  });
+});
+
 describe('docs/user-stories.md — the spec actually shipped', () => {
   it('defines every story it references, and every story code and tests cite is there', () => {
-    const md = readFileSync(REAL_MD, 'utf8');
+    const md = loadStories();
     expect(integrityProblems(md, null, false)).toEqual([]);
     // The 17 stories lost on 2026-09-01, by id: never again silently.
     const defined = new Set([...md.matchAll(/^### US-(\d+)\b/gm)].map((m) => Number(m[1])));

@@ -19,10 +19,11 @@
  *        npx tsx scripts/build-user-stories-html.ts --check-against <git-ref> [source.md]
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { basename, join, dirname } from 'node:path';
+import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
+import { readStories } from '../tools/stories.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Prefix for relative links, so a copy served away from docs/ (Pages) still resolves them. HTML-escaped once, where it is set. */
@@ -104,13 +105,11 @@ export function integrityProblems(md: string, baselineMd: string | null, allowRe
   return problems;
 }
 
-/** The source as `ref` holds it; null when that commit has no such file (a first build). Throws on a bad ref. */
+/** The source as `ref` holds it, reassembled when split; null when that commit has no such file (a first build). Throws on a bad ref. */
 function sourceAt(ref: string, src: string): string | null {
-  const git = (args: string[]) =>
-    execFileSync('git', args, { cwd: dirname(src), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
-  git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
+  execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd: dirname(src), stdio: 'ignore' });
   try {
-    return git(['show', `${ref}:./${basename(src)}`]);
+    return readStories(src, { ref });
   } catch (e) {
     // Only "that commit has no such path" means a first build; any other failure must not pass the gate.
     if (/does not exist in|exists on disk, but not in/.test(String((e as { stderr?: unknown }).stderr ?? ''))) return null;
@@ -128,13 +127,14 @@ function main(): void {
   linkBase = esc(option('--link-base') ?? '');
   const SRC = args[0] ?? join(root, 'docs', 'user-stories.md');
   const OUT = args[1] ?? join(root, 'docs', 'user-stories.html');
-  const md = readFileSync(SRC, 'utf8');
+  const md = readStories(SRC);
   let baseline: string | null = null;
   if (against !== undefined) {
     try {
       baseline = sourceAt(against, SRC);
-    } catch {
-      console.error(`user-stories.md: cannot read git ref ${against || '(empty)'}; nothing checked.`);
+    } catch (e) {
+      const why = String(e instanceof Error ? e.message : e).trim(); // the message only, never the stack
+      console.error(`user-stories.md: cannot read git ref ${against || '(empty)'}: ${why}; nothing checked.`);
       process.exit(1);
     }
   }

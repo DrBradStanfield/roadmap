@@ -494,3 +494,121 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(r.out).toContain(`| node ${join(realpathSync(main), '.claude/hooks/worktree-guard.cjs')}`);
   });
 });
+
+describe('merge-batch.mjs on the split stories (docs/stories/, tools/stories.mjs)', () => {
+  const INDEX = ['# Stories', '', '- [US-1 · One](stories/US-1.md)', '', '## Coverage', ''].join('\n');
+  const PART = ['### US-1 · One', '- AC1 one', '- AC2 two', '- Tests: none', ''].join('\n');
+  let splitSha: string;
+  beforeEach(() => {
+    advanceMain((d) => {
+      write(d, 'docs/user-stories.md', INDEX);
+      write(d, 'docs/stories/US-1.md', PART);
+    });
+    splitSha = git(root, '--git-dir', origin, 'rev-parse', 'main');
+  });
+  const addPartAc = (line: string) => (d: string) => {
+    const p = join(d, 'docs/stories/US-1.md');
+    writeFileSync(p, readFileSync(p, 'utf8').replace('- Tests: none', `${line}\n- Tests: none`));
+  };
+  const addStory = (id: number, title: string) => (d: string) => {
+    const p = join(d, 'docs/user-stories.md');
+    const line = `- [US-${id} · ${title}](stories/US-${id}.md)`;
+    writeFileSync(p, readFileSync(p, 'utf8').replace('(stories/US-1.md)\n', `(stories/US-1.md)\n\n${line}\n`));
+    write(d, `docs/stories/US-${id}.md`, `### US-${id} · ${title}\n- AC1 ${title}\n`);
+  };
+
+  it('keeps the ACs two PRs add at the same line of one part, in AC order, and proves the diff', () => {
+    const late = pr(131, splitSha, addPartAc('- AC4 from 131'));
+    const early = pr(132, splitSha, addPartAc('- AC3 from 132'));
+    const r = runBatch([`131 ${late}`, `132 ${early}`]);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('proof ok');
+    const md = readFileSync(join(batch, 'docs/stories/US-1.md'), 'utf8');
+    expect(md).toBe(PART.replace('- Tests: none', '- AC3 from 132\n- AC4 from 131\n- Tests: none'));
+  });
+
+  it('keeps the index lines of two new stories added at the same place, ours first', () => {
+    const a = pr(133, splitSha, addStory(74, 'Seventy-four'));
+    const b = pr(134, splitSha, addStory(75, 'Seventy-five'));
+    const r = runBatch([`133 ${a}`, `134 ${b}`]);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('proof ok');
+    expect(readFileSync(join(batch, 'docs/user-stories.md'), 'utf8')).toBe(
+      INDEX.replace(
+        '(stories/US-1.md)\n',
+        '(stories/US-1.md)\n\n- [US-74 · Seventy-four](stories/US-74.md)\n\n- [US-75 · Seventy-five](stories/US-75.md)\n',
+      ),
+    );
+    expect(git(batch, 'status', '--porcelain')).toBe('');
+  });
+
+  // Each PR puts its line right after US-1's, with no blank; a blank then ends the list before "## Coverage".
+  const addAdjacent = (id: number, title: string) => (d: string) => {
+    const p = join(d, 'docs/user-stories.md');
+    writeFileSync(p, readFileSync(p, 'utf8').replace('(stories/US-1.md)\n', `(stories/US-1.md)\n- [US-${id} · ${title}](stories/US-${id}.md)\n`));
+    write(d, `docs/stories/US-${id}.md`, `### US-${id} · ${title}\n- AC1 ${title}\n`);
+  };
+
+  it('keeps two adjacent index lines added at the same place, with no blank invented before the section break', () => {
+    const a = pr(141, splitSha, addAdjacent(74, 'Seventy-four'));
+    const b = pr(142, splitSha, addAdjacent(75, 'Seventy-five'));
+    const r = runBatch([`141 ${a}`, `142 ${b}`]);
+    expect(r.err).toBe('');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('proof ok');
+    expect(readFileSync(join(batch, 'docs/user-stories.md'), 'utf8')).toBe(
+      INDEX.replace('(stories/US-1.md)\n', '(stories/US-1.md)\n- [US-74 · Seventy-four](stories/US-74.md)\n- [US-75 · Seventy-five](stories/US-75.md)\n'),
+    );
+  });
+
+  it('keeps a blank-separated index line from one PR beside an adjacent one from the other, adding no line of its own', () => {
+    const a = pr(143, splitSha, addStory(74, 'Seventy-four'));
+    const b = pr(144, splitSha, addAdjacent(75, 'Seventy-five'));
+    const r = runBatch([`143 ${a}`, `144 ${b}`]);
+    expect(r.err).toBe('');
+    expect(r.code).toBe(0);
+    const md = readFileSync(join(batch, 'docs/user-stories.md'), 'utf8');
+    expect(md.split('\n').length).toBe(INDEX.split('\n').length + 3); // the two lines and the one blank a added
+    expect(md).toContain('- [US-74 · Seventy-four](stories/US-74.md)');
+    expect(md).toContain('- [US-75 · Seventy-five](stories/US-75.md)');
+  });
+
+  it('stops with exit 2 when two PRs take the same story number', () => {
+    const a = pr(135, splitSha, addStory(74, 'Mine'));
+    const b = pr(136, splitSha, addStory(74, 'Theirs'));
+    const r = runBatch([`135 ${a}`, `136 ${b}`]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('#136');
+    expect(existsSync(join(batch, '.git/MERGE_HEAD'))).toBe(true);
+  });
+
+  it('stops with exit 2 when two PRs list the same story at separate places and git merges them cleanly', () => {
+    const line = '- [US-74 · Twice](stories/US-74.md)';
+    const part = (d: string) => write(d, 'docs/stories/US-74.md', '### US-74 · Twice\n- AC1 twice\n');
+    const top = (d: string) => {
+      const p = join(d, 'docs/user-stories.md');
+      writeFileSync(p, readFileSync(p, 'utf8').replace('# Stories\n', `# Stories\n\n${line}\n`));
+      part(d);
+    };
+    const end = (d: string) => {
+      writeFileSync(join(d, 'docs/user-stories.md'), `${INDEX}\n${line}\n`);
+      part(d);
+    };
+    const a = pr(139, splitSha, top);
+    const b = pr(140, splitSha, end);
+    const r = runBatch([`139 ${a}`, `140 ${b}`]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('#140');
+    expect(r.err).toContain('US-74 twice');
+    expect(() => git(batch, 'merge-base', '--is-ancestor', b, 'HEAD')).toThrow();
+    expect(existsSync(join(batch, '.git/MERGE_HEAD'))).toBe(true);
+  });
+
+  it('still stops with exit 2 on a code conflict beside a stories one', () => {
+    const a = pr(137, splitSha, (d) => { addPartAc('- AC3 a')(d); write(d, 'src/a.txt', 'a1\nfrom 137\na3\n'); });
+    const b = pr(138, splitSha, (d) => { addPartAc('- AC4 b')(d); write(d, 'src/a.txt', 'a1\nfrom 138\na3\n'); });
+    const r = runBatch([`137 ${a}`, `138 ${b}`]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('src/a.txt');
+  });
+});
