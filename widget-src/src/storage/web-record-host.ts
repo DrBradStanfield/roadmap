@@ -18,7 +18,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, healthWritesAllowed, logOffId, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { clearOffFileHealthData, healthWritesAllowed, logOffId, noteDevicePage, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -170,6 +170,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // The other record files (chat-history.json) sit under the adapter's
     // named-file prefix, which only disconnect() clears — and disconnect()
     // after an erase would delete the erased record file just written.
+    noteDevicePage();
     return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
   }
   const device = new LocalStorageAdapter();

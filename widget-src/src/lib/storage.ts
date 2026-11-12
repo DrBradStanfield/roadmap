@@ -19,32 +19,58 @@ export const MIRROR_KEY = 'health_roadmap_data';
 export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
-/** Where this page may write health data on the device (US-09 AC2c, AC2e).
+/** Where this page may write health data on the device (US-09 AC2c, AC2e,
+ *  AC2h). 'loading': no record has opened yet; it may only while this
+ *  device's log-off id is the one the page loaded with, and it holds another
+ *  tab's log-off heard meanwhile until it knows which kind of page it is.
  *  'device': its device copy is its only store, so it always may. 'cloud': a
- *  cloud record opened here, so it may only while this device's log-off id is
- *  the one the page loaded with. 'stopped': its own log-off, or another tab's
- *  it heard. One way only: log-off navigates away. It lives in this module,
- *  which every device writer imports, so all of them check the same state. */
-export type HealthWrites = 'device' | 'cloud' | 'stopped';
-export function healthWritesTransition(state: HealthWrites, event: 'cloudOpened' | 'stop'): HealthWrites {
-  return event === 'stop' || state === 'stopped' ? 'stopped' : 'cloud';
+ *  cloud record opened here, so it may only while the id is the one it loaded
+ *  with. 'stopped': its own log-off, or another tab's heard on a cloud page.
+ *  Never back: log-off navigates away. It lives in this module, which every
+ *  device writer imports, so all of them check the same state. */
+export type HealthWrites =
+  | { mode: 'loading'; logOffHeard: boolean }
+  | { mode: 'device' }
+  | { mode: 'cloud' }
+  | { mode: 'stopped' };
+export type HealthWritesEvent = 'deviceOpened' | 'cloudOpened' | 'logOffHeard' | 'stop';
+export function healthWritesTransition(state: HealthWrites, event: HealthWritesEvent): HealthWrites {
+  if (state.mode === 'stopped' || event === 'stop') return { mode: 'stopped' };
+  if (event === 'logOffHeard') {
+    if (state.mode === 'loading') return { mode: 'loading', logOffHeard: true };
+    // A device page's copy is its only store, so a heard log-off never stops it.
+    return state.mode === 'cloud' ? { mode: 'stopped' } : state;
+  }
+  if (event === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
+  // A load that fell back to the device drops the heard log-off; a cloud page stays one.
+  return state.mode === 'cloud' ? state : { mode: 'device' };
 }
-let healthWrites: HealthWrites = 'device';
+let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };
+const dispatchHealthWrites = (event: HealthWritesEvent) => { healthWrites = healthWritesTransition(healthWrites, event); };
 export function stopLocalHealthWrites(): void {
-  healthWrites = healthWritesTransition(healthWrites, 'stop');
+  dispatchHealthWrites('stop');
 }
 /** A cloud record has opened on this page (the web host's mirror.opened()). */
 export function noteCloudPage(): void {
-  healthWrites = healthWritesTransition(healthWrites, 'cloudOpened');
+  dispatchHealthWrites('cloudOpened');
+}
+/** This page runs on the device tier: a guest, or a cloud load's fallback. */
+export function noteDevicePage(): void {
+  dispatchHealthWrites('deviceOpened');
+}
+/** Another tab's log-off signal reached this page. */
+export function noteLogOffHeard(): void {
+  dispatchHealthWrites('logOffHeard');
 }
 /** This page's own log-off, or another tab's it heard: the device was wiped. */
 export function healthWritesStopped(): boolean {
-  return healthWrites === 'stopped';
+  return healthWrites.mode === 'stopped';
 }
 /** The one check every on-device health writer makes.
  *  The single rule for on-device health writes; callers import it, never copy it. */
 export function healthWritesAllowed(): boolean {
-  return healthWrites === 'device' || (healthWrites === 'cloud' && logOffId() === logOffIdAtLoad);
+  if (healthWrites.mode === 'device') return true;
+  return healthWrites.mode !== 'stopped' && logOffId() === logOffIdAtLoad;
 }
 
 interface StoredData {
@@ -304,10 +330,13 @@ export function logOffId(): LogOffId {
   return safeGetItem(LOG_OFF_ID_KEY);
 }
 /** Read once, as this page loads; never reassigned (US-09 AC2c). */
+// Read once at load; a page restored from the back-forward cache keeps it and is refused. Do not re-read it on pageshow.
 const logOffIdAtLoad: LogOffId = logOffId();
-/** Set when this page's own log-off begins and never cleared (the page
- *  reloads), so a full localStorage that drops the new id still stops this
- *  page saving a sign-in. A one-way latch, not a mode. */
+/** A synchronous claim, not a mode: set before log-off's first await and never
+ *  cleared (the page reloads), so a sign-in finishing during log-off's awaits
+ *  is refused even when a full localStorage dropped the new id. It is not
+ *  'stopped': a log-off heard from another tab stops health writes but leaves
+ *  a sign-in begun under the new id free to save. */
 let ownLogOffBegun = false;
 /** At log-off, before any await. */
 export function newLogOffId(): void {
