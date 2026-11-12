@@ -120,7 +120,7 @@ function deviceCopyRevision(host: RecordHost): string | null | undefined {
  * write, mirror, announce and erase.
  */
 export class RecordSession {
-  private current: RoadmapFile;
+  private current!: RoadmapFile; // set by open()
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
@@ -158,23 +158,19 @@ export class RecordSession {
     private readonly host: RecordHost,
     private readonly deviceId: string,
     private readonly sync: SyncManager<RoadmapFile>,
-    file: RoadmapFile,
     /** The user chose a cloud this session cannot reach, and runs on-device
      *  meanwhile (US-09 AC13): an erase here is refused (AC23). */
     private readonly cloudUnreachable: boolean,
-  ) {
-    this.current = file;
-  }
+  ) {}
 
   /** Load the record from the host's store and return a ready session. */
   static async open(host: RecordHost, { cloudUnreachable = false } = {}): Promise<RecordSession> {
     const deviceId = host.deviceId();
     const sync = new SyncManager(host.store, deviceId, ROADMAP_DOC, { now: () => new Date(host.clock.now()).toISOString() });
-    const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
-    const copySeen = deviceCopyRevision(host);
-    const session = new RecordSession(host, deviceId, sync, await sync.load(), cloudUnreachable);
-    session.revisionSeen = revision;
-    session.deviceCopySeen = copySeen;
+    const session = new RecordSession(host, deviceId, sync, cloudUnreachable);
+    session.revisionSeen = host.sync?.revision(ROADMAP_FILE_NAME) ?? null; // both before the read
+    session.deviceCopySeen = deviceCopyRevision(host);
+    session.current = session.deviceClosed() ? ROADMAP_DOC.migrate(null, session.ctx()) : await sync.load();
     const mirror = host.tier === 'cloud' ? host.mirror : null;
     if (mirror) {
       mirror.opened();
@@ -185,7 +181,7 @@ export class RecordSession {
     // A previous cloud session failed to save and mirrored its changes on-device
     // (saveLoop()'s catch), or a write missed the connect's lift: merge them in and
     // schedule a save to lift them up; the marker clears once a cloud save does.
-    if (mirror && (liftMissed(mirror, copySeen) || mirror.pending.get())) {
+    if (mirror && (liftMissed(mirror, session.deviceCopySeen) || mirror.pending.get())) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain
@@ -434,7 +430,7 @@ export class RecordSession {
    * not put back here.
    */
   async refreshFromRemote(): Promise<boolean> {
-    if (writePending(this.mode)) return false;
+    if (writePending(this.mode) || this.deviceClosed()) return false;
     const at = this.host.clock.now();
     if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
     this.lastRefresh = at;
@@ -480,7 +476,7 @@ export class RecordSession {
   flushSync(): void {
     if (!unsaved(this.mode)) return;
     const store = this.host.sync;
-    if (store) {
+    if (store && !this.deviceClosed()) {
       try {
         const ctx = this.ctx();
         const { body, version } = store.readSync(ROADMAP_DOC.fileName);
@@ -543,6 +539,8 @@ export class RecordSession {
       this.clearReportedFor = this.eraseIdentity;
     }
   }
+  /** A device page that may not read or write this device's health files: it reads none and saves none (US-09 AC2c). */
+  private deviceClosed(): boolean { return this.host.tier === 'device' && this.host.deviceFilesOpen?.() === false; }
 
   /** Device tier: write the erased record over bytes no record reads, at the
    *  revision they were read at. Another tab that wrote since wins the race:
@@ -690,7 +688,8 @@ export class RecordSession {
     let remoteFolded: RemoteChange | null = null;
     try {
       while (pass !== null) {
-        const result = await this.sync.save(this.current);
+        // A closed device page fails the pass before its read, once awaited: the claim is set by then.
+        const result = await (this.deviceClosed() ? Promise.reject(new Error('Device files closed')) : this.sync.save(this.current));
         this.revisionSeen = result.version; // what it wrote, never what its verify read
         if (result.warning) this.saveWarning = result.warning;
         const next = this.dispatch({ type: 'passLanded', from: pass });
@@ -720,6 +719,7 @@ export class RecordSession {
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);
+      if (this.deviceClosed()) return false; // nothing to report: the page may not save here
       // The background cloud save failed — this MUST be observable (unreported, it's silent data-at-risk),
       // and the changes must NOT stay memory-only: mirror the working copy on-device so a page close can't
       // lose it, and leave the marker so the next cloud session merges it back up (US-09 AC4; Sentry

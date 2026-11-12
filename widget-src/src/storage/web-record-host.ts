@@ -130,7 +130,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     ...(store.watch ? {
       watch(onChange: () => void) {
         const watching = new AbortController();
-        store.watch!(ROADMAP_FILE_NAME, onChange, watching.signal);
+        // A device page that may not write here hears no change either (US-09 AC2c).
+        store.watch!(ROADMAP_FILE_NAME, () => { if (!(store instanceof LocalStorageAdapter) || healthWritesAllowed()) onChange(); }, watching.signal);
         return () => watching.abort();
       },
     } : {}),

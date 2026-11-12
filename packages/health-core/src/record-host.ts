@@ -56,7 +56,7 @@ export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStat
 export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
   let kept = after;
   try {
-    const body = host.deviceRecord?.();
+    const body = host.ownsOffFileData?.() !== false ? host.deviceRecord?.() : null; // a non-owner reads no device record
     if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
   } catch {
     /* unreadable: it names nothing */

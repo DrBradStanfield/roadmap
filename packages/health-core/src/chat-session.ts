@@ -322,7 +322,9 @@ export class ChatSession {
    *  A page that may not write the device's files drops its copy when it
    *  closes and reads none while closed: it keeps in page memory only the
    *  turns it makes from then on, a follow-up in an open conversation
-   *  included. It reopens, and reads the file again, when the write gate does. */
+   *  included. It reopens, and reads the file again, when the write gate does,
+   *  dropping those turns unsaved and unerased: reopening needs the log-off key
+   *  cleared, which in practice clears the file too. */
   private refreshAfterDeviceErase(): void {
     if (!this.device) return;
     const fence = this.device.closed() ? CLOSED : this.device.fence();

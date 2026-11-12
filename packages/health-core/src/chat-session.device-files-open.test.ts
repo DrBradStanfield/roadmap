@@ -33,7 +33,7 @@ function host(sync: DeviceStore, state: { fence: string | null; open?: boolean }
   return {
     store: new MemoryAdapter(), deviceId: () => 'laptop', clock: { now: () => (clock += 1) },
     timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     tier: 'device', sync, clearNamedFiles: () => {}, eraseFence: () => state.fence,
     ...(omit ? {} : { deviceFilesOpen: () => state.open !== false }),
   } as RecordHost;
@@ -119,7 +119,9 @@ describe('US-09 AC2c: a page that may not write this device\'s chat file does no
     expect(sync.writeSync).not.toHaveBeenCalled();
   });
 
-  it('a closed page that opens again reads the device file again and saves to it', async () => {
+  // Reopening needs the log-off key cleared, which in practice clears the file too: the turns made while closed
+  // are dropped, neither saved nor tombstoned.
+  it('a closed page that opens again drops its closed turns unsaved and unerased, then reads and saves the file', async () => {
     const sync = new DeviceStore();
     const state = { fence: 'g1', open: false };
     const page = await ChatSession.open(host(sync, state));
@@ -132,7 +134,8 @@ describe('US-09 AC2c: a page that may not write this device\'s chat file does no
     expect(sync.readSync).toHaveBeenCalled();
     await exchange(page, 'reopened');
     const stored = sync.files.get('chat-history.json')!.body as { conversations: Array<{ id: string }> };
-    expect(stored.conversations.map((c) => c.id).sort()).toEqual(['other', 'reopened']);
+    expect(stored.conversations.map((c) => c.id).sort()).toEqual(['other', 'reopened']); // no tombstone of 'closed-turn'
+    expect(page.getMessages('closed-turn')).toEqual([]);
   });
 
   it('a page closed at open starts empty and reads nothing', async () => {
