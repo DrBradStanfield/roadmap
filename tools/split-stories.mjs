@@ -3,8 +3,7 @@
  * Splits the user stories into an index and one file per story: the exact inverse of tools/stories.mjs (US-64 AC33).
  *
  * In:  the monolith docs/user-stories.md, in the working tree or at a git ref. A file that is already an index
- *      is refused: a rerun on its own output changes nothing, and splitting loadStories of its output gives every
- *      file back byte for byte.
+ *      is refused; splitting loadStories of its output gives every file back byte for byte.
  * Out: docs/user-stories.md, the index: every line of the text outside the constitution and the stories, kept as is
  *      (H1 and intro, the epic headings and their intros, the blank and `---` lines between stories, Coverage), and
  *      in place of each part one line: `- [The product constitution](stories/_constitution.md)` or
@@ -16,13 +15,18 @@
  * It refuses, writing nothing (exit 1), when a story id repeats, a short title would not make an index line
  * (empty, or holding `[` or `]`), a `### US-` heading lacks its ` · `, the input already holds index lines, or
  * loadStories of the would-be output is not the input byte for byte (checked in a temporary folder first).
+ * Writing into the repo itself (no --out), it also refuses rather than overwrite parts written after the split:
+ * - during a merge (MERGE_HEAD exists), unless the incoming side holds exactly the split of the monolith at the merge
+ *   base, which is how an open branch takes the split commit and re-splits its own monolith;
+ * - otherwise, when docs/stories/ exists and the index or a part differs from the output, unless --replace is given.
  *
- * Usage, from the repo root: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>]
- *   --from  read the stories at a git ref instead of the working tree.
- *   --out   write under <dir> (a dry run) instead of the repo root. Stale docs/stories/*.md there are removed.
+ * Usage, from the repo root: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>] [--replace]
+ *   --from     read the stories at a git ref instead of the working tree.
+ *   --out      write under <dir> (a dry run) instead of the repo root. Stale docs/stories/*.md there are removed.
+ *   --replace  outside a merge, overwrite a docs/stories/ that differs from the output.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,21 +102,78 @@ export function verifyPlan(text, plan) {
   }
 }
 
+/** The first file where `have` (an index and parts) differs from `plan`, as "<path> differs", or undefined. */
+function firstDiff(have, plan) {
+  for (const name of [...new Set([...have.parts.keys(), ...plan.parts.keys()])].sort()) {
+    if (!have.parts.has(name)) return `docs/stories/${name} is missing`;
+    if (!plan.parts.has(name)) return `docs/stories/${name} is not in the split`;
+    if (have.parts.get(name) !== plan.parts.get(name)) return `docs/stories/${name} differs`;
+  }
+  return have.index === plan.index ? undefined : `${INDEX} differs`;
+}
+
+const gitIn = (root) => (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
+
+/** The commit a merge in progress under `root` brings in, or undefined when none is (or `root` is no git repo). */
+function mergeHead(root) {
+  try {
+    return gitIn(root)('rev-parse', '-q', '--verify', 'MERGE_HEAD').trim();
+  } catch (e) {
+    if (e.status === 1 || /not a git repository/.test(String(e.stderr))) return undefined;
+    throw e;
+  }
+}
+
+/** Throws SplitRefusal unless the commit `incoming` holds exactly the split of the monolith at its merge base with HEAD. */
+function checkMerge(root, incoming) {
+  const git = gitIn(root);
+  const at = incoming.slice(0, 12);
+  let base, diff;
+  try {
+    base = git('merge-base', 'HEAD', incoming).trim();
+    const names = git('ls-tree', '--name-only', incoming, 'docs/stories/').split('\n').filter((p) => p.endsWith('.md'));
+    const have = { index: git('show', `${incoming}:${INDEX}`), parts: new Map(names.map((p) => [p.slice('docs/stories/'.length), git('show', `${incoming}:${p}`)])) };
+    diff = firstDiff(have, planSplit(git('show', `${base}:${INDEX}`)));
+  } catch (e) {
+    diff = e instanceof SplitRefusal ? e.message : String(e.stderr || e.message).trim();
+  }
+  if (diff !== undefined) {
+    throw new SplitRefusal(`a merge is in progress, and its incoming side (MERGE_HEAD ${at}) is not exactly the split of the monolith at the merge base${base ? ` ${base.slice(0, 12)}` : ''}: ${diff}. Abort the merge and merge exactly the split commit, nothing after it, then run this again.`);
+  }
+}
+
+/** Throws SplitRefusal when docs/stories/ under `root` exists and the index or a part there differs from `plan`. */
+function checkExisting(root, plan) {
+  const dir = join(root, 'docs/stories');
+  if (!existsSync(dir)) return;
+  const have = {
+    index: existsSync(join(root, INDEX)) ? readFileSync(join(root, INDEX), 'utf8') : undefined,
+    parts: new Map(readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => [f, readFileSync(join(dir, f), 'utf8')])),
+  };
+  const diff = firstDiff(have, plan);
+  if (diff !== undefined) throw new SplitRefusal(`docs/stories/ already holds parts that differ from the split: ${diff}. Pass --replace to overwrite them.`);
+}
+
 /**
  * Splits the stories under `root` (at `from` when given) into `out`, after proving the round trip.
  * @returns {{ stories: number, parts: number, indexBytes: number, stale: string[] }}
  */
-export function splitStories({ root = process.cwd(), from, out = root } = {}) {
+export function splitStories({ root = process.cwd(), from, out = root, replace = false } = {}) {
   let text;
   try {
     text = from === undefined
       ? readFileSync(join(root, INDEX), 'utf8')
-      : execFileSync('git', ['show', `${from}:${INDEX}`], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
+      : gitIn(root)('show', `${from}:${INDEX}`);
   } catch (e) {
     throw new SplitRefusal(`cannot read the stories${from === undefined ? '' : ` at ${from}`}: ${String(e.stderr || e.message).trim()}`);
   }
   const plan = planSplit(text);
   verifyPlan(text, plan);
+  if (resolve(out) === resolve(root)) {
+    const incoming = mergeHead(root);
+    if (incoming !== undefined) checkMerge(root, incoming);
+    else if (!replace) checkExisting(root, plan);
+  }
   const stale = writePlan(out, plan);
   return {
     stories: [...plan.parts.keys()].filter((n) => n.startsWith('US-')).length,
@@ -126,8 +187,13 @@ function main(argv) {
   const opts = {};
   for (let i = 0; i < argv.length; i += 2) {
     const [flag, value] = [argv[i], argv[i + 1]];
+    if (flag === '--replace') {
+      opts.replace = true;
+      i--;
+      continue;
+    }
     if ((flag !== '--from' && flag !== '--out') || value === undefined || value.startsWith('--')) {
-      console.error('usage: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>]');
+      console.error('usage: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>] [--replace]');
       return 64;
     }
     opts[flag.slice(2)] = flag === '--out' ? resolve(value) : value;

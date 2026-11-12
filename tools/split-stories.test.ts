@@ -19,7 +19,8 @@ const SCRIPT = join(ROOT, 'tools/split-stories.mjs');
 const TSX = join(ROOT, 'node_modules/.bin/tsx');
 const HTML = join(ROOT, 'scripts/build-user-stories-html.ts');
 // The index today is 8.6 KB for 73 stories (about 115 bytes a line). 16 KB leaves room for some 65 more stories
-// before anyone has to look again, and an index that swallowed even one story body (several KB each) shows at once.
+// before anyone has to look again. The cap catches a large leaked body; a small story (US-08 is 283 bytes, with no
+// `- AC` line) would slip under it, so the index is also checked for any `### US-` heading.
 const INDEX_CAP = 16 * 1024;
 // Relative links the stories already hold whose target is not in the repo; fixing one means deleting it here.
 const KNOWN_BROKEN = new Set(['../drafts/my-health-build-plan.md']);
@@ -119,27 +120,42 @@ describe('the standing checks on the split tree', () => {
     expect([...listed, '_constitution.md'].sort()).toEqual(parts().sort());
   });
 
-  it(`the index holds no "- AC" line and stays under ${INDEX_CAP} bytes`, () => {
+  it(`the index holds no story heading, no "- AC" line, and stays under ${INDEX_CAP} bytes`, () => {
+    expect(index()).not.toMatch(/^### US-/m);
     expect(index()).not.toMatch(/^- AC/m);
     expect(statSync(join(tree, 'docs/user-stories.md')).size).toBeLessThan(INDEX_CAP);
   });
 
   it('every relative link in the parts resolves from docs/stories/', () => {
     const broken: string[] = [];
+    const seen = new Set<string>();
     for (const f of parts()) {
       // A `[text](target)` inside a code span is an example, not a link.
       const text = readFileSync(join(tree, 'docs/stories', f), 'utf8').replace(/`[^`\n]*`/g, '');
       for (const [, t] of text.matchAll(/\]\(([^)\s]+)\)/g)) {
         if (/^([a-z][a-z0-9+.-]*:|[#/])/i.test(t)) continue;
         const target = t.split('#')[0];
+        seen.add(target);
         if (!existsSync(join(ROOT, 'docs/stories', target)) && !KNOWN_BROKEN.has(target)) broken.push(`${f}: ${t}`);
       }
     }
     expect(broken).toEqual([]);
-    for (const t of KNOWN_BROKEN) expect(existsSync(join(ROOT, 'docs/stories', t)), `${t} now resolves: drop it from KNOWN_BROKEN`).toBe(false);
+    for (const t of KNOWN_BROKEN) {
+      expect(existsSync(join(ROOT, 'docs/stories', t)), `${t} now resolves: drop it from KNOWN_BROKEN`).toBe(false);
+      expect(seen.has(t), `no part links ${t} any more: drop it from KNOWN_BROKEN`).toBe(true);
+    }
   });
 
-  it('the Pages HTML built from the split is the HTML built from the monolith, byte for byte', () => {
+  // On the split layout this is the committed tree: a part edited out of the split's shape (a trailing blank line,
+  // a link without its `../`) fails here. On the monolith layout it checks the temporary split.
+  it('the parts and index are the split of loadStories, byte for byte', () => {
+    const plan = planSplit(loadStories(tree));
+    expect(files(tree)).toEqual({ index: plan.index, ...Object.fromEntries(plan.parts) });
+  });
+
+  // Both inputs carry the same text, so this proves only that the Pages build reads the split layout as it reads
+  // the monolith (scripts/build-user-stories-html.ts goes through readStories).
+  it('the Pages build reads both layouts the same: the HTML from the split equals the HTML from the monolith', () => {
     const build = (src: string, out: string) => {
       const r = spawnSync(TSX, [HTML, src, out], { encoding: 'utf8' });
       expect(r.status, r.stderr).toBe(0);
@@ -219,5 +235,89 @@ describe('refuses and writes nothing', () => {
   it('a bad flag is a usage error', () => {
     expect(cli(dir, '--into', 'x').status).toBe(64);
     expect(cli(dir, '--from').status).toBe(64);
+  });
+});
+
+describe('writing into a repo that already holds parts (the PR 3 rebase path)', () => {
+  // A repo whose main went: the monolith (base), PR 3's own split run (split), then a post-split commit (post).
+  // An open branch (feat) made from base edits US-02 in the monolith.
+  let repo: string;
+  const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
+  const run = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env });
+  const commit = (m: string) => (run('add', '-A'), run('commit', '-q', '-m', m));
+  const text = ['# Stories', '', '## Epic A — Things', '', '### US-01 · One', '- AC1 one', '', '### US-02 · Two', '- AC1 two', ''].join('\n');
+  const featText = text.replace('- AC1 two', '- AC1 two, edited on the branch');
+  const tree = () => files(repo);
+  // The branch merges `ref` and stops before committing, as a conflicted merge does.
+  const mergeIntoFeat = (ref: string) => {
+    run('checkout', '-q', 'feat');
+    spawnSync('git', ['merge', '--no-commit', '--no-ff', '-q', ref], { cwd: repo, env });
+    expect(existsSync(join(repo, '.git/MERGE_HEAD'))).toBe(true);
+  };
+
+  beforeEach(() => {
+    repo = mkdtempSync(join(tmpdir(), 'split-stories-repo-'));
+    run('init', '-q', '-b', 'main');
+    mkdirSync(join(repo, 'docs'));
+    writeFileSync(join(repo, 'docs/user-stories.md'), text);
+    commit('base');
+    run('tag', 'pre-split');
+    run('checkout', '-q', '-b', 'feat');
+    writeFileSync(join(repo, 'docs/user-stories.md'), featText);
+    commit('feat');
+    run('checkout', '-q', 'main');
+    // PR 3's own run: on main, no docs/stories/ yet, no merge, no flag.
+    const r = cli(repo);
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    commit('split');
+    run('tag', 'split');
+    writeFileSync(join(repo, 'docs/stories/US-01.md'), '### US-01 · One\n- AC1 one\n- AC2 added after the split\n');
+    writeFileSync(join(repo, 'docs/stories/US-03.md'), '### US-03 · Three\n- AC1 three\n');
+    writeFileSync(join(repo, 'docs/user-stories.md'), `${readFileSync(join(repo, 'docs/user-stories.md'), 'utf8')}\n- [US-03 · Three](stories/US-03.md)\n`);
+    commit('post');
+  });
+  afterEach(() => rmSync(repo, { recursive: true, force: true }));
+
+  it('PR 3: the first split on main, with no docs/stories/ yet, needs no flag', () => {
+    expect(loadStories(repo, { ref: 'split' })).toBe(text);
+  });
+
+  it('a branch merging exactly the split commit re-splits its own monolith', () => {
+    mergeIntoFeat('split');
+    const r = cli(repo, '--from', 'HEAD');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(loadStories(repo)).toBe(featText);
+  });
+
+  it('refuses, writing nothing, when the merge brings commits after the split (US-64 AC33)', () => {
+    mergeIntoFeat('main');
+    const before = tree();
+    const r = cli(repo, '--from', 'HEAD');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: a merge is in progress.*docs\/stories\/US-01\.md differs.*merge exactly the split commit/s);
+    expect(tree()).toEqual(before);
+  });
+
+  it('outside a merge, refuses to overwrite docs/stories/ that differs from the split, unless --replace (US-64 AC33)', () => {
+    const before = tree();
+    const r = cli(repo, '--from', 'pre-split');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split: docs\/stories\/US-01\.md differs.*--replace/s);
+    expect(tree()).toEqual(before);
+    const ok = cli(repo, '--from', 'pre-split', '--replace');
+    expect(ok.stderr).toBe('');
+    expect(ok.status).toBe(0);
+    expect(loadStories(repo)).toBe(text);
+    expect(existsSync(join(repo, 'docs/stories/US-03.md'))).toBe(false);
+  });
+
+  it('outside a merge, a rerun whose output equals docs/stories/ needs no flag', () => {
+    run('checkout', '-q', 'split');
+    const before = tree();
+    const r = cli(repo, '--from', 'pre-split');
+    expect(r.status).toBe(0);
+    expect(tree()).toEqual(before);
   });
 });
