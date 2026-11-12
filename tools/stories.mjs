@@ -6,6 +6,8 @@
  * - Split: docs/user-stories.md is an index, with one file per story at docs/stories/US-NN.md
  *   and the constitution at docs/stories/_constitution.md. The index is reassembled.
  * The split shape is in force when the stories/ folder beside the index exists (on disk, or in the git ref).
+ * Either way it fails closed: an index that links parts with no stories/ folder, a stories tree git cannot read,
+ * a missing part or a story listed twice throws; only git's "no such path" counts as absent.
  *
  * The reassembly rule (tools/split-stories.mjs must be its exact inverse):
  * 1. Split the index into lines on "\n".
@@ -81,12 +83,20 @@ export function readStories(indexPath, { ref } = {}) {
     try {
       git('cat-file', '-e', at(rel));
       return true;
-    } catch {
-      return false;
+    } catch (e) {
+      // Only git's "no such path" is absent; an unreadable tree (exit 1, silent) or any other failure must not
+      // turn a split base into a raw index that defines no story (US-64 AC11).
+      if (e.status === 128 && /does not exist in|exists on disk, but not in/.test(String(e.stderr))) return false;
+      throw e;
     }
   };
   const index = read(basename(indexPath));
-  if (!has('stories')) return index;
+  if (!has('stories')) {
+    if (index.split('\n').some((l) => STORY_LINE.test(l) || CONSTITUTION_LINE.test(l))) {
+      throw new Error(`stories: the index links stories/ parts, but there is no stories/ folder${ref === undefined ? '' : ` at ${ref}`}`);
+    }
+    return index;
+  }
   return expandIndex(index, (rel) => {
     try {
       return read(rel);
