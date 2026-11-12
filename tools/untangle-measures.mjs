@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { isStoriesPath } from './stories.mjs';
 
 export const CAP = 500;
 const PROD_EXT = new Set(['.ts', '.tsx', '.swift', '.mjs']);
@@ -20,7 +21,7 @@ export const LEGEND = {
   boolState: 'useState<boolean>(...), useState(true|false) or useState(!x)',
   timers: 'setTimeout( calls; clearTimeout is their pair and not counted again',
   specialCases: "per line: each ==, ===, != or !== between a name and one string literal (either side), counted when the line has `if (` before it or a ternary `?` (not ?? or ?.) after it; skipped when the name's last part is type, kind, mode, state, phase or status (a union read, the cure), or it is typeof x or document.*",
-  coChange: `pairs from git log --no-merges, top 3 per file (top 10 overall for one path); skips docs/user-stories.{md,html}, docs/reference.md, scripts/file-size-baseline.json, lockfiles, extensions/*/assets and a file with its own tests, then commits still over ${SWEEP_FILES} files; history before a rename is not followed`,
+  coChange: `pairs from git log --no-merges, top 3 per file (top 10 overall for one path); skips the stories (docs/user-stories.{md,html}, docs/stories/), docs/reference.md, scripts/file-size-baseline.json, lockfiles, extensions/*/assets and a file with its own tests, then commits still over ${SWEEP_FILES} files; history before a rename is not followed`,
   fanInOut: 'relative import/export-from/import() specifiers only; approximate',
 };
 
@@ -109,7 +110,8 @@ export function parseGitLog(stdout) {
 
 export function isExcludedFromCoChange(path) {
   return (
-    /^(docs\/user-stories\.(md|html)|docs\/reference\.md|scripts\/file-size-baseline\.json)$/.test(path) ||
+    isStoriesPath(path) ||
+    /^(docs\/user-stories\.html|docs\/reference\.md|scripts\/file-size-baseline\.json)$/.test(path) ||
     /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Package\.resolved|[^/]+\.lock)$/.test(path) ||
     /^extensions\/[^/]+\/assets\//.test(path)
   );
