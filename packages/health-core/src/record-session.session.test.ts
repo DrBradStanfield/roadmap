@@ -1487,8 +1487,59 @@ describe("RecordSession: an edit made while another device's erase is taken in (
       await new Promise((r) => setTimeout(r, 0));
       expect(clears.calls).toBe(3); // no loop left running
       expect(changes).toEqual([{ erase: erased }]);
-      expect(fake.reports).toEqual(Array(3).fill({ op: 'clear-off-file', repeat: false }));
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+        { op: 'clear-off-file', repeat: true },
+      ]);
       expect(session.saveStatus).toBe('saved');
+    });
+
+    it('a clear that keeps throwing is reported once per erase, then as a repeat; a later erase reports afresh', async () => {
+      const { store, fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(3);
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+        { op: 'clear-off-file', repeat: true },
+      ]);
+      // A second erase from elsewhere, whose clear throws too.
+      const third = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+      clock += 60_000;
+      expect((await third.erase()).success).toBe(true);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(session.eraseIdentity).not.toBe(erased);
+      expect(clears.calls).toBe(4);
+      expect(fake.reports.slice(3)).toEqual([{ op: 'clear-off-file', repeat: false }]);
+    });
+
+    it('once the clear lands, it is neither tried nor reported again', async () => {
+      const { fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 2);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush(); // the third try lands
+      expect(clears.calls).toBe(3);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'e', 84, '2026-10-05');
+      await session.flush();
+      expect(clears.calls).toBe(3);
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+      ]);
     });
   });
 });

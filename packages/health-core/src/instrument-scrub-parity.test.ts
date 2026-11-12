@@ -215,7 +215,7 @@ const TEXTS = [
 ];
 
 describe('free-text scrub parity', () => {
-  // sentry-scrub.ts DERIVES both lists from UNIT_DEFS, METRIC_LABELS and the
+  // scrub-vocabulary.ts DERIVES both lists from UNIT_DEFS, METRIC_LABELS and the
   // lab catalogue; the .mjs cannot import, so it carries them as literals. When
   // the catalogue moves, these two fail and print the array to paste back.
   const paste = (name: string, words: readonly string[]) =>
