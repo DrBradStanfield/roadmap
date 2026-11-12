@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H57,discord bot,US-09 AC6d did not name the shaped-token limit,lead,done,"docs/user-stories.md US-09 AC6d: a one-word token (up to 40 of [\w[\]-]) in code, or in name with no code, still reaches a Sentry tag, the fingerprint and the console; the real throwers set codes from their own vocabularies. Doc only. Fable F3 on PR 1397",1416,no
