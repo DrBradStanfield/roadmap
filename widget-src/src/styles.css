@@ -490,13 +490,14 @@ input[type="number"] {
   flex: 1 1 7em;
 }
 
-.date-picker-row {
-  display: flex;
-  gap: 8px;
+/* A screening date with no month picked: "Month and year" reads as a prompt, not an answer. */
+.health-tool .health-field select.month-select:has(> option[value=""]:checked) {
+  color: var(--color-text-secondary);
 }
 
-.date-picker-row select {
-  flex: 1;
+.health-tool .health-field select.month-select option,
+.health-tool .health-field select.month-select optgroup {
+  color: var(--color-text);
 }
 
 /* PSA inline row: value input + month + year on one line */
