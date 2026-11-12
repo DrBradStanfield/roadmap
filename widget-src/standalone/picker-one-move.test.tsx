@@ -346,3 +346,39 @@ describe('US-09 AC45: the shared move state never holds a credential (Q5)', () =
     for (const s of seen) expect(s).not.toMatch(/test-token-good|test-pass-good/);
   });
 });
+
+describe('US-09 AC45: a page the browser shows again from its back-forward cache', () => {
+  function pageshow(persisted: boolean): void {
+    const event = new Event('pageshow');
+    Object.defineProperty(event, 'persisted', { value: persisted });
+    act(() => { window.dispatchEvent(event); });
+  }
+
+  async function connectGitHubThenClose(view: View): Promise<void> {
+    open(view);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    close(view);
+  }
+
+  it('after a move, the reopened picker offers every choice and Log off again', async () => {
+    const view = render(<Host />);
+    await connectGitHubThenClose(view);
+    pageshow(true);
+
+    open(view);
+    expect(optionButtons()).toHaveLength(5);
+    expect(optionButtons().every((b) => !b.disabled)).toBe(true);
+    expect(logOffLink()?.disabled).toBe(false);
+    expect(errorText()).toBe('');
+  });
+
+  it('control: a first page show leaves the move running', async () => {
+    const view = render(<Host />);
+    await connectGitHubThenClose(view);
+    pageshow(false);
+
+    open(view);
+    expect(view.getByRole('button', { name: 'Connecting…' })).toBeTruthy();
+  });
+});

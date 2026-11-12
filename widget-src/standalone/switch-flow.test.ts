@@ -15,6 +15,8 @@ const START_GITHUB: SwitchEvent = { type: 'start', to: 'github', step: 'github' 
 const LOG_OFF: SwitchEvent = { type: 'logOff' };
 const FAIL: SwitchEvent = { type: 'failed', message: 'GitHub rejected the token.' };
 const CLEAR: SwitchEvent = { type: 'clearError' };
+// The browser shows this page again from its back-forward cache.
+const RESTORED: SwitchEvent = { type: 'restored' };
 
 type Row = [string, SwitchFlow, SwitchEvent, SwitchFlow, boolean];
 const TABLE: Row[] = [
@@ -22,22 +24,27 @@ const TABLE: Row[] = [
   ['idle, logOff', IDLE, LOG_OFF, LOGGING_OFF, true],
   ['idle, failed', IDLE, FAIL, IDLE, false],
   ['idle, clearError', IDLE, CLEAR, IDLE, false],
+  ['idle, restored', IDLE, RESTORED, IDLE, false],
   ['idle with an error, start', FAILED, START_GITHUB, TO_GITHUB, true],
   ['idle with an error, logOff', FAILED, LOG_OFF, LOGGING_OFF, true],
   ['idle with an error, failed', FAILED, FAIL, FAILED, false],
   ['idle with an error, clearError', FAILED, CLEAR, IDLE, false],
+  ['idle with an error, restored', FAILED, RESTORED, IDLE, false],
   ['switching from the list, start', TO_DRIVE, START_GITHUB, TO_DRIVE, false],
   ['switching from the list, logOff', TO_DRIVE, LOG_OFF, TO_DRIVE, false],
   ['switching from the list, failed', TO_DRIVE, FAIL, { kind: 'idle', error: 'GitHub rejected the token.' }, false],
   ['switching from the list, clearError', TO_DRIVE, CLEAR, TO_DRIVE, false],
+  ['switching from the list, restored', TO_DRIVE, RESTORED, IDLE, false],
   ['switching from a form, start', TO_GITHUB, START_GITHUB, TO_GITHUB, false],
   ['switching from a form, logOff', TO_GITHUB, LOG_OFF, TO_GITHUB, false],
   ['switching from a form, failed', TO_GITHUB, FAIL, { kind: 'idle', error: 'GitHub rejected the token.' }, false],
   ['switching from a form, clearError', TO_GITHUB, CLEAR, TO_GITHUB, false],
+  ['switching from a form, restored', TO_GITHUB, RESTORED, IDLE, false],
   ['logging off, start', LOGGING_OFF, START_GITHUB, LOGGING_OFF, false],
   ['logging off, logOff', LOGGING_OFF, LOG_OFF, LOGGING_OFF, false],
   ['logging off, failed', LOGGING_OFF, FAIL, { kind: 'idle', error: 'GitHub rejected the token.' }, false],
   ['logging off, clearError', LOGGING_OFF, CLEAR, LOGGING_OFF, false],
+  ['logging off, restored', LOGGING_OFF, RESTORED, IDLE, false],
 ];
 
 describe('US-09 AC45: switch-flow transition, every state against every event', () => {

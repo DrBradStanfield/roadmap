@@ -4,7 +4,8 @@
  * for the page's life, not in the picker. One union, one pure transition.
  * `dispatch` updates synchronously, so it is its own claim: a second start in
  * the same turn already sees the first. Success leaves the page (a reload or
- * a redirect), so only a failure returns to idle.
+ * a redirect), so only a failure returns to idle, or the browser showing this
+ * page again from its back-forward cache, where nothing is running any more.
  *
  * Never holds a credential: the GitHub token and the WebDAV password stay in
  * the picker's component state and die with its mount.
@@ -24,12 +25,14 @@ export type SwitchEvent =
   | { type: 'start'; to: Backend; step: MoveStep }
   | { type: 'logOff' }
   | { type: 'failed'; message: string }
-  | { type: 'clearError' };
+  | { type: 'clearError' }
+  | { type: 'restored' };
 
 const IDLE: SwitchFlow = { kind: 'idle', error: null };
 
 /** `run` is true only when the event claimed the flow: its caller then runs the move. */
 export function transition(state: SwitchFlow, event: SwitchEvent): { next: SwitchFlow; run: boolean } {
+  if (event.type === 'restored') return { next: state.kind === 'idle' && state.error === null ? state : IDLE, run: false };
   if (state.kind === 'idle') {
     if (event.type === 'start') return { next: { kind: 'switching', to: event.to, step: event.step }, run: true };
     if (event.type === 'logOff') return { next: { kind: 'loggingOff' }, run: true };
@@ -69,6 +72,12 @@ export async function runMove(event: SwitchEvent, move: () => Promise<void>): Pr
   } catch (e) {
     dispatch({ type: 'failed', message: e instanceof Error ? e.message : 'Connection failed.' });
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) dispatch({ type: 'restored' });
+  });
 }
 
 export function useSwitchFlow(): SwitchFlow {
