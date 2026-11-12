@@ -41,13 +41,23 @@ import { trackProductEvent } from '../src/lib/server-api';
 /** A cloud whose writes can fail with a chosen error, counting each one tried. */
 class TestCloud extends MemoryAdapter {
   fail: Error | null = null;
+  /** Thrown by the first read after a write lands: the save's verify read. */
+  failVerify: Error | null = null;
+  private landed = false;
   writes = 0;
+  async read(...args: Parameters<MemoryAdapter['read']>) {
+    if (this.landed && this.failVerify) { this.landed = false; throw this.failVerify; }
+    return super.read(...args);
+  }
   async write(...args: Parameters<MemoryAdapter['write']>) {
     this.writes += 1;
     if (this.fail) throw this.fail;
-    return super.write(...args);
+    const result = await super.write(...args);
+    this.landed = true;
+    return result;
   }
 }
+const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
 const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'));
 const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401);
 
@@ -117,6 +127,34 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     const detail = settingsDetail();
     expect(detail).toBe(`${WAITING} ${SAFE}`);
     expect(detail).not.toContain(RETRY_CLAUSE);
+  });
+
+  // F7: a log-off in another tab stops this page's writes (US-09 AC2c), so no retry will come.
+  // The sentence goes at once, with no save event to tell the line.
+  it('a log-off in another tab takes the sentence away at once', async () => {
+    await failedSave(OFFLINE());
+    cleanup();
+    render(<SyncControl backend="dropbox" />);
+    const detail = () => document.querySelector('.hr-sync-detail')?.textContent ?? null;
+    expect(detail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+    act(() => {
+      localStorage.setItem(LOG_OFF_ID_KEY, 'logged-off-elsewhere');
+      window.dispatchEvent(new StorageEvent('storage', { key: LOG_OFF_ID_KEY }));
+    });
+    expect(detail()).not.toContain(RETRY_CLAUSE);
+  });
+
+  // Codex R2 (F3): a revoked grant met after the write landed keeps its reason through the rewrap.
+  it('a revoked grant met by the verify read after the write landed never promises an upload', async () => {
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    vi.useFakeTimers();
+    render(<StorageBar backend="dropbox" />);
+    cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect');
+    await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(cloud.writes).toBe(1);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
   });
 
   it('once saved, there is no waiting line', async () => {

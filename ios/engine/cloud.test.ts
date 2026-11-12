@@ -1408,6 +1408,35 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     expect(attempts).toBe(1);
   });
 
+  // Owner F1 (a): a 403 is retried, yet the iPhone still tells the person to sign in again,
+  // as before: the retry's classification changes, the words do not (failureKind, cloud-adapters.ts).
+  it('a save refused with 403 still says sign-in, and the network coming back retries it', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const answer = dropbox.answer.bind(dropbox);
+    let refusing = true;
+    let attempts = 0;
+    dropbox.answer = (url, headers, body) => {
+      if (!refusing) return answer(url, headers, body);
+      attempts += 1;
+      return { status: 403, headers: {}, body: '{"error":{"errors":[{"reason":"insufficientPermissions"}]}}' };
+    };
+    engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind: 'sign-in' });
+    expect(JSON.parse(failed[1]).detail).toContain('refused this connection');
+    await settle();
+    refusing = false;
+    const before = attempts;
+    engine.cloudOnline();
+    await settle();
+    expect(attempts).toBe(before);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
   // No iPhone test of "never after a refused grant": on the iPhone the network's catch-up is a
   // re-read, and the engine's re-read retries a failed save first (cloud.ts reread's flushSync),
   // one of the older save paths the owner left as they are (D2, lead A21). The web pins the rule:

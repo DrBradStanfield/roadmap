@@ -12,8 +12,10 @@ import { MemoryAdapter } from './memory-adapter';
 
 const MINUTE = 60_000;
 
-function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean } = {}) {
+function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean; watch?: boolean } = {}) {
   let now = 5_000_000;
+  let shown = true;
+  let watching = 0;
   const order: string[] = [];
   const reported: unknown[][] = [];
   const timers: Array<{ run: () => void; ms: number }> = [];
@@ -35,13 +37,17 @@ function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean 
     // Held, not run: a test runs the minute poll's tick itself.
     timers: { set: (run: () => void, ms: number) => { timers.push({ run, ms }); return timers.length; }, clear: () => {} },
     saveRetried: (...args: unknown[]) => void reported.push(args),
+    ...(opts.watch ? { watch: () => { watching++; return () => { watching--; }; } } : {}),
   };
   const host = (opts.tier === 'device'
     ? { ...base, tier: 'device', clearNamedFiles: () => {}, sync: { revision: () => 'r1', readSync: () => ({ body: null, version: null }), writeSync: () => ({ version: '' }) } }
     : { ...base, tier: 'cloud' }) as unknown as RecordHost;
-  const live = new LiveRefresh(session as unknown as RecordSession, host, { reread, isVisible: () => true }) as LiveRefresh & { online(): void };
+  const live = new LiveRefresh(session as unknown as RecordSession, host, { reread, isVisible: () => shown }) as LiveRefresh & { online(): void };
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-  return { live, session, reread, order, reported, state, settle, timers, advance: (ms: number) => { now += ms; } };
+  return {
+    live, session, reread, order, reported, state, settle, timers, advance: (ms: number) => { now += ms; },
+    hide: () => { shown = false; live.hidden(); }, watching: () => watching,
+  };
 }
 
 describe('LiveRefresh retries a failed save (US-09 AC30, lead A1 step e)', () => {
@@ -134,5 +140,20 @@ describe('LiveRefresh retries a failed save (US-09 AC30, lead A1 step e)', () =>
     await r.settle();
     expect(r.session.retry).toHaveBeenCalledTimes(2);
     expect(r.reported).toEqual([[{ trigger: 'online', outcome: 'landed' }]]);
+  });
+
+  // Codex R1 (F2): the network coming back while the page is hidden retries the save, but
+  // takes up no watch and reads nothing: a hidden page has no screen to keep up to date.
+  it('online() while hidden retries a failed save, and starts no watch and no re-read', async () => {
+    const r = rig({ watch: true });
+    r.live.start();
+    r.hide();
+    expect(r.watching()).toBe(0);
+    r.live.online();
+    await r.settle();
+    expect(r.session.retry).toHaveBeenCalledTimes(1);
+    expect(r.reported).toEqual([[{ trigger: 'online', outcome: 'landed' }]]);
+    expect(r.watching()).toBe(0);
+    expect(r.reread).not.toHaveBeenCalled();
   });
 });

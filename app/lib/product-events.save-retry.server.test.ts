@@ -29,13 +29,14 @@ describe('save_retry (US-09 AC30)', () => {
     }
   });
 
-  it('refuses any other word, any other key, and a row without its trigger', () => {
+  it('refuses any other word, any other key, and a row without its trigger or its outcome', () => {
     for (const metadata of [
       { trigger: 'poll', outcome: 'landed' },
       { trigger: 'online', outcome: 'ok' },
       { trigger: 'online', outcome: 'landed', provider: 'dropbox' },
       { trigger: 'online', outcome: 'landed', count: 1 },
       { outcome: 'landed' },
+      { trigger: 'online' }, // F5: never without its outcome
       {},
     ]) {
       expect(parseProductEvent(event(metadata))).toBeNull();

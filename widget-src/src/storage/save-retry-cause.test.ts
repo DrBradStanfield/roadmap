@@ -44,6 +44,19 @@ class Handover extends MemoryAdapter {
   }
 }
 
+/** A memory store whose reads go to `real` once a write has landed while it is set: the
+ *  save's verify read after its write meets the real adapter's error (Codex R2). */
+class VerifyHandover extends MemoryAdapter {
+  real: StorageAdapter | null = null;
+  wrote = false;
+  async read(fileName: string) { return this.real && this.wrote ? this.real.read(fileName) : super.read(fileName); }
+  async write(fileName: string, body: object, expected: string | null) {
+    const result = await super.write(fileName, body, expected);
+    if (this.real) this.wrote = true;
+    return result;
+  }
+}
+
 function host(store: StorageAdapter): RecordHost {
   return {
     tier: 'cloud', store,
@@ -69,6 +82,21 @@ async function retryAfterFailedSave(real: StorageAdapter): Promise<Promise<boole
   const run = session.retry();
   await run; // a retry that started runs out before the test ends
   return run;
+}
+
+/** As retryAfterFailedSave, but the write lands and the save's verify read fails (the save
+ *  rewraps that error, US-09 AC13d). Answers retry() and whether Settings would promise an upload. */
+async function retryAfterVerifyFails(real: StorageAdapter): Promise<{ run: Promise<boolean> | null; due: boolean }> {
+  const store = new VerifyHandover(new MemoryCloud());
+  const session = await RecordSession.open(host(store));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })));
+  store.real = real;
+  await expect(session.flush()).rejects.toThrow();
+  expect(store.wrote).toBe(true);
+  const due = session.retryDue;
+  const run = session.retry();
+  await run;
+  return { run, due };
 }
 
 /** The error the adapter's own read throws: the first call a save makes. */
@@ -166,5 +194,31 @@ describe('Google Drive (US-09 AC30)', () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
     expect((await readError(new GoogleDriveAdapter(CONFIG))).status).toBeUndefined();
     expect(await retryAfterFailedSave(new GoogleDriveAdapter(CONFIG))).not.toBeNull();
+  });
+});
+
+// Codex R2 (F3): a revoked grant met by the verify read after a landed write keeps its
+// reason through the save's rewrap, so it is still a refused sign-in: no retry, no promise.
+describe('a revoked grant after the write landed (US-09 AC30)', () => {
+  const DROPBOX = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };
+  const DRIVE = {
+    clientId: 'test-client-id',
+    scope: 'openid email https://www.googleapis.com/auth/drive.file',
+    redirectUri: 'https://example.com/',
+    exchangeUrl: 'https://health-tool-app.fly.dev/api/google-token',
+  };
+  const expired = { accessToken: 'at-old', refreshToken: 'rt-old', expiresAt: 0 };
+
+  it('Dropbox, 400 invalid_grant on the verify read: never retried, and Settings promises nothing', async () => {
+    local.set(DROPBOX_TOKENS, JSON.stringify(expired));
+    vi.stubGlobal('fetch', vi.fn(async () => reply(400, { error: 'invalid_grant' })));
+    expect(await retryAfterVerifyFails(new DropboxAdapter(DROPBOX))).toEqual({ run: null, due: false });
+  });
+
+  it('Google Drive, a refresh with no grant on the verify read: never retried, and Settings promises nothing', async () => {
+    local.set(DRIVE_TOKENS, JSON.stringify(expired));
+    local.set(DRIVE_CONFIG, JSON.stringify({ accountEmail: 'a@example.com' }));
+    vi.stubGlobal('fetch', vi.fn(async () => reply(401, { error: 'invalid_grant' })));
+    expect(await retryAfterVerifyFails(new GoogleDriveAdapter(DRIVE))).toEqual({ run: null, due: false });
   });
 });

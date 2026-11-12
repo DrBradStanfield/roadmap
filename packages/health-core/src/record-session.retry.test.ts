@@ -152,11 +152,12 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
     expect(store.writes).toBe(1);
   });
 
-  it('after a 403 answers null and starts nothing', async () => {
+  // Owner F1 (a), the one ruled flip: a 403 is retried (it was answered null before).
+  it('after a 403, starts one save, which lands once the provider takes it', async () => {
     const { store, session } = await failedSession(new StorageError('Forbidden', undefined, undefined, 403));
     store.fail = null;
-    expect(session.retry()).toBeNull();
-    expect(store.writes).toBe(1);
+    expect(await session.retry()).toBe(true);
+    expect(store.writes).toBe(2);
   });
 
   it('while an erase runs over a failed save, answers null and starts nothing', async () => {
@@ -198,6 +199,19 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
     expect(session.retry()).toBeNull();
     expect(store.writes).toBe(writes);
   });
+});
+
+// F7: a retry is a cloud matter. A device page's failed save (a full or blocked store) is
+// never due, open or not, so nothing promises an upload for it.
+it('RecordSession.retry: never due on the device tier, even with its files open', async () => {
+  const store = new DeviceStore(new MemoryCloud());
+  const session = await RecordSession.open(deviceHost(store, { value: true }));
+  store.fail = new StorageError('Storage full', undefined, new DOMException('full', 'QuotaExceededError'));
+  add(session, 'a');
+  await expect(session.flush()).rejects.toThrow();
+  expect(session.saveStatus).toBe('not-saved');
+  expect(session.retryDue).toBe(false);
+  expect(session.retry()).toBeNull();
 });
 
 describe('the session tells the host when a retry becomes owed or stops being owed (US-09 AC30)', () => {

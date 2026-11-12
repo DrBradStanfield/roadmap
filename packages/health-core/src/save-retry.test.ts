@@ -81,10 +81,14 @@ describe('passFailed carries its cause into failed (US-09 AC30)', () => {
   });
 });
 
-describe('saveFailureCause (US-09 AC30): auth only for a refused grant', () => {
+describe('saveFailureCause (US-09 AC30): auth only for a 401 or a revoked grant', () => {
   it.each([
     ['a StorageError with status 401', new StorageError('refused', undefined, undefined, 401), 'auth'],
-    ['a StorageError with status 403', new StorageError('refused', undefined, undefined, 403), 'auth'],
+    // Owner F1 (a): a 403 is retried, whatever its body: a limit passes, and a true refusal costs one failed call a retry.
+    ['a StorageError with status 403', new StorageError('refused', undefined, undefined, 403), 'other'],
+    ['a Drive 403 rate limit, as drive-rest throws it', new StorageError('Google Drive record lookup failed (403): {"error":{"errors":[{"domain":"usageLimits","reason":"userRateLimitExceeded"}],"code":403}}', undefined, undefined, 403), 'other'],
+    ['a Drive 403 daily limit, as drive-rest throws it', new StorageError('Google Drive write failed (403): {"error":{"errors":[{"domain":"usageLimits","reason":"dailyLimitExceeded"}],"code":403}}', undefined, undefined, 403), 'other'],
+    ['a GitHub 403 secondary limit, as github.ts throws it (no status)', new StorageError('GitHub write failed (403): {"message":"You have exceeded a secondary rate limit. Please wait a few minutes before you try again."}'), 'other'],
     ['a StorageError with status 500', new StorageError('server', undefined, undefined, 500), 'other'],
     ['a StorageError with no status', new StorageError('did not answer'), 'other'],
     ['a plain Error', new Error('boom'), 'other'],
