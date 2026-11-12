@@ -396,7 +396,7 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     state.replies = [{ text: 'Synthetic answer', blocks: [] }];
     state.store = {
       getMessages: () => [],
-      recordExchange: () => Promise.reject(new WritesStoppedError()),
+      recordExchange: vi.fn(() => Promise.reject(new WritesStoppedError())),
       eraseMarks: () => [],
     };
     vi.mocked(Sentry.captureException).mockClear();
@@ -407,6 +407,7 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     expect(error).toBeNull();
     expect(result?.content).toBe('Synthetic answer');
     await new Promise((r) => setTimeout(r, 0));
+    expect(state.store!.recordExchange).toHaveBeenCalledOnce();
     expect(Sentry.captureException).not.toHaveBeenCalled();
     state.store = null;
   });

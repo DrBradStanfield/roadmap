@@ -31,7 +31,8 @@ type RecordFailure =
   | 'Chat list failed';
 
 /** The device refusing a health write after a log-off (US-09 AC2c): a
- *  refusal the page asked for, not a failure, so no caller reports it (A15). */
+ *  refusal the page asked for, not a failure. The record save, the document
+ *  write and both chat saves do not report it (A15). */
 export class WritesStoppedError extends StorageError {
   constructor() {
     super('On-device roadmap persistence stopped for logout.');

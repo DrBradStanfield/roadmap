@@ -55,6 +55,7 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     expect(error).toBeNull();
     expect(result?.content).toBe('fresh answer');
     await new Promise((r) => setTimeout(r, 0));
+    expect(store.recordExchange).toHaveBeenCalledOnce();
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
