@@ -213,6 +213,125 @@ describe('US-11 AC6: a page closed through an erase made elsewhere', () => {
   });
 });
 
+/** The cloud `id` erased three times elsewhere, the device keeping E3, and a copy that stops at E2. */
+async function keptAtE3WithLaggingE2() {
+  const { cloud, other, fake, id } = await cloudAtEpoch(1);
+  later();
+  expect((await other.erase()).success).toBe(true);
+  const lagging = new MemoryCloud();
+  lagging.files = new Map(cloud.files);
+  later();
+  expect((await other.erase()).success).toBe(true);
+  later();
+  const current = await RecordSession.open(fake.host);
+  const e3 = current.eraseIdentity;
+  expect(epoch(e3)).toBe(3);
+  expect(fake.device.key).toEqual({ lineage: id, erase: e3 });
+  fake.clears.calls = 0;
+  return { cloud, other, fake, id, lagging, current, e3 };
+}
+
+describe('US-11 AC6: "cleared up to" is an order, at open and in session', () => {
+  it('an owner opens a lagging copy at E2 over a key at E3: nothing cleared at open or after; E3 arriving clears nothing; E4 clears once', async () => {
+    const { cloud, other, fake, id, lagging, e3 } = await keptAtE3WithLaggingE2();
+    offFileData(fake.device, 'typed-after-e3');
+    const stale = await RecordSession.open(fakeHost(provider(lagging, id), fake.device).host);
+    expect(epoch(stale.eraseIdentity)).toBe(2);
+    expect(fake.clears.calls).toBe(0);
+    later();
+    await stale.refreshFromRemote();
+    stale.edit((file) => void file.measurements.push(weight('b', '2026-10-02')), stale.eraseIdentity);
+    await stale.flush();
+    expect(fake.clears.calls).toBe(0);
+    untouched(fake.device, 'typed-after-e3');
+    expect(fake.device.key).toEqual({ lineage: id, erase: e3 });
+
+    // The up-to-date copy at E3 arrives: already cleared for it.
+    lagging.files = new Map(cloud.files);
+    later();
+    expect(await stale.refreshFromRemote()).toBe(true);
+    expect(stale.eraseIdentity).toBe(e3);
+    expect(fake.clears.calls).toBe(0);
+    untouched(fake.device, 'typed-after-e3');
+    expect(fake.device.key).toEqual({ lineage: id, erase: e3 });
+
+    // A real E4 arrives: one clear, and the key moves to it.
+    later();
+    expect((await other.erase()).success).toBe(true);
+    lagging.files = new Map(cloud.files);
+    later();
+    expect(await stale.refreshFromRemote()).toBe(true);
+    expect(epoch(stale.eraseIdentity)).toBe(4);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.key).toEqual({ lineage: id, erase: stale.eraseIdentity });
+    later();
+    await stale.refreshFromRemote();
+    expect(fake.clears.calls).toBe(1);
+  });
+
+  it('an owner open at E3 whose store goes back to an E2 copy clears nothing; E4 then clears once', async () => {
+    const { cloud, other, fake, id, lagging, current, e3 } = await keptAtE3WithLaggingE2();
+    offFileData(fake.device, 'typed-after-e3');
+    const upToDate = new Map(cloud.files);
+    cloud.files = new Map(lagging.files); // a store that serves the older copy again
+    later();
+    await current.refreshFromRemote();
+    expect(current.eraseIdentity).toBe(e3);
+    expect(fake.clears.calls).toBe(0);
+    untouched(fake.device, 'typed-after-e3');
+    expect(fake.device.key).toEqual({ lineage: id, erase: e3 });
+
+    cloud.files = upToDate;
+    later();
+    expect((await other.erase()).success).toBe(true);
+    later();
+    expect(await current.refreshFromRemote()).toBe(true);
+    expect(epoch(current.eraseIdentity)).toBe(4);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.key).toEqual({ lineage: id, erase: current.eraseIdentity });
+  });
+
+  it('a non-owner drops its on-screen draft on a later erase and on nothing else; the key is unchanged throughout', async () => {
+    const { cloud, other, fake, id, lagging, e3 } = await keptAtE3WithLaggingE2();
+    fake.device.chosen = 'cloud-b'; // another tab moved this browser to another cloud
+    offFileData(fake.device);
+    // Opened on the older copy: it adopts that erase, and drops nothing.
+    const onLagging = await RecordSession.open(fakeHost(provider(lagging, id), fake.device).host);
+    expect(epoch(onLagging.eraseIdentity)).toBe(2);
+    expect(fake.device.screenDrops).toBe(0);
+    // The same erase again: nothing.
+    later();
+    await onLagging.refreshFromRemote();
+    expect(fake.device.screenDrops).toBe(0);
+    // A later erase (E3) arrives: one drop.
+    const e2Copy = new Map(lagging.files);
+    lagging.files = new Map(cloud.files);
+    later();
+    expect(await onLagging.refreshFromRemote()).toBe(true);
+    expect(onLagging.eraseIdentity).toBe(e3);
+    expect(fake.device.screenDrops).toBe(1);
+    // The older copy served again: nothing.
+    lagging.files = new Map(e2Copy);
+    later();
+    await onLagging.refreshFromRemote();
+    expect(onLagging.eraseIdentity).toBe(e3);
+    expect(fake.device.screenDrops).toBe(1);
+    // E4: one more drop, never a clear.
+    later();
+    expect((await other.erase()).success).toBe(true);
+    lagging.files = new Map(cloud.files);
+    later();
+    expect(await onLagging.refreshFromRemote()).toBe(true);
+    expect(epoch(onLagging.eraseIdentity)).toBe(4);
+    expect(fake.device.screenDrops).toBe(2);
+    expect(fake.clears.calls).toBe(0);
+    untouched(fake.device);
+    expect(fake.device.key).toEqual({ lineage: id, erase: e3 });
+  });
+});
+
 describe('US-11 AC6: an on-device fallback page while a cloud is chosen', () => {
   it('opens over an earlier key: no clear, and the key is unchanged', async () => {
     const { fake, id } = await cloudAtEpoch(3);
