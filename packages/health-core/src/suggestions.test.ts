@@ -96,7 +96,7 @@ describe('generateSuggestions', () => {
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-diabetic');
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('urgent');
-      // US-25 AC10 (App Review 1.4.1): a guideline range plus a doctor line, not a diagnosis.
+      // US-25 AC28 (App Review 1.4.1): a guideline range plus a doctor line, not a diagnosis.
       expect(hba1cSuggestion?.description).toMatch(/ is in the range guidelines use for diabetes\. See your doctor to confirm and plan care, including lifestyle changes\.$/);
       expect(hba1cSuggestion?.description).not.toContain('indicates diabetes');
     });
@@ -2861,7 +2861,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const retinoid = suggestions.find(s => s.id === 'skin-retinoid')!;
       expect(retinoid.description).toContain('pregnancy');
-      // US-25 AC10 (App Review 1.4.1): the prescription line ends the card.
+      // US-25 AC28 (App Review 1.4.1): the prescription line ends the card.
       expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\. Ask your doctor or pharmacist before you start\.$/);
     });
   });
@@ -3827,7 +3827,7 @@ describe('US-07 AC6: who the plan is for', () => {
         .toMatch(/elevated cardiovascular risk\. Guidelines typically recommend statin therapy and lifestyle changes at this level\. Discuss it with your doctor\.$/);
     });
 
-    it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC10, App Review 1.4.1)', () => {
+    it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC28, App Review 1.4.1)', () => {
       const bp = { systolicBp: 165, diastolicBp: 102 };
       const unknown = desc({ ...base, ...bp }, undefined, 'bp-stage2');
       expect(unknown).toContain('indicates stage 2 hypertension. Discuss treatment with your doctor.');

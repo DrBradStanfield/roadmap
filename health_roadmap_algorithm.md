@@ -1201,7 +1201,7 @@ Source: `suggestions.ts`
 |----|-------|-------------|
 | `skin-moisturizer` | Daily moisturizer with ceramides | Ceramides + nicotinamide (B3) |
 | `skin-sunscreen` | Daily broad-spectrum sunscreen | SPF 50+. **Conventional/US:** CeraVe Mineral (zinc oxide, titanium dioxide). **SI/non-US:** Beauty of Joseon SPF50+ (chemical filters). |
-| `skin-retinoid` | Topical retinoid | Adapalene 0.3% or tretinoin 0.05%, 2-3 nights/week. **Must not use during pregnancy.** |
+| `skin-retinoid` | Topical retinoid | Adapalene 0.3% or tretinoin 0.05%, 2-3 nights/week. **Must not use during pregnancy.** Tretinoin needs a prescription (the card says to ask a doctor or pharmacist). |
 | `skin-advanced` | Advanced skin treatments | Red light therapy, fractional laser, IPL, microneedling |
 
 ### Supplements (always shown)
