@@ -65,7 +65,7 @@ extension RecordStore {
             case none
             /// They are shown.
             case show
-            /// No drawing; the problem is shown. The record text is left as it was.
+            /// No drawing and no record text (as a file that cannot be read, RecordFile.loadPhone); the problem is shown.
             case unreadable
             /// A cell no caller reaches today (every record step is chained): nothing moves,
             /// so a future unchained caller draws nothing instead of mixing two records.
