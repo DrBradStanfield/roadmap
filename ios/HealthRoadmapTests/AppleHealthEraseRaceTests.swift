@@ -368,6 +368,33 @@ final class AppleHealthEraseRaceTests: XCTestCase {
         XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 2, source: "dropbox:dbid:B"))
     }
 
+    /// Review R1 of the Source union (US-72 AC10: the first open of a newly connected cloud never
+    /// disconnects Apple Health). A switch links the new account while the old cloud's record is
+    /// still shown; a pass then must not adopt the new account with the old record's eraseEpoch,
+    /// or the new cloud's own record (a higher epoch) reads as an erase. Composed at the store:
+    /// the test suite has no Google Drive stub, so the link and the two records are set directly,
+    /// in the order the switch lands them.
+    func testANewAccountLinkedOverTheOldCloudsRecordDoesNotDisconnect_US72_AC10() async throws {
+        let app = try app(cloud: false)
+        await app.health.connect()
+        let pending = PhoneFiles(record: nil, pending: nil)
+        let json = { (record: [String: Any]) in String(decoding: try JSONSerialization.data(withJSONObject: record), as: UTF8.self) }
+        app.store.link(.init(account: "dropbox:A", pending: pending))
+        await app.store.showCloud(HealthEngine.CloudView(record: try json(webRecord(epoch: 0)), erase: "e-a", session: 1)).value
+        await app.health.refresh()
+        XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 0, source: "dropbox:A"))
+
+        app.store.link(.init(account: "googleDrive:B", pending: pending))  // the switch's connect, A's record still shown
+        await app.health.refresh()
+        XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 0, source: "dropbox:A"), "no source while the link and the record disagree")
+
+        await app.store.showCloud(HealthEngine.CloudView(record: try json(webRecord(epoch: 1)), erase: "e-b", session: 2)).value
+        await app.health.refresh()
+        XCTAssertTrue(app.health.connected, "a new cloud's first open is adopted")
+        XCTAssertEqual(health.stops, 0)
+        XCTAssertEqual(memory.eraseSeen, EraseSeen(epoch: 1, source: "googleDrive:B"))
+    }
+
     // MARK: F7, only this app's samples
 
     /// The remote delete's predicate: our sync ids AND this app as the source. The fake cannot

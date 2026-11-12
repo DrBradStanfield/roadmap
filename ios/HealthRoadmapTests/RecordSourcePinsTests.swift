@@ -85,6 +85,58 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.recordJSON, phone)
     }
 
+    /// Shows a cloud record, then starts showPhone with the engine held: returns once the store
+    /// is `leaving`, with the release and the showPhone step.
+    private func leavingTheCloud(_ store: RecordStore, engine: HealthEngine) async throws -> (release: () -> Void, showing: Task<Void, Never>) {
+        let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
+        await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)).value
+        let release = holdEngine(engine)
+        let leaving = sourceChanges(store)
+        let showing = store.showPhone()
+        await fulfillment(of: [leaving], timeout: 10)
+        XCTAssertEqual(store.screen.erase, "e-1", "leaving: the screen still reports the cloud")
+        return (release, showing)
+    }
+
+    /// Lead S10 (review R2): a lab report saved during showPhone's read is refused in its turn with
+    /// the existing words before anything is read against the phone's record, so a summary that
+    /// would fail there (a value the report lacks) cannot answer instead. Nothing is written.
+    func testALabImportAskedWhileLeavingTheCloudIsRefused() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let (release, showing) = try await leavingTheCloud(store, engine: engine)
+        store.pinScreen()  // the review sheet opens on the cloud's screen
+        defer { store.unpinScreen() }
+        let extraction = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],"additionalValues":[],"refusedValues":[]}"#
+        let asked = Task { await store.importLabs(extractionJSON: extraction, refs: ["v9"], reportDay: "2026-10-01") }
+        release()
+        await showing.value
+        let result = await asked.value
+        XCTAssertEqual(result, .failure(LabRefusal(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.")))
+        let onDisk = (try? Data(contentsOf: RecordStore.file(in: folder))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        XCTAssertEqual((onDisk?["labValues"] as? [Any])?.count ?? 0, 0, "nothing reaches the phone's file")
+    }
+
+    /// Lead S10 (review R2): a document filed during showPhone's read is refused in its turn with
+    /// the existing words, and nothing is written.
+    func testADocumentSavedWhileLeavingTheCloudIsRefused() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let (release, showing) = try await leavingTheCloud(store, engine: engine)
+        store.pinScreen()
+        defer { store.unpinScreen() }
+        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: nil)
+        let asked = Task { await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) }
+        release()
+        await showing.value
+        let result = await asked.value
+        XCTAssertEqual(result, .refused("Your record changed while this was open, so this was not saved. Close this and try again."))
+        let onDisk = (try? Data(contentsOf: RecordStore.file(in: folder))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+        XCTAssertEqual((onDisk?["documents"] as? [Any])?.count ?? 0, 0, "nothing reaches the phone's file")
+        XCTAssertFalse(store.recordJSON.contains("Cardiology follow-up"))
+    }
+
     // MARK: S10b · the cloud session goes with the cloud
 
     /// Lead S10: the phone's source has no session field, so showPhone leaves none behind.
@@ -94,7 +146,7 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.source, .phone(link: nil), "no cloud record yet")
         let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
         await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)).value
-        XCTAssertEqual(store.source, .cloud(.init(erase: "e-1", session: 7, link: nil)))
+        XCTAssertEqual(store.source, .cloud(.init(erase: "e-1", session: 7, link: nil, drawnAccount: nil)))
         await store.showPhone().value
         XCTAssertEqual(store.source, .phone(link: nil), "the phone's file, and no session")
         XCTAssertEqual(store.recordSource, "phone")
@@ -146,6 +198,30 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.recordSource, "phone")
     }
 
+    /// Review R1 (US-72 AC10): Apple Health's source names the account the shown record was drawn
+    /// under, never a newer link. A switch can link another account while the old cloud's record
+    /// is still shown (its showPhone queued behind a held step); the gate must decide nothing then.
+    func testTheSourceIsTheAccountTheShownRecordWasDrawnUnder() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let pending = PhoneFiles(record: nil, pending: nil)
+        store.link(.init(account: "dropbox:A", pending: pending))
+        let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
+        await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)).value
+        XCTAssertEqual(store.recordSource, "dropbox:A")
+
+        let release = holdEngine(engine)
+        let held = store.redraw()  // a chained step held on the engine, as an upload would be
+        store.link(.init(account: "googleDrive:B", pending: pending))
+        XCTAssertNil(store.recordSource, "the shown record is A's: no source while the link says B")
+        release()
+        await held.value
+        XCTAssertNil(store.recordSource, "still A's record on screen")
+
+        await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-2", session: 8)).value
+        XCTAssertEqual(store.recordSource, "googleDrive:B", "B's own record names B")
+    }
+
     // MARK: H28 · a cloud mark never lands on the phone
 
     /// Lead H28: an Apple Health batch read from the cloud record writes nothing once the phone's
@@ -165,5 +241,23 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         XCTAssertNil(result, "the batch read on the cloud writes nothing on the phone")
         XCTAssertFalse(phoneFileDays().contains("2026-10-05"))
         XCTAssertFalse(activeDays(store.recordJSON).contains("2026-10-05"))
+    }
+
+    /// Lead H28, the other way (review R3): a batch read on the phone while a cloud connects writes
+    /// nothing once the handover shows the cloud record.
+    func testAPhoneMarkDoesNotLandOnTheCloudRecord() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let onPhone = store.mark
+        XCTAssertNil(onPhone.erase)
+        let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
+        let shown = await store.handOver(to: HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)) { true }
+        XCTAssertTrue(shown)
+        XCTAssertEqual(store.mark.erase, "e-1")
+        XCTAssertTrue(onPhone.holds(at: store.mark), "Mark.holds is unchanged: the chat sees no erase")
+        let result = await store.applyNow(.add(metric: "weight", value: 81, day: "2026-10-05"), on: onPhone)
+        XCTAssertNil(result, "the batch read on the phone writes nothing on the cloud record")
+        XCTAssertEqual(store.recordJSON, cloud)
+        XCTAssertFalse(phoneFileDays().contains("2026-10-05"))
     }
 }
