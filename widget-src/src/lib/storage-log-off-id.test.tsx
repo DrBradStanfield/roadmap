@@ -208,11 +208,13 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
   const quiet = { mode: 'loading', logOffHeard: false } as const;
   const heard = { mode: 'loading', logOffHeard: true } as const;
   const device = { mode: 'device' } as const;
-  const cloud = { mode: 'cloud' } as const;
+  const cloud = { mode: 'cloud', storeId: 'memory' } as const;
+  const otherCloud = { mode: 'cloud', storeId: 'google-drive' } as const;
   const stopped = { mode: 'stopped' } as const;
   const same = { type: 'deviceOpened', sameSignIn: true } as const;
   const changed = { type: 'deviceOpened', sameSignIn: false } as const;
-  const opened = { type: 'cloudOpened' } as const;
+  const opened = { type: 'cloudOpened', storeId: 'memory' } as const;
+  const otherOpened = { type: 'cloudOpened', storeId: 'google-drive' } as const;
   const hear = { type: 'logOffHeard' } as const;
   const stop = { type: 'stop' } as const;
   it.each([
@@ -234,11 +236,13 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
     [cloud, same, device],
     [cloud, changed, stopped],
     [cloud, opened, cloud],
+    [cloud, otherOpened, otherCloud], // two cloud hosts in a row (the OAuth return's lift, then the store): the last one's id
     [cloud, hear, stopped],
     [cloud, stop, stopped],
     [stopped, same, stopped],
     [stopped, changed, stopped],
     [stopped, opened, stopped],
+    [stopped, otherOpened, stopped],
     [stopped, hear, stopped],
     [stopped, stop, stopped],
   ] as const)('%o + %o -> %o', async (state, event, next) => {
