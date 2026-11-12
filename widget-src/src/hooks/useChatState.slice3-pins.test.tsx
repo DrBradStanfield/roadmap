@@ -154,6 +154,17 @@ describe('US-15 AC7a: the newest opening wins (1311d R2)', () => {
     expect(hook.result.current.state).toMatchObject({ activeConversationId: null, messages: [], load: 'none', isLoading: false });
   });
 
+  it('a thread\'s read that lands with turns in the same tick as New chat changes nothing: the new chat stays empty', async () => {
+    // The read resolves before New chat's dispatch stops it, so readThread returns the turns
+    // and a load-landed for an opening the store has left reaches the reducer (chat-turn.ts loadLanded).
+    const held = heldReads();
+    const hook = renderHook(() => useChatState({ isLoggedIn: true, prefetchedData: atNew }));
+    open(hook, 'B');
+    await act(async () => { held[0].resolve(threadB); hook.result.current.actions.startNewChat(); });
+    await settle();
+    expect(hook.result.current.state).toMatchObject({ activeConversationId: null, messages: [], load: 'none', isLoading: false });
+  });
+
   it('a left thread\'s failed read changes nothing: B shows, with no failure line', async () => {
     const held = heldReads();
     const hook = renderHook(() => useChatState({ isLoggedIn: true, prefetchedData: atNew }));
@@ -195,6 +206,20 @@ describe('US-15: no landing reads the list again', () => {
     expect(hook.result.current.state.conversations.map((c) => c.id)).toEqual(['N', 'A']);
     await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
     expect(listReads()).toBe(1);
+  });
+});
+
+describe('US-15 (C26): a failed list read is not retried until an erase is shown', () => {
+  it('a list read that lands null keeps the old list (here none), a second open reads nothing, and an erase-shown reads again', async () => {
+    vi.mocked(listConversations).mockResolvedValueOnce(null as never);
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(hook.result.current.state.conversations).toEqual([]);
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(listReads()).toBe(1);
+    await act(async () => { tellChats({ type: 'erase-shown', erase: 'erase-2', by: 'own' }); });
+    expect(listReads()).toBe(2);
+    expect(hook.result.current.state.conversations.map((c) => c.id)).toEqual(['A', 'B']);
   });
 });
 
