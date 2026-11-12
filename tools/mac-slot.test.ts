@@ -139,12 +139,29 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(await r.done).toBe(0);
   });
 
-  it('at the load-wait cap starts the command anyway with a one-line warning (the slots still bound it)', async () => {
+  it('at the load-wait bound refuses with exit 75 and one line, never runs the command, and frees the slot', async () => {
     setLoads('12.00');
-    const r = bg('codex', ['sh', '-c', 'exit 5'], { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
-    expect(await r.done).toBe(5);
-    expect(r.err().split('\n').filter((l) => /starting anyway/.test(l))).toHaveLength(1);
-    expect(r.err()).toMatch(/load 12\.00/);
+    const extra = { MAC_SLOT_LOAD_WAIT_SECONDS: '2', MAC_SLOT_CODEX_MAX: '1' };
+    const r = bg('codex', ['sh', '-c', `touch "${fake}/ran"`], extra);
+    expect(await r.done).toBe(75);
+    expect(existsSync(join(fake, 'ran'))).toBe(false);
+    const refused = r.err().split('\n').filter((l) => /refused/.test(l));
+    expect(refused).toHaveLength(1);
+    expect(refused[0]).toMatch(/the 1-minute load 12\.00 is still 8 or more after 2s; not starting sh -c touch/);
+    expect(r.err()).not.toMatch(/starting codex slot/);
+    // The slot is free at once: the next caller (load now low) starts without waiting for a slot.
+    setLoads('1.00');
+    const n = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(extra), encoding: 'utf8', timeout: 5000 });
+    expect(n.status).toBe(0);
+    expect(n.stderr).not.toMatch(/waiting for a codex slot/);
+  });
+
+  it('a load that drops below the cap within the bound starts the command', async () => {
+    setLoads('12.00', '12.00', '2.00');
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '10' });
+    expect(await r.done).toBe(0);
+    expect(existsSync(join(fake, 'ran'))).toBe(true);
+    expect(r.err()).not.toMatch(/refused/);
   });
 
   it('a waiter killed during the load wait frees its slot at once (its sleep holds no slot fd)', async () => {
