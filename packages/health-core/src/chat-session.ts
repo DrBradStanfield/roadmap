@@ -116,10 +116,14 @@ function mergeWithinCap(local: ChatHistoryFile, remote: ChatHistoryFile, ctx: Sy
   return merged;
 }
 
-/** The device tier's synchronous store and its erase fence. */
-function deviceStore(host: RecordHost): { sync: SyncStorage; fence: () => string | null } | null {
-  return host.tier === 'device' ? { sync: host.sync, fence: () => host.eraseFence() } : null;
+/** The device tier's synchronous store, its erase fence, and whether this
+ *  page may read and write the device's files (absent: open). */
+function deviceStore(host: RecordHost): { sync: SyncStorage; fence: () => string | null; closed: () => boolean } | null {
+  return host.tier === 'device' ? { sync: host.sync, fence: () => host.eraseFence(), closed: () => host.deviceFilesOpen?.() === false } : null;
 }
+
+/** The fence a closed page holds: its working copy has nothing read from the device. */
+const CLOSED = Symbol('closed');
 
 export class ChatSession {
   /** Conversations a device erase removed under this session: an answer that
@@ -139,7 +143,7 @@ export class ChatSession {
     /** A fresh loop for one save: its document, with verify-after-write for a delete or an erase. */
     private readonly loop: ((doc: DocumentSpec<ChatHistoryFile>) => SyncManager<ChatHistoryFile>) | null,
     private file: ChatHistoryFile,
-    private fenceSeen: string | null,
+    private fenceSeen: string | null | typeof CLOSED,
   ) {
     this.device = sync ? null : deviceStore(host);
   }
@@ -149,6 +153,8 @@ export class ChatSession {
     const device = deviceStore(host);
     const ctx = contextOf(host);
     if (device) {
+      // A page that may not write the device's files reads none either.
+      if (device.closed()) return new ChatSession(host, null, null, migrateChatHistoryFile(null, ctx), CLOSED);
       // Read the content-free erase fence with the chat snapshot. It survives
       // a record removal and parses no health data.
       const fence = device.fence();
@@ -312,16 +318,24 @@ export class ChatSession {
   }
 
   /** After a device erase, replace the entire stale working copy before
-   *  appending new chat. Never merge pre-erase ids into the now-missing file. */
+   *  appending new chat. Never merge pre-erase ids into the now-missing file.
+   *  A page that may not write the device's files drops its copy when it
+   *  closes and reads none while closed: it keeps in page memory only the
+   *  turns it makes from then on, a follow-up in an open conversation
+   *  included. It reopens, and reads the file again, when the write gate does,
+   *  dropping those turns unsaved and unerased: reopening needs the log-off key
+   *  cleared, which in practice clears the file too. */
   private refreshAfterDeviceErase(): void {
     if (!this.device) return;
-    const fence = this.device.fence();
+    const fence = this.device.closed() ? CLOSED : this.device.fence();
     if (fence === this.fenceSeen) return;
+    const erased = fence !== CLOSED && this.fenceSeen !== CLOSED;
     for (const conv of this.file.conversations) {
-      this.erasedIds.add(conv.id);
+      if (erased) this.erasedIds.add(conv.id);
       this.pending.delete(conv.id);
     }
-    this.file = migrateChatHistoryFile(this.device.sync.readSync(CHAT_HISTORY_DOC.fileName).body, contextOf(this.host));
+    const body = fence === CLOSED ? null : this.device.sync.readSync(CHAT_HISTORY_DOC.fileName).body;
+    this.file = migrateChatHistoryFile(body, contextOf(this.host));
     this.fenceSeen = fence;
   }
 
@@ -346,7 +360,8 @@ export class ChatSession {
       this.file = mergeChatHistoryFiles(this.file, result.file, ctx);
       return;
     }
-    const { sync } = this.device!;
+    const { sync, closed } = this.device!;
+    if (closed()) return; // neither read nor written: the turn stays on this page only
     // Not SyncManager.save: its read and write are awaited, and an erase that
     // lands between them would let this pre-erase snapshot be written back.
     // No await between checking the erase fence, merging and writing.

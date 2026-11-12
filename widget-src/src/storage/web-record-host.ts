@@ -130,7 +130,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     ...(store.watch ? {
       watch(onChange: () => void) {
         const watching = new AbortController();
-        store.watch!(ROADMAP_FILE_NAME, onChange, watching.signal);
+        // A device page that may not write here hears no change either (US-09 AC2c).
+        store.watch!(ROADMAP_FILE_NAME, () => { if (!(store instanceof LocalStorageAdapter) || healthWritesAllowed()) onChange(); }, watching.signal);
         return () => watching.abort();
       },
     } : {}),
@@ -179,7 +180,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // named-file prefix, which only disconnect() clears — and disconnect()
     // after an erase would delete the erased record file just written.
     noteDevicePage();
-    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
+    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration, deviceFilesOpen: healthWritesAllowed };
   }
   const device = new LocalStorageAdapter();
   // Note a log-off from another page from now, not only once the first cloud
