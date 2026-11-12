@@ -140,6 +140,37 @@ describe.each([
     expect(await questionKept()).toEqual(NOTHING);
   });
 
+  it('a reply whose save is pending when an erase begins is not kept', async () => {
+    // Hold the chat-history write that carries the question until the erase has begun.
+    let releaseWrite = () => {};
+    const writeHeld = new Promise<void>((resolve) => { releaseWrite = resolve; });
+    let writeReached = () => {};
+    const reached = new Promise<void>((resolve) => { writeReached = resolve; });
+    const write = vi.mocked(MemoryAdapter.prototype.write).getMockImplementation()!;
+    vi.mocked(MemoryAdapter.prototype.write).mockImplementation(async function (this: MemoryAdapter, fileName, body, ...rest) {
+      if (fileName === CHAT_FILE && JSON.stringify(body).includes(QUESTION)) {
+        writeReached();
+        await writeHeld;
+      }
+      return write.call(this, fileName, body, ...rest);
+    });
+    const sent = send(QUESTION, null, null);
+    reply.release();
+    expect((await sent).error).toBeNull();
+    await reached; // the reply landed with no erase yet, and its save is under way
+    const erase = deleteUserData();
+    await settle();
+    releaseWrite();
+    expect((await erase).success).toBe(true);
+    await settle();
+    const page = (await getChatHistory())!.listConversations();
+    expect(page.filter((c) => c.title.includes(QUESTION))).toHaveLength(0);
+    expect(chatWrites.at(-1)).not.toContain(QUESTION);
+    await initRoadmapStore(new MemoryAdapter(cloud)); // a fresh page
+    const reloaded = (await getChatHistory())!.listConversations();
+    expect(reloaded.filter((c) => c.title.includes(QUESTION))).toHaveLength(0);
+  });
+
   it('a reply with no erase in between is saved', async () => {
     const sent = send(QUESTION, null, null);
     reply.release();
