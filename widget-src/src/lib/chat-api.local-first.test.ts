@@ -16,7 +16,8 @@ const store = vi.hoisted(() => ({
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
-import { deleteConversation, sendMessage } from './chat-api';
+import * as Sentry from '@sentry/react';
+import { deleteConversation, loadConversation, sendMessage } from './chat-api';
 
 const ok = () =>
   new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: null, content: 'fresh answer' }), {
@@ -122,5 +123,28 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     expect(await deleteConversation('c1')).toBe(true);
     expect(store.deleteConversation).toHaveBeenCalledWith('c1');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // N1, N2 (Fable 2026-11-12): a thread read from the user's own file that throws is failed, never an empty thread.
+  it('US-15 AC7a, N2: the cloud store\'s getMessages throwing synchronously is a failed read', async () => {
+    store.getMessages.mockImplementationOnce(() => { throw new Error('file unreadable'); });
+    expect(await loadConversation('c1')).toBe('failed');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Codex R1 (privacy): the cloud store's StorageError can quote chat text in its message or cause.
+  it('a store error\'s message and cause reach neither the console nor Sentry', async () => {
+    const MARKER = 'SYNTHETIC_CHAT_MARKER';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    store.getMessages.mockImplementationOnce(() => { throw Object.assign(new Error(`bad file: ${MARKER}`), { cause: new Error(MARKER) }); });
+    expect(await loadConversation('c1')).toBe('failed');
+    const text = (v: unknown, depth = 0): string => depth > 4 || v == null ? '' : v instanceof Error
+      ? `${v.message} ${v.stack ?? ''} ${text((v as { cause?: unknown }).cause, depth + 1)}`
+      : typeof v === 'object' ? Object.values(v).map((x) => text(x, depth + 1)).join(' ') : String(v);
+    const said = [warn, error, vi.mocked(Sentry.captureException), vi.mocked(Sentry.captureMessage)].flatMap((m) => m.mock.calls).map((c) => text(c)).join(' ');
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { feature: 'chat', kind: 'store' } });
+    expect(said).not.toContain(MARKER);
+    warn.mockRestore(); error.mockRestore();
   });
 });

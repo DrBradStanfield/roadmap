@@ -85,7 +85,7 @@ struct SyncView: View {
 
         Section {
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
-                .disabled(sync.erasing || sync.status == .disconnecting)
+                .disabled(sync.eraseRunning() || sync.status == .disconnecting)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
                     Button("Disconnect", role: .destructive) { Task { await disconnect(provider) } }
                 } message: {

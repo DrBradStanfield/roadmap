@@ -7,7 +7,7 @@ import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
 import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
-import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, tokenOf } from './chat-request';
+import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
 import { askChatHistory, getChatHistory } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
@@ -27,8 +27,9 @@ import { getChatArticle } from './assistant-config';
 export interface ChatConversation {
   id: string;
   title: string;
-  updatedAt: string;
-  createdAt: string;
+  /** Absent on a thread the chat listed itself as its first reply landed (chat-turn.ts `done`). */
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface ChatMessage {
@@ -176,40 +177,49 @@ export async function listConversations(): Promise<ChatListResult | null> {
       isGuest: result.isGuest,
     };
   } catch (error) {
-    console.warn('Error listing conversations:', error);
-    Sentry.captureException(error);
+    console.warn('Chat list failed.'); // as a failed load: the error can quote titles (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind: 'fetch' } });
     return null;
   }
 }
 
-/** null: the server no longer recognizes this guest thread (US-15 AC6a). */
-export async function loadConversation(conversationId: string): Promise<ChatMessage[] | null> {
-  const store = await cloudHistory();
-  if (store) return store.getMessages(conversationId);
+/** Settles 'failed' when `signal` aborts; never, without one. */
+const untilAborted = (signal?: AbortSignal) => new Promise<'failed'>((resolve) => {
+  if (signal?.aborted) resolve('failed');
+  else signal?.addEventListener('abort', () => resolve('failed'), { once: true });
+});
+
+/**
+ * A thread's turns. 'gone': the server no longer recognizes this thread, a guest's or a customer's (US-15 AC6a).
+ * 'failed': they could not be read (an error answer, a throw, or `signal` aborting), so the
+ * thread never shows as empty and no send goes out with an empty history (N2).
+ */
+export async function loadConversation(conversationId: string, signal?: AbortSignal): Promise<ChatMessage[] | 'gone' | 'failed'> {
+  let kind: 'store' | 'fetch' = 'store';
   try {
+    const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
+    if (store === 'failed') return 'failed';
+    if (store) return store.getMessages(conversationId);
+    kind = 'fetch';
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
-    const response = await fetchWithTransientRetry(
-      `${PROXY_PATH}/api/chat?${params}`,
-    );
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
+      const data = await parseJsonResponse<ChatReply>(response).catch(() => null);
+      if (guestThreadGone(response.status, data) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
         extra: { status: response.status, contentType: response.headers.get('content-type') },
       });
-      return [];
+      return 'failed';
     }
-    const result = await parseJsonResponse<{
-      success: boolean;
-      messages: ChatMessage[];
-    }>(response);
-    if (!result?.success) return [];
-    return result.messages;
+    const result = await parseJsonResponse<{ success: boolean; messages: ChatMessage[] }>(response);
+    return result?.success ? result.messages : 'failed';
   } catch (error) {
-    console.warn('Error loading conversation:', error);
-    Sentry.captureException(error);
-    return [];
+    if (signal?.aborted) return 'failed'; // the caller's timeout, not an error to report
+    console.warn('Chat load failed.'); // never the error: it or its cause can quote chat text (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat load failed'), { tags: { feature: 'chat', kind } });
+    return 'failed';
   }
 }
 
@@ -288,12 +298,7 @@ export async function sendMessage(
       return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked, opened);
     }
 
-    if (response.status === 429) {
-      return {
-        result: null,
-        error: { error: CHAT_LIMIT_MESSAGE },
-      };
-    }
+    if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
 
     if (!response.ok || !data?.success) {
       Sentry.captureMessage('Chat sendMessage failed', {
@@ -360,10 +365,7 @@ export async function sendMessage(
     // Fixed words only: the error can quote the chat (US-15 AC47).
     console.warn('Chat send failed');
     Sentry.captureException(recordFailure(error, error instanceof ChatStreamError ? error.failure : 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
-    return {
-      result: null,
-      error: { error: 'Network error' },
-    };
+    return { result: null, error: { error: 'Network error' } };
   }
 }
 
@@ -403,8 +405,8 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
     const data = await parseJsonResponse<{ success: boolean }>(response);
     return data?.success ?? false;
   } catch (error) {
-    console.warn('Error deleting conversation:', error);
-    Sentry.captureException(error);
+    console.warn('Chat delete failed');
+    Sentry.captureException(recordFailure(error, 'Chat delete failed'), { tags: { feature: 'chat', kind: 'delete' } });
     return false;
   }
 }

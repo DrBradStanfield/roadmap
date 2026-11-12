@@ -3076,6 +3076,28 @@ input[type="number"] {
   }
 }
 
+/* The shown thread's read: loading, or failed with Try again (N1, N2). */
+.chat-load-line {
+  margin: auto 0;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.chat-load-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.chat-load-actions .chat-new-btn {
+  width: auto;
+  padding: 8px 16px;
+  margin-bottom: 0;
+}
+
 /* Message bubbles */
 
 .chat-message {

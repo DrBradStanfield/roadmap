@@ -641,8 +641,17 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   never its own: one cloud at a time, so a token a refused delete left never outlives the next
   cloud (round 2). A sign-in voided by a
   Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
-  Disconnect (owner): nothing is lost and the existing words show. Not yet (PR 2): `erasing` is still a boolean beside the union; it moves to
-  `DataEraser.phase`, and a one-step cloud switch replaces "Disconnect from <cloud> first".
+  Disconnect (owner): nothing is lost and the existing words show.
+  PR 2 (2026-11-12, US-25 AC16e): "an erase is running" has one source, `DataEraser.phase`.
+  CloudSync's own `erasing` flag is gone; it was set only during the cloud erase's engine call,
+  so a phone-only erase left Connect live (a first connect could lift a half-erased record) and a
+  cloud erase left Connect and Disconnect live through its last steps. CloudSync now reads
+  `eraseRunning()`, a closure set only by `CloudSync.waitsFor(eraser)`, which DataEraser's init
+  calls (it takes `sync`, so no app or test can build an eraser and forget the wiring; owner's
+  ruling, option d); it is read at each decision, never kept, and an
+  @Observable read through it redraws Sync's rows. An erase begun with no shown session (opening,
+  closed, closing) is refused and erases nothing (pinned). Not yet (PR 3, lead S24): a one-step
+  cloud switch replaces "Disconnect from <cloud> first", with the web's twin.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.

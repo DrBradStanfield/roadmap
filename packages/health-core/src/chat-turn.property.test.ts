@@ -1,8 +1,8 @@
 /**
  * The chat-turn reducer over random event sequences (design page §7 item 1).
  * A seeded PRNG (mulberry32), no dependency: ~500 sequences of 1-40 events,
- * landings sometimes current and sometimes stale. Five invariants after every
- * step; a failure prints the seed and the sequence. Reachability counts prove
+ * landings sometimes current and sometimes stale. Five invariants (plus N2: no request
+ * while the load is not none) after every step; a failure prints the seed and the sequence. Reachability counts prove
  * the generator visits the states the invariants are about (PR 1349 R5).
  */
 import { describe, expect, it } from 'vitest';
@@ -24,6 +24,7 @@ function mulberry32(seed: number): () => number {
 
 const IDS = ['A', 'B', 'C'];
 const ERASES = ['E0', 'E1', 'E2'];
+const UNREAD = 'unread-post';
 const msg = (id: string): Msg => ({ id, role: 'assistant', content: id, createdAt: 'T' });
 const convs = (ids: string[]): Conv[] => ids.map((id) => ({ id, title: id }));
 
@@ -42,10 +43,14 @@ function genEvent(r: () => number, s: ChatState, guest: boolean): ChatEvent {
     [4, () => ({ type: 'failed', turn: turnNo, message: 'f', boxEmpty: coin(0.5) })],
     [6, () => ({ type: 'open-thread', id: pick(IDS) })],
     [4, () => ({ type: 'new-chat' })],
-    [4, () => ({ type: 'mirror-state', payload: {
-      conversations: convs(IDS.filter(() => coin(0.5))), activeConversationId: coin(0.3) ? null : pick(IDS), messages: [msg('mm')], error: null,
-      ...(coin(0.3) ? {} : { erase: coin(0.6) ? s.erase.shown : pick(ERASES) }),
-    } })],
+    [4, () => {
+      // R1: a post from a tab that has not read its thread carries turns no tab may show or send (UNREAD).
+      const loaded = coin(0.3) ? undefined : coin(0.6);
+      return { type: 'mirror-state', payload: {
+        conversations: convs(IDS.filter(() => coin(0.5))), activeConversationId: coin(0.3) ? null : pick(IDS), messages: [msg(loaded === false ? UNREAD : 'mm')], error: null,
+        ...(coin(0.3) ? {} : { erase: coin(0.6) ? s.erase.shown : pick(ERASES) }), ...(loaded === undefined ? {} : { loaded }),
+      } };
+    }],
     [2, () => ({ type: 'mirror-new' })],
     [3, () => ({ type: 'thread-gone', id: pick(IDS), tell: coin(0.5) })],
     [5, () => ({ type: 'erase-state', moving: pick(['none', 'own', 'remote'] as const) })],
@@ -62,6 +67,13 @@ function genEvent(r: () => number, s: ChatState, guest: boolean): ChatEvent {
         id: current && s.load.phase === 'loading' ? s.load.id : pick(IDS), turns: coin(0.2) ? null : [msg('L')],
       };
     }],
+    [5, () => { // N2: a failed read, current about half the time, else stale (an older opening or another thread)
+      const current = s.load.phase === 'loading' && coin(0.6);
+      return {
+        type: 'load-failed', opening: current && s.load.phase === 'loading' ? s.load.opening : Math.floor(r() * (s.seq.opening + 2)),
+        id: current && s.load.phase === 'loading' ? s.load.id : pick(IDS),
+      };
+    }],
     [2, () => ({ type: 'dismiss' })],
   ];
   let w = r() * kinds.reduce((n, [k]) => n + k, 0);
@@ -69,11 +81,11 @@ function genEvent(r: () => number, s: ChatState, guest: boolean): ChatEvent {
   return kinds[0][1]();
 }
 
-const LANDINGS = new Set(['delta', 'done', 'failed', 'list-landed', 'load-landed']);
+const LANDINGS = new Set(['delta', 'done', 'failed', 'list-landed', 'load-landed', 'load-failed']);
 const isCurrent = (s: ChatState, e: ChatEvent): boolean => {
   if (e.type === 'delta' || e.type === 'done' || e.type === 'failed') return s.turn.phase !== 'idle' && s.turn.turn === e.turn;
   if (e.type === 'list-landed') return s.list.phase === 'reading' && s.list.read === e.read;
-  if (e.type === 'load-landed') return s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
+  if (e.type === 'load-landed' || e.type === 'load-failed') return s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
   return true;
 };
 /** Key-order-free JSON, to compare a state with one built here. */
@@ -87,8 +99,8 @@ function afterStale404(prev: ChatState, id: string): [ChatState, Effect[]] {
   const seq = { ...prev.seq, key: prev.seq.key + 1, opening: prev.seq.opening + 1 };
   return [{ ...dropped, list: settledList(prev), seq, shown: { key: `new:${seq.key}`, id: null, opening: seq.opening }, messages: [], error: null, notice: 'none', load: { phase: 'none' } }, [{ type: 'edits-leave' }]];
 }
-/** A send the reducer would take, but for the shown thread still loading (PR 1349 D). */
-const sendWhileLoading = (s: ChatState, e: ChatEvent) => e.type === 'send' && s.load.phase === 'loading' && s.turn.phase === 'idle'
+/** A send the reducer would take, but for the shown thread still loading or failed to (PR 1349 D, N2). */
+const sendWhileLoading = (s: ChatState, e: ChatEvent) => e.type === 'send' && s.load.phase !== 'none' && s.turn.phase === 'idle'
   && s.erase.moving === 'none' && !e.othersBusy && e.online && e.text.trim().length > 0 && e.text.trim().length <= 8000;
 const count = (fx: Effect[], type: Effect['type']) => fx.filter((f) => f.type === type).length;
 
@@ -118,11 +130,16 @@ function check(prev: ChatState, e: ChatEvent, next: ChatState, fx: Effect[], las
     if (canon(next) !== canon(want) || canon(fx) !== canon(wantFx)) return 'I3: a stale 404 changed more than the list and the fresh-chat reset';
   } else if (LANDINGS.has(e.type) && !isCurrent(prev, e) && (JSON.stringify(next) !== JSON.stringify(prev) || fx.length > 0)) return 'I3: a stale landing changed state';
   if (sendWhileLoading(prev, e) && (next !== prev || fx.length > 0)) return 'D: a send while the shown thread loads was taken';
+  // N2: a send never carries a history it failed (or has yet) to read.
+  if (count(fx, 'request') > 0 && (prev.load.phase !== 'none' || next.load.phase !== 'none')) return 'N2: a request while the load is not none';
+  // R1: turns from a post whose thread was not read are never shown, nor sent as a history.
+  const unread = (ms: Msg[]) => ms.some((m) => m.id === UNREAD);
+  if (unread(next.messages) || fx.some((f) => f.type === 'request' && unread(f.history))) return 'R1: turns from an unread post shown or sent';
   // 4. No read or request in response to a landing that was dropped; no landing ever re-asks.
   if (LANDINGS.has(e.type) && (count(fx, 'request') + count(fx, 'read-list') > 0)) return 'I4: a landing re-asked';
-  if (e.type === 'load-landed' && count(fx, 'read-turns') > 0) return 'I4: a load landing re-asked';
+  if ((e.type === 'load-landed' || e.type === 'load-failed') && count(fx, 'read-turns') > 0) return 'I4: a load landing re-asked';
   // A load is only ever for the shown chat (so send's refusal and loadLanded need no other case).
-  if (next.load.phase === 'loading' && (next.load.id !== next.shown.id || next.load.opening !== next.shown.opening)) return 'Load: loading a chat not shown';
+  if (next.load.phase !== 'none' && (next.load.id !== next.shown.id || next.load.opening !== next.shown.opening)) return 'Load: loading (or failed) a chat not shown';
   // 5. moving is the last erase-state's, and nothing else moves it.
   if (next.erase.moving !== lastMoving) return 'I5: moving is not the last erase-state';
   return null;
@@ -131,7 +148,10 @@ function check(prev: ChatState, e: ChatEvent, next: ChatState, fx: Effect[], las
 describe('chat-turn property: five invariants over random sequences (§7 item 1)', () => {
   it('holds for 500 seeded sequences of 1-40 events', () => {
     let steps = 0;
-    const seen = { orphanedOwn: 0, orphanedRemote: 0, listWaiting: 0, staleLoadingLanding: 0, guestAutoOpen: 0, sendRefusedWhileLoading: 0, guestWantedAfterMove: 0 };
+    const seen = {
+      orphanedOwn: 0, orphanedRemote: 0, listWaiting: 0, staleLoadingLanding: 0, guestAutoOpen: 0, sendRefusedWhileLoading: 0, guestWantedAfterMove: 0,
+      loadFailed: 0, staleLoadFailed: 0, sendRefusedWhileFailed: 0, unreadMirrorOpened: 0,
+    };
     for (let seed = 1; seed <= 500; seed++) {
       const r = mulberry32(seed);
       const initialMoving = (['none', 'none', 'own', 'remote'] as const)[seed % 4];
@@ -154,7 +174,10 @@ describe('chat-turn property: five invariants over random sequences (§7 item 1)
         if (state.list.phase === 'waiting') seen.listWaiting++;
         if (e.type === 'load-landed' && e.turns && s.load.phase === 'loading' && !isCurrent(s, e)) seen.staleLoadingLanding++;
         if (e.type === 'list-landed' && effects.some((f) => f.type === 'read-turns')) seen.guestAutoOpen++;
-        if (sendWhileLoading(s, e)) seen.sendRefusedWhileLoading++;
+        if (sendWhileLoading(s, e)) seen[s.load.phase === 'failed' ? 'sendRefusedWhileFailed' : 'sendRefusedWhileLoading']++;
+        if (e.type === 'load-failed' && isCurrent(s, e)) seen.loadFailed++;
+        if (e.type === 'mirror-state' && e.payload.loaded === false && effects.some((f) => f.type === 'read-turns')) seen.unreadMirrorOpened++;
+        if (e.type === 'load-failed' && !isCurrent(s, e)) seen.staleLoadFailed++;
         // Codex on PR 1349: a guest who sent or opened a chat before the first read was wanted never auto-opens (Q7).
         if (e.type === 'list-wanted' && e.guest && s.list.phase === 'unread' && (s.shown.key !== 'new:0' || s.turn.phase !== 'idle' || s.messages.length > 0)) {
           seen.guestWantedAfterMove++;

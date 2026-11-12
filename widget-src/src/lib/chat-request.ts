@@ -77,12 +77,15 @@ export function chatBodyParts(sessionToken = getGuestSessionToken()): Record<str
   };
 }
 
+/** The server's own 404 for a thread it does not know (US-15 AC6a), not a proxy's. */
+export const threadNotFound = (status: number, data: ChatReply | null): boolean => status === 404 && data?.error === 'Conversation not found';
+
 /**
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
 export function guestThreadGone(status: number, data: ChatReply | null): boolean {
-  if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
+  if (!threadNotFound(status, data) || data?.isGuest !== true) return false;
   const sessionToken = tokenOf(data);
   if (sessionToken) setGuestSessionToken(sessionToken);
   return true;

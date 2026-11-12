@@ -238,14 +238,72 @@ describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () =
   it('US-15 AC6a: loading a guest thread that 404s keeps the handed-back session and reports the thread gone', async () => {
     fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
 
-    expect(await loadConversation('c1')).toBeNull();
+    expect(await loadConversation('c1')).toBe('gone');
     expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
   });
 
-  it('US-15 AC6a: a customer\'s 404 on load stays an empty thread', async () => {
+  // N2 (Fable 2026-11-12): a load that failed is never an empty thread, or a send goes out without its history.
+  // R6, Fable (a): a signed-in customer's not-found on load is gone like a guest's; any other error answer is failed.
+  it('US-15 AC6a: a customer\'s 404 on load reports the thread gone; another error answer is a failed read', async () => {
     fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
+    expect(await loadConversation('c1')).toBe('gone');
+    expect(localStorage.getItem('health_roadmap_guest_session')).toBe('old-tok'); // a customer's answer hands back no session
+    fetchMock.mockResolvedValueOnce(jsonError(500, 'Failed to load'));
+    expect(await loadConversation('c1')).toBe('failed');
+    fetchMock.mockResolvedValueOnce(jsonError(403, 'Forbidden'));
+    expect(await loadConversation('c1')).toBe('failed');
+  });
 
-    expect(await loadConversation('c1')).toEqual([]);
+  // Codex R1 (privacy): a thrown error, a malformed body or a cause can quote chat text; none reaches the console or Sentry.
+  describe('a failed read or list reports no error text (Codex R1)', () => {
+    const MARKER = 'SYNTHETIC_CHAT_MARKER';
+    const said = () => {
+      const text = (v: unknown, depth = 0): string => depth > 4 || v == null ? '' : v instanceof Error
+        ? `${v.message} ${v.stack ?? ''} ${text((v as { cause?: unknown }).cause, depth + 1)}`
+        : typeof v === 'object' ? Object.values(v).map((x) => text(x, depth + 1)).join(' ') : String(v);
+      return [warn, error, vi.mocked(Sentry.captureException), vi.mocked(Sentry.captureMessage)].flatMap((m) => m.mock.calls).map((c) => text(c)).join(' ');
+    };
+    let warn: ReturnType<typeof vi.spyOn>, error: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => { warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); error = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+    afterEach(() => { warn.mockRestore(); error.mockRestore(); });
+    const planted = () => Object.assign(new Error(`read failed: ${MARKER}`), { cause: new Error(`cause: ${MARKER}`) });
+    const malformed = () => new Response(`{"messages":[{"content":"${MARKER}"`, { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+    it('loadConversation: a thrown fetch, then a malformed body', async () => {
+      fetchMock.mockRejectedValueOnce(planted()).mockResolvedValueOnce(malformed());
+      expect(await loadConversation('c1')).toBe('failed');
+      expect(await loadConversation('c1')).toBe('failed');
+      expect(Sentry.captureException).toHaveBeenCalledTimes(2);
+      expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { feature: 'chat', kind: 'fetch' } });
+      expect(said()).not.toContain(MARKER);
+    });
+
+    it('listConversations: a thrown fetch, then a malformed body', async () => {
+      fetchMock.mockRejectedValueOnce(planted()).mockResolvedValueOnce(malformed());
+      expect(await listConversations()).toBeNull();
+      expect(await listConversations()).toBeNull();
+      expect(Sentry.captureException).toHaveBeenCalledTimes(2);
+      expect(said()).not.toContain(MARKER);
+    });
+  });
+
+  it('US-15 AC7a, N2: an answer with success false, or a throw, is a failed read', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ success: false }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    expect(await loadConversation('c1')).toBe('failed');
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await loadConversation('c1')).toBe('failed');
+  });
+
+  it('US-15 AC7a, N1: the read carries the caller\'s signal, and an aborted read is failed', async () => {
+    const abort = new AbortController();
+    fetchMock.mockImplementationOnce((_url: string, init?: RequestInit) => new Promise((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    }));
+    const read = loadConversation('c1', abort.signal);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled()); // the request is out, and hangs
+    abort.abort();
+    expect(await read).toBe('failed');
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: abort.signal });
   });
 
   it('US-15 AC6a: deleting a guest thread that 404s keeps the handed-back session and counts as gone', async () => {
@@ -280,5 +338,57 @@ describe('chat-api: the open blog post (US-50 AC14)', () => {
     setChatArticle('some-post');
     await sendMessage('my message', 'c1', null);
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).articleHandle).toBe('some-post');
+  });
+});
+
+// US-15 AC47b: a failed delete reports fixed words only. The
+// error and its cause chain reach neither the console nor Sentry.
+describe.each([
+  ['delete', 'Chat delete failed', () => deleteConversation('c1')],
+] as const)('US-15 AC47b: a failed %s reports fixed words only', (kind, words, call) => {
+  const MARKER = 'zz-thread-marker';
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('neither the error nor its cause reaches the console or Sentry', async () => {
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const failure = Object.assign(new Error(`failed for ${MARKER}`), { cause: new Error(`cause ${MARKER}`) });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure));
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+
+    await call();
+
+    const captured = vi.mocked(Sentry.captureException).mock.calls;
+    expect(captured).toHaveLength(1);
+    const [reported, context] = captured[0] as unknown as [Error, { tags: Record<string, string> }];
+    expect(reported.message).toBe(words);
+    expect('cause' in reported).toBe(false);
+    expect(context.tags).toEqual({ feature: 'chat', kind });
+    const printed = spies.flatMap((s) => s.mock.calls);
+    expect(printed).toEqual([[words]]);
+    const text = (x: unknown): string => {
+      if (x instanceof Error) return `${x.message} ${text((x as { cause?: unknown }).cause)}`;
+      return x === undefined ? '' : JSON.stringify(x) ?? String(x);
+    };
+    const all = [...printed, ...captured, ...vi.mocked(Sentry.captureMessage).mock.calls];
+    expect(all.flat().map(text).join(' ')).not.toContain(MARKER);
+  });
+
+  it('a dropped connection reads as a network request that did not answer', async () => {
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await call();
+
+    const captured = vi.mocked(Sentry.captureException).mock.calls;
+    expect(captured).toHaveLength(1);
+    const [reported, context] = captured[0] as unknown as [Error, { tags: Record<string, string> }];
+    expect(reported.message).toBe('Network request did not answer');
+    expect(context.tags).toEqual({ feature: 'chat', kind });
   });
 });

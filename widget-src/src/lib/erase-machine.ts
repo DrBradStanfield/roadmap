@@ -111,6 +111,9 @@ export type EraseIdentity = string;
 export interface EraseState {
   phase: 'loading' | 'idle' | 'erasing';
   shown: EraseIdentity;
+  /** Who moved `shown` there: a read (another writer's) or this tab's erase ending (own, unless another's overtook it).
+   *  Its own field, set wherever `shown` moves; never read off `pending`, which a counted erase leaves null (PR 1359 R5). */
+  shownBy: 'own' | 'remote';
   heard: EraseIdentity | null;
   said: ReadonlySet<EraseIdentity>;
   counted: ReadonlySet<EraseIdentity>;
@@ -151,7 +154,7 @@ export type EraseEffect =
 export interface Step { state: EraseState; effects: EraseEffect[] }
 
 export function initialEraseState(shown: EraseIdentity): EraseState {
-  return { phase: 'loading', shown, heard: null, said: new Set(), counted: new Set(), pending: null };
+  return { phase: 'loading', shown, shownBy: 'own', heard: null, said: new Set(), counted: new Set(), pending: null };
 }
 
 /** `next` takes `prior`'s place: another identity, at the same or a higher epoch. */
@@ -178,6 +181,7 @@ function ownEnd(state: EraseState, identity: EraseIdentity, message: string): St
       ...state,
       phase: 'idle',
       shown: shows ? identity : state.shown,
+      shownBy: shows ? (theirs ? 'remote' : 'own') : state.shownBy,
       heard: above ? state.heard : null,
       // A refusal of a save asked before the erase is not news (adversary R3).
       said: add(state.said, state.shown),
@@ -205,7 +209,7 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       if (!replaces(event.identity, state.shown)) return seen === state ? same : { state: seen, effects: [] };
       // No erase this tab made reaches a read first: its own-end shows it.
       return {
-        state: { ...seen, shown: event.identity, pending: state.counted.has(event.identity) ? null : event.identity },
+        state: { ...seen, shown: event.identity, shownBy: 'remote', pending: state.counted.has(event.identity) ? null : event.identity },
         effects: [{ type: 'clear-drafts' }],
       };
     }

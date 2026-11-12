@@ -16,6 +16,7 @@ type RecordFailure =
   | 'Chat-history erase failed'
   | 'Chat-history save failed'
   | 'Chat send failed'
+  | 'Chat delete failed'
   | 'Chat stream line was not JSON'
   | 'Chat stream ended without an answer'
   | 'Pre-erase teardown failed'
@@ -23,7 +24,9 @@ type RecordFailure =
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
-  | 'Upload save failed';
+  | 'Upload save failed'
+  | 'Chat load failed'
+  | 'Chat list failed';
 
 /** Fresh exception: no provider text, original cause or document reference. */
 export function recordFailure(error: unknown, message: RecordFailure): Error {

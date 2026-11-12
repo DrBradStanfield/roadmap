@@ -23,8 +23,9 @@ export interface SendResult {
   conversationId: string; messageId: string | null; content: string; isFallback?: boolean;
   proposedEdits?: ProposedEdit[]; editRefusals?: ChatEditRefusal[]; subscriptionCard?: unknown;
 }
-/** Another tab's state post. `erase` is absent from an older bundle: it counts as this tab's. */
-export interface MirrorPayload { conversations: Conv[]; activeConversationId: string | null; messages: Msg[]; error: string | null; erase?: Erase }
+/** Another tab's state post. `erase` is absent from an older bundle: it counts as this tab's. `loaded` false: that
+ *  tab has not read its thread's turns (its load is not none), so its `messages` are no history; absent, they are. */
+export interface MirrorPayload { conversations: Conv[]; activeConversationId: string | null; messages: Msg[]; error: string | null; erase?: Erase; loaded?: boolean }
 
 export type Key = `new:${number}` | `thread:${string}`;
 export type Erase = string;
@@ -43,7 +44,8 @@ export type Turn =
   | { phase: 'orphaned'; turn: number; asked: Asked; by: 'own' | 'remote' };
 /** `autoOpen`: a guest's first read, which opens the latest thread on landing unless the person moved first (Q7). */
 export type List = { phase: 'unread' } | { phase: 'waiting'; autoOpen: boolean } | { phase: 'reading'; read: number; autoOpen: boolean } | { phase: 'read' };
-export type Load = { phase: 'none' } | { phase: 'loading'; opening: number; id: string };
+/** `failed`: the shown thread's turns could not be read (not a 404). Send stays locked: a send must never carry a history it failed to read (N2). */
+export type Load = { phase: 'none' } | { phase: 'loading'; opening: number; id: string } | { phase: 'failed'; opening: number; id: string };
 
 export interface ChatState {
   shown: Shown; messages: Msg[]; conversations: Conv[];
@@ -68,6 +70,7 @@ export type ChatEvent =
   | { type: 'list-wanted'; guest: boolean }
   | { type: 'list-landed'; read: number; conversations: Conv[] | null }
   | { type: 'load-landed'; opening: number; id: string; turns: Msg[] | null }
+  | { type: 'load-failed'; opening: number; id: string } // a read that threw, timed out, or answered with no turns (not a 404)
   | { type: 'dismiss' };
 
 export type Effect =
@@ -87,10 +90,12 @@ export interface Step { state: ChatState; effects: Effect[] }
 
 const NO_PENDING: Pending = { thinking: '', sources: [], text: '', status: '' };
 
-/** A prefetched list mounts read: nothing reads it again or opens a thread from it. */
-export function initialChatState(opts: { erase: Erase; moving: Moving; conversations?: Conv[] }): ChatState {
+/** A prefetched list mounts read: nothing reads it again or opens a thread from it. `opened`: the prefetched thread shown. */
+export function initialChatState(opts: { erase: Erase; moving: Moving; conversations?: Conv[]; opened?: { id: string; messages: Msg[] } }): ChatState {
+  const { opened } = opts;
   return {
-    shown: { key: 'new:0', id: null, opening: 0 }, messages: [], conversations: opts.conversations ?? [],
+    shown: opened ? { key: `thread:${opened.id}`, id: opened.id, opening: 0 } : { key: 'new:0', id: null, opening: 0 },
+    messages: opened?.messages ?? [], conversations: opts.conversations ?? [],
     turn: { phase: 'idle' }, list: opts.conversations ? { phase: 'read' } : { phase: 'unread' }, load: { phase: 'none' },
     erase: { shown: opts.erase, moving: opts.moving },
     notice: 'none', error: null,
@@ -108,9 +113,9 @@ export function isLocalSender(s: ChatState): boolean {
 export function showsPending(s: ChatState): Pending | null {
   return s.turn.phase === 'streaming' && s.turn.asked.key === s.shown.key ? s.turn.pending : null;
 }
-/** Locks Send, also while the shown thread loads; never draws the indicator. */
+/** Locks Send, also while the shown thread loads or failed to; never draws the indicator. */
 export function busy(s: ChatState, othersBusy: boolean): boolean {
-  return s.turn.phase !== 'idle' || s.load.phase === 'loading' || othersBusy;
+  return s.turn.phase !== 'idle' || s.load.phase !== 'none' || othersBusy;
 }
 
 // --- transition -------------------------------------------------------------
@@ -155,7 +160,7 @@ function takeEdits(r: SendResult, erase: Erase, stayed: boolean): Effect[] {
 
 function send(s: ChatState, e: Extract<ChatEvent, { type: 'send' }>): Step {
   const text = e.text.trim();
-  // busy(), and the shown thread still loading: its turns are not the history yet (US-15 AC7a).
+  // busy(), and the shown thread still loading or failed to: its turns are not the history (US-15 AC7a, N2).
   if (busy(s, e.othersBusy) || s.erase.moving !== 'none' || !text || text.length > MAX_CHARS) return same(s);
   if (!e.online) return same({ ...s, error: OFFLINE_ERROR });
   const turn = s.seq.turn + 1;
@@ -175,7 +180,8 @@ function send(s: ChatState, e: Extract<ChatEvent, { type: 'send' }>): Step {
 
 function done(s: ChatState, t: Extract<Turn, { phase: 'sending' | 'streaming' }>, r: SendResult, now: string): Step {
   const idle: ChatState = { ...s, turn: { phase: 'idle' } };
-  const ended: Effect[] = [{ type: 'post-state' }, { type: 'own-ended' }];
+  // own-ended first: an older bundle's wait ends before the post counts it as another tab busy (PR 1359 R5).
+  const ended: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
   const restarted = t.convId !== null && r.conversationId !== t.convId;
   const saved = t.convId === null || restarted; // a new thread on the server
   const conversations = saved
@@ -200,7 +206,7 @@ function done(s: ChatState, t: Extract<Turn, { phase: 'sending' | 'streaming' }>
 function turnStep(s: ChatState, e: Extract<ChatEvent, { type: 'delta' | 'done' | 'failed' }>): Step {
   const t = s.turn;
   if (t.phase === 'idle' || t.turn !== e.turn) return same(s);
-  const ended: Effect[] = [{ type: 'post-state' }, { type: 'own-ended' }];
+  const ended: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
   if (t.phase === 'orphaned') {
     if (e.type === 'delta') return same(s);
     const idle: ChatState = { ...s, turn: { phase: 'idle' } };
@@ -242,8 +248,11 @@ function listLanded(s: ChatState, e: Extract<ChatEvent, { type: 'list-landed' }>
   return { state: { ...opened, load: { phase: 'loading', opening: opened.shown.opening, id: latest.id } }, effects: [{ type: 'read-turns', opening: opened.shown.opening, id: latest.id }] };
 }
 
+/** The landing is for the load in flight; any other is stale. */
+const loadsNow = (s: ChatState, e: { opening: number; id: string }): boolean => s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
+
 function loadLanded(s: ChatState, e: Extract<ChatEvent, { type: 'load-landed' }>): Step {
-  const current = s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
+  const current = loadsNow(s, e);
   if (e.turns) {
     if (!current) return same(s);
     return { state: { ...s, messages: e.turns, load: { phase: 'none' } }, effects: [{ type: 'post-state' }] };
@@ -268,11 +277,20 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     case 'mirror-state': {
       const p = e.payload;
       if ((p.erase ?? s.erase.shown) !== s.erase.shown) return same(s);
-      const base: ChatState = { ...s, messages: p.messages, conversations: p.conversations, error: p.error, load: { phase: 'none' } };
-      if (p.activeConversationId === s.shown.id) return same(base);
       const id = p.activeConversationId;
+      const moved: Effect[] = [{ type: 'remote-selected' }, { type: 'edits-leave' }];
+      if (p.loaded === false) { // R1: its turns are no history; this tab keeps its own, or reads the thread itself
+        const kept: ChatState = { ...s, conversations: p.conversations, error: p.error };
+        if (id === s.shown.id) return same(kept);
+        if (id === null) return { state: { ...freshChat(kept), error: p.error, notice: s.notice }, effects: moved };
+        const opened = openThread({ ...kept, messages: [] }, id);
+        const opening = opened.shown.opening;
+        return { state: { ...opened, load: { phase: 'loading', opening, id } }, effects: [...moved, { type: 'read-turns', opening, id }] };
+      }
+      const base: ChatState = { ...s, messages: p.messages, conversations: p.conversations, error: p.error, load: { phase: 'none' } };
+      if (id === s.shown.id) return same(base);
       const next = id === null ? { ...freshChat(base), messages: p.messages, error: p.error, notice: s.notice } : openThread(base, id);
-      return { state: next, effects: [{ type: 'remote-selected' }, { type: 'edits-leave' }] };
+      return { state: next, effects: moved };
     }
     case 'thread-gone': {
       const dropped: ChatState = { ...s, conversations: s.conversations.filter((c) => c.id !== e.id) };
@@ -295,6 +313,7 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     }
     case 'list-landed': return listLanded(s, e);
     case 'load-landed': return loadLanded(s, e);
+    case 'load-failed': return same(loadsNow(s, e) ? { ...s, load: { phase: 'failed', opening: e.opening, id: e.id } } : s);
     case 'dismiss': return same({ ...s, notice: 'none' });
   }
 }

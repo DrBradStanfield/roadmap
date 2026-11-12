@@ -46,10 +46,17 @@ final class CloudSync: CloudPort {
     /// The cloud the record was last synced with, kept after Disconnect: the copy
     /// there stays, so the app never says the record never left the phone (review A3).
     private(set) var syncedBefore: CloudProvider?
-    /// True while "Delete all my data" runs on the open session. Connect and
-    /// Disconnect wait: either would swap the session the erase writes under, and
-    /// the screen and the phone's file would keep the old record (review R2).
-    private(set) var erasing = false
+    /// True while "Delete all my data" runs, from the tap until its words show: a reader of
+    /// `DataEraser.phase`, wired only by `waitsFor`, read at each decision and never kept.
+    /// Connect and Disconnect wait (US-25 AC16e): either would swap the session the erase
+    /// writes under (review R2), and a first connect would lift a half-erased record.
+    private(set) var eraseRunning: @MainActor () -> Bool = { false }
+
+    /// The one wiring of `eraseRunning`, called by DataEraser's init: it takes this CloudSync,
+    /// so every eraser built on it is the one Connect and Disconnect wait for.
+    func waitsFor(_ eraser: DataEraser) {
+        eraseRunning = { [weak eraser] in eraser?.erasing ?? false }
+    }
 
     private let engine: HealthEngine
     private let store: RecordStore
@@ -88,7 +95,7 @@ final class CloudSync: CloudPort {
         // A demo record never reaches anyone's cloud (DemoRecord).
         guard !DemoRecord.isOn else { throw OAuthClient.Failure.refused("A demo record never syncs.") }
         #endif
-        guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        guard !eraseRunning() else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
         try verdict(send(.signInStarted(provider)))
         let key = connection.signInKey
@@ -102,7 +109,7 @@ final class CloudSync: CloudPort {
             throw error
         }
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
-        guard !erasing else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        guard !eraseRunning() else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
         let known = files.read(files.account)
         let effects = send(.signInReturned(key: key, provider: provider, otherAccount: known != nil && known != signedIn.account))
         try verdict(effects)
@@ -150,8 +157,6 @@ final class CloudSync: CloudPort {
     /// refuses as the web does (US-09 AC23).
     func erase(chatHistory: String?, keepChat: @escaping @Sendable (String) -> Bool) async throws -> HealthEngine.CloudErase? {
         guard let session = connection.shownSession else { return nil }
-        erasing = true
-        defer { erasing = false }
         send(.syncStarted)
         let result: HealthEngine.CloudErase
         do {
@@ -186,7 +191,7 @@ final class CloudSync: CloudPort {
     /// copy; the phone keeps what it already held.
     func disconnectOutcome() async -> DisconnectOutcome {
         guard provider != nil else { return .done(copied: true) }
-        guard !erasing, send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
+        guard !eraseRunning(), send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
         let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
         // Each step after an await checks this Disconnect still owns the connection (Codex C1).
         guard connection.attempt == closing.attempt else { return .refused }
