@@ -88,15 +88,16 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     },
   );
 
-  // Lead A1 step d (owner, 2026-11-12): the session's save status and the device marker, seven rows.
-  // The on-device words need the device write to land, never the marker alone (design decision 2).
+  // Lead A1 step d (owner, 2026-11-12): the session's save status and the device marker, eight rows.
+  // The on-device words need both this session's landed device write and the marker (re-check).
   it.each([
     ['saving', false, 'Saving to Dropbox…'],
     ['saving', true, 'Saving to Dropbox…'],
     ['not-saved-on-device', true, 'Not synced yet. Your changes are on this device.'],
+    ['not-saved-on-device', false, 'Not synced yet.'], // another tab logged off: device copy and marker gone (Codex)
     ['not-saved', true, 'Not synced yet.'], // marker set, device write failed (a full disk, a newer device file)
     ['not-saved', false, 'Not synced yet.'],
-    ['saved', true, 'Not synced yet. Your changes are on this device.'], // an earlier session's, lifted by the next load
+    ['saved', true, 'Not synced yet.'], // a device copy the marker's release cannot read, or another tab's write waiting
     ['saved', false, 'Synced to Dropbox'],
   ] as const)('session %s, device marker %s: "%s"', (status, pending, words) => {
     sync.status = status;
@@ -107,10 +108,22 @@ describe('US-09 AC30 — the label says the real storage state', () => {
 
   it('Settings says what waits on this device, and promises no upload nothing yet retries (lead A1 step d)', () => {
     sync.pending = true;
+    sync.status = 'not-saved-on-device';
     mount('dropbox');
     expect(document.querySelector('.hr-sync-detail')?.textContent).toBe(
       'Some data in this browser is still waiting to sync to your Dropbox. Your data is safe in this browser meanwhile.',
     );
+  });
+
+  it.each([
+    ['not-saved-on-device', false], // the mirror landed, then another tab logged off (Codex)
+    ['saved', true], // the marker stayed over a device copy its release could not read
+  ] as const)('Settings says nothing of data in this browser when the session is %s and the marker %s (lead A1 step d re-check)', (status, pending) => {
+    sync.status = status;
+    sync.pending = pending;
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('safe in this browser');
   });
 
   it('Settings says nothing of data waiting in this browser when the device write failed (lead A1 step d review)', () => {
@@ -207,8 +220,13 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(only('local').container.innerHTML).toBe('');
     cleanup();
     sync.pending = true;
+    sync.status = 'not-saved-on-device';
     only('dropbox');
     expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
+    cleanup();
+    sync.status = 'saved'; // a marker with no landed device write this session
+    only('dropbox');
+    expect(state()?.textContent).toBe('Not synced yet.');
     cleanup();
     sync.pending = false;
     sync.status = 'saving';

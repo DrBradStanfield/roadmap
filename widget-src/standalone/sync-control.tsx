@@ -82,12 +82,13 @@ const NOT_SYNCED_ON_DEVICE = 'Not synced yet. Your changes are on this device.';
 const NOT_SYNCED = 'Not synced yet.';
 const SYNCED_TO = (provider: string) => `Synced to ${provider}`;
 
-/** The device copy holds the unsynced changes: a failed save's device write
- *  landed, or an earlier session left its marker. The marker alone never says
- *  so, since it is set before that write (US-09 AC4), and never while a save
- *  runs, which may run over a failed, unmirrored write. */
+/** The device copy holds the unsynced changes: this session's failed save
+ *  wrote its device copy, and the marker still stands (another tab's log-off
+ *  deletes both). The marker alone never says so: it is set before that write
+ *  (US-09 AC4), and it outlives a save that lands when its release cannot read
+ *  the device copy (a newer app's, or corrupt). */
 const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
-  status === 'not-saved-on-device' || (pendingSync && status === 'saved');
+  pendingSync && status === 'not-saved-on-device';
 
 /** US-09 AC30: the title line's words, from the real storage state (storageState's
  *  three, the session's save status and the device marker), so they never claim
@@ -97,13 +98,14 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
   if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
   // Status, not a call to action (Brad 2026-11-09). A marker set while the
-  // session is saved is an earlier session's: the next load lifts it. On a
+  // session is saved stands over a device copy its release could not read, or
+  // another tab's write: not synced, and nothing claimed of the device. On a
   // phone a retry over a set marker keeps the problem shown, in words true
   // whatever the device holds (F3).
   const provider = PROVIDERS[backend].label;
   if (facts.status === 'saving') return problemsOnly && facts.pendingSync ? NOT_SYNCED : SAVING_TO(provider);
   if (deviceHolds(facts)) return NOT_SYNCED_ON_DEVICE;
-  return facts.status === 'not-saved' ? NOT_SYNCED : SYNCED_TO(provider);
+  return facts.status === 'saved' && !facts.pendingSync ? SYNCED_TO(provider) : NOT_SYNCED;
 }
 
 /** One reconnect at a time across the bar and the panel (both mount the hook). */

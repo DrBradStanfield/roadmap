@@ -32,10 +32,10 @@ vi.mock('./connect', () => ({
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 
-import { StorageBar } from './sync-control';
+import { StorageBar, SyncControl } from './sync-control';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
-import { isSyncPending, markSyncPending } from '../src/storage/web-record-host';
+import { isSyncPending, markSyncPending, PENDING_MIRROR_KEY } from '../src/storage/web-record-host';
 
 /** A cloud whose writes can fail or be held, counting each one tried. */
 class TestCloud extends MemoryAdapter {
@@ -51,6 +51,12 @@ class TestCloud extends MemoryAdapter {
 }
 
 const line = () => document.querySelector('.hr-storage-state')?.textContent;
+/** Settings' "still waiting to sync … safe in this browser" line, as a remount shows it. */
+const settingsDetail = () => {
+  cleanup();
+  render(<SyncControl backend="dropbox" />);
+  return document.querySelector('.hr-sync-detail')?.textContent ?? null;
+};
 const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const add = (value: number, day: string) => act(async () => { await addMeasurement('weight', value, day); });
 
@@ -154,14 +160,45 @@ describe('US-09 AC30: the storage line says what the session knows (lead A1 step
     expect(cloud.writes).toBe(1);
     expect(isSyncPending()).toBe(true);
     expect(line()).toBe('Not synced yet.');
+
+    // Re-check of lead A1 step d: a retry lands in the cloud, but the marker stays
+    // (the device copy cannot be read to release it). The change is not on the device.
+    cloud.failing = false;
+    await add(81, '2026-06-02');
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(cloud.writes).toBe(2);
+    expect(isSyncPending()).toBe(true);
+    expect(line()).toBe('Not synced yet.');
+    expect(settingsDetail()).toBeNull();
   });
 
-  it('a marker an earlier session left, which this session cannot lift yet (a newer app wrote the device copy), shows the not-synced words while the session is saved', async () => {
+  // Re-check of lead A1 step d (Codex): another tab logs off after this tab's failed,
+  // mirrored save, deleting the device copy and the marker.
+  it('a mirrored failed save whose device copy and marker another tab then deleted says "Not synced yet." alone, and Settings says nothing', async () => {
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    vi.useFakeTimers();
+    render(<StorageBar backend="dropbox" />);
+    cloud.failing = true;
+    await add(80, '2026-06-01');
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(line()).toBe('Not synced yet. Your changes are on this device.');
+
+    localStorage.removeItem('health_roadmap_file_v2'); // tab B logs off this device
+    localStorage.removeItem(PENDING_MIRROR_KEY);
+    cleanup();
+    render(<StorageBar backend="dropbox" />);
+    expect(line()).toBe('Not synced yet.');
+    expect(settingsDetail()).toBeNull();
+  });
+
+  it('a marker this session cannot lift (a newer app wrote the device copy) says "Not synced yet." alone while the session is saved, and Settings says nothing', async () => {
     new LocalStorageAdapter().writeSync(ROADMAP_FILE_NAME, { schemaVersion: 9999 }, null);
     markSyncPending();
     const cloud = new TestCloud(new MemoryCloud());
     await initRoadmapStore(cloud);
     render(<StorageBar backend="dropbox" />);
-    expect(line()).toBe('Not synced yet. Your changes are on this device.');
+    expect(line()).toBe('Not synced yet.');
+    expect(settingsDetail()).toBeNull();
   });
 });
