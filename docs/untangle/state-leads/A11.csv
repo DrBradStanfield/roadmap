@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A11,erase,"Off-file clear owed after an erase taken in: check what a reload leaves; privacy class, detail private until traced",lead,"not started, unverified","Adversary on PR 1374, 2026-11-12; record-session.ts open(); detail in the owner's notes",,yes

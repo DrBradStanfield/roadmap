@@ -109,11 +109,18 @@ extension HealthEngine {
         try await callAsync("cloudFlush", []) == "saved"
     }
 
-    /// Close the session. With `copyDown`, merge the cloud record onto the phone
-    /// first; true only when that copy happened. No open session (an open still in
-    /// flight, or none) copies nothing, and says so (review F6).
+    /// What `cloudClose` did (ios/engine/cloud.ts): `none`, no open session (an open still in
+    /// flight, or none), so nothing to copy (review F6); `closed`, closed without a copy down;
+    /// `copied`, the cloud record was merged onto the phone; `unreachable`, the cloud could not be
+    /// read for it. A cloud switch stops on `unreachable` and never on `none` (US-25 AC11n).
+    enum CloudClose: String {
+        case none, closed, copied, unreachable
+    }
+
+    /// Close the session. With `copyDown`, merge the cloud record onto the phone first.
+    /// An answer this build does not know reads as `unreachable`: no copy is claimed.
     @discardableResult
-    func cloudClose(copyDown: Bool) async throws -> Bool {
-        try await callAsync("cloudClose", [copyDown]) == "copied"
+    func cloudClose(copyDown: Bool) async throws -> CloudClose {
+        CloudClose(rawValue: try await callAsync("cloudClose", [copyDown])) ?? .unreachable
     }
 }

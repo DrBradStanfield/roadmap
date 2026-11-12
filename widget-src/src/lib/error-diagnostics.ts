@@ -21,6 +21,7 @@ type RecordFailure =
   | 'Chat stream line was not JSON'
   | 'Chat stream ended without an answer'
   | 'Pre-erase teardown failed'
+  | 'Record upkeep failed'
   | 'Erase failed'
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
