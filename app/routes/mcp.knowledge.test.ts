@@ -246,7 +246,8 @@ describe('US-41 AC7 — search_knowledge: masters first, capped, the notice on e
     const results = (await call(await connect(), 'search_knowledge', { query: 'potassium supplements' })).structuredContent!.results as Array<Record<string, any>>;
     expect(results[0]).toMatchObject({ handle: 'potassium-benefits-forms-dosing-and-side-effects', master: true });
     expect(results[0].excerpt.length).toBeGreaterThan(MAX_EXCERPT_CHARS);
-    expect(results[0].excerpt).toMatch(/Talk to your doctor before taking added potassium if you have kidney disease, .*ACE inhibitor.*\(Brad's current guidance, 6 Oct 2026\)\.$/);
+    // The view's closing caution (wording changes with each rebuild): an ACE inhibitor warning, cited to Brad.
+    expect(results[0].excerpt).toMatch(/ACE inhibitor[^.]*\(Brad's current guidance, \d{1,2} [A-Z][a-z]{2} \d{4}\)\.$/);
   });
 
   // US-50 AC13 (R5): the master excerpt cap must hold every served view whole, so none is cut silently.
