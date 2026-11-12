@@ -1,6 +1,7 @@
 // A scrub that throws sends nothing (US-09 AC7i). The SDK's own report about
 // a fault in its pipeline (hint `data.__sentry__`) is marked by reference and
-// rebuilt at the transport from a fixed allow-list; its breadcrumb is dropped. Plain ESM shared by the widget (sentry.ts) and the server
+// rebuilt at the transport from a fixed allow-list; its breadcrumb is dropped.
+// Plain ESM shared by the widget (sentry.ts) and the server
 // (instrument.server.mjs, which is `node --import`-ed with no build step).
 
 const selfReports = new WeakSet();
