@@ -8,6 +8,7 @@ import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
@@ -86,11 +87,11 @@ export function getShownErase(): string {
 export const askedUnder = getShownErase;
 /** Whether the record is still at the erase `asked` names, and the page still
  *  shows it. Whole identities, never epochs: a merge can move the identity
- *  within one epoch (US-16 AC2a). The record half refuses while an erase still
- *  writes, since the erase swaps the copy before it flushes; the shown half
- *  covers the gap between the record moving and the screen showing it. */
+ *  within one epoch (US-16 AC2a). The record half refuses while this tab's
+ *  erase runs, from its confirm (lead A6); the shown half covers the gap
+ *  between the record moving and the screen showing it. */
 export function stillShown(asked: string): boolean {
-  return asked === getEraseIdentity() && asked === getShownErase();
+  return asked === getEraseIdentity() && asked === getShownErase() && !store?.refuses(asked);
 }
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
@@ -105,6 +106,12 @@ export function markEraseShown(identity: string): void {
 /** Where the record lives, as the usage counters name it (US-34). */
 export function getBackendKind(): 'local' | 'cloud' {
   return store && store.backendId !== 'local' ? 'cloud' : 'local';
+}
+
+/** The open record's save status, for the storage line as it mounts; it then
+ *  follows SAVE_STATUS_EVENT (US-09 AC30). Saved while no record is open. */
+export function currentSaveStatus(): SaveStatus {
+  return store?.saveStatus ?? 'saved';
 }
 
 // --- synchronous prefill seed for HealthTool's initial inputs state ---

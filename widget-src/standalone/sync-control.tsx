@@ -11,7 +11,9 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
+import { currentSaveStatus } from '../src/lib/roadmap-data';
+import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
@@ -28,20 +30,24 @@ const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 /** The same, for this page's life, in case storage throws. */
 let storageCtaSeen = false;
 
-/** "Still waiting to sync": driven by the store's pending-sync marker, set by a
- *  failed cloud save or a failed connect-time lift and cleared by the next
- *  successful cloud save. The store fires SYNC_PENDING_EVENT on every flip, so
- *  this is true only while data is genuinely unsynced; no polling. */
-function usePendingSync(backend: Backend): boolean {
-  const [pendingSync, setPendingSync] = useState(false);
+/** What a connected record's save is doing: the session's save status (US-09
+ *  AC30), and the store's pending-sync marker ("still waiting to sync"), set by
+ *  a failed cloud save or a failed connect-time lift and cleared by the next
+ *  successful cloud save. Each fires its event on every change; no polling. */
+interface SaveFacts { status: SaveStatus; pendingSync: boolean }
+const readSaveFacts = (): SaveFacts => ({ status: currentSaveStatus(), pendingSync: isSyncPending() });
+function useSaveFacts(backend: Backend): SaveFacts {
+  // Read at mount, so the first frame never says a false Synced.
+  const [facts, setFacts] = useState<SaveFacts>(() => (backend === 'local' ? { status: 'saved', pendingSync: false } : readSaveFacts()));
   useEffect(() => {
     if (backend === 'local') return;
-    const check = () => setPendingSync(isSyncPending());
+    const check = () => setFacts(readSaveFacts());
     check();
-    window.addEventListener(SYNC_PENDING_EVENT, check);
-    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+    const events = [SYNC_PENDING_EVENT, SAVE_STATUS_EVENT];
+    for (const name of events) window.addEventListener(name, check);
+    return () => { for (const name of events) window.removeEventListener(name, check); };
   }, [backend]);
-  return pendingSync;
+  return facts;
 }
 
 /** US-01 AC5: said while this browser's storage refused the record's last
@@ -69,15 +75,37 @@ export function LocalSaveAlert({ backend }: { backend: Backend }) {
   return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
 }
 
+/** US-09 AC30: a connected record's save words (lead A1 step d, owner 2026-11-12),
+ *  as the iPhone says them (SyncStatusText.swift). */
+const SAVING_TO = (provider: string) => `Saving to ${provider}…`;
+const NOT_SYNCED_ON_DEVICE = 'Not synced yet. Your changes are on this device.';
+const NOT_SYNCED = 'Not synced yet.';
+const SYNCED_TO = (provider: string) => `Synced to ${provider}`;
+
+/** The device copy holds the unsynced changes: this session's failed save
+ *  wrote its device copy, and the marker still stands (another tab's log-off
+ *  deletes both). The marker alone never says so: it is set before that write
+ *  (US-09 AC4), and it outlives a save that lands when its release cannot read
+ *  the device copy (a newer app's, or corrupt). */
+const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
+  pendingSync && status === 'not-saved-on-device';
+
 /** US-09 AC30: the title line's words, from the real storage state (storageState's
- *  three, plus pending sync), so they never claim what is not true. A reconnect
- *  session runs on 'local', so it is asked first. */
-function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
+ *  three, the session's save status and the device marker), so they never claim
+ *  what is not true. A reconnect session runs on 'local', so it is asked first. */
+function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, facts: SaveFacts, problemsOnly: boolean): string {
   // Only Drive can re-auth in place; the others only try the read again, as the panel says.
   if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
-  // Status, not a call to action (Brad 2026-11-09).
-  return pendingSync ? 'Saving…' : `Synced to ${PROVIDERS[backend].label}`;
+  // Status, not a call to action (Brad 2026-11-09). A marker set while the
+  // session is saved stands over a device copy its release could not read, or
+  // another tab's write: not synced, and nothing claimed of the device. On a
+  // phone a retry over a set marker keeps the problem shown, in words true
+  // whatever the device holds (F3).
+  const provider = PROVIDERS[backend].label;
+  if (facts.status === 'saving') return problemsOnly && facts.pendingSync ? NOT_SYNCED : SAVING_TO(provider);
+  if (deviceHolds(facts)) return NOT_SYNCED_ON_DEVICE;
+  return facts.status === 'saved' && !facts.pendingSync ? SYNCED_TO(provider) : NOT_SYNCED;
 }
 
 /** One reconnect at a time across the bar and the panel (both mount the hook). */
@@ -124,13 +152,14 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  (AC13). A connected record's state is text: the storage card's provider link opens the
  *  picker. On a phone (US-62 AC34) Account draws no Sign in here, since the storage card's
  *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
- *  reconnect or a waiting save needs saying. */
+ *  reconnect or a change not synced needs saying: never for a save that runs, which would
+ *  flash on every edit burst, unless the marker is set: then "Not synced yet." (owner, 2026-11-12). */
 export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
-  const pendingSync = usePendingSync(backend);
+  const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
   const { busy, error, reconnectNow } = useReconnect(reconnect);
-  if (problemsOnly && !reconnect && !pendingSync) return null;
-  const label = storageBarLabel(backend, reconnect, pendingSync);
+  const label = storageBarLabel(backend, reconnect, facts, problemsOnly);
+  if (problemsOnly && !reconnect && label !== NOT_SYNCED_ON_DEVICE && label !== NOT_SYNCED) return null;
   return (
     <>
       {reconnect || (backend === 'local' && !isMobile) ? (
@@ -178,7 +207,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
 
-  const pendingSync = usePendingSync(backend);
+  const facts = useSaveFacts(backend);
 
   // Forget the unreachable connection (no copy-down needed — this session
   // already runs on the device copy; the cloud file stays put).
@@ -238,10 +267,10 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
             {provider}
           </button>
         </span>
-        {pendingSync && (
+        {deviceHolds(facts) && (
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            It will upload automatically. Your data is safe in this browser meanwhile.
+            Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>

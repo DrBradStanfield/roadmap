@@ -7,8 +7,10 @@
  */
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
-const sync = vi.hoisted(() => ({ pending: false, popup: vi.fn(async () => {}) }));
+const sync = vi.hoisted(() => ({ pending: false, status: 'saved' as 'saved' | 'saving' | 'not-saved' | 'not-saved-on-device', popup: vi.fn(async () => {}) }));
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status }));
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class { connectViaPopup = sync.popup; },
   GitHubAdapter: class {},
@@ -16,6 +18,7 @@ vi.mock('../src/storage', () => ({
   isSyncPending: () => sync.pending,
   markSyncPending: vi.fn(),
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  SAVE_STATUS_EVENT: 'hr:save-status',
   gisReady: () => true,
   preloadGis: () => undefined,
 }));
@@ -47,7 +50,7 @@ beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
   HTMLDialogElement.prototype.close = vi.fn();
 });
-afterEach(() => { cleanup(); sync.pending = false; sync.popup.mockClear(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); sync.pending = false; sync.status = 'saved'; sync.popup.mockClear(); vi.unstubAllGlobals(); });
 
 type Cloud = Exclude<Backend, 'local'>;
 /** The bar as app.tsx mounts it, beside the plan's SyncControl, which hosts the picker. */
@@ -86,10 +89,93 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     },
   );
 
-  it('connected with changes still waiting, it says Saving… and goes back once they land', () => {
-    sync.pending = true;
+  // Lead A1 step d (owner, 2026-11-12): the session's save status and the device marker, eight rows.
+  // The on-device words need both this session's landed device write and the marker (re-check).
+  it.each([
+    ['saving', false, 'Saving to Dropbox…'],
+    ['saving', true, 'Saving to Dropbox…'],
+    ['not-saved-on-device', true, 'Not synced yet. Your changes are on this device.'],
+    ['not-saved-on-device', false, 'Not synced yet.'], // another tab logged off: device copy and marker gone (Codex)
+    ['not-saved', true, 'Not synced yet.'], // marker set, device write failed (a full disk, a newer device file)
+    ['not-saved', false, 'Not synced yet.'],
+    ['saved', true, 'Not synced yet.'], // a device copy the marker's release cannot read, or another tab's write waiting
+    ['saved', false, 'Synced to Dropbox'],
+  ] as const)('session %s, device marker %s: "%s"', (status, pending, words) => {
+    sync.status = status;
+    sync.pending = pending;
     mount('dropbox');
-    expect(state()?.textContent).toBe('Saving…');
+    expect(state()?.textContent).toBe(words);
+  });
+
+  it('Settings says what waits on this device, and promises no upload nothing yet retries (lead A1 step d)', () => {
+    sync.pending = true;
+    sync.status = 'not-saved-on-device';
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')?.textContent).toBe(
+      'Some data in this browser is still waiting to sync to your Dropbox. Your data is safe in this browser meanwhile.',
+    );
+  });
+
+  it.each([
+    ['not-saved-on-device', false], // the mirror landed, then another tab logged off (Codex)
+    ['saved', true], // the marker stayed over a device copy its release could not read
+  ] as const)('Settings says nothing of data in this browser when the session is %s and the marker %s (lead A1 step d re-check)', (status, pending) => {
+    sync.status = status;
+    sync.pending = pending;
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('safe in this browser');
+  });
+
+  it('Settings says nothing of data waiting in this browser when the device write failed (lead A1 step d review)', () => {
+    sync.pending = true;
+    sync.status = 'not-saved';
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('in this browser');
+    cleanup();
+    sync.status = 'not-saved-on-device';
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')?.textContent).toBe(
+      'Some data in this browser is still waiting to sync to your Dropbox. Your data is safe in this browser meanwhile.',
+    );
+  });
+
+  it('Settings claims nothing while a retry runs over a failed, unmirrored write (lead A1 step d review)', () => {
+    sync.pending = true; // the marker landed; the device write did not
+    sync.status = 'not-saved';
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    sync.status = 'saving'; // an edit: the retry runs
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('safe in this browser');
+  });
+
+  it('the first frame already says what the session knows, never a false Synced (F4)', () => {
+    sync.status = 'saving';
+    expect(renderToStaticMarkup(<StorageBar backend="dropbox" />)).toContain('Saving to Dropbox…');
+    sync.status = 'not-saved-on-device';
+    sync.pending = true;
+    expect(renderToStaticMarkup(<StorageBar backend="dropbox" />)).toContain('Not synced yet. Your changes are on this device.');
+  });
+
+  it('follows the save status event and the marker event, with no polling', () => {
+    mount('dropbox');
+    sync.status = 'saving';
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    sync.status = 'not-saved';
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Not synced yet.');
+    sync.pending = true;
+    act(() => { window.dispatchEvent(new Event('hr:sync-pending')); });
+    expect(state()?.textContent).toBe('Not synced yet.'); // the marker alone: the device write may have failed
+    sync.status = 'not-saved-on-device';
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
+    sync.status = 'saved';
     sync.pending = false;
     act(() => { window.dispatchEvent(new Event('hr:sync-pending')); });
     expect(state()?.textContent).toBe('Synced to Dropbox');
@@ -127,7 +213,7 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(bar().textContent).toBe('Sign in to Google again');
   });
 
-  it('problemsOnly (atop My health) draws nothing while all is well, Saving… while a save waits, and the reconnect', () => {
+  it('problemsOnly (atop My health) draws nothing while all is well or a save runs over no marker, the not-synced words, and the reconnect', () => {
     asPhone();
     const only = (backend: Backend, reconnect?: Cloud) => render(<StorageBar backend={backend} reconnect={reconnect} problemsOnly />);
     expect(only('dropbox').container.innerHTML).toBe('');
@@ -135,10 +221,28 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(only('local').container.innerHTML).toBe('');
     cleanup();
     sync.pending = true;
+    sync.status = 'not-saved-on-device';
     only('dropbox');
-    expect(state()?.textContent).toBe('Saving…');
+    expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
+    cleanup();
+    sync.status = 'saved'; // a marker with no landed device write this session
+    only('dropbox');
+    expect(state()?.textContent).toBe('Not synced yet.');
     cleanup();
     sync.pending = false;
+    sync.status = 'saving';
+    expect(only('dropbox').container.innerHTML).toBe(''); // no flash on every edit burst (owner, 2026-11-12)
+    cleanup();
+    sync.pending = true; // saving over a marker: the problem stays shown while the retry runs, in words true whatever the device holds (F3)
+    only('dropbox');
+    expect(state()?.textContent).toBe('Not synced yet.');
+    cleanup();
+    sync.pending = false;
+    sync.status = 'not-saved';
+    only('dropbox');
+    expect(state()?.textContent).toBe('Not synced yet.');
+    cleanup();
+    sync.status = 'saved';
     only('local', 'dropbox');
     expect(bar().textContent).toBe('Retry');
   });

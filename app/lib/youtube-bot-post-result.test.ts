@@ -63,7 +63,8 @@ describe('US-27 AC5 (Q3, R1): 401, 429 and the quota and rate-limit reasons are 
 
 describe('US-27 AC5 (c): one tick posts until an account-wide refusal or the second unreadable 400', () => {
   const open = (n: number): Posting => ({ kind: 'open', unreadable400s: n });
-  const halted: Posting = { kind: 'halted' };
+  const accountWide: Posting = { kind: 'halted', reason: 'accountWide' };
+  const unreadable: Posting = { kind: 'halted', reason: 'unreadable400' };
   const table: Array<[Posting, Sent, Posting]> = [
     [open(0), 'posted', open(0)],
     [open(0), 'unknown', open(0)],
@@ -71,13 +72,17 @@ describe('US-27 AC5 (c): one tick posts until an account-wide refusal or the sec
     [open(0), 'unknown400', open(1)],
     [open(1), 'posted', open(1)],
     [open(1), 'unknown', open(1)],
-    [open(1), 'unknown400', halted],
-    [open(0), 'halt', halted],
-    [open(1), 'halt', halted],
-    [halted, 'posted', halted],
+    [open(1), 'unknown400', unreadable],
+    [open(0), 'halt', accountWide],
+    [open(1), 'halt', accountWide],
+    [accountWide, 'posted', accountWide],
+    // A halted tick stays halted with its first reason (N2).
+    [unreadable, 'halt', unreadable],
+    [accountWide, 'unknown400', accountWide],
   ];
   for (const [from, sent, want] of table) {
     it(`${JSON.stringify(from)} + ${sent}`, () => expect(nextPosting(from, sent)).toEqual(want));
   }
   it('a tick starts open with none seen', () => expect(OPEN_POSTING).toEqual(open(0)));
+  it('OPEN_POSTING is frozen, so no edit leaks across ticks', () => expect(Object.isFrozen(OPEN_POSTING)).toBe(true));
 });

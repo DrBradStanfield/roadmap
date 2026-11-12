@@ -66,7 +66,8 @@ export async function postClaimed(
   if (result.kind === 'unknown') {
     // An unreadable 400 may hide a refusal of every post, so it alerts (C15 b).
     const unreadable400 = result.why === 'unreadable' && result.status === 400;
-    Sentry.captureMessage('YouTube bot: post outcome unknown', {
+    // Its own fixed message, so Sentry groups it apart from the warning-level unknowns and alerts on it (N1).
+    Sentry.captureMessage(unreadable400 ? 'YouTube bot: post outcome unknown (unreadable 400)' : 'YouTube bot: post outcome unknown', {
       level: unreadable400 ? 'error' : 'warning',
       // The status tells an unreadable 2xx from an unreadable 400 (N2); a shape-checked number only.
       tags: { feature: 'youtube-bot', subsystem: 'post', why: result.why,
