@@ -14,7 +14,7 @@
     "packages/health-core/src/mcp-import.ts": 959,
     "packages/health-core/src/merge.ts": 893,
     "ios/scripts/app-store-video-compose.swift": 882,
-    "app/routes/api.chat.ts": 829,
+    "app/routes/api.chat.ts": 814,
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 786,

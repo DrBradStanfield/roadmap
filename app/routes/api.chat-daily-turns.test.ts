@@ -18,6 +18,8 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: vi.fn(async () => null),
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
+// The turn claim's store (US-15 AC63): absent here, so its client never warns about missing env.
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/supabase.server', () => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) query[method] = () => query;
