@@ -135,6 +135,46 @@ describe('US-09 AC47: Google Drive refreshes once per page and sign-in', () => {
   });
 });
 
+describe('US-09 AC47: a refused flight answers every caller who joined it', () => {
+  it('Drive, 400 unauthorized_client: one post, both callers get nothing, and the tokens are kept', async () => {
+    seedDrive();
+    const net = network(DRIVE.exchangeUrl, () => json({ error: 'unauthorized_client' }, 400));
+    const refresh = new GoogleDriveAdapter(DRIVE).tryServerRefresh();
+    const reminder = new GoogleDriveAdapter(DRIVE).getReminderIdToken();
+    await flush();
+    net.release();
+    expect([await refresh, await reminder]).toEqual([false, null]);
+    expect(net.tokenPosts()).toBe(1);
+    expect(driveTokens()).toMatchObject({ accessToken: 'test-token-old', refreshToken: 'test-refresh-a' });
+  });
+
+  it('Drive, 400 invalid_grant: one post, both callers get false, and the tokens are cleared', async () => {
+    seedDrive();
+    const net = network(DRIVE.exchangeUrl, () => json({ error: 'invalid_grant' }, 400));
+    const one = new GoogleDriveAdapter(DRIVE).tryServerRefresh();
+    const two = new GoogleDriveAdapter(DRIVE).tryServerRefresh();
+    await flush();
+    net.release();
+    expect([await one, await two]).toEqual([false, false]);
+    expect(net.tokenPosts()).toBe(1);
+    expect(local.has(DRIVE_TOKENS)).toBe(false);
+  });
+
+  it('Dropbox, a refused refresh: one post, and both callers throw', async () => {
+    seedDropbox();
+    const net = network(DROPBOX_TOKEN_URL, () => json({ error: 'invalid_grant' }, 400));
+    const one = new DropboxAdapter(DROPBOX).accountEmail();
+    const two = new DropboxAdapter(DROPBOX).accountEmail();
+    one.catch(() => undefined);
+    two.catch(() => undefined);
+    await flush();
+    net.release();
+    await expect(one).rejects.toThrow('Dropbox token refresh failed (400)');
+    await expect(two).rejects.toThrow('Dropbox token refresh failed (400)');
+    expect(net.tokenPosts()).toBe(1);
+  });
+});
+
 describe('US-09 AC47: Google Drive forgets a sign-in only on invalid_grant', () => {
   it('a 400 invalid_grant clears the tokens; the refresh is "none"', async () => {
     seedDrive();

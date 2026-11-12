@@ -1,8 +1,8 @@
 /**
  * US-09 AC47: a server misconfiguration answers 502, so browsers keep their
- * Google Drive sign-in. Google answers a wrong client secret with 401
- * `invalid_client`; passed through, every browser read that as a refused
- * grant. Every other refusal still passes through with its status, and no
+ * Google Drive sign-in. Google answers a wrong client secret with
+ * `invalid_client` at a 4xx status; passed through, every browser read that
+ * as a refused grant. Every other refusal still passes through with its status, and no
  * line is logged. Synthetic Google; no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,8 +29,8 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('US-09 AC47: the Google token exchange', () => {
-  it('maps Google\'s 401 invalid_client to 502, without the description', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'invalid_client', error_description: 'Unauthorized' }, { status: 401 })));
+  it.each([401, 400])('maps Google\'s %s invalid_client to 502, without the description', async (status) => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'invalid_client', error_description: 'Unauthorized' }, { status })));
     const res = await action({ request: refreshRequest('203.0.113.70') } as never);
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: 'exchange_failed', errorDescription: 'server_misconfigured' });
@@ -40,7 +40,6 @@ describe('US-09 AC47: the Google token exchange', () => {
   it.each([
     [400, 'invalid_grant'],
     [401, 'unauthorized_client'],
-    [400, 'invalid_client'],
     [403, 'access_denied'],
   ])('passes a %s %s through as it did', async (status, error) => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error, error_description: 'test description' }, { status })));
