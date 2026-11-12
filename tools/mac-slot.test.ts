@@ -17,7 +17,7 @@ echo "$l"
 `;
 
 let dir: string, fake: string, home: string;
-// Every child is spawned detached, so it leads its own process group; afterEach ends the groups.
+// Every background child is spawned detached, so it leads its own process group; afterEach ends the groups.
 const kids: { p: ChildProcess; done: Promise<number> }[] = [];
 const track = (p: ChildProcess) => {
   const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
@@ -27,11 +27,13 @@ const track = (p: ChildProcess) => {
 const setLoads = (...l: string[]) => writeFileSync(join(fake, 'loads'), `${l.join('\n')}\n`);
 // A minimal environment: nothing of the caller's (no MAC_SLOT_*, no CI, no node_modules/.bin on PATH) reaches
 // the script, which needs only the system tools (lockf, perl, awk, sed, pgrep, ps, sysctl, /usr/bin/time).
+// Children run detached, so a Ctrl-C of vitest does not reach them: the load wait defaults to 60 s, not the
+// script's 10 min, so a waiter orphaned before afterEach ends soon. Tests that need a bound set their own.
 const SYSTEM_PATH = '/usr/bin:/bin:/usr/sbin:/sbin';
 const env = (extra: Record<string, string> = {}): Record<string, string> => ({
   PATH: SYSTEM_PATH, HOME: process.env.HOME ?? '', TMPDIR: tmpdir(),
   FAKE: fake, MAC_SLOT_HOME: home, MAC_SLOT_LOAD_CMD: join(fake, 'load'), MAC_SLOT_POLL_SECONDS: '1',
-  MAC_SLOT_CODEX_MAX: '2', MAC_SLOT_TESTS_MAX: '3', ...extra,
+  MAC_SLOT_LOAD_WAIT_SECONDS: '60', MAC_SLOT_CODEX_MAX: '2', MAC_SLOT_TESTS_MAX: '3', ...extra,
 });
 // A holder that runs until its release file appears, then exits with `code`. It also gives up (exit 99) when its
 // folder goes or after 120 s, so one orphaned by a hard vitest kill cannot loop forever.
@@ -377,7 +379,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
   // R4 (PR 1427 review): a marker is live only while its waiter holds the kernel lock on it (fd 7). A pid can be
   // reused, and a marker left by a SIGKILL or a reboot names one; on 220c9803c ahead() judged by `kill -0`, so a
   // stale marker naming any live pid queued every caller of that kind behind it, with no limit.
-  const sleeper = () => { const s = spawn('sleep', ['300'], { detached: true }); track(s); return s.pid ?? 0; };
+  const sleeper = () => { const s = spawn('sleep', ['60'], { detached: true }); track(s); return s.pid ?? 0; };
   const waiting = (kind: string) => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith(`waiting.${kind}.`)) : []);
   it('a stale marker naming a live unrelated pid does not hold up a caller (R4)', () => {
     mkdirSync(home, { recursive: true });
@@ -508,14 +510,15 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
   // Modelled on T22 in ios/scripts/sim-run.test.ts: the first test leaves a grandchild that names its folder
   // (a shell the command forked, outside afterEach's direct children), then fails; the second checks, after
   // afterEach, that nothing names that folder. vitest flips the first result after afterEach, so the check
-  // lives in the next test.
+  // lives in the next test. The grandchild stops by itself after about 30 s (never by its folder, which the old
+  // afterEach removed, so the pin would pass vacuously), so a regression this catches leaves no endless process.
   describe('a test that fails mid-run leaves nothing behind', () => {
     const left = { dir: '', ready: false };
     const named = () => spawnSync('ps', ['-axo', 'command='], { encoding: 'utf8' }).stdout
       .split('\n').filter((l) => left.dir && l.includes(left.dir));
     it.fails('(fails on purpose) a test fails while a holder and its grandchild run', async () => {
       left.dir = dir;
-      bg('tests', ['sh', '-c', `sh -c 'while :; do sleep 0.2; done; : ${dir}' & echo started > "${fake}/g.log"; wait`]);
+      bg('tests', ['sh', '-c', `sh -c 'while [ $((n += 1)) -le 150 ]; do sleep 0.2; done; : ${dir}' & echo started > "${fake}/g.log"; wait`]);
       await until(() => started('g'));
       await until(() => named().length >= 2);
       left.ready = true;
