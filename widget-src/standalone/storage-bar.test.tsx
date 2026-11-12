@@ -113,12 +113,17 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     );
   });
 
-  it('Settings never says the data is safe in this browser when the device write failed (lead A1 step d review)', () => {
+  it('Settings says nothing of data waiting in this browser when the device write failed (lead A1 step d review)', () => {
     sync.pending = true;
     sync.status = 'not-saved';
     mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('in this browser');
+    cleanup();
+    sync.status = 'not-saved-on-device';
+    mount('dropbox');
     expect(document.querySelector('.hr-sync-detail')?.textContent).toBe(
-      'Some data in this browser is still waiting to sync to your Dropbox.',
+      'Some data in this browser is still waiting to sync to your Dropbox. Your data is safe in this browser meanwhile.',
     );
   });
 
@@ -197,9 +202,9 @@ describe('US-62 AC34 — the bar on a phone', () => {
     sync.status = 'saving';
     expect(only('dropbox').container.innerHTML).toBe(''); // no flash on every edit burst (owner, 2026-11-12)
     cleanup();
-    sync.pending = true; // saving over a marker: a standing problem stays shown while the retry runs (F3)
+    sync.pending = true; // saving over a marker: the problem stays shown while the retry runs, in words true whatever the device holds (F3)
     only('dropbox');
-    expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
+    expect(state()?.textContent).toBe('Not synced yet.');
     cleanup();
     sync.pending = false;
     sync.status = 'not-saved';

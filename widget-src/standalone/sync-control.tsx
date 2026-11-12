@@ -97,9 +97,10 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
   if (backend === 'local') return 'Sign in';
   // Status, not a call to action (Brad 2026-11-09). A marker set while the
   // session is saved is an earlier session's: the next load lifts it. On a
-  // phone a retry over a set marker keeps the standing problem shown (F3).
+  // phone a retry over a set marker keeps the problem shown, in words true
+  // whatever the device holds (F3).
   const provider = PROVIDERS[backend].label;
-  if (facts.status === 'saving') return problemsOnly && facts.pendingSync ? NOT_SYNCED_ON_DEVICE : SAVING_TO(provider);
+  if (facts.status === 'saving') return problemsOnly && facts.pendingSync ? NOT_SYNCED : SAVING_TO(provider);
   if (deviceHolds(facts)) return NOT_SYNCED_ON_DEVICE;
   return facts.status === 'not-saved' ? NOT_SYNCED : SYNCED_TO(provider);
 }
@@ -147,7 +148,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  picker. On a phone (US-62 AC34) Account draws no Sign in here, since the storage card's
  *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
  *  reconnect or a change not synced needs saying: never for a save that runs, which would
- *  flash on every edit burst, unless the device already holds unsynced changes (owner, 2026-11-12). */
+ *  flash on every edit burst, unless the marker is set: then "Not synced yet." (owner, 2026-11-12). */
 export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
   const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
@@ -261,10 +262,10 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
             {provider}
           </button>
         </span>
-        {facts.pendingSync && (
+        {deviceHolds(facts) && (
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            {deviceHolds(facts) && ' Your data is safe in this browser meanwhile.'}
+            Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>
