@@ -79,10 +79,8 @@ function resolveStories(text) {
     }
     const all = [...sides[0], ...sides[1]];
     if (i < lines.length && all.some(indexId) && all.every((l) => l === '' || indexId(l))) {
-      // git moves a blank line both sides share out of the block; put one back between them when it did.
-      const [ours, theirs] = sides;
-      const gap = ours.length && theirs.length && ours.at(-1) !== '' && theirs[0] !== '' && (out.at(-1) === '' || lines[i + 1] === '');
-      out.push(...ours, ...(gap ? [''] : []), ...theirs);
+      // diff3 blocks are untrimmed: each side holds exactly the lines its PR added, blanks included.
+      out.push(...all);
       continue;
     }
     if (i >= lines.length || all.length === 0 || !all.every((l) => acKey(l))) return { fail: 'is not only added "- AC" lines' };
@@ -276,8 +274,9 @@ function main() {
       // refresh then did not, and it failed: "fatal: stash failed" (US-64 AC20). Ignoring ctime is safe here: the
       // clean-tree check above trusts ctime (an edit that kept its mtime, as `touch -r` or `cp -p` can, still
       // shows), and after it only git writes the tree.
-      // --no-commit: every merge, clean or not, is checked below before it commits.
-      git('-c', 'core.trustctime=false', 'merge', '--no-ff', '--no-commit', sha);
+      // --no-commit: every merge, clean or not, is checked below before it commits. diff3: git's default style
+      // moves lines both sides added (a shared blank) out of a block, so its sides would not be each PR's own.
+      git('-c', 'core.trustctime=false', '-c', 'merge.conflictStyle=diff3', 'merge', '--no-ff', '--no-commit', sha);
     } catch (err) {
       mergeErr = String(err.stderr || err.message).trim();
     }
