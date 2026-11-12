@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A19,web sync,"The erase and upload report sites still report a WritesStoppedError: decide whether they should, as the record save, document write and chat saves do not",lead,not started,"widget-src/src/hooks/useErase.ts:121 reports 'Erase failed' and widget-src/src/hooks/useUploadFlow.ts:353 and :386 report 'Upload save failed' for any error, a WritesStoppedError (error-diagnostics.ts, US-09 AC2c) included. Raised in the A15 review, 2026-11-13",,no
