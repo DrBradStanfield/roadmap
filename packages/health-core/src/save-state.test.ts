@@ -182,6 +182,16 @@ describe('save-state transition table (A1, A6)', () => {
     expect(run(waiting(5, 5), [EVENTS.began, EVENTS.aborted])).toEqual({ state: waiting(5, 5), effects: [CANCEL, ARM] });
   });
 
+  it('lead A10 (US-10 AC5a): a pass landing after a sync write keeps what the sync write recorded and asks for no extra pass', () => {
+    // a sync write landed every change (saved 5) while the pass from change 3 ran
+    expect(transition(saving(5, 5, 3), { type: 'passLanded', from: 3 })).toEqual({ state: clean(5), effects: [] });
+    // the normal path is unchanged: a pass from above `saved` still advances it
+    expect(transition(saving(5, 2, 5), { type: 'passLanded', from: 5 })).toEqual({ state: clean(5), effects: [] });
+    expect(transition(saving(7, 2, 5), { type: 'passLanded', from: 5 })).toEqual({ state: saving(7, 5, 7), effects: [pass(7)] });
+    // an edit after the sync write still asks for one more pass, from the sync write's count up
+    expect(transition(saving(6, 5, 3), { type: 'passLanded', from: 3 })).toEqual({ state: saving(6, 5, 6), effects: [pass(6)] });
+  });
+
   it('mirrored (US-09 AC30): only a write that holds every change marks a failed pass, so an older write never vouches for a newer failure', () => {
     // pass A failed at change 6; an edit and pass B failed at 7 before A's device write landed
     const b = run(failed(6, 4), [EVENTS.edited, EVENTS.save, EVENTS.failed]).state;
