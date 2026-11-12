@@ -144,8 +144,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const remaining = ipQuota.remaining(getClientIp(request, 'shopify'));
-  return Response.json({ allowed: remaining > 0, remaining });
+  const ip = getClientIp(request, 'shopify');
+  return Response.json({ allowed: !daySpent(ip), remaining: ipQuota.remaining(ip) });
 }
 
 /** POST: batch poll, single-file extraction, or batch creation. */

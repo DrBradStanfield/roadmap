@@ -403,7 +403,7 @@ describe('US-12 AC25: the same files sent again while their batch runs join it, 
     const left = await remaining();
     const refused = await post({ batch: true, files: twoFiles });
     expect(refused.status).toBe(429);
-    expect(await refused.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
+    expect(await refused.json()).toEqual({ success: false, error: 'Server busy. Please try again later.', code: 'busy' });
     expect(creates()).toBe(1);
     expect(await remaining()).toBe(left);
   });
@@ -444,10 +444,10 @@ describe('US-12 AC25: the same files sent again while their batch runs join it, 
       const { machineFiles } = await import('../lib/rate-limiter');
       machineFiles.take('machine', machineFiles.remaining('machine'));
     }
-    if (which === 'IP') expect((await (await loader({ request: request({}, undefined, true, IP, 'GET') } as never)).json()).allowed).toBe(false);
+    expect((await (await loader({ request: request({}, undefined, true, IP, 'GET') } as never)).json()).allowed).toBe(false);
     const again = await post({ batch: true, files: twoFiles });
     expect(again.status).toBe(429);
-    expect(await again.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    expect(await again.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' });
     expect((await pollWith(first.batchId, first.pollToken)).status).toBe(200);
     expect(creates()).toBe(which === 'IP' ? 2 : 1);
   });
