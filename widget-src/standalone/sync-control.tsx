@@ -21,7 +21,7 @@ import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
-import { safeGetItem, safeSetItem } from '../src/lib/storage';
+import { healthWritesStopped, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
@@ -240,10 +240,12 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
           {drive ? (busy ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
-          Your record is safe in your {label}.{' '}
-          {drive
-            ? 'Sign in again to keep it in step. Anything you change meanwhile is kept in this browser and merges when you reconnect.'
-            : `Anything you change now is kept in this browser and merges as soon as ${label} answers again.`}
+          Your record is safe in your {label}.
+          {/* A page whose device writes stopped keeps nothing in this browser. */}
+          {drive && ' Sign in again to keep it in step.'}
+          {!healthWritesStopped() && (drive
+            ? ' Anything you change meanwhile is kept in this browser and merges when you reconnect.'
+            : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
         <div className="hr-sync-more">
           <button type="button" className="hr-sync-link" onClick={() => void forgetProvider(reconnect)}>Use this browser only</button>
