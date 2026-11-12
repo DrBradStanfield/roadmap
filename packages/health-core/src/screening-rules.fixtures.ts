@@ -167,7 +167,16 @@ function colonoscopyFixtures(): Fixture[] {
       fx(`${tag(monthsAgo(41))}@${OVERDUE}`, { ...done(monthsAgo(41)), colorectalFollowupDate: OVERDUE }),
       fx(`${tag(monthsAgo(41))}@${OVERDUE},years=2`, { ...done(monthsAgo(41)), colorectalFollowupDate: OVERDUE, colorectalFollowupIntervalYears: 2 }),
     ];
-  });
+  }).concat(
+    // A newer abnormal last screening starts the follow-up again (US-07 AC1j, Brad 2026-11-12): read as not organised,
+    // an older engine's or a merge's leftover answers ignored; the same month never.
+    fx(`colonoscopy:colonoscopy_10yr,last=${RECENT},abnormal,fu=completed@${OVERDUE},years=5,reopened`,
+      { colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: RECENT, colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: OVERDUE, colorectalFollowupIntervalYears: 5 }),
+    fx(`colonoscopy:fit_annual,last=${RECENT},abnormal,fu=scheduled@${OVERDUE},reopened`,
+      { colorectalMethod: 'fit_annual', colorectalLastDate: RECENT, colorectalResult: 'abnormal', colorectalFollowupStatus: 'scheduled', colorectalFollowupDate: OVERDUE }),
+    fx(`colonoscopy:other,last=${FU_DONE},abnormal,fu=completed@${FU_DONE},same-month`,
+      { colorectalMethod: 'other', colorectalLastDate: FU_DONE, colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: FU_DONE }),
+  );
 }
 
 /** Every answer fixture, by screening type. */

@@ -2,7 +2,7 @@ import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, Medicat
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
-import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
+import { colonoscopyCard, liveColorectal, monthLabel } from './colonoscopy-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -923,10 +923,10 @@ export function generateSuggestions(
       else pushDue(r, lastDate, method);
     }
 
-    if (ruleTakes(COLORECTAL, COLORECTAL.cardAges, age, sex)) {
+    if (ruleTakes(COLORECTAL, COLORECTAL.cardAges, age, sex)) { // a newer abnormal screening reopens the follow-up: no status (US-07 AC1j)
       if (notStarted(COLORECTAL, screenings.colorectalMethod)) pushStart(COLORECTAL, 'attention');
       else if (screenings.colorectalLastDate) pushStarted(COLORECTAL, screenings.colorectalMethod!, screenings.colorectalLastDate,
-        screenings.colorectalResult, screenings.colorectalFollowupStatus, screenings.colorectalFollowupDate);
+        screenings.colorectalResult, liveColorectal(screenings).colorectalFollowupStatus, screenings.colorectalFollowupDate);
     }
 
     if (ruleTakes(BREAST, BREAST.cardAges, age, sex)) {

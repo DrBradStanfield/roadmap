@@ -61,6 +61,9 @@ const done = (method: Method, date?: string, years?: number): ScreeningInputs =>
   colorectalMethod: method, colorectalLastDate: '2025-01', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed',
   ...(date === undefined ? {} : { colorectalFollowupDate: date }), ...(years === undefined ? {} : { colorectalFollowupIntervalYears: years }),
 });
+/** The same, its abnormal screening in 2019, before a colonoscopy dated earlier than done()'s 2025-01: a last screening
+ *  later than the colonoscopy starts the follow-up again (US-07 AC1j, Brad 2026-11-12; screening-colonoscopy-reopen.test.ts). */
+const doneEarly = (method: Method, date?: string, years?: number): ScreeningInputs => ({ ...done(method, date, years), colorectalLastDate: '2019-06' });
 const card = (title: string, priority: string, description: string) =>
   [expect.objectContaining({ id: 'screening-colorectal-followup', category: 'screening', priority, title, description })];
 
@@ -93,7 +96,7 @@ describe('US-07 AC1j: the trigger table, row by row, on every colorectal method 
   });
 
   it.each(METHODS)('%s: C, dated with no follow-up time, overdue (attention)', (method) => {
-    expect(plan(done(method, '2023-01'))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Jan 2026')));
+    expect(plan(doneEarly(method, '2023-01'))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Jan 2026')));
   });
 
   it.each(METHODS)('%s: D, the report\'s follow-up time, not yet due: 1, 3 and 10 years on (info)', (method) => {
@@ -104,12 +107,12 @@ describe('US-07 AC1j: the trigger table, row by row, on every colorectal method 
 
   it.each(METHODS)('%s: E, the report\'s follow-up time, overdue (attention), counted once from the colonoscopy', (method) => {
     expect(plan(done(method, '2025-06', 1))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Jun 2026')));
-    expect(plan(done(method, '2020-01', 5))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Jan 2025')));
+    expect(plan(doneEarly(method, '2020-01', 5))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Jan 2025')));
   });
 
   it('due this month is overdue, as the other follow-up cards count it', () => {
-    expect(plan(done('fit_annual', '2023-11'))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Nov 2026')));
-    expect(plan(done('fit_annual', '2023-12'))).toEqual(card(B_TITLE, 'info', B_TEXT.replace('{due}', 'Dec 2026')));
+    expect(plan(doneEarly('fit_annual', '2023-11'))).toEqual(card(C_TITLE, 'attention', C_TEXT.replace('{due}', 'Nov 2026')));
+    expect(plan(doneEarly('fit_annual', '2023-12'))).toEqual(card(B_TITLE, 'info', B_TEXT.replace('{due}', 'Dec 2026')));
   });
 
   it('a leftover follow-up time is ignored while the parent gate is closed (an older engine never cleared it)', () => {
@@ -178,7 +181,7 @@ describe('US-07 AC1j: reminders', () => {
     expect(due(done(method, '2026-06', 1))?.dueAt).toBe('2027-06-01');
     expect(due(done(method, '2025-06', 3))?.dueAt).toBe('2028-06-01');
     expect(due(done(method, '2025-06', 10))?.dueAt).toBe('2035-06-01');
-    expect(due(done(method, '2020-01', 5))?.dueAt).toBe('2025-01-01');
+    expect(due(doneEarly(method, '2020-01', 5))?.dueAt).toBe('2025-01-01');
   });
 });
 

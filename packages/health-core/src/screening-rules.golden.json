@@ -3,7 +3,7 @@
   "now": "2026-10-01T12:00:00.000Z",
   "edgeNow": "2026-09-30T12:00:00.000Z",
   "tz": "Pacific/Auckland",
-  "cases": 2333
+  "cases": 2336
  },
  "constants": {
   "SCREENING_MIN_AGE": {
@@ -377,43 +377,60 @@
   }
  },
  "writes": {
+  "colorectal | blank": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
+  "colorectal | colorectal:not_yet_started": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
   "colorectal | colorectal:not_yet_started,stale last+abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:no-method,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
+  "colorectal | colorectal:fit_annual,no-date": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -422,7 +439,8 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -440,35 +458,44 @@
    "colorectal_followup_status=": "clear colorectal_followup_date",
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
+  "colorectal | colorectal:colonoscopy_10yr,no-date": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -477,7 +504,8 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -495,35 +523,44 @@
    "colorectal_followup_status=": "clear colorectal_followup_date",
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
+  "colorectal | colorectal:other,no-date": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
   "colorectal | colorectal:other,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status"
+   "colorectal_result=awaiting": "clear colorectal_followup_status",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -532,7 +569,8 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -552,7 +590,8 @@
   },
   "colorectal | all-answered": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   },
   "breast | breast:not_yet_started,stale last+abnormal": {
    "breast_frequency=": "clear breast_last_date breast_result",
@@ -1649,6 +1688,9 @@
    "dexa_screening=": "clear dexa_last_date dexa_result",
    "dexa_screening=not_yet_started": "clear dexa_last_date dexa_result"
   },
+  "colonoscopy | blank": {
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
   "colonoscopy | colonoscopy:fit_annual,last=2026-04,abnormal,fu=completed,undated": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -1680,6 +1722,7 @@
   "colonoscopy | colonoscopy:fit_annual,last=2023-05,abnormal,fu=completed@2023-06": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
@@ -1691,6 +1734,7 @@
    "colorectal_method=colonoscopy_10yr": "clear colorectal_followup_interval_years",
    "colorectal_method=other": "clear colorectal_followup_interval_years",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
@@ -1729,6 +1773,7 @@
   "colonoscopy | colonoscopy:colonoscopy_10yr,last=2023-05,abnormal,fu=completed@2023-06": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
@@ -1740,6 +1785,7 @@
    "colorectal_method=fit_annual": "clear colorectal_followup_interval_years",
    "colorectal_method=other": "clear colorectal_followup_interval_years",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
@@ -1778,6 +1824,7 @@
   "colonoscopy | colonoscopy:other,last=2023-05,abnormal,fu=completed@2023-06": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
@@ -1789,6 +1836,7 @@
    "colorectal_method=fit_annual": "clear colorectal_followup_interval_years",
    "colorectal_method=colonoscopy_10yr": "clear colorectal_followup_interval_years",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
@@ -1796,9 +1844,45 @@
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_followup_status=scheduled": "clear colorectal_followup_interval_years"
   },
+  "colonoscopy | colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,reopened": {
+   "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_method=fit_annual": "clear colorectal_followup_interval_years",
+   "colorectal_method=other": "clear colorectal_followup_interval_years",
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=abnormal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_followup_status=": "clear colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_followup_status=scheduled": "clear colorectal_followup_interval_years"
+  },
+  "colonoscopy | colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,reopened": {
+   "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_result=abnormal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
+   "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_followup_status=": "clear colorectal_followup_date",
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+  },
+  "colonoscopy | colonoscopy:other,last=2026-07,abnormal,fu=completed@2026-07,same-month": {
+   "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
+   "colorectal_result=": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
+   "colorectal_followup_status=": "clear colorectal_followup_date",
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
+  },
   "colonoscopy | all-answered": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
+   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
   }
  },
  "cards": {
@@ -3717,149 +3801,175 @@
   ],
   "G246": [
    "# colorectal | Colorectal",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"5\"}"
+  ],
+  "G247": [
+   "# colorectal | Colorectal",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"2023-06\",\"when\":\"future\"}"
+  ],
+  "G248": [
+   "# colorectal | Colorectal",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
+  ],
+  "G249": [
+   "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G247": [
+  "G250": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G248": [
+  "G251": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2016-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G249": [
+  "G252": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2016-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G250": [
+  "G253": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2016-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G251": [
+  "G254": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G252": [
+  "G255": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G253": [
+  "G256": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G254": [
+  "G257": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G255": [
+  "G258": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G256": [
+  "G259": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G257": [
+  "G260": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2024-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G258": [
+  "G261": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2024-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G259": [
+  "G262": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
    "{\"kind\":\"month\",\"key\":\"breast_last_date\",\"label\":\"Date of last mammogram\",\"value\":\"2024-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"breast_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G260": [
+  "G263": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2021-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G261": [
+  "G264": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2021-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G262": [
+  "G265": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2021-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G263": [
+  "G266": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G264": [
+  "G267": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G265": [
+  "G268": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G266": [
+  "G269": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G267": [
+  "G270": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G268": [
+  "G271": [
    "# cervical | Cervical",
    "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G269": [
+  "G272": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -3867,7 +3977,7 @@
    "{\"kind\":\"month\",\"key\":\"lung_last_date\",\"label\":\"Date of last low-dose CT\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"lung_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G270": [
+  "G273": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -3875,7 +3985,7 @@
    "{\"kind\":\"month\",\"key\":\"lung_last_date\",\"label\":\"Date of last low-dose CT\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"lung_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G271": [
+  "G274": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -3883,82 +3993,82 @@
    "{\"kind\":\"month\",\"key\":\"lung_last_date\",\"label\":\"Date of last low-dose CT\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"lung_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
-  "G272": [
+  "G275": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2021-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"normal\"}"
   ],
-  "G273": [
+  "G276": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2021-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"normal\"}"
   ],
-  "G274": [
+  "G277": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2021-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"normal\"}"
   ],
-  "G275": [
-   "# dexa | ",
-   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
-  ],
-  "G276": [
-   "# dexa | ",
-   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-10\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
-  ],
-  "G277": [
-   "# dexa | ",
-   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-09\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
-  ],
   "G278": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
   ],
   "G279": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-10\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
   ],
   "G280": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-09\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteopenia\"}"
   ],
   "G281": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G282": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-10\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G283": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-09\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G284": [
+   "# dexa | ",
+   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-11\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+  ],
+  "G285": [
+   "# dexa | ",
+   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-10\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+  ],
+  "G286": [
+   "# dexa | ",
+   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2024-09\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"\"}"
+  ],
+  "G287": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
@@ -3967,7 +4077,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G285": [
+  "G288": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
@@ -3976,7 +4086,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G286": [
+  "G289": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
@@ -3985,7 +4095,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G287": [
+  "G290": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
@@ -3994,7 +4104,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G288": [
+  "G291": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
@@ -4003,7 +4113,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G289": [
+  "G292": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"colonoscopy_10yr\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
@@ -4012,7 +4122,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G290": [
+  "G293": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
@@ -4021,7 +4131,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G291": [
+  "G294": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
@@ -4030,7 +4140,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G292": [
+  "G295": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"other\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
@@ -4039,7 +4149,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
-  "G293": [
+  "G296": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
@@ -4048,7 +4158,7 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2025-11\",\"when\":\"past\"}"
   ],
-  "G294": [
+  "G297": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
@@ -4057,7 +4167,7 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2025-10\",\"when\":\"past\"}"
   ],
-  "G295": [
+  "G298": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"annual\"}",
@@ -4066,7 +4176,7 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
   ],
-  "G296": [
+  "G299": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
@@ -4075,7 +4185,7 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2024-11\",\"when\":\"past\"}"
   ],
-  "G297": [
+  "G300": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
@@ -4084,7 +4194,7 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2024-10\",\"when\":\"past\"}"
   ],
-  "G298": [
+  "G301": [
    "# breast | Breast",
    "note: Annual mammograms are recommended at your age (45–54).",
    "{\"kind\":\"choice\",\"key\":\"breast_frequency\",\"label\":\"Screening frequency\",\"options\":\"SCREENING_OPTIONS.breast_frequency\",\"value\":\"biennial\"}",
@@ -4093,33 +4203,9 @@
    "{\"kind\":\"choice\",\"key\":\"breast_followup_status\",\"label\":\"Diagnostic imaging/biopsy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"breast_followup_date\",\"label\":\"When was the diagnostic imaging/biopsy completed?\",\"value\":\"2024-09\",\"when\":\"past\"}"
   ],
-  "G299": [
-   "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-11\",\"when\":\"past\"}"
-  ],
-  "G300": [
-   "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-10\",\"when\":\"past\"}"
-  ],
-  "G301": [
-   "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
-   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
-  ],
   "G302": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
@@ -4127,7 +4213,7 @@
   ],
   "G303": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
@@ -4135,7 +4221,7 @@
   ],
   "G304": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"hpv_every_5yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
@@ -4143,7 +4229,7 @@
   ],
   "G305": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
@@ -4151,7 +4237,7 @@
   ],
   "G306": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
@@ -4159,13 +4245,37 @@
   ],
   "G307": [
    "# cervical | Cervical",
-   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"pap_every_3yr\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
   ],
   "G308": [
+   "# cervical | Cervical",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-11\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-11\",\"when\":\"past\"}"
+  ],
+  "G309": [
+   "# cervical | Cervical",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-10\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-10\",\"when\":\"past\"}"
+  ],
+  "G310": [
+   "# cervical | Cervical",
+   "{\"kind\":\"choice\",\"key\":\"cervical_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.cervical_method\",\"value\":\"other\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"cervical_followup_status\",\"label\":\"Colposcopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
+   "{\"kind\":\"month\",\"key\":\"cervical_followup_date\",\"label\":\"When was the colposcopy completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
+  ],
+  "G311": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -4175,7 +4285,7 @@
    "{\"kind\":\"choice\",\"key\":\"lung_followup_status\",\"label\":\"Follow-up imaging status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"lung_followup_date\",\"label\":\"When was the follow-up imaging completed?\",\"value\":\"2025-11\",\"when\":\"past\"}"
   ],
-  "G309": [
+  "G312": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -4185,7 +4295,7 @@
    "{\"kind\":\"choice\",\"key\":\"lung_followup_status\",\"label\":\"Follow-up imaging status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"lung_followup_date\",\"label\":\"When was the follow-up imaging completed?\",\"value\":\"2025-10\",\"when\":\"past\"}"
   ],
-  "G310": [
+  "G313": [
    "# lung | Lung",
    "{\"kind\":\"choice\",\"key\":\"lung_smoking_history\",\"label\":\"Smoking history\",\"options\":\"SCREENING_OPTIONS.lung_smoking_history\",\"value\":\"former_smoker\"}",
    "{\"kind\":\"number\",\"key\":\"lung_pack_years\",\"label\":\"Pack-years (packs/day × years smoked)\",\"hint\":\"Screening recommended if ≥20 pack-years\",\"value\":\"25\",\"min\":0,\"max\":200}",
@@ -4195,7 +4305,7 @@
    "{\"kind\":\"choice\",\"key\":\"lung_followup_status\",\"label\":\"Follow-up imaging status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"lung_followup_date\",\"label\":\"When was the follow-up imaging completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
   ],
-  "G311": [
+  "G314": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2025-11\",\"when\":\"past\"}",
@@ -4203,7 +4313,7 @@
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When was the treatment review completed?\",\"value\":\"2025-11\",\"when\":\"past\"}"
   ],
-  "G312": [
+  "G315": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2025-10\",\"when\":\"past\"}",
@@ -4211,7 +4321,7 @@
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When was the treatment review completed?\",\"value\":\"2025-10\",\"when\":\"past\"}"
   ],
-  "G313": [
+  "G316": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2025-09\",\"when\":\"past\"}",
@@ -4219,40 +4329,17 @@
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When was the treatment review completed?\",\"value\":\"2025-09\",\"when\":\"past\"}"
   ],
-  "G314": [
-   "# colorectal | Colorectal",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
-  ],
-  "G315": [
-   "# colorectal | Colorectal",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
-   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
-  ],
-  "G316": [
-   "# dexa | ",
-   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-11\",\"when\":\"past\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
-   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
-  ],
   "G317": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G318": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4260,7 +4347,7 @@
   "G319": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4268,14 +4355,14 @@
   "G320": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G321": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4283,7 +4370,7 @@
   "G322": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4291,14 +4378,14 @@
   "G323": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-08\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G324": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-08\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4306,7 +4393,7 @@
   "G325": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-08\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4314,14 +4401,14 @@
   "G326": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-08\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G327": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-08\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4329,7 +4416,7 @@
   "G328": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-08\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4337,14 +4424,14 @@
   "G329": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
   ],
   "G330": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4352,7 +4439,7 @@
   "G331": [
    "# dexa | ",
    "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
-   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-07\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
    "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
    "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
@@ -4360,10 +4447,33 @@
   "G332": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"\"}"
+  ],
+  "G333": [
+   "# colorectal | Colorectal",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+  ],
+  "G334": [
+   "# dexa | ",
+   "{\"kind\":\"choice\",\"key\":\"dexa_screening\",\"label\":\"DEXA scan status\",\"options\":\"SCREENING_OPTIONS.dexa_screening\",\"value\":\"dexa_scan\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_last_date\",\"label\":\"Date of last DEXA scan\",\"value\":\"2026-06\",\"when\":\"past\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.dexa_result\",\"value\":\"osteoporosis\"}",
+   "{\"kind\":\"choice\",\"key\":\"dexa_followup_status\",\"label\":\"Treatment review status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
+   "{\"kind\":\"month\",\"key\":\"dexa_followup_date\",\"label\":\"When is the treatment review scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+  ],
+  "G335": [
+   "# colorectal | Colorectal",
+   "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"\"}"
   ],
-  "G333": [
+  "G336": [
    "# colorectal | Colorectal",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
@@ -7977,25 +8087,25 @@
   ],
   "F503": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G022",
+   "G248",
    "G031",
    "G032"
   ],
   "F504": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G248",
+   "G249",
    "G031",
    "G032"
   ],
   "F505": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G249",
+   "G250",
    "G031",
    "G032"
   ],
   "F506": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G250",
+   "G022",
    "G031",
    "G032"
   ],
@@ -8019,33 +8129,21 @@
   ],
   "F510": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G254",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F511": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G255",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F512": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G256",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F513": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8079,15 +8177,33 @@
   ],
   "F516": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G260"
+   "G016",
+   "G260",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F517": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G261"
+   "G016",
+   "G261",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F518": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G262"
+   "G016",
+   "G262",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F519": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8115,51 +8231,33 @@
   ],
   "F525": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G269",
-   "G032"
+   "G269"
   ],
   "F526": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G270",
-   "G032"
+   "G270"
   ],
   "F527": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G271",
-   "G032"
+   "G271"
   ],
   "F528": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
-   "G044",
-   "G001",
-   "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G272"
+   "G272",
+   "G032"
   ],
   "F529": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
-   "G044",
-   "G001",
-   "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G273"
+   "G273",
+   "G032"
   ],
   "F530": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
-   "G044",
-   "G001",
-   "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G274"
+   "G274",
+   "G032"
   ],
   "F531": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8253,21 +8351,33 @@
   ],
   "F540": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G284",
+   "G016",
+   "G044",
+   "G001",
    "G031",
-   "G032"
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G284"
   ],
   "F541": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G285",
+   "G016",
+   "G044",
+   "G001",
    "G031",
-   "G032"
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G285"
   ],
   "F542": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G286",
+   "G016",
+   "G044",
+   "G001",
    "G031",
-   "G032"
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G286"
   ],
   "F543": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8307,33 +8417,21 @@
   ],
   "F549": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G293",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F550": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G294",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F551": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
    "G295",
-   "G001",
    "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G039"
+   "G032"
   ],
   "F552": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8367,15 +8465,33 @@
   ],
   "F555": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G299"
+   "G016",
+   "G299",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F556": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G300"
+   "G016",
+   "G300",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F557": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G301"
+   "G016",
+   "G301",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G039"
   ],
   "F558": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8403,43 +8519,35 @@
   ],
   "F564": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G308",
-   "G032"
+   "G308"
   ],
   "F565": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G309",
-   "G032"
+   "G309"
   ],
   "F566": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G016",
-   "G310",
-   "G032"
+   "G310"
   ],
   "F567": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
-   "G044",
-   "G001",
-   "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G311"
+   "G311",
+   "G032"
   ],
   "F568": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
-   "G044",
-   "G001",
-   "G031",
-   "G024",
-   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G312"
+   "G312",
+   "G032"
   ],
   "F569": [
+   "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
+   "G016",
+   "G313",
+   "G032"
+  ],
+  "F570": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G016",
    "G044",
@@ -8447,19 +8555,17 @@
    "G031",
    "G024",
    "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
-   "G313"
-  ],
-  "F570": [
-   "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G314",
-   "G031",
-   "G032"
+   "G314"
   ],
   "F571": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-   "G315",
+   "G016",
+   "G044",
+   "G001",
    "G031",
-   "G032"
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G315"
   ],
   "F572": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
@@ -8590,6 +8696,28 @@
   "F589": [
    "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
    "G333",
+   "G031",
+   "G032"
+  ],
+  "F590": [
+   "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
+   "G016",
+   "G044",
+   "G001",
+   "G031",
+   "G024",
+   "## bone-density | Bone Density | DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.",
+   "G334"
+  ],
+  "F591": [
+   "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
+   "G335",
+   "G031",
+   "G032"
+  ],
+  "F592": [
+   "## cancer-screening | Cancer Screening | Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
+   "G336",
    "G031",
    "G032"
   ]
@@ -33488,6 +33616,46 @@
    ],
    "form": "F500"
   },
+  "B m60 colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,reopened": {
+   "age": 60,
+   "cards": [
+    "C034",
+    "C013"
+   ],
+   "due": [
+    "screening_colorectal (screening) Colonoscopy 2026-04-01"
+   ],
+   "followups": [
+    "screening_colorectal organize repeat colonoscopy"
+   ],
+   "form": "F501"
+  },
+  "B m60 colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,reopened": {
+   "age": 60,
+   "cards": [
+    "C007",
+    "C013"
+   ],
+   "due": [
+    "screening_colorectal (screening) Colorectal screening 2026-04-01"
+   ],
+   "followups": [
+    "screening_colorectal organize colonoscopy"
+   ],
+   "form": "F502"
+  },
+  "B m60 colonoscopy:other,last=2026-07,abnormal,fu=completed@2026-07,same-month": {
+   "age": 60,
+   "cards": [
+    "C032",
+    "C013"
+   ],
+   "due": [
+    "screening_colorectal (screening) Colorectal screening 2029-07-01",
+    "annual_checkin (annual) Annual health check-in 2027-10-01"
+   ],
+   "form": "F503"
+  },
   "C interval fit_annual=12mo m50 last=2025-11 (11mo ago)": {
    "age": 50,
    "cards": [
@@ -33497,7 +33665,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-11-01"
    ],
-   "form": "F501"
+   "form": "F504"
   },
   "C interval fit_annual=12mo m50 last=2025-10 (12mo ago)": {
    "age": 50,
@@ -33508,7 +33676,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-10-01"
    ],
-   "form": "F502"
+   "form": "F505"
   },
   "C interval fit_annual=12mo m50 last=2025-09 (13mo ago)": {
    "age": 50,
@@ -33519,7 +33687,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
    ],
-   "form": "F503"
+   "form": "F506"
   },
   "C interval colonoscopy_10yr=120mo m50 last=2016-11 (119mo ago)": {
    "age": 50,
@@ -33530,7 +33698,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-11-01"
    ],
-   "form": "F504"
+   "form": "F507"
   },
   "C interval colonoscopy_10yr=120mo m50 last=2016-10 (120mo ago)": {
    "age": 50,
@@ -33541,7 +33709,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-10-01"
    ],
-   "form": "F505"
+   "form": "F508"
   },
   "C interval colonoscopy_10yr=120mo m50 last=2016-09 (121mo ago)": {
    "age": 50,
@@ -33552,7 +33720,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-09-01"
    ],
-   "form": "F506"
+   "form": "F509"
   },
   "C interval other=12mo m50 last=2025-11 (11mo ago)": {
    "age": 50,
@@ -33563,7 +33731,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-11-01"
    ],
-   "form": "F507"
+   "form": "F510"
   },
   "C interval other=12mo m50 last=2025-10 (12mo ago)": {
    "age": 50,
@@ -33574,7 +33742,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-10-01"
    ],
-   "form": "F508"
+   "form": "F511"
   },
   "C interval other=12mo m50 last=2025-09 (13mo ago)": {
    "age": 50,
@@ -33585,7 +33753,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
    ],
-   "form": "F509"
+   "form": "F512"
   },
   "C interval annual=12mo f50 last=2025-11 (11mo ago)": {
    "age": 50,
@@ -33599,7 +33767,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-11-01"
    ],
-   "form": "F510"
+   "form": "F513"
   },
   "C interval annual=12mo f50 last=2025-10 (12mo ago)": {
    "age": 50,
@@ -33613,7 +33781,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-10-01"
    ],
-   "form": "F511"
+   "form": "F514"
   },
   "C interval annual=12mo f50 last=2025-09 (13mo ago)": {
    "age": 50,
@@ -33627,7 +33795,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-09-01"
    ],
-   "form": "F512"
+   "form": "F515"
   },
   "C interval biennial=24mo f50 last=2024-11 (23mo ago)": {
    "age": 50,
@@ -33641,7 +33809,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-11-01"
    ],
-   "form": "F513"
+   "form": "F516"
   },
   "C interval biennial=24mo f50 last=2024-10 (24mo ago)": {
    "age": 50,
@@ -33655,7 +33823,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-10-01"
    ],
-   "form": "F514"
+   "form": "F517"
   },
   "C interval biennial=24mo f50 last=2024-09 (25mo ago)": {
    "age": 50,
@@ -33669,7 +33837,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-09-01"
    ],
-   "form": "F515"
+   "form": "F518"
   },
   "C interval hpv_every_5yr=60mo f30 last=2021-11 (59mo ago)": {
    "age": 30,
@@ -33679,7 +33847,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F516"
+   "form": "F519"
   },
   "C interval hpv_every_5yr=60mo f30 last=2021-10 (60mo ago)": {
    "age": 30,
@@ -33689,7 +33857,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F517"
+   "form": "F520"
   },
   "C interval hpv_every_5yr=60mo f30 last=2021-09 (61mo ago)": {
    "age": 30,
@@ -33699,7 +33867,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F518"
+   "form": "F521"
   },
   "C interval pap_every_3yr=36mo f30 last=2023-11 (35mo ago)": {
    "age": 30,
@@ -33709,7 +33877,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F519"
+   "form": "F522"
   },
   "C interval pap_every_3yr=36mo f30 last=2023-10 (36mo ago)": {
    "age": 30,
@@ -33719,7 +33887,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F520"
+   "form": "F523"
   },
   "C interval pap_every_3yr=36mo f30 last=2023-09 (37mo ago)": {
    "age": 30,
@@ -33729,7 +33897,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F521"
+   "form": "F524"
   },
   "C interval other=12mo f30 last=2025-11 (11mo ago)": {
    "age": 30,
@@ -33739,7 +33907,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F522"
+   "form": "F525"
   },
   "C interval other=12mo f30 last=2025-10 (12mo ago)": {
    "age": 30,
@@ -33749,7 +33917,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F523"
+   "form": "F526"
   },
   "C interval other=12mo f30 last=2025-09 (13mo ago)": {
    "age": 30,
@@ -33759,7 +33927,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F524"
+   "form": "F527"
   },
   "C interval annual_ldct=12mo m60 last=2025-11 (11mo ago)": {
    "age": 60,
@@ -33771,7 +33939,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-11-01"
    ],
-   "form": "F525"
+   "form": "F528"
   },
   "C interval annual_ldct=12mo m60 last=2025-10 (12mo ago)": {
    "age": 60,
@@ -33783,7 +33951,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-10-01"
    ],
-   "form": "F526"
+   "form": "F529"
   },
   "C interval annual_ldct=12mo m60 last=2025-09 (13mo ago)": {
    "age": 60,
@@ -33795,7 +33963,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-09-01"
    ],
-   "form": "F527"
+   "form": "F530"
   },
   "C interval will_screen=12mo m55 last=2025-11 (11mo ago)": {
    "age": 55,
@@ -33842,7 +34010,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
    ],
-   "form": "F528"
+   "form": "F531"
   },
   "C interval dexa_normal=60mo f60 last=2021-10 (60mo ago)": {
    "age": 60,
@@ -33856,7 +34024,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
    ],
-   "form": "F529"
+   "form": "F532"
   },
   "C interval dexa_normal=60mo f60 last=2021-09 (61mo ago)": {
    "age": 60,
@@ -33870,7 +34038,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
    ],
-   "form": "F530"
+   "form": "F533"
   },
   "C interval dexa_osteopenia=24mo f60 last=2024-11 (23mo ago)": {
    "age": 60,
@@ -33884,7 +34052,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
    ],
-   "form": "F531"
+   "form": "F534"
   },
   "C interval dexa_osteopenia=24mo f60 last=2024-10 (24mo ago)": {
    "age": 60,
@@ -33898,7 +34066,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
    ],
-   "form": "F532"
+   "form": "F535"
   },
   "C interval dexa_osteopenia=24mo f60 last=2024-09 (25mo ago)": {
    "age": 60,
@@ -33912,7 +34080,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
    ],
-   "form": "F533"
+   "form": "F536"
   },
   "C interval dexa_scan=24mo f60 last=2024-11 (23mo ago)": {
    "age": 60,
@@ -33929,7 +34097,7 @@
    "followups": [
     "screening_dexa organize treatment review"
    ],
-   "form": "F534"
+   "form": "F537"
   },
   "C interval dexa_scan=24mo f60 last=2024-10 (24mo ago)": {
    "age": 60,
@@ -33946,7 +34114,7 @@
    "followups": [
     "screening_dexa organize treatment review"
    ],
-   "form": "F535"
+   "form": "F538"
   },
   "C interval dexa_scan=24mo f60 last=2024-09 (25mo ago)": {
    "age": 60,
@@ -33963,7 +34131,7 @@
    "followups": [
     "screening_dexa organize treatment review"
    ],
-   "form": "F536"
+   "form": "F539"
   },
   "C interval dexa_scan (no result)=24mo f60 last=2024-11 (23mo ago)": {
    "age": 60,
@@ -33978,7 +34146,7 @@
     "screening_dexa (screening) DEXA bone density scan 2029-11-01",
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F537"
+   "form": "F540"
   },
   "C interval dexa_scan (no result)=24mo f60 last=2024-10 (24mo ago)": {
    "age": 60,
@@ -33993,7 +34161,7 @@
     "screening_dexa (screening) DEXA bone density scan 2029-10-01",
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F538"
+   "form": "F541"
   },
   "C interval dexa_scan (no result)=24mo f60 last=2024-09 (25mo ago)": {
    "age": 60,
@@ -34008,7 +34176,7 @@
     "screening_dexa (screening) DEXA bone density scan 2029-09-01",
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F539"
+   "form": "F542"
   },
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
@@ -34019,7 +34187,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-11-01"
    ],
-   "form": "F540"
+   "form": "F543"
   },
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
@@ -34030,7 +34198,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-10-01"
    ],
-   "form": "F541"
+   "form": "F544"
   },
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
@@ -34041,7 +34209,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
    ],
-   "form": "F542"
+   "form": "F545"
   },
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
@@ -34052,7 +34220,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-11-01"
    ],
-   "form": "F543"
+   "form": "F546"
   },
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
@@ -34063,7 +34231,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-10-01"
    ],
-   "form": "F544"
+   "form": "F547"
   },
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
@@ -34074,7 +34242,7 @@
    "due": [
     "screening_colorectal (screening) Colonoscopy 2026-09-01"
    ],
-   "form": "F545"
+   "form": "F548"
   },
   "C post-followup colorectal_other=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
@@ -34085,7 +34253,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-11-01"
    ],
-   "form": "F546"
+   "form": "F549"
   },
   "C post-followup colorectal_other=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
@@ -34096,7 +34264,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-10-01"
    ],
-   "form": "F547"
+   "form": "F550"
   },
   "C post-followup colorectal_other=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
@@ -34107,7 +34275,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
    ],
-   "form": "F548"
+   "form": "F551"
   },
   "C post-followup breast_annual=12mo f50 fu=2025-11 (11mo ago)": {
    "age": 50,
@@ -34121,7 +34289,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-11-01"
    ],
-   "form": "F549"
+   "form": "F552"
   },
   "C post-followup breast_annual=12mo f50 fu=2025-10 (12mo ago)": {
    "age": 50,
@@ -34135,7 +34303,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-10-01"
    ],
-   "form": "F550"
+   "form": "F553"
   },
   "C post-followup breast_annual=12mo f50 fu=2025-09 (13mo ago)": {
    "age": 50,
@@ -34149,7 +34317,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-09-01"
    ],
-   "form": "F551"
+   "form": "F554"
   },
   "C post-followup breast_biennial=24mo f50 fu=2024-11 (23mo ago)": {
    "age": 50,
@@ -34163,7 +34331,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-11-01"
    ],
-   "form": "F552"
+   "form": "F555"
   },
   "C post-followup breast_biennial=24mo f50 fu=2024-10 (24mo ago)": {
    "age": 50,
@@ -34177,7 +34345,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-10-01"
    ],
-   "form": "F553"
+   "form": "F556"
   },
   "C post-followup breast_biennial=24mo f50 fu=2024-09 (25mo ago)": {
    "age": 50,
@@ -34191,7 +34359,7 @@
    "due": [
     "screening_breast (screening) Mammogram 2026-09-01"
    ],
-   "form": "F554"
+   "form": "F557"
   },
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
@@ -34201,7 +34369,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F555"
+   "form": "F558"
   },
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
@@ -34211,7 +34379,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F556"
+   "form": "F559"
   },
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
@@ -34221,7 +34389,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F557"
+   "form": "F560"
   },
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
@@ -34231,7 +34399,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F558"
+   "form": "F561"
   },
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
@@ -34241,7 +34409,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F559"
+   "form": "F562"
   },
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
@@ -34251,7 +34419,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F560"
+   "form": "F563"
   },
   "C post-followup cervical_other=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
@@ -34261,7 +34429,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
    ],
-   "form": "F561"
+   "form": "F564"
   },
   "C post-followup cervical_other=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
@@ -34271,7 +34439,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
    ],
-   "form": "F562"
+   "form": "F565"
   },
   "C post-followup cervical_other=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
@@ -34281,7 +34449,7 @@
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
    ],
-   "form": "F563"
+   "form": "F566"
   },
   "C post-followup lung_annual_ldct=12mo m60 fu=2025-11 (11mo ago)": {
    "age": 60,
@@ -34293,7 +34461,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-11-01"
    ],
-   "form": "F564"
+   "form": "F567"
   },
   "C post-followup lung_annual_ldct=12mo m60 fu=2025-10 (12mo ago)": {
    "age": 60,
@@ -34305,7 +34473,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-10-01"
    ],
-   "form": "F565"
+   "form": "F568"
   },
   "C post-followup lung_annual_ldct=12mo m60 fu=2025-09 (13mo ago)": {
    "age": 60,
@@ -34317,7 +34485,7 @@
    "due": [
     "screening_lung (screening) Lung screening (low-dose CT) 2026-09-01"
    ],
-   "form": "F566"
+   "form": "F569"
   },
   "C post-followup dexa_dexa_scan=12mo f60 fu=2025-11 (11mo ago)": {
    "age": 60,
@@ -34331,7 +34499,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
    ],
-   "form": "F567"
+   "form": "F570"
   },
   "C post-followup dexa_dexa_scan=12mo f60 fu=2025-10 (12mo ago)": {
    "age": 60,
@@ -34345,7 +34513,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
    ],
-   "form": "F568"
+   "form": "F571"
   },
   "C post-followup dexa_dexa_scan=12mo f60 fu=2025-09 (13mo ago)": {
    "age": 60,
@@ -34359,7 +34527,7 @@
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
    ],
-   "form": "F569"
+   "form": "F572"
   },
   "C followup organize m50 last=2026-11 (-1mo ago)": {
    "age": 50,
@@ -34369,7 +34537,7 @@
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F570"
+   "form": "F573"
   },
   "C followup check-in m50 last=2026-11 (-1mo ago)": {
    "age": 50,
@@ -34379,7 +34547,7 @@
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F571"
+   "form": "F574"
   },
   "C followup dexa check-in f60 last=2026-11 (-1mo ago)": {
    "age": 60,
@@ -34393,7 +34561,7 @@
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F572"
+   "form": "F575"
   },
   "C followup organize m50 last=2026-10 (0mo ago)": {
    "age": 50,
@@ -34407,7 +34575,7 @@
    "followups": [
     "screening_colorectal organize colonoscopy"
    ],
-   "form": "F573"
+   "form": "F576"
   },
   "C followup check-in m50 last=2026-10 (0mo ago)": {
    "age": 50,
@@ -34421,7 +34589,7 @@
    "followups": [
     "screening_colorectal checkin colonoscopy"
    ],
-   "form": "F574"
+   "form": "F577"
   },
   "C followup dexa check-in f60 last=2026-10 (0mo ago)": {
    "age": 60,
@@ -34438,7 +34606,7 @@
    "followups": [
     "screening_dexa checkin treatment review"
    ],
-   "form": "F575"
+   "form": "F578"
   },
   "C followup organize m50 last=2026-09 (1mo ago)": {
    "age": 50,
@@ -34452,7 +34620,7 @@
    "followups": [
     "screening_colorectal organize colonoscopy"
    ],
-   "form": "F576"
+   "form": "F579"
   },
   "C followup check-in m50 last=2026-09 (1mo ago)": {
    "age": 50,
@@ -34466,7 +34634,7 @@
    "followups": [
     "screening_colorectal checkin colonoscopy"
    ],
-   "form": "F577"
+   "form": "F580"
   },
   "C followup dexa check-in f60 last=2026-09 (1mo ago)": {
    "age": 60,
@@ -34483,7 +34651,7 @@
    "followups": [
     "screening_dexa checkin treatment review"
    ],
-   "form": "F578"
+   "form": "F581"
   },
   "C followup organize m50 last=2026-08 (2mo ago)": {
    "age": 50,
@@ -34497,7 +34665,7 @@
    "followups": [
     "screening_colorectal organize colonoscopy"
    ],
-   "form": "F579"
+   "form": "F582"
   },
   "C followup check-in m50 last=2026-08 (2mo ago)": {
    "age": 50,
@@ -34511,7 +34679,7 @@
    "followups": [
     "screening_colorectal checkin colonoscopy"
    ],
-   "form": "F580"
+   "form": "F583"
   },
   "C followup dexa check-in f60 last=2026-08 (2mo ago)": {
    "age": 60,
@@ -34528,7 +34696,7 @@
    "followups": [
     "screening_dexa checkin treatment review"
    ],
-   "form": "F581"
+   "form": "F584"
   },
   "C followup organize m50 last=2026-07 (3mo ago)": {
    "age": 50,
@@ -34542,7 +34710,7 @@
    "followups": [
     "screening_colorectal organize colonoscopy"
    ],
-   "form": "F582"
+   "form": "F585"
   },
   "C followup check-in m50 last=2026-07 (3mo ago)": {
    "age": 50,
@@ -34556,7 +34724,7 @@
    "followups": [
     "screening_colorectal checkin colonoscopy"
    ],
-   "form": "F583"
+   "form": "F586"
   },
   "C followup dexa check-in f60 last=2026-07 (3mo ago)": {
    "age": 60,
@@ -34573,7 +34741,7 @@
    "followups": [
     "screening_dexa checkin treatment review"
    ],
-   "form": "F584"
+   "form": "F587"
   },
   "C followup organize m50 last=2026-06 (4mo ago)": {
    "age": 50,
@@ -34587,7 +34755,7 @@
    "followups": [
     "screening_colorectal organize colonoscopy"
    ],
-   "form": "F585"
+   "form": "F588"
   },
   "C followup check-in m50 last=2026-06 (4mo ago)": {
    "age": 50,
@@ -34601,7 +34769,7 @@
    "followups": [
     "screening_colorectal checkin colonoscopy"
    ],
-   "form": "F586"
+   "form": "F589"
   },
   "C followup dexa check-in f60 last=2026-06 (4mo ago)": {
    "age": 60,
@@ -34618,7 +34786,7 @@
    "followups": [
     "screening_dexa checkin treatment review"
    ],
-   "form": "F587"
+   "form": "F590"
   },
   "D m25 born 2001-9 all-answered": {
    "age": 25,
@@ -36459,7 +36627,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-11-01"
    ],
-   "form": "F501"
+   "form": "F504"
   },
   "D edge-clock m50 fit_annual last=2025-10 (12mo ago)": {
    "age": 50,
@@ -36470,7 +36638,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-10-01"
    ],
-   "form": "F502"
+   "form": "F505"
   },
   "D edge-clock m50 fit_annual last=2025-09 (13mo ago)": {
    "age": 50,
@@ -36481,7 +36649,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
    ],
-   "form": "F503"
+   "form": "F506"
   },
   "D m50 fit_annual last=2026-10 (0mo ago)": {
    "age": 50,
@@ -36492,7 +36660,7 @@
    "due": [
     "screening_colorectal (screening) Colorectal screening 2027-10-01"
    ],
-   "form": "F588"
+   "form": "F591"
   },
   "D m50 fit_annual last=2026-11 (-1mo ago)": {
    "age": 50,
@@ -36502,7 +36670,7 @@
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
-   "form": "F589"
+   "form": "F592"
   }
  }
 }

@@ -38,7 +38,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
-import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
+import { liveColorectal, nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
 
 // ===== Types =====
 
@@ -153,10 +153,12 @@ function screeningSchedule(
   const takes = (r: ScreeningRule) => ruleTakes(r, r.cardAges, age, sex);
 
   // On the colonoscopy schedule (US-07 AC1j) only its date counts, and an undated colonoscopy has none.
-  if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
-    push(COLORECTAL, s.colorectalMethod, onColonoscopySchedule(s) ? nextColonoscopyDue(s) : earliest(
-      getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
-      followupDueDate(COLORECTAL, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
+  // A newer abnormal screening reopens the follow-up: the plan's live answers, its organise reminder.
+  const c = liveColorectal(s);
+  if (takes(COLORECTAL) && c.colorectalMethod && c.colorectalMethod !== 'not_yet_started') {
+    push(COLORECTAL, c.colorectalMethod, onColonoscopySchedule(c) ? nextColonoscopyDue(c) : earliest(
+      getScreeningNextDueDate(c.colorectalLastDate, c.colorectalMethod),
+      followupDueDate(COLORECTAL, c.colorectalResult, c.colorectalFollowupStatus, c.colorectalLastDate),
     ));
   }
 
@@ -364,7 +366,7 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
   const s = fileScreenings(file, now);
   const kinds: Partial<Record<ReminderCategory, { kind: FollowupKind; name: string }>> = {};
   const rows: Array<[ScreeningId, string | undefined, string | undefined, string | undefined, string | undefined]> = [
-    ['colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate],
+    ['colorectal', s.colorectalMethod, s.colorectalResult, liveColorectal(s).colorectalFollowupStatus, s.colorectalLastDate], // reopened: organise (US-07 AC1j)
     ['breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastLastDate],
     ['cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate],
     ['lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungLastDate],

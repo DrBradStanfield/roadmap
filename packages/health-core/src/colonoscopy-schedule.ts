@@ -9,7 +9,7 @@
  * The words are frozen: docs/drafts/screening-change-2b-words-2026-11-12.md.
  */
 import { getPostFollowupDueDate, type ScreeningInputs, type Suggestion } from './types';
-import { opensFollowup, ruleOf } from './screening-rules';
+import { chainKeys, opensFollowup, ruleOf } from './screening-rules';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** A due month as every screening card prints it: "Jul 2029". */
@@ -27,6 +27,32 @@ export function followupIntervalYears(value: string): number | undefined {
   const max = ruleOf('colorectal').followupInterval!.maxYears;
   const n = /^\d{1,2}$/.test(value.trim()) ? Number(value) : NaN;
   return n >= 1 && n <= max ? n : undefined;
+}
+
+/** A date's month (YYYY-MM from YYYY-MM or YYYY-MM-DD), or '' when it names none. */
+const monthOf = (d: string | undefined): string => (/^\d{4}-\d{2}/.test(d ?? '') ? d!.slice(0, 7) : '');
+
+/**
+ * Whether a new abnormal last screening starts the follow-up again (Brad 2026-11-12, US-07 AC1j): "The new
+ * abnormal result starts the follow-up again." The result is abnormal and the last screening's month is later
+ * than the follow-up's. The same month, or a follow-up with no date, never.
+ */
+const reopens = (result: string | undefined, lastDate: string | undefined, followupDate: string | undefined): boolean =>
+  opensFollowup(ruleOf('colorectal'), result) && !!monthOf(followupDate) && monthOf(lastDate) > monthOf(followupDate);
+
+/** The colorectal answers the plan and reminders read: a follow-up a newer abnormal screening started again
+ *  reads as not organised, its old status, date and time ignored (an older engine or a merge can leave them). */
+export const liveColorectal = (s: ScreeningInputs): ScreeningInputs =>
+  reopens(s.colorectalResult, s.colorectalLastDate, s.colorectalFollowupDate)
+    ? { ...s, colorectalFollowupStatus: undefined, colorectalFollowupDate: undefined, colorectalFollowupIntervalYears: undefined } : s;
+
+/** The follow-up answers a colorectal last date or result write clears when it starts the follow-up again:
+ *  status, date and time. screeningWrites writes them always, so the stamped nulls win a merge. */
+export function reopenClears(s: ScreeningInputs, key: string, value: string): string[] {
+  const r = ruleOf('colorectal');
+  if (key !== r.dateKey && key !== r.result!.key) return [];
+  const [last, result] = key === r.dateKey ? [value, s.colorectalResult] : [s.colorectalLastDate, value];
+  return reopens(result, last, s.colorectalFollowupDate) ? chainKeys(r).slice(1) : [];
 }
 
 /** Whether an abnormal result's colonoscopy is done: the person is on the colonoscopy schedule. */

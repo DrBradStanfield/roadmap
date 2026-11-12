@@ -9,6 +9,7 @@
  * Pure: no DOM, no React. Every text below is the web form's own, moved here
  * word for word.
  */
+import { reopenClears } from './colonoscopy-schedule';
 import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
@@ -495,28 +496,27 @@ export function readScreening(scr: ScreeningInputs, key: string): string {
 }
 
 /**
- * What one screening answer writes, in order (the web form's onChange rules):
- * the answer itself, then '' for each later answer it closes, and only for
- * those that hold a value. "Not yet started" closes the date and the result;
- * a result that is not abnormal closes the follow-up; a follow-up not yet
- * organized closes its date; "Never smoked" closes the whole lung chain.
+ * What one screening answer writes, in order (the web form's onChange rules): the answer itself, then '' for each later
+ * answer it closes that holds a value, or always for the follow-up time completed closes and a follow-up a newer abnormal
+ * colorectal screening reopens, so the stamped null wins a merge (US-07 AC1j). "Not yet started" closes the date and the result; a
+ * result that is not abnormal closes the follow-up; a follow-up not yet organized closes its date; "Never smoked" closes the lung chain.
  */
 export function screeningWrites(scr: ScreeningInputs, key: string, value: string): Array<[string, string]> {
   const writes: Array<[string, string]> = [[key, value]];
-  const clear = (...keys: string[]) => { for (const k of keys) if (readScreening(scr, k)) writes.push([k, '']); };
-  const byChoice = SCREENING_RULES.find((r) => r.choice.key === key);
-  const byResult = SCREENING_RULES.find((r) => r.result?.key === key);
+  const clear = (keys: string[], always = false) => { for (const k of keys) if (always || readScreening(scr, k)) writes.push([k, '']); };
+  const byChoice = SCREENING_RULES.find((r) => r.choice.key === key), byResult = SCREENING_RULES.find((r) => r.result?.key === key);
   if (byChoice?.result && byChoice.dateKey) {
     // DEXA closes on any answer but its scan; the cancer rows on "Not yet started" or a clear.
     const closes = byChoice.id === 'dexa' ? value !== onlyMethod(byChoice) : value === byChoice.notStarted || value === '';
-    clear(...(closes ? [byChoice.dateKey, ...chainKeys(byChoice)] : intervalClosedBy(key, value, readScreening(scr, key))));
+    clear(closes ? [byChoice.dateKey, ...chainKeys(byChoice)] : intervalClosedBy(key, value, readScreening(scr, key)));
   } else if (key === 'lung_smoking_history') {
-    if (value === 'never_smoked' || value === '') clear('lung_pack_years', LUNG.choice.key, LUNG.dateKey!, ...chainKeys(LUNG));
+    if (value === 'never_smoked' || value === '') clear(['lung_pack_years', LUNG.choice.key, LUNG.dateKey!, ...chainKeys(LUNG)]);
   } else if (byResult) {
-    if (!opensFollowup(byResult, value)) clear(...chainKeys(byResult).slice(1));
+    if (!opensFollowup(byResult, value)) clear(chainKeys(byResult).slice(1));
   } else if (key.endsWith('_followup_status')) {
-    clear(...(value === 'not_organized' || value === '' ? [`${key.split('_')[0]}_followup_date`] : []), ...intervalClosedBy(key, value, readScreening(scr, key)));
+    clear(value === 'not_organized' || value === '' ? [`${key.split('_')[0]}_followup_date`] : []); clear(intervalClosedBy(key, value, readScreening(scr, key)), value === 'completed');
   }
+  clear(reopenClears(scr, key, value), true);
   return writes;
 }
 
