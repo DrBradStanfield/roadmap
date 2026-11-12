@@ -231,6 +231,8 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(await cloudMedications(cloud)).not.toContain('atorvastatin');
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
     expect(bodyText()).not.toContain('Medication updated from chat.');
+    // The erase it reported has landed and shows: the banner goes.
+    expect(bodyText()).not.toContain(ERASE_IN_PROGRESS);
   });
 
   it('the notice goes at the next question', async () => {
