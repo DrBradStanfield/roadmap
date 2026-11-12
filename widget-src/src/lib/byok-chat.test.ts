@@ -16,7 +16,7 @@ const state = vi.hoisted(() => ({
   store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void>; eraseMarks: () => string[] },
 }));
 
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store), askChatHistory: () => Promise.resolve({ store: state.store, askedMarks: state.store?.eraseMarks() }) }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {
     constructor(readonly code: string, message: string) { super(message); }

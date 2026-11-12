@@ -274,6 +274,158 @@ describe('US-11 AC2h: a new conversation is saved only under the erase marks it 
   });
 });
 
+describe('US-11 AC2h: a refused conversation stays refused in every later save', () => {
+  /** Reads and writes that fail while armed; `during` runs inside the next read. */
+  class Flaky extends MemoryAdapter {
+    failReads = 0;
+    failWrites = 0;
+    during: (() => void) | null = null;
+    async read(name: string, signal?: AbortSignal) {
+      if (this.failReads > 0) { this.failReads--; throw new Error('read failed'); }
+      const answer = await super.read(name, signal);
+      const during = this.during;
+      this.during = null;
+      during?.();
+      return answer;
+    }
+    async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+      if (this.failWrites > 0) { this.failWrites--; throw new Error('upload failed'); }
+      return super.write(name, body, expected, signal);
+    }
+  }
+
+  it('its save failed on the read: a follow-up save does not send it', async () => {
+    const cloud = new MemoryCloud();
+    const store = new Flaky(cloud);
+    const b = await ChatSession.open(cloudHost(store));
+    const asked = b.eraseMarks();
+    await (await open(cloud)).eraseAll();
+    store.failReads = 1;
+    await expect(ask(b, 'late', asked)).rejects.toThrow('read failed');
+    await ask(b, 'late', undefined, false); // a follow-up asked under no marks
+    expect(liveIn(storedOf(cloud))).toEqual([]);
+    expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/question late/);
+    expect(b.listConversations()).toEqual([]);
+  });
+
+  it('its save failed on the read: another conversation\'s save does not send it', async () => {
+    const cloud = new MemoryCloud();
+    const store = new Flaky(cloud);
+    const b = await ChatSession.open(cloudHost(store));
+    const asked = b.eraseMarks();
+    await (await open(cloud)).eraseAll();
+    store.failReads = 1;
+    await expect(ask(b, 'late', asked)).rejects.toThrow('read failed');
+    await ask(b, 'next'); // a save asked under no marks
+    expect(liveIn(storedOf(cloud))).toEqual(['next']);
+  });
+
+  it('a save already on its way when it is asked does not send it', async () => {
+    const cloud = new MemoryCloud();
+    const store = new Flaky(cloud);
+    const b = await ChatSession.open(cloudHost(store));
+    const asked = b.eraseMarks();
+    await (await open(cloud)).eraseAll();
+    let late: Promise<void> | null = null;
+    store.during = () => {
+      late = ask(b, 'late', asked); // lands in this copy while the other save reads
+      store.failReads = 1; // and its own save never reads
+    };
+    await ask(b, 'other');
+    await expect(late!).rejects.toThrow('read failed');
+    expect(liveIn(storedOf(cloud))).toEqual(['other']);
+    expect(cloud.files.get('chat-history.json')!.json).not.toMatch(/question late/);
+  });
+
+  it('a follow-up in a thread the file does not hold is refused under a new mark', async () => {
+    // The website chat: a server thread this copy has not saved (isNew false).
+    const cloud = new MemoryCloud();
+    const b = await open(cloud);
+    const asked = b.eraseMarks();
+    await (await open(cloud)).eraseAll();
+    await ask(b, 'server-thread', asked, false);
+    expect(liveIn(storedOf(cloud))).toEqual([]);
+    expect(b.listConversations()).toEqual([]);
+  });
+
+  it('a follow-up in a thread the file does not hold is saved with no new mark', async () => {
+    const cloud = new MemoryCloud();
+    await (await open(cloud)).eraseAll();
+    const b = await open(cloud);
+    await ask(b, 'server-thread', b.eraseMarks(), false);
+    expect(liveIn(storedOf(cloud))).toEqual(['server-thread']);
+    expect(b.listConversations()).toMatchObject([{ id: 'server-thread', title: 'Chat' }]);
+  });
+
+  it('the refusing save brings the mark in, so the next new conversation is saved', async () => {
+    const cloud = new MemoryCloud();
+    const b = await open(cloud);
+    const asked = b.eraseMarks();
+    await (await open(cloud)).eraseAll();
+    const mark = marksIn(storedOf(cloud))[0].id;
+    await ask(b, 'late', asked);
+    expect(b.eraseMarks()).toEqual([mark]);
+    await ask(b, 'next', b.eraseMarks());
+    expect(liveIn(storedOf(cloud))).toEqual(['next']);
+  });
+
+  it('a refused conversation takes no place under the cap', async () => {
+    const cloud = new MemoryCloud();
+    const b = await open(cloud);
+    const asked = b.eraseMarks();
+    const at = (i: number) => new Date(Date.parse('2026-11-12T09:00:00.000Z') + i * 1000).toISOString();
+    const kept = Array.from({ length: 50 }, (_, i) => ({ id: `kept-${i}`, title: `t${i}`, createdAt: at(i), updatedAt: at(i), messages: [] }));
+    const mark = { id: 'erase:00000000-0000-4000-8000-000000000002', title: '', createdAt: at(0), updatedAt: at(0), deleted: true, messages: [] };
+    await new MemoryAdapter(cloud).write('chat-history.json', {
+      schemaVersion: 1, meta: { createdAt: at(0), updatedAt: at(60), lastDeviceId: 'other', lamport: 5 }, conversations: [mark, ...kept],
+    }, null);
+    await ask(b, 'late', asked);
+    expect(liveIn(storedOf(cloud)).sort()).toEqual(kept.map((c) => c.id).sort());
+  });
+});
+
+describe('US-11 AC2d: an erase removes what the file holds when it is written', () => {
+  it('a conversation only the erase\'s first write saw stays erased after an overwrite', async () => {
+    // Device B saves "from-b" after the erase read the file; the erase's write
+    // tombstones it; a stale copy without it lands on top (Drive). The retry
+    // writes the tombstone again, so B, still holding it live, cannot bring it back.
+    class Raced extends MemoryAdapter {
+      reads = 0;
+      beforeSecondRead: (() => Promise<void>) | null = null;
+      onWrite: (() => Promise<void>) | null = null;
+      async read(name: string, signal?: AbortSignal) {
+        const hook = this.reads++ === 1 ? this.beforeSecondRead : null;
+        if (hook) { this.beforeSecondRead = null; await hook(); }
+        return super.read(name, signal);
+      }
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        const result = await super.write(name, body, expected, signal);
+        const hook = this.onWrite;
+        this.onWrite = null;
+        if (hook) await hook();
+        return result;
+      }
+    }
+    const cloud = new MemoryCloud();
+    const store = new Raced(cloud);
+    const a = await ChatSession.open(cloudHost(store));
+    await ask(a, 'mine');
+    const b = await open(cloud);
+    const stale = structuredClone(storedOf(cloud)) as unknown as ChatHistoryFile;
+    store.reads = 0;
+    store.beforeSecondRead = () => ask(b, 'from-b'); // after the erase read, before its save reads
+    store.onWrite = async () => {
+      const version = cloud.files.get('chat-history.json')!.version;
+      await new MemoryAdapter(cloud).write('chat-history.json', { ...stale, meta: { ...stale.meta, lamport: 999 } }, String(version));
+    };
+    await a.eraseAll();
+    expect(liveIn(storedOf(cloud))).toEqual([]);
+    await ask(b, 'from-b', undefined, false); // B, still holding it live, saves again
+    expect(liveIn(storedOf(cloud))).toEqual([]);
+    expect((await open(cloud)).listConversations()).toEqual([]);
+  });
+});
+
 describe('US-11 AC2h: every reader and merge keeps the marker, deleted', () => {
   const ctx = { deviceId: 'd', now: '2026-11-12T11:00:00.000Z' };
   const at = '2026-11-12T09:00:00.000Z';

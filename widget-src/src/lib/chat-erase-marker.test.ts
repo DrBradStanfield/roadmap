@@ -116,3 +116,41 @@ describe.each([
     expect(await (await deviceA()).list()).toHaveLength(1);
   });
 });
+
+describe.each([
+  ['website chat (chat-api)', sendWebsite],
+  ['Pages chat (byok-chat)', sendPages],
+])('US-11 AC2h: %s, a page whose chat history is already open', (_name, send) => {
+  it('takes the erase marks at once when the question is asked', async () => {
+    const store = (await getChatHistory())!;
+    store.listConversations();
+    const marks = vi.spyOn(store, 'eraseMarks');
+    const sent = send(QUESTION, null, null);
+    expect(marks).toHaveBeenCalledTimes(1); // before the send yields
+    reply.release();
+    await sent;
+  });
+
+  it('a follow-up in a thread this page does not hold is not saved after another device erases', async () => {
+    (await getChatHistory())!.listConversations();
+    const sent = send(QUESTION, 'server-c1', null);
+    await settle();
+    const a = await deviceA();
+    expect((await a.deleteUserData()).success).toBe(true);
+    reply.release();
+    expect((await sent).result?.content).toBe('synthetic answer');
+    await settle();
+    expect(liveInCloud()).toEqual([]);
+    expect(cloud.files.get(CHAT_FILE)!.json).not.toContain(QUESTION);
+    expect((await getChatHistory())!.listConversations()).toEqual([]);
+  });
+
+  it('with no erase, that follow-up is saved', async () => {
+    (await getChatHistory())!.listConversations();
+    const sent = send(QUESTION, 'server-c1', null);
+    reply.release();
+    expect((await sent).error).toBeNull();
+    await settle();
+    expect(liveInCloud()).toHaveLength(1);
+  });
+});

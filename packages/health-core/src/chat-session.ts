@@ -52,21 +52,32 @@ const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   },
 };
 
+/** One save's own step, run on the merged file before the cap and the
+ *  write, on every attempt, so a retry checks what it read again. `remote`
+ *  is the file as that attempt read it. */
+type MergeStep = (merged: ChatHistoryFile, remote: ChatHistoryFile) => void;
+
+/** A save's document: its step runs in every attempt's merge. */
+function steppedDoc(step: MergeStep): DocumentSpec<ChatHistoryFile> {
+  return { ...CHAT_HISTORY_DOC, merge: (local, base, ctx) => mergeWithinCap(local, base, ctx, step) };
+}
+
 /** A delete or an erase is not tolerated loss: re-read after the write, and
  *  write again if another writer put the conversation back. On Drive, which
  *  has no conditional write, nothing else sees that writer (US-11 AC2d).
  *  One spec per save: every attempt merges the same local copy, so the
- *  tombstones an attempt read from the cloud are carried into the next. A
- *  retry would otherwise write a conversation another device deleted back
- *  live, and its verify, which checks only what it wrote, would pass. */
-function checkedDoc(): DocumentSpec<ChatHistoryFile> {
+ *  tombstones an attempt read from the cloud, or its step made, are carried
+ *  into the next. A retry would otherwise write a conversation another device
+ *  deleted back live, or drop one only that attempt read, and its verify,
+ *  which checks only what it wrote, would pass. */
+function checkedDoc(step: MergeStep): DocumentSpec<ChatHistoryFile> {
   let learned: ChatFileConversation[] = [];
   return {
     ...CHAT_HISTORY_DOC,
     verify: true,
     merge: (local, base, ctx) => {
       // The merge folds an id that appears twice, so a tombstone wins here too.
-      const merged = mergeWithinCap({ ...local, conversations: [...local.conversations, ...learned] }, base, ctx);
+      const merged = mergeWithinCap({ ...local, conversations: [...local.conversations, ...learned] }, base, ctx, step);
       learned = merged.conversations.filter((c) => c.deleted);
       return merged;
     },
@@ -87,15 +98,6 @@ function tombstone(conv: ChatFileConversation, now?: string): void {
 const ERASE_MARK = 'erase:';
 const isEraseMark = (c: ChatFileConversation): boolean => c.deleted === true && c.id.startsWith(ERASE_MARK);
 
-/** One save's own step, run on the merged file before it is written: on
- *  every attempt, so a retry checks what it read again. */
-type MergeStep = (merged: ChatHistoryFile) => void;
-
-function withStep(doc: DocumentSpec<ChatHistoryFile>, step?: MergeStep): DocumentSpec<ChatHistoryFile> {
-  if (!step) return doc;
-  return { ...doc, merge: (local, base, ctx) => { const merged = doc.merge(local, base, ctx); step(merged); return merged; } };
-}
-
 function liveOf(file: ChatHistoryFile): ChatFileConversation[] {
   return file.conversations
     .filter((c) => !c.deleted)
@@ -105,9 +107,11 @@ function liveOf(file: ChatHistoryFile): ChatFileConversation[] {
 /** Every save's merge: the oldest live conversations beyond the cap are
  *  tombstoned by the MERGED copy's updatedAt, never this page's stale one, so
  *  a conversation another device just continued stays (US-10 AC10). A plain
- *  slice would just resurrect on the next cloud merge; tombstones converge. */
-function mergeWithinCap(local: ChatHistoryFile, remote: ChatHistoryFile, ctx: SyncContext): ChatHistoryFile {
+ *  slice would just resurrect on the next cloud merge; tombstones converge.
+ *  The save's step runs first, so a conversation it removes takes no place. */
+function mergeWithinCap(local: ChatHistoryFile, remote: ChatHistoryFile, ctx: SyncContext, step?: MergeStep): ChatHistoryFile {
   const merged = mergeChatHistoryFiles(local, remote, ctx);
+  step?.(merged, remote);
   for (const conv of liveOf(merged).slice(CHAT_HISTORY_MAX_CONVERSATIONS)) tombstone(conv);
   return merged;
 }
@@ -123,6 +127,9 @@ export class ChatSession {
   private readonly erasedIds = new Set<string>();
   private readonly device: ReturnType<typeof deviceStore>;
   /** The tail of this session's cloud saves, run one at a time (US-11 AC2e). */
+  /** Conversations this copy creates, each with the erase marks its question
+   *  was asked under (US-11 AC2h), until a write whose merge checked it lands. */
+  private readonly pending = new Map<string, ReadonlySet<string>>();
   private saving: Promise<unknown> = Promise.resolve();
 
   private constructor(
@@ -204,9 +211,10 @@ export class ChatSession {
     assistantMessageId?: string | null;
     /** A fallback or refusal line: stored so the dedup never re-serves it after a reload. */
     isFallback?: boolean;
-    /** eraseMarks() when the question was asked. A new conversation is then
-     *  saved only if the file it is written into holds no other marker: an
-     *  erase that began after the question, on any device (US-11 AC2h). */
+    /** eraseMarks() when the question was asked. A conversation the stored
+     *  file does not hold is then saved only if the file it is written into
+     *  holds no other marker: an erase that began after the question, on any
+     *  device (US-11 AC2h). */
     askedMarks?: readonly string[];
   }): Promise<void> {
     this.refreshAfterDeviceErase();
@@ -226,12 +234,11 @@ export class ChatSession {
 
     const existing = this.file.conversations.find((c) => c.id === opts.conversationId);
     if (existing?.deleted) return; // tombstoned on another device — don't resurrect
-    let guard: MergeStep | undefined;
     if (existing) {
       existing.messages = mergeMessages(existing.messages, messages);
       existing.updatedAt = now;
     } else {
-      if (opts.isNew && opts.askedMarks) guard = this.refuseUnder(opts.conversationId, opts.askedMarks);
+      if (opts.askedMarks) this.pending.set(opts.conversationId, new Set(opts.askedMarks));
       this.file.conversations.push({
         id: opts.conversationId,
         title: opts.isNew ? cutText(opts.userText, 80) : 'Chat', // never half an emoji (US-15 AC26b)
@@ -240,21 +247,26 @@ export class ChatSession {
         messages,
       });
     }
-    await this.persist(false, guard);
+    await this.persist();
   }
 
-  /** The new conversation's check, run in each attempt's merge: a marker the
-   *  question was not asked under tombstones it in the file about to be
-   *  written, and in this copy, so no later save sends it. */
-  private refuseUnder(id: string, asked: readonly string[]): MergeStep {
-    const seen = new Set(asked);
-    return (merged) => {
-      if (!merged.conversations.some((c) => isEraseMark(c) && !seen.has(c.id))) return;
-      for (const file of [merged, this.file]) {
-        const conv = file.conversations.find((c) => c.id === id);
-        if (conv) tombstone(conv);
-      }
-    };
+  /** Every save's check of the pending conversations, in each attempt's
+   *  merge: one the file read does not hold, under a marker its question was
+   *  not asked under, is tombstoned in the file about to be written and in
+   *  this copy. Returns the ids this merge held, settled once it is written. */
+  private checkPending(merged: ChatHistoryFile, remote: ChatHistoryFile): string[] {
+    const marks = merged.conversations.filter(isEraseMark).map((c) => c.id);
+    const held: string[] = [];
+    for (const [id, asked] of this.pending) {
+      const conv = merged.conversations.find((c) => c.id === id);
+      if (!conv) continue;
+      held.push(id);
+      if (remote.conversations.some((c) => c.id === id) || marks.every((m) => asked.has(m))) continue;
+      tombstone(conv);
+      const mine = this.file.conversations.find((c) => c.id === id);
+      if (mine) tombstone(mine);
+    }
+    return held;
   }
 
   /** Tombstone a conversation (monotonic — merge keeps it deleted everywhere). */
@@ -310,15 +322,21 @@ export class ChatSession {
     this.fenceSeen = fence;
   }
 
-  private async persist(deleted = false, step?: MergeStep): Promise<void> {
+  private async persist(deleted = false, own?: MergeStep): Promise<void> {
+    let held: string[] = [];
+    const step: MergeStep = (merged, remote) => {
+      own?.(merged, remote);
+      held = this.checkPending(merged, remote);
+    };
     if (this.sync) {
       // One save at a time: on Drive a write checks, then uploads, so a save
       // still on its way could land after an erase's or a delete's verified
       // write. Each waits for the one before, a failed one too.
-      const loop = deleted || step ? this.loop!(withStep(deleted ? checkedDoc() : CHAT_HISTORY_DOC, step)) : this.sync;
+      const loop = this.loop!(deleted ? checkedDoc(step) : steppedDoc(step));
       const run = this.saving.then(() => loop.save(this.file));
       this.saving = run.catch(() => undefined);
       const result = await run;
+      for (const id of held) this.pending.delete(id); // the last attempt's merge is the one written
       // Merged in, never put in place: a delete made while this save was in
       // the air lives only in the working copy (US-11 AC2b).
       const ctx = contextOf(this.host);
@@ -333,10 +351,10 @@ export class ChatSession {
       this.refreshAfterDeviceErase();
       const { body, version } = sync.readSync(CHAT_HISTORY_DOC.fileName);
       const ctx = contextOf(this.host);
-      const merged = mergeWithinCap(this.file, migrateChatHistoryFile(body, ctx), ctx);
-      step?.(merged);
+      const merged = mergeWithinCap(this.file, migrateChatHistoryFile(body, ctx), ctx, step);
       try {
         sync.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
+        for (const id of held) this.pending.delete(id);
         this.file = merged;
         return;
       } catch (error) {

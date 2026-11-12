@@ -24,6 +24,8 @@ let factory: (() => Promise<ChatHistoryStore>) | null = null;
  * for the first one's saves.
  */
 let session: Promise<ChatHistoryStore> | null = null;
+/** The session once its open has resolved, for what a send takes at once. */
+let ready: ChatHistoryStore | null = null;
 /** What callers are served: the session, or its re-read (null: it failed). */
 let store: Promise<ChatHistoryStore | null> | null = null;
 /** The record's erase identity, and the one the store was read at (null: read again). */
@@ -32,13 +34,15 @@ let readAt: string | null = '';
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
-  session = store = null;
+  session = store = ready = null;
   eraseIdentity = identity;
 }
 
 function open(): Promise<ChatHistoryStore> {
   const opening = factory!();
   session = opening;
+  ready = null;
+  opening.then((s) => { if (session === opening) ready = s; }, () => {});
   store = opening.catch(() => null);
   readAt = eraseIdentity();
   return opening;
@@ -68,6 +72,16 @@ function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | n
 export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
   return cached(session ?? open());
+}
+
+/**
+ * The store for a question's reply, and the erase marks the question is asked
+ * under (US-11 AC2h): taken from the open session's copy at once, or, before
+ * the first open resolves, from that open. Never rejects.
+ */
+export function askChatHistory(): Promise<{ store: ChatHistoryStore | null; askedMarks?: string[] }> {
+  const askedMarks = ready?.eraseMarks();
+  return getChatHistory().then((s) => ({ store: s, askedMarks: askedMarks ?? s?.eraseMarks() }));
 }
 
 /**

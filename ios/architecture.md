@@ -680,7 +680,8 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
     and written only when that step ran. With a cloud open, the `chat-history.json` the
     website saved there is tombstoned first, by `ChatSession` on the cloud host, as the web's
-    erase does (2026-10-22). It is best effort and reported on its own (`cloudChatErased`):
+    erase does (2026-10-22). The cloud chat erase also writes an erase mark (US-11 AC2h); the
+    phone's own chat file gets none. It is best effort and reported on its own (`cloudChatErased`):
     a corrupt file or a newer website's schema never blocks the phone's chat erase
     (adversary R1). The confirmation names the website's chat in the cloud, and the result
     says whether it is gone or still there (R2): a provider that did not answer gets "Try

@@ -8,7 +8,7 @@ import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-
 import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, tokenOf } from './chat-request';
-import { getChatHistory } from './chat-history-access';
+import { askChatHistory, getChatHistory } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
@@ -235,10 +235,9 @@ export async function sendMessage(
   sessionToken = getGuestSessionToken(),
   asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
-  // A first question opens the history now, without the send waiting, and is
-  // saved only under the erase marks that open read (US-11 AC2h).
-  const opened = conversationId ? null : cloudHistory().then((store) => ({ store, askedMarks: store?.eraseMarks() }));
-  opened?.catch(() => {}); // a failure is reported by the save below, or never needed
+  // The reply is saved only under the erase marks taken now, without the
+  // send waiting (US-11 AC2h).
+  const opened = LOCAL_FIRST ? askChatHistory() : Promise.resolve({ store: null, askedMarks: undefined });
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -317,7 +316,7 @@ export async function sendMessage(
     // keyed by the server's canonical conversation id, unless an erase began
     // since the question (US-11 AC2h). Fire-and-forget — history must never
     // block or fail the chat itself.
-    void (opened ?? cloudHistory().then((store) => ({ store, askedMarks: undefined })))
+    void opened
       .then(({ store, askedMarks }) =>
         chatAskedUnder() !== asked ? undefined : store?.recordExchange({
           askedMarks,

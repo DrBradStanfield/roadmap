@@ -11,6 +11,7 @@ vi.mock('./sentry', () => ({
 }));
 vi.mock('./chat-history-access', () => ({
   getChatHistory: () => Promise.resolve(null),
+  askChatHistory: () => Promise.resolve({ store: null }),
 }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 

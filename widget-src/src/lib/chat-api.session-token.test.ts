@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null), askChatHistory: () => Promise.resolve({ store: null }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 
 import { listConversations, loadConversation, sendMessage } from './chat-api';
