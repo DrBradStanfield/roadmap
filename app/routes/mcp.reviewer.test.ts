@@ -18,6 +18,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
+/** A claim store for the two-phase confirms (US-36 AC9): every other table is inert. */
+vi.mock('../lib/supabase-client.server', async (actual) => {
+  const helpers = await import('../lib/single-use-claims.test-helpers');
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+});
 vi.mock('../lib/product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('../lib/product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };

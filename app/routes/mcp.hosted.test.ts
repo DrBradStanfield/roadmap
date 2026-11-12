@@ -15,6 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
+/** A claim store for the two-phase confirms (US-36 AC9): every other table is inert. */
+vi.mock('../lib/supabase-client.server', async (actual) => {
+  const helpers = await import('../lib/single-use-claims.test-helpers');
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+});
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';

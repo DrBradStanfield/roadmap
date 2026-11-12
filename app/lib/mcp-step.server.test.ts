@@ -7,7 +7,11 @@
  * input, its window is one table, rotation works both ways, and a step key is
  * never a blob key. The flow over the wire is `mcp.hosted-guards.test.ts`.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('./supabase-client.server', async (actual) => {
+  const helpers = await import('./single-use-claims.test-helpers');
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+});
 import { claimProposal, resetMcpMemory } from './mcp-grants.server';
 import { typeKey } from './mcp-seal.server';
 import { issueProposal, openProposal, openStep, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
@@ -147,10 +151,13 @@ describe('US-36 AC9 — keys: rotation in and out, and a step key is never a blo
 });
 
 describe('US-36 AC9 — single use is keyed on the whole receipt and the connection', () => {
-  it('a receipt spends once per connection; another connection’s spend does not burn this one’s', () => {
+  it('a receipt spends once per connection; another connection’s spend does not burn this one’s', async () => {
     const { receipt } = issueProposal(SUBJECT, CONN, AUDIENCE, NOW);
-    expect(claimProposal(receipt, 'conn-b', ttlSeconds * 1000, LATER)).toBe(true);
-    expect(claimProposal(receipt, CONN, ttlSeconds * 1000, LATER)).toBe(true);
-    expect(claimProposal(receipt, CONN, ttlSeconds * 1000, LATER + 1000)).toBe(false);
+    expect(await claimProposal(receipt, 'conn-b', ttlSeconds * 1000, LATER)).toBe('claimed');
+    expect(await claimProposal(receipt, CONN, ttlSeconds * 1000, LATER)).toBe('claimed');
+    expect(await claimProposal(receipt, CONN, ttlSeconds * 1000, LATER + 1000)).toBe('spent');
+    // The shared store still answers once this process forgets.
+    resetMcpMemory();
+    expect(await claimProposal(receipt, CONN, ttlSeconds * 1000, LATER + 2000)).toBe('spent');
   });
 });
