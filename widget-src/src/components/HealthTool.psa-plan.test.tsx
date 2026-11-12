@@ -62,10 +62,10 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     view.unmount();
   });
 
-  it('a saved PSA of 4.04 prints 4.04 on the card (US-06 AC18, Brad 2026-11-03)', async () => {
-    const view = await plan([], [4.04, TODAY]);
+  it('a saved PSA of exactly 4.0 shows "Elevated PSA" (US-07 AC1i, Brad 2026-11-12)', async () => {
+    const view = await plan([], [4.0, TODAY]);
     await waitFor(() => expect(titles(view.container)).toContain('Elevated PSA'));
-    expect(view.container.textContent).toContain('Your PSA of 4.04 ng/mL');
+    expect(view.container.textContent).toContain('Your PSA of 4.0 ng/mL is 4.0 or higher');
     view.unmount();
   });
 

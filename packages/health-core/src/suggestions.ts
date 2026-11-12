@@ -955,11 +955,11 @@ export function generateSuggestions(
         screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
     }
 
-    // Prostate — shared decision
+    // Prostate — shared decision. While the PSA is raised (4.0 or above), "Elevated PSA" shows alone (Change 3, D19, Brad 2026-11-12).
     if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
-      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0;
+      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue >= 4.0;
       if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
-        pushStart(PROSTATE, 'info');
+        if (!psaRaised) pushStart(PROSTATE, 'info');
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
@@ -973,8 +973,8 @@ export function generateSuggestions(
           category: 'screening',
           priority: 'attention',
           title: 'Elevated PSA',
-          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". A value never as 4.0 (US-06 AC18): "4.04 ng/mL".
-          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (≤4.0). Discuss with your doctor — elevated PSA can have multiple causes.`,
+          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". Change 4 adds the 3-month sentence.
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.`,
         });
       }
     }

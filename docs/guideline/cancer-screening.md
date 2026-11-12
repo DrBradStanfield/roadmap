@@ -63,7 +63,7 @@ A pack-year is one pack a day for one year [13].
 
 **After an abnormal result** (the health tool): an urgent card shows until the follow-up is organised, then a reminder to keep the appointment. Once it is done, the next test is due 3 years after a positive stool test and colonoscopy, or after polyps on colonoscopy; 1 year after an abnormal HPV or smear test; and at the usual interval for breast and lung.
 
-**PSA.** The plan treats 4.0 ng/mL as the upper limit of normal and flags a PSA above 4.0 ng/mL for attention, even if you chose not to screen (the health tool). NZ and Australian labs print PSA in µg/L, the same number. A PSA result may not be accurate, and a high PSA does not mean cancer; an enlarged prostate also raises it [22]. Finasteride and dutasteride, taken for an enlarged prostate, cut PSA by about half, so a result under 4.0 can hide a high one: tell your doctor if you take one [23][24]. For 48 hours before the test, do not ejaculate, exercise hard or cycle, and wait 4 to 6 weeks after a urine infection [22].
+**PSA.** The plan treats 4.0 ng/mL as the upper limit of normal and flags a PSA of 4.0 ng/mL or above for attention, even if you chose not to screen (the health tool). NZ and Australian labs print PSA in µg/L, the same number. A PSA result may not be accurate, and a high PSA does not mean cancer; an enlarged prostate also raises it [22]. Finasteride and dutasteride, taken for an enlarged prostate, cut PSA by about half, so a result under 4.0 can hide a high one: tell your doctor if you take one [23][24]. For 48 hours before the test, do not ejaculate, exercise hard or cycle, and wait 4 to 6 weeks after a urine infection [22].
 
 ## What helps
 

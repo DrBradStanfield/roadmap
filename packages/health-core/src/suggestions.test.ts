@@ -1614,14 +1614,14 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-prostate')).toBeUndefined();
     });
 
-    it('warns about elevated PSA > 4.0', () => {
+    it('warns about elevated PSA >= 4.0', () => {
       const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 5.2 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-prostate-elevated')).toBeDefined();
     });
 
-    it('no elevated PSA warning when PSA <= 4.0', () => {
+    it('no elevated PSA warning when PSA < 4.0', () => {
       const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 2.1 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
