@@ -17,7 +17,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { CLEARED_ERASE_KEY, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -98,7 +98,11 @@ export function isSyncPending(): boolean {
 export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
-    clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
+    clearOffFileData: (keepOriginals: ReadonlySet<string>) => {
+      if (!clearOffFileHealthData((ref) => keepOriginals.has(ref))) throw new Error('Off-file data still stored');
+    },
+    clearedErase: () => safeGetItem(CLEARED_ERASE_KEY),
+    noteCleared: (identity: string) => safeSetItem(CLEARED_ERASE_KEY, identity),
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,

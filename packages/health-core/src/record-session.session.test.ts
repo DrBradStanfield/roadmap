@@ -82,9 +82,12 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
   const mirrorCloud = new MemoryCloud();
   const pending = { value: false };
   const kept: string[][] = [];
+  let clearedFor: string | null = null;
   const base = {
     store,
     clearOffFileData: (keep: ReadonlySet<string>) => { calls.push('clearOffFileData'); kept.push([...keep].sort()); },
+    clearedErase: () => clearedFor,
+    noteCleared: (identity: string) => { clearedFor = identity; },
     deviceId: () => 'phone',
     clock: { now: () => clock },
     timers: {

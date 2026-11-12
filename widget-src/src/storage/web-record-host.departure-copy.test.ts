@@ -88,7 +88,7 @@ function phoneHost(cloud: MemoryCloud): RecordHost {
   if (host.tier !== 'cloud') throw new Error('cloud host expected');
   return {
     ...host,
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceRecord: undefined,
     mirror: {
       ...host.mirror, adapter: new MemoryAdapter(new MemoryCloud()), sync: undefined,

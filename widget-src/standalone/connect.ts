@@ -20,7 +20,7 @@ import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
+import { CLEARED_ERASE_KEY, clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -237,7 +237,8 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  *    record files (chat-history.json, …) and stored documents
  *    (LocalStorageAdapter.disconnect())
  *  - off-file health data: matrix drafts and Lp(a) kept answers
- *    (clearOffFileHealthData(); documents are already cleared above)
+ *    (clearOffFileHealthData(); documents are already cleared above), and
+ *    the erase it was last cleared for (CLEARED_ERASE_KEY)
  *  - the legacy v1 health blob + the authenticated flag (clearLocalStorage())
  *  - the remembered-backend selection (BACKEND_KEY)
  *
@@ -270,6 +271,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
+  safeRemoveItem(CLEARED_ERASE_KEY);
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();

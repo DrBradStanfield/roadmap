@@ -6,6 +6,7 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
@@ -46,6 +47,20 @@ export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncCont
     /* unreadable: it names nothing */
   }
   host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)));
+}
+
+/**
+ * At a session's open: the erase this device's off-file data was last cleared
+ * for, so a clear is owed while the record is at another one (US-11 AC6). With
+ * none kept, a record that was erased owes one (''), and a record never erased
+ * owes none and is kept as cleared, so its live drafts stay.
+ */
+export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
+  const kept = host.clearedErase();
+  if (kept != null) return kept;
+  if (eraseOf(file)[0] > 0) return '';
+  host.noteCleared(eraseIdentityOf(file));
+  return eraseIdentityOf(file);
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).
@@ -99,8 +114,14 @@ interface HostBase {
    *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
    *  originals stay, the engine's call (`RecordSession.clearOffFileData`);
-   *  every other original goes. */
+   *  every other original goes. Throws when it cannot say every store it
+   *  meant to clear is clear. */
   clearOffFileData(keepOriginals: ReadonlySet<string>): void;
+  /** The erase identity (`eraseIdentityOf`) this device's off-file data was
+   *  last cleared for, kept across loads; null when none is kept (US-11 AC6). */
+  clearedErase(): string | null;
+  /** Keep `identity` as the erase last cleared for. Never throws. */
+  noteCleared(identity: string): void;
   /** The raw body of the record copy this device keeps beside the session's
    *  store (on the web, the localStorage record a guest or on-device fallback
    *  tab writes), read synchronously; null when there is none. May throw when

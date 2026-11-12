@@ -182,17 +182,25 @@ export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
 export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 /** The Lp(a) rows the user kept as saved when asked (US-05 AC3, lpa-unit.ts). */
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
+/** The erase identity the off-file data below was last cleared for, and nothing
+ *  else (RecordHost.clearedErase, US-11 AC6). Log-off removes it. */
+export const CLEARED_ERASE_KEY = 'health_roadmap_cleared_erase';
 
 /**
  * Remove the stored document blobs, both matrices' unsaved drafts and the
  * Lp(a) check's kept answers — the on-device health data an erase would
  * otherwise leave behind. `keepDocument` spares the blobs of documents an
  * erase did not remove (US-09 AC20, AC23): by default none is spared.
+ * Answers whether every key it removed reads back as gone: safeRemoveItem
+ * drops the error of a remove the storage refused.
  */
-export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
+export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): boolean {
+  const keep = (key: string) => keepDocument(key.slice(DOC_KEY_PREFIX.length));
   clearMatrixDrafts();
-  removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
+  removeByPrefix(DOC_KEY_PREFIX, keep);
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
+  return keysUnder(DOC_KEY_PREFIX).every(keep)
+    && [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY].every((key) => safeGetItem(key) == null);
 }
 
 /** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of
@@ -210,12 +218,15 @@ function clearMatrixDrafts(): void {
 /** Remove every stored key under `prefix` (document blobs, named record
  *  files), except those `keep` names. */
 export function removeByPrefix(prefix: string, keep: (key: string) => boolean = () => false): void {
+  for (const key of keysUnder(prefix)) if (!keep(key)) safeRemoveItem(key);
+}
+
+/** The stored keys under `prefix`; none when storage is unavailable. */
+function keysUnder(prefix: string): string[] {
   try {
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix) && !keep(key)) safeRemoveItem(key);
-    }
+    return Object.keys(localStorage).filter((key) => key.startsWith(prefix));
   } catch {
-    /* storage unavailable — nothing to clear */
+    return [];
   }
 }
 

@@ -17,7 +17,7 @@ let clock = Date.parse('2026-11-12T10:00:00.000Z');
 const base = (store: MemoryAdapter) => ({
   store, deviceId: () => 'phone', clock: { now: () => (clock += 1) },
   timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-  clearOffFileData: () => {},
+  clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
 });
 const cloudHost = (store: MemoryAdapter) => ({
   ...base(store), tier: 'cloud',

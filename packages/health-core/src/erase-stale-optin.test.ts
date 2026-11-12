@@ -60,7 +60,7 @@ describe('buildErasedFile: an opt-in only another copy holds (US-11 AC4)', () =>
 describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-11 AC4)', () => {
   const host = (cloud: MemoryCloud, mirror = new MemoryCloud()): RecordHost => ({
     store: new MemoryAdapter(cloud),
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceId: () => 'tab',
     clock: { now: () => Date.parse(NOW) },
     timers: { set: () => 0, clear: () => {} },
