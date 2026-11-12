@@ -6,7 +6,7 @@
  * from there.
  */
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
-import type { RecordHost, RemoteChange } from '@roadmap/health-core/record-host';
+import type { RecordFailureOp, RecordHost, RemoteChange } from '@roadmap/health-core/record-host';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
@@ -117,7 +117,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
     remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
     failureCause: storageFailureClass,
-    report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }) {
+    report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }) {
       // The erase's best-effort steps: an orphaned server row or chat history
       // left behind is reported, never silently swallowed, and only as a fixed
       // message (an error can quote the chat file, e.g. a medication's name).
@@ -129,6 +129,12 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       if (at.op === 'chat-erase') {
         console.warn('Chat-history erase failed');
         Sentry.captureException(recordFailure(error, 'Chat-history erase failed'), { tags: { area: 'chat-history', op: 'erase' } });
+        return;
+      }
+      // A save landed, or an erase was taken in; upkeep after it failed.
+      if (at.op === 'clear-off-file' || at.op === 'after-save') {
+        console.warn('Record upkeep failed');
+        Sentry.captureException(recordFailure(error, 'Record upkeep failed'), { tags: { area: 'cloud-sync', op: at.op } });
         return;
       }
       console.warn('Cloud sync failed');

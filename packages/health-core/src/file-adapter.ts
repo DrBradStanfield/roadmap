@@ -30,6 +30,9 @@ export const BACKUPS_KEPT = 3;
 const LOCK_RETRY_MS = 25;
 const LOCK_WAIT_MS = 5_000;
 
+/** Its own words: pre-erase copies left on disk are a privacy fact (US-11). */
+const ERASE_STEP = 'prune copies from before the erase';
+
 /**
  * The bytes on disk, as a value that changes whenever they do. A content hash
  * rather than mtime+size: two writes inside one millisecond that keep the file
@@ -66,6 +69,28 @@ function create(dest: string, text: string, mode: number): void {
   } finally {
     closeSync(fd);
   }
+}
+
+/**
+ * How old a lock file is, as one sentence a refusal can open with. Plain
+ * words for the person deciding whether its writer is still alive.
+ */
+function lockAge(lockPath: string): string {
+  const name = basename(lockPath);
+  let ms = -1;
+  try {
+    ms = Date.now() - lstatSync(lockPath).mtimeMs;
+  } catch {
+    // Reported below, as for a clock that puts the lock in the future.
+  }
+  if (ms < 0) return `The age of the lock file ${name} is unknown.`;
+  const units: Array<[string, number]> = [['day', 86_400_000], ['hour', 3_600_000], ['minute', 60_000], ['second', 1_000]];
+  let i = units.findIndex(([, size]) => ms >= size);
+  if (i < 0) i = units.length - 1;
+  let n = Math.round(ms / units[i][1]);
+  // Rounding can reach the next unit up: 59.6 s is about 1 minute, not 60 seconds.
+  if (i > 0 && n * units[i][1] >= units[i - 1][1]) n = Math.round(ms / units[--i][1]);
+  return `The lock file ${name} is about ${n} ${units[i][0]}${n === 1 ? '' : 's'} old.`;
 }
 
 export class FileAdapter implements StorageAdapter {
@@ -175,6 +200,18 @@ export class FileAdapter implements StorageAdapter {
     signal?.throwIfAborted();
     this.only(fileName);
     const lock = await this.lock();
+    // Once the replace lands the write has happened, and nothing after it may
+    // report it as failed: a cleanup step that throws becomes a warning.
+    let version: string | undefined;
+    const unfinished = new Set<string>();
+    const step = (name: string, run: () => void) => {
+      if (version === undefined) return run();
+      try {
+        run();
+      } catch {
+        unfinished.add(name);
+      }
+    };
     try {
       const current = this.bytes();
       if (stampOf(current) !== expectedVersion) {
@@ -196,15 +233,30 @@ export class FileAdapter implements StorageAdapter {
         );
       }
       this.replace(next, mode);
-      this.pruneErased(body);
-      return { version: stampOf(next) };
+      version = stampOf(next);
+      // Trimmed only now: a replace that failed leaves every old copy in place.
+      if (!erasing) step('prune old backups', () => this.trim());
+      step(ERASE_STEP, () => this.pruneErased(body));
     } finally {
       try {
-        if (this.ownsLock(lock)) rmSync(this.lockPath);
+        step('remove the lock file', () => {
+          if (this.ownsLock(lock)) rmSync(this.lockPath);
+        });
       } finally {
-        closeSync(lock);
+        step('close the lock file', () => closeSync(lock));
       }
     }
+    return unfinished.size ? { version, warning: this.unfinished([...unfinished]) } : { version };
+  }
+
+  /** The warning for a landed write: the steps that failed, never their error text. */
+  private unfinished(steps: string[]): string {
+    const name = basename(this.path);
+    const erase = steps.includes(ERASE_STEP) ? ' Copies from before the erase are still on disk; the next save removes them.' : '';
+    const left = steps.includes('remove the lock file')
+      ? ` The lock file ${name}.lock was left in place; remove it only when no other writer is running.`
+      : '';
+    return `${name} was written, but cleanup did not finish: could not ${steps.join(', ')}.${erase}${left}`;
   }
 
   private get lockPath(): string {
@@ -240,7 +292,7 @@ export class FileAdapter implements StorageAdapter {
         if (Date.now() > until) {
           throw new StorageError(
             `Another program is writing ${basename(this.path)} and did not finish`,
-            'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
+            `${lockAge(this.lockPath)} Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.`,
           );
         }
         await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
@@ -315,7 +367,7 @@ export class FileAdapter implements StorageAdapter {
     return dest;
   }
 
-  /** Copy the record beside itself, then prune all but the newest few backups. */
+  /** Copy the record beside itself. */
   private backup(text: string, mode: number): string {
     const dest = this.backupPath();
     try {
@@ -328,6 +380,11 @@ export class FileAdapter implements StorageAdapter {
         'Check the folder is writable, then try again. Your record was not changed.',
       );
     }
+    return basename(dest);
+  }
+
+  /** Remove all but the newest few backups. */
+  private trim(): void {
     // Backups named before the colon-free rule carry `:` (0x3A), which sorts
     // AFTER `-` (0x2D), so a plain sort reads an older colon name as the
     // newest and prunes a newer one instead. Compare on a normalised key.
@@ -336,7 +393,6 @@ export class FileAdapter implements StorageAdapter {
     for (const name of this.siblings().sort(order).slice(0, -BACKUPS_KEPT)) {
       rmSync(join(dirname(this.path), name), { force: true });
     }
-    return basename(dest);
   }
 
   /** Every `.bak-` sibling of the record, by name. */
@@ -382,7 +438,8 @@ export class FileAdapter implements StorageAdapter {
    * Write a temp file in the same folder, then rename over the original, so a
    * failed write leaves the old file whole rather than half of the new one.
    * Honest limit: a SIGKILL between the two calls leaves a `.tmp-` sibling
-   * behind (harmless, and .gitignored).
+   * behind (harmless, and .gitignored). After the rename there is no temp
+   * left, so nothing runs there that could fail a write that landed.
    */
   private replace(text: string, mode: number): void {
     const temp = this.tempPath();
@@ -390,12 +447,15 @@ export class FileAdapter implements StorageAdapter {
       create(temp, text, mode);
       renameSync(temp, this.path);
     } catch {
+      try {
+        rmSync(temp, { force: true });
+      } catch {
+        // A leftover `.tmp-` is harmless; the failure below is what matters.
+      }
       throw new StorageError(
         `Cannot write ${basename(this.path)}`,
         'Check the file and its folder are writable. Your record was not changed.',
       );
-    } finally {
-      rmSync(temp, { force: true }); // a no-op once the rename has happened
     }
   }
 

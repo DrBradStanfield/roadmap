@@ -359,6 +359,7 @@
         "colorectalResult": { "anyOf": [{ "$ref": "#/$defs/ScreeningResult" }, { "type": "null" }] },
         "colorectalFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
         "colorectalFollowupDate": { "type": ["string", "null"] },
+        "colorectalFollowupIntervalYears": { "type": ["number", "null"], "description": "The repeat interval the colonoscopy report gave after an abnormal result, in whole years, 1 to 10; read only while colorectalResult is abnormal and colorectalFollowupStatus is completed. Absent: the report gave none (the plan uses 3 years)." },
 
         "breastFrequency": { "enum": ["annual", "biennial", "not_yet_started", null] },
         "breastLastDate": { "type": ["string", "null"] },
