@@ -5,8 +5,11 @@
  * that page's mirror and the page may write. A cloud page whose open is still
  * loading its cloud record when another page logs off, and a guest page then
  * saves on this device and connects (setting the marker), holds its cloud copy
- * only: nothing from the device copy, no save carrying it, and the marker stays
- * for the session that owns it now. Each page is a fresh module graph over the
+ * only: nothing from the device copy and no save carrying it. The marker is not
+ * cleared; it may have been set by this page before the read, so the next owner
+ * may see a waiting-to-sync notice once, and no data crosses. The guest may
+ * connect the same provider with another account: then only the log-off id
+ * separates the two pages. Each page is a fresh module graph over the
  * one localStorage, as browser tabs are. The engine rules: health-core
  * record-session.mirror-ours.test.ts.
  */
@@ -14,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, type ReadResult } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { CloudBackend } from '../../standalone/providers';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -106,6 +110,38 @@ describe('US-09 AC2c: a cloud page takes in the device copy only while it is tha
     expect(held.written.some((body) => body.includes('guest-row'))).toBe(false); // no save carries it
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.json).not.toContain('guest-row');
     expect(pending()).toBe(true); // the marker is left
+  });
+
+  it('a guest that connects the same provider with another account after the log-off adds nothing to the loading page', async () => {
+    const cloud = new MemoryCloud();
+    const a = await page();
+    const seed = await a.record.RecordSession.open(a.host.webRecordHost(new MemoryAdapter(cloud)));
+    addWeight(seed, 'cloud-row');
+    await seed.flush();
+
+    const held = new HeldCloud(cloud);
+    const opening = a.record.RecordSession.open(a.host.webRecordHost(held));
+    await logOffOnAnotherPage();
+    const guest = await page();
+    const device = await guest.record.RecordSession.open(guest.host.webRecordHost(new guest.local.LocalStorageAdapter()));
+    addWeight(device, 'guest-row');
+    await device.flush();
+    // finishFormConnect's first two steps, for the provider page A uses: only the log-off id now separates them.
+    const connect = await import('../../standalone/connect');
+    const { logOffId } = await import('../lib/storage');
+    expect(connect.rememberSignIn(true, held.id as unknown as CloudBackend, logOffId())).toBe(true);
+    guest.host.markSyncPending();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe(held.id);
+    const pending = (await page()).host.isSyncPending;
+    expect(pending()).toBe(true);
+
+    held.release();
+    const session = await opening;
+    expect(ids(session.file)).toEqual(['cloud-row']);
+    await session.flush();
+    expect(held.written.some((body) => body.includes('guest-row'))).toBe(false);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.json).not.toContain('guest-row');
+    expect(pending()).toBe(true);
   });
 
   it('with no log-off, a cloud page opening with the marker set takes the device copy in and clears the marker once saved', async () => {
