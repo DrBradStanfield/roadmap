@@ -272,7 +272,7 @@ export async function logOff(backend: Backend): Promise<void> {
     console.warn('Cloud disconnect during log-off failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
-  // Every provider's sign-in, not only the active one's (US-09 AC45).
+  // Every provider's sign-in on this device (US-09 AC45).
   for (const key of SIGN_IN_KEYS) safeRemoveItem(key);
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
   // Only its content-free erase-fence write can throw, after the health keys

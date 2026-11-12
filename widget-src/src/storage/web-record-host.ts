@@ -18,7 +18,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearOffFileHealthData, logOffId, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -97,6 +97,16 @@ export function isSyncPending(): boolean {
   return safeGetItem(PENDING_MIRROR_KEY) != null;
 }
 
+/**
+ * The cloud page's device copy is still its mirror only while BOTH hold
+ * (US-09 AC2, AC2c): no log-off on this device since `openedUnder`, heard or
+ * not, and this browser still names this provider. Keep both halves: after a
+ * log-off and a new sign-in to the same provider, the name alone matches again.
+ */
+function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): boolean {
+  return logOffId() === openedUnder && safeGetItem(BACKEND_KEY) === store.id;
+}
+
 /** The host for `store`: the device tier when it is localStorage itself,
  *  else a cloud with localStorage as its mirror. Every global is read at each
  *  call, never captured, so tests' fake timers and clocks apply. */
@@ -164,6 +174,9 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
   // read returns: its signal is set and removed at once, so a tab still
   // loading would miss it (US-09 AC2h). opened() latches on the note.
   noteOtherTabsLogOffWhileLoading();
+  // Noted once, never reassigned: the id the adapter's sign-in began under,
+  // else the device's id now.
+  const openedUnder: LogOffId = 'gen' in store ? (store as { gen: LogOffId }).gen : logOffId();
   return {
     ...base,
     tier: 'cloud',
@@ -177,7 +190,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
         clear: () => safeRemoveItem(LIFTED_REVISION_KEY),
       },
       writesStopped: roadmapLocalWritesStopped,
-      stillChosen: () => safeGetItem(BACKEND_KEY) === store.id,
+      stillChosen: () => sameSignInAndProvider(store, openedUnder),
       wipe: () => device.disconnect(),
       opened: latchOnOtherTabsLogOff,
     },

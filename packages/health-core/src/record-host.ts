@@ -91,11 +91,14 @@ export interface DeviceMirror {
   /** True once this device has logged off: no write may recreate the record
    *  here (US-09 AC2c). */
   writesStopped(): boolean;
-  /** True while this browser still uses this cloud, so the device copy is
-   *  still its mirror: false once another tab has switched to "This device"
-   *  or another cloud (US-09 AC2), and then a page going away writes nothing
-   *  there. Absent: never known, so an erase taken in removes no device copy,
-   *  and a page going away still writes it (US-06 AC13). */
+  /** True while this browser still uses this cloud under the sign-in this
+   *  page opened with, so the device copy is still its mirror. Two facts, both
+   *  needed: false once another tab has switched to "This device" or another
+   *  cloud (US-09 AC2), and false once this device has logged off since, even
+   *  when the same provider is chosen again (AC2c; the web's
+   *  `sameSignInAndProvider`). Then a page going away writes nothing there.
+   *  Absent: never known, so an erase taken in removes no device copy, and a
+   *  page going away still writes it (US-06 AC13). */
   stillChosen?(): boolean;
   /** Remove the device copy and what sits beside it, after an erase has
    *  reached the cloud (US-11). */
