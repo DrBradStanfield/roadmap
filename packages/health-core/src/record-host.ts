@@ -56,7 +56,7 @@ export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStat
 export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
   let kept = after;
   try {
-    const body = host.deviceRecord?.();
+    const body = host.ownsOffFileData?.() !== false ? host.deviceRecord?.() : null; // a non-owner reads no device record
     if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
   } catch {
     /* unreadable: it names nothing */
@@ -217,6 +217,8 @@ export type RecordHost =
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
       eraseFence(): string | null;
+      /** True while this page may read and write this device's health files; read at each use, and left out means open (the iPhone), as with ownsOffFileData. */
+      deviceFilesOpen?(): boolean;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
 

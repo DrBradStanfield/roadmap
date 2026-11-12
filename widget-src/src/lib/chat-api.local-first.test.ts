@@ -48,15 +48,14 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     expect(body.guestInputs).toEqual({ unitSystem: 'si' });
   });
 
-  it('US-09 AC2c: an answer whose history save the device refuses still reaches the page, and the refusal is not reported (A15)', async () => {
-    const { WritesStoppedError } = await import('./error-diagnostics');
-    store.recordExchange.mockRejectedValueOnce(new WritesStoppedError());
+  it('US-09 AC2c: an answer whose history save the device refuses still reaches the page, and the report names no chat text', async () => {
+    const { StorageError } = await import('@roadmap/health-core/adapter');
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic device refusal'));
     const { result, error } = await sendMessage('SYNTHETIC_REFUSED_QUESTION', null, null);
     expect(error).toBeNull();
     expect(result?.content).toBe('fresh answer');
-    await new Promise((r) => setTimeout(r, 0));
-    expect(store.recordExchange).toHaveBeenCalledOnce();
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(Sentry.captureException).toHaveBeenCalledWith(expect.objectContaining({ message: 'Chat-history save failed' }), { tags: { area: 'chat-history', op: 'save' } }));
+    expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toContain('SYNTHETIC_REFUSED_QUESTION');
   });
 
   it('sends an empty history for a new conversation', async () => {
