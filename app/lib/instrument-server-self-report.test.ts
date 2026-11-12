@@ -193,3 +193,32 @@ describe('US-09 AC7i: the SDK\'s own report is rebuilt at the transport (server)
     expect(ownCaptures).toEqual([]);
   });
 });
+
+// The wrapper on its own, without the SDK: a drop resolves `{}` and the inner
+// transport never sees the envelope.
+describe('US-09 AC7i: the transport wrapper drops what it cannot rebuild', () => {
+  async function sendThrough(envelope: unknown) {
+    const { selfReportTransport } = await import('../../instrument-self-report.mjs');
+    const inner = { send: vi.fn(async () => ({ statusCode: 200 })), flush: async () => true };
+    const result = await selfReportTransport(() => inner)({}).send(envelope as never);
+    return { result, inner };
+  }
+
+  it('a marked event whose allowed field has a throwing getter drops the envelope', async () => {
+    const { selfReportIntegration } = await import('../../instrument-self-report.mjs');
+    let mark: ((event: object, hint: unknown) => void) | undefined;
+    selfReportIntegration.setup({ on: (_name: string, listener: typeof mark) => { mark = listener; } } as never);
+    const event = { message: `planted ${MARKER}` };
+    Object.defineProperty(event, 'release', { enumerable: true, get() { throw new Error(MARKER); } });
+    mark!(event, { data: { __sentry__: true } });
+    const { result, inner } = await sendThrough([{ event_id: 'a'.repeat(32) }, [[{ type: 'event' }, event]]]);
+    expect(result).toEqual({});
+    expect(inner.send).not.toHaveBeenCalled();
+  });
+
+  it('an event item whose payload is a string drops the envelope', async () => {
+    const { result, inner } = await sendThrough([{ event_id: 'a'.repeat(32) }, [[{ type: 'event' }, `{"message":"planted ${MARKER}"}`]]]);
+    expect(result).toEqual({});
+    expect(inner.send).not.toHaveBeenCalled();
+  });
+});

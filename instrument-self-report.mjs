@@ -1,8 +1,6 @@
-// The SDK's own report about a fault in its pipeline (US-09 AC7i). When a
-// beforeSend or an event processor throws, the SDK drops the event and reports
-// the throw as an event of its own (hint `data.__sentry__`), which skips every
-// scrub. A hook marks that event by reference; the transport rebuilds it from
-// a fixed allow-list. Plain ESM shared by the widget (sentry.ts) and the server
+// A scrub that throws sends nothing (US-09 AC7i). The SDK's own report about
+// a fault in its pipeline (hint `data.__sentry__`) is marked by reference and
+// rebuilt at the transport from a fixed allow-list; its breadcrumb is dropped. Plain ESM shared by the widget (sentry.ts) and the server
 // (instrument.server.mjs, which is `node --import`-ed with no build step).
 
 const selfReports = new WeakSet();
@@ -95,8 +93,8 @@ export const selfReportIntegration = {
   },
 };
 
-// True for a breadcrumb the SDK records about its own report (the browser's
-// `sentry.event` crumb carries the event's text), or one whose hint cannot be read.
+// True for the breadcrumb the SDK records about its own report (the browser's
+// `sentry.event` crumb), or one whose hint cannot be read: both are dropped.
 export function isSelfReportBreadcrumb(hint) {
   try {
     const event = hint?.event;

@@ -32,8 +32,8 @@ function elementPath(target: unknown): string | undefined {
 
 /** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
 export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
-  // The crumb the SDK records about its own pipeline report quotes that
-  // report's text; it goes whole, as the report is rebuilt (US-09 AC7i).
+  // A scrub that throws sends nothing: the SDK's own report is rebuilt at the
+  // transport, and its breadcrumb is dropped (US-09 AC7i).
   if (isSelfReportBreadcrumb(hint)) return null;
   // The SDK names a clicked or typed-in element by its aria-label, type, name,
   // title and alt, and a label can quote values that scrubText misses (the
