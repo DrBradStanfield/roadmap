@@ -37,6 +37,10 @@ export function stopLocalHealthWrites(): void {
 export function noteCloudPage(): void {
   healthWrites = healthWritesTransition(healthWrites, 'cloudOpened');
 }
+/** This page's own log-off, or another tab's it heard: the device was wiped. */
+export function healthWritesStopped(): boolean {
+  return healthWrites === 'stopped';
+}
 /** The one check every on-device health writer makes. */
 export function healthWritesAllowed(): boolean {
   return healthWrites === 'device' || (healthWrites === 'cloud' && logOffId() === logOffIdAtLoad);

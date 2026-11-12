@@ -76,6 +76,15 @@ describe('US-09 AC2c: a cloud page loaded before a log-off writes no health data
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
   });
 
+  it("a typed vitals value leaves the draft the device holds since the log-off", async () => {
+    await cloudPage();
+    logOffElsewhere();
+    const theirs = JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} });
+    localStorage.setItem(VITALS_DRAFT_KEY, theirs);
+    await typeWeight('81');
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
+  });
+
   it('an Lp(a) answer is not kept on the device', async () => {
     await cloudPage();
     const { keepLpaAsIs } = await import('./lpa-unit');
@@ -95,6 +104,15 @@ describe('US-09 AC2c: a cloud page loaded before a log-off writes no health data
 });
 
 describe('US-09 AC2c controls', () => {
+  it("after this page's own log-off begins, a typed value removes the draft", async () => {
+    await cloudPage();
+    const { beginRoadmapLogOff } = await import('../storage/web-record-host');
+    beginRoadmapLogOff();
+    localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} }));
+    await typeWeight('81');
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+  });
+
   it('a page whose device copy is its only store keeps writing after the id changes', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
