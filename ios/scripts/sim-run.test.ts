@@ -4,7 +4,7 @@
 // macOS only (lockf, BSD stat and date): CI runs Linux, so these run locally:
 //   npx vitest run ios/scripts/sim-run.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -78,8 +78,8 @@ beforeEach(() => {
 });
 // Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
 // Whatever a test leaves running (a failed assertion included) is released and stopped here.
-// Keep it that way: a waiter queued behind a holder that ignores the release file (a plain sleep)
-// would block cleanup, because bash defers SIGTERM while the wrapper waits in lockf.
+// A waiter stops at once on SIGTERM (its 0.2 s sleep runs in the background), so cleanup never
+// waits on one.
 const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');
@@ -115,10 +115,34 @@ const until = async (check: () => boolean, ms = 10_000) => {
   for (const end = Date.now() + ms; Date.now() < end; await sleep(50)) if (check()) return;
   throw new Error('timed out waiting');
 };
+/** The queue's waiting.<start>.<pid> markers, in name order. */
+const markers = () => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith('waiting.')).sort() : []);
 const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status === 0;
 /** True while the lock is taken: lockf on the lock file cannot take it at once (75). Changes nothing. */
 const busy = () => existsSync(join(home, 'lock'))
   && spawnSync('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9', '_', join(home, 'lock')]).status === 75;
+/** Another process holding the lock, not through sim-run, until release(). */
+const holdLock = () => {
+  mkdirSync(home, { recursive: true });
+  const p = spawn('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9 || exit 1; until [ -f "$2" ]; do sleep 0.1; done',
+    '_', join(home, 'lock'), join(dir, 'release')]);
+  const done = new Promise((res) => p.on('exit', res));
+  live.push({ p, done });
+  return { p, done };
+};
+/** CPU seconds used by a process and its live descendants, exited children summed in (ps -S). The
+ * real /bin/ps, not the fake on PATH. Measured live, since exec drops a process's accumulated child CPU. */
+const treeCpu = (root: number) => {
+  const rows = spawnSync('/bin/ps', ['-S', '-axo', 'pid=,ppid=,time='], { encoding: 'utf8' }).stdout
+    .trim().split('\n').map((l) => l.trim().split(/\s+/));
+  const secs = (t: string) => t.split(':').reduce((s, part) => s * 60 + Number(part), 0);
+  const tree = new Set([String(root)]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [pid, ppid] of rows) if (tree.has(ppid) && !tree.has(pid)) { tree.add(pid); grew = true; }
+  }
+  return rows.filter(([pid]) => tree.has(pid)).reduce((s, [, , t]) => s + secs(t), 0);
+};
 
 describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macOS: lockf, load guard)', () => {
   describe('lock: who runs and who waits', () => {
@@ -163,6 +187,134 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.stderr).toMatch(/gave up after 1s: the simulator is still in use by pid \d+ .*: sh -c until .*release/);
       release();
       expect((await a.done).code).toBe(0);
+    });
+
+    // macOS lockf in its fd form spins a core while it waits (lockf -s -t 5 9 used 4.97 s of CPU in 5 s).
+    it('a waiter barely uses the CPU: under 0.3 s over a 3 s wait', async () => {
+      holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      const before = treeCpu(b.p.pid!);
+      await sleep(3000);
+      const used = treeCpu(b.p.pid!) - before;
+      expect(b.p.exitCode).toBe(null);
+      expect(used).toBeLessThan(0.3);
+    });
+
+    it('a waiter takes the lock within about a second of it freeing', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      await sleep(1500);
+      release();
+      await h.done;
+      const freed = Date.now();
+      await until(() => existsSync(join(home, 'holder')) && info('pid') === String(b.p.pid));
+      expect(Date.now() - freed).toBeLessThan(1500);
+      expect((await b.done).code).toBe(0);
+    });
+
+    it('a caller that reruns straight after its own run does not starve a waiter queued behind it', async () => {
+      // Six back-to-back runs; the waiter queues during the first and must run before the sixth.
+      const chain = spawn('bash', ['-c', 'for i in 1 2 3 4 5 6; do bash "$0" -- sh -c \'echo c >> "$FAKE/order"; sleep 0.5\'; done', SCRIPT],
+        { env: env(), cwd: work });
+      const chainDone = new Promise((res) => chain.on('exit', res));
+      live.push({ p: chain, done: chainDone });
+      await until(() => busy() && log('order') === 'c\n');
+      const w = start(['--', 'sh', '-c', 'echo W >> "$FAKE/order"'], { HR_SIM_WAIT_SECONDS: '60' });
+      await until(() => w.err().includes('waiting up to'));
+      expect((await w.done).code).toBe(0);
+      await chainDone;
+      const order = log('order').trim().split('\n');
+      expect(order.filter((x) => x === 'c')).toHaveLength(6);
+      expect(order.indexOf('W')).toBeLessThan(order.length - 1);
+    });
+
+    it('a caller\'s marker is in the queue before its first try for the lock, so no later caller slips in', async () => {
+      // A lockf on PATH that records, at each try for the lock (fd 9), the queue's markers, then runs the real one.
+      const shim = join(dir, 'shim');
+      mkdirSync(shim);
+      writeFileSync(join(shim, 'lockf'), '#!/bin/bash\n[ "${!#}" = 9 ] && echo "$(cd "$HR_SIM_HOME" && echo waiting.*)" >> "$FAKE/tries"\nexec /usr/bin/lockf "$@"\n',
+        { mode: 0o755 });
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30', PATH: `${shim}:${fake}:${process.env.PATH}` });
+      await until(() => b.err().includes('waiting up to'));
+      expect(log('tries').split('\n')[0]).toMatch(new RegExp(`^waiting\\.\\d+\\.${b.p.pid}$`));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    // The queue's failure modes: a waiter is live only while it holds the kernel lock on its marker.
+    it('a stale marker naming a live unrelated process does not hold up a run while the lock is free', () => {
+      const other = spawn('sleep', ['300']);
+      live.push({ p: other, done: new Promise((res) => other.on('exit', res)) });
+      mkdirSync(home, { recursive: true });
+      writeFileSync(join(home, `waiting.1000000000.${other.pid}`), '');
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('a waiter SIGKILLed mid-wait holds no one up: the next run proceeds at once and its marker goes', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      expect(markers()).toHaveLength(1);
+      b.p.kill('SIGKILL');
+      await b.done;
+      release();
+      await h.done;
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('removes its marker when it gives up (75), and on TERM and INT', async () => {
+      holdLock();
+      await until(busy);
+      expect(run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
+      expect(markers()).toEqual([]);
+      for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+        const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+        await until(() => b.err().includes('waiting up to'));
+        expect(markers()).toHaveLength(1);
+        b.p.kill(sig);
+        expect((await b.done).code).toBe(sig === 'SIGTERM' ? 143 : 130);
+        expect(markers()).toEqual([]);
+      }
+    });
+
+    it('a stale marker with the caller\'s own pid does not let it skip a live waiter queued earlier', async () => {
+      mkdirSync(home, { recursive: true });
+      // A live waiter: a process holding the lock on its own marker.
+      const w = spawn('/bin/bash', ['-c', 'm="$1/waiting.1500000000.$$"; exec 7>>"$m"; lockf -s -t 0 7 || exit 1; touch "$1/w-ready"; until [ -f "$2" ]; do sleep 0.1; done',
+        '_', home, join(dir, 'release')]);
+      live.push({ p: w, done: new Promise((res) => w.on('exit', res)) });
+      await until(() => existsSync(join(home, 'w-ready')));
+      // The caller leaves a marker with its own pid that sorts first, then becomes sim-run (exec keeps the pid).
+      const r = spawnSync('bash', ['-c', 'touch "$1/waiting.1000000000.$$"; exec bash "$0" -- sh -c \'echo ran > "$FAKE/ran"\'', SCRIPT, home],
+        { encoding: 'utf8', env: env({ HR_SIM_WAIT_SECONDS: '2' }), timeout: 30_000, cwd: work });
+      expect(r.status).toBe(75);
+      expect(log('ran')).toBe('');
+      expect(markers()).toEqual([`waiting.1500000000.${w.pid}`]);
+    });
+
+    it('a waiter\'s command gets neither the marker\'s descriptor (7) nor the lock\'s (9)', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'sh', '-c', '{ for f in 7 9; do [ -e /dev/fd/$f ] && echo "fd$f"; done; echo done; } >> "$FAKE/fds"'],
+        { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(log('fds')).toBe('done\n');
     });
 
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
@@ -470,7 +622,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
 
     it('caps the guard wait plus the lock wait at the wait limit', async () => {
       const a = start(['--', 'sleep', '15']);
-      await until(busy);
+      // The holder has read the load twice (before the lock and after it), so it cannot read the 9s below.
+      await until(() => busy() && log('sysctl.log').trim().split('\n').length >= 2);
       // Trips at 0, 1 and 2 s, clears at 3 s; the lock then gets what is left of 4 s, not 4 s more.
       setLoads('9.00', '9.00', '9.00', '2.00');
       const t = Date.now();
