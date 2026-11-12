@@ -13,7 +13,7 @@ import { liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { RoadmapStore } from './roadmap-store';
-import { webRecordHost } from './web-record-host';
+import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { clearOffFileAfterErase, deleteUserData, initRoadmapStore, setPreEraseHook } from '../lib/roadmap-data';
 import { setChatHistoryFactory } from '../lib/chat-history-access';
@@ -36,6 +36,7 @@ async function upload(store: RoadmapStore): Promise<string> {
 
 beforeEach(() => {
   localStorage.clear();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // the cloud pages here run on the one this browser chose
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-21T10:00:00.000Z'));
 });

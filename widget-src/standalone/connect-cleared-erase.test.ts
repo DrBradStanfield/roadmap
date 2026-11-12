@@ -1,9 +1,10 @@
 /**
  * US-11 AC6: the erase a device last cleared its off-file data for is kept
- * per record. A deliberate connect (a sign-in, or a switch of provider)
- * writes a content-free mark ('adopt') in its place, so the record connected
- * to adopts its own erase at its first load, clearing nothing. Log-off removes
- * it. A reload, a token refresh and a reconnect of the same record keep it.
+ * per record. A deliberate connect to another record (a sign-in, or a switch
+ * of provider) removes it, so the record connected to adopts its own erase at
+ * its first load, clearing nothing. Log-off removes it. A reload, a token
+ * refresh, a reconnect of the same record and an OAuth return to the provider
+ * already chosen keep it.
  * (The reconnect and "use this browser only" pins live in storage-bar.test.tsx.)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -40,29 +41,43 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('US-11 AC6: a connect marks the kept erase to adopt the next record', () => {
-  it('a Dropbox sign-in (the OAuth return) marks it to adopt', async () => {
+describe('US-11 AC6: a connect to another record removes the kept erase', () => {
+  it('a Dropbox sign-in (the OAuth return) from the on-device record removes it', async () => {
     vi.mocked(DropboxAdapter.completeRedirect).mockResolvedValue(Object.create(DropboxAdapter.prototype));
     expect((await resolveBackend()).resolved.backend).toBe('dropbox');
-    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
+    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
   });
 
-  it('a Google Drive sign-in (the OAuth return) marks it to adopt', async () => {
+  it('a Dropbox OAuth return while Google Drive was chosen removes it', async () => {
+    backing.set(BACKEND_KEY, 'google-drive');
+    vi.mocked(DropboxAdapter.completeRedirect).mockResolvedValue(Object.create(DropboxAdapter.prototype));
+    expect((await resolveBackend()).resolved.backend).toBe('dropbox');
+    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
+  });
+
+  it('a Google Drive sign-in (the OAuth return) from the on-device record removes it', async () => {
     vi.mocked(GoogleDriveAdapter.completeRedirect).mockResolvedValue(Object.create(GoogleDriveAdapter.prototype));
     expect((await resolveBackend()).resolved.backend).toBe('google-drive');
-    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
+    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
   });
 
-  it('a form connect (GitHub, self-host) marks it to adopt', async () => {
+  it('a form connect (GitHub, self-host) removes it', async () => {
     const adapter = new LocalStorageAdapter();
     vi.spyOn(adapter, 'connect').mockResolvedValue();
     await finishFormConnect(adapter, 'github');
-    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
+    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
     expect(backing.get(BACKEND_KEY)).toBe('github');
   });
 });
 
 describe('US-11 AC6: a load that connects nothing keeps the kept erase', () => {
+  it.each([['dropbox', DropboxAdapter], ['google-drive', GoogleDriveAdapter]] as const)('an OAuth return to %s, the provider already chosen: the same record', async (backend, Adapter) => {
+    backing.set(BACKEND_KEY, backend);
+    vi.mocked(Adapter.completeRedirect).mockResolvedValue(Object.create(Adapter.prototype));
+    expect((await resolveBackend()).resolved.backend).toBe(backend);
+    expect(backing.get(CLEARED_ERASE_KEY)).toBe(KEPT);
+  });
+
   it('a reload on the on-device record', async () => {
     expect((await resolveBackend()).resolved.backend).toBe('local');
     expect(backing.get(CLEARED_ERASE_KEY)).toBe(KEPT);

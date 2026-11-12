@@ -38,7 +38,7 @@ vi.mock('./connect', () => ({
   connectRefusal: () => null,
   rememberBackend: vi.fn(),
   forgetBackend: vi.fn(),
-  adoptNextErase: vi.fn(),
+  forgetClearedErase: vi.fn(),
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 // The chart panel itself is not under test: a stand-in keeps the lazy load instant.

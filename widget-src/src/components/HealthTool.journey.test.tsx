@@ -90,6 +90,7 @@ vi.mock('./UploadModal', () => ({
 }));
 
 import { HealthTool } from './HealthTool';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
 
@@ -1767,6 +1768,9 @@ describe('US-11: an erase made here', () => {
 // another device, and was committed into the new record when the user
 // started again.
 describe('US-11: an erase made on another device', () => {
+  beforeEach(() => {
+    localStorage.setItem(BACKEND_KEY, 'memory'); // the cloud this browser chose: its tab keeps the erase cleared for (US-11 AC6)
+  });
   it('clears this device\'s drafts when the page takes it in; starting again brings nothing back', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);

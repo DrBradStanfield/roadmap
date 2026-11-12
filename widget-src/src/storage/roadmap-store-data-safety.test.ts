@@ -1025,7 +1025,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   const KEEP: Record<string, string> = {
     health_roadmap_gdrive_tokens: '{"access_token":"secret"}',
     health_roadmap_dropbox_tokens: '{"access_token":"secret"}',
-    health_roadmap_backend: 'dropbox',
+    health_roadmap_backend: 'memory', // the cloud the pages here run on: its tab keeps the erase cleared for (US-11 AC6)
     health_roadmap_device_id: 'device-1',
     hr_reminders_autoenrol_blocked: '1',
     hr_ab: '{"variant":"b"}',

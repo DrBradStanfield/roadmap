@@ -16,6 +16,7 @@ import type { FileDocument, RoadmapFile } from '@roadmap/health-core/roadmap-fil
 import { sha256Blob } from '../lib/archive-payloads';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
+import { BACKEND_KEY } from './web-record-host';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -79,7 +80,10 @@ const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; document
   ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }), false],
 ];
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // the cloud this browser chose: its tab keeps the erase cleared for (US-11 AC6)
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe('US-16 AC2a: the store refuses a write made against an erase it no longer holds', () => {
