@@ -25,6 +25,7 @@ import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
 import { getChatHistory } from './chat-history-access';
+import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -147,6 +148,7 @@ export async function sendMessage(
     return { result: null, error: { error: 'Connect your Anthropic API key to use chat.' } };
   }
 
+  const asked = chatAskedUnder(); // the erase the question is asked under (US-11 AC2h)
   // Don't stall the answer on the store: only conversation FOLLOW-UPS need it
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
@@ -194,16 +196,19 @@ export async function sendMessage(
     if (!content) return { result: null, error: { error: 'Empty response from Anthropic. Try again.' } };
   } catch (error) {
     if (error instanceof ByokAnthropicError) return { result: null, error: { error: error.message } };
-    console.warn('BYOK chat error:', error);
+    // Fixed words only: the error can quote the chat (US-15 AC47).
+    console.warn('Chat send failed');
+    Sentry.captureException(recordFailure(error, 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
     return { result: null, error: { error: 'Network error reaching Anthropic. Check your connection.' } };
   }
 
-  // Persist to the user's cloud — fire-and-forget, history is best-effort.
+  // Persist to the user's cloud, unless an erase began since the question
+  // (US-11 AC2h) — fire-and-forget, history is best-effort.
   const convId = conversationId ?? `conv-${Date.now()}`;
   const assistantId = `a-${Date.now()}`;
   void storePromise
     .then((store) =>
-      store?.recordExchange({
+      chatAskedUnder() !== asked ? undefined : store?.recordExchange({
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

@@ -12,6 +12,7 @@ import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
+import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
@@ -45,6 +46,7 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // lazily on first chat use (see chat-history-access.ts for the policy).
   // It is read again after an erase, this page's or another device's (US-11 AC2g).
   setChatHistoryFactory(() => ChatHistoryStore.create(adapter), getEraseIdentity);
+  setChatEraseReader(getEraseIdentity);
 }
 
 /** Flush pending writes (call before navigation). */
@@ -321,6 +323,7 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean; chatUnread?: true }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
+  eraseBegan(); // a chat reply asked before this is not saved (US-11 AC2h)
   // The order and the best-effort rules are the record session's (health-core
   // deleteAllData): it reads the record first, and an erase that cannot read
   // it is refused before either step runs (US-09 AC23). Chat goes through the
