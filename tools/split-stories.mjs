@@ -39,7 +39,7 @@
  *   --replace    outside a merge, overwrite a docs/stories/ that differs from the output.
  *   --normalize  put the repo's split tree into the split's exact form (above); takes no other flag.
  */
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -92,13 +92,14 @@ export function planSplit(text) {
 }
 
 /**
- * Writes a plan under `root`: the index and docs/stories/, removing any other part file there. A failure throws
+ * Writes a plan under `root`: the index and docs/stories/, removing any other part file there. Each file goes to
+ * `<name>.tmp`, then is renamed into place, so a failed write leaves it as it was. A failure throws
  * SplitRefusal, its `partway` naming what was already created, removed or written.
  */
 function writePlan(root, { index, parts }) {
   const dir = join(root, 'docs/stories');
   const removed = [];
-  let made, written = 0;
+  let made, tmp, written = 0;
   try {
     made = mkdirSync(dir, { recursive: true });
     for (const f of readdirSync(dir).filter((f) => f.endsWith('.md') && !parts.has(f))) {
@@ -106,11 +107,17 @@ function writePlan(root, { index, parts }) {
       removed.push(f);
     }
     for (const [path, text] of [...[...parts].map(([n, t]) => [join(dir, n), t]), [join(root, INDEX), index]]) {
-      writeFileSync(path, text);
+      tmp = `${path}.tmp`; // a full disk fails the temp file, never the part it replaces
+      writeFileSync(tmp, text);
+      renameSync(tmp, path);
+      tmp = undefined;
       written++;
     }
     return removed;
   } catch (e) {
+    try {
+      if (tmp !== undefined) rmSync(tmp, { force: true }); // best effort: the refusal below is the error that matters
+    } catch {}
     const done = [`${written} file${written === 1 ? '' : 's'} written`, removed.length && `${removed.length} removed`, made && 'docs/stories/ created'];
     throw new SplitRefusal(`cannot write under ${root}: ${e.message}`, written || removed.length || made ? `${done.filter(Boolean).join(', ')} under ${root}` : undefined);
   }

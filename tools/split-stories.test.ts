@@ -666,6 +666,46 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     expect(tree()).toEqual(before);
   });
 
+  it('a write that fails mid-file (a full disk) leaves that part as it was, no .tmp, and a true count (US-64 AC33)', () => {
+    // A preload makes the Nth writeFileSync under the repo write 3 bytes, then throw ENOSPC, as a full disk does.
+    const hookDir = mkdtempSync(join(tmpdir(), 'split-stories-enospc-'));
+    const hook = join(hookDir, 'enospc.mjs');
+    writeFileSync(hook, `import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+const real = fs.writeFileSync;
+let n = 0;
+fs.writeFileSync = (p, data, ...rest) => {
+  if (!String(p).includes(process.env.FAIL_UNDER) || ++n !== Number(process.env.FAIL_AT)) return real(p, data, ...rest);
+  const fd = fs.openSync(p, 'w');
+  fs.writeSync(fd, String(data).slice(0, 3));
+  fs.closeSync(fd);
+  throw Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' });
+};
+syncBuiltinESMExports();
+`);
+    rmSync(join(repo, 'docs/stories/US-03.md')); // no stale part, so nothing is removed before the writes
+    const failAt = (at: number) => spawnSync(process.execPath, ['--import', hook, SCRIPT, '--from', 'pre-split', '--replace'], {
+      cwd: repo, encoding: 'utf8', env: { ...process.env, FAIL_UNDER: basename(repo), FAIL_AT: String(at) },
+    });
+    try {
+      const before = tree();
+      const first = failAt(1); // US-01.md, the first file
+      expect(first.status).toBe(1);
+      expect(first.stderr).toMatch(/^split-stories: refused, nothing written: cannot write under .*: ENOSPC[^\n]*\n$/);
+      expect(tree()).toEqual(before);
+      const second = failAt(2); // US-02.md, after US-01.md is in place
+      expect(second.status).toBe(1);
+      expect(second.stderr.startsWith(`split-stories: refused partway: 1 file written under ${realpathSync.native(repo)}: `)).toBe(true);
+      expect(second.stderr).toMatch(/ENOSPC[^\n]*\n$/);
+      const after = tree();
+      expect(after['US-02.md']).toBe(before['US-02.md']);
+      expect(after.index).toBe(before.index);
+      expect(Object.keys(after).filter((f) => f.endsWith('.tmp'))).toEqual([]);
+    } finally {
+      rmSync(hookDir, { recursive: true, force: true });
+    }
+  });
+
   it('when git cannot run, it refuses and writes nothing, with and without --replace (US-64 AC33)', () => {
     mergeIntoFeat('main');
     writeFileSync(join(repo, 'docs/user-stories.md'), featText); // the branch's monolith, as a hand resolution leaves it
