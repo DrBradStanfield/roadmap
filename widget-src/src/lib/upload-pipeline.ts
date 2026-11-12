@@ -333,7 +333,7 @@ export async function processBatch(
     const statusMsg = PROGRESS_MESSAGES[Math.floor(tickCount / 8) % PROGRESS_MESSAGES.length];
     const fileName = fileNames[Math.floor(tickCount / 3) % fileNames.length];
     const msg = realCompleted > 0
-      ? `Processed ${realCompleted} of ${allFiles.length} — ${fileName}`
+      ? `Processed ${realCompleted} of ${allFiles.length}: ${fileName}`
       : `${statusMsg} ${fileName}`;
     updateProgress({ current: Math.round(displayPct), total: 100, fileName: msg });
   }, FAKE_TICK_INTERVAL);
@@ -346,7 +346,7 @@ export async function processBatch(
       if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
 
       const poll = await pollBatchStatus(batchId);
-      realCompleted = poll.completed;
+      realCompleted = Math.max(realCompleted, poll.completed); // never less than the last answer (US-12 AC24)
       if (poll.error) throw new UploadError(poll.error, poll.errorCode || 'server_error');
 
       if (poll.status === 'ended' && poll.results) {

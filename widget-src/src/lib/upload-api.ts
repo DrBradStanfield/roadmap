@@ -105,24 +105,30 @@ export async function labImportBatch(
   }
 }
 
+/** A failed poll that can change (a 5xx, a network throw) answers `error` and the caller
+ *  polls on. One that cannot (404, 401, 403, an answer that is not a poll) ends the watch (US-12 AC24). */
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
+  const ended = (error: string, errorCode: UploadErrorCode): BatchPollResponse => {
+    pollTokens.delete(batchId);
+    return { status: 'ended', completed: 0, total: 0, error, errorCode };
+  };
+  let response: Response;
   try {
     const token = pollTokens.get(batchId) ?? '';
     // A POST so the token travels in the body: the server logs request URLs
     // (morgan) and a logged token reads the extracted lab text back.
-    const response = await fetch(LAB_IMPORT_V2_URL, {
+    response = await fetch(LAB_IMPORT_V2_URL, {
       method: 'POST',
       body: JSON.stringify({ batchId, pollToken: token }),
     });
-    if (response.status === 404) {
-      pollTokens.delete(batchId);
-      return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };
-    }
-    if (!response.ok) return { status: 'processing', completed: 0, total: 0 };
-    const poll = (await parseJsonResponse<BatchPollResponse>(response)) ?? { status: 'processing' as const, completed: 0, total: 0 };
-    if (poll.status === 'ended') pollTokens.delete(batchId);
-    return poll;
   } catch {
-    return { status: 'processing', completed: 0, total: 0 };
+    return { status: 'error', completed: 0, total: 0 };
   }
+  if (response.status === 404) return ended('Batch not found — server may have restarted.', 'server_restart');
+  if (response.status === 401 || response.status === 403) return ended('Batch poll refused', 'server_error');
+  if (!response.ok) return { status: 'error', completed: 0, total: 0 };
+  const poll = await parseJsonResponse<BatchPollResponse>(response).catch(() => null);
+  if (!poll || !['processing', 'ended', 'error'].includes(poll.status)) return ended('Batch poll answer unreadable', 'server_error');
+  if (poll.status === 'ended') pollTokens.delete(batchId);
+  return poll;
 }

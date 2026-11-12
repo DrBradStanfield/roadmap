@@ -100,14 +100,31 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     const polls = Array.from({ length: 5 }, () => call(batch));
     await vi.waitFor(() => expect(reads()).toBe(stage === 'status' ? 2 : 3));
     reject(new TypeError('synthetic fetch rejection'));
+    // US-12 AC24: a failed read answers `error`, never "processing 0 of N".
     for (const response of await Promise.all(polls)) {
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ status: 'processing', completed: 0, total: 1 });
+      expect(await response.json()).toEqual({ status: 'error', completed: 0, total: 1 });
     }
     const before = reads();
     expect(await (await call(batch)).json()).toMatchObject({ status: 'ended', results: [{ index: 0, errorCode: 'refused' }] });
     expect(reads()).toBe(before + 2);
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('US-12 AC24: a rejected read answers `error` with the last count it served, and the next good read moves on', async () => {
+    let succeeded = 3;
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => init?.method === 'POST'
+      ? Response.json({ id: `batch_${++nextId}` })
+      : Response.json({ ended_at: null, request_counts: { processing: 20 - succeeded, succeeded } }));
+    const batch = await upload();
+    expect(await (await call(batch)).json()).toEqual({ status: 'processing', completed: 3, total: 20 });
+    await vi.advanceTimersByTimeAsync(2000);
+    fetchMock.mockImplementationOnce(async () => new Response('synthetic outage', { status: 529 }));
+    const failed = await call(batch);
+    expect(failed.status).toBe(200);
+    expect(await failed.json()).toEqual({ status: 'error', completed: 3, total: 20 });
+    succeeded = 5;
+    expect(await (await call(batch)).json()).toEqual({ status: 'processing', completed: 5, total: 20 });
   });
 
   it.each([

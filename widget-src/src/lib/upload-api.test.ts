@@ -64,6 +64,37 @@ describe('the batch poll carries the token the upload was given', () => {
   });
 });
 
+// US-12 AC24: a failed poll that can change answers `error`, and the caller
+// polls on to its deadline. One that cannot change ends the watch at once.
+describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
+  it.each([
+    ['a 500 from our route', () => jsonResponse({ success: false }, 500)],
+    ['a network throw', () => { throw new TypeError('synthetic network failure'); }],
+  ])('%s answers error, never "processing 0"', async (_, reply) => {
+    stubFetch(reply);
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 0, total: 0 });
+  });
+
+  it.each([
+    ['a 401', () => jsonResponse({ error: 'Unauthorized' }, 401), 'server_error'],
+    ['a 403', () => jsonResponse({ success: false, error: 'Forbidden' }, 403), 'server_error'],
+    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404), 'server_restart'],
+    ['a page that is not JSON', () => new Response('<html>synthetic</html>', { headers: { 'content-type': 'text/html' } }), 'server_error'],
+    ['JSON that does not parse', () => new Response('{"status":', { headers: { 'content-type': 'application/json' } }), 'server_error'],
+    ['an answer with no known status', () => jsonResponse({ ok: true }), 'server_error'],
+  ] as const)('%s ends the watch with an error', async (_, reply, errorCode) => {
+    stubFetch(reply);
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode });
+    expect(poll.error).toBeTruthy();
+  });
+
+  it('passes the server\'s own `error` answer through, its count kept', async () => {
+    stubFetch(() => jsonResponse({ status: 'error', completed: 3, total: 20 }));
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 3, total: 20 });
+  });
+});
+
 // Privacy: a file name can hold a patient's name ("Jane Citizen bloods.pdf").
 // The server never needs it: a batch result comes back by its request index,
 // and the browser maps the index to the file. So no name leaves the browser.
