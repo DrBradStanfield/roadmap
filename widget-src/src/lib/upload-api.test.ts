@@ -62,6 +62,36 @@ describe('the batch poll carries the token the upload was given', () => {
     expect(calls[0].body).toEqual({ batchId: 'batch_stranger', pollToken: '' });
     expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_restart' });
   });
+
+  // US-12 AC25: a re-pick joins the same batch id with a new token. A cancelled
+  // poll that answers late must not erase the joiner's token.
+  it.each([
+    ['ended', () => jsonResponse({ status: 'ended', completed: 1, total: 1, results: [] })],
+    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404)],
+  ])('US-12 AC25: a late %s answer to the old token keeps the token a join stored since', async (_, late) => {
+    let release!: (response: Response) => void;
+    let joined = false;
+    stubFetch((call) => {
+      if (call.body && 'batch' in call.body) {
+        const pollToken = joined ? 'tok-join' : 'tok-first';
+        joined = true;
+        return jsonResponse({ success: true, batchId: 'batch_join', pollToken });
+      }
+      return jsonResponse({ status: 'processing', completed: 0, total: 1 });
+    });
+    const fetchMock = vi.mocked(fetch);
+    await labImportBatch(FILES);
+    fetchMock.mockImplementationOnce(async (url, init) => {
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+      return new Promise<Response>(resolve => { release = resolve; });
+    });
+    const cancelled = pollBatchStatus('batch_join');
+    await labImportBatch(FILES);
+    release(late());
+    await cancelled;
+    await pollBatchStatus('batch_join');
+    expect(calls.at(-1)?.body).toEqual({ batchId: 'batch_join', pollToken: 'tok-join' });
+  });
 });
 
 // US-12 AC24: a failed poll that can change answers `error`, and the caller

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H62,lab batch upload,"The browser shows a batch 429 busy answer as the daily limit",lead,not started,"widget-src/src/lib/upload-api.ts labImportBatch maps every 429 to ""Daily upload limit reached"" (errorCode rate_limit), so the route's ""Server busy"" 429 (200 batches, or a fourth re-pick of one batch under US-12 AC25) reads as the daily limit and upload_outcome counts it as one. A distinct busy code the browser can map would need its own words",,no

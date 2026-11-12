@@ -435,4 +435,97 @@ describe('US-12 AC25: the same files sent again while their batch runs join it, 
       for (const spy of spies) spy.mockRestore();
     }
   });
+
+  // Round 1 (PR 1442): a join must still be reachable once the day's quota is spent.
+  const bigFiles = [{ pages: [page('A'.repeat(70 * 1024))] }, { pages: [page('B'.repeat(70 * 1024))] }];
+  /** Spend the IP's quota on a second batch, then serve it, so only the first stays joinable. */
+  const spendIpQuota = async () => {
+    const spent = await send(Array.from({ length: 198 }, (_, i) => ({ pages: [page(`F${i}`)] })));
+    ended = true;
+    await pollWith(spent.batchId, spent.pollToken);
+    ended = false;
+  };
+  const allowed = async (ip = IP) => (await (await loader({ request: request({}, undefined, true, ip, 'GET') } as never)).json()).allowed;
+
+  it('US-12 AC25: a re-pick after the IP quota is spent joins, with the full body read; polls give back their read', async () => {
+    ended = false;
+    const first = await send(bigFiles);
+    await spendIpQuota();
+    expect(await remaining()).toBe(0);
+    expect(await allowed()).toBe(true);
+    for (let i = 0; i < 5; i++) expect((await pollWith(first.batchId, first.pollToken)).status).toBe(200);
+    const joined = await send(bigFiles);
+    expect(joined.batchId).toBe(first.batchId);
+    expect(creates()).toBe(2);
+  });
+
+  it('US-12 AC25: a re-pick after the machine quota is spent joins', async () => {
+    ended = false;
+    const { machineFiles } = await import('../lib/rate-limiter');
+    const first = await send(bigFiles);
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    expect(await allowed()).toBe(true);
+    const joined = await send(bigFiles);
+    expect(joined.batchId).toBe(first.batchId);
+    expect(creates()).toBe(1);
+  });
+
+  it('US-12 AC25: over quota, three full-body reads per live batch; the fourth gets the small cap and the daily limit', async () => {
+    ended = false;
+    const first = await send(bigFiles);
+    await spendIpQuota();
+    expect((await send(bigFiles)).batchId).toBe(first.batchId);
+    expect((await send(bigFiles)).batchId).toBe(first.batchId);
+    const third = await post({ batch: true, files: bigFiles });
+    expect(await third.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
+    expect(await allowed()).toBe(false);
+    const fourth = await post({ batch: true, files: bigFiles });
+    expect(fourth.status).toBe(429);
+    expect(await fourth.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    expect(creates()).toBe(2);
+  });
+
+  it('US-12 AC25: over quota, a body that matches no batch is never charged and makes no batch', async () => {
+    ended = false;
+    const { machineFiles } = await import('../lib/rate-limiter');
+    await send(bigFiles);
+    await spendIpQuota();
+    const machineLeft = machineFiles.remaining('machine');
+    const other = await post({ batch: true, files: [{ pages: [page('C'.repeat(70 * 1024))] }] });
+    expect(other.status).toBe(429);
+    expect(await other.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    expect(creates()).toBe(2);
+    expect(await remaining()).toBe(0);
+    expect(machineFiles.remaining('machine')).toBe(machineLeft);
+  });
+
+  it('US-12 AC25: when the first create is refused while a twin waits, both get the 500, neither is charged, the reservation is gone', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      fetchMock.mockImplementationOnce(async () => new Response('synthetic refusal', { status: 500 }));
+      const [a, b] = await Promise.all([post({ batch: true, files: twoFiles }), post({ batch: true, files: twoFiles })]);
+      expect([a.status, b.status]).toEqual([500, 500]);
+      expect(creates()).toBe(1);
+      expect(await remaining()).toBe(200);
+      ended = false;
+      expect((await send()).batchId).toBe('batch_1');
+      expect(creates()).toBe(2);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("US-12 AC25: joins only a batch with the browser's 10-minute deadline of life left", async () => {
+    const { BATCH_POLL_DEADLINE_MS } = await import('../../widget-src/src/lib/upload-api');
+    const { JOIN_LIFE_MS } = await import('../lib/lab-batches.server');
+    expect(JOIN_LIFE_MS).toBe(BATCH_POLL_DEADLINE_MS);
+    expect(JOIN_LIFE_MS).toBe(10 * MIN);
+    ended = false;
+    const first = await send();
+    await vi.advanceTimersByTimeAsync(50 * MIN + 1);
+    const late = await send();
+    expect(late.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+    expect(await remaining()).toBe(200 - 4);
+  });
 });
