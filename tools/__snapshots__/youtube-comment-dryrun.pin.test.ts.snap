@@ -1,0 +1,477 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`youtube-comment-dryrun pins (US-64 AC23) > a full run: stdout, every request, the shell-out and the written page 1`] = `
+{
+  "out": [
+    "log: [1m=== YouTube comment dry-run ===[0m",
+    "log: Video ID:     zzSynthVid1",
+    "log: Using ANTHROPIC_TEST_API_KEY (test workspace)",
+    "log: [90mLooking up blog post...[0m",
+    "log:   Matched: synthetic-zeta-video.md ("Synthetic zeta video")",
+    "log: [90mFetching comments (max 8)...[0m",
+    "log:   Fetched 9 top-level comments (using first 8)",
+    "log: [90mRunning pipeline (concurrency=1)...[0m",
+    "stdout: "\\r  1/8 comments processed"",
+    "stdout: "\\r  2/8 comments processed"",
+    "stdout: "\\r  3/8 comments processed"",
+    "stdout: "\\r  4/8 comments processed"",
+    "stdout: "\\r  5/8 comments processed"",
+    "stdout: "\\r  6/8 comments processed"",
+    "stdout: "\\r  7/8 comments processed"",
+    "stdout: "\\r  8/8 comments processed"",
+    "stdout: "\\n"",
+    "log: 
+[1m=== Results ===[0m",
+    "log:   Comments processed: 8",
+    "log:   Would post:         2",
+    "log:   Would skip:         6",
+    "log: 
+Report: <repo>/tools/output/youtube-dryrun-zzSynthVid1.html",
+    "log: Open with: open "<repo>/tools/output/youtube-dryrun-zzSynthVid1.html"",
+  ],
+  "requests": [
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: Hello there and greetings from a zeta fan
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: How much zeta should I take each morning please?
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 200,
+      "model": "claude-sonnet-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 2,
+      "thinking": {
+        "type": "between_tools",
+      },
+      "user": "Current query: How much zeta should I take each morning please?",
+    },
+    {
+      "cached": [
+        true,
+        true,
+        true,
+        false,
+        false,
+      ],
+      "matched": "## Referenced Blog Articles
+
+Synthetic matched text: synthetic-zeta-guide, synthetic-zeta-video",
+      "max_tokens": 4096,
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium",
+      },
+      "platformHasBody": true,
+      "systemBlocks": 5,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive",
+      },
+      "user": "How much zeta should I take each morning please?",
+    },
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: Where can I buy the zeta product you showed?
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+        true,
+        true,
+        false,
+      ],
+      "matched": null,
+      "max_tokens": 4096,
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium",
+      },
+      "platformHasBody": true,
+      "systemBlocks": 4,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive",
+      },
+      "user": "Where can I buy the zeta product you showed?",
+    },
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: Is zeta safe to take with my other pills?
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 200,
+      "model": "claude-sonnet-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 2,
+      "thinking": {
+        "type": "between_tools",
+      },
+      "user": "Current query: Is zeta safe to take with my other pills?",
+    },
+    {
+      "cached": [
+        true,
+        true,
+        true,
+        false,
+      ],
+      "matched": null,
+      "max_tokens": 4096,
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium",
+      },
+      "platformHasBody": true,
+      "systemBlocks": 4,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive",
+      },
+      "user": "Is zeta safe to take with my other pills?",
+    },
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: Please refuse this synthetic zeta comment now
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 16,
+      "model": "claude-haiku-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 1,
+      "thinking": {
+        "type": "disabled",
+      },
+      "user": "(new conversation, no prior turns)
+
+Current message: Does zeta interact with coffee at all, doctor?
+
+Classification:",
+    },
+    {
+      "cached": [
+        true,
+        true,
+      ],
+      "matched": null,
+      "max_tokens": 200,
+      "model": "claude-sonnet-5-5",
+      "output_config": undefined,
+      "platformHasBody": false,
+      "systemBlocks": 2,
+      "thinking": {
+        "type": "between_tools",
+      },
+      "user": "Current query: Does zeta interact with coffee at all, doctor?",
+    },
+    {
+      "cached": [
+        true,
+        true,
+        true,
+        false,
+      ],
+      "matched": null,
+      "max_tokens": 4096,
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium",
+      },
+      "platformHasBody": true,
+      "systemBlocks": 4,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive",
+      },
+      "user": "Does zeta interact with coffee at all, doctor?",
+    },
+  ],
+  "spawn": [
+    [
+      "node",
+      [
+        "/Users/bradstanfield/Documents/claude_business.nosync/tools/youtube-analytics.js",
+        "comments",
+        "zzSynthVid1",
+        "--count",
+        "8",
+      ],
+    ],
+  ],
+  "writes": [
+    "<repo>/tools/output/youtube-dryrun-zzSynthVid1.html",
+  ],
+}
+`;
+
+exports[`youtube-comment-dryrun pins (US-64 AC23) > a full run: stdout, every request, the shell-out and the written page 2`] = `
+"<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<title>YouTube dry-run: Synthetic zeta video</title>
+<style>
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; margin: 0; padding: 24px; max-width: 1100px; color: #1a1a1a; background: #fafafa; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; }
+  .subtitle { color: #555; margin-bottom: 16px; }
+  .summary { background: #fff; border: 1px solid #ddd; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 16px; margin-top: 8px; }
+  .summary-grid div { font-size: 13px; }
+  .summary-grid strong { display: block; font-size: 18px; }
+  .controls { background: #fff; border: 1px solid #ddd; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; }
+  .controls label { margin-right: 16px; font-size: 13px; cursor: pointer; }
+  ul.comments { list-style: none; padding: 0; margin: 0; }
+  li.comment { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  li.comment[data-will-post="0"] { opacity: 0.65; }
+  .comment-header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 6px; }
+  .idx { color: #888; font-family: ui-monospace, monospace; font-size: 12px; }
+  .author { font-weight: 600; }
+  .meta { color: #888; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .will-post-badge { background: #2f7a4d; color: white; }
+  .skip-badge { background: #eee; color: #555; font-weight: 400; }
+  .comment-text { white-space: pre-wrap; font-size: 14px; color: #333; margin: 4px 0 6px; padding: 6px 10px; background: #f5f5f5; border-radius: 4px; }
+  .handles { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .handles code { background: #eef4fc; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .reply { white-space: pre-wrap; padding: 8px 12px; border-radius: 4px; font-size: 14px; line-height: 1.55; margin-top: 6px; }
+  .reply.will-post { background: #e9f4ec; border-left: 3px solid #2f7a4d; }
+  .reply.will-skip { background: #f8f4eb; border-left: 3px solid #b06a2b; color: #555; }
+  .reply.none { background: #f5f5f5; color: #888; }
+</style>
+</head><body>
+<h1>YouTube comment dry-run</h1>
+<div class="subtitle">Video: <a href="https://youtu.be/zzSynthVid1">Synthetic zeta video</a> · Blog: <code>synthetic-zeta-video.md</code> · Model: claude-sonnet-5-5</div>
+
+<div class="summary">
+  <strong>Summary</strong>
+  <div class="summary-grid">
+    <div><strong>8</strong>total fetched</div>
+    <div><strong>2</strong>would post</div>
+    <div><strong>2</strong>filtered out</div>
+    <div><strong>2</strong>silent skips</div>
+    <div><strong>1</strong>LLM-skips</div>
+    <div><strong>1</strong>errors</div>
+  </div>
+</div>
+
+<div class="controls">
+  <label><input type="checkbox" id="show-skipped" checked> Show skipped</label>
+  <label><input type="checkbox" id="show-posted" checked> Show would-post</label>
+</div>
+
+<ul class="comments">
+
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#1</span>
+          <span class="author">Zed Viewer</span>
+          <span class="meta">9♥ · 0 replies · 2026-01-05</span>
+          
+          <span class="badge skip-badge">SKIP — filtered: too short (3 words)</span>
+        </div>
+        <div class="comment-text">Too short here</div>
+        
+        <div class="reply none"><em>(no reply generated)</em></div>
+      </li>
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#2</span>
+          <span class="author">Dr Brad Stanfield</span>
+          <span class="meta">8♥ · 1 replies · 2026-01-05</span>
+          
+          <span class="badge skip-badge">SKIP — filtered: Brad&#39;s own comment</span>
+        </div>
+        <div class="comment-text">Thanks everyone for watching this zeta video</div>
+        
+        <div class="reply none"><em>(no reply generated)</em></div>
+      </li>
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#3</span>
+          <span class="author">Ava Sample</span>
+          <span class="meta">7♥ · 0 replies · 2026-01-06</span>
+          <span class="badge" style="background:#888;color:white">GREETING</span>
+          <span class="badge skip-badge">SKIP — classifier=GREETING (silent skip)</span>
+        </div>
+        <div class="comment-text">Hello there and greetings from a zeta fan</div>
+        
+        <div class="reply none"><em>(no reply generated)</em></div>
+      </li>
+      <li class="comment" data-will-post="1">
+        <div class="comment-header">
+          <span class="idx">#4</span>
+          <span class="author">Bo Sample</span>
+          <span class="meta">6♥ · 2 replies · 2026-01-06</span>
+          <span class="badge" style="background:#2b5fb0;color:white">ROUTE</span>
+          <span class="badge will-post-badge">WILL POST</span>
+        </div>
+        <div class="comment-text">How much zeta should I take each morning please?</div>
+        <div class="handles">router handles: <code>synthetic-zeta-guide</code>, <code>synthetic-zeta-video</code></div>
+        <div class="reply will-post">Synthetic reply about zeta.</div>
+      </li>
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#5</span>
+          <span class="author">Cy Sample</span>
+          <span class="meta">5♥ · 0 replies · 2026-01-07</span>
+          <span class="badge" style="background:#a06030;color:white">PRODUCT</span>
+          <span class="badge skip-badge">SKIP — main-LLM returned SKIP_NO_REPLY</span>
+        </div>
+        <div class="comment-text">Where can I buy the zeta product you showed?</div>
+        
+        <div class="reply will-skip">SKIP_NO_REPLY</div>
+      </li>
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#6</span>
+          <span class="author">Di &lt;Sample&gt;</span>
+          <span class="meta">4♥ · 0 replies · 2026-01-07</span>
+          <span class="badge" style="background:#2b5fb0;color:white">ROUTE</span>
+          <span class="badge skip-badge">SKIP — main-LLM error: API error: {&quot;status&quot;:500,&quot;error&quot;:&quot;server error body&quot;}</span>
+        </div>
+        <div class="comment-text">Is zeta safe to take with my other pills?</div>
+        
+        <div class="reply none"><em>(no reply generated)</em></div>
+      </li>
+      <li class="comment" data-will-post="0">
+        <div class="comment-header">
+          <span class="idx">#7</span>
+          <span class="author">Ed Sample</span>
+          <span class="meta">3♥ · 0 replies · 2026-01-08</span>
+          <span class="badge" style="background:#c0392b;color:white">ERROR</span>
+          <span class="badge skip-badge">SKIP — classifier=ERROR (refusal) (silent skip)</span>
+        </div>
+        <div class="comment-text">Please refuse this synthetic zeta comment now</div>
+        
+        <div class="reply none"><em>(no reply generated)</em></div>
+      </li>
+      <li class="comment" data-will-post="1">
+        <div class="comment-header">
+          <span class="idx">#8</span>
+          <span class="author">Fi Sample</span>
+          <span class="meta">2♥ · 0 replies · 2026-01-08</span>
+          <span class="badge" style="background:#c0392b;color:white">ERROR</span>
+          <span class="badge will-post-badge">WILL POST</span>
+        </div>
+        <div class="comment-text">Does zeta interact with coffee at all, doctor?</div>
+        
+        <div class="reply will-post">Synthetic &lt;b&gt;reply&lt;/b&gt; &amp; &quot;quotes&quot; about zeta.</div>
+      </li>
+</ul>
+
+<script>
+  const showSkipped = document.getElementById('show-skipped');
+  const showPosted = document.getElementById('show-posted');
+  function apply() {
+    document.querySelectorAll('li.comment').forEach(li => {
+      const wp = li.dataset.willPost === '1';
+      li.style.display = (wp ? showPosted.checked : showSkipped.checked) ? '' : 'none';
+    });
+  }
+  showSkipped.addEventListener('change', apply);
+  showPosted.addEventListener('change', apply);
+</script>
+</body></html>"
+`;
+
+exports[`youtube-comment-dryrun pins (US-64 AC23) > the production key line, a youtu.be URL and the default limit 1`] = `
+[
+  "log: Using ANTHROPIC_API_KEY (production key — billing shared with prod)",
+  "log: [90mFetching comments (max 50)...[0m",
+  "log: [90mRunning pipeline (concurrency=3)...[0m",
+]
+`;

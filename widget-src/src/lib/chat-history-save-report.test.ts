@@ -22,6 +22,8 @@ vi.mock('./byok-anthropic', () => ({
   callAnthropicDirectRaw: async () => ({ text: 'synthetic answer', blocks: [] }),
 }));
 
+import { StorageError } from '@roadmap/health-core/adapter';
+import { WritesStoppedError } from './error-diagnostics';
 import { sendMessage as sendWebsite } from './chat-api';
 import { sendMessage as sendPages } from './byok-chat';
 
@@ -67,6 +69,24 @@ describe.each([
     await send('hello', null, null);
     await settle();
     expect((sentry.captureException.mock.calls[0] as unknown as [Error])[0].message).toBe('Network request did not answer');
+  });
+
+  it('A15: a device write refused after log-off is not reported, and the answer still shows', async () => {
+    store.recordExchange.mockRejectedValueOnce(new WritesStoppedError());
+    const { result, error } = await send('hello', null, null);
+    await settle();
+    expect(error).toBeNull();
+    expect(result?.content).toBe('synthetic answer');
+    expect(store.recordExchange).toHaveBeenCalledOnce();
+    expect(sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('A15: a real device failure (storage full) is still reported once', async () => {
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic storage full'));
+    await send('hello', null, null);
+    await settle();
+    expect(sentry.captureException).toHaveBeenCalledOnce();
+    expect((sentry.captureException.mock.calls[0] as unknown as [Error])[0].message).toBe('Chat-history save failed');
   });
 
   it('reports nothing when the save succeeds', async () => {

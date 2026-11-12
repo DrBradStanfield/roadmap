@@ -42,6 +42,8 @@ async function page() {
     lib: await import('../lib/storage'),
     local: await import('./local-storage-adapter'),
     chat: await import('./chat-history-store'),
+    errors: await import('../lib/error-diagnostics'),
+    adapter: await import('@roadmap/health-core/adapter'),
   };
 }
 
@@ -66,6 +68,23 @@ describe('US-09 AC2c: the on-device adapter writes a named file only while the p
     }
     // Only the content-free log-off id remains.
     expect(Object.keys(localStorage).filter((key) => key.startsWith('health_roadmap_file_v2'))).toEqual([]);
+  });
+
+  it('A15: the refusal is a WritesStoppedError, still a StorageError, from writeSync and writeDocument', async () => {
+    const { lib, local, errors, adapter: core } = await page();
+    lib.noteCloudPage('dropbox');
+    local.stopRoadmapLocalWrites();
+    const adapter = new local.LocalStorageAdapter();
+    const refusals: unknown[] = [];
+    try { adapter.writeSync('chat-history.json', { a: 1 }, null); } catch (error) { refusals.push(error); }
+    await adapter.writeDocument('synthetic.pdf', new Blob(['synthetic'])).catch((error: unknown) => refusals.push(error));
+    expect(refusals).toHaveLength(2);
+    for (const error of refusals) {
+      expect(error).toBeInstanceOf(errors.WritesStoppedError);
+      expect(error).toBeInstanceOf(core.StorageError);
+      expect((error as Error).name).toBe('WritesStoppedError');
+      expect((error as Error).message).toBe('On-device roadmap persistence stopped for logout.');
+    }
   });
 
   it("a guest's chat history still saves, after another tab's log-off too", async () => {

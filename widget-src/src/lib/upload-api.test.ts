@@ -260,3 +260,28 @@ describe('US-12 AC10: the quota preflight says why it refused', () => {
     expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 12 });
   });
 });
+
+// US-12 AC9 (H65): a 429 says which with a code. Busy is not the daily limit;
+// a missing or unknown code reads as the daily limit, as an older server meant.
+describe('US-12 AC9 H65: a 429 is read by its code', () => {
+  const DAILY = { error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
+  const BUSY = { error: 'Server busy. Please try again later.', errorCode: 'busy' };
+  const cases: Array<[string, () => Response, typeof DAILY]> = [
+    ['code busy', () => jsonResponse({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }, 429), BUSY],
+    ['code daily_limit', () => jsonResponse({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' }, 429), DAILY],
+    ['no code', () => jsonResponse({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' }, 429), DAILY],
+    ['an unknown code', () => jsonResponse({ success: false, error: 'x', code: 'later' }, 429), DAILY],
+    ['no body', () => new Response(null, { status: 429 }), DAILY],
+    ['a body that is not JSON', () => new Response('Too many', { status: 429, headers: { 'content-type': 'application/json' } }), DAILY],
+  ];
+
+  it.each(cases)('a batch 429 with %s', async (_, reply, expected) => {
+    stubFetch(reply);
+    expect(await labImportBatch(FILES)).toEqual({ batchId: null, ...expected });
+  });
+
+  it.each(cases)('a single-file 429 with %s', async (_, reply, expected) => {
+    stubFetch(reply);
+    expect(await labImport(FILES[0].pages, 'si')).toEqual({ result: null, ...expected });
+  });
+});
