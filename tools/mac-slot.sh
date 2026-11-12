@@ -10,6 +10,11 @@
 # children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
 # A waiter never blocks inside lockf (macOS lockf spins a core while it blocks): it tries every slot with an
 # instant lockf every 0.2 s. Waiters are served in arrival order, and a newcomer defers to any live waiter.
+# Every caller queues before its first try: it locks a marker on fd 7 (an instant lockf, then a rename to
+# waiting.<kind>.<ms>.<pid>, which keeps the lock), so a marker is live exactly while its waiter's lock holds.
+# The kernel drops that lock however the waiter ends, even by SIGKILL or a reboot, and a marker anyone can lock
+# is removed; the pid in the name is for order and for humans. Known limit: a stopped (SIGSTOP) waiter still
+# holds its lock, so it holds up the queue for its kind until it is continued or killed.
 # With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
 # MAC_SLOT_POLL_SECONDS (30). A run never starts over the cap: if the load is still that high after
 # MAC_SLOT_LOAD_WAIT_MIN (10; MAC_SLOT_LOAD_WAIT_SECONDS for the tests) it refuses with one line and exit 75
@@ -61,7 +66,7 @@ load() {
   if [ -n "${MAC_SLOT_LOAD_CMD:-}" ]; then sh -c "$MAC_SLOT_LOAD_CMD" 2>/dev/null
   else LC_ALL=C sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }'; fi
 }
-# True while some process holds slot file $1 (a probe on its own descriptor, let go at once).
+# True while some process holds a lock on file $1, a slot or a marker (a probe on its own fd 8, let go at once).
 held() { ! ( exec 8>>"$1" && lockf -s -t 0 8 ) 2>/dev/null; }
 holders() { # kind max: one "pid N (slot i): command" line per held slot
   i=1
@@ -78,8 +83,7 @@ if [ "$kind" = status ]; then
     w=""
     for f in "$DIR"/waiting."$k".*; do
       [ -f "$f" ] || continue
-      p=${f##*.}
-      if kill -0 "$p" 2>/dev/null; then w="$w  waiting: pid $p: $(cat "$f")
+      if held "$f"; then w="$w  waiting: pid ${f##*.}: $(cat "$f")
 "; else rm -f "$f"; fi
     done
     echo "$k: $(printf '%s' "$h" | grep -c .)/$n held, $(printf '%s' "$w" | grep -c .) waiting"
@@ -112,37 +116,43 @@ scan() {
   return 1
 }
 # True while a live waiter for this kind queued before us. Markers are waiting.<kind>.<ms>.<pid>, so the glob
-# lists them in arrival order (two in the same millisecond by pid, as text). A waiter stops at its own marker; a
-# newcomer has none, so any live waiter is ahead of it. A marker whose pid is dead is removed.
+# lists them in arrival order (two in the same millisecond by pid, as text), and we stop at our own. A marker held
+# by no lock has no live waiter (it died, even by SIGKILL, or the Mac rebooted), so it is removed.
 ahead() {
   for f in "$DIR"/waiting."$kind".*; do
     [ -f "$f" ] || continue
-    [ "$f" = "${WFILE:-}" ] && return 1
-    kill -0 "${f##*.}" 2>/dev/null && return 0
+    [ "$f" = "$MARK" ] && return 1
+    held "$f" && return 0
     rm -f "$f"
   done
   return 1
 }
 
-SLOT="" lk="" WFILE=""
+SLOT="" lk="" MARK="" Q="$DIR/queue.$kind.$$"
+trap 'rm -f "$MARK" "$Q"' EXIT
+trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 130' INT
+trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 143' TERM
+# The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked, and before the first scan,
+# so arrival order is start order.
+exec 7>"$Q"
+lockf -s -t 0 7
+echo "$CMDLINE" >&7
+MARK="$DIR/waiting.$kind.$(perl -MTime::HiRes=time -e 'printf "%d", time * 1000').$$"
+mv "$Q" "$MARK"
 if ahead || ! scan retry; then
-  WFILE="$DIR/waiting.$kind.$(perl -MTime::HiRes=time -e 'printf "%d", time * 1000').$$"
-  trap 'rm -f "$WFILE"' EXIT
-  trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 130' INT
-  trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 143' TERM
-  echo "$CMDLINE" > "$WFILE"
   h=$(holders "$kind" "$MAX")
   echo "mac-slot: waiting for a $kind slot ($(printf '%s' "$h" | grep -c .)/$MAX held): $(printf '%s' "$h" | sed 's/ (slot [0-9]*)//' | paste -sd ';' - | sed 's/;/; /g')" >&2
   # Waiters are served in arrival order: only the first live waiter tries the slots, all of them every 0.2 s, so
   # it takes a freed slot within about 0.2 s, and a newcomer queues behind it. The 0.2 s sleep runs in the
-  # background under `wait`, with fd 9 closed, so TERM and INT end a slot wait at once.
+  # background under `wait`, with fds 7 and 9 closed, so TERM and INT end a slot wait at once.
   until ! ahead && scan; do
-    sleep 0.2 9>&- & lk=$!
+    sleep 0.2 7>&- 9>&- & lk=$!
     wait "$lk"; lk=""
   done
-  rm -f "$WFILE"
-  trap - EXIT INT TERM
 fi
+rm -f "$MARK"
+exec 7>&-
+trap - EXIT INT TERM
 echo "$$ $CMDLINE" > "$DIR/$kind.$SLOT.holder"
 
 # Helpers here run with fd 9 closed (9>&-), so a waiter killed mid-sleep frees its slot at once; the sleep runs in
