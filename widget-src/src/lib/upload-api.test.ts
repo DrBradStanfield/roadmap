@@ -110,9 +110,13 @@ describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
     ['a negative count', { status: 'error', completed: -1, total: 20 }],
     ['a fractional count', { status: 'processing', completed: 1.5, total: 20 }],
     ['an `ended` with neither results nor an error', { status: 'ended', completed: 20, total: 20 }],
+    ['an `ended` with a code but no error text', { status: 'ended', completed: 20, total: 20, errorCode: 'server_error' }],
+    ['an `ended` with an empty error', { status: 'ended', completed: 20, total: 20, error: '' }],
   ])('an answer with %s ends the watch with a server error', async (_, body) => {
     stubFetch(() => jsonResponse(body));
-    expect(await pollBatchStatus('batch_abc')).toMatchObject({ status: 'ended', errorCode: 'server_error' });
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_error' });
+    expect(poll.error).toBeTruthy(); // what the pipeline ends on
   });
 
   it('passes the server\'s own `error` answer through, its count kept', async () => {

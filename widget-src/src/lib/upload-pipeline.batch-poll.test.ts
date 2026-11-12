@@ -89,6 +89,8 @@ describe('US-12 AC24: a poll failure that cannot change ends the watch at once',
     ['a NaN count (JSON carries it as null)', () => json({ status: 'processing', completed: NaN, total: N }), 'server_error'],
     ['a negative count', () => json({ status: 'error', completed: -1, total: N }), 'server_error'],
     ['an `ended` with neither results nor an error', () => json({ status: 'ended', completed: N, total: N }), 'server_error'],
+    ['an `ended` with a code but no error text', () => json({ status: 'ended', completed: N, total: N, errorCode: 'server_error' }), 'server_error'],
+    ['an `ended` with an empty error', () => json({ status: 'ended', completed: N, total: N, error: '' }), 'server_error'],
   ] as const)('%s rejects after one poll and no more, and the bar never reads NaN', async (_, failure, code) => {
     script(failure, () => processing(3));
     let settled: unknown;
@@ -99,25 +101,5 @@ describe('US-12 AC24: a poll failure that cannot change ends the watch at once',
     await vi.advanceTimersByTimeAsync(60_000);
     expect(polls).toBe(1);
     expect(bar.filter(Number.isNaN)).toEqual([]);
-  });
-});
-
-/**
- * Stands in for one turn of processBatch's poll loop as shipped before this fix (24f52596^, upload-pipeline.ts
- * :349-352): it set its count from every answer, threw on `error` text, finished on `ended` with results and
- * polled on for anything else. Copied, not imported: the deploy window serves that widget against this server.
- */
-function oldWidgetTurn(poll: { status: string; completed?: number; total?: number; error?: string; results?: unknown[] }, fake = 35) {
-  const realCompleted = poll.completed as number;
-  const next = poll.error ? 'throw' : poll.status === 'ended' && poll.results ? 'done' : 'poll';
-  return { next, realCompleted, bar: Math.round(Math.max(fake, (realCompleted / N) * 100)) };
-}
-
-describe('US-12 AC24: a widget from before the fix, given the server\'s new `error` answer', () => {
-  it('polls on with a count of 3, never NaN', () => {
-    expect(oldWidgetTurn({ status: 'error', completed: 3, total: N })).toEqual({ next: 'poll', realCompleted: 3, bar: 35 });
-  });
-  it('would read NaN were `completed` left out, which is why the server sends it', () => {
-    expect(oldWidgetTurn({ status: 'error', total: N }).bar).toBeNaN();
   });
 });

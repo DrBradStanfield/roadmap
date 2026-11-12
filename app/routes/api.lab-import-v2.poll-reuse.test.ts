@@ -127,6 +127,11 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     expect(await (await call(batch)).json()).toEqual({ status: 'processing', completed: 5, total: 20 });
   });
 
+  // The deploy-window guard. A widget from before AC24 (f5c3e6001, upload-pipeline.ts:349-352) set
+  // `realCompleted = poll.completed`, threw only on `poll.error`, finished only on `ended` with results,
+  // and polled on for any other status. So the route's `error` answer must carry a numeric `completed`:
+  // without it that widget's bar reads NaN. This test puts the route's real answers through the
+  // schema, which requires the count, so it guards both the new widget and the old one.
   it('US-12 AC24: every poll answer the route gives passes the widget\'s poll schema, where it enters', async () => {
     const { batchPollAnswer } = await import('../../widget-src/src/lib/upload-api');
     ended = false;
