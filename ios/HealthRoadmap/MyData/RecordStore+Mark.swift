@@ -33,14 +33,6 @@ extension RecordStore {
         }.value
     }
 
-    /// Which record is shown, for Apple Health's erase gate (US-72 AC10): "phone", the cloud's
-    /// provider and account once its record is open, nil while a connected cloud's record is
-    /// not open yet and while showPhone reads the phone's file.
-    var recordSource: String? {
-        switch source {
-        case .phone(let link): link == nil ? "phone" : nil
-        case .leaving: nil
-        case .cloud(let cloud): cloud.link?.account
-        }
-    }
+    /// Which record is shown, for Apple Health's erase gate (US-72 AC10): `Source.recordSource`.
+    var recordSource: String? { source.recordSource }
 }

@@ -20,18 +20,20 @@ extension RecordStore {
     }
 
     private func importLabsInTurn(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
+        // Another record since the review opened (a sync, a Disconnect's read): refused before
+        // anything is read against the record now shown, as `applyInTurn` refuses it.
+        guard seen.erase == cloudErase else { return .failure(LabRefusal(message: Self.recordChanged)) }
         let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
         do {
             let summary: Result<LabSaveSummary, LabRefusal>
             let result: ApplyResult
-            if let erase = seen.erase, erase == cloudErase {
+            if let erase = seen.erase {
                 let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
                                                              units: seen.units, now: .now, choices: seen.choices)
                 result = await shown(answer.outcome, of: edit)
                 summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
-                // The phone's file (or a screen that moved on, which `apply` refuses): nothing
-                // else changes the record before this turn ends.
+                // The phone's file: nothing else changes the record before this turn ends.
                 summary = try await engine.labSaveSummary(recordJSON: recordJSON, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: .now, deviceId: deviceId)
                 guard case .success = summary else { return summary }
                 result = await applyInTurn(edit, as: seen)

@@ -358,13 +358,16 @@ final class RecordStore {
         await chain { await self.applyInTurn(edit, as: self.screen) }.value
     }
 
+    /// An edit asked on a record no longer shown: an erase taken in, or sync turned on or off.
+    static let recordChanged = "Your record changed while this was open, so this was not saved. Close this and enter the value again."
+
     func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
         // in a record or units it never showed (re-check R1).
         guard seen.erase == cloudErase else {
-            return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
+            return .refused(message: Self.recordChanged, existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }

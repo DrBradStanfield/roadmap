@@ -31,9 +31,13 @@ extension RecordStore {
             let erase: String
             /// The engine session the record came from.
             let session: Int
+            /// CloudSync's link now: a switch may replace it while this record is still shown.
             let link: Link?
+            /// The link's account when this record was drawn. A link never moves it, so a record
+            /// is never named after an account it does not come from (US-72 AC10).
+            let drawnAccount: String?
 
-            func linked(_ link: Link?) -> Cloud { Cloud(erase: erase, session: session, link: link) }
+            func linked(_ link: Link?) -> Cloud { Cloud(erase: erase, session: session, link: link, drawnAccount: drawnAccount) }
         }
 
         enum Event: Equatable {
@@ -70,7 +74,7 @@ extension RecordStore {
         static func transition(_ state: Source, _ event: Event) -> (next: Source, effect: Effect) {
             switch (state, event) {
             case (.phone, .linked(let link)): (.phone(link: link), .none)
-            case (.phone(let link), .cloudShown(let erase, let session)): (.cloud(Cloud(erase: erase, session: session, link: link)), .show)
+            case (.phone(let link), .cloudShown(let erase, let session)): (.cloud(Cloud(erase: erase, session: session, link: link, drawnAccount: link?.account)), .show)
             case (.phone, .cloudEdited): (state, .drop)
             case (.phone, .phoneRequested): (state, .none)
             case (.phone, .phoneLoaded): (state, .show)
@@ -86,8 +90,8 @@ extension RecordStore {
             case (.leaving, .phoneWritten): (state, .drop)
 
             case (.cloud(let cloud), .linked(let link)): (.cloud(cloud.linked(link)), .none)
-            case (.cloud(let cloud), .cloudShown(let erase, let session)): (.cloud(Cloud(erase: erase, session: session, link: cloud.link)), .show)
-            case (.cloud(let cloud), .cloudEdited(let erase)): (.cloud(Cloud(erase: erase, session: cloud.session, link: cloud.link)), .show)
+            case (.cloud(let cloud), .cloudShown(let erase, let session)): (.cloud(Cloud(erase: erase, session: session, link: cloud.link, drawnAccount: cloud.link?.account)), .show)
+            case (.cloud(let cloud), .cloudEdited(let erase)): (.cloud(Cloud(erase: erase, session: cloud.session, link: cloud.link, drawnAccount: cloud.drawnAccount)), .show)
             case (.cloud(let cloud), .phoneRequested): (.leaving(from: cloud), .none)
             case (.cloud, .phoneLoaded): (state, .drop)
             case (.cloud, .phoneUnreadable): (state, .drop)
@@ -100,6 +104,18 @@ extension RecordStore {
             switch self {
             case .phone: nil
             case .leaving(let cloud), .cloud(let cloud): cloud.erase
+            }
+        }
+
+        /// Which record is shown, for Apple Health's erase gate (US-72 AC10): "phone"; the account
+        /// a cloud record was drawn under while the link still names it; nil while a connected
+        /// cloud's record is not open, while showPhone reads the phone's file, and while a switch's
+        /// link disagrees with the record shown. Nil: the gate decides nothing.
+        var recordSource: String? {
+            switch self {
+            case .phone(let link): link == nil ? "phone" : nil
+            case .leaving: nil
+            case .cloud(let cloud): cloud.link?.account == cloud.drawnAccount ? cloud.drawnAccount : nil
             }
         }
 
