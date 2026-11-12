@@ -444,7 +444,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range guidelines use for diabetes. See your doctor to confirm and plan care.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.`,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({

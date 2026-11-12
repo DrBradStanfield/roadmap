@@ -97,7 +97,7 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('urgent');
       // US-25 AC10 (App Review 1.4.1): a guideline range plus a doctor line, not a diagnosis.
-      expect(hba1cSuggestion?.description).toMatch(/ is in the range guidelines use for diabetes\. See your doctor to confirm and plan care\.$/);
+      expect(hba1cSuggestion?.description).toMatch(/ is in the range guidelines use for diabetes\. See your doctor to confirm and plan care, including lifestyle changes\.$/);
       expect(hba1cSuggestion?.description).not.toContain('indicates diabetes');
     });
 

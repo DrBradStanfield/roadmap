@@ -1170,7 +1170,7 @@
           "category": "bloodwork",
           "priority": "urgent",
           "title": "HbA1c in diabetic range",
-          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care.",
+          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.",
           "ingredients": [],
           "reason": "An HbA1c in the diabetic range (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.",
           "guidelines": [
@@ -1983,7 +1983,7 @@
           "category": "bloodwork",
           "priority": "urgent",
           "title": "HbA1c in diabetic range",
-          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care.",
+          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.",
           "ingredients": [],
           "reason": "An HbA1c in the diabetic range (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.",
           "guidelines": [
