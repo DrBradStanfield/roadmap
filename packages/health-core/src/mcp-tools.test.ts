@@ -1387,17 +1387,18 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   });
 
   // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
-  // number typed onto the front of a name is one word. These still file (so
-  // does the Sentry scrub's output: it leaves them as written).
+  // number typed onto the front of a name is one word. These still file, and
+  // the Sentry scrub leaves them as written.
   it('still files a number in non-ASCII digits, or a whole number glued in front of a name', () => {
     for (const detail of [
-      'my ldl \uFF11\uFF14\uFF10 is wrong', // full-width digits
-      'my ldl is \uFF13.\uFF12 mmol/L',
-      'my bmi \u0663\u0661 is wrong', // Arabic-Indic digits
+      'my ldl １４０ is wrong', // full-width digits
+      'my ldl is ３.２ mmol/L',
+      'my bmi ٣١ is wrong', // Arabic-Indic digits
       'my 140ldl is wrong',
       'my 31bmi is wrong',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+      expect(scrubText(detail), detail).toBe(detail);
     }
     // A decimal or a dot ends the word first, so these are refused.
     for (const detail of ['my 3.2ldl is wrong', 'my 140.ldl is wrong']) {
