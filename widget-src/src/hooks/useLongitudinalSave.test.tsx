@@ -16,7 +16,7 @@ vi.mock('../lib/roadmap-data', () => ({
   getShownErase: () => 'erase-1',
   loadAllHistorySync: () => [],
 }));
-vi.mock('../lib/storage', () => ({ localHealthWritesStopped: () => false }));
+vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => true }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 
 import { addMeasurement } from '../lib/roadmap-data';

@@ -18,7 +18,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, logOffId, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { clearOffFileHealthData, healthWritesAllowed, logOffId, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -98,13 +98,14 @@ export function isSyncPending(): boolean {
 }
 
 /**
- * The cloud page's device copy is still its mirror only while BOTH hold
- * (US-09 AC2, AC2c): no log-off on this device since `openedUnder`, heard or
- * not, and this browser still names this provider. Keep both halves: after a
- * log-off and a new sign-in to the same provider, the name alone matches again.
+ * The cloud page's device copy is still its mirror only while ALL hold
+ * (US-09 AC2, AC2c): this page may write health data here at all
+ * (healthWritesAllowed), no log-off on this device since `openedUnder`, heard
+ * or not, and this browser still names this provider. Keep every part: after
+ * a log-off and a new sign-in to the same provider, the name alone matches again.
  */
 function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): boolean {
-  return logOffId() === openedUnder && safeGetItem(BACKEND_KEY) === store.id;
+  return healthWritesAllowed() && logOffId() === openedUnder && safeGetItem(BACKEND_KEY) === store.id;
 }
 
 /** The host for `store`: the device tier when it is localStorage itself,

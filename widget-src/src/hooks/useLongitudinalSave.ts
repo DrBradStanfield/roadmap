@@ -12,7 +12,7 @@ import { localDay } from '@roadmap/health-core/merge';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { activeRowIndex, routeTasksToSaves, slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
 import { addMeasurement, correctValue, getBackendKind, getShownErase, loadAllHistorySync } from '../lib/roadmap-data';
-import { localHealthWritesStopped } from '../lib/storage';
+import { healthWritesAllowed } from '../lib/storage';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
@@ -157,7 +157,7 @@ export function useLongitudinalSave({
       }
     };
     if (now) {
-      if (getBackendKind() === 'local' && localHealthWritesStopped()) return Promise.resolve(new Map());
+      if (getBackendKind() === 'local' && !healthWritesAllowed()) return Promise.resolve(new Map());
       const toSave = tasks ?? fromForm();
       return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
     }

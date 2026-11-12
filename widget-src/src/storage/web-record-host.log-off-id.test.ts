@@ -8,23 +8,34 @@
  * still names the page's provider. No storage event is needed: these pages
  * hear none (jsdom raises none for the same document).
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, type WriteResult } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RecordSession } from '@roadmap/health-core/record-session';
 import { createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { RecordHost } from '@roadmap/health-core/record-host';
-import { LocalStorageAdapter } from './local-storage-adapter';
-import { BACKEND_KEY, PENDING_MIRROR_KEY, isSyncPending, webRecordHost } from './web-record-host';
+
+const BACKEND_KEY = 'health_roadmap_backend';
+const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
+let LocalStorageAdapter: typeof import('./local-storage-adapter').LocalStorageAdapter;
+let webRecordHost: typeof import('./web-record-host').webRecordHost;
+let isSyncPending: typeof import('./web-record-host').isSyncPending;
+/** A fresh page: a fresh module graph, loaded with the device's log-off id as it is now. */
+async function loadPage(): Promise<void> {
+  vi.resetModules();
+  ({ LocalStorageAdapter } = await import('./local-storage-adapter'));
+  ({ webRecordHost, isSyncPending } = await import('./web-record-host'));
+}
 
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
 const LIFTED_KEY = 'health_roadmap_lifted_revision';
 
 afterEach(() => localStorage.clear());
 // A cloud page runs with its backend remembered; MemoryAdapter's id is 'memory'.
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.setItem(BACKEND_KEY, 'memory');
   localStorage.setItem(LOG_OFF_ID_KEY, 'id-before');
+  await loadPage();
 });
 
 /** Another tab logs off (a new id) and the device signs in again to the same
@@ -140,6 +151,7 @@ describe('US-09 AC2c: a host built before a log-off writes nothing to this devic
 
   it("an adapter whose sign-in began before the log-off is refused, though its host is built after", async () => {
     localStorage.setItem(LOG_OFF_ID_KEY, 'id-after');
+    await loadPage();
     const adapter = new FailingCloud(new MemoryCloud());
     const signedIn = Object.assign(adapter, { gen: 'id-before' });
     const tab = await RecordSession.open(webRecordHost(signedIn));
@@ -193,6 +205,7 @@ describe('US-09 AC2c controls: no log-off, a device page, a host built after the
 
   it('a page opened before the first log-off mirrors while there is still none', async () => {
     localStorage.removeItem(LOG_OFF_ID_KEY);
+    await loadPage();
     const adapter = new FailingCloud(new MemoryCloud());
     const tab = await RecordSession.open(webRecordHost(adapter));
     adapter.failing = true;
@@ -201,8 +214,9 @@ describe('US-09 AC2c controls: no log-off, a device page, a host built after the
     expect(ids(deviceCopy())).toEqual(['late']);
   });
 
-  it('a host built after the log-off works normally', async () => {
+  it('a host built after the log-off, on a page loaded after it, works normally', async () => {
     logOffElsewhere();
+    await loadPage();
     const adapter = new FailingCloud(new MemoryCloud());
     const tab = await RecordSession.open(webRecordHost(adapter));
     adapter.failing = true;

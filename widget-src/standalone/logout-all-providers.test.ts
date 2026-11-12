@@ -80,12 +80,22 @@ describe('US-09 AC45: log off removes every provider sign-in on this device', ()
     for (const keys of Object.values(ENTRIES)) for (const key of keys) expect(localStorage.getItem(key)).toBeNull();
   });
 
-  it('the log-off id and the erase fence survive, and the id is new', async () => {
+  it('when the active provider fails to disconnect, no provider sign-in remains', async () => {
+    seedAll('gen-1');
+    const { GoogleDriveAdapter } = await import('../src/storage/drive');
+    vi.spyOn(GoogleDriveAdapter.prototype, 'disconnect').mockRejectedValue(new Error('synthetic disconnect failure'));
+    await connect.logOff('google-drive');
+    for (const keys of Object.values(ENTRIES)) for (const key of keys) expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  it('the sign-in sweep never names the log-off id or the erase fence, and the id is new', async () => {
+    const { SIGN_IN_KEYS } = await import('./providers');
+    expect(SIGN_IN_KEYS).not.toContain(LOG_OFF_ID_KEY);
+    expect(SIGN_IN_KEYS).not.toContain(ERASE_FENCE_KEY);
     seedAll('gen-1');
     await connect.logOff('google-drive');
     const id = localStorage.getItem(LOG_OFF_ID_KEY);
     expect(id).not.toBeNull();
     expect(id).not.toBe('gen-1');
-    expect(localStorage.getItem(ERASE_FENCE_KEY)).not.toBeNull();
   });
 });

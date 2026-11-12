@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, localHealthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, healthWritesAllowed, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -142,7 +142,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     // After log-off, typed values stay on screen only: writing them would put
     // health values back on a device the user meant to leave clean (US-09 AC2e).
     // Removing a draft is always safe, so a stale one does not stay behind.
-    if (localHealthWritesStopped()) { safeRemoveItem(storageKey); return; }
+    if (!healthWritesAllowed()) { safeRemoveItem(storageKey); return; }
     if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);
