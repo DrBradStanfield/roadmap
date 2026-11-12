@@ -356,6 +356,94 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(r.err()).not.toMatch(/could not read the load/);
   });
 
+  // R4 (PR 1427 review): a marker is live only while its waiter holds the kernel lock on it (fd 7). A pid can be
+  // reused, and a marker left by a SIGKILL or a reboot names one; on 220c9803c ahead() judged by `kill -0`, so a
+  // stale marker naming any live pid queued every caller of that kind behind it, with no limit.
+  const sleeper = () => { const s = spawn('sleep', ['300']); kids.push(s); return s.pid ?? 0; };
+  const waiting = (kind: string) => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith(`waiting.${kind}.`)) : []);
+  it('a stale marker naming a live unrelated pid does not hold up a caller (R4)', () => {
+    mkdirSync(home, { recursive: true });
+    writeFileSync(join(home, `waiting.codex.${Date.now() - 60000}.${sleeper()}`), 'left behind\n');
+    const t = Date.now();
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(Date.now() - t).toBeLessThan(2000);
+    expect(s.stderr).not.toMatch(/waiting for a codex slot/);
+    expect(waiting('codex')).toEqual([]);
+  });
+
+  it('a marker left from before a reboot (unlocked, naming a live pid) is cleared by status and blocks no one (R4)', () => {
+    mkdirSync(home, { recursive: true });
+    writeFileSync(join(home, `waiting.tests.1000000000000.${process.pid}`), 'before the reboot\n');
+    const st = spawnSync('sh', [SCRIPT, 'status'], { env: env(), encoding: 'utf8' });
+    expect(st.stdout).toMatch(/tests: 0\/3 held, 0 waiting/);
+    expect(waiting('tests')).toEqual([]);
+    writeFileSync(join(home, `waiting.tests.1000000000000.${process.pid}`), 'before the reboot\n');
+    const s = spawnSync('sh', [SCRIPT, 'tests', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(s.stderr).not.toMatch(/waiting for a tests slot/);
+    expect(waiting('tests')).toEqual([]);
+  });
+
+  it('a waiter SIGKILLed mid-wait holds up no one, and leaves no marker once the next caller runs (R4)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', hold('b'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    w.p.kill('SIGKILL');
+    await w.done;
+    release('a');
+    const t = Date.now();
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(extra), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(Date.now() - t).toBeLessThan(2000);
+    expect(started('b')).toBe(false);
+    expect(waiting('codex')).toEqual([]);
+  });
+
+  it('the command does not inherit the queue marker descriptor (fd 7), only the slot (fd 9) (R4)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', ['sh', '-c', `ls /dev/fd > "${fake}/fds"`], extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    release('a');
+    expect(await w.done).toBe(0);
+    const fds = readFileSync(join(fake, 'fds'), 'utf8').trim().split('\n');
+    expect(fds).toContain('9');
+    expect(fds).not.toContain('7');
+  });
+
+  // R5: a caller writes and locks its marker before its first scan, so arrival order is start order. On 220c9803c
+  // the marker came only after a failed `scan retry` (0.6 s with three slots held), and a later caller could slip in.
+  it('a caller holds its marker before its first scan ends (R5)', async () => {
+    for (const n of ['a', 'b', 'c']) bg('tests', hold(n));
+    await until(() => started('a') && started('b') && started('c'));
+    const d = bg('tests', hold('d'));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(waiting('tests').filter((f) => f.endsWith(`.${d.p.pid}`))).toHaveLength(1);
+  });
+
+  it('two callers started 0.15 s apart while the slot is held run in that order, every time (R5)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    for (let round = 0; round < 3; round += 1) {
+      const h = bg('codex', hold('x'), extra);
+      await until(() => started('x'));
+      const first = bg('codex', queued(`F${round}`), extra);
+      await new Promise((r) => setTimeout(r, 150));
+      const second = bg('codex', queued(`S${round}`), extra);
+      await until(() => /waiting for a codex slot/.test(first.err()) && /waiting for a codex slot/.test(second.err()));
+      release('x');
+      expect(await h.done).toBe(0);
+      expect(await first.done).toBe(0);
+      expect(await second.done).toBe(0);
+      rmSync(join(fake, 'x.go'));
+      rmSync(join(fake, 'x.log'));
+      expect(order().slice(-2)).toEqual([`F${round}`, `S${round}`]);
+    }
+  }, 30000);
+
   it('honours MAC_SLOT_MAX_LOAD', async () => {
     setLoads('9.00');
     const r = bg('tests', ['true'], { MAC_SLOT_MAX_LOAD: '10' });
