@@ -8,8 +8,9 @@
 #   ios/scripts/sim-run.sh -- xcodebuild test -project HealthRoadmap.xcodeproj -scheme HealthRoadmap
 #   ios/scripts/sim-run.sh --reset-app -- xcrun simctl install {udid} <path>.app
 # The lock is the kernel's: lockf on a file descriptor (fd 9) opened on ~/Library/Caches/health-roadmap-sim/
-# lock. The kernel frees it when every holder of that descriptor has exited, however it exited. The
-# holder file there is information for status and waiting messages, never the lock. A call carrying the
+# lock, tried every 0.2 s (lockf waiting on its own spins a core on macOS). The kernel frees it when
+# every holder of that descriptor has exited, however it exited. The holder file there is information
+# for status and waiting messages, never the lock. A call carrying the
 # holder's token in HR_SIM_LEASE (a script under the lock calling sim-run again) runs without locking.
 # The command runs under a small perl shim that keeps fd 9 while the command (in its own process group,
 # without fd 9) runs, and stops the whole group at the run's time limit, on a signal, or when this
@@ -43,7 +44,7 @@ NUM='^[0-9]+(\.[0-9]+)?$'
 [[ "$POLL" =~ $NUM ]] && awk -v p="$POLL" 'BEGIN { exit !(p + 0 >= 1) }' || POLL=1
 START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
-OWN=0 SHIM="" UDID="" TOKEN="$$-$(date +%s)"
+OWN=0 SHIM="" UDID="" MARK="" TOKEN="$$-$(date +%s)"
 
 die() { echo "sim-run: $*" >&2; exit "${2:-1}"; }
 now() { date +%s; }
@@ -121,14 +122,38 @@ wait_guard() {
   done
 }
 
-# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder.
+# True while a live caller queued ahead of this one: waiting.<start>.<pid> markers in name order, up
+# to this caller's own; a dead pid's marker goes.
+ahead() {
+  local f p
+  for f in "$HOME_DIR"/waiting.*; do
+    [ -e "$f" ] || continue
+    p=${f##*.}
+    [ "$p" = $$ ] && return 1
+    kill -0 "$p" 2>/dev/null && return 0
+    rm -f "$f"
+  done
+  return 1
+}
+
+# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder. It
+# tries every 0.2 s, never waiting inside lockf, which spins a core on macOS; the sleep runs in the
+# background so a signal reaches the trap at once. Waiters queue by marker, and a newcomer waits behind
+# them, so a caller that reruns at once cannot starve one already waiting.
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
-  if ! lockf -s -t 0 9; then
+  if ahead || ! lockf -s -t 0 9; then
+    MARK="$HOME_DIR/waiting.$(now).$$"
+    : > "$MARK"
     echo "sim-run: the shared simulator is $(describe)" >&2
     echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
-    lockf -s -t "$(left)" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+    until ! ahead && lockf -s -t 0 9; do
+      [ "$(left)" -gt 0 ] || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+      sleep 0.2 9>&- & wait $!
+    done
+    rm -f "$MARK"
+    MARK=""
   fi
   OWN=1
 }
@@ -149,7 +174,8 @@ idle_shutdown() {
   sleep "$IDLE_SECONDS"
   [ "$(cat "$HOME_DIR/last-release" 2>/dev/null)" = "$1" ] || exit 0
   exec 9>>"$LOCK"
-  lockf -s -t 5 9 || exit 0
+  local end=$(( $(now) + 5 ))
+  until lockf -s -t 0 9; do [ "$(now)" -lt "$end" ] || exit 0; sleep 1; done
   [ "$(cat "$HOME_DIR/last-release" 2>/dev/null)" = "$1" ] || exit 0
   write_info idle shutdown
   UDID=$(cat "$HOME_DIR/udid" 2>/dev/null)
@@ -368,7 +394,7 @@ if [ -n "${HR_SIM_LEASE:-}" ] && [ "$HR_SIM_LEASE" = "$(field token)" ] && held;
   exec "$SELF" _inner "$RESET" "$@"
 fi
 
-on_exit() { [ "$OWN" = 1 ] && arm_idle; }
+on_exit() { [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
 # A signal goes to the shim, which stops the command's group; this script waits for it, then exits.
 on_signal() { [ -n "$SHIM" ] && { kill -TERM "$SHIM" 2>/dev/null; wait "$SHIM"; }; exit "$1"; }
 trap on_exit EXIT
