@@ -10,9 +10,15 @@
  * import alias); a line that defines it ("function name(") and comment lines
  * (starting with //, /* or *) do not count. A file also counts when it imports
  * a guarded name from its defining module under any alias (named, namespace,
- * dynamic or re-export), so a renamed import cannot dodge the pin. A file that
- * re-exports a name becomes a source of it too. tools/ is out of scope: those
- * are manual scripts with their own copies, never served.
+ * dynamic or re-export). A file that re-exports a name, under any alias,
+ * becomes a source of that alias too, through chains of re-exports.
+ *
+ * Gap it does not close: a NEW export in a listed file that wraps a guarded
+ * call (`export const ask = (p) => getChatCompletion(p)` in api.chat.ts), or
+ * re-exports a local import with a bare `export { name }`, gives the call a
+ * new name this scan never sees. Whoever reviews a change to a listed file
+ * checks for that. tools/ is out of scope: those are manual scripts with
+ * their own copies, never served.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -51,9 +57,10 @@ const DEFINED_IN: Record<string, string> = {
   action: 'app/routes/api.chat',
 };
 
-type Import = { file: string; from: string; names: string[] | '*'; reexport: boolean };
+/** One import or re-export edge; each name is [name in the source module, name it takes here]. */
+type Import = { file: string; from: string; names: Array<[string, string]> | '*'; reexport: boolean };
 const NAMED = /\b(import|export)\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g;
-const WHOLE = /\b(import\s+\*\s+as\s+\w+\s+from|export\s+\*\s+(?:as\s+\w+\s+)?from|import\()\s*['"]([^'"]+)['"]/g;
+const WHOLE = /\b(import\s+\*\s+as\s+\w+\s+from|export\s+\*\s+(?:as\s+\w+\s+)?from|import\()\s*['"`]([^'"`]+)['"`]/g;
 
 function imports(files: Source[]): Import[] {
   return files.flatMap((f) => {
@@ -61,20 +68,38 @@ function imports(files: Source[]): Import[] {
     const at = (spec: string) => (spec.startsWith('.') ? join(dirname(f.path), spec).replace(/\.tsx?$/, '') : spec);
     const named = [...text.matchAll(NAMED)].map((m) => ({
       file: f.path, from: at(m[3]), reexport: m[1] === 'export',
-      names: m[2].split(',').map((n) => n.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter(Boolean),
+      names: m[2].split(',').map((n) => n.trim().replace(/^type\s+/, '')).filter(Boolean)
+        .map((n) => { const [orig, alias] = n.split(/\s+as\s+/); return [orig, alias ?? orig] as [string, string]; }),
     }));
     const whole = [...text.matchAll(WHOLE)].map((m) => ({ file: f.path, from: at(m[2]), reexport: m[1].startsWith('export'), names: '*' as const }));
     return [...named, ...whole];
   });
 }
 
-/** Files that import the name from its defining module, or from a file that re-exports it. */
+/**
+ * Files that import the name from its defining module, or from any file that
+ * re-exports it under any alias, through chains of re-exports. `provides` maps
+ * a module to the names it exports the guarded function under; it grows until
+ * no re-export adds a new one.
+ */
 function importers(name: string, files: Source[] = FILES): string[] {
   const all = imports(files);
-  const takes = (i: Import, from: Set<string>) => from.has(i.from) && (i.names === '*' || i.names.includes(name));
-  const from = new Set([DEFINED_IN[name]]);
-  for (const i of all) if (i.reexport && takes(i, from)) from.add(i.file.replace(/\.tsx?$/, ''));
-  return all.filter((i) => takes(i, from)).map((i) => i.file);
+  const provides = new Map<string, Set<string>>([[DEFINED_IN[name], new Set([name])]]);
+  const taken = (i: Import): string[] => {
+    const names = provides.get(i.from);
+    if (!names) return [];
+    return i.names === '*' ? [...names] : i.names.filter(([orig]) => names.has(orig)).map(([, alias]) => alias);
+  };
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const i of all.filter((x) => x.reexport)) {
+      const mod = i.file.replace(/\.tsx?$/, '');
+      const names = provides.get(mod) ?? new Set<string>();
+      for (const n of taken(i)) if (!names.has(n)) { names.add(n); grew = true; }
+      if (names.size) provides.set(mod, names);
+    }
+  }
+  return all.filter((i) => taken(i).length > 0).map((i) => i.file);
 }
 
 /** Every file that calls the name or imports it from its source, under any alias. */
@@ -114,6 +139,22 @@ describe('US-15 AC65: chat model entries, pinned (add a missing-prompt guard bef
     expect(callers('webChatAction', false, fake)).toEqual([]);
     expect(entries('getChatCompletion', fake)).toEqual(['app/lib/new-bot.server.ts', 'app/lib/relay.server.ts', 'app/lib/via-relay.server.ts']);
     expect(entries('action', fake)).toEqual(['app/lib/new-route.server.ts']);
+  });
+
+  it('a renamed re-export imported by name, a chain of re-exports and a template dynamic import are caught (R2)', () => {
+    const fake: Source[] = [
+      { path: 'app/lib/youtube-bot.server.ts', lines: ["export { runPipeline as answer } from './youtube-bot-pipeline.server';"] },
+      { path: 'app/routes/new-route.ts', lines: ["import { answer } from '../lib/youtube-bot.server';", 'answer(args);'] },
+      { path: 'app/lib/hop1.server.ts', lines: ["export { getChatCompletion as a } from './chat.server';"] },
+      { path: 'app/lib/hop2.server.ts', lines: ["export { a as b } from './hop1.server';"] },
+      { path: 'app/lib/hop3.server.ts', lines: ["export * from './hop2.server';"] },
+      { path: 'app/lib/end.server.ts', lines: ["import { b as go } from './hop3.server';", 'go(params);'] },
+      { path: 'app/lib/lazy.server.ts', lines: ['const m = await import(`./chat.server`);'] },
+    ];
+    expect(entries('runPipeline', fake)).toEqual(['app/lib/youtube-bot.server.ts', 'app/routes/new-route.ts']);
+    expect(entries('getChatCompletion', fake)).toEqual([
+      'app/lib/end.server.ts', 'app/lib/hop1.server.ts', 'app/lib/hop2.server.ts', 'app/lib/hop3.server.ts', 'app/lib/lazy.server.ts',
+    ]);
   });
 
   it('the pin reads real source: it finds a definition file it then excludes', () => {
