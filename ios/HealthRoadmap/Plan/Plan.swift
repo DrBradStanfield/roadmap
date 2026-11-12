@@ -27,6 +27,9 @@ struct Suggestion: Decodable, Identifiable {
     /// Dr Brad's product for this card, for a US adult (US-61): only in the engine's `usProducts`.
     let usProduct: USProduct?
 
+    /// Whether the card marks, before it is opened, that it cites sources (App Review 1.4.1).
+    var hasSources: Bool { !(references ?? []).isEmpty }
+
     /// The one suggestion with a Dismiss button, which asks "Do you drink alcohol?" (US-60).
     static let reduceAlcohol = "reduce-alcohol"
 }

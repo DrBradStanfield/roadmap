@@ -102,11 +102,17 @@ private struct SuggestionRow: View {
                             .transaction(value: expanded) { $0.animation = nil }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(expanded ? 180 : 0))
-                        .padding(.top, 4)
+                    // A quiet mark that the card cites sources, shown closed and open so the title never reflows (App Review 1.4.1).
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        if suggestion.hasSources {
+                            Text("Sources").font(.caption2).foregroundStyle(.secondary)
+                        }
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(expanded ? 180 : 0))
+                    }
+                    .padding(.top, 4)
                 }
                 .contentShape(Rectangle())
             }
