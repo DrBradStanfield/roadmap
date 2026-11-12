@@ -134,7 +134,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       // A save landed, or an erase was taken in; upkeep after it failed.
       if (at.op === 'clear-off-file' || at.op === 'after-save') {
         console.warn('Record upkeep failed');
-        Sentry.captureException(recordFailure(error, 'Record upkeep failed'), { tags: { area: 'cloud-sync', op: at.op } });
+        if (!at.repeat) Sentry.captureException(recordFailure(error, 'Record upkeep failed'), { tags: { area: 'cloud-sync', op: at.op } });
         return;
       }
       console.warn('Cloud sync failed');
