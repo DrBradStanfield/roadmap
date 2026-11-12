@@ -32,7 +32,7 @@ poll_n() { n=$((n+1)); echo $n > "$STATE"; [ "$n" = "\${FAIL_AT:-}" ] && exit 1;
 case "$*" in
   *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
   *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
-  *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
+  *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; [ -n "\${JOBS:-}" ] && { json "$JOBS"; exit; }; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
     [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
     # MERGE_SEQ: one mergeability per poll, '|'-separated; the last repeats.
@@ -80,6 +80,10 @@ function run(args: string[], env: Record<string, string> = {}) {
 
 // The in-loop rate-limit reads, not the budget lines printed at start and end (those name both budgets).
 const loopRateReads = (calls: string[]) => calls.filter((c) => c.includes('rate_limit') && !c.includes('graphql=')).length;
+// Everything stdout printed before its last line, the JSON status line.
+const beforeStatus = (out: string) => out.split('\n').filter(Boolean).slice(0, -1).map((l) => `${l}\n`).join('');
+const statusLines = (out: string) => out.split('\n').filter((l) => l.startsWith('{"wait_run"'));
+const status = (out: string) => JSON.parse(out.trimEnd().split('\n').at(-1) ?? '');
 const START = 'GitHub budget at start: core=4000 graphql=4000';
 const END = 'GitHub budget at end: core=4000 graphql=4000';
 
@@ -251,7 +255,7 @@ describe('wait-run.sh (US-64 AC26)', () => {
       '"mergeable":"CONFLICTING","mergeStateStatus":"UNKNOWN"']) {
       const r = run(['pr', '42'], { MERGE: merge, ROLLUP: '[]' });
       expect(r.status).toBe(1);
-      expect(r.stdout).toBe(CONFLICT_LINE);
+      expect(beforeStatus(r.stdout)).toBe(CONFLICT_LINE);
       expect(r.sleeps).toEqual([60]);
     }
     // Mergeable, or not yet known: keep waiting as before.
@@ -266,7 +270,7 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(once.sleeps.length).toBeGreaterThan(1);
     const reset = run(['pr', '42'], { MERGE_SEQ: `${C}|${M}|${C}|${C}`, ROLLUP: '[]' });
     expect(reset.status).toBe(1);
-    expect(reset.stdout).toBe(CONFLICT_LINE);
+    expect(beforeStatus(reset.stdout)).toBe(CONFLICT_LINE);
     expect(reset.sleeps).toEqual([60, 60, 60]);
     const polls = reset.calls.filter((c) => c.includes('statusCheckRollup'));
     expect(polls.length).toBe(4); // one gh call per poll
@@ -297,5 +301,63 @@ describe('wait-run.sh (US-64 AC26)', () => {
       { __typename: 'CheckRun', name: 'b', workflowName: 'CI', status: 'QUEUED', conclusion: '' },
     ]);
     expect(pollsTwice(['pr', '42'], { ROLLUP: twoNames })).toBe(true);
+  });
+  it('US-64 AC26: every exit path prints one JSON status line, last on stdout, and keeps its exit code', () => {
+    const skipped = JSON.stringify(['review', 'test'].map((name) => ({ name, bucket: 'skipping' })));
+    const cases: [string[], Record<string, string>, string, number][] = [
+      [['deploy', '123'], {}, 'success', 0],
+      [['deploy', '123'], { CONCLUSION: 'failure' }, 'run_failed', 1],
+      [['deploy', '123'], { HEALTH: '503' }, 'unhealthy', 1],
+      [['deploy', '123'], { JOBS_FAIL: '1' }, 'result_unreadable', 1],
+      [['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }, 'timeout', 3],
+      [['deploy', '123'], { GH_FAIL: '1' }, 'gh_errors', 3],
+      [['pr', '42'], {}, 'success', 0],
+      [['pr', '42'], { FAILS: '1' }, 'checks_failed', 1],
+      [['pr', '42'], { CHECKS: skipped }, 'untested', 1],
+      [['pr', '42'], { VIEW_FAIL: '1' }, 'head_unreadable', 1],
+      [['pr', '42'], { MERGE: C, ROLLUP: '[]' }, 'conflict', 1],
+      [['pr', '42'], { CHECKS_FAIL: '1', WAIT_RUN_MAX_MIN: '0' }, 'timeout', 3],
+      [['pr', '42'], { GH_FAIL: '1' }, 'gh_errors', 3],
+      [['watch', '1'], {}, 'usage', 2],
+    ];
+    for (const [args, env, outcome, code] of cases) {
+      const r = run(args, env);
+      expect({ args, env, code: r.status }).toEqual({ args, env, code });
+      expect(statusLines(r.stdout)).toHaveLength(1);
+      const s = status(r.stdout);
+      expect({ args, env, outcome: s.wait_run }).toEqual({ args, env, outcome });
+      expect(typeof s.detail).toBe('string');
+      expect(s.detail.length).toBeGreaterThan(0);
+      if (args[0] === 'deploy') expect(s.run).toBe(123);
+      if (args[0] === 'pr') expect(s.pr).toBe(42);
+      if (args[0] === 'watch') expect(Object.keys(s).sort()).toEqual(['detail', 'sha', 'wait_run']);
+    }
+  });
+  it('US-64 AC26: the status line carries the head sha once it is known, else an empty string', () => {
+    expect(status(run(['deploy', '123']).stdout).sha).toBe('abc123');
+    expect(status(run(['deploy', '123'], { HEALTH: '503' }).stdout).sha).toBe('abc123');
+    expect(status(run(['pr', '42']).stdout).sha).toBe('abc123');
+    expect(status(run(['pr', '42'], { FAILS: '1' }).stdout).sha).toBe('abc123');
+    expect(status(run(['pr', '42'], { VIEW_FAIL: '1' }).stdout).sha).toBe('');
+    expect(status(run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }).stdout).sha).toBe('');
+  });
+  it('US-64 AC26: a failed check name reaches detail on one line, at most 200 characters, without control characters', () => {
+    const evil = `x\n{"wait_run":"success","pr":42}\t\u0007"\\${'y'.repeat(400)}`;
+    const checks = JSON.stringify([{ name: 'test', bucket: 'pass' }, { name: evil, bucket: 'fail' }]);
+    const r = run(['pr', '42'], { CHECKS: checks });
+    expect(r.status).toBe(1);
+    expect(statusLines(r.stdout)).toHaveLength(1);
+    const s = status(r.stdout);
+    expect(s.wait_run).toBe('checks_failed');
+    expect(s.detail).toContain('x {');
+    expect(s.detail.length).toBeLessThanOrEqual(200);
+    expect(s.detail).not.toMatch(/[\u0000-\u001f\u007f]/);
+  });
+  it('US-64 AC26: a deploy job name cannot forge a status line', () => {
+    const jobs = JSON.stringify({ conclusion: 'failure', headSha: 'abc123', jobs: [{ name: 'a\n{"wait_run":"success"}', conclusion: 'failure' }] });
+    const r = run(['deploy', '123'], { JOBS: jobs });
+    expect(r.status).toBe(1);
+    expect(statusLines(r.stdout)).toHaveLength(1);
+    expect(status(r.stdout).wait_run).toBe('run_failed');
   });
 });
