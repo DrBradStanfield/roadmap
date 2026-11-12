@@ -25,7 +25,7 @@
  */
 import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
-import { claimSingleUse, releaseSingleUse, sweepSingleUse } from './single-use-claims.server';
+import { CLAIM_TIMEOUT_MS, insertClaim, releaseSingleUse, sweepSingleUse, type ClaimResult } from './single-use-claims.server';
 
 export const DEDUP_WINDOW_MS = 60_000;
 
@@ -90,13 +90,20 @@ export const CHAT_BUSY_REPLY = 'Still answering this question. Try sending it ag
  * The rest (orders, Supabase writes) has no timeout of its own: 37 s of margin.
  * The live chat_timing p99 could not be read on 2026-11-12 (the Fly log buffer
  * held no chat_timing line). chat-dedup.server.test.ts fails if the sum ever
- * reaches this.
+ * reaches this. The sum covers the model stages only: a longer turn (a slow
+ * Discord send) just loses its claim early. Its release names its own row's
+ * exact created_at, so it never deletes a twin's later claim.
  */
 export const CHAT_TURN_TTL_MS = 180_000;
 const KIND = 'chat-turn';
 /** Domain separation: this MAC can never equal one the same secret makes elsewhere. */
 const KEY_LABEL = 'chat-turn-claim:v1';
+/** The claim's whole store time (insert, sweep, retry) shares one deadline, then fails open. */
+const CLAIM_BUDGET_MS = CLAIM_TIMEOUT_MS;
+/** An outage or a missing table reports once per process per this long, not on every turn. */
+const CLAIM_FAILED_REPORT_MS = 10 * 60_000;
 let missingSecretReported = false;
+let claimFailedReportedAt = -Infinity;
 
 export type TurnClaim =
   | { kind: 'duplicate'; content: string }
@@ -144,13 +151,20 @@ export async function claimChatTurn(
   }
   const key = turnKey(scope, message);
   if (!key) return UNCLAIMED;
-  let outcome = await claimSingleUse(key, KIND, CHAT_TURN_TTL_MS);
-  // The row may be a crashed turn's: clear claims past the TTL and try once more.
-  if (outcome === 'spent') {
-    await sweepSingleUse(KIND, CHAT_TURN_TTL_MS);
-    outcome = await claimSingleUse(key, KIND, CHAT_TURN_TTL_MS);
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), CLAIM_BUDGET_MS);
+  let claim: ClaimResult;
+  try {
+    claim = await insertClaim(key, KIND, deadline.signal);
+    // The row may be a crashed turn's: clear claims past the TTL and try once more.
+    if (claim.outcome === 'spent') {
+      await sweepSingleUse(KIND, CHAT_TURN_TTL_MS, deadline.signal);
+      claim = await insertClaim(key, KIND, deadline.signal);
+    }
+  } finally {
+    clearTimeout(timer);
   }
-  if (outcome === 'spent') {
+  if (claim.outcome === 'spent') {
     Sentry.captureMessage('chat: turn already running', {
       level: 'info',
       tags: { feature: 'chat', platform, diagnostic: 'inflight' },
@@ -158,7 +172,15 @@ export async function claimChatTurn(
     });
     return { kind: 'busy' };
   }
-  if (outcome === 'unavailable') Sentry.captureMessage('Chat: turn claim failed', { level: 'warning', tags: { feature: 'chat', platform } });
-  // An 'unavailable' insert may still have landed, so the release runs either way.
-  return { kind: 'run', release: () => void releaseSingleUse(key, KIND) };
+  if (claim.outcome === 'unavailable') {
+    if (Date.now() - claimFailedReportedAt >= CLAIM_FAILED_REPORT_MS) {
+      claimFailedReportedAt = Date.now();
+      Sentry.captureMessage('Chat: turn claim failed', { level: 'warning', tags: { feature: 'chat', platform } });
+    }
+    // Fail open with nothing to release: a row that may have landed expires through the sweep.
+    return UNCLAIMED;
+  }
+  void sweepSingleUse(KIND, CHAT_TURN_TTL_MS);
+  const createdAt = claim.outcome === 'claimed' ? claim.createdAt : null;
+  return createdAt ? { kind: 'run', release: () => void releaseSingleUse(key, KIND, createdAt) } : UNCLAIMED;
 }

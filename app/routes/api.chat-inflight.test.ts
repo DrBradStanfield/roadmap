@@ -142,6 +142,18 @@ describe('US-15 AC63 — an identical message while a turn runs', () => {
     expect(mocks.getChatCompletion).toHaveBeenCalledTimes(1);
   });
 
+  it('one conversation id in lower and upper case is one scope: one model call, one busy answer', async () => {
+    const answer = holdModel();
+    const first = post({ message: QUESTION, conversationId: conv });
+    await modelStarted();
+    const second = await post({ message: QUESTION, conversationId: conv.toUpperCase() });
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ success: false, error: BUSY });
+    answer();
+    expect((await first).status).toBe(200);
+    expect(mocks.getChatCompletion).toHaveBeenCalledTimes(1);
+  });
+
   it('a first message with no conversationId sent twice while running: one conversation, the second is busy', async () => {
     const answer = holdModel();
     const first = post({ message: QUESTION });

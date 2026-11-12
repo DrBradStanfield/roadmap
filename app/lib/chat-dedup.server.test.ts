@@ -112,9 +112,66 @@ describe('US-15 AC63 — claimChatTurn', () => {
       expect((await pending).kind, down).toBe('run');
       vi.useRealTimers();
     }
-    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat: turn claim failed', expect.objectContaining({ tags: expect.objectContaining({ feature: 'chat' }) }));
     expect(allSentryArgs()).not.toContain(MESSAGE);
     expect(allSentryArgs()).not.toContain(SCOPE);
+  });
+
+  it('an unavailable claim runs the turn and releases nothing: a twin that claims later keeps its row, and a resend during it is busy', async () => {
+    claims.state!.down = 'commit-then-throw'; // A's row may have landed; A cannot know
+    const a = await claimChatTurn(SCOPE, MESSAGE, [], 'shopify');
+    expect(a.kind).toBe('run');
+    claims.state!.rows.clear(); // the uncertain row expired through the sweep
+    claims.state!.down = false;
+    expect((await claimChatTurn(SCOPE, MESSAGE, [], 'shopify')).kind).toBe('run'); // B
+    const deletesBefore = claims.state!.deleteFilters.length;
+    if (a.kind === 'run') a.release(); // A ends with a 500
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(claims.state!.deleteFilters.slice(deletesBefore).filter((f) => f.some(([, column]) => column === 'key'))).toEqual([]);
+    expect(claims.state!.rows.size).toBe(1);
+    expect((await claimChatTurn(SCOPE, MESSAGE, [], 'shopify')).kind).toBe('busy'); // C
+  });
+
+  it("a turn that outlives the TTL, after a twin re-claimed, releases nothing of the twin's", async () => {
+    const a = await claimChatTurn(SCOPE, MESSAGE, [], 'shopify');
+    const realNow = Date.now;
+    vi.spyOn(Date, 'now').mockImplementation(() => realNow() + CHAT_TURN_TTL_MS + 1_000);
+    expect((await claimChatTurn(SCOPE, MESSAGE, [], 'shopify')).kind).toBe('run'); // B, after the sweep took A's row
+    if (a.kind === 'run') a.release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(claims.state!.rows.size).toBe(1);
+    expect((await claimChatTurn(SCOPE, MESSAGE, [], 'shopify')).kind).toBe('busy');
+    vi.mocked(Date.now).mockRestore();
+  });
+
+  it('the whole claim (insert, sweep, retry) shares one 5 s deadline, then fails open', async () => {
+    await claimChatTurn(SCOPE, MESSAGE, [], 'shopify'); // a live claim: the next one conflicts
+    claims.state!.delayMs = 2_000; // each step takes 2 s
+    vi.useFakeTimers();
+    let result: string | undefined;
+    void claimChatTurn(SCOPE, MESSAGE, [], 'shopify').then((r) => { result = r.kind; });
+    await vi.advanceTimersByTimeAsync(4_900);
+    expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(200);
+    // 2 s insert (23505), 2 s sweep, then the retry is cut off at 5 s: unavailable, so the turn runs.
+    expect(result).toBe('run');
+    vi.useRealTimers();
+  });
+
+  it("the claim-failed warning goes out at most once per process every 10 minutes, in fixed words", async () => {
+    vi.resetModules();
+    const fresh = await import('./chat-dedup.server');
+    const SentryNow = await import('@sentry/react-router');
+    vi.mocked(SentryNow.captureMessage).mockClear();
+    claims.state!.down = 'error';
+    const failed = () => vi.mocked(SentryNow.captureMessage).mock.calls.filter(([m]) => m === 'Chat: turn claim failed');
+    for (let i = 0; i < 3; i++) expect((await fresh.claimChatTurn(SCOPE, `${MESSAGE} ${i}`, [], 'shopify')).kind).toBe('run');
+    expect(failed()).toHaveLength(1);
+    const realNow = Date.now;
+    vi.spyOn(Date, 'now').mockImplementation(() => realNow() + 10 * 60_000 + 1_000);
+    await fresh.claimChatTurn(SCOPE, MESSAGE, [], 'discord');
+    expect(failed()).toHaveLength(2);
+    expect(failed()[0][1]).toEqual({ level: 'warning', tags: { feature: 'chat', platform: 'shopify' } });
+    vi.mocked(Date.now).mockRestore();
   });
 
   it('with no server secret it fails open, never hashes without one, and reports once per process in fixed words', async () => {

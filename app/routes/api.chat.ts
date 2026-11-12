@@ -469,7 +469,7 @@ async function chatAction(request: Request, app: boolean) {
     // No re-serve while subscription changes are on for a signed-in customer (US-59): a replayed reply would
     // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
     const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
-    const turn = retention === 'transcript' ? await claimChatTurn(conversationId ?? auth.userId, message, subscriptionTurn ? [] : storedHistory, 'shopify') : null;
+    const turn = retention === 'transcript' ? await claimChatTurn(conversationId?.toLowerCase() ?? auth.userId, message, subscriptionTurn ? [] : storedHistory, 'shopify') : null;
     if (turn?.kind === 'busy') return Response.json({ success: false, error: CHAT_BUSY_REPLY }, { status: 409 });
     if (turn?.kind === 'duplicate') {
       return Response.json({ success: true, conversationId, messageId: null, content: turn.content,
