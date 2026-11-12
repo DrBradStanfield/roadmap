@@ -8,8 +8,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
-import { flushRoadmapStore, initRoadmapStore } from './roadmap-data';
+import { flushRoadmapStore, getEraseIdentity, initRoadmapStore } from './roadmap-data';
 import { getChatHistory } from './chat-history-access';
+import { ChatSession } from '@roadmap/health-core/chat-session';
+import * as Sentry from '@sentry/react';
 
 vi.mock('@sentry/react', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
@@ -36,11 +38,16 @@ const QUESTION = 'zz-erase-marker question';
 const settle = async () => { for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0)); };
 
 let cloud: MemoryCloud;
+/** Page B's record store, to read the record again when a test says so. */
+let pageRecord: RoadmapStore | undefined;
 
 beforeEach(async () => {
   reply.gate = new Promise<void>((resolve) => { reply.release = resolve; });
-  // No live refresh: page B never reads device A's erase in the record.
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
+  // No live refresh: page B reads device A's erase in the record only when a test asks.
+  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
+    pageRecord = this;
+    return () => {};
+  });
   const keys = new Map([['hr_anthropic_key', 'sk-ant-synthetic']]);
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => keys.get(k) ?? null,
@@ -176,5 +183,89 @@ describe('US-11 AC2h: website chat, a guest whose thread is gone', () => {
     await settle();
     expect(liveInCloud()).toEqual([]);
     expect(cloud.files.get(CHAT_FILE)!.json).not.toContain(QUESTION);
+  });
+});
+
+describe.each([
+  ['website chat (chat-api)', sendWebsite],
+  ['Pages chat (byok-chat)', sendPages],
+])('US-11 AC2h: %s, a page that has read another device\'s erase in the record before its chat history reloads', (_name, send) => {
+  /** Page B's chat history is open, device A erases, and page B reads that erase in the record only. */
+  async function eraseReadInRecord() {
+    (await getChatHistory())!.listConversations();
+    const before = getEraseIdentity();
+    expect((await (await deviceA()).deleteUserData()).success).toBe(true);
+    await pageRecord!.refreshFromRemote();
+    expect(getEraseIdentity()).not.toBe(before);
+  }
+
+  it('saves a new conversation asked after that erase', async () => {
+    await eraseReadInRecord();
+    const sent = send(QUESTION, null, null);
+    reply.release();
+    expect((await sent).error).toBeNull();
+    await settle();
+    expect(liveInCloud()).toHaveLength(1);
+    expect((await getChatHistory())!.listConversations()).toHaveLength(1);
+  });
+
+  it('saves a follow-up in a thread this page does not hold, asked after that erase', async () => {
+    await eraseReadInRecord();
+    const sent = send(QUESTION, 'server-c1', null);
+    reply.release();
+    expect((await sent).error).toBeNull();
+    await settle();
+    expect(liveInCloud()).toHaveLength(1);
+  });
+
+  it('takes the erase marks at once again once its chat history has reloaded', async () => {
+    await eraseReadInRecord();
+    const store = (await getChatHistory())!;
+    const marks = vi.spyOn(store, 'eraseMarks');
+    const sent = send(QUESTION, null, null);
+    expect(marks).toHaveBeenCalledTimes(1); // before the send yields
+    reply.release();
+    await sent;
+  });
+});
+
+describe.each([
+  ['website chat (chat-api)', sendWebsite],
+  ['Pages chat (byok-chat)', sendPages],
+])('US-11 AC2h: %s, a chat history that cannot give the erase marks', (_name, send) => {
+  const MARKER = 'zz-marks-marker';
+  const fail = () => { throw Object.assign(new Error(`marks failed ${MARKER}`), { cause: new Error(`cause ${MARKER}`) }); };
+
+  async function answeredAndNothingSaved(sent: ReturnType<typeof send>) {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    reply.release();
+    expect((await sent).result?.content).toBe('synthetic answer');
+    await settle();
+    expect(liveInCloud()).toEqual([]);
+    expect(cloud.files.get(CHAT_FILE)?.json ?? '').not.toContain(QUESTION);
+    const captured = vi.mocked(Sentry.captureException).mock.calls;
+    const reported = captured.filter(([e]) => (e as Error).message === 'Chat-history read failed');
+    expect(reported).toHaveLength(1);
+    expect('cause' in (reported[0][0] as Error)).toBe(false);
+    expect(reported[0][1]).toEqual({ tags: { area: 'chat-history', op: 'ask' } });
+    const all = [...spies.flatMap((s) => s.mock.calls), ...captured, ...vi.mocked(Sentry.captureMessage).mock.calls];
+    const seen = all.flat().map((x) => (x instanceof Error ? `${x.message} ${String((x as { cause?: unknown }).cause)}` : JSON.stringify(x))).join(' ');
+    expect(seen).not.toContain(MARKER);
+  }
+
+  beforeEach(() => {
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+  });
+
+  it('with its history open, a read that throws at once: the answer arrives and nothing is saved', async () => {
+    const store = (await getChatHistory())!;
+    vi.spyOn(store, 'eraseMarks').mockImplementation(fail);
+    await answeredAndNothingSaved(send(QUESTION, null, null));
+  });
+
+  it('before its history opens, a read that fails: the answer arrives and nothing is saved', async () => {
+    vi.spyOn(ChatSession.prototype, 'eraseMarks').mockImplementation(fail);
+    await answeredAndNothingSaved(send(QUESTION, null, null));
   });
 });

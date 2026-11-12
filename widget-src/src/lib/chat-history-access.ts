@@ -3,7 +3,8 @@
  *
  * chat-api.ts is bundled into the PRODUCTION widget, which must not drag in
  * the local-first storage stack — so this module holds only a factory slot
- * (type-only import, zero runtime deps). roadmap-data.ts registers the factory
+ * (type-only import of the store; its runtime imports are the ones chat-api.ts
+ * already bundles: Sentry and the fixed failure words). roadmap-data.ts registers the factory
  * at init time on local-first builds; on production builds nothing ever calls
  * the setter and `getChatHistory()` resolves null, leaving the server CRUD
  * path untouched.
@@ -14,7 +15,9 @@
  * boot), and a failed create resolves to null (chat still answers, history
  * just doesn't persist) — consumers never need their own catch.
  */
+import * as Sentry from '@sentry/react';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
+import { recordFailure } from './error-diagnostics';
 
 let factory: (() => Promise<ChatHistoryStore>) | null = null;
 /**
@@ -31,6 +34,8 @@ let store: Promise<ChatHistoryStore | null> | null = null;
 /** The record's erase identity, and the one the store was read at (null: read again). */
 let eraseIdentity = (): string => '';
 let readAt: string | null = '';
+/** The erase identity the ready session's copy was read at, once that read is done. */
+let readyAt: string | null = null;
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
@@ -42,9 +47,10 @@ function open(): Promise<ChatHistoryStore> {
   const opening = factory!();
   session = opening;
   ready = null;
-  opening.then((s) => { if (session === opening) ready = s; }, () => {});
+  const at = eraseIdentity();
+  opening.then((s) => { if (session === opening) { ready = s; readyAt = at; } }, () => {});
   store = opening.catch(() => null);
-  readAt = eraseIdentity();
+  readAt = at;
   return opening;
 }
 
@@ -58,7 +64,10 @@ function open(): Promise<ChatHistoryStore> {
 function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | null> {
   const now = eraseIdentity();
   if (now !== readAt) {
-    store = opened.then((s) => s.reload().then(() => s, () => {
+    store = opened.then((s) => s.reload().then(() => {
+      readyAt = now;
+      return s;
+    }, () => {
       readAt = null;
       return null;
     }), () => null);
@@ -76,12 +85,25 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
 
 /**
  * The store for a question's reply, and the erase marks the question is asked
- * under (US-11 AC2h): taken from the open session's copy at once, or, before
- * the first open resolves, from that open. Never rejects.
+ * under (US-11 AC2h): taken at once from the open session's copy when it was
+ * read at the record's erase identity, or else from the open, which reads it
+ * again first (AC2g). Best-effort: a read that throws or fails gives no
+ * store, so nothing is saved, and the send neither fails nor waits. Never rejects.
  */
 export function askChatHistory(): Promise<{ store: ChatHistoryStore | null; askedMarks?: string[] }> {
-  const askedMarks = ready?.eraseMarks();
-  return getChatHistory().then((s) => ({ store: s, askedMarks: askedMarks ?? s?.eraseMarks() }));
+  try {
+    const askedMarks = ready && readyAt === eraseIdentity() ? ready.eraseMarks() : undefined;
+    return getChatHistory()
+      .then((s) => ({ store: s, askedMarks: askedMarks ?? s?.eraseMarks() }))
+      .catch(unavailable);
+  } catch (error) {
+    return Promise.resolve(unavailable(error));
+  }
+}
+
+function unavailable(error: unknown): { store: null } {
+  Sentry.captureException(recordFailure(error, 'Chat-history read failed'), { tags: { area: 'chat-history', op: 'ask' } });
+  return { store: null };
 }
 
 /**

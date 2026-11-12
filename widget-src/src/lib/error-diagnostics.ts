@@ -15,6 +15,7 @@ type RecordFailure =
   | 'Cloud sync failed'
   | 'Chat-history erase failed'
   | 'Chat-history save failed'
+  | 'Chat-history read failed'
   | 'Chat send failed'
   | 'Chat delete failed'
   | 'Chat stream line was not JSON'

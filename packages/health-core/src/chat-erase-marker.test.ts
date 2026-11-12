@@ -111,7 +111,7 @@ describe('US-11 AC2h: an erase writes a marker in its verified save', () => {
   });
 });
 
-describe('US-11 AC2e: an erase tombstones every conversation in the file it writes', () => {
+describe('US-11 AC2i: an erase tombstones every conversation in the file it writes', () => {
   /** The next armed read answers with what the file held when it was asked, after `during` runs. */
   class HoldNextRead extends MemoryAdapter {
     during: (() => Promise<void>) | null = null;
@@ -384,7 +384,7 @@ describe('US-11 AC2h: a refused conversation stays refused in every later save',
   });
 });
 
-describe('US-11 AC2d: an erase removes what the file holds when it is written', () => {
+describe('US-11 AC2i: an erase removes what the file holds when it is written', () => {
   it('a conversation only the erase\'s first write saw stays erased after an overwrite', async () => {
     // Device B saves "from-b" after the erase read the file; the erase's write
     // tombstones it; a stale copy without it lands on top (Drive). The retry
@@ -460,5 +460,29 @@ describe('US-11 AC2h: every reader and merge keeps the marker, deleted', () => {
     expect(s.listConversations().map((c) => c.id)).toEqual(['c1']);
     expect(s.getMessages(marker.id)).toEqual([]);
     expect(s.eraseMarks()).toEqual([marker.id]);
+  });
+});
+
+describe('US-11 AC2h: a device erase ends the checks for the conversations it removed', () => {
+  it('a conversation whose save failed is no longer pending once a device erase removes it', async () => {
+    class RefusingStore extends DeviceStore {
+      refuse = false;
+      writeSync(name: string, body: object, expected: string | null): WriteResult {
+        if (this.refuse) throw new Error('write refused');
+        return super.writeSync(name, body, expected);
+      }
+    }
+    const sync = new RefusingStore();
+    const fence = { now: null as string | null };
+    const b = await ChatSession.open({ ...deviceHost(sync), eraseFence: () => fence.now } as RecordHost);
+    const pending = () => [...(b as unknown as { pending: Map<string, unknown> }).pending.keys()];
+    sync.refuse = true;
+    await expect(ask(b, 'late', b.eraseMarks())).rejects.toThrow('write refused');
+    expect(pending()).toEqual(['late']);
+    sync.refuse = false;
+    sync.files.clear(); // the device erase removes the file
+    fence.now = 'erased-1';
+    expect(b.listConversations()).toEqual([]);
+    expect(pending()).toEqual([]);
   });
 });

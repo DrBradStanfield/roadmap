@@ -317,7 +317,10 @@ export class ChatSession {
     if (!this.device) return;
     const fence = this.device.fence();
     if (fence === this.fenceSeen) return;
-    for (const conv of this.file.conversations) this.erasedIds.add(conv.id);
+    for (const conv of this.file.conversations) {
+      this.erasedIds.add(conv.id);
+      this.pending.delete(conv.id);
+    }
     this.file = migrateChatHistoryFile(this.device.sync.readSync(CHAT_HISTORY_DOC.fileName).body, contextOf(this.host));
     this.fenceSeen = fence;
   }
