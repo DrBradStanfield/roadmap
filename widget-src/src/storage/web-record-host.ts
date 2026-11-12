@@ -17,7 +17,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { BACKEND_KEY, clearOffFileHealthData, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -34,9 +34,7 @@ export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
 /** The device copy's revision a connect's lift uploaded (DeviceMirror.lifted). */
 const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
 
-/** The backend this browser uses, as the standalone picker remembers it
- *  (standalone/connect.ts); absent on the device tier. */
-export const BACKEND_KEY = 'health_roadmap_backend';
+export { BACKEND_KEY } from '../lib/storage';
 
 /** Fired on every marker flip; the sync-status UI listens (same convention as
  *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
@@ -116,10 +114,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
     clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
-    // The off-file data is the chosen record's: the device record ('local') when no cloud is chosen, and only
-    // while no log-off came since this page loaded. Another tab takes an erase in without clearing it, and its
-    // own erase is refused first (US-11 AC6). Read live at each call.
-    ownsOffFileData: () => healthWritesAllowed() && (safeGetItem(BACKEND_KEY) ?? 'local') === store.id,
+    // Another tab takes an erase in without clearing, and its own erase is refused first (US-11 AC6).
+    ownsOffFileData: () => ownsOffFileData(store.id),
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,

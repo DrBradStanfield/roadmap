@@ -86,6 +86,16 @@ export function healthWritesAllowed(): boolean {
   if (healthWrites.mode === 'device') return true;
   return healthWrites.mode !== 'stopped' && logOffId() === logOffIdAtLoad;
 }
+/** The backend this browser uses, as the standalone picker remembers it
+ *  (standalone/connect.ts); absent on the device tier. */
+export const BACKEND_KEY = 'health_roadmap_backend';
+/** The one owner rule for this browser's off-file health data (the drafts, stored originals, the Lp(a) kept
+ *  answer): the page's record (`storeId`; 'local' is the device record) is the one this browser has chosen, and
+ *  no log-off came on this device since the page loaded, a device page's included. Only the owner erases or
+ *  clears that data (US-11 AC6). Read live; callers import it, never copy it. */
+export function ownsOffFileData(storeId: string): boolean {
+  return healthWritesAllowed() && logOffId() === logOffIdAtLoad && (safeGetItem(BACKEND_KEY) ?? 'local') === storeId;
+}
 
 interface StoredData {
   inputs: Partial<HealthInputs>;
