@@ -424,7 +424,7 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   }
   const claim = await claimProposal(confirm, conn, ttlSeconds * 1000, nowMs);
   if (claim === 'spent') return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
-  return claim === 'unavailable' ? 'The confirm could not be checked just now. Nothing was written, and the receipt still works until it expires: try the same call once more in a minute.' : null;
+  return claim === 'unavailable' ? 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.' : null;
 }
 
 // ---------------------------------------------------------------------------

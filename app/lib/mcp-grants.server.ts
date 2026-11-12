@@ -170,7 +170,8 @@ export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce
  * A confirm receipt works once, across machines and restarts (US-36 AC9): this
  * machine's map first, then the shared store, keyed on the sha256 hex of the
  * connection hash and the receipt and nothing else. A store that cannot answer
- * fails closed and spends nothing, so the receipt still works once it returns.
+ * fails closed, and this machine forgets the key before the refusal returns, so
+ * a retry asks the store, which decides. A claim the store accepted stays here.
  */
 export async function claimProposal(receipt: string, conn: string, lifetimeMs: number, nowMs = Date.now()): Promise<ClaimOutcome> {
   const key = `${conn} ${receipt}`;
