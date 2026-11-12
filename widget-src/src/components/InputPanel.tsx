@@ -23,7 +23,8 @@ import { formatValue } from '@roadmap/health-core/lab-limits';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { anyScreeningEligible, medicationWrites, screeningWrites, readScreening, dexaEligible } from '@roadmap/health-core/input-form';
-import { formatShortDate, MONTHS_FULL } from '../lib/constants';
+import { formatShortDate } from '../lib/constants';
+import { monthOptions } from '../lib/month-options';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
@@ -57,17 +58,6 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   WEIGHT_FIELD,
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
-
-/** What a screening's month and year pickers show: a date still being picked
- *  (year or month blank, but not both, so nothing is saved yet) as picked,
- *  else the saved date. A finished pick has just written it, and clearing
- *  both has just cleared it. A cleared or changed answer then shows as the
- *  record holds it, not as last picked (US-06 AC16). */
-function shownDate(
-  picking: { year: string; month: string } | undefined, savedYear: string | undefined, savedMonth: string | undefined,
-): { year: string; month: string } {
-  return picking && !picking.year !== !picking.month ? picking : { year: savedYear ?? '', month: savedMonth ?? '' };
-}
 
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
@@ -195,7 +185,6 @@ export function InputPanel({
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
   const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
   const settleOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') rangeWait.settle(); };
-  const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
   // Expand/collapse state for display-first longitudinal fields.
   // (Blood tests have their own matrix UI in BloodTestTimeline; no expand state here.)
@@ -442,79 +431,22 @@ export function InputPanel({
     });
   }, [fieldsSaved]);
 
-  // Shared date constants for screening date pickers
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1; // 1-12
-  const pastYears = Array.from({ length: 11 }, (_, i) => currentYear - i);
-
-  /** Render a month/year date picker for screening dates. Used by both cancer screening and bone density. */
-  /** `min` (YYYY-MM, the form field's): no earlier year or month is offered or written (US-07 AC1j). */
-  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean; min?: string }) => {
-    const futureOnly = options?.futureOnly ?? false;
-    const [minYear, minMonth] = (options?.min ?? '').split('-');
-    const savedValue = readScreening(scr, key);
-    const [savedYear, savedMonth] = savedValue.split('-');
-
-    const { year: displayYear, month: displayMonth } = shownDate(dateInputs[key], savedYear, savedMonth);
-
-    const availableYears = (futureOnly
-      ? Array.from({ length: 6 }, (_, i) => currentYear + i)
-      : pastYears).filter(y => !minYear || y >= Number(minYear));
-
-    const availableMonths = (futureOnly
-      ? (displayYear === String(currentYear)
-        ? MONTHS_FULL.filter(m => parseInt(m.value, 10) >= currentMonth)
-        : MONTHS_FULL)
-      : (displayYear === String(currentYear)
-        ? MONTHS_FULL.filter(m => parseInt(m.value, 10) <= currentMonth)
-        : MONTHS_FULL)).filter(m => !minYear || displayYear !== minYear || m.value >= minMonth);
-
-    const handleDateChange = (newYear: string, newMonth: string) => {
-      const beyondToday = newYear === String(currentYear) && newMonth && (futureOnly ? parseInt(newMonth, 10) < currentMonth : parseInt(newMonth, 10) > currentMonth);
-      let adjustedMonth = beyondToday ? '' : newMonth;
-      // A year change never writes a month before `min`: the month moves up to it.
-      if (minYear && newYear === minYear && adjustedMonth && adjustedMonth < minMonth) adjustedMonth = minMonth;
-
-      setDateInputs(prev => ({
-        ...prev,
-        [key]: { year: newYear, month: adjustedMonth }
-      }));
-
-      if (newYear && adjustedMonth) {
-        writeScreening(scr, key, `${newYear}-${adjustedMonth}`);
-      } else if (!newYear && !adjustedMonth) {
-        writeScreening(scr, key, '');
-      }
-    };
-
+  /** A screening date: one select of whole months, each choice one write (US-06 AC16). Cancer screening and bone density. */
+  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => {
+    const value = readScreening(scr, key);
+    const { extra, groups } = monthOptions({ when: options?.futureOnly ? 'future' : 'past', today: localDay(new Date()), stored: value });
     return (
       <div className="health-field">
-        <label>{label}</label>
-        <div className="date-picker-row">
-          <select
-            id={`${key}-month`}
-            value={displayMonth}
-            onChange={(e) => handleDateChange(displayYear, e.target.value)}
-            aria-label={`${label} month`}
-          >
-            <option value="">Month</option>
-            {availableMonths.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-          <select
-            id={`${key}-year`}
-            value={displayYear}
-            onChange={(e) => handleDateChange(e.target.value, displayMonth)}
-            aria-label={`${label} year`}
-          >
-            <option value="">Year</option>
-            {availableYears.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
+        <label htmlFor={key}>{label}</label>
+        <select id={key} className="month-select" value={value} onChange={(e) => writeScreening(scr, key, e.target.value)}>
+          <option value="">Month and year</option>
+          {extra && <option value={extra.value}>{extra.label}</option>}
+          {groups.map(g => (
+            <optgroup key={g.year} label={g.year}>
+              {g.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
       </div>
     );
   };
@@ -904,11 +836,10 @@ export function InputPanel({
                   onChange={(e) => {
                     typeIn('systolicBp', e.target.value);
                     updateField('systolicBp', parseLocalisedNumber(e.target.value));
-                    // US-02 AC6: hop to diastolic once systolic is unambiguous.
+                    // US-02 AC6: hop to diastolic once systolic is unambiguous; anything else cancels the wait (AC6c).
                     const adv = bpSysAdvance(e.target.value);
-                    if (adv !== 'stay' && inputs.diastolicBp === undefined) {
-                      advanceToDiastolic({ ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') });
-                    }
+                    advanceToDiastolic(adv !== 'stay' && inputs.diastolicBp === undefined
+                      ? { ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') } : null);
                   }}
                   onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
                   onKeyDown={onIntegerEnter}

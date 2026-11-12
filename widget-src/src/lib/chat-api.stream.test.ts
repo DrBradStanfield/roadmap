@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // server, a proxy that rewrote the type, an error status) takes today's path.
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-const store = vi.hoisted(() => ({ recordExchange: vi.fn(async () => {}) }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
+const store = vi.hoisted(() => ({ recordExchange: vi.fn(async () => {}), eraseMarks: vi.fn(() => []) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import { sendMessage, type ChatDelta } from './chat-api';

@@ -584,7 +584,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   Since 2026-11-12 (US-25 AC11l, review of PR 1328) the rule is wider and that check is gone:
   a different cloud is refused whenever one is connected, in any state ("Disconnect from Google
   Drive first, then connect Dropbox."); S3's union will make it true by construction and delete it.
-  It runs before the sign-in shows (the post-sign-in check is a backstop for races), and the welcome sheet at failed offers only "Sign in to <cloud> again" and "Use a different cloud" (Disconnect; US-54 AC2d).
+  It runs before the sign-in shows (the post-sign-in check is a backstop for races), and the welcome sheet at failed offers only "Sign in to <cloud> again" and, since S3 PR 3, a "Switch to <cloud>" row for each other cloud (US-54 AC2d; it was "Use a different cloud", a Disconnect).
   A sign-in carries the connection generation it began under: one returning after a Disconnect moved it is dropped before anything is kept (US-25 AC11l).
   Connect errors show in the screen's alert, not the row's, since the welcome sheet hides its
   rows while a record opens. After a Disconnect,
@@ -650,8 +650,26 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   calls (it takes `sync`, so no app or test can build an eraser and forget the wiring; owner's
   ruling, option d); it is read at each decision, never kept, and an
   @Observable read through it redraws Sync's rows. An erase begun with no shown session (opening,
-  closed, closing) is refused and erases nothing (pinned). Not yet (PR 3, lead S24): a one-step
-  cloud switch replaces "Disconnect from <cloud> first", with the web's twin.
+  closed, closing) is refused and erases nothing (pinned).
+  PR 3 (2026-11-12, US-25 AC11n, lead S24): switching clouds is one step, as on the web. Sync's
+  connected branch and the welcome sheet at failed show a "Switch to <cloud>" row per other
+  configured cloud (`SwitchCloudRow`), with a confirmation that names the cloud the record is in,
+  read when the dialog shows; with no session open it promises no copy, read from `recordOpen`, the
+  fact that makes the engine answer 'none' (review R2). The sign-in session is read by the screen,
+  which stays while the Disconnect drops the row (R1). `CloudSync.switchTo` is Disconnect, then connect, with no await
+  between the Disconnect's end and connect's `signInStarted`, so no erase or connect slips in; it
+  adds no state and the table is unchanged (the design page's `switchRequested`/`closing(then:)`
+  was dropped as unnecessary). Why the composition: every existing cell (the erase gate, a second
+  Disconnect while closing, a sign-in voided by the Disconnect) already covers each half. Owner
+  D1 (a): a switch stops when the copy-down could not reach the cloud with a session open, or the
+  engine threw; the old cloud stays connected (the existing `closeFailed` and reopen) and no
+  sign-in starts. A plain Disconnect still never stops. For this `HealthEngine.cloudClose` returns
+  the engine's answer (`CloudClose`), not a Bool. A sign-in cancelled or failed after the
+  Disconnect ends on the phone with the record whole and no tokens (web parity); the row says
+  "<old> is disconnected and <new> did not connect. Your record is on this iPhone only." Owner D2:
+  "Disconnect from <cloud> first, then connect <other>." stays as the race backstop's cell.
+  Web twin: the picker already switches in one step (connect.ts prepareSwitch); its wording that
+  the old copy stays is lead A12.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.
@@ -689,7 +707,8 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
     and written only when that step ran. With a cloud open, the `chat-history.json` the
     website saved there is tombstoned first, by `ChatSession` on the cloud host, as the web's
-    erase does (2026-10-22). It is best effort and reported on its own (`cloudChatErased`):
+    erase does (2026-10-22). The cloud chat erase also writes an erase mark (US-11 AC2h); the
+    phone's own chat file gets none. It is best effort and reported on its own (`cloudChatErased`):
     a corrupt file or a newer website's schema never blocks the phone's chat erase
     (adversary R1). The confirmation names the website's chat in the cloud, and the result
     says whether it is gone or still there (R2): a provider that did not answer gets "Try

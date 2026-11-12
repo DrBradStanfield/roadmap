@@ -93,7 +93,8 @@ enum CloudConnection: Equatable {
         case disconnectStarted
         /// The provider file is gone: the Disconnect happened.
         case disconnectEnded(attempt: Int)
-        /// The provider file stayed after a retry: the Disconnect did not happen.
+        /// The provider file stayed after a retry, or a switch stopped on its copy-down (US-25
+        /// AC11n): the Disconnect did not happen.
         case closeFailed(attempt: Int)
     }
 

@@ -46,6 +46,38 @@ enum SyncStatusText {
         "Couldn't disconnect from \(provider.label). Try again."
     }
 
+    /// The switch row, and its dialog's title with a "?" (US-25 AC11n, owner-approved words).
+    static func switchRow(_ provider: CloudProvider) -> String {
+        "Switch to \(provider.label)"
+    }
+
+    /// The switch dialog's message, read as it shows: `current` is the cloud the record is in, and
+    /// `recordOpen` (`CloudSync.recordOpen`) whether its session is open. With none open the
+    /// engine's close answers 'none' and nothing is copied, so the words promise no copy.
+    static func switchMessage(from current: CloudProvider, to provider: CloudProvider, recordOpen: Bool) -> String {
+        recordOpen
+            ? "Your record in \(current.label) stays there as it is. This iPhone copies it, connects \(provider.label), and saves there from now on."
+            : "Your record in \(current.label) stays there as it is. This iPhone connects \(provider.label) and saves there from now on."
+    }
+
+    /// What the screen's alert says once a switch from `old` to `new` ends; nil: nothing.
+    /// `connected`: the cloud connected now. The on-the-phone sentence is said only while none
+    /// is, since a sign-in race may have connected one (US-25 AC11n).
+    static func switchEnded(_ outcome: CloudSync.SwitchOutcome, from old: CloudProvider, to new: CloudProvider, connected: CloudProvider?) -> String? {
+        switch outcome {
+        case .stopped(.unreachable):
+            return "\(old.label) could not be reached, so your record there could not be copied to this iPhone. Try again once it answers."
+        case .stopped(.failed): return disconnectFailed(old)
+        // Refused by the state (a second tap, a Disconnect closing): silent, as Disconnect's is.
+        case .stopped, .moved: return nil
+        case .failed(let error):
+            let cancelled = error as? OAuthClient.Failure == .cancelled
+            guard connected == nil else { return cancelled ? nil : error.localizedDescription }
+            let sentence = "\(old.label) is disconnected and \(new.label) did not connect. Your record is on this iPhone only."
+            return cancelled ? sentence : error.localizedDescription + " " + sentence
+        }
+    }
+
     /// The footer under My data: where the record is kept, and nothing more.
     /// `earlier`: the cloud it was synced with before a Disconnect, whose copy stays.
     static func myDataFooter(provider: CloudProvider?, earlier: CloudProvider?) -> String {

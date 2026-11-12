@@ -30,6 +30,19 @@ final class CloudSync: CloudPort {
         case refused
         /// The provider file could not be removed: still connected, nothing else touched.
         case failed
+        /// A switch's copy-down could not reach the cloud with a session open, or the engine
+        /// threw: still connected, nothing removed (US-25 AC11n). A plain Disconnect never stops.
+        case unreachable
+    }
+
+    /// What a switch did (US-25 AC11n).
+    enum SwitchOutcome {
+        /// No sign-in started: the Disconnect was refused, failed or stopped (`unreachable`).
+        case stopped(DisconnectOutcome)
+        /// Disconnected, then connected.
+        case moved
+        /// Disconnected, then the connect threw this.
+        case failed(Error)
     }
 
     /// The one source for the provider, the status and the open session.
@@ -51,6 +64,8 @@ final class CloudSync: CloudPort {
     /// Connect and Disconnect wait (US-25 AC16e): either would swap the session the erase
     /// writes under (review R2), and a first connect would lift a half-erased record.
     private(set) var eraseRunning: @MainActor () -> Bool = { false }
+    /// Connect and a switch refuse with these words while an erase runs (AC16e).
+    private static let waitForErase = OAuthClient.Failure.refused("Wait for the erase to finish, then connect.")
 
     /// The one wiring of `eraseRunning`, called by DataEraser's init: it takes this CloudSync,
     /// so every eraser built on it is the one Connect and Disconnect wait for.
@@ -95,7 +110,7 @@ final class CloudSync: CloudPort {
         // A demo record never reaches anyone's cloud (DemoRecord).
         guard !DemoRecord.isOn else { throw OAuthClient.Failure.refused("A demo record never syncs.") }
         #endif
-        guard !eraseRunning() else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        guard !eraseRunning() else { throw Self.waitForErase }
         // Before the sign-in shows, so nobody goes through a consent only to be refused (review of PR 1329).
         try verdict(send(.signInStarted(provider)))
         let key = connection.signInKey
@@ -109,7 +124,7 @@ final class CloudSync: CloudPort {
             throw error
         }
         // A sign-in begun before the erase may finish during it (Codex re-check R2).
-        guard !eraseRunning() else { throw OAuthClient.Failure.refused("Wait for the erase to finish, then connect.") }
+        guard !eraseRunning() else { throw Self.waitForErase }
         let known = files.read(files.account)
         let effects = send(.signInReturned(key: key, provider: provider, otherAccount: known != nil && known != signedIn.account))
         try verdict(effects)
@@ -189,15 +204,22 @@ final class CloudSync: CloudPort {
     /// tokens and the other files go; what fails there, the next launch removes. The cloud
     /// file stays where it is. `done(copied: false)`: the cloud could not be read for the
     /// copy; the phone keeps what it already held.
-    func disconnectOutcome() async -> DisconnectOutcome {
+    /// `forSwitch` (US-25 AC11n, owner D1 a): an unreachable copy-down with a session open, or an
+    /// engine throw, stops it as connected as before (`unreachable`); never with no session
+    /// ('none'). It also skips the wait for the phone's draw, so the caller's connect follows
+    /// with no await between them.
+    func disconnectOutcome(forSwitch: Bool = false) async -> DisconnectOutcome {
         guard provider != nil else { return .done(copied: true) }
         guard !eraseRunning(), send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
-        let copied = (try? await engine.cloudClose(copyDown: true)) ?? false
+        let closed = try? await engine.cloudClose(copyDown: true)
         // Each step after an await checks this Disconnect still owns the connection (Codex C1).
         guard connection.attempt == closing.attempt else { return .refused }
+        if forSwitch, closed == nil || closed == .unreachable {
+            await stayConnected(closing.attempt)
+            return .unreachable
+        }
         guard removeProviderFile() else {
-            await run(send(.closeFailed(attempt: closing.attempt)))
-            await run(send(.openStarted))
+            await stayConnected(closing.attempt)
             return .failed
         }
         signOutAll()
@@ -205,8 +227,25 @@ final class CloudSync: CloudPort {
         files.remove(files.pending)
         let shown = store.showPhone()
         send(.disconnectEnded(attempt: closing.attempt))
-        await shown.value
-        return .done(copied: copied)
+        if !forSwitch { await shown.value }
+        return .done(copied: closed == .copied)
+    }
+
+    /// One step from the connected cloud to `provider` (US-25 AC11n): Disconnect, then connect,
+    /// with no await between the Disconnect's end and connect's first step, so no erase or other
+    /// connect starts between them. Throws only the erase refusal, before anything changes.
+    func switchTo(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws -> SwitchOutcome {
+        guard !eraseRunning() else { throw Self.waitForErase }
+        // No cloud to switch from: one tapped during a switch's own sign-in.
+        guard self.provider != nil else { return .stopped(.refused) }
+        let closed = await disconnectOutcome(forSwitch: true)
+        guard case .done = closed else { return .stopped(closed) }
+        do {
+            try await connect(provider, authenticate: authenticate)
+            return .moved
+        } catch {
+            return .failed(error)
+        }
     }
 
     // MARK: The connection
@@ -307,6 +346,13 @@ final class CloudSync: CloudPort {
             return self.connection.shownSession == view.session
         }
         await run(later)
+    }
+
+    /// A Disconnect that did not happen: connected as before, as a relaunch reads it, and the
+    /// record opens again (the engine closed its session already).
+    private func stayConnected(_ attempt: Int) async {
+        await run(send(.closeFailed(attempt: attempt)))
+        await run(send(.openStarted))
     }
 
     /// The provider file goes, tried once more if it stays. True once it is gone.

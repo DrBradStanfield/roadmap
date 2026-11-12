@@ -13,10 +13,10 @@ const state = vi.hoisted(() => ({
   bodies: [] as Array<Record<string, any>>,
   replies: [] as Array<{ text: string; blocks: unknown[] } | Error>,
   /** The chat-history store getChatHistory hands back: null, as when it could not be opened. */
-  store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void> },
+  store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void>; eraseMarks: () => string[] },
 }));
 
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store), askChatHistory: () => Promise.resolve({ store: state.store, askedMarks: state.store?.eraseMarks() }) }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {
     constructor(readonly code: string, message: string) { super(message); }
@@ -371,7 +371,7 @@ describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the hi
   });
 
   it('control: an open store is still the history, not the copy on screen', async () => {
-    state.store = { getMessages: () => [{ role: 'user', content: 'Stored question' }, { role: 'assistant', content: 'Stored answer' }], recordExchange: async () => {} };
+    state.store = { getMessages: () => [{ role: 'user', content: 'Stored question' }, { role: 'assistant', content: 'Stored answer' }], recordExchange: async () => {}, eraseMarks: () => [] };
     await sendMessage('And my HDL?', 'conv-1', null, SHOWN);
     expect(state.bodies[0].messages.map((m: { content: string }) => m.content)).toEqual(['Stored question', 'Stored answer', 'And my HDL?']);
   });

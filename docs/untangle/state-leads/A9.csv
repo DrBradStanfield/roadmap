@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-A9,web sync,"Web backend picker: closing and reopening it during a switch or log-off gives a new, idle busy flag, so a second prepareSwitch can start alongside the first (widget-src/standalone/backend-picker.tsx, connect.ts prepareSwitch). Found while checking iPhone PR 1350's disconnecting window.",lead,"not started, unverified",widget-src/standalone/backend-picker.tsx; widget-src/standalone/connect.ts prepareSwitch; owner UI thread,,no
+A9,web sync,"The cloud picker runs one move at a time",lead,done,switch-flow.ts; US-09 AC45,1398,no

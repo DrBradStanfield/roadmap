@@ -5,13 +5,20 @@
  * tier, any other store is a cloud with localStorage as its mirror. The store
  * tests pin what each tier does; these pin which tier a store gets.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { PENDING_MIRROR_KEY, webRecordHost } from './web-record-host';
+import { Sentry } from '../lib/sentry';
 
-afterEach(() => localStorage.clear());
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+
+afterEach(() => {
+  localStorage.clear();
+  vi.restoreAllMocks();
+  vi.mocked(Sentry.captureException).mockClear();
+});
 
 describe('webRecordHost', () => {
   it('makes localStorage the device tier, with its synchronous reads and writes', () => {
@@ -40,5 +47,18 @@ describe('webRecordHost', () => {
     await host.mirror.adapter.write(ROADMAP_FILE_NAME, { schemaVersion: 1 }, null);
     await host.mirror.wipe();
     expect((await host.mirror.adapter.read(ROADMAP_FILE_NAME)).body).toBeNull();
+  });
+
+  // US-11 AC7: a clear that keeps failing is reported once per erase.
+  it('sends a repeating off-file clear failure only to the console, and the first one to Sentry', () => {
+    const host = webRecordHost(new LocalStorageAdapter());
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    host.report(new Error('clear refused'), { op: 'clear-off-file', repeat: true });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith('Record upkeep failed');
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    host.report(new Error('clear refused'), { op: 'clear-off-file', repeat: false });
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
   });
 });

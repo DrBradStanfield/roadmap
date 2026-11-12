@@ -23,12 +23,14 @@ const M = 'not an identity'; // malformed: epoch -1, the floor
 const O = id(3, '2026-11-01T10:00:12.000Z'); // this tab's own erase, ending above Z
 
 const set = (...ids: string[]) => new Set(ids);
-type Extra = { heard?: string; said?: Set<string>; counted?: Set<string>; pending?: string; shownBy?: EraseState['shownBy'] };
-const state = (phase: EraseState['phase'], shown: string, x: Extra): EraseState =>
-  ({ phase, shown, shownBy: x.shownBy ?? 'own', heard: x.heard ?? null, said: x.said ?? set(), counted: x.counted ?? set(), pending: x.pending ?? null });
-const loading = (shown: string, heard: string | null = null, x: Extra = {}) => state('loading', shown, { ...x, heard: heard ?? undefined });
-const idle = (shown: string, x: Extra = {}) => state('idle', shown, x);
-const erasing = (shown: string, heard: string | null = null, x: Extra = {}) => state('erasing', shown, { ...x, heard: heard ?? undefined });
+type Extra = { heard?: string; said?: Set<string>; counted?: Set<string>; pending?: string; shownBy?: EraseState['shownBy']; refused?: string };
+const common = (shown: string, x: Extra) =>
+  ({ shown, shownBy: x.shownBy ?? 'own', heard: x.heard ?? null, said: x.said ?? set(), counted: x.counted ?? set(), pending: x.pending ?? null });
+const loading = (shown: string, heard: string | null = null, x: Extra = {}): EraseState => ({ phase: 'loading', ...common(shown, { ...x, heard: heard ?? undefined }) });
+const idle = (shown: string, x: Extra = {}): EraseState => ({ phase: 'idle', ...common(shown, x) });
+/** `x.refused`: the erase a save refused during this tab's erase was asked under (A6 R1). */
+const erasing = (shown: string, heard: string | null = null, x: Extra = {}): EraseState =>
+  ({ phase: 'erasing', ...common(shown, { ...x, heard: heard ?? undefined }), refused: x.refused ?? null });
 
 const COUNT: EraseEffect = { type: 'count-remote-change' };
 const READ: EraseEffect = { type: 'read' };
@@ -42,6 +44,7 @@ const FAILED: EraseEvent = { type: 'own-failed', message: FAILED_TEXT };
 const SAY: EraseEffect = { type: 'say-outcome', message: DONE };
 const SAY_FAILED: EraseEffect = { type: 'say-outcome', message: FAILED_TEXT };
 const ALERT: EraseEffect = { type: 'alert-refused' };
+const REREAD_REFUSED: EraseEffect = { type: 'reread-refused' };
 
 /** [rule, row, state, event, next state ('same': unchanged, the same object), effects] */
 // "counted" in a read's or an own-end's row: marked pending, and counted when the tree that shows it commits (the committed rows).
@@ -73,7 +76,10 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['d order', 'erasing: a later report at the same epoch replaces the one kept, whatever its erasedAt', erasing(W, X), { type: 'arrived', identity: E }, erasing(W, E), []],
   ['d order', 'erasing: a report at a lower epoch keeps the higher', erasing(W, Z), { type: 'arrived', identity: X }, erasing(W, Z), []],
   ['iii', 'erasing: a malformed report keeps the readable one', erasing(W, X), { type: 'arrived', identity: M }, erasing(W, X), []],
-  ['d', 'erasing: a refused save is no news (no alert-refused for the own erase)', erasing(W), { type: 'refused', askedUnder: W }, 'same', []],
+  // A6 R1: a refusal during this tab's erase is no news, but it is kept, for an own-failed to re-read. The machine
+  // cannot tell a save refused while the erase reads from one refused while it writes: one row.
+  ['d A6 R1', 'erasing: a refused save is no news (no alert-refused for the own erase); its erase is recorded', erasing(W), { type: 'refused', askedUnder: W }, erasing(W, null, { refused: W }), []],
+  ['A6 R1', 'erasing: a second refused save: the first one\'s erase kept', erasing(W, null, { refused: W }), { type: 'refused', askedUnder: X }, 'same', []],
   // g: this tab's erase ends at the store's identity.
   ['g', 'erasing: own-end, nothing overtook it: its erase shown, the old record forgotten, the pre-erase erase said, not counted', erasing(W), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
   ['d g Q2 R2', 'erasing: own-end at the heard erase (another writer\'s won): shown, its rows read, counted once, not forget-only', erasing(W, Z), end(Z), idle(Z, { said: set(W), pending: Z, shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
@@ -81,7 +87,12 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['d g order', 'erasing: own-end at its own erase, an erase overtaken at the same epoch: its own shows, the overtaken one never counts', erasing(W, X), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
   ['d g order', 'erasing: own-end at a merge\'s pick with an EARLIER erasedAt than the shown erase, at that epoch: shown', erasing(X), end(E), idle(E, { said: set(X) }), [FORGET, CLEAR, SAY]],
   ['g', 'idle: an own-end with no erase under way: nothing (the newer one stays shown)', idle(Z), end(Y), 'same', []],
-  ['-', 'erasing: own-failed, nothing overtook it: back to idle, the failure said', erasing(W), FAILED, idle(W), [SAY_FAILED]],
+  // A6 Codex R1: nothing refused, nothing read: a list save still waiting lands on the screen it was made on.
+  ['-', 'erasing: own-failed, nothing overtook it, nothing refused: back to idle, the failure said', erasing(W), FAILED, idle(W), [SAY_FAILED]],
+  // A6 R1: a save refused during the erase was not saved; the record is re-read as any refused save is, then the failure said.
+  ['US-16 AC2a A6 R1', 'erasing: own-failed after a refused save: idle, the refusal dropped, re-read as refused, the failure said', erasing(W, null, { refused: W }), FAILED, idle(W), [REREAD_REFUSED, SAY_FAILED]],
+  ['A6 R1 d i', 'erasing: own-failed after a refused save, an erase heard: the heard erase\'s read only, which shows the record too', erasing(W, Z, { refused: W }), FAILED, idle(W, { heard: Z }), [READ, SAY_FAILED]],
+  ['A6 R1 g', 'erasing: own-end after a refused save: the refusal dropped with the phase, no re-read (the erase forgets the record)', erasing(W, null, { refused: W }), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
   ['d i R1', 'erasing: own-failed, another writer\'s erase heard: idle, still heard, read, the failure said; the read shows and counts it', erasing(W, Z), FAILED, idle(W, { heard: Z }), [READ, SAY_FAILED]],
   ['known cost', 'erasing: own-end at the heard erase when that arrival was really this tab\'s own echo (record-session.ts:595/600 rule it out): the person sees their erase done, plus one extra re-read of the empty record (no visible change) and one wrong count', erasing(W, O), end(O), idle(O, { said: set(W), pending: O, shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
   ['R3', 'erasing: own-end at this tab\'s own erase, an erase heard: its own shows, the heard one dropped, never counted', erasing(W, Z), end(O), idle(O, { said: set(W) }), [FORGET, CLEAR, SAY]],
@@ -121,7 +132,7 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['2b-1 Q3', 'idle: refused under A, C heard, news: alerted, one read', idle(X, { heard: Z }), { type: 'refused', askedUnder: X }, idle(X, { heard: Z, said: set(X) }), [ALERT, READ]],
   ['2b-1 Q3', 'idle: refused under A, nothing heard, A already said: nothing', idle(X, { said: set(X) }), { type: 'refused', askedUnder: X }, 'same', []],
   ['2b-1 Q3', 'loading: refused, an erase held: alerted, one read', loading(W, X), { type: 'refused', askedUnder: W }, loading(W, X, { said: set(W) }), [ALERT, READ]],
-  ['2b-1 Q3', 'erasing: refused, an erase heard: nothing (own-end or own-failed reads it)', erasing(W, Z), { type: 'refused', askedUnder: W }, 'same', []],
+  ['2b-1 Q3', 'erasing: refused, an erase heard: no effect (own-end or own-failed reads it); the refusal recorded', erasing(W, Z), { type: 'refused', askedUnder: W }, erasing(W, Z, { refused: W }), []],
   // Codex R1 (Fable's conditions): a remote erase counts when the tree that shows it commits, in every phase.
   ['commit', 'idle: a commit with nothing pending: nothing', idle(X), { type: 'committed', identity: X }, 'same', []],
   ['commit', 'idle: the commit of the pending erase: counted', idle(X, { pending: X }), { type: 'committed', identity: X }, idle(X, { counted: set(X) }), [COUNT]],
@@ -389,6 +400,7 @@ function doors(): EraseDoors & { calls: string[] } {
     clearDrafts: () => calls.push('clear-drafts'),
     forget: () => calls.push('forget'),
     read: () => calls.push('read'),
+    rereadRefused: () => calls.push('reread-refused'),
     countRemoteChange: () => calls.push('count-remote-change'),
     alertRefused: () => calls.push('alert-refused'),
     sayOutcome: (message) => calls.push(`say-outcome ${message}`),
@@ -443,6 +455,17 @@ describe('createEraseStore: the state\'s only copy, and the one place effects ru
     store.dispatch({ type: 'own-start' });
     expect(refusal(store, X)).toEqual({ news: false, reads: false });
     expect(d.calls).toEqual(['alert-refused', 'clear-drafts', 'count-remote-change']);
+  });
+
+  it('A6 R1: a save refused during this tab\'s erase, then the erase stops short: the rereadRefused door, then the failure said', () => {
+    const d = doors();
+    const store = createEraseStore(W, d);
+    store.dispatch({ type: 'loaded' });
+    store.dispatch({ type: 'own-start' });
+    expect(refusal(store, W)).toEqual({ news: false, reads: false });
+    store.dispatch(FAILED);
+    expect(d.calls).toEqual(['reread-refused', `say-outcome ${FAILED_TEXT}`]);
+    expect(store.getSnapshot()).toEqual(idle(W));
   });
 
   it('2b-3, Fable Q3: a news refusal with an erase heard says it before the read starts', () => {
