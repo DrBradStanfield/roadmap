@@ -14,6 +14,8 @@ enum WelcomeConnect {
         case failed(SyncProblem)
         /// The cloud record is open: the screen can go on.
         case opened
+        /// A Disconnect (a switch's first half) is closing: a spinner, no Connect rows.
+        case disconnecting
     }
 
     /// No spinner without an open behind it: every tap that can show `opening` also
@@ -32,15 +34,27 @@ enum WelcomeConnect {
         // .connecting in the same turn; saving and synced need an open session). No
         // open is implied, so the taps start one.
         case .onPhone, .synced, .saving: return .opening
+        // A Disconnect closing: the Connect rows stay hidden, since a connect is dropped while
+        // it closes; choosing follows (owner, R2 b).
+        case .disconnecting: return .disconnecting
         }
     }
 
-    /// The Connect buttons hide while a record opens: a second cloud chosen mid-open would
-    /// set the provider while the first cloud's open hands over (review, PR 1281).
+    /// A Connect row for every cloud shows only with no cloud: with one connected, connect
+    /// refuses any other (US-25 AC11l), so at failed the sheet offers `showsRecovery` instead.
     static func showsConnect(_ phase: Phase) -> Bool {
         switch phase {
-        case .choosing, .failed: true
-        case .opening, .opened: false
+        case .choosing: true
+        case .opening, .failed, .opened, .disconnecting: false
+        }
+    }
+
+    /// At failed, and only there: one row to sign in to the connected cloud again (the Sync
+    /// screen's own row) and a "Switch to <cloud>" row per other cloud (US-54 AC2d, US-25 AC11n).
+    static func showsRecovery(_ phase: Phase) -> Bool {
+        switch phase {
+        case .failed: true
+        case .choosing, .opening, .opened, .disconnecting: false
         }
     }
 
@@ -66,7 +80,7 @@ enum WelcomeConnect {
              // cloud it only fails again (owner, review F2 of PR 1328).
              .storageFull:
             Failure(words: problem.words(provider), offersTryAgain: true)
-        // Only signing in again helps: the Connect rows, which show at failed, are the remedy.
+        // Only signing in again helps: the sign-in-again row, which shows at failed, is the remedy.
         case .signIn,
              // Only an app update helps.
              .tooNew:

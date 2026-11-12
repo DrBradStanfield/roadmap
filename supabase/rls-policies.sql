@@ -223,6 +223,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 --    (truncated to 500 chars in the app before insert). Both NULL on success.
 --    'refusal' (2026-09-29, US-15 AC14): the model declined; is_fallback stays
 --    FALSE and the row holds the fixed refusal line. Free text, no migration.
+--    'partial' (2026-11-12, US-15 AC62): a Discord answer cut off part way; the
+--    row holds the text that went out, and the dedup never re-serves it.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;
@@ -660,9 +662,10 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
 ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
 -- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
 
--- Only the Google-verified lane upserts on email (an owner may replace their
--- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as
--- "the owner already has a row": schedule refresh at most, never a new token.
+-- Both lanes INSERT, and a 23505 on this UNIQUE means a row already exists.
+-- Address-only opt-ins then refresh the schedule at most, never a new token.
+-- The Google-verified lane then rotates the token with one compare-and-set
+-- (only a row not yet verified matches) and reads the token back (US-17 AC16).
 
 -- Service-role only (no policies = zero rows via the anon/authenticated API).
 ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;
@@ -837,6 +840,18 @@ CREATE TABLE IF NOT EXISTS chat_question_archive (
 );
 ALTER TABLE chat_question_archive ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON chat_question_archive FROM anon, authenticated;
+NOTIFY pgrst, 'reload schema';
+
+-- ===== single_use_claims: one-time claims, content-free (US-36 AC9, 2026-11-12) =====
+-- Apply to production BEFORE deploying the code that reads it. Until then every
+-- hosted MCP confirm is refused in words and nothing is written: the claim fails
+-- closed. One row per spent key: a sha256 hex the caller makes, never the thing
+-- it names, and the kind of claim ('mcp-confirm'). Rows of a kind older than an
+-- hour are deleted as each new claim is made. Service role only: RLS on, no
+-- policies. Columns only ever via ADD COLUMN IF NOT EXISTS; never DROP.
+CREATE TABLE IF NOT EXISTS single_use_claims (key text primary key, kind text not null, created_at timestamptz not null default now());
+ALTER TABLE single_use_claims ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON single_use_claims FROM anon, authenticated;
 NOTIFY pgrst, 'reload schema';
 
 -- ===== Lock down SECURITY DEFINER functions (2026-10-21) =====

@@ -210,8 +210,19 @@ final class DataEraserTests: XCTestCase {
         let cloudChat = try XCTUnwrap(dropbox.chat).text
         XCTAssertFalse(cloudChat.contains(websiteQuestion), "the website's chat in Dropbox is tombstoned")
         let conversations = try XCTUnwrap(object(cloudChat)["conversations"] as? [[String: Any]])
-        XCTAssertEqual(conversations.count, 1)
-        XCTAssertEqual(conversations.first?["deleted"] as? Bool, true)
+        func isContentFreeTombstone(_ c: [String: Any]) -> Bool {
+            c["deleted"] as? Bool == true && c["title"] as? String == "" && (c["messages"] as? [Any])?.isEmpty == true
+        }
+        // Every conversation that was there before the erase is tombstoned, by id.
+        let before = conversations.filter { ($0["id"] as? String) == "w1" }
+        XCTAssertEqual(before.count, 1, "the website's conversation is kept as a tombstone")
+        XCTAssertTrue(before.allSatisfy(isContentFreeTombstone), "w1: deleted, no title, no messages")
+        // The erase adds exactly one marker (67b0b7837, PR 1368; US-11 AC2h): a
+        // born-deleted conversation whose id starts "erase:", empty title, no messages.
+        let markers = conversations.filter { ($0["id"] as? String)?.hasPrefix("erase:") == true }
+        XCTAssertEqual(markers.count, 1, "one erase marker")
+        XCTAssertTrue(markers.allSatisfy(isContentFreeTombstone), "the marker: deleted, empty title, no messages")
+        XCTAssertEqual(conversations.count, before.count + markers.count, "no other conversation")
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's own chat is erased as before")
         XCTAssertEqual(epoch(dropbox.record), 1)
     }
@@ -291,14 +302,13 @@ final class DataEraserTests: XCTestCase {
         dropbox.downloadDelay = 0.3
         let erase = Task { await app.eraser.eraseAll() }
         try await Task.sleep(for: .milliseconds(50))
-        XCTAssertTrue(app.sync.erasing)
         let copied = await app.sync.disconnect()
         XCTAssertFalse(copied, "Disconnect is refused while the erase runs")
         XCTAssertNotNil(app.sync.provider, "still connected")
         guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertEqual(epoch(dropbox.record), 1)
         XCTAssertEqual(epoch(object(app.store.recordJSON)), 1, "the screen shows the erase")
-        XCTAssertFalse(app.sync.erasing)
+        XCTAssertFalse(app.sync.eraseRunning(), "Disconnect is back once the erase's words show")
     }
 
     func testN1AnAnswerThatStartedBeforeTheEraseIsNeverSavedAfterIt() async throws {

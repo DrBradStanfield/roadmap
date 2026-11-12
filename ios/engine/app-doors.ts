@@ -44,7 +44,7 @@ function memoryHost(historyText: string | null, nowIso: string, deviceId: string
     clearNamedFiles: () => {},
     eraseFence: () => null,
     store: { read: unused, write: unused },
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {}, // chat only: no off-file data
     deviceId: () => deviceId,
     clock: { now: () => Date.parse(nowIso) },
     timers: { set: unused, clear: () => {} },

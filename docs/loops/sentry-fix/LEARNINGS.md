@@ -144,7 +144,7 @@
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
-- `[gotcha][supabase]` 2026-09-24, missed 10-15, 10-22..10-24, 10-26, 10-28, 11-09..11-11 (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+- `[gotcha][supabase]` 2026-09-24, missed 10-15, 10-22..10-24, 10-26, 10-28, 11-09..11-12 (LEARNINGS read only in part: read it WHOLE) — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
   JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
   + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
   `product_health_ro`, valid to 2027-08-07; the product-health charter has

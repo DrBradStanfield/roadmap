@@ -26,7 +26,7 @@ vi.mock('../hooks/useChatState', () => ({
   useChatState: () => ({
     state: {
       conversations: [], activeConversationId: null, messages: [], inputText: '',
-      isLoading: false, isLocalSender: false, error: null, isOffline: false,
+      isLoading: false, replying: false, load: 'none', isLocalSender: false, error: null, isOffline: false,
       pending: { thinking: '', text: '', status: '', sources: [] }, approachById: {},
     },
     actions: {

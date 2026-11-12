@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T20,tooling,"knowledge-lint pin: the CLI-guard pin runs the real CLI with --init-state against the real repo, which would write a lint-state.json into the checkout if that file were ever removed",gap,not started,"tools/knowledge-lint.pin.test.ts runs knowledge-lint.ts --init-state on the repo and expects the ""lint-state.json exists"" refusal; a read-only flag would pin the guard without that risk (review of PR 1425)",1425,no

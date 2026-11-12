@@ -18,14 +18,16 @@ for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
   rm -f "$STATUS"
   # sim-run adds the shared device, -parallel-testing-enabled NO and a time limit. Its exit code is
-  # kept in $STATUS: the pipe drops it, and 75 means it gave up waiting, so no test ran (US-71 AC8).
+  # kept in $STATUS: the pipe drops it. 75 means it refused or gave up waiting, so no test ran (US-71
+  # AC7, AC8); 76 means another simulator booted during the run and it stopped (AC7).
   { TEST_RUNNER_TZ="$ZONE" scripts/sim-run.sh -- xcodebuild test \
     -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 || echo $? > "$STATUS"; } | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)|sim-run:" || true
-  if [ "$(cat "$STATUS" 2>/dev/null)" = 75 ]; then
-    echo "NOT RUN in $ZONE: sim-run gave up waiting (not a test failure)"; exit 75
-  fi
+  case "$(cat "$STATUS" 2>/dev/null)" in
+    75) echo "NOT RUN in $ZONE: sim-run refused or gave up; see its line above (not a test failure)"; exit 75;;
+    76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; exit 76;;
+  esac
   grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }
   if grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
     echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it"; exit 1

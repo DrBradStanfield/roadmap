@@ -24,7 +24,8 @@ import { toolOnlyAck, type ProposedEdit } from '@roadmap/health-core/chat-edits'
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
-import { getChatHistory } from './chat-history-access';
+import { askChatHistory, getChatHistory } from './chat-history-access';
+import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -76,8 +77,13 @@ export async function listConversations(): Promise<ChatListResult | null> {
   };
 }
 
-export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
-  return (await getChatHistory())?.getMessages(conversationId) ?? [];
+/** chat-api's union (N2): no store, or a read that throws, is 'failed', never an empty thread a send could go out from. */
+export async function loadConversation(conversationId: string): Promise<ChatMessage[] | 'failed'> {
+  try {
+    return (await getChatHistory())?.getMessages(conversationId) ?? 'failed';
+  } catch {
+    return 'failed'; // nothing logged: the error can quote chat text (Codex R1)
+  }
 }
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
@@ -147,10 +153,13 @@ export async function sendMessage(
     return { result: null, error: { error: 'Connect your Anthropic API key to use chat.' } };
   }
 
+  const asked = chatAskedUnder(); // the erase the question is asked under (US-11 AC2h)
   // Don't stall the answer on the store: only conversation FOLLOW-UPS need it
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
-  const storePromise = getChatHistory();
+  // Saved only under the erase marks taken now (US-11 AC2h).
+  const opened = askChatHistory();
+  const storePromise = opened.then(({ store }) => store);
   const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? shownHistory : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
@@ -194,16 +203,20 @@ export async function sendMessage(
     if (!content) return { result: null, error: { error: 'Empty response from Anthropic. Try again.' } };
   } catch (error) {
     if (error instanceof ByokAnthropicError) return { result: null, error: { error: error.message } };
-    console.warn('BYOK chat error:', error);
+    // Fixed words only: the error can quote the chat (US-15 AC47).
+    console.warn('Chat send failed');
+    Sentry.captureException(recordFailure(error, 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
     return { result: null, error: { error: 'Network error reaching Anthropic. Check your connection.' } };
   }
 
-  // Persist to the user's cloud — fire-and-forget, history is best-effort.
+  // Persist to the user's cloud, unless an erase began since the question
+  // (US-11 AC2h) — fire-and-forget, history is best-effort.
   const convId = conversationId ?? `conv-${Date.now()}`;
   const assistantId = `a-${Date.now()}`;
-  void storePromise
-    .then((store) =>
-      store?.recordExchange({
+  void opened
+    .then(({ store, askedMarks }) =>
+      chatAskedUnder() !== asked ? undefined : store?.recordExchange({
+        askedMarks,
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

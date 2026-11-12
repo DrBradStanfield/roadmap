@@ -9,7 +9,7 @@ import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
-import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult } from '../lib/lab-batches.server';
+import { activeBatches, armSweep, batchFor, creatingBatches, fileSetKey, MAX_ACTIVE_BATCHES, MAX_POLL_TOKENS, type BatchPollResult } from '../lib/lab-batches.server';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 /**
@@ -48,19 +48,21 @@ function consumeQuota(ip: string, count: number): boolean {
   return false;
 }
 
+// A 429's `code` tells the browser the daily limit from a busy server (US-12 AC9).
 const dailyLimit = () => Response.json(
-  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' },
   { status: 429 },
 );
+const serverBusy = () => Response.json({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }, { status: 429 });
 
+const daySpent = (ip: string) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
 /**
  * US-12 AC17b: with no file left today for this IP or the machine, only a poll
  * can succeed, so no more than a poll's body is read, and a larger one gets the
  * daily-limit answer.
  */
 function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
-  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
-  if (spent) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
+  if (daySpent(ip)) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
   return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
 }
 
@@ -81,6 +83,15 @@ function matchesPollToken(expected: string, supplied: string | null): boolean {
   return sameBytes(Buffer.from(expected), Buffer.from(supplied));
 }
 
+/** Hand a re-send of a live batch its own poll token, up to the cap (US-12 AC25). */
+function joinBatch(batchId: string): Response {
+  const batch = activeBatches.get(batchId);
+  if (!batch || batch.servedAt || batch.pollTokens.length >= MAX_POLL_TOKENS) return serverBusy();
+  const pollToken = newPollToken();
+  batch.pollTokens.push(pollToken);
+  return Response.json({ success: true, batchId, pollToken, totalFiles: batch.totalFiles });
+}
+
 /** How long a processing count is reused before the next provider read. */
 const PROCESSING_POLL_MS = 2000;
 
@@ -93,7 +104,7 @@ const PROCESSING_POLL_MS = 2000;
  */
 async function answerPoll(batchId: string, pollToken: string | null): Promise<Response> {
   const batch = activeBatches.get(batchId);
-  if (!batch || !matchesPollToken(batch.pollToken, pollToken)) {
+  if (!batch || !batch.pollTokens.some(token => matchesPollToken(token, pollToken))) {
     return Response.json({ error: 'Batch not found' }, { status: 404 });
   }
   try {
@@ -121,8 +132,10 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       { status: result.status, results: result.results?.map(r => withRefusalsItReads(withDaysItReads(r, batch.days), batch.refusedRows)), completed: result.completed, total: result.total },
     );
   } catch (error) {
+    // A failed read can change: answer `error` with the last count served, and the
+    // client polls on to its deadline (US-12 AC24). The next poll reads the provider again.
     console.error('Batch poll error (v2):', safeErrorFields(error));
-    return Response.json({ status: 'processing', completed: 0, total: batch.totalFiles });
+    return Response.json({ status: 'error', completed: batch.pollResult?.completed ?? 0, total: batch.pollResult?.total ?? batch.totalFiles });
   }
 }
 
@@ -131,8 +144,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const remaining = ipQuota.remaining(getClientIp(request, 'shopify'));
-  return Response.json({ allowed: remaining > 0, remaining });
+  const ip = getClientIp(request, 'shopify');
+  return Response.json({ allowed: !daySpent(ip), remaining: ipQuota.remaining(ip) });
 }
 
 /** POST: batch poll, single-file extraction, or batch creation. */
@@ -158,20 +171,28 @@ export async function action({ request }: ActionFunctionArgs) {
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
       const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
+      // US-12 AC25: the same files again join their live batch with a new token, uncharged.
+      // Matched and reserved before any await, so a twin POST never makes a second batch.
+      // A spent day joins nothing: the re-pick gets the daily limit, as a new batch would.
+      if (daySpent(ip)) return dailyLimit();
+      const fileSet = fileSetKey(ip, { ownDates, undatedPrev, refusedRows }, files);
+      const joining = batchFor(fileSet);
+      if (joining !== undefined) return joinBatch(await joining);
       // Busy is checked first, so a refused batch is never charged.
-      if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
-        return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
-      }
+      if (activeBatches.size >= MAX_ACTIVE_BATCHES) return serverBusy();
       if (!consumeQuota(ip, files.length)) return dailyLimit();
+      const pollToken = newPollToken();
       // A timeout or network failure may still have made the batch: it stays charged.
-      const { batchId } = await createBatch(files).catch((err: unknown) => {
+      const creating = createBatch(files).then(({ batchId }) => {
+        activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollTokens: [pollToken], days: { ownDates, undatedPrev }, refusedRows, fileSet });
+        armSweep();
+        return batchId;
+      }, (err: unknown) => {
         if (err instanceof BatchRefusedError) refundQuota(ip, files.length);
         throw err;
-      });
-      const pollToken = newPollToken();
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
-      armSweep();
-      return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
+      }).finally(() => creatingBatches.delete(fileSet));
+      creatingBatches.set(fileSet, creating);
+      return Response.json({ success: true, batchId: await creating, pollToken, totalFiles: files.length });
     }
 
     // --- Single file mode ---

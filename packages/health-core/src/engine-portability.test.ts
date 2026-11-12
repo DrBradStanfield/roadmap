@@ -16,7 +16,7 @@ import { build } from 'esbuild';
 const SRC = dirname(fileURLToPath(import.meta.url));
 
 /** The modules the web store and the app share. Add each one as it moves. */
-const ENGINE_ENTRIES = ['chat-session.ts', 'device-export.ts', 'document-save.ts', 'device-import.ts', 'input-form.ts', 'state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
+const ENGINE_ENTRIES = ['chat-session.ts', 'chat-turn.ts', 'device-export.ts', 'document-save.ts', 'device-import.ts', 'input-form.ts', 'state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
 
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['a node: import', /from\s+['"]node:|require\(\s*['"]node:/],
@@ -164,7 +164,7 @@ describe('engine portability (ios/architecture.md D4)', () => {
     const host = {
       tier: 'cloud' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },
       timers: { set: () => 1, clear: () => {} },
-      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {},
+      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
       mirror: {
         adapter: new MemoryAdapter(new MemoryCloud()), writesStopped: () => false, wipe: async () => {}, opened: () => {},
         pending: { get: () => false, set: () => {}, clear: () => {} },

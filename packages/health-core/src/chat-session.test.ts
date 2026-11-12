@@ -13,7 +13,7 @@ let clock = Date.parse('2026-10-21T10:00:00.000Z');
 const base = (store: MemoryAdapter) => ({
   store, deviceId: () => 'phone', clock: { now: () => (clock += 1) },
   timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-  clearOffFileData: () => {},
+  clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
 });
 const cloudHost = (store: MemoryAdapter) => ({
   ...base(store), tier: 'cloud',
@@ -98,14 +98,17 @@ describe('ChatSession on a cloud', () => {
     const s = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
     await exchange(s, 'c1', 'private words');
     await s.eraseAll();
-    const file = JSON.parse(cloud.files.get('chat-history.json')!.json);
-    expect(file.conversations).toEqual([expect.objectContaining({ id: 'c1', deleted: true, title: '', messages: [] })]);
+    const file = JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string }> };
+    // Beside the erase marker (chat-erase-marker.test.ts).
+    expect(file.conversations.filter((c) => !c.id.startsWith('erase:'))).toEqual([expect.objectContaining({ id: 'c1', deleted: true, title: '', messages: [] })]);
   });
 
   describe('US-11 AC2e: eraseAll erases what is stored, not only what this page loaded', () => {
-    /** The stored file, as a fresh device would read it. */
-    const storedOf = (cloud: MemoryCloud) =>
-      JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+    /** The stored file's conversations, as a fresh device would read it, less the erase marker (chat-erase-marker.test.ts). */
+    const storedOf = (cloud: MemoryCloud) => {
+      const file = JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+      return { conversations: file.conversations.filter((c) => !c.id.startsWith('erase:')) };
+    };
     /** A cloud whose reads fail while `down`. */
     class ReadFails extends MemoryAdapter {
       down = false;
@@ -213,11 +216,12 @@ describe('ChatSession on a cloud', () => {
       expect(page.listConversations()).toEqual([]);
     });
 
-    it('still writes nothing when nothing is stored anywhere', async () => {
+    it('writes only the erase marker when nothing is stored anywhere', async () => {
       const cloud = new MemoryCloud();
       const page = await ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
       await page.eraseAll();
-      expect(cloud.files.has('chat-history.json')).toBe(false);
+      const file = JSON.parse(cloud.files.get('chat-history.json')!.json) as { conversations: Array<{ id: string; deleted?: boolean }> };
+      expect(file.conversations).toEqual([expect.objectContaining({ id: expect.stringMatching(/^erase:/), deleted: true })]);
     });
   });
 });

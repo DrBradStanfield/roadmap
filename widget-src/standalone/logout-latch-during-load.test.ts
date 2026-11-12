@@ -2,7 +2,7 @@
  * US-09 AC2h: a cloud-mode tab whose first cloud read is still in flight
  * when another tab logs off must latch the log-off barrier too.
  *
- * The listener (latchOnOtherTabsLogOff, via mirror.opened()) was added only
+ * The listener (now listenForOtherTabsLogOff; then via mirror.opened()) was added only
  * after `await sync.load()` in RecordSession.open, and the signal key is set
  * and removed at once, so a tab still loading hears neither signal. Its later
  * failed cloud save then writes health_roadmap_file_v2 and the pending marker
@@ -132,10 +132,9 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     expect(localStorage.getItem(other.lib.MIRROR_KEY)).toBeNull();
   });
 
-  it('does not latch when its cloud load then fails and it runs on the device copy', async () => {
-    // US-09 AC2c / record-host.ts opened(): a page that falls back to the
-    // device keeps that copy as its only store, so a log-off heard while it
-    // was loading must not stop its writes.
+  it('stops when its cloud load then fails and it falls back after a log-off and a new sign-in', async () => {
+    // The device copy is now the new sign-in's mirror: a page that falls back
+    // under a changed log-off id must not write into it.
     vi.resetModules();
     const other = {
       storage: await import('../src/storage/roadmap-store'),
@@ -146,17 +145,53 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     const cloud = new SlowFirstReadCloud();
     cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
-    const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'google-drive' }, async (adapter) => {
+    const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'dropbox' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);
     });
 
     await connect.logOff('local'); // both log-off signals fire while it loads
+    // Another tab, loaded after the log-off, signs in to the same provider and
+    // keeps that sign-in's mirror on the device.
+    vi.resetModules();
+    const fresh = {
+      storage: await import('../src/storage/roadmap-store'),
+      local: await import('../src/storage/local-storage-adapter'),
+    };
+    localStorage.setItem('health_roadmap_backend', 'dropbox');
+    const theirs = await fresh.storage.RoadmapStore.create(new fresh.local.LocalStorageAdapter());
+    theirs.addMeasurement('weight', 70, '2026-01-01');
+    await theirs.flush();
+    const theirMirror = localStorage.getItem(FILE_KEY);
+    expect(theirMirror).not.toBeNull();
 
     cloud.firstRead.resolve();
     const started = await starting;
     expect(started.backend).toBe('local'); // fell back to the device copy
-    expect(other.local.roadmapLocalWritesStopped()).toBe(false);
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
+    store.addMeasurement('weight', 81, '2026-01-02');
+    await store.flush().catch(() => {});
+    expect(localStorage.getItem(FILE_KEY)).toBe(theirMirror);
+    expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('control: a cloud load that fails with no log-off falls back and writes the device copy', async () => {
+    vi.resetModules();
+    const other = {
+      storage: await import('../src/storage/roadmap-store'),
+      local: await import('../src/storage/local-storage-adapter'),
+      connect: await import('./connect'),
+      core: await import('@roadmap/health-core/adapter'),
+    };
+    const cloud = new SlowFirstReadCloud();
+    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
+    let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
+    const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'google-drive' }, async (adapter) => {
+      store = await other.storage.RoadmapStore.create(adapter);
+    });
+    cloud.firstRead.resolve();
+    expect((await starting).backend).toBe('local');
+    expect(other.local.roadmapLocalWritesStopped()).toBe(false);
     store.addMeasurement('weight', 81, '2026-01-01');
     await store.flush();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull(); // its only copy is kept
@@ -273,7 +308,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
   });
 
-  it('does not latch when that wait ends on the device copy (Drive refresh failed)', async () => {
+  it('stops when that wait ends on the device copy (Drive refresh failed) after the log-off', async () => {
     const other = await otherTab();
     const waiting = deferred();
     const running = runMainUntilLoaded(other, async () => {
@@ -286,9 +321,20 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     waiting.resolve();
     const { backend: started, store } = await running;
     expect(started).toBe('local');
+    expect(other.local.roadmapLocalWritesStopped()).toBe(true);
+    store.addMeasurement('weight', 81, '2026-01-01');
+    await store.flush().catch(() => {});
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+  });
+
+  it('control: a guest page with no log-off opens on the device and writes', async () => {
+    const other = await otherTab();
+    const { backend: started, store } = await runMainUntilLoaded(other, async () => (
+      { resolved: { adapter: new other.local.LocalStorageAdapter(), backend: 'local' } }));
+    expect(started).toBe('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(false);
     store.addMeasurement('weight', 81, '2026-01-01');
     await store.flush();
-    expect(localStorage.getItem(FILE_KEY)).not.toBeNull(); // its only copy is kept
+    expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
 });

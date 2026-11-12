@@ -6,7 +6,7 @@
  *
  * Test-only. A pin named "today (lead T1 step b changes this)" records
  * behaviour the owner has ruled will change; step (b) flips exactly those.
- * US-31 AC8 / US-32 AC6.
+ * US-31 AC8 / AC8a / US-32 AC6.
  */
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
@@ -65,7 +65,7 @@ afterEach(() => {
 });
 
 describe('lead T1 — cleanup after a landed replace', () => {
-  it('pruneErased throwing after the replace: the raw error escapes save, though the file holds the new bytes — today (lead T1 step b changes this)', async () => {
+  it('pruneErased throwing after the replace: save resolves with a warning that copies from before the erase stayed, and the file holds the new bytes (US-31 AC8a)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const adapter = new FileAdapter(path);
@@ -75,12 +75,14 @@ describe('lead T1 — cleanup after a landed replace', () => {
       throw fault;
     });
     try {
-      const error = await failureOf(recordSync(adapter, CTX.deviceId, NOW).save(marked()));
-      // SyncManager rethrows as-is: `mayHaveWritten` is set only after
-      // adapter.write returns, and write never returned.
-      expect(error).toBe(fault);
-      expect(isStorageFailure(error)).toBe(false);
-      // Yet the replace landed: the record holds the bytes write produced.
+      const saved = await recordSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(
+        `${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune copies from before the erase. ` +
+        'Copies from before the erase are still on disk; the next save removes them.',
+      );
+      // No error text and no folder: the warning names the step and the file only.
+      expect(saved.warning).not.toMatch(/EACCES|permission|\//);
+      // The replace landed: the record holds the bytes write produced.
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
@@ -91,7 +93,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
     }
   });
 
-  it('rmSync(lockPath) throwing in the finally after the replace: the raw error escapes save, though the file holds the new bytes — today (lead T1 step b changes this)', async () => {
+  it('rmSync(lockPath) throwing in the finally after the replace: save resolves with a warning that the lock file was left in place, and the file holds the new bytes (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     // `rmSync` is a named ESM import of node:fs, which vi.spyOn cannot
@@ -111,12 +113,14 @@ describe('lead T1 — cleanup after a landed replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(
+        `${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not remove the lock file. ` +
+        `The lock file ${ROADMAP_FILE_NAME}.lock was left in place; remove it only when no other writer is running.`,
+      );
+      expect(saved.warning).not.toMatch(/EBUSY|busy|\//);
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
@@ -129,7 +133,7 @@ describe('lead T1 — cleanup after a landed replace', () => {
     }
   });
 
-  it('closeSync(lock) throwing in the finally after the replace: the raw error escapes save, though the file holds the new bytes and the lock is gone — today (lead T1 step b changes this)', async () => {
+  it('closeSync(lock) throwing in the finally after the replace: save resolves with a warning naming the close step, the file holds the new bytes and the lock is gone (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     vi.resetModules();
@@ -153,12 +157,11 @@ describe('lead T1 — cleanup after a landed replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
       const wrote = recordReplace(adapter);
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not close the lock file.`);
+      expect(saved.warning).not.toMatch(/EIO|\//);
       expect(JSON.parse(before).meta.lamport).toBe(0);
       expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
       expect(readFileSync(path, 'utf8')).toBe(wrote.text);
@@ -173,8 +176,67 @@ describe('lead T1 — cleanup after a landed replace', () => {
   });
 });
 
-describe('lead T1 — the backup trim runs before the replace', () => {
-  it('with three backups and a failing replace, the oldest backup is gone and the record unchanged — today (lead T1 step b changes this)', async () => {
+describe('US-31 AC8a — nothing fails after the rename', () => {
+  /** Reload file-adapter over a node:fs whose rmSync throws on the temp file. */
+  async function tempRemovalThrows() {
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    const fault = Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      rmSync: (target: fs.PathLike, options?: fs.RmOptions) => {
+        if (String(target).includes('.tmp-')) throw fault;
+        return real.rmSync(target, options);
+      },
+    }));
+    const { FileAdapter: Isolated } = await import('./file-adapter');
+    const { recordSync: isolatedSync } = await import('./roadmap-doc');
+    return { Isolated, isolatedSync };
+  }
+
+  it('a landed rename is a save: removing the temp file is never attempted, so its failure cannot reject (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      const { Isolated, isolatedSync } = await tempRemovalThrows();
+      const adapter = new Isolated(path);
+      const wrote = recordReplace(adapter);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.version).toMatch(/^[0-9a-f]{64}$/);
+      expect(saved.warning).toBeUndefined();
+      expect(readFileSync(path, 'utf8')).toBe(wrote.text);
+      expect(readdirSync(dir).filter((n) => n.includes('.tmp-'))).toEqual([]);
+      expect(existsSync(`${path}.lock`)).toBe(false);
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('a failed temp write whose temp file cannot be removed still reports the failure in words (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    const before = readFileSync(path, 'utf8');
+    try {
+      const { Isolated, isolatedSync } = await tempRemovalThrows();
+      const adapter = new Isolated(path);
+      const temp = (adapter as any).tempPath();
+      vi.spyOn(adapter as any, 'tempPath').mockReturnValue(temp);
+      fs.symlinkSync(join(dir, 'elsewhere.txt'), temp);
+      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
+      expect((error as Error).message).toBe(`Cannot write ${ROADMAP_FILE_NAME}`);
+      expect((error as StorageError).hint).toBe('Check the file and its folder are writable. Your record was not changed.');
+      expect(readFileSync(path, 'utf8')).toBe(before);
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('lead T1 — the backup trim runs after the replace', () => {
+  it('with three backups and a failing replace, every old backup stays and the record is unchanged (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const old = ['2026-01-01T00-00-00.000Z', '2026-01-02T00-00-00.000Z', '2026-01-03T00-00-00.000Z']
@@ -193,12 +255,11 @@ describe('lead T1 — the backup trim runs before the replace', () => {
       expect((error as StorageError).message).toBe(`Cannot write ${ROADMAP_FILE_NAME}`);
       expect(isStorageFailure(error)).toBe(true);
       expect(readFileSync(path, 'utf8')).toBe(before);
-      // backup() made a fourth copy and trimmed to three before replace ran:
-      // the oldest is gone, the two newer ones and this write's copy remain.
+      // backup() made a fourth copy; the trim waits for a landed replace, so
+      // all three old copies remain beside it.
       const kept = backups(dir);
-      expect(kept).toHaveLength(3);
-      expect(kept).not.toContain(old[0]);
-      expect(kept).toEqual(expect.arrayContaining([old[1], old[2]]));
+      expect(kept).toHaveLength(4);
+      expect(kept).toEqual(expect.arrayContaining(old));
       // lastBackup names this failed write's copy.
       expect(kept).toContain(adapter.lastBackup);
     } finally {
@@ -206,7 +267,7 @@ describe('lead T1 — the backup trim runs before the replace', () => {
     }
   });
 
-  it('rmSync throwing on the trim: the raw error escapes backup() before the replace, the record is unchanged, the new backup exists and the lock is released — today (lead T1 step b changes this)', async () => {
+  it('rmSync throwing on the trim: the replace has landed, save resolves with a warning naming the prune step, every backup stays and the lock is released (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     const before = readFileSync(path, 'utf8');
     const old = ['2026-01-01T00-00-00.000Z', '2026-01-02T00-00-00.000Z', '2026-01-03T00-00-00.000Z']
@@ -226,16 +287,15 @@ describe('lead T1 — the backup trim runs before the replace', () => {
     try {
       const { FileAdapter: Isolated } = await import('./file-adapter');
       const { recordSync: isolatedSync } = await import('./roadmap-doc');
-      const { isStorageFailure: isolatedIs } = await import('./sync-manager');
       const adapter = new Isolated(path);
-      const replace = vi.spyOn(adapter as any, 'replace');
-      const error = await failureOf(isolatedSync(adapter, CTX.deviceId, NOW).save(marked()));
-      expect(error).toBe(fault);
-      expect(isolatedIs(error)).toBe(false);
-      expect(replace).not.toHaveBeenCalled();
-      expect(readFileSync(path, 'utf8')).toBe(before);
+      const wrote = recordReplace(adapter);
+      const saved = await isolatedSync(adapter, CTX.deviceId, NOW).save(marked());
+      expect(saved.warning).toBe(`${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune old backups.`);
+      expect(saved.warning).not.toMatch(/EPERM|\//);
+      expect(JSON.parse(wrote.text).meta.lamport).toBe(8); // save advances 7 by one
+      expect(readFileSync(path, 'utf8')).toBe(wrote.text);
       // The trim failed on the oldest, so all three old copies remain beside
-      // this write's new one, which holds the record's bytes.
+      // this write's new one, which holds the record's previous bytes.
       const kept = backups(dir);
       expect(kept).toHaveLength(4);
       expect(kept).toEqual(expect.arrayContaining(old));
@@ -265,13 +325,16 @@ describe('lead T1 — a lock held by another writer', () => {
     return { error, waited: Date.now() - start };
   }
 
-  it('refuses after the wait with today’s exact words, which the CLI and stdio server print as-is — today (lead T1 step b changes this)', async () => {
+  it('refuses after the wait naming the lock file’s age, which the CLI and stdio server print as-is (lead T1 step b)', async () => {
     const { dir, path } = scratch();
     try {
       const { error } = await refusedSave(path);
+      // The lock's mtime is the epoch; the fake clock stands still after the wait.
+      const days = Math.round(Date.now() / 86_400_000);
       expect(error).toBeInstanceOf(StorageError);
       expect((error as StorageError).message).toBe(`Another program is writing ${ROADMAP_FILE_NAME} and did not finish`);
       expect((error as StorageError).hint).toBe(
+        `The lock file ${ROADMAP_FILE_NAME}.lock is about ${days} days old. ` +
         'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
       );
       expect(isStorageFailure(error)).toBe(true);
@@ -280,6 +343,88 @@ describe('lead T1 — a lock held by another writer', () => {
         message: (error as StorageError).message,
         hint: (error as StorageError).hint,
       });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('names a recent lock’s age in minutes (lead T1 step b)', async () => {
+    const { dir, path } = scratch();
+    try {
+      writeFileSync(`${path}.lock`, 'held by another writer');
+      const threeMinutesAgo = new Date(Date.now() - 3 * 60_000);
+      utimesSync(`${path}.lock`, threeMinutesAgo, threeMinutesAgo);
+      vi.useFakeTimers();
+      const outcome = failureOf(recordSync(new FileAdapter(path), CTX.deviceId, NOW).save(marked()));
+      await vi.runAllTimersAsync();
+      const error = await outcome;
+      // Three minutes old when planted, five seconds more after the wait.
+      expect((error as StorageError).hint).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 3 minutes old\\. Nothing was changed\\.`));
+      expect(existsSync(`${path}.lock`)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('says the lock’s age is unknown when its stat fails (lead T1 step b)', async () => {
+    const { dir, path } = scratch();
+    writeFileSync(`${path}.lock`, 'held by another writer');
+    vi.resetModules();
+    const real = await vi.importActual<typeof fs>('node:fs');
+    vi.doMock('node:fs', () => ({
+      ...real,
+      default: real,
+      lstatSync: (target: fs.PathLike, options?: fs.StatOptions) => {
+        if (String(target).endsWith('.lock')) throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+        return real.lstatSync(target, options);
+      },
+    }));
+    try {
+      const { FileAdapter: Isolated } = await import('./file-adapter');
+      const { recordSync: isolatedSync } = await import('./roadmap-doc');
+      vi.useFakeTimers();
+      const outcome = failureOf(isolatedSync(new Isolated(path), CTX.deviceId, NOW).save(marked()));
+      await vi.runAllTimersAsync();
+      const error = await outcome;
+      expect((error as StorageError).message).toBe(`Another program is writing ${ROADMAP_FILE_NAME} and did not finish`);
+      expect((error as StorageError).hint).toMatch(new RegExp(`^The age of the lock file ${ROADMAP_FILE_NAME}\\.lock is unknown\\. Nothing was changed\\.`));
+    } finally {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The refusal's hint for a lock whose mtime is `age` ms before the refusal.
+   * Fake clock from T0: 25 ms retries end the wait at T0 + 5_025.
+   */
+  async function hintFor(path: string, age: number): Promise<string> {
+    const T0 = Date.parse(NOW);
+    vi.useFakeTimers({ now: T0 });
+    writeFileSync(`${path}.lock`, 'held by another writer');
+    const mtime = new Date(T0 + 5_025 - age);
+    utimesSync(`${path}.lock`, mtime, mtime);
+    const outcome = failureOf(recordSync(new FileAdapter(path), CTX.deviceId, NOW).save(marked()));
+    await vi.runAllTimersAsync();
+    return ((await outcome) as StorageError).hint ?? '';
+  }
+
+  it('picks the unit after rounding: 59.7 seconds is about 1 minute, 23.99 hours about 1 day (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      expect(await hintFor(path, 59_700)).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 1 minute old\\. `));
+      vi.useRealTimers();
+      expect(await hintFor(path, 23.99 * 3_600_000)).toMatch(new RegExp(`^The lock file ${ROADMAP_FILE_NAME}\\.lock is about 1 day old\\. `));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('says the age is unknown when the lock’s mtime is in the future (US-31 AC8a)', async () => {
+    const { dir, path } = scratch();
+    try {
+      expect(await hintFor(path, -3_600_000)).toMatch(new RegExp(`^The age of the lock file ${ROADMAP_FILE_NAME}\\.lock is unknown\\. Nothing was changed\\.`));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -159,6 +159,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
     it(`${mode}: reports incomplete cleanup when the content-free erase fence cannot be stored`, async () => {
       const cloud = new MemoryCloud();
       const adapter = () => (mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(cloud));
+      if (mode === 'cloud') localStorage.setItem('health_roadmap_backend', 'memory'); // a cloud page remembers its backend (US-11 AC6)
       await initRoadmapStore(adapter());
       await addMeasurement('weight', 70, '2026-01-01');
       const chat = (await getChatHistory())!;

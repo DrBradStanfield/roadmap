@@ -259,7 +259,7 @@ function fieldsByKey(sections: FormSection[]): Map<string, FormField> {
 function offered(field: FormField, value: string, months: FormsView['months']): boolean {
   switch (field.kind) {
     case 'choice': return field.options.some((o) => o.value === value && !o.disabled);
-    case 'month': return value === '' || months[field.when].includes(value);
+    case 'month': return value === '' || (months[field.when].includes(value) && !(field.min && value < field.min));
     case 'number': {
       if (value === '') return true;
       const n = Number(value);
@@ -319,7 +319,7 @@ export function applyFormEdit(file: RoadmapFile, edit: Exclude<FormEdit, { kind:
  * view offers corrections, never removal.
  */
 /** A stored value as its cell shows it: a limit with its symbol, at places that keep it true (US-12 AC20).
- *  A raised PSA prints on its side of 4.0, as the web's PSA line does (US-06 AC18). */
+ *  A PSA prints on its side of 4.0, as the web's PSA line does (US-06 AC18). */
 export function rowText(metric: MetricType, row: { value: number; comparator?: Comparator }, unit: CellUnit): string {
   const { comparator } = comparatorOf(row);
   return metric === 'psa' ? formatGradedOrLimit('psa', row.value, 'si', comparator) : limitCellText(metric, row.value, unit, comparator);

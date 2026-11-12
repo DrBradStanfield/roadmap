@@ -2,7 +2,7 @@
  * US-06 AC14: the plan's PSA cards and the yearly PSA reminder read the newest
  * saved PSA measurement, its value and its day. PSA has been a measurement
  * since February 2026 (lab uploads, the assistant and the iPhone save a dated
- * `psa` row), but the "Elevated PSA" card (PSA > 4.0 ng/mL), the PSA-due card
+ * `psa` row), but the "Elevated PSA" card (PSA >= 4.0 ng/mL since Change 3), the PSA-due card
  * and the `screening_prostate` reminder (12 months, `will_screen`) read only
  * the old screening answers `prostate_psa_value` / `prostate_last_date`, which
  * nothing writes any more. Those answers stay the fallback; the newer by date
@@ -45,7 +45,7 @@ function prostate(file: RoadmapFile) {
 }
 
 const ELEVATED = (v: string) =>
-  `Elevated PSA: Your PSA of ${v} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`;
+  `Elevated PSA: Your PSA of ${v} ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.`;
 
 describe('the plan reads the saved PSA measurement (US-06 AC14)', () => {
   // Since US-06 AC17 (Brad 2026-11-03) no "PSA test up to date" shows beside "Elevated PSA"; the due list and the reminder still carry the day.
@@ -169,15 +169,20 @@ describe('a PSA printed as a limit is graded only when the limit decides against
   it('"> 100" shows "Elevated PSA" with the limit as printed, never a number the lab did not print', () => {
     const p = prostate(record([[100, '2025-09-03', 'active', '>']]));
     expect(p.cards).toEqual([
-      'Elevated PSA: Your PSA of > 100.0 ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.']);
+      'Elevated PSA: Your PSA of > 100.0 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.']);
+    expect(p.pushed).toEqual(['2026-09-01']);
+  });
+
+  it('">= 4.0" shows "Elevated PSA" as printed: 4.0 is raised (Change 3, Brad 2026-11-12)', () => {
+    const p = prostate(record([[4.0, '2025-09-03', 'active', '>=']]));
+    expect(p.cards).toEqual([ELEVATED('\u2265 4.0')]);
     expect(p.pushed).toEqual(['2026-09-01']);
   });
 
   it.each([
     ['"< 0.1": below the line', 0.1, '<'],
     ['"< 5": could be either side of 4.0', 5, '<'],
-    ['"<= 4.0": not above 4.0', 4.0, '<='],
-    ['">= 4.0": could be exactly 4.0', 4.0, '>='],
+    ['"<= 4.0": could be exactly 4.0, or below it', 4.0, '<='],
   ] as const)('%s: no "Elevated PSA", and the test still dates the next one', (_what, value, comparator) => {
     const p = prostate(record([[value, '2025-09-03', 'active', comparator]]));
     expect(p.cards).toEqual([DUE]);

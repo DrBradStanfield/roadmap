@@ -10,9 +10,10 @@ final class WelcomeConnectTests: XCTestCase {
     private let unreachable = SyncProblem(kind: .unreachable)
 
     func testEveryStatusHasAPhase_US54_AC2b() {
-        let statuses: [CloudSync.Status] = [.onPhone, .connecting, .synced(.now), .saving, .problem(unreachable)]
-        // With a cloud and no open record: an open shows as opening, a failure as failed.
-        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable)]
+        let statuses: [CloudSync.Status] = [.onPhone, .connecting, .synced(.now), .saving, .problem(unreachable), .disconnecting]
+        // With a cloud and no open record: an open shows as opening, a failure as failed,
+        // a Disconnect closing as disconnecting (US-25 AC11m, owner R2 b).
+        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable), .disconnecting]
         for (status, expected) in zip(statuses, connected) {
             XCTAssertEqual(WelcomeConnect.phase(provider: .dropbox, status: status, recordOpen: false), expected, "\(status)")
             // An open record wins over any status.
@@ -23,12 +24,28 @@ final class WelcomeConnectTests: XCTestCase {
         }
     }
 
-    /// No second cloud can be chosen while a record opens.
+    /// No second cloud can be chosen while a record opens, nor at failed, where a cloud is
+    /// still connected (US-25 AC11l, US-54 AC2d).
     func testTheConnectButtonsHideWhileARecordOpens_US54_AC2b() {
-        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), true), (.opened, false)]
+        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), false), (.opened, false), (.disconnecting, false)]
         for (phase, shows) in rows {
             XCTAssertEqual(WelcomeConnect.showsConnect(phase), shows, "\(phase)")
         }
+    }
+
+    /// US-54 AC2d (review of PR 1329; US-25 AC11n): at failed, and only there, the sheet shows
+    /// one row to sign in to the connected cloud again and a "Switch to <cloud>" row for each
+    /// other configured cloud, never the connected one.
+    func testOnlyAFailedOpenOffersSignInAgainAndTheSwitchRows_US54_AC2d() {
+        let rows: [(Phase, Bool)] = [(.choosing, false), (.opening, false), (.failed(unreachable), true), (.opened, false), (.disconnecting, false)]
+        for (phase, shows) in rows {
+            XCTAssertEqual(WelcomeConnect.showsRecovery(phase), shows, "\(phase)")
+        }
+        for kind in SyncProblem.Kind.allCases {
+            XCTAssertTrue(WelcomeConnect.showsRecovery(.failed(SyncProblem(kind: kind))), "\(kind)")
+        }
+        XCTAssertEqual(SwitchCloudRow.targets(from: .googleDrive), [.dropbox])
+        XCTAssertEqual(SwitchCloudRow.targets(from: .dropbox), [.googleDrive])
     }
 
     func testWhatEachTapDoes_US54_AC2b() {
@@ -45,6 +62,7 @@ final class WelcomeConnectTests: XCTestCase {
             (.phaseChanged, true, true, [.nothing, .nothing, .nothing, .nothing]),
             (.alertDismissed, true, false, [.nothing, .nothing, .nothing, .goOn]),
             (.alertDismissed, false, false, [.nothing, .nothing, .nothing, .nothing]),
+            // US-54 AC2d: the switch rows call CloudSync.switchTo themselves (US-25 AC11n): no event here.
         ]
         for (event, sheetShown, alertShown, expected) in rows {
             for (phase, decision) in zip(phases, expected) {

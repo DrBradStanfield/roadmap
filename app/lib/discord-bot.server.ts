@@ -19,13 +19,13 @@ import {
   Events,
   GatewayIntentBits,
   Partials,
-  type Message,
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
-import { findDuplicateReply } from './chat-dedup.server';
+import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
+import { CHAT_PROMPT } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
@@ -49,6 +49,8 @@ import {
   type GuildMessage,
   isExcludedChannel,
   errorKind,
+  errorTag,
+  DiscordHandleError,
   safeReply,
   getRepliedToUsers,
   stripBotMention,
@@ -60,10 +62,13 @@ import {
   loadThreadHistory,
 } from './discord-bot-history.server';
 import { persistConversation } from './discord-bot-persist.server';
+import { sendAnswer, sentText } from './discord-bot-send.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 export { splitForDiscord } from './discord-bot-messages.server';
 export { persistConversation } from './discord-bot-persist.server';
+
+const ERROR_REPLY = 'Something went wrong on my end. Please try again in a moment.';
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -94,6 +99,11 @@ export function startDiscordBot(): void {
 
   if (!DISCORD_BOT_TOKEN) {
     console.log('Discord bot: DISCORD_BOT_TOKEN not set — bot disabled');
+    return;
+  }
+
+  if (CHAT_PROMPT.kind === 'missing') {
+    console.warn('Discord bot: chat system prompt missing — bot disabled');
     return;
   }
 
@@ -133,9 +143,12 @@ export function startDiscordBot(): void {
   });
 
   client.on(Events.MessageCreate, (message) => {
-    handleMessage(message).catch((err) => {
-      console.error('Discord message handler error:', safeErrorFields(err));
-      Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
+    // Reached by a throw before the try, or a throw inside the catch (a throwing
+    // getter on the error): fixed words only, never the error (US-15 AC62).
+    handleMessage(message).catch(() => {
+      console.error('Discord message handler error: catch failed');
+      Sentry.captureException(new DiscordHandleError(), { level: 'error', fingerprint: ['discord-handle', 'catch-failed', 'catch'],
+        tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: 'catch-failed', stage: 'catch' } });
     });
   });
 
@@ -224,14 +237,14 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   if (!checkUserCooldown(authorId)) return;              // silently ignore flooding (< 3s since last reply)
 
   if (!checkUserRateLimit(authorId)) {
-    await safeReply(message, 'You are sending messages a bit quickly — try again in a few minutes.');
+    await safeReply(message, 'You are sending messages a bit quickly. Try again in a few minutes.');
     return;
   }
 
   // ----- Concurrency gate -----
   if (activeLlmCalls >= CONCURRENCY_LIMIT) {
     if (waitingLlmCalls >= QUEUE_MAX_DEPTH) {
-      await safeReply(message, 'Busy helping other people right now — try again in a moment.');
+      await safeReply(message, 'Busy helping other people right now. Try again in a moment.');
       return;
     }
     waitingLlmCalls++;
@@ -247,6 +260,10 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   // ----- Load conversation history if this is a reply to the bot -----
   activeLlmCalls++;
   let typingInterval: NodeJS.Timeout | null = null;
+  // How far the turn got, for the outer catch's Sentry report (H47). Plain
+  // progress state inside one function, not a mode beside a union.
+  let stage: 'prepare' | 'history' | 'ask' | 'send' | 'store' = 'prepare';
+  let release = (): void => undefined; // the turn claim's, once taken
 
   try {
     const strippedContent = stripBotMention(content, clientUserId);
@@ -269,48 +286,30 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // Explicit reply chain wins. Otherwise, outside a thread (threads carry their
     // own history via loadThreadHistory), continue this user's recent conversation
     // so channel follow-ups aren't each answered from scratch.
+    stage = 'history';
     let dbResult = await loadConversationForReply(message, authorId);
     if (!dbResult.conversationId && !message.channel.isThread()) {
       dbResult = await loadRecentConversation(authorId);
     }
     const conversationId = dbResult.conversationId;
 
-    // Dedup check (shared with web — app/lib/chat-dedup.server.ts). Only when we have
-    // DB-backed conversation history with timestamps + is_fallback flag. Re-serves the
-    // previous bot reply via Discord without re-running classifier/router/main LLM.
-    if (conversationId) {
-      const dup = findDuplicateReply(dbResult.history, truncatedInput);
-      if (dup) {
-        Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
-          level: 'info',
-          tags: { feature: 'chat', platform: PLATFORM_DISCORD, diagnostic: 'dedup' },
-          extra: {
-            conversationId,
-            ageMs: dup.ageMs,
-            messageLength: truncatedInput.length,
-          },
-        });
-        if (typingInterval) {
-          clearInterval(typingInterval);
-          typingInterval = null;
-        }
-        const dupChunks = splitForDiscord(dup.content, DISCORD_SPLIT_CHARS);
-        let dupFirst = true;
-        for (const chunk of dupChunks) {
-          try {
-            if (dupFirst) {
-              await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } });
-            } else if (message.channel.isTextBased() && 'send' in message.channel) {
-              await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
-            }
-          } catch (sendErr) {
-            console.error('Discord: dedup re-send failed:', errorKind(sendErr));
-          }
-          dupFirst = false;
-        }
-        return;
+    // Dedup and turn claim (shared with web, app/lib/chat-dedup.server.ts): re-serve a reply
+    // the DB history shows was just given, or say nothing while an identical turn still runs:
+    // its answer arrives anyway (US-15 AC63).
+    const turn = await claimChatTurn(conversationId ?? authorId, truncatedInput, conversationId ? dbResult.history : [], PLATFORM_DISCORD);
+    if (turn.kind !== 'run') {
+      if (typingInterval) {
+        clearInterval(typingInterval);
+        typingInterval = null;
       }
+      if (turn.kind === 'busy') return;
+      // US-15 AC62: a partial re-send stores nothing; the 60 s window bounds a repeat.
+      stage = 'send';
+      const resent = await sendAnswer(message, splitForDiscord(turn.content, DISCORD_SPLIT_CHARS));
+      if (resent.kind === 'none-sent') await safeReply(message, ERROR_REPLY);
+      return;
     }
+    release = turn.release;
 
     // Narrow history to what the LLM call needs (role+content). When there's no
     // DB-backed reply chain but the message is in a thread, fall back to Discord-API
@@ -319,12 +318,14 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       ? dbResult.history.map(h => ({ role: h.role, content: h.content }))
       : (message.channel.isThread() ? await loadThreadHistory(message, clientUserId) : []);
 
+    stage = 'ask';
     const tBeforeLlm = Date.now();
     const result = await platformChatCompletion({
       message: truncatedInput,
       history,
     });
     const tAfterLlm = Date.now();
+    stage = 'send';
 
     // Fire the shared fallback reporter (no-op when result.isFallback is false).
     // Without this, Discord fallbacks would silently miss Sentry alerts — the
@@ -348,31 +349,30 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
     // US-15 AC48: a silent (SPAM) turn sends nothing; below, only its match event is stored.
     const chunks = result.silent ? [] : splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
-    const sentMessages: Message[] = [];
-    let firstChunk = true;
-    for (const chunk of chunks) {
-      const sent = firstChunk
-        ? await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } })
-        : (message.channel.isTextBased() && 'send' in message.channel
-            ? await message.channel.send({ content: chunk, allowedMentions: { parse: [] } })
-            : null);
-      if (sent) sentMessages.push(sent);
-      firstChunk = false;
+    const sent = await sendAnswer(message, chunks);
+    // US-15 AC62: nothing went out, so say so and store nothing. A partial is
+    // stored as the text that went out, marked so the dedup never re-serves it.
+    if (sent.kind === 'none-sent') {
+      await safeReply(message, ERROR_REPLY);
+      return;
     }
 
     // Fire-and-forget: persist the conversation and the router event.
     // All DB errors go to Sentry but never block the Discord response.
+    // 'store' covers building the stored text (sentText, the history find and
+    // filter) as well as the write.
+    stage = 'store';
     persistConversation({
       conversationId,
       authorId,
       userMessage: truncatedInput,
       userDiscordMessageId: message.id,
-      assistantContent: result.content,
+      assistantContent: sent.kind === 'partial' ? sentText(result.content, sent.sent) : result.content,
       silent: result.silent === true,
-      assistantDiscordMessageIds: sentMessages.map(m => m.id),
+      assistantDiscordMessageIds: sent.sent.map(c => c.id),
       usage: result.usage,
       isFallback: result.isFallback,
-      failureMode: result.failureMode,
+      failureMode: sent.kind === 'partial' ? 'partial' : result.failureMode,
       errorDetail: result.errorDetail,
       routerResult: result.routerResult,
       replaced: result.replaced,
@@ -392,10 +392,15 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   } catch (err) {
     if (typingInterval) clearInterval(typingInterval);
     console.error('Discord handleMessage error:', errorKind(err));
-    Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
-    await safeReply(message, 'Something went wrong on my end — please try again in a moment.');
+    // A stand-in with its own stack, a shaped tag and the stage, never the error:
+    // a model or history error can carry the question or a request body, and
+    // ContextLines would read any file a frame names (US-15 AC62, H47).
+    Sentry.captureException(new DiscordHandleError(), { level: 'error', fingerprint: ['discord-handle', errorTag(err), stage],
+      tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: errorTag(err), stage } });
+    await safeReply(message, ERROR_REPLY);
   } finally {
     activeLlmCalls--;
+    release();
   }
 }
 

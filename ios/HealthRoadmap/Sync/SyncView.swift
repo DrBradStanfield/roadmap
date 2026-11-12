@@ -1,12 +1,15 @@
+import AuthenticationServices
 import SwiftUI
 
 /// The Sync screen (US-25 AC11e), opened from My data's About you line: what sync does,
 /// where the record is, its state in plain words, Connect Dropbox or Google
-/// Drive, Sync now, and Disconnect. Every action is CloudSync's; this view only
+/// Drive, Sync now, Switch to another cloud, and Disconnect. Every action is CloudSync's; this view only
 /// draws and asks.
 struct SyncView: View {
     let sync: CloudSync
     @Environment(\.dismiss) private var dismiss
+    /// The switch rows' sign-in, read here: this view stays while they go (US-25 AC11n).
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var message: String?
     @State private var confirmDisconnect = false
 
@@ -84,8 +87,10 @@ struct SyncView: View {
         }
 
         Section {
+            // One step to another cloud (US-25 AC11n).
+            ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, authenticate: webAuthenticationSession.signIn, message: $message) }
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
-                .disabled(sync.erasing)
+                .disabled(sync.eraseRunning() || sync.status == .disconnecting)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
                     Button("Disconnect", role: .destructive) { Task { await disconnect(provider) } }
                 } message: {
@@ -97,9 +102,12 @@ struct SyncView: View {
     // MARK: Actions
 
     private func disconnect(_ provider: CloudProvider) async {
-        guard !sync.erasing else { return } // refused, not unreachable (re-check N3)
-        if !(await sync.disconnect()) {
+        switch await sync.disconnectOutcome() {
+        // Refused, not unreachable (re-check N3). `unreachable` is a switch's stop only (AC11n).
+        case .done(copied: true), .refused, .unreachable: break
+        case .done(copied: false):
             message = "\(provider.label) could not be reached, so changes made on other devices since the last sync are not on this iPhone. Everything saved on this iPhone is kept."
+        case .failed: message = SyncStatusText.disconnectFailed(provider)
         }
     }
 }

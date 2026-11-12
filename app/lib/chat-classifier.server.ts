@@ -86,6 +86,8 @@ let promptCachedAt = 0;
 let promptMissingReported = false;
 const PROMPT_TTL_MS = 60_000;
 const PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-classifier-prompt.md');
+/** One attempt; anthropic-fetch retries once (chat-dedup.server.ts CHAT_TURN_TTL_MS counts on it). */
+export const CLASSIFIER_TIMEOUT_MS = 5_000;
 
 function getClassifierPrompt(): string {
   if (cachedPrompt && Date.now() - promptCachedAt < PROMPT_TTL_MS) return cachedPrompt;
@@ -164,7 +166,7 @@ export async function classifyMessage(
   let raw = '';
 
   try {
-    const result = await callAnthropicWithUsage(body, 5_000);
+    const result = await callAnthropicWithUsage(body, CLASSIFIER_TIMEOUT_MS);
     raw = result.content;
     const classification = parseClassification(raw);
     const latencyMs = Date.now() - t0;

@@ -22,11 +22,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); case \"$input\" in *push*|*merge*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
+            "command": "input=$(cat); case \"$input\" in *push*|*merge*|*refs/heads/main*|*updateRef*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.cjs\";; esac"
           },
           {
             "type": "command",
             "command": "input=$(cat); case \"$input\" in *xcodebuild*|*simctl*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/simulator-guard.cjs\";; esac",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); case \"$input\" in *test*|*npm*) printf '%s' \"$input\" | node \"$CLAUDE_PROJECT_DIR/.claude/hooks/broad-test-guard.cjs\";; esac",
             "timeout": 10
           },
           {

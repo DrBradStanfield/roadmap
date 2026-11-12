@@ -19,10 +19,11 @@
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
+import { refreshOnce } from './token-flight';
 
-const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
+export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
@@ -55,11 +56,11 @@ interface DropboxTokens {
 }
 
 function loadTokens(): DropboxTokens | null {
-  return getJson<DropboxTokens>(TOKEN_KEY);
+  return getSignIn<DropboxTokens>(TOKEN_KEY);
 }
 
-function saveTokens(tokens: DropboxTokens): void {
-  setJson(TOKEN_KEY, tokens);
+function saveTokens(tokens: DropboxTokens, gen: LogOffId): boolean {
+  return setSignIn(TOKEN_KEY, tokens, gen);
 }
 
 /** A token reply holds a non-empty access token and a finite expiry, and at
@@ -79,7 +80,8 @@ export class DropboxAdapter implements StorageAdapter {
   readonly label = 'Dropbox';
   private tokens: DropboxTokens | null;
 
-  constructor(private readonly config: DropboxConfig) {
+  /** `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
+  constructor(private readonly config: DropboxConfig, readonly gen: LogOffId = logOffId()) {
     this.tokens = loadTokens();
   }
 
@@ -97,7 +99,7 @@ export class DropboxAdapter implements StorageAdapter {
     const challenge = await deriveCodeChallenge(verifier);
     const state = generateState();
     try {
-      sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+      sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state, this.gen));
     } catch {
       throw new StorageError('Cannot start Dropbox sign-in: session storage is blocked.');
     }
@@ -149,14 +151,14 @@ export class DropboxAdapter implements StorageAdapter {
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
     const json = tokenReply(await res.json().catch(() => null), true);
-    saveTokens({
+    const saved = saveTokens({
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
       expiresAt: Date.now() + json.expires_in * 1000,
-    });
+    }, claimed.gen);
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return new DropboxAdapter(config);
+    return saved ? new DropboxAdapter(config, claimed.gen) : null;
   }
 
   async disconnect(): Promise<void> {
@@ -308,12 +310,13 @@ export class DropboxAdapter implements StorageAdapter {
       client_id: this.config.clientId,
     });
     // Bounded like Drive's refresh (US-09 AC13h): every read and save waits on it.
-    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
+    // One flight per page and grant (US-09 AC47); each caller reads its own copy of the answer.
+    const res = await refreshOnce('dropbox', startedFrom, () => fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
       timeoutMs: 5000,
-    }).catch((error: unknown) => {
+    })).then((shared) => shared.clone(), (error: unknown) => {
       this.dropIfGrantMoved(startedFrom);
       throw error;
     });
@@ -329,7 +332,7 @@ export class DropboxAdapter implements StorageAdapter {
       accessToken: json.access_token,
       expiresAt: Date.now() + json.expires_in * 1000,
     };
-    saveTokens(this.tokens);
+    saveTokens(this.tokens, this.gen);
   }
 
   /**

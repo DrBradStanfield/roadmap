@@ -96,6 +96,9 @@ describe('generateSuggestions', () => {
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-diabetic');
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('urgent');
+      // US-25 AC28 (App Review 1.4.1): a guideline range plus a doctor line, not a diagnosis.
+      expect(hba1cSuggestion?.description).toMatch(/ is in the range guidelines use for diabetes\. See your doctor to confirm and plan care, including lifestyle changes\.$/);
+      expect(hba1cSuggestion?.description).not.toContain('indicates diabetes');
     });
 
     it('generates prediabetic suggestion for HbA1c 5.7-6.4% (38.8-47.5 mmol/mol)', () => {
@@ -557,7 +560,7 @@ describe('generateSuggestions', () => {
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage2');
       expect(bpSuggestion?.description).toContain('Weight loss');
       expect(bpSuggestion?.description).toContain('potassium-rich foods');
-      expect(bpSuggestion?.description).toContain('Medication is typically recommended');
+      expect(bpSuggestion?.description).toContain('Guidelines typically recommend medication at this level. Discuss it with your doctor.');
     });
 
     it('crisis does not include lifestyle advice', () => {
@@ -1614,14 +1617,14 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-prostate')).toBeUndefined();
     });
 
-    it('warns about elevated PSA > 4.0', () => {
+    it('warns about elevated PSA >= 4.0', () => {
       const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 5.2 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-prostate-elevated')).toBeDefined();
     });
 
-    it('no elevated PSA warning when PSA <= 4.0', () => {
+    it('no elevated PSA warning when PSA < 4.0', () => {
       const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
       const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 2.1 };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
@@ -1783,8 +1786,9 @@ describe('generateSuggestions', () => {
         // no followupDate
       };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
-      // Should fall back to default logic
-      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')).toBeUndefined();
+      // Since Change 2b (US-07 AC1j) colorectal asks for the colonoscopy date instead of the routine card.
+      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')?.title).toBe('Add your colonoscopy date');
+      expect(suggestions.find(s => s.id === 'screening-colorectal-upcoming')).toBeUndefined();
     });
 
     // --- Breast ---
@@ -2335,7 +2339,8 @@ describe('generateSuggestions', () => {
     it.each(cases)('step 1 card, $name', ({ bmi, whr, inputs: values, text }) => {
       const { inputs, results } = createTestData(values, { bmi, waistToHeightRatio: whr });
       const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'weight-med-glp1');
-      expect(card?.title).toBe('Consider a GLP-1 medication');
+      // US-25 AC28 (App Review 1.4.1, Brad 2026-11-13): the step 1 title names the doctor.
+      expect(card?.title).toBe('Consider discussing a GLP-1 medication with your doctor');
       expect(card?.description).toBe(text);
     });
 
@@ -2857,6 +2862,8 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const retinoid = suggestions.find(s => s.id === 'skin-retinoid')!;
       expect(retinoid.description).toContain('pregnancy');
+      // US-25 AC28 (App Review 1.4.1): the prescription line ends the card.
+      expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\. Ask your doctor or pharmacist before you start\.$/);
     });
   });
 
@@ -3818,15 +3825,15 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).not.toMatch(MEDICINE_WORDS);
       expect(unknown).toMatch(/is very high, indicating significantly elevated cardiovascular risk\. Discuss treatment, including lifestyle changes, with your doctor\.$/);
       expect(desc({ ...adultBase, apoB: apoB(110) }, undefined, 'apob-very-high'))
-        .toMatch(/elevated cardiovascular risk\. Statin therapy and lifestyle intervention are typically recommended\.$/);
+        .toMatch(/elevated cardiovascular risk\. Statin therapy and lifestyle changes are typically recommended at this level\. Discuss it with your doctor\.$/);
     });
 
-    it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult keeps "Medication is typically recommended"', () => {
+    it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC28, App Review 1.4.1)', () => {
       const bp = { systolicBp: 165, diastolicBp: 102 };
       const unknown = desc({ ...base, ...bp }, undefined, 'bp-stage2');
       expect(unknown).toContain('indicates stage 2 hypertension. Discuss treatment with your doctor.');
-      expect(unknown).not.toContain('Medication is typically recommended');
-      expect(desc({ ...adultBase, ...bp }, undefined, 'bp-stage2')).toContain('indicates stage 2 hypertension. Medication is typically recommended at this level.');
+      expect(unknown).not.toContain('recommend medication');
+      expect(desc({ ...adultBase, ...bp }, undefined, 'bp-stage2')).toContain('indicates stage 2 hypertension. Guidelines typically recommend medication at this level. Discuss it with your doctor.');
     });
 
     it('very high LDL: "Discuss treatment with your doctor."; an adult keeps the statin sentence', () => {
@@ -3834,7 +3841,7 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).not.toMatch(MEDICINE_WORDS);
       expect(unknown).toMatch(/This may indicate familial hypercholesterolemia\. Discuss treatment with your doctor\.$/);
       expect(desc({ ...adultBase, ldlC: ldl(200) }, undefined, 'ldl-very-high'))
-        .toMatch(/This may indicate familial hypercholesterolemia\. Statin therapy is typically recommended\.$/);
+        .toMatch(/This may indicate familial hypercholesterolemia\. Guidelines typically recommend statin therapy at this level\. Discuss it with your doctor\.$/);
     });
 
     it('high Lp(a): the "not started" medicine lines go; an adult keeps them', () => {

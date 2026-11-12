@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H59,hosted mcp,A refused confirm's telemetry names one reason for several kinds of refusal,lead,done,"checkConfirm (app/lib/mcp.server.ts) returns { text, confirmReason }; countToolCall writes confirmReason beside reason 'confirm' on mcp_tool_call; MCP_CONFIRM_REASONS in app/lib/product-events.server.ts. US-36 AC9. Tests: app/routes/mcp.hosted-guards.test.ts (H59), app/lib/product-events.server.test.ts",1440,no

@@ -268,11 +268,11 @@ describe('US-07 AC1a: the elevated Lp(a) checklist grades each factor at its tar
   });
 });
 
-describe('US-07 AC1: PSA is elevated only above 4.0 ng/mL (doc §8: "PSA > 4.0")', () => {
+describe('US-07 AC1i: PSA is elevated at 4.0 ng/mL or above (doc §8: "PSA >= 4.0", Brad 2026-11-12)', () => {
   const psa = (v: number) => ids(plan({}, { age: 55 }, undefined, { prostateDiscussion: 'will_screen', prostatePsaValue: v }));
-  it('4.0 is not elevated; 4.01 is', () => {
-    expect(psa(4.0)).not.toContain('screening-prostate-elevated');
-    expect(psa(4.01)).toContain('screening-prostate-elevated');
+  it('3.99 is not elevated; 4.0 is', () => {
+    expect(psa(3.99)).not.toContain('screening-prostate-elevated');
+    expect(psa(4.0)).toContain('screening-prostate-elevated');
   });
 });
 

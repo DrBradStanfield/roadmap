@@ -78,7 +78,8 @@ document has `fileRef: ""`.
      is "> 60", never 60. Say it with its symbol. No `comparator` means an exact value.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
-   `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
+   `profile` and `screenings` are singletons. `screenings.colorectalFollowupIntervalYears` (whole years, 1 to 10) is the repeat interval the colonoscopy report gave after an abnormal colorectal result; absent means the report gave none, and the plan then uses 3 years.
+   Each may carry `fieldStamps`, the merge's
    clock for each field; it is not part of what the record says, so skip it when reading.
    `read_record` leaves it out, with the rest of the sync bookkeeping (US-32 AC41): `meta`,
    every row's `createdAt` and `lamport`, `updatedAt` except on the two history logs (there
@@ -314,7 +315,8 @@ Validate your result against the schema before you write it back.
   first stood. The other cards stay, but those that named a medicine say none:
   `apob-very-high` and `ldl-very-high` end "Discuss treatment…with your doctor." in
   place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor."
-  in place of "Medication is typically recommended at this level.", `bp-stage1` and
+  in place of "Guidelines typically recommend medication at this level. Discuss it
+  with your doctor.", `bp-stage1` and
   `bp-stage2` leave out their GLP-1 sentence, and the `lpa-elevated` checklist leaves
   out its "not started" medicine lines. Each card's `reason` is unchanged. When the plan holds the
   `adults-only` card, a `null` in those four profile fields means "withheld". In any

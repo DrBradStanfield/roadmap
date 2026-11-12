@@ -85,6 +85,19 @@ describe('US-27 AC3: one tick at a time', () => {
   });
 });
 
+// US-27 AC5 (C15 design §1e): stop cancels the first tick too, so a SIGTERM in the first
+// 30 s runs no tick, and a stop then start in one process gives one first tick, not two.
+describe('US-27 AC5: stop cancels the pending first tick', () => {
+  it('a stop before the first tick is due runs no tick', async () => {
+    const bot = await import('./youtube-bot.server');
+    bot.startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(10_000);
+    bot.stopYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(0);
+  });
+});
+
 // US-15 AC58: the tick's fallback count goes to Sentry as one warning when the tick ends.
 describe('US-15 AC58: the fallback warning goes out when the tick ends', () => {
   it('a counted fallback is reported once the tick finishes, not before', async () => {

@@ -103,4 +103,20 @@ describe('createDebouncedSave', () => {
     vi.advanceTimersByTime(2000);
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  // take() hands the waiting fn back unrun and clears the timer, so a caller
+  // can run it its own way (a departure, at once: US-06 AC15).
+  it.each([
+    ['a waiting fn', 'returns it unrun; the timer and flush() no longer run it', true],
+    ['nothing waiting', 'returns null', false],
+  ] as const)('take() with %s %s', (_name, _what, scheduled) => {
+    const d = createDebouncedSave(500);
+    const fn = vi.fn();
+    if (scheduled) d.schedule(fn);
+    expect(d.take()).toBe(scheduled ? fn : null);
+    vi.advanceTimersByTime(1000);
+    d.flush();
+    expect(fn).not.toHaveBeenCalled();
+    expect(d.take()).toBeNull();
+  });
 });

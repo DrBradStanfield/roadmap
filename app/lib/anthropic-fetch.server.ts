@@ -66,8 +66,10 @@ export interface AnthropicResult {
  * persist past the retry, because persistent 502/504 often indicates a real
  * issue with the request path rather than just capacity.
  */
-const RETRY_MAX_ATTEMPTS = 2;
-const RETRY_DELAY_MS = 1000;
+export const RETRY_MAX_ATTEMPTS = 2;
+export const RETRY_DELAY_MS = 1000;
+/** One attempt's cap when the caller names none: the chat answer's (chat-dedup.server.ts CHAT_TURN_TTL_MS counts on it). */
+export const ANTHROPIC_TIMEOUT_MS = 60_000;
 const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
 const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
 
@@ -196,7 +198,7 @@ export interface ReadControl { began(): void; idle: AbortController }
  * with a useful window, 5 s after its 1 s wait (US-52 AC7c). `onRetry` is told each retry (US-52 AC7d).
  */
 export async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
+  apiKey: string, body: Record<string, unknown>, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts = RETRY_MAX_ATTEMPTS,
   read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson, deadline?: number,
   onRetry?: () => void,
 ): Promise<AnthropicResult> {

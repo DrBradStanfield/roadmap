@@ -34,12 +34,12 @@ import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
-import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
+import { claimChatTurn, CHAT_BUSY_REPLY, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
 import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
-
+import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
 // conversation contents even when every identifier passed validation.
@@ -369,6 +369,7 @@ async function chatAction(request: Request, app: boolean) {
     if (process.env.CHAT_ENABLED === 'false') {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
+    if (request.method !== 'DELETE' && CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65: before auth, guest session, claim and model; DELETE still runs
 
     // 2 MB: 20 prior turns at their longest plus the plan context come to
     // well under half of it (US-09 AC25).
@@ -426,7 +427,6 @@ async function chatAction(request: Request, app: boolean) {
 
     // ----- POST — send message -----
     const { message, conversationId } = body;
-
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
@@ -463,34 +463,19 @@ async function chatAction(request: Request, app: boolean) {
       history = storedHistory;
     }
 
-    // Dedup: re-serve the previous reply if the user just double-sent the same
-    // message. See app/lib/chat-dedup.server.ts and claude_business docs/chat-architecture.md §
-    // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
-    // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
-    // Never while subscription changes are on for a signed-in customer (US-59): a replayed reply would
+    // Dedup and turn claim (app/lib/chat-dedup.server.ts, shared with Discord): re-serve a reply the
+    // user just double-sent, and answer busy while an identical turn still runs (US-15 AC63). Only
+    // 'transcript' claims: the widget dedups from its own file (chat-api.ts), the app stores nothing (D9).
+    // No re-serve while subscription changes are on for a signed-in customer (US-59): a replayed reply would
     // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
     const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
-    if (conversationId && retention === 'transcript' && !subscriptionTurn) {
-      const dup = findDuplicateReply(storedHistory, message);
-      if (dup) {
-        Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
-          level: 'info',
-          tags: { feature: 'chat', platform: 'shopify', diagnostic: 'dedup' },
-          extra: {
-            isGuest: auth.isGuest,
-            ageMs: dup.ageMs,
-            messageLength: message.length,
-          },
-        });
-        return Response.json({
-          success: true,
-          conversationId,
-          messageId: null,
-          content: dup.content,
-          ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
-        });
-      }
+    const turn = retention === 'transcript' ? await claimChatTurn(conversationId?.toLowerCase() ?? auth.userId, message, subscriptionTurn ? [] : storedHistory, 'shopify') : null;
+    if (turn?.kind === 'busy') return Response.json({ success: false, error: CHAT_BUSY_REPLY }, { status: 409 });
+    if (turn?.kind === 'duplicate') {
+      return Response.json({ success: true, conversationId, messageId: null, content: turn.content,
+        ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}) });
     }
+    const release = turn?.kind === 'run' ? turn.release : () => undefined;
 
     // Only the widget's own chat and an iPhone app that says `edits: 1` apply form edits, so
     // only they get the tools (US-15 AC19, US-67 AC1): the server holds the other surfaces
@@ -814,9 +799,9 @@ async function chatAction(request: Request, app: boolean) {
     };
 
     if (streaming) {
-      return streamTurn(async (write) => write({ type: 'done', ...(await runTurn(write)).reply }));
+      return streamTurn(async (write) => write({ type: 'done', ...(await runTurn(write).finally(release)).reply }));
     }
-    const { status, reply } = await runTurn(() => {});
+    const { status, reply } = await runTurn(() => {}).finally(release);
     return Response.json(reply, status ? { status } : undefined);
   } catch (error) {
     if (error instanceof Response) throw error; // see the loader's catch (US-15 AC9)

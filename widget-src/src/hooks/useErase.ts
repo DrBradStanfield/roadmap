@@ -1,8 +1,11 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
+import { recordFailure } from '../lib/error-diagnostics';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
+import { tellChats } from './chatStore';
 
 /**
  * The page's door to lib/erase-machine.ts: the erase the screen shows, and
@@ -17,6 +20,8 @@ import { createEraseStore, refusal, type EraseState, type EraseStore } from '../
  * - clearDrafts, forget: the page's;
  * - read: the page's `shows` (useRecordApply: it ends a hold, clears the
  *   answer mark, and counts nothing);
+ * - rereadRefused: the page's `reread('refused')`, the read writeRefused asks
+ *   for (an erase that refused a save, then stopped short: A6 R1);
  * - countRemoteChange: remote_change_applied, the one count of another
  *   writer's erase (the relay counts other changes only);
  * - alertRefused, sayOutcome: alerts.
@@ -41,7 +46,7 @@ export interface EraseDoorProps {
   clearDrafts: () => void;
   /** This tab's erase moved the record: the page forgets the old one, on the device and on screen. */
   forget: () => void;
-  /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard. */
+  /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard, or one made during an erase that stopped short. */
   reread: (reason: 'refused' | 'left') => void;
   /** The machine's read: another writer's erase shows (useRecordApply `shows`). */
   shows: () => void;
@@ -69,6 +74,7 @@ export function useErase(props: EraseDoorProps): Erase {
     clearDrafts: () => doors.current.clearDrafts(),
     forget: () => doors.current.forget(),
     read: () => doors.current.shows(),
+    rereadRefused: () => doors.current.reread('refused'),
     countRemoteChange: () => trackProductEvent('remote_change_applied', { backend: getBackendKind() }),
     alertRefused: () => window.alert(WRITE_REFUSED),
     sayOutcome: message => window.alert(message),
@@ -83,8 +89,15 @@ export function useErase(props: EraseDoorProps): Erase {
   // commits the new tree, the old one is on screen, and a save asked from it
   // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
   // run before this one, so none may write; none does (2026-11-10). The same
-  // moment counts another writer's erase now on screen (`committed`, Codex R1).
-  useLayoutEffect(() => { markEraseShown(state.shown); store.dispatch({ type: 'committed', identity: state.shown }); }, [state.shown, store]);
+  // moment counts another writer's erase now on screen (`committed`, Codex R1),
+  // and tells every chat which erase it now shows and who moved it there
+  // (chat-turn R6; `shownBy`, PR 1359 R5).
+  useLayoutEffect(() => {
+    markEraseShown(state.shown);
+    tellChats({ type: 'erase-shown', erase: state.shown, by: state.shownBy });
+    store.dispatch({ type: 'committed', identity: state.shown });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per erase shown; `shownBy` is read as it stands then
+  }, [state.shown, store]);
 
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
 
@@ -99,10 +112,15 @@ export function useErase(props: EraseDoorProps): Erase {
   }, [store]);
 
   const eraseAll = useCallback(async () => {
-    if (!window.confirm(ERASE_CONFIRM)) return false;
+    // One erase at a time: the machine answers synchronously, so a second asked in the same turn is refused unasked (US-16 AC2f).
+    if (store.getSnapshot().phase === 'erasing' || !window.confirm(ERASE_CONFIRM)) return false;
     const before = getEraseIdentity();
     store.dispatch({ type: 'own-start' });
-    const result = await deleteUserData();
+    // A throw is reported, then taken as a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
+    const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch((error: unknown) => {
+      Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
+      return { success: false, chatErased: false };
+    });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
     // shows that copy too (US-16 AC2a). A refused erase moved nothing.

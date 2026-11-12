@@ -8,10 +8,12 @@ import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
+import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
@@ -45,6 +47,7 @@ export async function initRoadmapStore(adapter: StorageAdapter, cloudUnreachable
   // lazily on first chat use (see chat-history-access.ts for the policy).
   // It is read again after an erase, this page's or another device's (US-11 AC2g).
   setChatHistoryFactory(() => ChatHistoryStore.create(adapter), getEraseIdentity);
+  setChatEraseReader(getEraseIdentity);
 }
 
 /** Flush pending writes (call before navigation). */
@@ -84,17 +87,21 @@ export function getShownErase(): string {
 export const askedUnder = getShownErase;
 /** Whether the record is still at the erase `asked` names, and the page still
  *  shows it. Whole identities, never epochs: a merge can move the identity
- *  within one epoch (US-16 AC2a). The record half refuses while an erase still
- *  writes, since the erase swaps the copy before it flushes; the shown half
- *  covers the gap between the record moving and the screen showing it. */
+ *  within one epoch (US-16 AC2a). The record half refuses while this tab's
+ *  erase runs, from its confirm (lead A6); the shown half covers the gap
+ *  between the record moving and the screen showing it. */
 export function stillShown(asked: string): boolean {
-  return asked === getEraseIdentity() && asked === getShownErase();
+  return asked === getEraseIdentity() && asked === getShownErase() && !store?.refuses(asked);
 }
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
 export function clearOffFileAfterErase(): void {
-  store?.clearOffFileData();
+  try {
+    store?.clearOffFileData();
+  } catch {
+    /* owed: the erase kept is not moved, and the next load clears again (US-11 AC6) */
+  }
 }
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);
@@ -103,6 +110,12 @@ export function markEraseShown(identity: string): void {
 /** Where the record lives, as the usage counters name it (US-34). */
 export function getBackendKind(): 'local' | 'cloud' {
   return store && store.backendId !== 'local' ? 'cloud' : 'local';
+}
+
+/** The open record's save status, for the storage line as it mounts; it then
+ *  follows SAVE_STATUS_EVENT (US-09 AC30). Saved while no record is open. */
+export function currentSaveStatus(): SaveStatus {
+  return store?.saveStatus ?? 'saved';
 }
 
 // --- synchronous prefill seed for HealthTool's initial inputs state ---
@@ -321,6 +334,7 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
 
 export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean; chatUnread?: true }> {
   if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
+  eraseBegan(); // a chat reply asked before this is not saved (US-11 AC2h)
   // The order and the best-effort rules are the record session's (health-core
   // deleteAllData): it reads the record first, and an erase that cannot read
   // it is refused before either step runs (US-09 AC23). Chat goes through the

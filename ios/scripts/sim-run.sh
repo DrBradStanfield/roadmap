@@ -8,8 +8,9 @@
 #   ios/scripts/sim-run.sh -- xcodebuild test -project HealthRoadmap.xcodeproj -scheme HealthRoadmap
 #   ios/scripts/sim-run.sh --reset-app -- xcrun simctl install {udid} <path>.app
 # The lock is the kernel's: lockf on a file descriptor (fd 9) opened on ~/Library/Caches/health-roadmap-sim/
-# lock. The kernel frees it when every holder of that descriptor has exited, however it exited. The
-# holder file there is information for status and waiting messages, never the lock. A call carrying the
+# lock, tried every 0.2 s (lockf waiting on its own spins a core on macOS). The kernel frees it when
+# every holder of that descriptor has exited, however it exited. The holder file there is information
+# for status and waiting messages, never the lock. A call carrying the
 # holder's token in HR_SIM_LEASE (a script under the lock calling sim-run again) runs without locking.
 # The command runs under a small perl shim that keeps fd 9 while the command (in its own process group,
 # without fd 9) runs, and stops the whole group at the run's time limit, on a signal, or when this
@@ -23,6 +24,7 @@
 # skips it. Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease
 # calls skip it; an unreadable load fails open; a non-numeric HR_SIM_MAX_LOAD skips the load check only
 # (US-71 AC8).
+# One booted simulator (US-71 AC7): ios/scripts/sim-guard.sh, sourced below.
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -37,13 +39,14 @@ IDLE_SECONDS="${HR_SIM_IDLE_SECONDS:-$(( ${HR_SIM_IDLE_MIN:-20} * 60 ))}"
 RUN_LIMIT="${HR_SIM_RUN_LIMIT_SECONDS:-1800}"
 KILL_SECONDS="${HR_SIM_KILL_SECONDS:-20}"
 MAX_LOAD="${HR_SIM_MAX_LOAD:-}" LOAD_PER_CPU=1.5 FALLBACK_LOAD=8
-POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}"
+POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}" WATCH_EVERY="${HR_SIM_GUARD_SECONDS:-15}"
 NUM='^[0-9]+(\.[0-9]+)?$'
 # A bad poll setting must not busy-loop: anything non-numeric or under 1 second polls every second.
-[[ "$POLL" =~ $NUM ]] && awk -v p="$POLL" 'BEGIN { exit !(p + 0 >= 1) }' || POLL=1
+for v in POLL WATCH_EVERY; do [[ "${!v}" =~ $NUM ]] && awk -v p="${!v}" 'BEGIN { exit !(p + 0 >= 1) }' || printf -v "$v" 1; done
 START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
-OWN=0 SHIM="" UDID="" TOKEN="$$-$(date +%s)"
+OWN=0 SHIM="" WATCH="" UDID="" MARK="" TOKEN="$$-$(date +%s)"
+. "$(dirname "$SELF")/sim-guard.sh"
 
 die() { echo "sim-run: $*" >&2; exit "${2:-1}"; }
 now() { date +%s; }
@@ -121,15 +124,45 @@ wait_guard() {
   done
 }
 
-# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder.
+# True while a live caller queued ahead of this one: waiting.<start>.<pid> markers in name order, up
+# to this caller's own. A waiter holds the kernel lock on its marker while it waits, so a marker this
+# probe can lock has no live owner (it died, even by SIGKILL) and goes; the pid is for order and humans.
+ahead() {
+  local f
+  for f in "$HOME_DIR"/waiting.*; do
+    [ -e "$f" ] || continue
+    [ "$f" = "$MARK" ] && return 1
+    ( exec 8>>"$f"; lockf -s -t 0 8 ) || return 0
+    rm -f "$f"
+  done
+  return 1
+}
+
+# Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder. It
+# tries every 0.2 s, never waiting inside lockf, which spins a core on macOS; the sleep runs in the
+# background so a signal reaches the trap at once. Waiters queue by marker, and a newcomer waits behind
+# them, so a caller that reruns at once cannot starve one already waiting. A stopped (SIGSTOP) waiter
+# still holds its marker's lock, so it holds the queue up while stopped, within HR_SIM_WAIT_MIN.
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
-  if ! lockf -s -t 0 9; then
+  # The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked, and before the
+  # first try, so no caller that starts later can take the lock ahead of this one.
+  exec 7>>"$HOME_DIR/queue.$$"
+  lockf -s -t 0 7
+  MARK="$HOME_DIR/waiting.$(now).$$"
+  mv "$HOME_DIR/queue.$$" "$MARK"
+  if ahead || ! lockf -s -t 0 9; then
     echo "sim-run: the shared simulator is $(describe)" >&2
     echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
-    lockf -s -t "$(left)" 9 || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+    until ! ahead && lockf -s -t 0 9; do
+      [ "$(left)" -gt 0 ] || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
+      sleep 0.2 7>&- 9>&- & wait $!
+    done
   fi
+  rm -f "$MARK"
+  MARK=""
+  exec 7>&-
   OWN=1
 }
 
@@ -149,7 +182,8 @@ idle_shutdown() {
   sleep "$IDLE_SECONDS"
   [ "$(cat "$HOME_DIR/last-release" 2>/dev/null)" = "$1" ] || exit 0
   exec 9>>"$LOCK"
-  lockf -s -t 5 9 || exit 0
+  local end=$(( $(now) + 5 ))
+  until lockf -s -t 0 9; do [ "$(now)" -lt "$end" ] || exit 0; sleep 1; done
   [ "$(cat "$HOME_DIR/last-release" 2>/dev/null)" = "$1" ] || exit 0
   write_info idle shutdown
   UDID=$(cat "$HOME_DIR/udid" 2>/dev/null)
@@ -368,7 +402,7 @@ if [ -n "${HR_SIM_LEASE:-}" ] && [ "$HR_SIM_LEASE" = "$(field token)" ] && held;
   exec "$SELF" _inner "$RESET" "$@"
 fi
 
-on_exit() { [ "$OWN" = 1 ] && arm_idle; }
+on_exit() { [ -n "$WATCH" ] && kill -- -"$WATCH" 2>/dev/null; rm -f "$FOUND"; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
 # A signal goes to the shim, which stops the command's group; this script waits for it, then exits.
 on_signal() { [ -n "$SHIM" ] && { kill -TERM "$SHIM" 2>/dev/null; wait "$SHIM"; }; exit "$1"; }
 trap on_exit EXIT
@@ -384,12 +418,19 @@ while :; do
   OWN=0
 done
 write_info "$@"
+GUARD=1
+[ "${HR_SIM_ALLOW_SECOND:-}" = 1 ] && GUARD=0
+[ "$GUARD" = 1 ] && refuse_second
 # In the background so a signal reaches the trap at once (bash defers traps while a foreground child
 # runs), with stdin kept (a background job would otherwise lose it).
 HR_SIM_LEASE="$TOKEN" perl -e "$SHIM" "$RUN_LIMIT" "$KILL_SECONDS" "$SELF" "$HOME_DIR" "$IDLE_SECONDS" \
   "$SELF" _inner "$RESET" "$@" <&0 &
 SHIM=$!
+# The watchdog gets its own process group (set -m), so end_watch can stop its list calls with it. A
+# found-file left under a reused pid is cleared first.
+[ "$GUARD" = 1 ] && { rm -f "$FOUND"; set -m; watch_devices </dev/null >/dev/null 7>&- 9>&- & WATCH=$!; set +m; }
 wait "$SHIM"
 RC=$?
 SHIM=""
+[ -n "$WATCH" ] && end_watch
 exit "$RC"

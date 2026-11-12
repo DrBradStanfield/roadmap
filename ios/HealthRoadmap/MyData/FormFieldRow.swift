@@ -44,7 +44,7 @@ struct FormFieldRow: View {
             switch field {
             case .choice(_, let label, let hint, let options, let value):
                 choice(label: label, hint: hint, options: options, value: value)
-            case .month(_, let label, let value, _):
+            case .month(_, let label, let value, _, _):
                 Button { asking = .month } label: {
                     labelled(label, hint: nil) {
                         Text(value.isEmpty ? "Add" : DayText.month(value))
@@ -79,8 +79,9 @@ struct FormFieldRow: View {
         }
         .sheet(item: $asking) { asking in
             switch (asking, field) {
-            case (.month, .month(_, let label, let value, let future)):
-                MonthPickerSheet(title: label, months: future ? months.future : months.past, future: future, current: value, save: answer)
+            case (.month, .month(_, let label, let value, let future, let min)):
+                MonthPickerSheet(title: label, months: (future ? months.future : months.past).filter { $0 >= (min ?? "") },
+                                 future: future, current: value, save: answer)
                     .presentationDetents([.medium])
             case (.number, .number(_, let label, _, let value)):
                 ValueEntrySheet(title: label, unit: "", current: value.isEmpty ? nil : value, asksForDay: false) { number, _ in
@@ -102,7 +103,8 @@ struct FormFieldRow: View {
         // Under a group's name, "Select screening method"; a question ("Discussed…?") goes under the row instead.
         let asks = label.hasSuffix("?")
         let empty = heading == nil || asks ? "Select..." : "Select \(Self.lowercasedFirst(label))"
-        let shown = options.first { $0.value == value && !$0.value.isEmpty }?.label ?? empty
+        // A blank answer an option names ("Not given", US-07 AC1j) shows that name; "Select..." stays the empty prompt.
+        let shown = options.first { $0.value == value && (!$0.value.isEmpty || $0.label != "Select...") }?.label ?? empty
         return labelled(label, hint: heading != nil && asks ? [label, hint].compactMap { $0 }.joined(separator: "\n") : hint) {
             Menu {
                 Picker(label, selection: Binding(get: { value }, set: { picked in

@@ -6,6 +6,15 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
+import { mergeFiles } from './merge';
+import { ROADMAP_DOC } from './roadmap-doc';
+import type { RoadmapFile } from './roadmap-file';
+import type { SaveStatus } from './save-state';
+import type { SyncContext } from './sync-manager';
+
+/** What failed, in a host's `report`. */
+export type RecordFailureOp = 'persist' | 'pre-erase' | 'chat-erase' | 'clear-off-file' | 'after-save';
 
 /** What `remoteChanged` tells the page: the erase a merge brought in, if any (US-16 AC2a). */
 export interface RemoteChange { erase: string | null }
@@ -19,6 +28,69 @@ export function laterChange(prior: RemoteChange | null, next: RemoteChange | nul
 /** Tell the page of a change taken in, when there is one. */
 export function announce(host: RecordHost, change: RemoteChange | null): void {
   if (change) host.remoteChanged(change);
+}
+
+/** Tell the host a save status it was not told last (US-09 AC30); answer the
+ *  status now told. A callback that throws never stops the save: the status
+ *  stays untold, and the next change tells it again. */
+export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStatus): SaveStatus {
+  if (now === told) return told;
+  try {
+    host.saveStatusChanged?.(now);
+    return now;
+  } catch {
+    return told;
+  }
+}
+
+/**
+ * Clear this device's off-file health data for the erase `after` is at
+ * (US-11 AC1, AC6), sparing only the stored originals of documents that
+ * outlive it (US-09 AC20, AC23): those live in `after`, and those live in
+ * the device's own record copy once the erase is applied to it, so an
+ * original the erase listed goes even where a stale device copy still names
+ * it. A device copy that cannot be read names nothing. Throws what the host's
+ * clear throws. What the host clears is its call: a tab not on the record this
+ * device has chosen drops only what its screen holds (`ownsOffFileData`).
+ */
+export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
+  let kept = after;
+  try {
+    const body = host.ownsOffFileData?.() !== false ? host.deviceRecord?.() : null; // a non-owner reads no device record
+    if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
+  } catch {
+    /* unreadable: it names nothing */
+  }
+  host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)));
+}
+
+/**
+ * At a session's open: the erase this tab's off-file data counts as cleared up
+ * to (US-11 AC6). The erase the host keeps for this store, when it keeps a
+ * readable one: a record at a later erase then owes a clear (`clearOwed`), and
+ * one at an earlier erase (a lagging copy) owes none until a later erase than
+ * the kept one. With none kept (a first run, another record, log-off, or a page
+ * that does not own the off-file data) the record adopts its erase, the host
+ * keeps it, and nothing is cleared. Always a readable identity.
+ */
+export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
+  const kept = keptErase(host);
+  if (kept != null) return kept;
+  host.noteCleared(eraseIdentityOf(file));
+  return eraseIdentityOf(file);
+}
+
+/** After a clear for `identity` worked: keep it as the erase cleared up to,
+ *  unless the one kept is later (another tab's): the kept erase never moves back. */
+export function keepCleared(host: RecordHost, identity: string): void {
+  const kept = keptErase(host);
+  if (kept == null || eraseLater(identity, kept)) host.noteCleared(identity);
+}
+
+/** The erase the host keeps as cleared up to; null when none, or it cannot be read. */
+function keptErase(host: RecordHost): string | null {
+  const kept = host.clearedErase();
+  return kept != null && readErase(kept) ? kept : null;
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).
@@ -72,8 +144,23 @@ interface HostBase {
    *  stored originals), cleared by an erase made here (US-11 AC1) or taken in
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
    *  originals stay, the engine's call (`RecordSession.clearOffFileData`);
-   *  every other original goes. */
+   *  every other original goes. A host whose tab does not own that data
+   *  (`ownsOffFileData`) clears none of it, and drops only what its screen holds.
+   *  Throws when the owner's clear cannot say every store it meant to clear is clear. */
   clearOffFileData(keepOriginals: ReadonlySet<string>): void;
+  /** The erase identity (`eraseIdentityOf`) this device's off-file data was
+   *  last cleared for, kept across loads with the store id it was cleared on and
+   *  nothing else: the erase's epoch and time only. Null unless this host's
+   *  store owns the off-file data and the kept one is this store's (US-11 AC6). */
+  clearedErase(): string | null;
+  /** Keep `identity`, with this store's id, as the erase last cleared for;
+   *  nothing unless this host's store owns the off-file data. Never throws. */
+  noteCleared(identity: string): void;
+  /** True while this tab's record is the one this device has chosen, and no
+   *  log-off came on this device since the tab loaded, so the off-file data is its own to clear, and an erase its own to make: another
+   *  tab's erase is refused first (US-11 AC6). Read at each clear and erase. Leave
+   *  it out when the device has one record (the iPhone): it always owns. */
+  ownsOffFileData?(): boolean;
   /** The raw body of the record copy this device keeps beside the session's
    *  store (on the web, the localStorage record a guest or on-device fallback
    *  tab writes), read synchronously; null when there is none. May throw when
@@ -94,15 +181,21 @@ interface HostBase {
    *  `erase`: the erase identity it moved the record to, when it carried
    *  another writer's erase; null for any other change. */
   remoteChanged(change: RemoteChange): void;
+  /** The save status a status line shows changed (US-09 AC30); told once per
+   *  change, once the session holds it. Leave it out when nothing shows it. */
+  saveStatusChanged?(status: SaveStatus): void;
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;
   /** Something the user cannot fix failed and must still be seen: a save
    *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
-   *  server teardown; `chat-erase`, the chat history's tombstones). `repeat`:
-   *  this kind of device refusal was already reported this session. Gets the
-   *  error and closed tags only, never record content. */
-  report(error: unknown, at: { op: 'persist' | 'pre-erase' | 'chat-erase'; cause?: string; repeat: boolean }): void;
+   *  server teardown; `chat-erase`, the chat history's tombstones), the
+   *  off-file clear an erase taken in owes (`clear-off-file`, retried in this
+   *  session until it lands), or a throw after a save's write landed (`after-save`). `repeat`:
+   *  this kind of device refusal, or this erase's failed clear, was already
+   *  reported this session. Gets the error and closed tags only, never
+   *  record content. */
+  report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }): void;
 }
 
 /**
@@ -124,6 +217,8 @@ export type RecordHost =
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
       eraseFence(): string | null;
+      /** True while this page may read and write this device's health files; read at each use, and left out means open (the iPhone), as with ownsOffFileData. */
+      deviceFilesOpen?(): boolean;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
 

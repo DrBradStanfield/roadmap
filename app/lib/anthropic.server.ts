@@ -23,7 +23,7 @@ import {
   EXTRACTION_MODEL, extractionStopCode, modelParams, type ExtractionStopCode, type RefusalCategory,
 } from '../../packages/health-core/src/models';
 import {
-  fetchAnthropicRaw, parseJsonBody, readJson, toErrorType, toResult, toUsage,
+  ANTHROPIC_TIMEOUT_MS, fetchAnthropicRaw, parseJsonBody, readJson, toErrorType, toResult, toUsage,
   type AnthropicContentBlock, type AnthropicResult, type ReadControl,
 } from './anthropic-fetch.server';
 // The HTTP layer moved to anthropic-fetch.server.ts; its public names keep this import path.
@@ -264,7 +264,7 @@ async function readEventStream(
 /** Text + usage + raw content blocks wrapper — for chat (prompt caching
  *  metrics + tool_use parsing). `maxAttempts: 1` turns the retry off (US-15 AC44's scrub). */
 export async function callAnthropicWithUsage(
-  body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts?: number,
+  body: Record<string, unknown>, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts?: number,
 ): Promise<AnthropicResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -273,7 +273,7 @@ export async function callAnthropicWithUsage(
 
 /** callAnthropicWithUsage, streamed: deltas go to `onEvent`, the result is the same shape. */
 export async function streamAnthropicWithUsage(
-  body: Record<string, unknown>, onEvent: (event: AnthropicStreamEvent) => void, timeoutMs = 60_000,
+  body: Record<string, unknown>, onEvent: (event: AnthropicStreamEvent) => void, timeoutMs = ANTHROPIC_TIMEOUT_MS,
 ): Promise<AnthropicResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -346,7 +346,7 @@ type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCod
 export async function pollBatch(
   batchId: string,
 ): Promise<{
-  status: 'processing' | 'ended' | 'failed';
+  status: 'processing' | 'ended';
   completed: number;
   total: number;
   results?: BatchFileResult[];

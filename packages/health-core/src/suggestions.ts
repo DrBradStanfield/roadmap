@@ -1,7 +1,8 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
-import { SCREENING_REFS, followupTrigger, inAges, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -421,7 +422,7 @@ export function generateSuggestions(
     } else {
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
-        glp1: ['attention', 'Consider a GLP-1 medication', glp1Text],
+        glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
         'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
         'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'],
         'glp1-switch': ['attention', 'Consider switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
@@ -443,7 +444,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} indicates diabetes. This requires medical management and lifestyle intervention.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.`,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
@@ -492,7 +493,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -523,7 +524,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Guidelines typically recommend statin therapy at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -766,7 +767,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Guidelines typically recommend medication at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (isBpRaised(sys, dia)) {
       suggestions.push({
@@ -819,8 +820,6 @@ export function generateSuggestions(
     const sex = inputs.sex;
     const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, ENDOMETRIAL, DEXA] =
       (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'endometrial', 'dexa'] as const).map(ruleOf);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const monthLabel = (d: Date) => `${months[d.getMonth()]} ${d.getFullYear()}`;
     /** A row's card text, with `{due}` and lung's `{packYears}` filled in. */
     const fill = (t: CardText, due = '') => ({
       title: t.title,
@@ -846,17 +845,15 @@ export function generateSuggestions(
       suggestions.push({ id: `screening-${r.id}`, category: 'screening', priority, ...fill(start) });
     }
 
-    /** Push a row's overdue or up-to-date card. */
-    function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string): void {
-      if (status === 'overdue' && r.cards.overdue) {
-        suggestions.push({ id: `screening-${r.id}-overdue`, category: 'screening', priority: 'attention', ...fill(r.cards.overdue, due) });
-      } else if (status === 'upcoming' && r.cards.upToDate) {
-        suggestions.push({ id: `screening-${r.id}-upcoming`, category: 'screening', priority: 'info', ...fill(r.cards.upToDate, due) });
-      }
+    /** Push a row's overdue or up-to-date card; colorectal's reads the method for its FIT line from 55. */
+    function pushScreeningStatus(r: ScreeningRule, status: 'overdue' | 'upcoming' | 'unknown', due: string, method?: string): void {
+      const card = status === 'overdue' ? r.cards.overdue : status === 'upcoming' ? r.cards.upToDate : undefined;
+      if (card) suggestions.push({ id: `screening-${r.id}-${status}`, category: 'screening', priority: status === 'overdue' ? 'attention' : 'info',
+        ...fill(r === COLORECTAL ? SCREENING_REFS.colorectalStatus(card, age, method, screenings?.colorectalResult) : card, due) });
     }
 
     const pushDue = (r: ScreeningRule, lastDate: string, intervalKey: string) =>
-      pushScreeningStatus(r, screeningStatus(lastDate, intervalKey), nextDueStr(lastDate, intervalKey));
+      pushScreeningStatus(r, screeningStatus(lastDate, intervalKey), nextDueStr(lastDate, intervalKey), intervalKey);
 
     /**
      * Check if a screening has the result that opens its follow-up (abnormal; DEXA's osteoporosis).
@@ -869,7 +866,7 @@ export function generateSuggestions(
       followupStatus: string | undefined,
       followupDate: string | undefined,
     ): Suggestion | null {
-      if (result !== followupTrigger(r)) return null;
+      if (!opensFollowup(r, result)) return null;
       const type = r.id;
       const info = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
 
@@ -893,7 +890,8 @@ export function generateSuggestions(
         };
       }
 
-      const nextDue = getPostFollowupDueDate(type, method, 'abnormal', followupStatus, followupDate);
+      if (r === COLORECTAL) return colonoscopyCard(screenings!, now); // completed: its own schedule, never the routine card (US-07 AC1j)
+      const nextDue = getPostFollowupDueDate(type, method, result, followupStatus, followupDate);
       if (nextDue) {
         const nextDueLabel = monthLabel(nextDue);
         if (now > nextDue) {
@@ -948,7 +946,7 @@ export function generateSuggestions(
     const lungSmoker = inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(screenings);
     if (lungSmoker && (!inAges(LUNG.cardAges, age, sex) || !SCREENING_REFS.lungPackYears(screenings))) {
       const followup = screenings.lungScreening && !notStarted(LUNG, screenings.lungScreening) && screenings.lungLastDate
-        && screenings.lungResult === followupTrigger(LUNG) && screenings.lungFollowupStatus !== 'completed'
+        && opensFollowup(LUNG, screenings.lungResult) && screenings.lungFollowupStatus !== 'completed'
         && screeningFollowup(LUNG, screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
       if (followup) suggestions.push(followup);
     } else if (lungSmoker) {
@@ -957,11 +955,11 @@ export function generateSuggestions(
         screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
     }
 
-    // Prostate — shared decision
+    // Prostate — shared decision. While the PSA is raised (4.0 or above), "Elevated PSA" shows alone (Change 3, D19, Brad 2026-11-12).
     if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
-      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0;
+      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue >= 4.0;
       if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
-        pushStart(PROSTATE, 'info');
+        if (!psaRaised) pushStart(PROSTATE, 'info');
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
@@ -975,8 +973,8 @@ export function generateSuggestions(
           category: 'screening',
           priority: 'attention',
           title: 'Elevated PSA',
-          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". A value never as 4.0 (US-06 AC18): "4.04 ng/mL".
-          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is above the typical reference range (≤4.0). Discuss with your doctor — elevated PSA can have multiple causes.`,
+          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". Change 4 adds the 3-month sentence.
+          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.`,
         });
       }
     }
@@ -1000,7 +998,7 @@ export function generateSuggestions(
     if (ruleTakes(DEXA, DEXA.cardAges, age, sex)) {
       if (notStarted(DEXA, screenings.dexaScreening)) {
         pushStart(DEXA, 'attention');
-      } else if (screenings.dexaResult === followupTrigger(DEXA)) {
+      } else if (opensFollowup(DEXA, screenings.dexaResult)) {
         // Osteoporosis — use follow-up pattern
         const followup = screeningFollowup(DEXA, 'dexa_scan', screenings.dexaResult, screenings.dexaFollowupStatus, screenings.dexaFollowupDate);
         if (followup) {
@@ -1113,7 +1111,7 @@ export function generateSuggestions(
       category: 'skin',
       priority: 'info',
       title: 'Topical retinoid',
-      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
+      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.',
     },
     {
       id: 'skin-advanced',

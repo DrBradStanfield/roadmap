@@ -17,7 +17,7 @@ function host(cloud: MemoryAdapter, device: MemoryAdapter) {
   const h = {
     tier: 'cloud', store: cloud, deviceId: () => 'phone', clock: { now: () => NOW },
     timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     mirror: {
       adapter: device, writesStopped: () => false, wipe: async () => {}, opened: () => {},
       pending: { get: () => pending.value, set: () => { pending.value = true; }, clear: () => { pending.value = false; } },

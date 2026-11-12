@@ -9,6 +9,7 @@ import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { BATCH_POLL_DEADLINE_MS } from './batch-deadline';
 import { isDocx, isLegacyDoc } from './file-kinds';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -186,13 +187,17 @@ function readResult(fileName: string, result: LabImportResult, notices: FileNoti
   return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
 }
 
+/** A file the server refused as busy (US-12 AC9): a server error, never the daily limit. */
+export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
+
 /** The notice for a file's own error code; anything else is a server error. */
 const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
 
 /** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
 function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
-  const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
-  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text: keyError });
+  const text = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}`
+    : errorCode === 'busy' ? BUSY_NOTICE_TEXT : undefined;
+  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text });
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
 }
 
@@ -333,20 +338,20 @@ export async function processBatch(
     const statusMsg = PROGRESS_MESSAGES[Math.floor(tickCount / 8) % PROGRESS_MESSAGES.length];
     const fileName = fileNames[Math.floor(tickCount / 3) % fileNames.length];
     const msg = realCompleted > 0
-      ? `Processed ${realCompleted} of ${allFiles.length} — ${fileName}`
+      ? `Processed ${realCompleted} of ${allFiles.length}: ${fileName}`
       : `${statusMsg} ${fileName}`;
     updateProgress({ current: Math.round(displayPct), total: 100, fileName: msg });
   }, FAKE_TICK_INTERVAL);
 
   try {
-    const maxPollTime = Date.now() + 10 * 60_000;
+    const maxPollTime = Date.now() + BATCH_POLL_DEADLINE_MS;
     while (!abort.signal.aborted) {
       await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
       if (abort.signal.aborted) break;
       if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
 
       const poll = await pollBatchStatus(batchId);
-      realCompleted = poll.completed;
+      realCompleted = Math.max(realCompleted, poll.completed); // never less than the last answer (US-12 AC24)
       if (poll.error) throw new UploadError(poll.error, poll.errorCode || 'server_error');
 
       if (poll.status === 'ended' && poll.results) {

@@ -13,9 +13,12 @@ import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import type { MutableRefObject } from 'react';
 import { BloodTestTimeline, ValueCell, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';
-import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, noteDevicePage } from '../lib/storage';
 import type { SaveTask } from '../lib/matrix-save';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+
+// This page's record is open, on this device: the drafts it keeps are its own (US-11 AC6).
+noteDevicePage();
 
 // The record's profile.lpaUnit, in memory: what RoadmapStore keeps (its own suite).
 const record = vi.hoisted(() => ({ lpaUnit: undefined as string | undefined, set: [] as string[] }));

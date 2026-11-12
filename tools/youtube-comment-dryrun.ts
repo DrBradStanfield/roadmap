@@ -34,7 +34,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { escapeHtml } from './escape-html.mjs';
-import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
+import { loadBlogIndex, findBlogByVideoId } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import { buildYouTubePlatformContext, loadedHandles } from '../app/lib/youtube-context';
 import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-view';
@@ -43,6 +43,7 @@ import { isUnreadableAnswer } from '../app/lib/chat-classifier.server';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
 } from '../packages/health-core/src/models';
+import { extractVideoId, filterComment, type BlogPost, type DryRunResult, type YouTubeComment } from './youtube-comment-dryrun-rules';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,21 +64,6 @@ const concurrency = Math.max(1, parseInt(getArg('--concurrency', '3'), 10));
 if (!videoArg) {
   console.error('Usage: npx tsx tools/youtube-comment-dryrun.ts <videoUrlOrId> [--limit 50] [--concurrency 3]');
   process.exit(1);
-}
-
-// Extract video ID from URL forms or accept raw ID
-function extractVideoId(input: string): string {
-  const patterns = [
-    /[?&]v=([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /^([a-zA-Z0-9_-]{11})$/,
-  ];
-  for (const p of patterns) {
-    const m = input.match(p);
-    if (m) return m[1];
-  }
-  throw new Error(`Could not extract video ID from: ${input}`);
 }
 
 const VIDEO_ID = extractVideoId(videoArg);
@@ -111,13 +97,6 @@ const ROUTER_INDEX_BLOCK = routerIndexBlock(ROUTER_VIEW);
 // Look up matching blog post by youtube: frontmatter via shared blog-index
 // ---------------------------------------------------------------------------
 
-interface BlogPost {
-  slug: string;
-  title: string;
-  body: string;
-  entry: BlogIndexEntry;
-}
-
 function loadBlogPostForVideo(videoId: string): BlogPost {
   const entry = findBlogByVideoId(videoId);
   if (!entry) {
@@ -136,14 +115,6 @@ function loadBlogPostForVideo(videoId: string): BlogPost {
 // ---------------------------------------------------------------------------
 // Fetch comments via the existing read-only YouTube tool
 // ---------------------------------------------------------------------------
-
-interface YouTubeComment {
-  author: string;
-  text: string;
-  likes: number;
-  replyCount: number;
-  publishedAt: string;
-}
 
 function fetchComments(videoId: string, count: number): YouTubeComment[] {
   const result = spawnSync('node', [
@@ -165,29 +136,6 @@ function fetchComments(videoId: string, count: number): YouTubeComment[] {
   if (jsonStart === -1) throw new Error(`No JSON found in YouTube tool stderr:\n${stderr}`);
   const jsonText = stderr.slice(jsonStart);
   return JSON.parse(jsonText) as YouTubeComment[];
-}
-
-// ---------------------------------------------------------------------------
-// Filter logic — mirrors production rules
-// ---------------------------------------------------------------------------
-
-interface FilterDecision {
-  keep: boolean;
-  reason?: string;
-}
-
-function filterComment(c: YouTubeComment): FilterDecision {
-  const text = c.text.trim();
-  // Top-level only (we don't pass replies to this loop — fetchComments already
-  // returns only top-level threads).
-  if (!text) return { keep: false, reason: 'empty' };
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
-  if (wordCount < 5) return { keep: false, reason: `too short (${wordCount} words)` };
-  // Brad's own channel — if we knew his author display name we'd skip it. The
-  // YouTube API's authorChannelId would be the deterministic check; for the
-  // dry-run we treat "Dr Brad Stanfield" as Brad's display name and skip those.
-  if (/^Dr\.?\s*Brad\s*Stanfield$/i.test(c.author.trim())) return { keep: false, reason: "Brad's own comment" };
-  return { keep: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -296,18 +244,6 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
 // ---------------------------------------------------------------------------
 // Run pipeline per comment with bounded concurrency
 // ---------------------------------------------------------------------------
-
-interface DryRunResult {
-  comment: YouTubeComment;
-  filter: FilterDecision;
-  classification?: Classification;
-  routerHandles?: string[];
-  routerError?: string | null;
-  reply?: string;
-  replyError?: string | null;
-  willPost: boolean;
-  skipReason?: string;
-}
 
 async function processOne(c: YouTubeComment, blogPost: BlogPost): Promise<DryRunResult> {
   const filter = filterComment(c);
