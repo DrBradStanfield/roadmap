@@ -1,8 +1,8 @@
 import XCTest
 @testable import HealthRoadmap
 
-/// Pins today's behaviour of RecordStore's phone/cloud source (leads S10, S23, H28,
-/// 2026-11-12), before its cloud fields (cloudErase, cloudSession, cloudName, cloudAccount,
+/// Pins today's behaviour of RecordStore's phone/cloud source (US-25 AC11; the mark, US-72 AC10;
+/// leads S10, S23, H28, 2026-11-12), before its cloud fields (cloudErase, cloudSession, cloudName, cloudAccount,
 /// marksPending, recordJSON) become one `Source` union. Each test is named "...Today": the
 /// Source union PR changes what it shows, and says so. The engine is held on its own queue
 /// or the cloud's reads at a StubHTTP.Gate, never with a fixed delay.
@@ -28,16 +28,6 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         try XCTUnwrap(engine.blocking { try $0.apply(.add(metric: "weight", value: 80, day: day), to: phone, now: .now, deviceId: "web") }.record)
     }
 
-    /// The store's engine session for the cloud record (RecordStore's private `cloudSession`,
-    /// read by reflection: no caller can read it). Fails when the field is gone or renamed.
-    private func session(_ store: RecordStore, file: StaticString = #filePath, line: UInt = #line) -> Int? {
-        guard let child = Mirror(reflecting: store).children.first(where: { $0.label == "_cloudSession" || $0.label == "cloudSession" }) else {
-            XCTFail("RecordStore has no cloudSession", file: file, line: line)
-            return nil
-        }
-        return child.value as? Int
-    }
-
     /// Holds the engine's queue until `release()`: every engine call asked for meanwhile waits.
     private func holdEngine(_ engine: HealthEngine) -> () -> Void {
         let held = DispatchSemaphore(value: 0)
@@ -56,7 +46,8 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
 
     /// Pins today's behaviour (lead S10); the Source union PR changes this. showPhone clears
     /// the cloud erase before it awaits the engine's read of the phone's file, so while that
-    /// read runs the screen reports the phone (erase nil) over the cloud's record and drawing.
+    /// read runs the screen reports the phone (erase nil) over the cloud's record and drawing
+    /// (US-25 AC11).
     func testShowPhoneReportsThePhoneOverTheCloudRecordWhileItReadsToday() async throws {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
@@ -90,14 +81,14 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
     func testShowPhoneKeepsTheCloudSessionToday() async throws {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
-        XCTAssertNil(session(store), "no cloud record yet")
+        XCTAssertNil(store.cloudSession, "no cloud record yet")
         let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
         await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)).value
-        XCTAssertEqual(session(store), 7)
+        XCTAssertEqual(store.cloudSession, 7)
         await store.showPhone().value
         XCTAssertNil(store.cloudErase)
         XCTAssertEqual(store.recordSource, "phone", "the phone's file is shown")
-        XCTAssertEqual(session(store), 7, "the cloud's session is still held")
+        XCTAssertEqual(store.cloudSession, 7, "the cloud's session is still held")
     }
 
     /// Pins today's behaviour (lead S10); the Source union PR changes this. A real Disconnect
@@ -113,13 +104,42 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         await sync.start()
         XCTAssertNotNil(store.cloudErase, "the cloud record is open")
-        let opened = try XCTUnwrap(session(store))
+        let opened = try XCTUnwrap(store.cloudSession)
         let copied = await sync.disconnect()
         XCTAssertTrue(copied)
         XCTAssertEqual(sync.status, .onPhone)
         XCTAssertNil(store.cloudErase)
         XCTAssertEqual(store.recordSource, "phone")
-        XCTAssertEqual(session(store), opened, "the closed session is still held")
+        XCTAssertEqual(store.cloudSession, opened, "the closed session is still held")
+    }
+
+    // MARK: S23 · the store's own copies of the account and the pending marker
+
+    /// Pins today's behaviour (lead S23); the Source union PR changes this. CloudSync pushes
+    /// cloudAccount and marksPending into the store; showPhone alone keeps both, so the phone's
+    /// file then has no source for Apple Health (US-72 AC10). Disconnect's transition clears them.
+    func testTheStoreKeepsCloudSyncsAccountAndMarkerUntilItsTransitionToday() async throws {
+        let dropbox = CloudSyncTests.FakeDropbox()
+        StubHTTP.handler = { dropbox.answer($0) }
+        try tokens.save(OAuthTokens(accessToken: "token-1", refreshToken: "r", expiresAt: .distantFuture), for: .dropbox)
+        try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let engine = try HealthEngine(session: StubHTTP.session())
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        await sync.start()
+        let account = try XCTUnwrap(store.cloudAccount)
+        XCTAssertTrue(account.hasPrefix("dropbox"), account)
+        XCTAssertNotNil(store.marksPending, "set while connected, even with the record open")
+        XCTAssertEqual(store.recordSource, account)
+        await store.showPhone().value
+        XCTAssertEqual(store.cloudAccount, account, "showPhone alone keeps the account")
+        XCTAssertNotNil(store.marksPending, "and the marker")
+        XCTAssertNil(store.recordSource, "so the phone's file has no source")
+        _ = await sync.disconnect()
+        XCTAssertNil(store.cloudAccount, "Disconnect's transition clears both")
+        XCTAssertNil(store.marksPending)
+        XCTAssertEqual(store.recordSource, "phone")
     }
 
     // MARK: H28 · a cloud mark holds on the phone
@@ -127,7 +147,7 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
     /// Pins today's behaviour (lead H28); the Source union PR changes this. Mark.holds compares
     /// the cloud erase only while both marks have one (RecordStore+Mark.swift:17), so a mark
     /// taken on the cloud record still holds once the phone's file is shown, and an Apple
-    /// Health batch read from the cloud lands on the phone's file.
+    /// Health batch read from the cloud lands on the phone's file (US-72 AC10).
     func testACloudMarkHoldsOnThePhoneRecordToday() async throws {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
