@@ -17,6 +17,7 @@ import { mergeLongitudinalInputs } from '@roadmap/health-core/mappings';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
+import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { run } from './edit-record';
 import { run as runGetPlan } from './get-plan';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
@@ -218,6 +219,25 @@ describe('US-31 AC8 — the write, as the person running it sees it', () => {
     expect(backups(dir)).toEqual([backup]);
     expect(readFileSync(join(dir, backup), 'utf8')).toBe(JSON.stringify(fixture()));
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  // Lead T1: cleanup that fails after the replace landed is a warning, not a
+  // failure. The person hears the record was written, then what was left.
+  it('prints the adapter warning when cleanup after a landed write did not finish, and still exits 0 (US-31 AC8a)', async () => {
+    const { dir, path } = writeFixture();
+    const prune = vi.spyOn(FileAdapter.prototype as any, 'pruneErased').mockImplementation(() => {
+      throw new Error('EACCES: permission denied');
+    });
+    try {
+      const result = await captureRun(['add', path, '--metric', 'weight', '--value', '92.4', '--date', '2026-08-14']);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toMatch(/^Added weight 92\.4/);
+      expect(result.stderr).toBe(`edit_record: ${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune copies from before the erase. Copies from before the erase are still on disk; the next save removes them.\n`);
+      expect(read(path).measurements.some((m) => m.metricType === 'weight')).toBe(true);
+    } finally {
+      prune.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   // An erase write keeps no backup at all (file-adapter.ts): the copy it would
