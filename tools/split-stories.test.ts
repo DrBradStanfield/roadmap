@@ -7,12 +7,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadStories } from './stories.mjs';
-import { planSplit, splitStories, SplitRefusal, verifyPlan } from './split-stories.mjs';
+import { planSplit, shapeReport, splitStories, SplitRefusal, verifyPlan } from './split-stories.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = join(ROOT, 'tools/split-stories.mjs');
@@ -33,7 +33,14 @@ const files = (root: string) => {
   return out;
 };
 const cli = (cwd: string, ...args: string[]) => spawnSync('node', [SCRIPT, ...args], { cwd, encoding: 'utf8' });
+const NORMALIZE = 'run `node tools/split-stories.mjs --normalize`';
 const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+// Small fixtures: a monolith with the constitution, one epic and the given stories.
+const US01 = '### US-01 · One — **shipped**\n- AC1 see [web](https://x.test) and [g](git-workflow.md).';
+const US02 = '### US-02 · Two\n- AC1 two\n\n- AC2 after a blank';
+const monolith = (...stories: string[]) =>
+  ['# Stories', '', '## The product constitution (rules)', 'Rule one.', '', '---', '', '## Epic A — Things', '', ...stories, '', '## Coverage', '1. done', ''].join('\n');
 
 // The real stories text, whichever layout holds it, as a monolith in a folder of its own.
 const SOURCE = loadStories();
@@ -147,10 +154,11 @@ describe('the standing checks on the split tree', () => {
   });
 
   // On the split layout this is the committed tree: a part edited out of the split's shape (a trailing blank line,
-  // a link without its `../`) fails here. On the monolith layout it checks the temporary split.
+  // a link without its `../`) fails here, naming the first such file and the repair. On the monolith layout it checks
+  // the temporary split.
   it('the parts and index are the split of loadStories, byte for byte', () => {
-    const plan = planSplit(loadStories(tree));
-    expect(files(tree)).toEqual({ index: plan.index, ...Object.fromEntries(plan.parts) });
+    const report = shapeReport(tree);
+    if (report !== undefined) expect.fail(report);
   });
 
   // Both inputs carry the same text, so this proves only that the Pages build reads the split layout as it reads
@@ -175,10 +183,6 @@ describe('refuses and writes nothing', () => {
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-  const US01 = '### US-01 · One — **shipped**\n- AC1 see [web](https://x.test) and [g](git-workflow.md).';
-  const US02 = '### US-02 · Two\n- AC1 two\n\n- AC2 after a blank';
-  const monolith = (...stories: string[]) =>
-    ['# Stories', '', '## The product constitution (rules)', 'Rule one.', '', '---', '', '## Epic A — Things', '', ...stories, '', '## Coverage', '1. done', ''].join('\n');
   const refuse = (text: string, why: RegExp) => {
     mkdirSync(join(dir, 'docs'));
     writeFileSync(join(dir, 'docs/user-stories.md'), text);
@@ -235,6 +239,56 @@ describe('refuses and writes nothing', () => {
   it('a bad flag is a usage error', () => {
     expect(cli(dir, '--into', 'x').status).toBe(64);
     expect(cli(dir, '--from').status).toBe(64);
+    expect(cli(dir, '--normalize', '--out', 'x').status).toBe(64);
+  });
+});
+
+describe('--normalize fixes the shape of a split tree, never its content (US-64 AC33)', () => {
+  let dir: string;
+  const part = (name: string) => join(dir, 'docs/stories', name);
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'split-stories-norm-'));
+    mkdirSync(join(dir, 'docs'));
+    writeFileSync(join(dir, 'docs/user-stories.md'), monolith(US01, '', US02, '', '### US-03 · Three\n- AC1 three'));
+    expect(cli(dir).status).toBe(0);
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  it('the standing check names the first file out of shape, the rule and the repair, with a short diff', () => {
+    expect(shapeReport(dir)).toBeUndefined();
+    writeFileSync(part('US-02.md'), readFileSync(part('US-02.md'), 'utf8').slice(0, -1));
+    const report = shapeReport(dir)!;
+    expect(report).toContain(`docs/stories/US-02.md is not in the split's exact form (one heading, its body to its last non-blank line, one final newline): ${NORMALIZE}`);
+    expect(report).toMatch(/line 5\n\s+have: \(end of file\)\n\s+want: ""/);
+    expect(report.split('\n').length).toBeLessThan(6);
+  });
+
+  it('repairs a part with no final newline and a part with a trailing blank line, the stories text unchanged', () => {
+    const want = files(dir);
+    writeFileSync(part('US-01.md'), want['US-01.md'].slice(0, -1));
+    writeFileSync(part('US-02.md'), `${want['US-02.md']}\n`);
+    const text = loadStories(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('docs/stories/US-01.md');
+    expect(shapeReport(dir)).toBeUndefined();
+    expect(loadStories(dir)).toBe(text);
+    expect(readFileSync(part('US-01.md'), 'utf8')).toBe(want['US-01.md']);
+    expect(readFileSync(part('US-02.md'), 'utf8')).toBe(want['US-02.md']);
+    // A second run finds nothing to do.
+    const again = cli(dir, '--normalize');
+    expect(again.status).toBe(0);
+    expect(again.stdout).toContain('already in the split');
+  });
+
+  it('refuses, naming the line, when re-splitting would change a story: a `---` line inside a part', () => {
+    writeFileSync(part('US-02.md'), readFileSync(part('US-02.md'), 'utf8').replace('- AC1 two\n', '- AC1 two\n---\n'));
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: normalizing would change the text of docs\/stories\/US-02\.md, not only its shape, from its line 3: "---"/);
+    expect(files(dir)).toEqual(before);
   });
 });
 
@@ -311,6 +365,95 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     expect(ok.status).toBe(0);
     expect(loadStories(repo)).toBe(text);
     expect(existsSync(join(repo, 'docs/stories/US-03.md'))).toBe(false);
+  });
+
+  it('names the commit before the split when main edited the monolith before splitting, and its steps work (US-64 AC33)', () => {
+    run('checkout', '-q', '-b', 'main2', 'pre-split');
+    writeFileSync(join(repo, 'docs/user-stories.md'), text.replace('- AC1 one', '- AC1 one, edited on main before the split'));
+    commit('main edit');
+    expect(cli(repo).status).toBe(0);
+    commit('split2');
+    const split2 = run('rev-parse', 'HEAD').trim();
+    const prev = run('rev-parse', 'HEAD^').trim();
+    mergeIntoFeat(split2);
+    const before = tree();
+    const r = cli(repo, '--from', 'HEAD');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: a merge is in progress.*docs\/stories\/US-01\.md differs/s);
+    expect(r.stderr).toContain(`merge ${prev.slice(0, 12)} (the commit before the split) first, commit, then merge ${split2.slice(0, 12)}, then run this again`);
+    expect(tree()).toEqual(before);
+    // Following its steps keeps main's pre-split edit and the branch's own.
+    run('merge', '--abort');
+    run('merge', '-q', '--no-edit', prev);
+    mergeIntoFeat(split2);
+    const ok = cli(repo, '--from', 'HEAD');
+    expect(ok.stderr).toBe('');
+    expect(ok.status).toBe(0);
+    expect(loadStories(repo)).toContain('- AC1 one, edited on main before the split');
+    expect(loadStories(repo)).toContain('- AC1 two, edited on the branch');
+  });
+
+  it('an --out that resolves to the repo through a symlink is writing into the repo (US-64 AC33)', () => {
+    const link = `${repo}-link`;
+    symlinkSync(repo, link);
+    try {
+      const before = tree();
+      const r = cli(repo, '--from', 'pre-split', '--out', link);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split/);
+      expect(tree()).toEqual(before);
+    } finally {
+      rmSync(link);
+    }
+  });
+
+  it('an --out that names the repo in other letter case is writing into the repo, where the disk ignores case (US-64 AC33)', () => {
+    const upper = join(dirname(repo), basename(repo).toUpperCase());
+    if (!existsSync(upper)) return; // a case-sensitive disk: two different folders
+    const before = tree();
+    const r = cli(repo, '--from', 'pre-split', '--out', upper);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/already holds parts that differ from the split/);
+    expect(tree()).toEqual(before);
+  });
+
+  it('from a subfolder, an --out of `..` landing on the repo is refused, naming the toplevel (US-64 AC33)', () => {
+    const before = tree();
+    const r = cli(join(repo, 'docs'), '--from', 'pre-split', '--out', '..');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: /);
+    expect(r.stderr).toContain(realpathSync.native(repo));
+    expect(tree()).toEqual(before);
+  });
+
+  it('from a subfolder, with no --out, it refuses rather than write a stray docs/ tree there (US-64 AC33)', () => {
+    const before = tree();
+    const r = cli(join(repo, 'docs'), '--from', 'pre-split');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: writing into the repo runs from its toplevel, /);
+    expect(r.stderr).toContain(realpathSync.native(repo));
+    expect(existsSync(join(repo, 'docs/docs'))).toBe(false);
+    expect(tree()).toEqual(before);
+  });
+
+  it('a git failure in the merge check refuses with exit 1, never a stack trace (US-64 AC33)', () => {
+    run('checkout', '-q', 'split');
+    const bin = mkdtempSync(join(tmpdir(), 'split-stories-git-'));
+    const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
+    writeFileSync(
+      join(bin, 'git'),
+      `#!/bin/sh\nif [ "$1 $2 $3 $4" = "rev-parse -q --verify MERGE_HEAD" ]; then echo "fatal: simulated failure" >&2; exit 128; fi\nexec ${realGit} "$@"\n`,
+      { mode: 0o755 },
+    );
+    try {
+      const before = tree();
+      const r = spawnSync('node', [SCRIPT, '--from', 'pre-split'], { cwd: repo, encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}` } });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toBe('split-stories: refused, nothing written: cannot tell whether a merge is in progress: fatal: simulated failure\n');
+      expect(tree()).toEqual(before);
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
   });
 
   it('outside a merge, a rerun whose output equals docs/stories/ needs no flag', () => {
