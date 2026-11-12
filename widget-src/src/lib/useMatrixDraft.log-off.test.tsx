@@ -10,8 +10,8 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Refused, SaveTask } from './matrix-save';
 import { StartingInfoVitals } from '../components/StartingInfoVitals';
-import { VITALS_DRAFT_KEY } from './storage';
-import { latchOnOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
+import { noteCloudPage, VITALS_DRAFT_KEY } from './storage';
+import { listenForOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
 
 afterEach(() => { cleanup(); localStorage.clear(); });
 
@@ -35,13 +35,16 @@ describe('US-09 AC2e: matrix drafts after another tab logs off', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
   });
 
-  it('after the latch, a typed value is not written to the device, and a stale draft goes', () => {
-    latchOnOtherTabsLogOff();
+  it('after a heard log-off, a typed value is not written, and the draft key is left alone', () => {
+    listenForOtherTabsLogOff();
+    noteCloudPage();
     window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_log_off_signal' }));
     expect(roadmapLocalWritesStopped()).toBe(true);
-    // A draft that landed in AC2c's race window, before this tab latched.
-    localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} }));
+    // A page that did not begin the log-off leaves the draft key alone: it may
+    // hold a draft written under the new sign-in.
+    const theirs = JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} });
+    localStorage.setItem(VITALS_DRAFT_KEY, theirs);
     fireEvent.change(weightInput(), { target: { value: '81' } });
-    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
   });
 });

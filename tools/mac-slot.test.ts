@@ -165,6 +165,33 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(r.err()).not.toMatch(/could not read the load|starting tests slot/);
   });
 
+  // Lead T16: only a well-formed number (digits, optionally a dot and digits) is a load; "." read as 0 and
+  // "1.2.3" as 1.2 used to start a run after a high reading.
+  for (const bad of ['.', '1.2.3']) {
+    it(`a malformed load "${bad}" after a high one keeps waiting and refuses at the bound (lead T16)`, async () => {
+      setLoads('12.00', bad);
+      const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
+      expect(await r.done).toBe(75);
+      expect(existsSync(join(fake, 'ran'))).toBe(false);
+      expect(r.err()).toMatch(/^mac-slot: refused: /m);
+    });
+  }
+
+  it('a malformed first load "." fails open as unreadable and starts (lead T16)', async () => {
+    setLoads('.');
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
+    expect(await r.done).toBe(0);
+    expect(existsSync(join(fake, 'ran'))).toBe(true);
+    expect(r.err()).toMatch(/could not read the load; not waiting/);
+  });
+
+  it('a 0-second bound refuses saying "after 0s" (lead T16)', async () => {
+    setLoads('12.00');
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '0' });
+    expect(await r.done).toBe(75);
+    expect(r.err()).toMatch(/still 8 or more after 0s; not starting/);
+  });
+
   it('a load that drops below the cap within the bound starts the command', async () => {
     setLoads('12.00', '12.00', '2.00');
     const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '10' });
