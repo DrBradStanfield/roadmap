@@ -17,7 +17,9 @@ import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY, webRecordHost } from './web-record-host';
-import { BT_TIMELINE_DRAFT_KEY, LPA_CHECK_KEPT_KEY, MIRROR_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
+import {
+  BT_TIMELINE_DRAFT_KEY, DOC_KEY_PREFIX, LPA_CHECK_KEPT_KEY, MIRROR_KEY, VITALS_DRAFT_KEY, clearLocalStorage, clearOffFileHealthData,
+} from '../lib/storage';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -180,6 +182,102 @@ describe('US-11 AC6 — only the tab on the chosen record clears off-file data',
     await tab.refreshFromRemote();
 
     expect(drafts()).toEqual([null, null]);
+  });
+});
+
+/** A page: a fresh module graph, so it has its own health-writes state, as each tab does in a real browser. */
+async function loadPage() {
+  vi.resetModules();
+  const { RecordSession: PageSession } = await import('@roadmap/health-core/record-session');
+  const { webRecordHost: pageHost } = await import('./web-record-host');
+  const { LocalStorageAdapter: PageDevice, stopRoadmapLocalWrites } = await import('./local-storage-adapter');
+  const { MemoryAdapter: PageCloud } = await import('@roadmap/health-core/memory-adapter');
+  const { healthWritesAllowed, healthWritesStopped } = await import('../lib/storage');
+  return {
+    openCloud: (cloud: MemoryCloud) => PageSession.open(pageHost(new PageCloud(cloud))),
+    openDevice: () => PageSession.open(pageHost(new PageDevice())),
+    stopRoadmapLocalWrites, healthWritesAllowed, healthWritesStopped,
+  };
+}
+const ORIGINAL = `${DOC_KEY_PREFIX}synthetic-guest.pdf`;
+const KEPT = '{"synthetic":"kept"}';
+const snapshot = () => Object.fromEntries(Object.keys(localStorage).map((key) => [key, localStorage.getItem(key)]));
+/** This browser's off-file data: two drafts, an original no record lists, and the Lp(a) kept answer. */
+function offFileData() {
+  typeDrafts();
+  localStorage.setItem(ORIGINAL, 'synthetic bytes');
+  localStorage.setItem(LPA_CHECK_KEPT_KEY, KEPT);
+}
+/** Another device erases the cloud record: only the cloud file is shared. */
+async function eraseElsewhere(cloud: MemoryCloud) {
+  const elsewhere = new MemoryAdapter(cloud);
+  const { body, version } = await elsewhere.read(ROADMAP_FILE_NAME);
+  const erased = body as { meta: { eraseEpoch?: number }; measurements: unknown[] };
+  await elsewhere.write(ROADMAP_FILE_NAME, { ...erased, measurements: [], meta: { ...erased.meta, eraseEpoch: (erased.meta.eraseEpoch ?? 0) + 1 } }, version);
+}
+
+describe('US-11 AC6 — a page stopped by another tab\'s log-off takes an erase in and clears nothing on this device', () => {
+  it('a cloud page that heard another tab\'s log-off takes in an erase made elsewhere: the guest\'s drafts, original and kept answer stay; nothing is written to the device', async () => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const page = await loadPage();
+    const stopped = await page.openCloud(cloud);
+    add(stopped, 'old');
+    await stopped.flush();
+    const before = stopped.eraseIdentity;
+
+    // Another tab logs off (connect.ts logOff): it signals the other tabs, wipes the device copy and off-file
+    // data, and forgets the backend. This page hears the signal as a storage event, as a real tab does.
+    const leaving = await loadPage();
+    leaving.stopRoadmapLocalWrites();
+    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
+    await new LocalStorageAdapter().disconnect();
+    clearLocalStorage();
+    clearOffFileHealthData();
+    localStorage.removeItem(BACKEND_KEY);
+    expect(page.healthWritesStopped()).toBe(true);
+    expect(page.healthWritesAllowed()).toBe(false);
+
+    // That tab, now a guest, saves a record, types drafts, keeps an original and answers the Lp(a) check.
+    const guestPage = await loadPage();
+    const guest = await guestPage.openDevice();
+    add(guest, 'guest');
+    await guest.flush();
+    offFileData();
+    localStorage.setItem(MIRROR_KEY, '{"synthetic":"mirror"}');
+
+    await eraseElsewhere(cloud);
+    const device = snapshot();
+
+    later();
+    await stopped.refreshFromRemote();
+
+    expect(stopped.eraseIdentity).not.toBe(before); // taken in
+    expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);
+    expect(localStorage.getItem(ORIGINAL)).toBe('synthetic bytes');
+    expect(localStorage.getItem(LPA_CHECK_KEPT_KEY)).toBe(KEPT);
+    expect(snapshot()).toEqual(device); // no record, mirror or marker written
+  });
+
+  it('control: the owner page takes in the same erase and clears the drafts, the original and the kept answer', async () => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const page = await loadPage();
+    const owner = await page.openCloud(cloud);
+    add(owner, 'old');
+    await owner.flush();
+    const before = owner.eraseIdentity;
+    expect(page.healthWritesAllowed()).toBe(true);
+    offFileData();
+
+    await eraseElsewhere(cloud);
+    later();
+    await owner.refreshFromRemote();
+
+    expect(owner.eraseIdentity).not.toBe(before);
+    expect(drafts()).toEqual([null, null]);
+    expect(localStorage.getItem(ORIGINAL)).toBeNull();
+    expect(localStorage.getItem(LPA_CHECK_KEPT_KEY)).toBeNull();
   });
 });
 
