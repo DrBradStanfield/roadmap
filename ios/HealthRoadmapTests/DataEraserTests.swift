@@ -57,6 +57,7 @@ final class DataEraserTests: XCTestCase {
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
+        sync.eraseRunning = { [weak eraser] in eraser?.erasing ?? false }
         return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth, engine: engine)
     }
 
@@ -291,14 +292,13 @@ final class DataEraserTests: XCTestCase {
         dropbox.downloadDelay = 0.3
         let erase = Task { await app.eraser.eraseAll() }
         try await Task.sleep(for: .milliseconds(50))
-        XCTAssertTrue(app.sync.erasing)
         let copied = await app.sync.disconnect()
         XCTAssertFalse(copied, "Disconnect is refused while the erase runs")
         XCTAssertNotNil(app.sync.provider, "still connected")
         guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertEqual(epoch(dropbox.record), 1)
         XCTAssertEqual(epoch(object(app.store.recordJSON)), 1, "the screen shows the erase")
-        XCTAssertFalse(app.sync.erasing)
+        XCTAssertFalse(app.sync.eraseRunning(), "Disconnect is back once the erase's words show")
     }
 
     func testN1AnAnswerThatStartedBeforeTheEraseIsNeverSavedAfterIt() async throws {

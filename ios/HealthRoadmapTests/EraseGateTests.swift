@@ -75,6 +75,7 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
             return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: nil, live: nil)
+        sync.eraseRunning = { [weak eraser] in eraser?.erasing ?? false } // AppParts' wiring, as written there
         return App(store: store, sync: sync, chat: chat, eraser: eraser)
     }
 
@@ -315,5 +316,42 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         lastStep.release()
         guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertEqual(activeDays(dropbox.record), [], "the erase reached the cloud")
+    }
+
+    // MARK: The one source: DataEraser.phase, read through eraseRunning
+
+    func testEraseRunningIsTrueOnlyWhileTheEraserErases_US25_AC16e() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        XCTAssertFalse(app.sync.eraseRunning())
+        let release = holdLine(app.store)
+        let erase = Task { await app.eraser.eraseAll() }
+        try await until("the erase runs") { app.eraser.erasing }
+        XCTAssertTrue(app.sync.eraseRunning(), "true while the eraser erases")
+        app.eraser.settingsClosed()
+        XCTAssertTrue(app.sync.eraseRunning(), "and while it erases with the sheet closed")
+        release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertFalse(app.eraser.erasing)
+        XCTAssertFalse(app.sync.eraseRunning(), "false once the words show")
+    }
+
+    /// Condition (i): a view reading `sync.eraseRunning()` redraws as the eraser's phase moves:
+    /// the read registers through the closure, on start and on finish.
+    func testAReadOfEraseRunningIsTrackedAndFiresOnStartAndFinish_US25_AC16e() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        let release = holdLine(app.store)
+        let started = XCTestExpectation(description: "a change as the erase starts")
+        withObservationTracking { _ = app.sync.eraseRunning() } onChange: { started.fulfill() }
+        let erase = Task { await app.eraser.eraseAll() }
+        await arrive(started)
+        XCTAssertTrue(app.sync.eraseRunning())
+        let finished = XCTestExpectation(description: "a change as the erase finishes")
+        withObservationTracking { _ = app.sync.eraseRunning() } onChange: { finished.fulfill() }
+        release()
+        await arrive(finished)
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertFalse(app.sync.eraseRunning())
     }
 }
