@@ -12,6 +12,27 @@
 // resolve and crash startup. A parity test keeps the copy in sync with the health-core source.
 import * as Sentry from "@sentry/react-router";
 import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
+import { selfReportIntegration, selfReportTransport } from "./instrument-self-report.mjs";
+
+// A throw in a scrub must never reach the SDK's own error report: the hook
+// returns null, so nothing is sent, and one fixed line names the error type,
+// never its message or stack (US-09 AC7i). Naming and logging are guarded too,
+// so the null always comes back.
+const failClosed = (hook) => (...args) => {
+  try {
+    return hook(...args);
+  } catch (err) {
+    let name = "unknown";
+    try {
+      const n = err instanceof Error ? err.name : typeof err;
+      if (typeof n === "string" && /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(n)) name = n;
+    } catch { /* keep "unknown" */ }
+    try {
+      console.error("Sentry scrub failed (" + name + "); event dropped");
+    } catch { /* the null still comes back */ }
+    return null;
+  }
+};
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -24,9 +45,11 @@ Sentry.init({
   // attaches them to every event, transactions included (US-09 AC7,
   // 2026-10-01). An /mcp body is a health record; a consent POST is a password.
   integrations: (defaults) => [
+    selfReportIntegration,
     ...defaults.filter((i) => i.name !== "Console"),
     Sentry.httpIntegration({ maxIncomingRequestBodySize: "none" }),
   ],
+  transport: selfReportTransport(Sentry.makeNodeTransport),
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
   ignoreErrors: [
@@ -39,7 +62,7 @@ Sentry.init({
     // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
     /cdn\/shopifycloud\/privacy-banner/,
   ],
-  beforeSend(event, hint) {
+  beforeSend: failClosed((event, hint) => {
     // Benign body-stream cancel on client abort: fires when a user closes the tab while
     // request.json() still holds a reader on the body stream. The PRIMARY suppression is the
     // `request.signal.aborted` guard in entry.server.tsx's handleError (it skips capture for
@@ -59,11 +82,11 @@ Sentry.init({
     // Scrub PII/PHI from event data before it leaves the server (shared with
     // the parity test, which runs this exact pipeline against the browser's).
     return scrubServerEvent(event);
-  },
+  }),
   // Sampled transactions carry the request (headers, cookies) too, and
   // beforeSend never sees them.
-  beforeSendTransaction: scrubServerEvent,
-  beforeBreadcrumb(breadcrumb) {
+  beforeSendTransaction: failClosed(scrubServerEvent),
+  beforeBreadcrumb: failClosed((breadcrumb) => {
     if (
       (breadcrumb.category === "fetch" ||
         breadcrumb.category === "xhr" ||
@@ -76,5 +99,5 @@ Sentry.init({
     // breadcrumb from anywhere else is dropped, not filtered.
     if (breadcrumb.category === "console") return null;
     return breadcrumb;
-  },
+  }),
 });
