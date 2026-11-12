@@ -17,8 +17,8 @@ export async function boot(
 ) {
   // First, before any await (US-09 AC2h): another tab's log-off signal is set
   // and removed at once, so note one heard during the OAuth code exchange or
-  // a Drive token refresh too. A cloud load that succeeds latches on it; a
-  // page that ends on the device copy never does.
+  // a Drive token refresh too: a log-off heard while loading stops the page
+  // wherever it opens.
   listenForOtherTabsLogOff();
   initSentry();
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.

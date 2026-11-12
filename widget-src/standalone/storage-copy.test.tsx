@@ -256,6 +256,13 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
   });
 });
 
+describe('US-09 AC13: the fallback notice on a live page', () => {
+  it.each(['google-drive', 'dropbox'] as const)('%s: says changes are kept in this browser', (provider) => {
+    const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);
+    expect(container.textContent).toContain('kept in this browser');
+  });
+});
+
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
   // Last in this file: the stop lasts for the module's life.
   it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {

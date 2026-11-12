@@ -53,10 +53,10 @@ export function healthWritesTransition(state: HealthWrites, event: HealthWritesE
   // be a new sign-in's mirror, so the page stops. Otherwise the device store
   // decides.
   if (state.mode === 'loading' && state.logOffHeard) return { mode: 'stopped' };
-  // No caller reaches cloud + deviceOpened today: only startOnBackend's
-  // fallback builds a device host after a cloud one, and only when the load
-  // throws, while every step of RecordSession.open after mirror.opened()
-  // catches its own errors.
+  // No caller reaches cloud + deviceOpened today: the fallback follows a cloud
+  // host only when init throws, and nothing after mirror.opened() does: the
+  // rest of RecordSession.open catches, RoadmapStore.create does not await
+  // writeMovedRecord, and initRoadmapStore's later steps raise no storage failure.
   return event.sameSignIn ? { mode: 'device' } : { mode: 'stopped' };
 }
 let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };

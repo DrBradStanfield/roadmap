@@ -49,10 +49,8 @@ function onLogOffSignal(event: Event): void {
 /** The page is starting (standalone main(), before its first await) or a
  *  cloud host was just built, and its first read may still be running. The
  *  log-off signal is set and removed at once, so listen now, for the page's
- *  life. The health-write state holds one heard while loading and stops on it
- *  only if a cloud load succeeds (noteCloudPage, via mirror.opened()). A load that fails
- *  falls back to the device, whose copy is then its only store, so a heard
- *  signal alone never stops a write there (US-09 AC2h). The OAuth return
+ *  life. The health-write state holds one heard while loading, and a log-off
+ *  heard while loading stops the page wherever it opens (US-09 AC2h). The OAuth return
  *  builds two cloud hosts in a row (the lift, then the store), and every way
  *  back to a cloud from a fallback page reloads the page. Re-adding the same
  *  listener is a no-op. */
