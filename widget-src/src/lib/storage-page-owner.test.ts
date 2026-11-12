@@ -36,9 +36,9 @@ describe('US-11 AC6 — which record the page is on, for its drafts', () => {
   it('two cloud hosts in a row (the OAuth return: the lift, then the store) end on the store\'s record', async () => {
     const page = await loadPage();
     localStorage.setItem(BACKEND_KEY, 'google-drive');
-    page.webRecordHost(page.cloud('memory')).mirror!.opened(); // the lift
+    (page.webRecordHost(page.cloud('memory')) as { mirror: { opened(): void } }).mirror.opened(); // the lift
     expect(page.pageOwnsOffFileData()).toBe(false);
-    page.webRecordHost(page.cloud('google-drive')).mirror!.opened(); // the store
+    (page.webRecordHost(page.cloud('google-drive')) as { mirror: { opened(): void } }).mirror.opened(); // the store
 
     expect(page.pageOwnsOffFileData()).toBe(true);
     localStorage.setItem(BACKEND_KEY, 'memory');
@@ -52,7 +52,7 @@ describe('US-11 AC6 — which record the page is on, for its drafts', () => {
 
     localStorage.setItem(BACKEND_KEY, 'memory');
     expect(page.pageOwnsOffFileData()).toBe(false); // chosen, not yet open here
-    page.webRecordHost(page.cloud('memory')).mirror!.opened();
+    (page.webRecordHost(page.cloud('memory')) as { mirror: { opened(): void } }).mirror.opened();
 
     expect(page.pageOwnsOffFileData()).toBe(true);
     localStorage.removeItem(BACKEND_KEY); // the device record chosen again

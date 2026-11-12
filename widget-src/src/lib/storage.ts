@@ -32,12 +32,12 @@ const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 export type HealthWrites =
   | { mode: 'loading'; logOffHeard: boolean }
   | { mode: 'device' }
-  | { mode: 'cloud' }
+  | { mode: 'cloud'; storeId: string }
   | { mode: 'stopped' };
 /** deviceOpened's `sameSignIn`: the log-off id is still the one the page loaded with. */
 export type HealthWritesEvent =
   | { type: 'deviceOpened'; sameSignIn: boolean }
-  | { type: 'cloudOpened' }
+  | { type: 'cloudOpened'; storeId: string }
   | { type: 'logOffHeard' }
   | { type: 'stop' };
 export function healthWritesTransition(state: HealthWrites, event: HealthWritesEvent): HealthWrites {
@@ -47,7 +47,7 @@ export function healthWritesTransition(state: HealthWrites, event: HealthWritesE
     // A device page's copy is its only store, so a heard log-off never stops it.
     return state.mode === 'cloud' ? { mode: 'stopped' } : state;
   }
-  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
+  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud', storeId: event.storeId };
   if (state.mode === 'device') return state;
   // A heard log-off, or a changed id, which proves one: the device copy may
   // be a new sign-in's mirror, so the page stops. Otherwise the device store
@@ -64,9 +64,9 @@ const dispatchHealthWrites = (event: HealthWritesEvent) => { healthWrites = heal
 export function stopLocalHealthWrites(): void {
   dispatchHealthWrites({ type: 'stop' });
 }
-/** A cloud record has opened on this page (the web host's mirror.opened()). */
-export function noteCloudPage(): void {
-  dispatchHealthWrites({ type: 'cloudOpened' });
+/** The record of `storeId`, a cloud, has opened on this page (the web host's mirror.opened()). */
+export function noteCloudPage(storeId: string): void {
+  dispatchHealthWrites({ type: 'cloudOpened', storeId });
 }
 /** This page runs on the device tier: a guest, or a cloud load's fallback. */
 export function noteDevicePage(): void {
@@ -95,6 +95,13 @@ export const BACKEND_KEY = 'health_roadmap_backend';
  *  clears that data (US-11 AC6). Read live; callers import it, never copy it. */
 export function ownsOffFileData(storeId: string): boolean {
   return healthWritesAllowed() && logOffId() === logOffIdAtLoad && (safeGetItem(BACKEND_KEY) ?? 'local') === storeId;
+}
+/** The owner rule for this page's own record: the device record on the device tier, the cloud whose record opened
+ *  last on a cloud. A page still loading is on no record yet and owns nothing (useMatrixDraft keeps what is typed
+ *  then on screen, and on the device from the first change after the record opens). */
+export function pageOwnsOffFileData(): boolean {
+  if (healthWrites.mode === 'device') return ownsOffFileData('local');
+  return healthWrites.mode === 'cloud' && ownsOffFileData(healthWrites.storeId);
 }
 
 interface StoredData {
@@ -256,20 +263,20 @@ export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
  * erase did not remove (US-09 AC20, AC23): by default none is spared.
  */
 export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
-  clearMatrixDrafts();
+  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  safeRemoveItem(VITALS_DRAFT_KEY);
+  dropDraftsOnScreen();
   removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
 }
 
-/** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of
+/** Fired by `dropDraftsOnScreen`: a matrix on screen drops its own copy of
  *  the draft too (useMatrixDraft), or its next keystroke writes it back. */
 export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
-/** Remove both matrices' unsaved drafts: an erase, made here or on another
- *  device, leaves none behind (US-11). */
-function clearMatrixDrafts(): void {
-  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
-  safeRemoveItem(VITALS_DRAFT_KEY);
+/** An erase reached this page: what its screen holds of the drafts goes, on
+ *  every page, the owner of the stored drafts or not (US-11 AC6). */
+export function dropDraftsOnScreen(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 

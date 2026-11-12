@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, healthWritesAllowed, ownLogOffHasBegun, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOwnsOffFileData, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -139,12 +139,13 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   const typedHere = (key: K) => metaOf([null, key])?.typedOn === PAGE;
 
   useEffect(() => {
-    // After log-off, typed values stay on screen only: writing them would put
-    // health values back on a device the user meant to leave clean (US-09 AC2e).
     // After a log-off this page began, the device was wiped, so a stale draft
-    // goes. A page that did not begin the log-off leaves the draft key alone:
-    // it may hold a draft written under the new sign-in (AC2c).
-    if (!healthWritesAllowed()) { if (ownLogOffHasBegun()) safeRemoveItem(storageKey); return; }
+    // goes (US-09 AC2e). Any other page off the record this browser has chosen
+    // (a log-off elsewhere since it loaded, a sign-in or switch in another tab,
+    // or a page still loading) keeps typed values on screen only and leaves the
+    // key alone: it may hold the chosen record's draft (US-11 AC6, AC2c).
+    if (ownLogOffHasBegun()) { safeRemoveItem(storageKey); return; }
+    if (!pageOwnsOffFileData()) return;
     if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);

@@ -139,7 +139,7 @@ describe('US-09 AC2c controls', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
   });
 
-  it('a page whose device copy is its only store keeps writing after the id changes', async () => {
+  it('a page whose device copy is its only store keeps writing after the id changes; its typed draft stays on screen only', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
@@ -154,7 +154,8 @@ describe('US-09 AC2c controls', () => {
     await store.flush();
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     expect(localStorage.getItem(LPA_KEPT_KEY)).not.toBeNull();
-    expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
+    // A page whose log-off id changed since load owns no off-file data, so it writes no draft (US-11 AC6).
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
 

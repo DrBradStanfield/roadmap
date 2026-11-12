@@ -17,7 +17,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { BACKEND_KEY, clearOffFileHealthData, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { BACKEND_KEY, clearOffFileHealthData, dropDraftsOnScreen, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -113,8 +113,10 @@ function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): bo
 export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
-    clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
-    // Another tab takes an erase in without clearing, and its own erase is refused first (US-11 AC6).
+    // Another tab takes an erase in without clearing, dropping only the drafts on its screen, and its own erase
+    // is refused first (US-11 AC6).
+    clearOffFileData: (keepOriginals: ReadonlySet<string>) => (ownsOffFileData(store.id)
+      ? clearOffFileHealthData((ref) => keepOriginals.has(ref)) : dropDraftsOnScreen()),
     ownsOffFileData: () => ownsOffFileData(store.id),
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
@@ -195,7 +197,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       writesStopped: roadmapLocalWritesStopped,
       stillChosen: () => sameSignInAndProvider(store, openedUnder),
       wipe: () => device.disconnect(),
-      opened: noteCloudPage,
+      opened: () => noteCloudPage(store.id),
     },
   };
 }

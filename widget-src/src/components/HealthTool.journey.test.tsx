@@ -944,6 +944,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     }
     const cloud = new MemoryCloud();
     const adapter = new HangingAdapter(cloud);
+    localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: its drafts are its own
     await adapter.connect();
     await initRoadmapStore(adapter);
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
