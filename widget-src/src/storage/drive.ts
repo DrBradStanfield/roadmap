@@ -347,13 +347,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /**
    * FALLBACK connect/reconnect: GIS popup (~1 h token, no refresh token).
-   * Needs a user gesture; works even with the exchange endpoint down.
-   */
-  async connectViaPopup(): Promise<void> {
+   * Needs a user gesture; works even with the exchange endpoint down. True
+   * when this adapter saved its own sign-in (US-09 AC45). */
+  async connectViaPopup(): Promise<boolean> {
     const token = await this.acquireViaGis();
-    this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt });
     this.stored = this.stored ?? {};
-    setSignIn(CONFIG_KEY, this.stored, this.gen);
+    return this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt }) && setSignIn(CONFIG_KEY, this.stored, this.gen);
   }
 
   /**
@@ -565,9 +564,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- helpers --------------------------------------------------------------
 
-  private saveTokens(tokens: DriveTokens): void {
+  private saveTokens(tokens: DriveTokens): boolean {
     this.tokens = tokens;
-    setSignIn(TOKENS_KEY, tokens, this.gen);
+    return setSignIn(TOKENS_KEY, tokens, this.gen);
   }
 
   private clearTokens(): void {

@@ -14,13 +14,15 @@ import {
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
+  type GitHubAdapter,
   type StorageAdapter,
+  type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
-import { PROVIDERS, providerOf, SIGN_IN_KEYS, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, sweepStaleSignIns, type LogOffId } from '../src/lib/storage';
+import { PROVIDERS, providerOf, type CloudBackend } from './providers';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -156,9 +158,8 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * resolve-backend.ts on return), so they don't go through here. `gen` is the
  * log-off id the move began under; the adapter was built with it too.
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
-  await adapter.connect();
-  if (rememberSignIn(backend, gen)) {
+export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
+  if (rememberSignIn(await adapter.signIn(), backend, gen)) {
     markSyncPending();
     await liftLocalInto(adapter, backend);
     trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
@@ -166,12 +167,12 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
   location.reload();
 }
 
-/** Remember `backend` once its sign-in is saved under the current log-off id,
- *  and only while `gen` is still that id (US-09 AC45). True when both hold:
+/** Remember `backend` when the connecting adapter `saved` its own sign-in,
+ *  and only while `gen` is still the current log-off id (US-09 AC45). True when both hold:
  *  only then is the device copy lifted into the cloud, marked pending first
  *  so a page that stops mid-lift lifts it on the next load. */
-export function rememberSignIn(backend: CloudBackend, gen: LogOffId): boolean {
-  return !!adapterFor(backend)?.isConnected() && rememberBackend(backend, gen);
+export function rememberSignIn(saved: boolean, backend: CloudBackend, gen: LogOffId): boolean {
+  return saved && rememberBackend(backend, gen);
 }
 
 /**
@@ -219,7 +220,6 @@ export function forgetBackend(): void {
  *  awaits this before the mount is rendered, so a throw here is a blank
  *  widget (Sentry JAVASCRIPT-REMIX-6T / 6N / 6J, US-09 AC16). */
 export async function resolveRemembered(): Promise<ResolvedBackend> {
-  sweepStaleSignIns(SIGN_IN_KEYS); // sign-ins from before the latest log-off (US-09 AC45)
   const remembered = rememberedBackend();
   const adapter = remembered ? adapterFor(remembered) : null;
   if (remembered && adapter?.isConnected()) {

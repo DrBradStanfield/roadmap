@@ -60,6 +60,11 @@ export class WebDavAdapter implements StorageAdapter {
 
   /** Validate reachability + credentials with a PROPFIND, then persist. */
   async connect(): Promise<void> {
+    await this.signIn();
+  }
+
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
+  async signIn(): Promise<boolean> {
     if (!this.config?.url || !this.config.username) {
       throw new StorageError('Self-host needs a URL, username, and password.');
     }
@@ -72,7 +77,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`);
     }
-    setSignIn(CONFIG_KEY, this.config, this.gen);
+    return setSignIn(CONFIG_KEY, this.config, this.gen);
   }
 
   async disconnect(): Promise<void> {

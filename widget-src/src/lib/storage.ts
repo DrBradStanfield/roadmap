@@ -8,6 +8,7 @@ import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { isComparator } from '@roadmap/health-core/lab-limits';
 import { isClinicalDay } from '@roadmap/health-core/measurement-history';
 import type { ApiReminderPreference } from './api-types';
+import { randomId } from './random-id';
 
 /** The mirror: HealthTool's copy of the saved record, which the chatbot embed
  *  and the blog bubble read (US-15 AC10). It holds what is saved, never a
@@ -294,7 +295,7 @@ let ownLogOffBegun = false;
 /** At log-off, before any await. */
 export function newLogOffId(): void {
   ownLogOffBegun = true;
-  safeSetItem(LOG_OFF_ID_KEY, crypto.randomUUID());
+  safeSetItem(LOG_OFF_ID_KEY, randomId());
 }
 
 /** Save a cloud sign-in entry with `gen` inside it, in one write, or the

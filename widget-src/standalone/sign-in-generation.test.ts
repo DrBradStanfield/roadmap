@@ -2,9 +2,8 @@
  * US-09 AC45: a cloud sign-in is kept only while the log-off id it began
  * under is still this device's current one. A tab still holding an older
  * sign-in saves nothing over a newer one, whether or not it heard the
- * log-off; a cloud copy is filled from this device only after its sign-in is
- * saved; entries saved before the device's first log-off still sign in, and a
- * page load removes those saved under any other id.
+ * log-off; entries saved before the device's first log-off still sign in, and
+ * a page load removes those saved under any other id.
  *
  * Each tab is its own module graph. They share one window, one localStorage
  * and one sessionStorage; `storage` events reach the window only when a test
@@ -49,6 +48,9 @@ let holdExchange: Promise<void> | null;
 let holdDownload: Promise<void> | null;
 /** The bodies uploaded to Dropbox. */
 let uploads: string[];
+/** The files written to GitHub. */
+let githubPuts: string[];
+const GITHUB_REPO = 'https://api.github.com/repos/someone/health';
 /** Keys whose writes this localStorage drops, as a full one does. */
 let dropped: Set<string>;
 /** What a Drive code exchange hands back: the same account each time. */
@@ -66,6 +68,14 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     if (body.grantType === 'code') return json({ accessToken: driveAccess, refreshToken: 'rt-same', expiresIn: 3600, idToken });
     return json({ accessToken: 'at-refreshed', expiresIn: 3600, idToken });
   }
+  if (url.startsWith(GITHUB_REPO)) {
+    if (url === GITHUB_REPO) return json({ private: true });
+    if (init?.method === 'PUT') {
+      githubPuts.push(url);
+      return json({ content: { sha: 's1' } }, 201);
+    }
+    return json({ message: 'Not Found' }, 404);
+  }
   if (url === DROPBOX_DOWNLOAD && holdDownload) await holdDownload;
   if (url === DROPBOX_UPLOAD) {
     uploads.push(String(init?.body));
@@ -79,9 +89,15 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
 
 beforeEach(() => {
   vi.resetModules();
+  const where = { search: '', origin: 'https://example.test', pathname: '/roadmap/', hash: '' };
   const page = Object.assign(new EventTarget(), {
-    location: { search: '', origin: 'https://example.test', pathname: '/roadmap/', hash: '' },
-    history: { state: null, replaceState: vi.fn() },
+    location: where,
+    history: {
+      state: null,
+      replaceState: vi.fn((_state: unknown, _title: string, url?: string | URL | null) => {
+        if (url != null) where.search = new URL(String(url), 'https://example.test/roadmap/').search;
+      }),
+    },
   });
   vi.stubGlobal('window', page);
   vi.stubGlobal('location', Object.assign(page.location, { reload: vi.fn(), assign: vi.fn() }));
@@ -112,6 +128,7 @@ beforeEach(() => {
   holdExchange = null;
   holdDownload = null;
   uploads = [];
+  githubPuts = [];
   driveAccess = 'at-first';
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -163,6 +180,16 @@ async function driveSignIn() {
   return resolved.adapter as unknown as { tryServerRefresh(): Promise<boolean>; rememberFileId(name: string, id: string): void };
 }
 
+/** A guest's record on this device. */
+async function seedGuest() {
+  vi.resetModules();
+  const { RoadmapStore } = await import('../src/storage/roadmap-store');
+  const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
+  const guest = await RoadmapStore.create(new LocalStorageAdapter());
+  guest.addMeasurement('weight', 80, '2026-01-01');
+  await guest.flush();
+}
+
 const driveKeys = () => [BACKEND_KEY, DRIVE_CONFIG, DRIVE_TOKENS].map((key) => localStorage.getItem(key));
 
 describe('US-09 AC45: a tab still holding an older sign-in leaves a newer one alone', () => {
@@ -195,7 +222,7 @@ describe('US-09 AC45: a tab still holding an older sign-in leaves a newer one al
   });
 });
 
-describe('US-09 AC45: a cloud copy is filled from this device only after its sign-in is saved', () => {
+describe('US-09 AC45: an OAuth return across a log-off in another tab', () => {
   it('a log-off in another tab during the code exchange: no tokens, no lift, the page opens on the device', async () => {
     await startSignIn('dropbox');
     const exchange = deferred();
@@ -290,8 +317,8 @@ describe('US-09 AC45: a page load removes sign-ins saved under another log-off i
     localStorage.setItem(GITHUB_CONFIG, JSON.stringify({ token: 'test-token-good', owner: 'someone', repo: 'health' })); // no id: before the first log-off
     localStorage.setItem(BACKEND_KEY, 'dropbox');
 
-    const { resolveRemembered } = await import('./connect');
-    expect((await resolveRemembered()).backend).toBe('dropbox');
+    const { resolveBackend } = await import('./resolve-backend');
+    expect((await resolveBackend()).resolved.backend).toBe('dropbox');
     expect([DRIVE_TOKENS, DRIVE_CONFIG, GITHUB_CONFIG].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
     expect(localStorage.getItem(DROPBOX_TOKENS)).toBe(current);
   });
@@ -313,5 +340,103 @@ describe('US-09 AC45: once a log-off has begun on this page', () => {
 
     expect(resolved.backend).toBe('local');
     expect([GITHUB_CONFIG, DROPBOX_TOKENS, BACKEND_KEY].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
+  });
+});
+
+describe('US-09 AC45: a form connect is remembered only when it saved its own sign-in', () => {
+  async function connectGitHub(token: string) {
+    vi.resetModules();
+    const connect = await import('./connect');
+    const { GitHubAdapter } = await import('../src/storage/github');
+    const { logOffId } = await import('../src/lib/storage');
+    const gen = logOffId();
+    await connect.finishFormConnect(new GitHubAdapter({ token, owner: 'someone', repo: 'health' }, gen), 'github', gen);
+  }
+
+  it('another tab\'s GitHub sign-in is saved; this page\'s own save is dropped: nothing is remembered or written to GitHub', async () => {
+    localStorage.setItem(GITHUB_CONFIG, JSON.stringify({ token: 'test-token-other', owner: 'someone', repo: 'health' }));
+    await seedGuest();
+    dropped.add(GITHUB_CONFIG);
+    await connectGitHub('test-token-this');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(githubPuts).toEqual([]);
+  });
+
+  it('this page\'s own save is dropped, with no other sign-in: nothing is remembered or written to GitHub', async () => {
+    await seedGuest();
+    dropped.add(GITHUB_CONFIG);
+    await connectGitHub('test-token-this');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(githubPuts).toEqual([]);
+  });
+
+  it('control: a saved connect is remembered and written to GitHub', async () => {
+    await seedGuest();
+    await connectGitHub('test-token-this');
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
+    expect(githubPuts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('US-09 AC45: every page load removes sign-ins saved under another log-off id', () => {
+  it.each(['dropbox', 'google-drive'] as const)('a %s return removes another provider\'s stale entry', async (cloud) => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'id-now');
+    const stale = cloud === 'dropbox' ? DRIVE_TOKENS : DROPBOX_TOKENS;
+    localStorage.setItem(stale, JSON.stringify({ accessToken: 'at-old', refreshToken: 'rt-old', expiresAt: 0, gen: 'id-before' }));
+    await startSignIn(cloud);
+    const page = await returningPage(cloud);
+    const { resolved } = await page.resolveBackend();
+    expect(resolved.backend).toBe(cloud);
+    expect(localStorage.getItem(stale)).toBeNull();
+  });
+});
+
+describe('US-09 AC45: an adapter reads only a sign-in saved under the current log-off id', () => {
+  const later = Date.now() + 3_600_000;
+  const ENTRIES = {
+    dropbox: { [DROPBOX_TOKENS]: { accessToken: 'at', refreshToken: 'rt', expiresAt: later } },
+    'google-drive': { [DRIVE_TOKENS]: { accessToken: 'at', refreshToken: 'rt', expiresAt: later }, [DRIVE_CONFIG]: { accountEmail: EMAIL } },
+    github: { [GITHUB_CONFIG]: { token: 'test-token-good', owner: 'someone', repo: 'health' } },
+    'self-host': { [SELFHOST_CONFIG]: { url: 'https://dav.example.test/health/', username: 'someone', password: 'test-pass-good' } },
+  } as const;
+  it.each([
+    ...Object.keys(ENTRIES).map((backend) => [backend, 'id-before', false] as const),
+    ...Object.keys(ENTRIES).map((backend) => [backend, 'id-now', true] as const),
+  ])('%s saved under %s: connected is %s', async (backend, gen, connected) => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'id-now');
+    for (const [key, value] of Object.entries(ENTRIES[backend as keyof typeof ENTRIES])) localStorage.setItem(key, JSON.stringify({ ...value, gen }));
+    const { adapterFor } = await import('./connect');
+    expect(adapterFor(backend as keyof typeof ENTRIES)!.isConnected()).toBe(connected);
+  });
+});
+
+describe('US-09 AC45: log-off where the browser has no crypto.randomUUID', () => {
+  const getRandomValues = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
+  it.each([
+    ['only crypto.getRandomValues', { getRandomValues }],
+    ['no crypto at all', undefined],
+  ])('%s: it still signs out, wipes the device, reloads and sets a new log-off id', async (_name, crypto) => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'id-before');
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: 'at', refreshToken: 'rt', expiresAt: 0, gen: 'id-before' }));
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    localStorage.setItem('health_roadmap_file_v2', '{}');
+    const { logOff } = await import('./connect');
+    vi.stubGlobal('crypto', crypto);
+    await logOff('dropbox');
+    expect([DROPBOX_TOKENS, BACKEND_KEY, 'health_roadmap_file_v2'].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
+    expect(location.reload).toHaveBeenCalledOnce();
+    expect(localStorage.getItem(LOG_OFF_ID_KEY)).not.toBeNull();
+    expect(localStorage.getItem(LOG_OFF_ID_KEY)).not.toBe('id-before');
+  });
+});
+
+describe('US-09 AC45: a return that is not completed', () => {
+  it('leaves no code or state in the address', async () => {
+    await startSignIn('dropbox');
+    await logOffElsewhere();
+    const page = await returningPage('dropbox');
+    const { resolved } = await page.resolveBackend();
+    expect(resolved.backend).toBe('local');
+    expect(location.search).not.toMatch(/code=|state=/);
   });
 });

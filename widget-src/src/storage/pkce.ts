@@ -85,7 +85,10 @@ export function claimRedirectCode(pkceKey: string): { code: string; verifier: st
   if (!stored) return null; // not our flow (another adapter's return)
   if (stored.state !== params.get('state')) return null; // stale entry or CSRF — don't exchange
   const gen = stored.gen ?? null;
-  if (gen !== logOffId()) return null; // a log-off since it began
+  if (gen !== logOffId()) { // a log-off since it began
+    stripParams(params, ['code', 'state', 'scope']);
+    return null;
+  }
   return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined, gen };
 }
 
@@ -100,8 +103,13 @@ export function claimRedirectCancel(pkceKey: string): boolean {
   const params = new URLSearchParams(window.location.search);
   if (params.get('error') !== 'access_denied' || params.get('code')) return false;
   if (takePkce(pkceKey)?.state !== params.get('state')) return false;
-  for (const k of ['error', 'error_description', 'error_uri', 'state']) params.delete(k);
+  stripParams(params, ['error', 'error_description', 'error_uri', 'state']);
+  return true;
+}
+
+/** Drop `keys` from the address, so a refresh cannot claim the return again. */
+function stripParams(params: URLSearchParams, keys: string[]): void {
+  for (const k of keys) params.delete(k);
   const rest = params.toString();
   window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
-  return true;
 }

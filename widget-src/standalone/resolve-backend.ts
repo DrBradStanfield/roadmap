@@ -15,11 +15,14 @@ import {
   type ResolvedBackend,
 } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
+import { sweepStaleSignIns } from '../src/lib/storage';
+import { SIGN_IN_KEYS } from './providers';
 
 /** The backend this load runs on, and the connect it refused on the way, if
  *  any (US-09 AC15) — kept apart from the backend so a load-time fallback
  *  cannot drop it. */
 export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: string }> {
+  sweepStaleSignIns(SIGN_IN_KEYS); // every page load: sign-ins from before the latest log-off (US-09 AC45)
   // Cancel or Deny at the provider (US-09 AC22; browser Back never returns here): counted once, nothing connected.
   if (DropboxAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });
   if (GoogleDriveAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'google-drive' });
@@ -32,9 +35,9 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   } catch (error) {
     refused = reportConnectFailure(error, 'dropbox');
   }
-  // Lifted only once its sign-in is saved under the log-off id it began
+  // A returned adapter saved its own sign-in under the log-off id it began
   // under (US-09 AC45); otherwise the page opens as if nothing was tried.
-  if (resumed && rememberSignIn('dropbox', resumed.gen)) {
+  if (resumed && rememberSignIn(true, 'dropbox', resumed.gen)) {
     markSyncPending();
     await liftLocalInto(resumed, 'dropbox');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
@@ -49,7 +52,7 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   } catch (error) {
     refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
-  if (gdResumed && rememberSignIn('google-drive', gdResumed.gen)) {
+  if (gdResumed && rememberSignIn(true, 'google-drive', gdResumed.gen)) {
     markSyncPending();
     await liftLocalInto(gdResumed, 'google-drive');
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });

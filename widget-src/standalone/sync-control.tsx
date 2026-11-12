@@ -105,8 +105,8 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
     void run(async () => {
       try {
         const gd = new GoogleDriveAdapter(googleDriveConfig());
-        await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-        if (rememberSignIn('google-drive', gd.gen)) {
+        const saved = await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
+        if (rememberSignIn(saved, 'google-drive', gd.gen)) {
           markSyncPending();
           await liftLocalInto(gd, 'google-drive');
         }

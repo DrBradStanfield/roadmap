@@ -84,11 +84,16 @@ export class GitHubAdapter implements StorageAdapter {
    * No redirect — the credential is user-supplied, not OAuth.
    */
   async connect(): Promise<void> {
+    await this.signIn();
+  }
+
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
+  async signIn(): Promise<boolean> {
     if (!this.config?.token || !this.config.owner || !this.config.repo) {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    setSignIn(CONFIG_KEY, this.config, this.gen);
+    return setSignIn(CONFIG_KEY, this.config, this.gen);
   }
 
   async disconnect(): Promise<void> {
