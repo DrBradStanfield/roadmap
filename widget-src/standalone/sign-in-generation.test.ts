@@ -387,7 +387,7 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     vi.resetModules();
     vi.doMock('react', async (importOriginal) => {
       const react = await importOriginal<typeof import('react')>();
-      const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {} };
+      const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {}, useSyncExternalStore: (_s: unknown, get: () => unknown) => get() };
       return { ...react, ...hooks, default: { ...react, ...hooks } };
     });
     Object.assign(window, { google: { accounts: { oauth2: { initTokenClient: (options: { callback: (r: object) => void }) => ({

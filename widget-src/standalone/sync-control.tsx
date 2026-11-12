@@ -11,11 +11,12 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
 import { currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { dispatch, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
@@ -116,9 +117,6 @@ function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> 
   return facts.status === 'saved' && !facts.pendingSync ? SYNCED_TO(provider) : NOT_SYNCED;
 }
 
-/** One reconnect at a time across the bar and the panel (both mount the hook). */
-let reconnectInFlight = false;
-
 /** US-09 AC30: said instead of starting a popup the browser would block. */
 export const GIS_LOADING = 'Google is loading. Tap again.';
 
@@ -127,32 +125,40 @@ export const GIS_LOADING = 'Google is loading. Tap again.';
  *  re-auths through the GIS popup FALLBACK (~1 h token), which works even with
  *  the exchange endpoint down and needs this click's user gesture, so it starts
  *  synchronously inside the click; local edits made while signed out merge up
- *  before the reload. The others can only try the read again. */
+ *  before the reload. The others can only try the read again. The Drive
+ *  reconnect and "Use this browser only" are moves, one at a time with the
+ *  picker (US-09 AC45); a failure is said here, so it leaves the picker no error. */
 function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
-  const { busy, error, setError, run } = useBusyRun();
+  const flow = useSwitchFlow();
+  const [error, setError] = useState<string | null>(null);
   // GIS loads on mount, so the click can open the popup synchronously.
   useEffect(() => { if (reconnect === 'google-drive') preloadGis(); }, [reconnect]);
+  // runMove claims before its first await, so the move's start stays inside the click.
+  const move = (event: SwitchEvent, body: (m: Move) => Promise<void>): void => {
+    setError(null);
+    void runMove(event, (m) => body(m).catch((e: unknown) => {
+      if (!isCurrentRun(m.run)) return; // it was stopped: nothing to say
+      setError(e instanceof Error ? e.message : 'Connection failed.');
+      dispatch({ type: 'cancel', run: m.run });
+    }));
+  };
   const reconnectNow = (): void => {
     if (reconnect !== 'google-drive') { location.reload(); return; }
     // Still loading: a popup started now would outlast the click and be blocked.
     if (!gisReady()) { preloadGis(); setError(GIS_LOADING); return; }
-    if (reconnectInFlight) return;
-    reconnectInFlight = true;
-    void run(async () => {
-      try {
-        const gd = new GoogleDriveAdapter(googleDriveConfig());
-        const saved = await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-        if (rememberSignIn(saved, 'google-drive', gd.gen)) {
-          markSyncPending();
-          await liftLocalInto(gd, 'google-drive');
-        }
-        location.reload();
-      } finally {
-        reconnectInFlight = false;
+    move({ type: 'reconnect' }, async ({ run, gen, navigating }) => {
+      const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
+        .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
+      if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
+      if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+        markSyncPending();
+        await liftLocalInto(new GoogleDriveAdapter(googleDriveConfig(), gen), 'google-drive');
       }
+      navigating();
+      location.reload();
     });
   };
-  return { busy, error, run, reconnectNow };
+  return { reconnecting: flow.kind === 'reconnecting', idle: flow.kind === 'idle', error, move, reconnectNow };
 }
 
 /** US-09 AC30: the title line's storage state. A record that could not be read runs the
@@ -165,7 +171,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
 export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
   const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
-  const { busy, error, reconnectNow } = useReconnect(reconnect);
+  const { reconnecting, idle, error, reconnectNow } = useReconnect(reconnect);
   const label = storageBarLabel(backend, reconnect, facts, problemsOnly);
   if (problemsOnly && !reconnect && label !== NOT_SYNCED_ON_DEVICE && label !== NOT_SYNCED) return null;
   return (
@@ -175,10 +181,10 @@ export function StorageBar({ backend, reconnect, problemsOnly = false }: { backe
           type="button"
           className="action-btn-small"
           aria-haspopup={reconnect ? undefined : 'dialog'}
-          disabled={busy}
+          disabled={!!reconnect && !idle}
           onClick={reconnect ? reconnectNow : () => openSignin('top_bar')}
         >
-          {busy ? 'Reconnecting…' : label}
+          {reconnecting ? 'Reconnecting…' : label}
         </button>
       ) : backend !== 'local' && <span className="hr-storage-state">{label}</span>}
       {error && <span className="hr-sync-error" role="alert">{error}</span>}
@@ -201,7 +207,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   const [pickerOpen, setPickerOpen] = useState(false);
   // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
   const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
-  const { busy, error, run, reconnectNow } = useReconnect(reconnect);
+  const { reconnecting, idle, error, move, reconnectNow } = useReconnect(reconnect);
   const writesAllowed = useSyncExternalStore(onHealthWritesChange, healthWritesAllowed);
 
   // Every route to the picker passes here, so any opening stops the pulse.
@@ -219,9 +225,9 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   const facts = useSaveFacts(backend);
 
   // Forget the unreachable connection (no copy-down needed — this session
-  // already runs on the device copy; the cloud file stays put).
-  const forgetProvider = (provider: Exclude<Backend, 'local'>): Promise<void> =>
-    run(async () => {
+  // already runs on the device copy; the cloud file stays put). A move (AC45).
+  const forgetProvider = (provider: Exclude<Backend, 'local'>): void =>
+    move({ type: 'start', to: 'local', step: 'list' }, async () => {
       await adapterFor(provider)?.disconnect();
       forgetBackend();
       location.reload();
@@ -243,10 +249,10 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         <span className="hr-sync-status">{label} {drive ? 'is signed out' : 'could not be reached'}</span>
         <button
           className="hr-sync-btn"
-          disabled={busy}
+          disabled={!idle}
           onClick={reconnectNow}
         >
-          {drive ? (busy ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
+          {drive ? (reconnecting ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
           Your record is safe in your {label}.
@@ -257,7 +263,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
             : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" onClick={() => void forgetProvider(reconnect)}>Use this browser only</button>
+          <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => forgetProvider(reconnect)}>Use this browser only</button>
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
