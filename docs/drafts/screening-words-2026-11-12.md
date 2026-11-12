@@ -144,7 +144,7 @@ A PSA printed as a limit counts only when it decides the band ("< 1.0" is below 
 - A man who declined, or recorded no answer: "Repeat PSA test" once 3 months have passed, the rest of the card as above, but this sentence replaces "Your last PSA was 4.0 or higher, so checking it again is about that result, not screening.":
 - Sentence (Brad 2026-11-13, word for word): "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening."
 
-**Reminders.** Category `screening_prostate`. The emailed label stays "PSA test" for every man; labels never carry results or reasons. The iPhone's Reminders list, which may name a follow-up as it does today, shows "Repeat PSA (your last result)" for the 4.0-or-above case, when the newest PSA itself is 4.0 or above; while the rule holds only through a vague newer PSA, the item keeps the plain label (review F4). A man who declined screening gets this reminder only while his newest PSA is 4.0 or above.
+**Reminders.** Category `screening_prostate`. The emailed label stays "PSA test" for every man; labels never carry results or reasons. The iPhone's Reminders list, which may name a follow-up as it does today, shows "Repeat PSA (your last result)" for the 4.0-or-above case, when the newest PSA itself is 4.0 or above; while the rule holds only through a vague newer PSA, the item keeps the plain label (review F4, Brad 2026-11-13). A man who declined screening gets this reminder only while the 3-month rule holds: his newest PSA is 4.0 or above, or a newer result does not show it is below 4.0 (item 6).
 
 **Algorithm doc**, intervals table. Before: "| `will_screen` (prostate PSA) | 12 |". After:
 - "| `will_screen`, PSA < 2.5 | 24 |"

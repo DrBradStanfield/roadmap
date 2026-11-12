@@ -275,7 +275,7 @@ export function withPsaMeasurement(
   const { comparator } = comparatorOf(psa);
   if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
   const graded = limitRepresentative('psa', comparator, psa.value);
-  const limit = { comparator, bound: psa.value, ...(psa.raisedBefore && { raisedBefore: true as const }) };
+  const limit = { comparator, bound: psa.value, ...(psa.raisedBefore && graded === null && { raisedBefore: true as const }) };
   return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: limit, prostateLastDate: day };
 }
 

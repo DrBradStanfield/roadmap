@@ -193,7 +193,7 @@ function screeningSchedule(
     ));
   }
 
-  // Prostate: the next PSA by level (US-06 AC21); a man who does not screen only while his newest PSA is 4.0 or above.
+  // Prostate: the next PSA by level (US-06 AC21); a man who does not screen only while the 3-month rule holds (psaRuleHolds).
   if (takes(PROSTATE)) push(PROSTATE, s.prostateDiscussion, psaNextDue(s));
 
   // DEXA bone density; result-based interval

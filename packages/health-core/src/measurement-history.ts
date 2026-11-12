@@ -30,6 +30,12 @@ export interface DatedMeasurement {
   comparator?: Comparator;
   /** An unsaved creatinine the client's plan read (US-07 AC7): the server takes its day, then drops it. */
   draft?: true;
+  /**
+   * On the newest PSA point only (US-06 AC21 item 6): it does not decide against 4.0 and an
+   * earlier PSA was 4.0 or above, worked out once from the full record (`raisedBeforeOf`).
+   * The one fact a chat's rule takes from older PSAs; no earlier value or date travels with it.
+   */
+  raisedBefore?: true;
 }
 
 /** A client's draft point (US-07 AC7): the marker counts only as `draft: true`; anything else is a saved point. */
@@ -60,7 +66,7 @@ export function isClinicalDay(recordedAt: unknown): recordedAt is string {
  * metric. Records without a valid YYYY-MM-DD recordedAt are dropped.
  */
 export function buildMeasurementHistory(
-  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
+  records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
   cap = HISTORY_CAP_PER_METRIC,
   now = new Date(),
 ): MeasurementHistoryMap {
@@ -71,11 +77,17 @@ export function buildMeasurementHistory(
   // `latestActivePerMetric`'s order (day, then time, createdAt, id), so each
   // series runs oldest first and its last point is the row the plan reads (US-06 AC14, US-07 AC4).
   const ranked = [...records].sort(compareReadings);
+  let newestPsa: (typeof records)[number] | undefined;
+  let anchor: (typeof records)[number] | undefined;
   for (const r of ranked) {
     const date = (r.recordedAt || '').slice(0, 10);
     if (!ISO_DATE.test(date) || (r.metricType === 'psa' && !usablePsa(r, latestDay))) continue;
     (out[r.metricType] ??= []).push({ date, value: r.value, ...comparatorOf(r) });
+    if (r.metricType === 'psa') [newestPsa, anchor] = [r, psaGrade(r) === null ? anchor : r];
   }
+  // US-06 AC21 item 6: the flag from every usable PSA, before the cap trims the series. A row
+  // that carries it (the chat mirror's, planPsa's over the full record) keeps it.
+  if (newestPsa && raisedBeforeOf(newestPsa, anchor, newestPsa.raisedBefore === true)) out.psa.at(-1)!.raisedBefore = true;
   for (const k of Object.keys(out)) {
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
@@ -115,10 +127,17 @@ const psaGrade = (r: { value: number; comparator?: unknown }): number | null => 
 };
 
 /**
+ * US-06 AC21 item 6, the one rule for `raisedBefore`: `newest`, the newest usable PSA, is a
+ * limit that does not decide against 4.0 ("< 5", "<= 4.0"), and `anchor`, the newest usable
+ * PSA that does decide, is 4.0 or above (or the flag was `carried` from the full record).
+ */
+const raisedBeforeOf = (newest: { value: number; comparator?: unknown }, anchor?: { value: number; comparator?: unknown }, carried = false) =>
+  psaGrade(newest) === null && (carried || (!!anchor && psaGrade(anchor)! >= PSA_THRESHOLDS.normal));
+
+/**
  * The PSA the plan reads (US-06 AC21 item 6, Brad 2026-11-13): `newestUsablePsa`, marked
- * `raisedBefore` when it is a limit that does not decide against 4.0 ("< 5", "<= 4.0") and
- * the newest usable PSA that does decide is 4.0 or above. A vague result never ends the
- * 3-month rule. Derived on every read, never stored.
+ * `raisedBefore` by `raisedBeforeOf`. A vague result never ends the 3-month rule. Derived on
+ * every read, never stored in the record.
  */
 export function planPsa<
   T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string; comparator?: unknown },
@@ -126,7 +145,7 @@ export function planPsa<
   const newest = newestUsablePsa(rows, now);
   if (!newest || psaGrade(newest) !== null) return newest;
   const anchor = newestUsablePsa(rows.filter((r) => psaGrade(r) !== null), now);
-  return anchor && psaGrade(anchor)! >= PSA_THRESHOLDS.normal ? { ...newest, raisedBefore: true } : newest;
+  return raisedBeforeOf(newest, anchor) ? { ...newest, raisedBefore: true } : newest;
 }
 
 /**

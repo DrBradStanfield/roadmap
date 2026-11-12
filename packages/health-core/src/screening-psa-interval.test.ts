@@ -275,11 +275,11 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     ]);
     expect(CARRIED.startsWith(FIRST_SENTENCE)).toBe(true);
     expect(fileCards(file)[0].description).not.toContain('Your last PSA');
-    // F4 (pending Brad's yes): the iPhone list's repeat name is for a newest PSA of 4.0 or above only.
+    // F4 (Brad 2026-11-13): the iPhone list's repeat name is for a newest PSA of 4.0 or above only.
     expect(followupKinds(file, NOW).screening_prostate).toBeUndefined();
   });
 
-  it('no answer recorded: the same card without "You chose not to"; the discussion card still shows (F2, pending Brad\'s yes)', () => {
+  it('no answer recorded: the same card without "You chose not to"; the discussion card still shows (F2, Brad 2026-11-13)', () => {
     const file = fileWith([RAISED, VAGUE_ROW]);
     expect(fileCards(file)).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED.replace(FIRST_SENTENCE, '') }),
@@ -291,7 +291,7 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     expect(due(file)).toEqual(['2026-09-01']);
   });
 
-  it('will screen: the 3-month date, no "up to date" before it (F3, pending Brad\'s yes), then the overdue card; never "Elevated PSA"', () => {
+  it('will screen: the 3-month date, no "up to date" before it (F3, Brad 2026-11-13), then the overdue card; never "Elevated PSA"', () => {
     const file = fileWith([RAISED, VAGUE_ROW], 'will_screen');
     expect(due(file)).toEqual(['2026-09-01']);
     expect(fileIds(file, AUG)).toEqual([]);
