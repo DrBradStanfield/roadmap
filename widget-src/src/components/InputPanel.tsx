@@ -908,11 +908,10 @@ export function InputPanel({
                   onChange={(e) => {
                     typeIn('systolicBp', e.target.value);
                     updateField('systolicBp', parseLocalisedNumber(e.target.value));
-                    // US-02 AC6: hop to diastolic once systolic is unambiguous.
+                    // US-02 AC6: hop to diastolic once systolic is unambiguous; anything else cancels the wait (AC6c).
                     const adv = bpSysAdvance(e.target.value);
-                    if (adv !== 'stay' && inputs.diastolicBp === undefined) {
-                      advanceToDiastolic({ ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') });
-                    }
+                    advanceToDiastolic(adv !== 'stay' && inputs.diastolicBp === undefined
+                      ? { ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') } : null);
                   }}
                   onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
                   onKeyDown={onIntegerEnter}

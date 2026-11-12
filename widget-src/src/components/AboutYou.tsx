@@ -5,6 +5,7 @@ import { focusById, type FormKit } from './form-kit';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { MONTHS_FULL } from '../lib/constants';
 import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
+import type { useAutoAdvance } from '../lib/useAutoAdvance';
 import { SEXES } from '@roadmap/health-core/types';
 import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
 import { type UnitSystem, getDisplayRange, cmToFeetInches, feetInchesToCm, formatHeightDisplay } from '@roadmap/health-core/units';
@@ -92,7 +93,7 @@ interface HeightFieldProps {
   parseAndConvert: (field: string, value: string) => number | undefined;
   /** No weight typed or saved yet: a complete height moves on to the weight. */
   mayAdvanceToWeight: boolean;
-  advanceToWeight: (opts: { ambiguous: boolean; advance: () => void }) => void;
+  advanceToWeight: ReturnType<typeof useAutoAdvance>;
 }
 
 export function HeightField(props: HeightFieldProps) {
@@ -166,6 +167,7 @@ export function HeightField(props: HeightFieldProps) {
               } else {
                 updateField('heightCm', undefined);
               }
+              advanceToWeight(null); // a feet edit cancels the inches wait (US-02 AC6c)
               if (val.length === 1) {
                 focusById('heightInches');
               }
@@ -196,13 +198,12 @@ export function HeightField(props: HeightFieldProps) {
                 updateField('heightCm', undefined);
               }
               // Height complete → move on to weight (mirrors the cm
-              // path). A lone '1' might still become 10/11 — wait it out.
-              if (heightFeet !== '' && val !== '' && inches <= 11 && mayAdvanceToWeight) {
-                advanceToWeight({
-                  ambiguous: val === '1',
-                  advance: () => focusById('weightKg'),
-                });
-              }
+              // path). A lone '1' might still become 10/11, so wait it out;
+              // anything else cancels the wait (US-02 AC6c).
+              advanceToWeight(heightFeet !== '' && val !== '' && inches <= 11 && mayAdvanceToWeight ? {
+                ambiguous: val === '1',
+                advance: () => focusById('weightKg'),
+              } : null);
             }}
             placeholder=""
             maxLength={2}
