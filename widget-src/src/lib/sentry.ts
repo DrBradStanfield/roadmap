@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { CAUSE_CLASS_TAGS, ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core/sentry-scrub';
+import { isSelfReportBreadcrumb, selfReportIntegration, selfReportTransport } from '../../../instrument-self-report.mjs';
 
 declare const __SENTRY_RELEASE__: string;
 
@@ -31,6 +32,9 @@ function elementPath(target: unknown): string | undefined {
 
 /** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
 export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
+  // The crumb the SDK records about its own pipeline report quotes that
+  // report's text; it goes whole, as the report is rebuilt (US-09 AC7i).
+  if (isSelfReportBreadcrumb(hint)) return null;
   // The SDK names a clicked or typed-in element by its aria-label, type, name,
   // title and alt, and a label can quote values that scrubText misses (the
   // review's Replace label did, "… zinc value 0.4 … with 0.7 …", until US-13 AC10). Keep tag, id and classes only
@@ -194,38 +198,6 @@ export function failClosed<A extends unknown[], R>(hook: (...args: A) => R | nul
   };
 }
 
-/** The fields a report the SDK makes about its own pipeline keeps (US-09 AC7i).
- *  An allow-list: a field a future SDK adds is dropped. */
-const SELF_REPORT_KEEP = new Set(['event_id', 'timestamp', 'platform', 'level', 'release', 'environment', 'sdk']);
-
-/** Empties the SDK's own report (`data.__sentry__`) to the allowed fields, a
- *  fixed message and a fixed exception: nothing of the error's name, message or
- *  stack. A hint that cannot be read counts as the SDK's own. Every step is
- *  guarded, so the hook never throws; any other event passes untouched. */
-function contentFreeSelfReport(event: Record<string, unknown>, hint: unknown): void {
-  let own = true;
-  try {
-    own = (hint as { data?: { __sentry__?: unknown } } | undefined)?.data?.__sentry__ === true;
-  } catch { /* unreadable: treat as the SDK's own */ }
-  if (!own) return;
-  let keys: string[] = [];
-  try { keys = Object.keys(event); } catch { /* nothing to walk */ }
-  for (const key of keys) {
-    if (SELF_REPORT_KEEP.has(key)) continue;
-    try { delete event[key]; } catch { try { event[key] = undefined; } catch { /* left as is */ } }
-  }
-  try { event.message = 'Sentry scrub pipeline error'; } catch { /* left as is */ }
-  try { event.exception = { values: [{ type: 'SentryPipelineError', value: 'dropped' }] }; } catch { /* left as is */ }
-}
-
-/** First in the list, so its hook runs before any other on the same event. */
-const selfReportIntegration = {
-  name: 'SelfReportAllowList',
-  setup(client: Sentry.BrowserClient) {
-    client.on('beforeSendEvent', (event, hint) => contentFreeSelfReport(event as unknown as Record<string, unknown>, hint));
-  },
-};
-
 /** A local dev host (US-20 AC5): localhost, its subdomains, and both loopback addresses. */
 export function isLoopbackHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -242,6 +214,7 @@ export function initSentry() {
     // A release switches Sentry sessions on (the default browserSessionIntegration
     // sends one per page load and route change). US-49 AC4 allows errors only.
     integrations: (defaults) => [selfReportIntegration, ...defaults.filter((i) => i.name !== 'BrowserSession')],
+    transport: selfReportTransport(Sentry.makeFetchTransport),
     environment: local
       ? 'development'
       : window.location.hostname === 'drbradstanfield.github.io'

@@ -88,6 +88,7 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
       'health_roadmap_algorithm.md',
       'instrument.server.mjs',
       'instrument-scrub.mjs',
+      'instrument-self-report.mjs',
       'package.json',
       'vite.config.ts',
       'react-router.config.ts',

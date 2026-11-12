@@ -12,6 +12,7 @@
 // resolve and crash startup. A parity test keeps the copy in sync with the health-core source.
 import * as Sentry from "@sentry/react-router";
 import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
+import { selfReportIntegration, selfReportTransport } from "./instrument-self-report.mjs";
 
 // A throw in a scrub must never reach the SDK's own error report: the hook
 // returns null, so nothing is sent, and one fixed line names the error type,
@@ -33,38 +34,6 @@ const failClosed = (hook) => (...args) => {
   }
 };
 
-// The fields a report the SDK makes about its own pipeline keeps (US-09 AC7i).
-// An allow-list: a field a future SDK adds is dropped.
-const SELF_REPORT_KEEP = new Set(["event_id", "timestamp", "platform", "level", "release", "environment", "sdk"]);
-
-// Empties the SDK's own report (`data.__sentry__`) to the allowed fields, a
-// fixed message and a fixed exception: nothing of the error's name, message or
-// stack. A hint that cannot be read counts as the SDK's own. Every step is
-// guarded, so the hook never throws; any other event passes untouched.
-function contentFreeSelfReport(event, hint) {
-  let own = true;
-  try {
-    own = hint?.data?.__sentry__ === true;
-  } catch { /* unreadable: treat as the SDK's own */ }
-  if (!own) return;
-  let keys = [];
-  try { keys = Object.keys(event); } catch { /* nothing to walk */ }
-  for (const key of keys) {
-    if (SELF_REPORT_KEEP.has(key)) continue;
-    try { delete event[key]; } catch { try { event[key] = undefined; } catch { /* left as is */ } }
-  }
-  try { event.message = "Sentry scrub pipeline error"; } catch { /* left as is */ }
-  try { event.exception = { values: [{ type: "SentryPipelineError", value: "dropped" }] }; } catch { /* left as is */ }
-}
-
-// First in the list, so its hook runs before any other on the same event.
-const selfReportIntegration = {
-  name: "SelfReportAllowList",
-  setup(client) {
-    client.on("beforeSendEvent", contentFreeSelfReport);
-  },
-};
-
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   // Console arguments are raw application text — a logged sentence carries a
@@ -80,6 +49,7 @@ Sentry.init({
     ...defaults.filter((i) => i.name !== "Console"),
     Sentry.httpIntegration({ maxIncomingRequestBodySize: "none" }),
   ],
+  transport: selfReportTransport(Sentry.makeNodeTransport),
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
   ignoreErrors: [
