@@ -1,11 +1,12 @@
 // Single shared timer for save-on-blur flows. `schedule(fn)` queues fn for
 // `delayMs`, replacing any pending call. `flush()` runs the queued fn now.
-// `cancel()` drops without firing. Cleans up on unmount.
+// `cancel()` drops without firing; `take()` drops it and hands it back.
+// Cleans up on unmount.
 
 import { useEffect, useRef } from 'react';
 
-export interface DebouncedSave {
-  schedule(fn: () => void): void;
+export interface DebouncedSave<F extends () => void = () => void> {
+  schedule(fn: F): void;
   flush(): void;
   cancel(): void;
   /** Run `fn` now, cancelling anything currently scheduled. Use when a UI
@@ -13,13 +14,15 @@ export interface DebouncedSave {
    *  a prior blur had already queued a save — a plain `flush()` is a no-op on
    *  an empty queue. */
   commit(fn: () => void): void;
+  /** The waiting fn, removed and not run, or null: its caller runs it its own way. */
+  take(): F | null;
 }
 
 /** Pure factory — extracted so the timer behaviour can be unit-tested
  *  without a React renderer. The hook below ties cleanup to the component. */
-export function createDebouncedSave(delayMs: number): DebouncedSave {
+export function createDebouncedSave<F extends () => void = () => void>(delayMs: number): DebouncedSave<F> {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let pending: (() => void) | null = null;
+  let pending: F | null = null;
 
   const cancel = () => {
     if (timer != null) {
@@ -39,7 +42,7 @@ export function createDebouncedSave(delayMs: number): DebouncedSave {
     if (fn) fn();
   };
 
-  const schedule = (fn: () => void) => {
+  const schedule = (fn: F) => {
     if (timer != null) clearTimeout(timer);
     pending = fn;
     timer = setTimeout(() => {
@@ -59,12 +62,18 @@ export function createDebouncedSave(delayMs: number): DebouncedSave {
     fn();
   };
 
-  return { schedule, flush, cancel, commit };
+  const take = () => {
+    const fn = pending;
+    cancel();
+    return fn;
+  };
+
+  return { schedule, flush, cancel, commit, take };
 }
 
-export function useDebouncedSave(delayMs: number = 500): DebouncedSave {
-  const ref = useRef<DebouncedSave | null>(null);
-  if (!ref.current) ref.current = createDebouncedSave(delayMs);
+export function useDebouncedSave<F extends () => void = () => void>(delayMs: number = 500): DebouncedSave<F> {
+  const ref = useRef<DebouncedSave<F> | null>(null);
+  if (!ref.current) ref.current = createDebouncedSave<F>(delayMs);
   // Drop pending timer on unmount; do NOT flush (component is gone, the
   // caller is responsible for any final-save coordination via beforeunload).
   useEffect(() => () => ref.current?.cancel(), []);

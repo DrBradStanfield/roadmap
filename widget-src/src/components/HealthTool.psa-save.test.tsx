@@ -339,6 +339,26 @@ describe('departure puts the save on disk before the page goes (US-06 AC15, Brad
     view.unmount();
   });
 
+  // Lead A5-n1 (US-06 AC15): once the timer has fired, the save sits on the
+  // chain behind any earlier save, and a departure no longer stages it. It is
+  // safe only because the chain's waits are all microtasks: a save queued on
+  // the chain stages its writes before a departure, a later task, can run.
+  // This guards that. Here the earlier save (the waist, on Enter) has already
+  // ended: a real save cannot be held open in this harness.
+  it('a save on the chain first, then a weight left, the timer fired, and the tab closed in the next task: the weight is on disk', async () => {
+    const { view } = await page();
+    const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
+    type(box('waistCm'), '90');
+    fireEvent.keyDown(box('waistCm'), { key: 'Enter' }); // the earlier save, on the chain at once
+    type(box('weightKg'), '82');
+    act(() => box('weightKg').blur()); // its 500 ms timer starts
+    // Set after the save's timer, for the same 500 ms: it runs in the task right after the timer fires.
+    await act(async () => { await new Promise<void>(r => setTimeout(() => { window.dispatchEvent(new Event('pagehide')); r(); }, 500)); });
+    expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
+    expect(rawActive('waist')).toEqual([[90, localDay(new Date())]]);
+    view.unmount();
+  });
+
   it('control: departure with nothing left or committed writes nothing', async () => {
     const { view } = await page();
     const before = new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME);
