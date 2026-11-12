@@ -7,7 +7,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from './roadmap-store';
-import { CLEARED_ERASE_KEY } from '../lib/cleared-erase';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -64,11 +63,8 @@ describe('an erase made on another device clears every off-file kind here (US-11
     await page.flush();
     const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
     vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
-    // This device's erase cleared for (US-11 AC6): another device's erase never writes it here.
-    const clearedFor = localStorage.getItem(CLEARED_ERASE_KEY)!;
     expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData()).success).toBe(true);
     putBack();
-    localStorage.setItem(CLEARED_ERASE_KEY, clearedFor);
     return { page, otherPage };
   }
 

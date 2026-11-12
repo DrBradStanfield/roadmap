@@ -1453,10 +1453,10 @@ describe("RecordSession: an edit made while another device's erase is taken in (
     function clearThatThrows(fake: Fake, fails = Infinity) {
       const clears = { calls: 0 };
       const real = fake.host.clearOffFileData;
-      fake.host.clearOffFileData = (keep, storage) => {
+      fake.host.clearOffFileData = (keep) => {
         clears.calls += 1;
         if (clears.calls <= fails) throw new Error('clear refused');
-        real(keep, storage);
+        real(keep);
       };
       return clears;
     }

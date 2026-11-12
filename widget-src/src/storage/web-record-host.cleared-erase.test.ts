@@ -224,10 +224,10 @@ describe('US-11 AC6: a clear whose read-back fails is tried again at the next lo
     const host = webRecordHost(new MemoryAdapter(new MemoryCloud()));
     offFileData();
     const refusing = refuseRemoving(VITALS_DRAFT_KEY);
-    expect(() => host.clearOffFileData(new Set(), true)).toThrow();
+    expect(() => host.clearOffFileData(new Set())).toThrow();
     refusing.mockRestore();
     localStorage.setItem('health_roadmap_doc_v2:kept.pdf', 'data:application/pdf;base64,BBBB');
-    expect(() => host.clearOffFileData(new Set(['kept.pdf']), true)).not.toThrow();
+    expect(() => host.clearOffFileData(new Set(['kept.pdf']))).not.toThrow();
     offFileDataGone();
     expect(localStorage.getItem('health_roadmap_doc_v2:kept.pdf')).not.toBeNull();
   });

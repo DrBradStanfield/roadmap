@@ -150,7 +150,7 @@ export class RecordSession {
   private shown: string | null = null;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
-  /** SCREEN: the erase this tab has seen; a later one drops its screen's drafts (storage: the host's live key). */
+  /** The erase this tab's off-file data is cleared up to: a later one owes a clear (US-11 AC6, AC7). */
   private clearedFor = '';
   private clearReportedFor = ''; // the erase whose failed clear was reported
 
@@ -524,10 +524,11 @@ export class RecordSession {
     }
   }
 
-  /** Clear this device's off-file health data for this copy's erase (record-host `clearOffFile`: storage only while
-   *  owed), moving the kept erase once storage's clear worked; the page calls it after an erase whose write failed. */
+  /** Clear this device's off-file health data for this copy's erase, and keep it once the clear worked; the page
+   *  calls it after an erase whose write failed (record-host `clearOffFile`). */
   clearOffFileData(): void {
-    if (clearOffFile(this.host, this.current, this.ctx())) keepCleared(this.host, this.eraseIdentity);
+    clearOffFile(this.host, this.current, this.ctx());
+    keepCleared(this.host, this.eraseIdentity);
     this.clearedFor = this.eraseIdentity;
   }
 

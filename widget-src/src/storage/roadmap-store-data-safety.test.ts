@@ -6,7 +6,6 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, StorageError, type WriteResult } from '@roadmap/health-core/adapter';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
-import { CLEARED_ERASE_KEY } from '../lib/cleared-erase';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 /** Every value row, a blood test (a core lab row since US-66) read as the measurement it was. */
@@ -1149,9 +1148,8 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   // this one by a re-read or a save, and the drafts typed here outlived it:
   // the matrix restored them, and a leave committed them into the new record.
   it('clears both drafts when an erase made on another device arrives, by a re-read or by a save', async () => {
-    const drafts: Array<readonly [string, string]> = [DRAFT_KEY, VITALS_DRAFT_KEY].map((k) => [k, localStorage.getItem(k)!] as const);
-    // jsdom has one localStorage for every device: this device's drafts go back, and the erase it
-    // cleared for (US-11 AC6), which another device's erase never writes here.
+    const drafts = [DRAFT_KEY, VITALS_DRAFT_KEY].map((k) => [k, localStorage.getItem(k)!] as const);
+    // jsdom has one localStorage for every device: this device's drafts go back.
     const putBack = () => { for (const [k, v] of drafts) localStorage.setItem(k, v); };
     // What a matrix on screen hears, so it drops its own copy (round 4).
     const heard = vi.fn();
@@ -1167,7 +1165,6 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     vi.setSystemTime(new Date('2026-09-01T10:01:00.000Z'));
-    drafts.push([CLEARED_ERASE_KEY, localStorage.getItem(CLEARED_ERASE_KEY)!]);
     await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData(); // the other device
     heard.mockClear();
     putBack();
@@ -1203,16 +1200,12 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     vi.setSystemTime(new Date('2026-09-18T10:01:00.000Z'));
-    // This device's erase cleared for (US-11 AC6): another device's erase never writes it here.
-    const clearedFor = localStorage.getItem(CLEARED_ERASE_KEY)!;
     await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData(); // the other device
     localStorage.setItem(KEPT_KEY, '["row-1"]'); // jsdom has one localStorage for every device: this device's goes back
-    localStorage.setItem(CLEARED_ERASE_KEY, clearedFor);
     expect(await page.refreshFromRemote()).toBe(true);
     expect(localStorage.getItem(KEPT_KEY)).toBeNull();
 
     localStorage.setItem(KEPT_KEY, '["row-1"]');
-    localStorage.setItem(CLEARED_ERASE_KEY, clearedFor);
     vi.setSystemTime(new Date('2026-09-18T10:02:00.000Z'));
     otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
     await otherPage.flush();

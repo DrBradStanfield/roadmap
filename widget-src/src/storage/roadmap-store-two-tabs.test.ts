@@ -210,10 +210,8 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
     a.flushSync(); // A hides
 
-    // Storage vs screen (US-11 AC6, 2026-11-13 ruling): B's erase cleared storage up to its erase and kept it,
-    // so A drops only its screen's copy; the store leaves the stored drafts (A's matrix removes its own on the drop).
-    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).not.toBeNull();
-    expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(cleared).toHaveBeenCalledTimes(1);
     expect(changed).toHaveBeenCalledTimes(1);
     expect(a.loadAllHistory().map((m) => m.metricType)).toEqual(['hdl']); // the seeded weight was listed
@@ -916,10 +914,8 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     await vi.advanceTimersByTimeAsync(0);
 
     expect(a.loadAllHistory()).toEqual([]);
-    // Storage vs screen (US-11 AC6, 2026-11-13 ruling): B's erase cleared storage up to its erase and kept it,
-    // so A drops only its screen's copy; the store leaves the stored drafts (A's matrix removes its own on the drop).
-    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).not.toBeNull();
-    expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(cleared).toHaveBeenCalledTimes(1);
     expect(heard).toHaveBeenCalledTimes(1);
     expect(write).not.toHaveBeenCalled();
