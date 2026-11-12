@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T13,tooling,"test-all-locked signal tests: the failure-only cleanup does nothing in CI mode, where the fake vitest is not a group leader",note,not started,"scripts/test-all-locked.test.ts afterEach kills -pgid; in CI the wrapper spawns vitest with detached:false (scripts/test-all-locked.mjs), so kill(-pid) gets ESRCH. Latent: both CI-mode fakes exit at once",1348,no

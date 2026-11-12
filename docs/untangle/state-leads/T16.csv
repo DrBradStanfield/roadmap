@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T16,tooling,"mac-slot: a malformed load reading that passes the digits-and-dots filter (a lone dot, 1.2.3) after a high one still starts the run; the header comment and a 0-second bound message are stale",bug,not started,"tools/mac-slot.sh load filter `*[!0-9.]*` lets ""."" and ""1.2.3"" through and awk reads them as under the cap (review of PR 1405); the header still says an unreadable load does not wait; MAC_SLOT_LOAD_WAIT_SECONDS=0 prints ""after 0m"". Real sysctl output cannot produce the malformed reading",1405,no
