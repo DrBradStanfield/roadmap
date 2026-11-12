@@ -1,0 +1,747 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > broken batch: an addendum, a void, a lost entry, an index change, a stray file, an unused exception 1`] = `
+"{
+ "results": [
+  {
+   "id": "AC1",
+   "title": "index.json and categories.json unchanged (except approved summary corrections)",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL docs/blog/index.json: entry changed for \\"beta\\" (no proposed_summary_correction, or fields beyond summary changed)"
+   ]
+  },
+  {
+   "id": "AC2",
+   "title": "raw fidelity of every new number token",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL alpha: token \\"300 mg\\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \\"Trials used 300 mg in adults [1].\\"",
+    "WARN alpha: alpha.addendum-x.json is not <handle>.addendum-<N>.json; ignored",
+    "alpha: proposed_summary_correction set by addendum-1",
+    "alpha: VOID changed_tokens 0 [base]: wrong line",
+    "alpha: 1 new tokens, 0 verified against raw",
+    "beta: 1 new tokens, 1 verified against raw"
+   ]
+  },
+  {
+   "id": "AC3",
+   "title": "hedging held; hardening words listed",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": []
+  },
+  {
+   "id": "AC4",
+   "title": "deleted sentences justified; headings kept",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL beta: sentence removed and not in deleted_sentences: Source: Beta guideline",
+    "alpha: 1 sentences removed (0 justified by pattern), 4 base headings",
+    "beta: 1 sentences removed (0 justified by pattern), 2 base headings"
+   ]
+  },
+  {
+   "id": "AC6",
+   "title": "diff touches only batch files",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL unexpected change: docs/blog/index.json",
+    "FAIL unexpected change: docs/blog/other.md",
+    "4 changed paths versus HEAD",
+    "Shopify updated_at snapshot: separate tool, NOT checked here"
+   ]
+  },
+  {
+   "id": "AC7",
+   "title": "grokipedia, products, references, banned phrases",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL unused exception (AC7, alpha): nothing matches this",
+    "alpha: 2 references, 2 cited"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "handle": "alpha",
+   "type": "reference",
+   "file": "docs/blog/alpha.md",
+   "rawRel": "<reports-dir>/alpha.raw.txt",
+   "rawSha": "929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38",
+   "bodySha": "8d7a11b904ca5ec7459a12f5c9581d3bf8cc9d3e5a3ea5b2f870e821434bfc44",
+   "tokensNew": 1,
+   "quoted": 0,
+   "deleted": 1,
+   "hedgeBefore": 3,
+   "hedgeAfter": 3,
+   "productsBefore": 1,
+   "productsAfter": 1,
+   "reportFiles": [
+    {
+     "name": "alpha.json",
+     "sha256": "<sha256 of alpha.json>"
+    },
+    {
+     "name": "alpha.addendum-1.json",
+     "sha256": "<sha256 of alpha.addendum-1.json>"
+    }
+   ]
+  },
+  {
+   "handle": "beta",
+   "type": "guideline",
+   "file": "docs/guideline/beta.md",
+   "rawRel": "<reports-dir>/beta.raw.txt",
+   "rawSha": "78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef",
+   "bodySha": "864b3f55e9e67e6457efab11d915177e11aa8a71bd3ab417f846f383a0f68cea",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 0,
+   "hedgeAfter": 0,
+   "productsBefore": 0,
+   "productsAfter": 0,
+   "reportFiles": [
+    {
+     "name": "beta.json",
+     "sha256": "<sha256 of beta.json>"
+    }
+   ]
+  }
+ ]
+}
+# Knowledge batch report: t
+
+Base: HEAD (<base-sha>)
+Handles: 2
+
+Counts and hashes only. Raw text never enters this repo.
+
+## Checks
+
+| Check | Status | FAIL | WARN |
+|---|---|---|---|
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | FAIL | 1 | 0 |
+| AC2 raw fidelity of every new number token | FAIL | 1 | 1 |
+| AC3 hedging held; hardening words listed | PASS | 0 | 0 |
+| AC4 deleted sentences justified; headings kept | FAIL | 1 | 0 |
+| AC6 diff touches only batch files | FAIL | 2 | 0 |
+| AC7 grokipedia, products, references, banned phrases | FAIL | 1 | 0 |
+
+## Handles
+
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| alpha | reference | <reports-dir>/alpha.raw.txt | 929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38 | 8d7a11b904ca5ec7 | 1 | 0 | 1 | 3>3 | 1>1 | alpha.json <sha256 of alpha.json> + alpha.addendum-1.json <sha256 of alpha.addendum-1.json> |
+| beta | guideline | <reports-dir>/beta.raw.txt | 78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef | 864b3f55e9e67e64 | 1 | 1 | 1 | 0>0 | 0>0 | beta.json <sha256 of beta.json> |
+
+## Voided entries
+
+- alpha: VOID changed_tokens 0 [base] (reason sha256 e77255d60aa4)
+
+## Summary corrections from addenda
+
+- alpha: proposed_summary_correction set by addendum-1
+
+Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
+
+## Not covered by this script
+
+- AC5 answer checks (harness)
+- AC6 Shopify updated_at snapshot (separate tool)
+- DOI/PMID resolution: NOT checked (run with --check-ids)
+- section placement of edits (R8)
+- primary-study abstract presence (only the WARN "unverified primary" lines)
+
+AC8 sign-off (Brad): PENDING
+"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > clean batch: results, rows and the --out report 1`] = `
+"{
+ "results": [
+  {
+   "id": "AC1",
+   "title": "index.json and categories.json unchanged (except approved summary corrections)",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "docs/blog/index.json byte-identical to HEAD"
+   ]
+  },
+  {
+   "id": "AC2",
+   "title": "raw fidelity of every new number token",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 new tokens, 1 verified against raw",
+    "beta: 1 new tokens, 1 verified against raw"
+   ]
+  },
+  {
+   "id": "AC3",
+   "title": "hedging held; hardening words listed",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": []
+  },
+  {
+   "id": "AC4",
+   "title": "deleted sentences justified; headings kept",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 sentences removed (0 justified by pattern), 4 base headings",
+    "beta: 1 sentences removed (0 justified by pattern), 2 base headings"
+   ]
+  },
+  {
+   "id": "AC6",
+   "title": "diff touches only batch files",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "2 changed paths versus HEAD",
+    "Shopify updated_at snapshot: separate tool, NOT checked here"
+   ]
+  },
+  {
+   "id": "AC7",
+   "title": "grokipedia, products, references, banned phrases",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 2 references, 2 cited"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "handle": "alpha",
+   "type": "reference",
+   "file": "docs/blog/alpha.md",
+   "rawRel": "<reports-dir>/alpha.raw.txt",
+   "rawSha": "929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38",
+   "bodySha": "8d7a11b904ca5ec7459a12f5c9581d3bf8cc9d3e5a3ea5b2f870e821434bfc44",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 3,
+   "hedgeAfter": 3,
+   "productsBefore": 1,
+   "productsAfter": 1,
+   "reportFiles": [
+    {
+     "name": "alpha.json",
+     "sha256": "<sha256 of alpha.json>"
+    }
+   ]
+  },
+  {
+   "handle": "beta",
+   "type": "guideline",
+   "file": "docs/guideline/beta.md",
+   "rawRel": "<reports-dir>/beta.raw.txt",
+   "rawSha": "78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef",
+   "bodySha": "864b3f55e9e67e6457efab11d915177e11aa8a71bd3ab417f846f383a0f68cea",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 0,
+   "hedgeAfter": 0,
+   "productsBefore": 0,
+   "productsAfter": 0,
+   "reportFiles": [
+    {
+     "name": "beta.json",
+     "sha256": "<sha256 of beta.json>"
+    }
+   ]
+  }
+ ]
+}
+# Knowledge batch report: t
+
+Base: HEAD (<base-sha>)
+Handles: 2
+
+Counts and hashes only. Raw text never enters this repo.
+
+## Checks
+
+| Check | Status | FAIL | WARN |
+|---|---|---|---|
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
+| AC2 raw fidelity of every new number token | PASS | 0 | 0 |
+| AC3 hedging held; hardening words listed | PASS | 0 | 0 |
+| AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
+| AC6 diff touches only batch files | PASS | 0 | 0 |
+| AC7 grokipedia, products, references, banned phrases | PASS | 0 | 0 |
+
+## Handles
+
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| alpha | reference | <reports-dir>/alpha.raw.txt | 929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38 | 8d7a11b904ca5ec7 | 1 | 1 | 1 | 3>3 | 1>1 | alpha.json <sha256 of alpha.json> |
+| beta | guideline | <reports-dir>/beta.raw.txt | 78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef | 864b3f55e9e67e64 | 1 | 1 | 1 | 0>0 | 0>0 | beta.json <sha256 of beta.json> |
+
+Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
+
+## Not covered by this script
+
+- AC5 answer checks (harness)
+- AC6 Shopify updated_at snapshot (separate tool)
+- DOI/PMID resolution: NOT checked (run with --check-ids)
+- section placement of edits (R8)
+- primary-study abstract presence (only the WARN "unverified primary" lines)
+
+AC8 sign-off (Brad): PENDING
+"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > guides 1`] = `
+"{
+ "results": [
+  {
+   "id": "AC1",
+   "title": "index.json and categories.json unchanged (except approved summary corrections)",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "docs/blog/index.json byte-identical to HEAD"
+   ]
+  },
+  {
+   "id": "AC2",
+   "title": "raw fidelity of every new number token",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 new tokens, 1 verified against raw",
+    "beta: 1 new tokens, 1 verified against raw"
+   ]
+  },
+  {
+   "id": "AC3",
+   "title": "hedging held; hardening words listed",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": []
+  },
+  {
+   "id": "AC4",
+   "title": "deleted sentences justified; headings kept",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 sentences removed (0 justified by pattern), 4 base headings",
+    "beta: 1 sentences removed (0 justified by pattern), 2 base headings"
+   ]
+  },
+  {
+   "id": "AC6",
+   "title": "diff touches only batch files",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "2 changed paths versus HEAD",
+    "Shopify updated_at snapshot: separate tool, NOT checked here"
+   ]
+  },
+  {
+   "id": "AC7",
+   "title": "grokipedia, products, references, banned phrases",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 2 references, 2 cited",
+    "beta: 0 references, 0 cited"
+   ]
+  },
+  {
+   "id": "GUIDE",
+   "title": "condition-guide keys, cap, template sections and emergency line",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL alpha: not a guideline",
+    "FAIL beta: kind must be condition",
+    "FAIL beta: reviewed: missing",
+    "FAIL beta: sources: missing",
+    "FAIL beta: thresholds: must be a single-line, non-empty JSON array",
+    "FAIL beta: needs one \\"## In short\\" section (found 0)",
+    "FAIL beta: needs one \\"## Get help now\\" section (found 0)",
+    "FAIL beta: needs one \\"## What it is\\" section (found 0)",
+    "FAIL beta: needs one \\"## Your numbers\\" section (found 0)",
+    "FAIL beta: needs one \\"## What helps\\" section (found 0)",
+    "FAIL beta: needs one \\"## Medicines\\" section (found 0)",
+    "FAIL beta: needs one \\"## Brad's view (reviewed D Mon YYYY) or Current evidence position\\" section (found 0)",
+    "FAIL beta: needs one \\"## Who needs extra care\\" section (found 0)",
+    "FAIL beta: needs one \\"## When to see your doctor\\" section (found 0)",
+    "FAIL beta: needs one \\"## Where guidelines differ\\" section (found 0)",
+    "FAIL beta: needs one \\"## Common questions\\" section (found 0)",
+    "FAIL beta: needs one \\"## References\\" section (found 0)"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "handle": "alpha",
+   "type": "reference",
+   "file": "docs/blog/alpha.md",
+   "rawRel": "<reports-dir>/alpha.raw.txt",
+   "rawSha": "929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38",
+   "bodySha": "8d7a11b904ca5ec7459a12f5c9581d3bf8cc9d3e5a3ea5b2f870e821434bfc44",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 3,
+   "hedgeAfter": 3,
+   "productsBefore": 1,
+   "productsAfter": 1,
+   "reportFiles": [
+    {
+     "name": "alpha.json",
+     "sha256": "<sha256 of alpha.json>"
+    }
+   ]
+  },
+  {
+   "handle": "beta",
+   "type": "guideline",
+   "file": "docs/guideline/beta.md",
+   "rawRel": "<reports-dir>/beta.raw.txt",
+   "rawSha": "78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef",
+   "bodySha": "864b3f55e9e67e6457efab11d915177e11aa8a71bd3ab417f846f383a0f68cea",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 0,
+   "hedgeAfter": 0,
+   "productsBefore": 0,
+   "productsAfter": 0,
+   "reportFiles": [
+    {
+     "name": "beta.json",
+     "sha256": "<sha256 of beta.json>"
+    }
+   ]
+  }
+ ]
+}
+# Knowledge batch report: t
+
+Base: HEAD (<base-sha>)
+Handles: 2
+
+Counts and hashes only. Raw text never enters this repo.
+
+## Checks
+
+| Check | Status | FAIL | WARN |
+|---|---|---|---|
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
+| AC2 raw fidelity of every new number token | PASS | 0 | 0 |
+| AC3 hedging held; hardening words listed | PASS | 0 | 0 |
+| AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
+| AC6 diff touches only batch files | PASS | 0 | 0 |
+| AC7 grokipedia, products, references, banned phrases | PASS | 0 | 0 |
+| GUIDE condition-guide keys, cap, template sections and emergency line | FAIL | 17 | 0 |
+
+## Handles
+
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| alpha | reference | <reports-dir>/alpha.raw.txt | 929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38 | 8d7a11b904ca5ec7 | 1 | 1 | 1 | 3>3 | 1>1 | alpha.json <sha256 of alpha.json> |
+| beta | guideline | <reports-dir>/beta.raw.txt | 78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef | 864b3f55e9e67e64 | 1 | 1 | 1 | 0>0 | 0>0 | beta.json <sha256 of beta.json> |
+
+Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
+
+## Not covered by this script
+
+- AC5 answer checks (harness)
+- AC6 Shopify updated_at snapshot (separate tool)
+- DOI/PMID resolution: NOT checked (run with --check-ids)
+- section placement of edits (R8)
+- primary-study abstract presence (only the WARN "unverified primary" lines)
+
+AC8 sign-off (Brad): PENDING
+"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > keeps every export of the module 1`] = `
+[
+  "ADDENDUM_VOID",
+  "BULLET_LINE",
+  "EMERGENCY_LINE",
+  "GUIDE_SECTIONS",
+  "GUIDE_SOURCE_NAMES",
+  "MAX_GUIDE_CHARS",
+  "MAX_KEY_POINTS_CHARS",
+  "PRODUCT_NAMES",
+  "REPORT_SCHEMA",
+  "SOURCE_NAMES",
+  "VIEW_HEADING",
+  "applyAddenda",
+  "cleanSentence",
+  "duplicateKeys",
+  "exampleReport",
+  "fmValue",
+  "guideErrors",
+  "headings",
+  "isGuideText",
+  "keySafetyErrors",
+  "main",
+  "masterKeyError",
+  "normChars",
+  "normQuote",
+  "productMentions",
+  "renderReport",
+  "runBatch",
+  "sentences",
+  "sha256",
+  "splitFrontmatter",
+  "tokenCounts",
+  "tokenise",
+  "unescapeMd",
+  "validDate",
+  "validateExceptions",
+  "validateOut",
+  "validateReport",
+]
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > masters, key safety points and --check-ids with a fixed HEAD status 1`] = `
+"{
+ "results": [
+  {
+   "id": "AC1",
+   "title": "index.json and categories.json unchanged (except approved summary corrections)",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "docs/blog/index.json byte-identical to HEAD"
+   ]
+  },
+  {
+   "id": "AC2",
+   "title": "raw fidelity of every new number token",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 new tokens, 1 verified against raw",
+    "beta: 1 new tokens, 1 verified against raw"
+   ]
+  },
+  {
+   "id": "AC3",
+   "title": "hedging held; hardening words listed",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": []
+  },
+  {
+   "id": "AC4",
+   "title": "deleted sentences justified; headings kept",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "alpha: 1 sentences removed (0 justified by pattern), 4 base headings",
+    "beta: 1 sentences removed (0 justified by pattern), 2 base headings"
+   ]
+  },
+  {
+   "id": "AC6",
+   "title": "diff touches only batch files",
+   "status": "PASS",
+   "excepted": [],
+   "evidence": [
+    "2 changed paths versus HEAD",
+    "Shopify updated_at snapshot: separate tool, NOT checked here"
+   ]
+  },
+  {
+   "id": "AC7",
+   "title": "grokipedia, products, references, banned phrases",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL alpha: new PubMed reference has no abstract file in extra_raw: [2] Jones B. Synthetic safety review. 2020. https://doi.org/10.1000/abc PMID: 1234567 https://pubmed.ncbi.nlm.nih.gov...",
+    "FAIL alpha: doi 10.1000/abc returned 404",
+    "alpha: 2 references, 2 cited"
+   ]
+  },
+  {
+   "id": "MASTER",
+   "title": "topic-master sections (Current view or evidence position, Brad's videos)",
+   "status": "FAIL",
+   "excepted": [],
+   "evidence": [
+    "FAIL alpha: a master needs reviewed in its frontmatter",
+    "FAIL alpha: a master needs sources in its frontmatter",
+    "FAIL alpha: needs exactly one of \\"## Current view (reviewed …)\\" or \\"## Current evidence position\\" (found 0)",
+    "FAIL alpha: needs one \\"## Brad's videos on this topic\\" section (found 0)"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "handle": "alpha",
+   "type": "reference",
+   "file": "docs/blog/alpha.md",
+   "rawRel": "<reports-dir>/alpha.raw.txt",
+   "rawSha": "929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38",
+   "bodySha": "de98033840f3812053dfd51f940aa6b307c5316fa9fd8094f91f1134caead300",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 3,
+   "hedgeAfter": 3,
+   "productsBefore": 1,
+   "productsAfter": 1,
+   "reportFiles": [
+    {
+     "name": "alpha.json",
+     "sha256": "<sha256 of alpha.json>"
+    }
+   ]
+  },
+  {
+   "handle": "beta",
+   "type": "guideline",
+   "file": "docs/guideline/beta.md",
+   "rawRel": "<reports-dir>/beta.raw.txt",
+   "rawSha": "78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef",
+   "bodySha": "864b3f55e9e67e6457efab11d915177e11aa8a71bd3ab417f846f383a0f68cea",
+   "tokensNew": 1,
+   "quoted": 1,
+   "deleted": 1,
+   "hedgeBefore": 0,
+   "hedgeAfter": 0,
+   "productsBefore": 0,
+   "productsAfter": 0,
+   "reportFiles": [
+    {
+     "name": "beta.json",
+     "sha256": "<sha256 of beta.json>"
+    }
+   ]
+  }
+ ]
+}
+# Knowledge batch report: t
+
+Base: HEAD (<base-sha>)
+Handles: 2
+
+Counts and hashes only. Raw text never enters this repo.
+
+## Checks
+
+| Check | Status | FAIL | WARN |
+|---|---|---|---|
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
+| AC2 raw fidelity of every new number token | PASS | 0 | 0 |
+| AC3 hedging held; hardening words listed | PASS | 0 | 0 |
+| AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
+| AC6 diff touches only batch files | PASS | 0 | 0 |
+| AC7 grokipedia, products, references, banned phrases | FAIL | 2 | 0 |
+| MASTER topic-master sections (Current view or evidence position, Brad's videos) | FAIL | 4 | 0 |
+
+## Handles
+
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| alpha | reference | <reports-dir>/alpha.raw.txt | 929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38 | de98033840f38120 | 1 | 1 | 1 | 3>3 | 1>1 | alpha.json <sha256 of alpha.json> |
+| beta | guideline | <reports-dir>/beta.raw.txt | 78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef | 864b3f55e9e67e64 | 1 | 1 | 1 | 0>0 | 0>0 | beta.json <sha256 of beta.json> |
+
+Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
+
+## Not covered by this script
+
+- AC5 answer checks (harness)
+- AC6 Shopify updated_at snapshot (separate tool)
+- DOI/PMID resolution: checked with --check-ids (see the run output for the cap)
+- section placement of edits (R8)
+- primary-study abstract presence (only the WARN "unverified primary" lines)
+
+AC8 sign-off (Brad): PENDING
+"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > the CLI's printed lines, exit code and --out file 1`] = `
+"exit 0
+PASS AC1 index.json and categories.json unchanged (except approved summary corrections)
+    docs/blog/index.json byte-identical to HEAD
+PASS AC2 raw fidelity of every new number token
+    alpha: 1 new tokens, 1 verified against raw
+    beta: 1 new tokens, 1 verified against raw
+PASS AC3 hedging held; hardening words listed
+PASS AC4 deleted sentences justified; headings kept
+    alpha: 1 sentences removed (0 justified by pattern), 4 base headings
+    beta: 1 sentences removed (0 justified by pattern), 2 base headings
+PASS AC6 diff touches only batch files
+    2 changed paths versus HEAD
+    Shopify updated_at snapshot: separate tool, NOT checked here
+PASS AC7 grokipedia, products, references, banned phrases
+    alpha: 2 references, 2 cited
+# Knowledge batch report: t
+
+Base: HEAD (<base-sha>)
+Handles: 2
+
+Counts and hashes only. Raw text never enters this repo.
+
+## Checks
+
+| Check | Status | FAIL | WARN |
+|---|---|---|---|
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
+| AC2 raw fidelity of every new number token | PASS | 0 | 0 |
+| AC3 hedging held; hardening words listed | PASS | 0 | 0 |
+| AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
+| AC6 diff touches only batch files | PASS | 0 | 0 |
+| AC7 grokipedia, products, references, banned phrases | PASS | 0 | 0 |
+
+## Handles
+
+| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products | diff report + addenda (sha256) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| alpha | reference | <reports-dir>/alpha.raw.txt | 929114e716de257e8aadd73be88a094187535936cb2feb5c9078397a6cc3fd38 | 8d7a11b904ca5ec7 | 1 | 1 | 1 | 3>3 | 1>1 | alpha.json <sha256 of alpha.json> |
+| beta | guideline | <reports-dir>/beta.raw.txt | 78e6ed524c15587517f483519879078439f2aa662c5124cac6d7c1c26b3b0cef | 864b3f55e9e67e64 | 1 | 1 | 1 | 0>0 | 0>0 | beta.json <sha256 of beta.json> |
+
+Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
+
+## Not covered by this script
+
+- AC5 answer checks (harness)
+- AC6 Shopify updated_at snapshot (separate tool)
+- DOI/PMID resolution: NOT checked (run with --check-ids)
+- section placement of edits (R8)
+- primary-study abstract presence (only the WARN "unverified primary" lines)
+
+AC8 sign-off (Brad): PENDING
+"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-batch-check split > the shared text rules on fixed guide and master text 1`] = `
+{
+  "broken": [
+    "needs one "## Medicines" section (found 0)",
+    "a red flag lacks the exact emergency line (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK): - Blood pressure of 180 systolic or more, or 120 diastolic or more, with symptoms: call your emer...",
+    "1 other version(s) of the emergency line; copy (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK) exactly",
+  ],
+  "keyPoints": [
+    ""Key safety points" has 2 bullets (3 to 8)",
+    "a key safety point cites [9] with no reference line: - Two [9]",
+  ],
+  "sound": [],
+}
+`;
