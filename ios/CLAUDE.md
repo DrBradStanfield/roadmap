@@ -42,7 +42,7 @@ This file adds only what is specific to the iPhone app.
 - `--reset-app` uninstalls the app and clears its simulator settings, so no data leaks between sessions.
 - Demos and the iOS Simulator MCP tool (outside the guard) use the demo device, "HR Demo iPhone", never
   the shared one: `ALLOW_EXTRA_SIMULATOR=other-device ios/scripts/fresh-sim.sh` makes, boots and fills it.
-  Or wrap all the steps in one script run through sim-run. Shut the demo device down when done.
+  Or wrap all the steps in one script run through sim-run. Shut the demo device down when done: sim-run refuses (75) while it is up.
 - A wait can last 30 minutes, longer than the Bash tool's 10-minute limit, which would kill it.
   Run a sim-run command that may wait in the background (`run_in_background`); it also waits while the load is 8+ or two Codex reviews run.
 - `ios/scripts/sim-run.sh status`: both devices, the holder, leftover simulator processes, and the
