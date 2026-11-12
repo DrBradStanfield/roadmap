@@ -148,7 +148,7 @@ describe('US-09 AC2c controls', () => {
   });
 });
 
-describe('US-09 AC2c: a page whose record is still opening', () => {
+describe('US-09 AC2h: a page whose record is still opening', () => {
   it('writes no health data after a log-off elsewhere, before it knows it is a device page', async () => {
     const { patchMirror } = await import('./storage');
     const { keepLpaAsIs } = await import('./lpa-unit');
@@ -178,34 +178,44 @@ describe('US-09 AC2c: a cloud page restored from the back-forward cache', () => 
   });
 });
 
-describe('US-09 AC2c: the health-write state', () => {
+describe('US-09 AC2c, AC2h: the health-write state', () => {
   const quiet = { mode: 'loading', logOffHeard: false } as const;
   const heard = { mode: 'loading', logOffHeard: true } as const;
   const device = { mode: 'device' } as const;
   const cloud = { mode: 'cloud' } as const;
   const stopped = { mode: 'stopped' } as const;
+  const same = { type: 'deviceOpened', sameSignIn: true } as const;
+  const changed = { type: 'deviceOpened', sameSignIn: false } as const;
+  const opened = { type: 'cloudOpened' } as const;
+  const hear = { type: 'logOffHeard' } as const;
+  const stop = { type: 'stop' } as const;
   it.each([
-    [quiet, 'deviceOpened', device],
-    [quiet, 'cloudOpened', cloud],
-    [quiet, 'logOffHeard', heard],
-    [quiet, 'stop', stopped],
-    [heard, 'deviceOpened', device],
-    [heard, 'cloudOpened', stopped],
-    [heard, 'logOffHeard', heard],
-    [heard, 'stop', stopped],
-    [device, 'deviceOpened', device],
-    [device, 'cloudOpened', cloud],
-    [device, 'logOffHeard', device],
-    [device, 'stop', stopped],
-    [cloud, 'deviceOpened', cloud],
-    [cloud, 'cloudOpened', cloud],
-    [cloud, 'logOffHeard', stopped],
-    [cloud, 'stop', stopped],
-    [stopped, 'deviceOpened', stopped],
-    [stopped, 'cloudOpened', stopped],
-    [stopped, 'logOffHeard', stopped],
-    [stopped, 'stop', stopped],
-  ] as const)('%o + %s -> %o', async (state, event, next) => {
+    [quiet, same, device],
+    [quiet, changed, stopped],
+    [quiet, opened, cloud],
+    [quiet, hear, heard],
+    [quiet, stop, stopped],
+    [heard, same, device],
+    [heard, changed, stopped],
+    [heard, opened, stopped],
+    [heard, hear, heard],
+    [heard, stop, stopped],
+    [device, same, device],
+    [device, changed, device],
+    [device, opened, cloud],
+    [device, hear, device],
+    [device, stop, stopped],
+    [cloud, same, device],
+    [cloud, changed, stopped],
+    [cloud, opened, cloud],
+    [cloud, hear, stopped],
+    [cloud, stop, stopped],
+    [stopped, same, stopped],
+    [stopped, changed, stopped],
+    [stopped, opened, stopped],
+    [stopped, hear, stopped],
+    [stopped, stop, stopped],
+  ] as const)('%o + %o -> %o', async (state, event, next) => {
     const { healthWritesTransition } = await import('./storage');
     expect(healthWritesTransition(state, event)).toEqual(next);
   });

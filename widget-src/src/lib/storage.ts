@@ -20,47 +20,55 @@ export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
 /** Where this page may write health data on the device (US-09 AC2c, AC2e,
- *  AC2h). 'loading': no record has opened yet; it may only while this
+ *  AC2h). 'loading': no record has opened yet; it may write only while this
  *  device's log-off id is the one the page loaded with, and it holds another
  *  tab's log-off heard meanwhile until it knows which kind of page it is.
  *  'device': its device copy is its only store, so it always may. 'cloud': a
- *  cloud record opened here, so it may only while the id is the one it loaded
- *  with. 'stopped': its own log-off, or another tab's heard on a cloud page.
- *  Never back: log-off navigates away. It lives in this module, which every
- *  device writer imports, so all of them check the same state. */
+ *  cloud record opened here, so it may write only while the id is the one it
+ *  loaded with. 'stopped': its own log-off, or another tab's heard on a cloud
+ *  page, or found as a changed id when the page opens on the device. Never
+ *  back: log-off navigates away. It lives in this module, which every device
+ *  writer imports, so all of them check the same state. */
 export type HealthWrites =
   | { mode: 'loading'; logOffHeard: boolean }
   | { mode: 'device' }
   | { mode: 'cloud' }
   | { mode: 'stopped' };
-export type HealthWritesEvent = 'deviceOpened' | 'cloudOpened' | 'logOffHeard' | 'stop';
+/** deviceOpened's `sameSignIn`: the log-off id is still the one the page loaded with. */
+export type HealthWritesEvent =
+  | { type: 'deviceOpened'; sameSignIn: boolean }
+  | { type: 'cloudOpened' }
+  | { type: 'logOffHeard' }
+  | { type: 'stop' };
 export function healthWritesTransition(state: HealthWrites, event: HealthWritesEvent): HealthWrites {
-  if (state.mode === 'stopped' || event === 'stop') return { mode: 'stopped' };
-  if (event === 'logOffHeard') {
+  if (state.mode === 'stopped' || event.type === 'stop') return { mode: 'stopped' };
+  if (event.type === 'logOffHeard') {
     if (state.mode === 'loading') return { mode: 'loading', logOffHeard: true };
     // A device page's copy is its only store, so a heard log-off never stops it.
     return state.mode === 'cloud' ? { mode: 'stopped' } : state;
   }
-  if (event === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
-  // A load that fell back to the device drops the heard log-off; a cloud page stays one.
-  return state.mode === 'cloud' ? state : { mode: 'device' };
+  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
+  if (state.mode === 'device') return state;
+  // The device store decides, but a changed id proves a log-off: the device
+  // copy may be a new sign-in's mirror, so the page stops as if it had heard.
+  return event.sameSignIn ? { mode: 'device' } : { mode: 'stopped' };
 }
 let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };
 const dispatchHealthWrites = (event: HealthWritesEvent) => { healthWrites = healthWritesTransition(healthWrites, event); };
 export function stopLocalHealthWrites(): void {
-  dispatchHealthWrites('stop');
+  dispatchHealthWrites({ type: 'stop' });
 }
 /** A cloud record has opened on this page (the web host's mirror.opened()). */
 export function noteCloudPage(): void {
-  dispatchHealthWrites('cloudOpened');
+  dispatchHealthWrites({ type: 'cloudOpened' });
 }
 /** This page runs on the device tier: a guest, or a cloud load's fallback. */
 export function noteDevicePage(): void {
-  dispatchHealthWrites('deviceOpened');
+  dispatchHealthWrites({ type: 'deviceOpened', sameSignIn: logOffId() === logOffIdAtLoad });
 }
 /** Another tab's log-off signal reached this page. */
 export function noteLogOffHeard(): void {
-  dispatchHealthWrites('logOffHeard');
+  dispatchHealthWrites({ type: 'logOffHeard' });
 }
 /** This page's own log-off, or another tab's it heard: the device was wiped. */
 export function healthWritesStopped(): boolean {
@@ -329,8 +337,7 @@ export type LogOffId = string | null;
 export function logOffId(): LogOffId {
   return safeGetItem(LOG_OFF_ID_KEY);
 }
-/** Read once, as this page loads; never reassigned (US-09 AC2c). */
-// Read once at load; a page restored from the back-forward cache keeps it and is refused. Do not re-read it on pageshow.
+/** Read once at load; a page restored from the back-forward cache keeps it and is refused. Do not re-read it on pageshow (US-09 AC2c). */
 const logOffIdAtLoad: LogOffId = logOffId();
 /** A synchronous claim, not a mode: set before log-off's first await and never
  *  cleared (the page reloads), so a sign-in finishing during log-off's awaits

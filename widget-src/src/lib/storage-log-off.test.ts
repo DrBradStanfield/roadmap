@@ -4,9 +4,9 @@
 // HealthTool mirror writer checked the latch: the profile save and the mirror
 // helpers the other save paths use (HealthTool.tsx:197, :319, :364) did not.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LPA_CHECK_KEPT_KEY, MIRROR_KEY, patchMirror, saveToLocalStorage } from './storage';
+import { LPA_CHECK_KEPT_KEY, MIRROR_KEY, noteCloudPage, patchMirror, saveToLocalStorage } from './storage';
 import { keepLpaAsIs } from './lpa-unit';
-import { latchOnOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
+import { listenForOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
 
 // Synthetic in-memory storage, as logout-persistence.test.ts installs.
 function makeStorage(): Storage {
@@ -28,7 +28,8 @@ describe('US-09 AC2e: the device mirror after another tab logs off', () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
   it('writes the mirror before log-off, and nothing after another tab logs off', () => {
-    latchOnOtherTabsLogOff();
+    listenForOtherTabsLogOff();
+    noteCloudPage();
     // Negative control: before any log-off the mirror is written (passes today and after the fix).
     expect(roadmapLocalWritesStopped()).toBe(false);
     patchMirror({ medications: [med] });

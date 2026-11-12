@@ -1,4 +1,4 @@
-import { noteOtherTabsLogOffWhileLoading } from '../src/storage/local-storage-adapter';
+import { listenForOtherTabsLogOff } from '../src/storage/local-storage-adapter';
 import { initSentry } from '../src/lib/sentry';
 import { takeEmailFlag } from './email-landing';
 import { showLoadFailure } from './load-failure';
@@ -19,7 +19,7 @@ export async function boot(
   // and removed at once, so note one heard during the OAuth code exchange or
   // a Drive token refresh too. A cloud load that succeeds latches on it; a
   // page that ends on the device copy never does.
-  noteOtherTabsLogOffWhileLoading();
+  listenForOtherTabsLogOff();
   initSentry();
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();

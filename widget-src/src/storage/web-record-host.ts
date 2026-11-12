@@ -11,14 +11,13 @@ import type { SaveStatus } from '@roadmap/health-core/save-state';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
-  latchOnOtherTabsLogOff,
   localEraseGeneration,
-  noteOtherTabsLogOffWhileLoading,
+  listenForOtherTabsLogOff,
   roadmapLocalWritesStopped,
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, healthWritesAllowed, logOffId, noteDevicePage, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { clearOffFileHealthData, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -177,7 +176,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
   // Note a log-off from another page from now, not only once the first cloud
   // read returns: its signal is set and removed at once, so a tab still
   // loading would miss it (US-09 AC2h). opened() latches on the note.
-  noteOtherTabsLogOffWhileLoading();
+  listenForOtherTabsLogOff();
   // Noted once, never reassigned: the id the adapter's sign-in began under,
   // else the device's id now.
   const openedUnder: LogOffId = 'gen' in store ? (store as { gen: LogOffId }).gen : logOffId();
@@ -196,7 +195,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       writesStopped: roadmapLocalWritesStopped,
       stillChosen: () => sameSignInAndProvider(store, openedUnder),
       wipe: () => device.disconnect(),
-      opened: latchOnOtherTabsLogOff,
+      opened: noteCloudPage,
     },
   };
 }

@@ -9,7 +9,7 @@
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
 import {
-  DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteCloudPage, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
+  DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
@@ -29,7 +29,7 @@ export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 // content-free key set and removed at once reaches them as `storage` events,
 // leaving no residue.
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
-// The flag itself is in lib/storage, shared with the mirror and the drafts.
+// The health-write state itself is in lib/storage, shared with the mirror and the drafts.
 export function stopRoadmapLocalWrites(): void {
   stopLocalHealthWrites();
   signalLogOff();
@@ -48,22 +48,16 @@ function onLogOffSignal(event: Event): void {
 }
 /** The page is starting (standalone main(), before its first await) or a
  *  cloud host was just built, and its first read may still be running. The
- *  log-off signal is set and removed at once, so listen now. The health-write
- *  state holds one heard while loading and stops on it only if a cloud load
- *  succeeds (latchOnOtherTabsLogOff, via mirror.opened()). A load that fails
+ *  log-off signal is set and removed at once, so listen now, for the page's
+ *  life. The health-write state holds one heard while loading and stops on it
+ *  only if a cloud load succeeds (noteCloudPage, via mirror.opened()). A load that fails
  *  falls back to the device, whose copy is then its only store, so a heard
  *  signal alone never stops a write there (US-09 AC2h). The OAuth return
  *  builds two cloud hosts in a row (the lift, then the store), and every way
  *  back to a cloud from a fallback page reloads the page. Re-adding the same
  *  listener is a no-op. */
-export function noteOtherTabsLogOffWhileLoading(): void {
+export function listenForOtherTabsLogOff(): void {
   if (typeof window !== 'undefined') window.addEventListener('storage', onLogOffSignal);
-}
-/** A cloud record opened: from now a heard log-off stops this page's writes,
- *  since its device copy is a mirror. */
-export function latchOnOtherTabsLogOff(): void {
-  noteCloudPage();
-  noteOtherTabsLogOffWhileLoading();
 }
 export function roadmapLocalWritesStopped(): boolean {
   return !healthWritesAllowed();
