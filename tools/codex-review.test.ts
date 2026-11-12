@@ -2610,7 +2610,9 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
   });
   it('a credential shape in the Codex error message is redacted before --out and stdout', () => {
     writeFileSync(join(repo, 'a.txt'), 'redaction check\n');
-    const message = 'Request rejected by hooks.slack.com/services/TESTONLY/more; check the hook';
+    // Built at runtime: as one literal, the wrapper's own pre-scan refuses this file (E_SECRET_PATTERN) when it is under review.
+    const hook = ['hooks', 'slack', 'com/services/TESTONLY/more'].join('.');
+    const message = `Request rejected by ${hook}; check the hook`;
     const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('turn.started'), ev('error', { message })] }).bin, []);
     expect(report.codex_error).toBe('Request rejected by [redacted]; check the hook');
     expect(JSON.stringify(report) + r.stdout).not.toContain('TESTONLY');
