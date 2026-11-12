@@ -132,8 +132,9 @@ function main(): void {
   if (against !== undefined) {
     try {
       baseline = sourceAt(against, SRC);
-    } catch {
-      console.error(`user-stories.md: cannot read git ref ${against || '(empty)'}; nothing checked.`);
+    } catch (e) {
+      const why = String(e instanceof Error ? e.message : e).trim(); // the message only, never the stack
+      console.error(`user-stories.md: cannot read git ref ${against || '(empty)'}: ${why}; nothing checked.`);
       process.exit(1);
     }
   }
