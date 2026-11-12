@@ -185,3 +185,21 @@ describe('US-15 AC65: DELETE with the prompt missing authenticates and enforces 
     expect(h.parents.map((p) => p.id)).toEqual([GUEST, FOREIGN]);
   });
 });
+
+describe('US-15 AC65: GET history stays ungated on purpose', () => {
+  it('prompt missing: a GET with a token returns 200 and the list, with no model call', async () => {
+    h.read = absent;
+    const { loader } = await import('./api.chat');
+    const request = new Request('https://drstanfield.com/api/chat?sessionToken=tok-stale', { headers: { 'x-forwarded-for': `203.0.113.${ipSeq}` } });
+    const res = await loader({ request, params: {} } as unknown as Parameters<typeof loader>[0]);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ success: true, isGuest: true, sessionToken: 'tok-new' });
+    expect(body.conversations.map((c: { id: string }) => c.id)).toEqual([GUEST]);
+    const { guestSession } = await spies();
+    expect(guestSession).toHaveBeenCalledTimes(1); // a stale token gets a new guest session, as with the prompt loaded
+    expect(h.classify).not.toHaveBeenCalled();
+    expect(h.callAnthropic).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
