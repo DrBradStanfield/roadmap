@@ -223,6 +223,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 --    (truncated to 500 chars in the app before insert). Both NULL on success.
 --    'refusal' (2026-09-29, US-15 AC14): the model declined; is_fallback stays
 --    FALSE and the row holds the fixed refusal line. Free text, no migration.
+--    'partial' (2026-11-12, US-15 AC62): a Discord answer cut off part way; the
+--    row holds the text that went out, and the dedup never re-serves it.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;
