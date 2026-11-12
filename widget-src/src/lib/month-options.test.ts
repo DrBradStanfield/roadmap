@@ -11,13 +11,11 @@ const values = (r: ReturnType<typeof monthOptions>) => r.groups.flatMap(g => g.o
 
 describe('US-06 AC16: monthOptions', () => {
   it.each([
-    // when, min, first, last, count, years
-    ['past', undefined, '2026-11', '2016-01', 131, ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016']],
-    ['future', undefined, '2026-11', '2031-12', 62, ['2026', '2027', '2028', '2029', '2030', '2031']],
-    ['past', '2025-03', '2026-11', '2025-03', 21, ['2026', '2025']],
-    ['future', '2027-02', '2027-02', '2031-12', 59, ['2027', '2028', '2029', '2030', '2031']],
-  ] as const)('%s, min %s: %s to %s, %i months', (when, min, first, last, count, years) => {
-    const r = monthOptions({ when, today: TODAY, min });
+    // when, first, last, count, years
+    ['past', '2026-11', '2016-01', 131, ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016']],
+    ['future', '2026-11', '2031-12', 62, ['2026', '2027', '2028', '2029', '2030', '2031']],
+  ] as const)('%s: %s to %s, %i months', (when, first, last, count, years) => {
+    const r = monthOptions({ when, today: TODAY });
     const vs = values(r);
     expect([vs[0], vs.at(-1), vs.length]).toEqual([first, last, count]);
     expect(r.groups.map(g => g.year)).toEqual(years);
@@ -39,16 +37,19 @@ describe('US-06 AC16: monthOptions', () => {
   });
 
   it.each([
-    // stored, when, min, extra
-    ['2010-03', 'past', undefined, { value: '2010-03', label: 'March 2010' }],
-    ['2027-01', 'past', undefined, { value: '2027-01', label: 'January 2027' }],
-    ['2025-01', 'future', undefined, { value: '2025-01', label: 'January 2025' }],
-    ['2025-01', 'past', '2025-03', { value: '2025-01', label: 'January 2025' }],
-    ['2019', 'past', undefined, { value: '2019', label: '2019' }],
-    ['2024-05', 'past', undefined, undefined],
-    ['', 'past', undefined, undefined],
-  ] as const)('stored %s on a %s date (min %s): one extra option, exactly as stored', (stored, when, min, extra) => {
-    const r = monthOptions({ when, today: TODAY, min, stored });
+    // stored, when, extra
+    ['2010-03', 'past', { value: '2010-03', label: 'March 2010' }],
+    ['2027-01', 'past', { value: '2027-01', label: 'January 2027' }],
+    ['2025-01', 'future', { value: '2025-01', label: 'January 2025' }],
+    ['2024-03-15', 'past', { value: '2024-03-15', label: '15 March 2024' }],
+    ['2024-03-05', 'future', { value: '2024-03-05', label: '5 March 2024' }],
+    ['2024-03-32', 'past', { value: '2024-03-32', label: '2024-03-32' }],
+    ['2024-3-15', 'past', { value: '2024-3-15', label: '2024-3-15' }],
+    ['2019', 'past', { value: '2019', label: '2019' }],
+    ['2024-05', 'past', undefined],
+    ['', 'past', undefined],
+  ] as const)('stored %s on a %s date: one extra option, exactly as stored', (stored, when, extra) => {
+    const r = monthOptions({ when, today: TODAY, stored });
     expect(r.extra).toEqual(extra);
     expect(values(r)).not.toContain(extra ? stored : '__none__');
   });
