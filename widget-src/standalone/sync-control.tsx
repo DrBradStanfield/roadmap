@@ -21,7 +21,7 @@ import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
-import { healthWritesAllowed, onHealthWritesChange, safeGetItem, safeSetItem } from '../src/lib/storage';
+import { healthWritesAllowed, onHealthWritesChange, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
@@ -68,16 +68,18 @@ function useLocalSaveRefused(backend: Backend): boolean {
   return refused;
 }
 
-/** US-09 AC2c (lead C31): said while a device page's writes have stopped after a log-off. A cloud
- *  page's stop refuses only its device mirror; its saves still reach its cloud, so it says nothing. */
+/** US-09 AC2i (lead C31): said while a device page's writes have stopped after another page's log-off.
+ *  A cloud page's stop refuses only its device mirror, and its saves reach its cloud while its sign-in
+ *  still holds, so it says nothing (lead C32). A page whose own log-off has begun reloads at once. */
 const WRITES_STOPPED = 'This page has stopped saving. Reload it to carry on.';
+const writesStoppedHere = (): boolean => !healthWritesAllowed() && !ownLogOffHasBegun();
 
-/** US-01 AC5: said while this device refuses the record's saves; US-09 AC2c: or will take none. Beside
+/** US-01 AC5: said while this device refuses the record's saves; US-09 AC2i: or will take none. Beside
  *  the storage button, and on a phone also atop My health and Chat, since the button sits in the Account tab (US-62 AC34). */
 export function LocalSaveAlert({ backend }: { backend: Backend }) {
   const localRefused = useLocalSaveRefused(backend);
-  const writesAllowed = useSyncExternalStore(onHealthWritesChange, healthWritesAllowed, healthWritesAllowed);
-  if (backend === 'local' && !writesAllowed) return <span className="hr-sync-error" role="alert">{WRITES_STOPPED}</span>;
+  const stopped = useSyncExternalStore(onHealthWritesChange, writesStoppedHere, writesStoppedHere);
+  if (backend === 'local' && stopped) return <span className="hr-sync-error" role="alert">{WRITES_STOPPED}</span>;
   return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
 }
 
