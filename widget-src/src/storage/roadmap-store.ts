@@ -61,7 +61,7 @@ export { ROADMAP_DOC };
 
 /** The pending-mirror marker (US-09 AC4) is the web host's; re-exported for
  *  the modules that import it from the store. */
-export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
+export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
@@ -207,9 +207,9 @@ export class RoadmapStore {
     return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m) && !(answered && m.drugName === 'not_yet'));
   }
 
-  get backendId() {
-    return this.session.backendId;
-  }
+  get backendId() { return this.session.backendId; }
+  /** What the storage line says of the save (US-09 AC30); see the session. */
+  get saveStatus() { return this.session.saveStatus; }
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
@@ -226,7 +226,7 @@ export class RoadmapStore {
   /** Every write below takes `erase`, the erase the page showed when the
    *  write was asked for, and is refused as the session's `refuses` says
    *  (US-16 AC2a). A refusal is the method's error answer, never a throw. */
-  private refuses(erase?: string): boolean {
+  refuses(erase?: string): boolean {
     return this.session.refuses(erase);
   }
 

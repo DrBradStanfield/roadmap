@@ -16,6 +16,8 @@ final class SyncStatusTextTests: XCTestCase {
     }
 
     func testAProblemSaysTheChangesAreSafeOnThePhone() {
+        // US-09 AC30, US-25 AC11e (owner, 2026-11-12): the web says the same headline.
+        XCTAssertEqual(SyncStatusText.headline(.problem(SyncProblem(kind: .unreachable)), provider: .dropbox), "Not synced yet.")
         for kind in [SyncProblem.Kind.unreachable, .signIn, .tooNew, .storageFull, .busy] {
             let words = SyncStatusText.detail(.problem(SyncProblem(kind: kind)), provider: .dropbox) ?? ""
             XCTAssertTrue(words.contains("on this iPhone"), words)

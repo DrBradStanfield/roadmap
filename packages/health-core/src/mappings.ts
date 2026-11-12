@@ -442,11 +442,18 @@ export function computeFormStage(
   saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
 ): FormStage {
   const merged = mergeLongitudinalInputs(inputs, saved);
-  const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
   if (!plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 1;
   if (!plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 1;
   if (!isSex(merged.sex)) return 2;
   return birthKept(merged) ? 4 : 3;
+}
+const plausible = (v: number | undefined, r: ValidationRange) => v !== undefined && !rangeFault(r, v);
+
+/** The weight step is still open on the saved record: it holds no plausible
+ *  weight, as computeFormStage reads it, typed and lent values aside. A chat
+ *  weight is the onboarding's answer only then (US-62 AC31a). */
+export function weightStepOpen(saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>>): boolean {
+  return !plausible(mergeLongitudinalInputs({}, saved).weightKg, UNIT_DEFS.weight.validationRange.si);
 }
 
 /** What a record holds beyond its profile, as `opensFullForm` reads it. */

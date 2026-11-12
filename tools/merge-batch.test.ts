@@ -561,16 +561,24 @@ describe('merge-batch.mjs on the split stories (docs/stories/, tools/stories.mjs
     );
   });
 
-  it('keeps a blank-separated index line from one PR beside an adjacent one from the other, adding no line of its own', () => {
-    const a = pr(143, splitSha, addStory(74, 'Seventy-four'));
+  it('keeps both index lines when two PRs add a story at the same place with different trailing blanks, and proves the diff', () => {
+    // Both insert right after US-1's line; 143's line carries a blank of its own, 144's does not, so git conflicts.
+    const withBlank = (d: string) => {
+      const p = join(d, 'docs/user-stories.md');
+      writeFileSync(p, readFileSync(p, 'utf8').replace('(stories/US-1.md)\n', '(stories/US-1.md)\n- [US-74 · Seventy-four](stories/US-74.md)\n\n'));
+      write(d, 'docs/stories/US-74.md', '### US-74 · Seventy-four\n- AC1 Seventy-four\n');
+    };
+    const a = pr(143, splitSha, withBlank);
     const b = pr(144, splitSha, addAdjacent(75, 'Seventy-five'));
     const r = runBatch([`143 ${a}`, `144 ${b}`]);
     expect(r.err).toBe('');
     expect(r.code).toBe(0);
-    const md = readFileSync(join(batch, 'docs/user-stories.md'), 'utf8');
-    expect(md.split('\n').length).toBe(INDEX.split('\n').length + 3); // the two lines and the one blank a added
-    expect(md).toContain('- [US-74 · Seventy-four](stories/US-74.md)');
-    expect(md).toContain('- [US-75 · Seventy-five](stories/US-75.md)');
+    expect(r.out).toContain('#144');
+    expect(r.out).toMatch(/PR #144 \S+ merged \(stories ACs merged, proof ok\)/);
+    expect(readFileSync(join(batch, 'docs/user-stories.md'), 'utf8')).toBe(
+      INDEX.replace('(stories/US-1.md)\n', '(stories/US-1.md)\n- [US-74 · Seventy-four](stories/US-74.md)\n\n- [US-75 · Seventy-five](stories/US-75.md)\n'),
+    );
+    expect(git(batch, 'status', '--porcelain')).toBe('');
   });
 
   it('stops with exit 2 when two PRs take the same story number', () => {

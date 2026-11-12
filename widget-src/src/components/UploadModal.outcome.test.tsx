@@ -752,6 +752,19 @@ describe('US-16 AC2a: a screening date from an upload the erase overtook', () =>
     expect(onScreeningUpdate).toHaveBeenCalledWith('colorectal_last_date', expect.any(String), '');
   });
 
+  // US-07 AC1j (Brad 2026-11-12): an uploaded report does not say the result, so it keeps the schedule. The upload
+  // writes the last date alone, straight to handleScreeningChange (HealthTool's onScreeningUpdate), never through
+  // screeningWrites: a newer abnormal last date typed in the form starts the follow-up again, an upload never does.
+  it('US-07 AC1j: an upload writes the last date alone and never clears the follow-up answers', async () => {
+    vi.mocked(labImport).mockResolvedValue(screeningLetter);
+    const onScreeningUpdate = vi.fn();
+    renderWithScreenings(onScreeningUpdate);
+    pick(pdf('scope.pdf'));
+    fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(onScreeningUpdate.mock.calls).toEqual([['colorectal_last_date', expect.any(String), '']]);
+  });
+
   it('writes no date when the document save finished after an erase the page has shown', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
     vi.mocked(bulkSaveDocuments).mockImplementation(async () => {

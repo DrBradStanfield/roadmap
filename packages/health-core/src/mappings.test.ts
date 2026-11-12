@@ -12,6 +12,7 @@ import {
   medicationsToInputs,
   screeningsToInputs,
   computeFormStage,
+  weightStepOpen,
   opensFullForm,
   type ApiMeasurement,
   type ApiMedication,
@@ -747,6 +748,18 @@ describe('hasCloudData', () => {
       { id: '1', medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null, updatedAt: '' },
     ];
     expect(hasCloudData(nullProfile, [], medications, [])).toBe(true);
+  });
+});
+
+// US-62 AC31a: a chat weight answers the onboarding only while the saved record holds no plausible weight.
+describe('weightStepOpen', () => {
+  it.each([
+    ['nothing saved', [], true],
+    ['a plausible weight', [{ metricType: 'weight', value: 80 }], false],
+    ['only a weight below 20 kg', [{ metricType: 'weight', value: 10 }], true],
+    ['a waist, no weight', [{ metricType: 'waist', value: 90 }], true],
+  ])('%s: %s', (_what, saved, open) => {
+    expect(weightStepOpen(saved)).toBe(open);
   });
 });
 
