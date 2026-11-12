@@ -24,8 +24,9 @@ to run himself, under the contract's Tier 3 restrictions.
 Start every run through the machine-wide queue:
 `tools/mac-slot.sh codex -- node tools/codex-review.mjs …` (heavy local test
 runs: `tools/mac-slot.sh tests -- npx vitest …`). It waits for a free slot,
-then while the 1-minute load is 8 or more, so you never check `uptime`
-yourself; `tools/mac-slot.sh status` shows the holders (US-71 AC9). It does not
+then while the 1-minute load is 8 or more (up to 10 minutes; still that
+high, it refuses with exit 75 and runs nothing: try again later), so you
+never check `uptime` yourself; `tools/mac-slot.sh status` shows the holders (US-71 AC9). It does not
 read memory: hold a run while `memory_pressure | tail -1` shows free memory
 under about 20% (macOS swap stays high long after use, so swap alone
 misleads). Start it in the same message as its

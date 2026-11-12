@@ -147,7 +147,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(existsSync(join(fake, 'ran'))).toBe(false);
     const refused = r.err().split('\n').filter((l) => /refused/.test(l));
     expect(refused).toHaveLength(1);
-    expect(refused[0]).toMatch(/the 1-minute load 12\.00 is still 8 or more after 2s; not starting sh -c touch/);
+    expect(refused[0]).toMatch(/the 1-minute load 12\.00 is still 8 or more after 2s; not starting sh -c touch \S+\. Try again when the Mac is quieter$/);
     expect(r.err()).not.toMatch(/starting codex slot/);
     // The slot is free at once: the next caller (load now low) starts without waiting for a slot.
     setLoads('1.00');
