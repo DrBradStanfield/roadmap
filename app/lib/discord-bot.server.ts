@@ -137,8 +137,8 @@ export function startDiscordBot(): void {
   });
 
   client.on(Events.MessageCreate, (message) => {
-    // Reached only when the outer catch itself throws (a throwing getter on the
-    // error): fixed words only, never the error (US-15 AC62).
+    // Reached by a throw before the try, or a throw inside the catch (a throwing
+    // getter on the error): fixed words only, never the error (US-15 AC62).
     handleMessage(message).catch(() => {
       console.error('Discord message handler error: catch failed');
       Sentry.captureException(new DiscordHandleError(), { level: 'error', fingerprint: ['discord-handle', 'catch-failed', 'catch'],
