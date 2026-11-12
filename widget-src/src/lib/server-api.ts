@@ -72,6 +72,7 @@ export async function sendFeedback(
 // ---------------------------------------------------------------------------
 
 let cachedVisitorId: string | null = null;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function getVisitorId(): string {
   if (cachedVisitorId) return cachedVisitorId;
@@ -79,7 +80,8 @@ export function getVisitorId(): string {
   const stored = safeGetItem(KEY);
   if (stored) { cachedVisitorId = stored; return stored; }
   const id = randomId();
-  safeSetItem(KEY, id);
+  // The server takes only a UUID: randomId's last-resort id serves this page alone.
+  if (UUID.test(id)) safeSetItem(KEY, id);
   cachedVisitorId = id;
   return id;
 }

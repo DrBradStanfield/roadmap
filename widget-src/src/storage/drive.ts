@@ -28,7 +28,7 @@ import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catch
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply } from './drive-token-reply';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
 export interface GoogleDriveConfig {
@@ -335,11 +335,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
     });
     const json = await codeGrantReply(res);
     const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
-    const saved = setSignIn(TOKENS_KEY, {
-      accessToken: json.accessToken,
-      refreshToken: json.refreshToken,
-      expiresAt: expiry(json.expiresIn),
-    } satisfies DriveTokens, claimed.gen) && setSignIn(CONFIG_KEY, { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored, claimed.gen);
+    const saved = setSignIns({
+      [TOKENS_KEY]: { accessToken: json.accessToken, refreshToken: json.refreshToken, expiresAt: expiry(json.expiresIn) } satisfies DriveTokens,
+      [CONFIG_KEY]: { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored,
+    }, claimed.gen);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
@@ -352,7 +351,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   async connectViaPopup(): Promise<boolean> {
     const token = await this.acquireViaGis();
     this.stored = this.stored ?? {};
-    return this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt }) && setSignIn(CONFIG_KEY, this.stored, this.gen);
+    this.tokens = { accessToken: token.accessToken, expiresAt: token.expiresAt };
+    return setSignIns({ [TOKENS_KEY]: this.tokens, [CONFIG_KEY]: this.stored }, this.gen);
   }
 
   /**

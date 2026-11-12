@@ -103,3 +103,33 @@ describe('Sentry ignoreErrors patterns', () => {
     }
   });
 });
+
+// US-09 AC45: the visitor id is kept only in the UUID form the server accepts.
+describe('getVisitorId: stored only as a UUID', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function freshVisitorId(crypto: object | undefined) {
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => values.get(k) ?? null,
+      setItem: (k: string, v: string) => void values.set(k, v),
+      removeItem: (k: string) => void values.delete(k),
+    });
+    vi.stubGlobal('crypto', crypto);
+    vi.resetModules();
+    const { getVisitorId } = await import('./server-api');
+    return { id: getVisitorId(), again: getVisitorId(), stored: values.get('hr_vid') ?? null };
+  }
+
+  it('with no crypto, the id lasts this page only and is not saved', async () => {
+    const { id, again, stored } = await freshVisitorId(undefined);
+    expect(id).not.toBe('');
+    expect(again).toBe(id);
+    expect(stored).toBeNull();
+  });
+
+  it('control: a UUID is saved', async () => {
+    const { id, stored } = await freshVisitorId({ randomUUID: () => '0b5f1c2e-4d3a-4b6c-8d7e-9f0a1b2c3d4e' });
+    expect(stored).toBe(id);
+  });
+});

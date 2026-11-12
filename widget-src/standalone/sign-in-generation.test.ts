@@ -53,6 +53,11 @@ let githubPuts: string[];
 const GITHUB_REPO = 'https://api.github.com/repos/someone/health';
 /** Keys whose writes this localStorage drops, as a full one does. */
 let dropped: Set<string>;
+/** Runs just before a dropped write throws: another tab's write landing in between. */
+let beforeDrop: ((key: string) => void) | null;
+/** A self-host server and the files written to it. */
+const DAV = 'https://dav.example.test/health/';
+let davPuts: string[];
 /** What a Drive code exchange hands back: the same account each time. */
 let driveAccess: string;
 
@@ -67,6 +72,14 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     const body = JSON.parse(String(init?.body ?? '{}')) as { grantType?: string };
     if (body.grantType === 'code') return json({ accessToken: driveAccess, refreshToken: 'rt-same', expiresIn: 3600, idToken });
     return json({ accessToken: 'at-refreshed', expiresIn: 3600, idToken });
+  }
+  if (url.startsWith(DAV)) {
+    if (init?.method === 'PROPFIND') return new Response('', { status: 207 });
+    if (init?.method === 'PUT') {
+      davPuts.push(url);
+      return new Response('', { status: 201, headers: { ETag: '"e1"' } });
+    }
+    return new Response('', { status: 404 });
   }
   if (url.startsWith(GITHUB_REPO)) {
     if (url === GITHUB_REPO) return json({ private: true });
@@ -104,12 +117,16 @@ beforeEach(() => {
   vi.stubGlobal('history', page.history);
   const values = new Map<string, string>();
   dropped = new Set();
+  beforeDrop = null;
   vi.stubGlobal('localStorage', {
     get length() { return values.size; },
     key: (i: number) => [...values.keys()][i] ?? null,
     getItem: (k: string) => values.get(k) ?? null,
     setItem: (k: string, v: string) => {
-      if (dropped.has(k)) throw new DOMException('quota', 'QuotaExceededError');
+      if (dropped.has(k)) {
+        beforeDrop?.(k);
+        throw new DOMException('quota', 'QuotaExceededError');
+      }
       values.set(k, String(v));
     },
     removeItem: (k: string) => void values.delete(k),
@@ -129,6 +146,7 @@ beforeEach(() => {
   holdDownload = null;
   uploads = [];
   githubPuts = [];
+  davPuts = [];
   driveAccess = 'at-first';
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -353,6 +371,47 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     await connect.finishFormConnect(new GitHubAdapter({ token, owner: 'someone', repo: 'health' }, gen), 'github', gen);
   }
 
+  /** The self-host form's connect; `drop` is the key this page's save loses. */
+  async function connectWebDav(drop?: string) {
+    vi.resetModules();
+    const connect = await import('./connect');
+    const { WebDavAdapter } = await import('../src/storage/webdav');
+    const { logOffId } = await import('../src/lib/storage');
+    const gen = logOffId();
+    if (drop) dropped.add(drop);
+    await connect.finishFormConnect(new WebDavAdapter({ url: DAV, username: 'someone', password: 'test-pass-this' }, gen), 'self-host', gen);
+  }
+
+  /** The storage bar's Drive reconnect, clicked: the GIS popup grants a token. */
+  async function reconnectDrive(drop?: string) {
+    vi.resetModules();
+    vi.doMock('react', async (importOriginal) => {
+      const react = await importOriginal<typeof import('react')>();
+      const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {} };
+      return { ...react, ...hooks, default: { ...react, ...hooks } };
+    });
+    Object.assign(window, { google: { accounts: { oauth2: { initTokenClient: (options: { callback: (r: object) => void }) => ({
+      requestAccessToken: () => options.callback({ access_token: 'at-popup', expires_in: 3600, scope: DRIVE_SCOPE }),
+    }) } } } });
+    try {
+      const { StorageBar } = await import('./sync-control');
+      const bar = StorageBar({ backend: 'local', reconnect: 'google-drive' }) as { props: { children: Array<{ props: { onClick: () => void } }> } };
+      if (drop) dropped.add(drop);
+      bar.props.children[0].props.onClick();
+      await vi.waitFor(() => expect(location.reload).toHaveBeenCalled());
+    } finally {
+      vi.doUnmock('react');
+    }
+  }
+
+  /** A Dropbox or Drive sign-in that left for the provider and is back. */
+  async function returnFrom(cloud: 'dropbox' | 'google-drive', drop?: string) {
+    await startSignIn(cloud);
+    const page = await returningPage(cloud);
+    if (drop) dropped.add(drop);
+    await page.resolveBackend();
+  }
+
   it('another tab\'s GitHub sign-in is saved; this page\'s own save is dropped: nothing is remembered or written to GitHub', async () => {
     localStorage.setItem(GITHUB_CONFIG, JSON.stringify({ token: 'test-token-other', owner: 'someone', repo: 'health' }));
     await seedGuest();
@@ -375,6 +434,52 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     await connectGitHub('test-token-this');
     expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
     expect(githubPuts.length).toBeGreaterThan(0);
+  });
+
+  // Another account's sign-in with every provider, saved and current.
+  const later = () => Date.now() + 3_600_000;
+  const otherAccount = () => ({
+    [SELFHOST_CONFIG]: { url: DAV, username: 'other', password: 'test-pass-other' },
+    [DROPBOX_TOKENS]: { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: later() },
+    [DRIVE_TOKENS]: { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: later() },
+    [DRIVE_CONFIG]: { accountEmail: 'other@example.test' },
+  });
+  /** Every write a connect could make to a cloud: Dropbox, self-host or any Drive call. */
+  const cloudWrites = () => [...uploads, ...davPuts, ...calls.filter((url) => url.includes('googleapis.com'))];
+
+  it.each([
+    ['a self-host form connect', SELFHOST_CONFIG, connectWebDav],
+    ['the Drive popup reconnect, its tokens dropped', DRIVE_TOKENS, reconnectDrive],
+    ['the Drive popup reconnect, its account dropped', DRIVE_CONFIG, reconnectDrive],
+    ['a Dropbox redirect return', DROPBOX_TOKENS, (drop: string) => returnFrom('dropbox', drop)],
+    ['a Drive redirect return, its tokens dropped', DRIVE_TOKENS, (drop: string) => returnFrom('google-drive', drop)],
+    ['a Drive redirect return, its account dropped', DRIVE_CONFIG, (drop: string) => returnFrom('google-drive', drop)],
+  ] as const)('%s: another account\'s sign-in is saved and this page\'s own save is dropped: nothing is remembered or written to the cloud', async (_name, key, run) => {
+    for (const [saved, value] of Object.entries(otherAccount())) localStorage.setItem(saved, JSON.stringify(value));
+    await seedGuest();
+    await run(key);
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(cloudWrites()).toEqual([]);
+  });
+
+  describe('Drive keeps no partial sign-in: tokens saved without their account are removed', () => {
+    it.each([
+      ['the popup reconnect', reconnectDrive],
+      ['a redirect return', (drop: string) => returnFrom('google-drive', drop)],
+    ] as const)('%s', async (_name, run) => {
+      await run(DRIVE_CONFIG);
+      expect([DRIVE_TOKENS, DRIVE_CONFIG, BACKEND_KEY].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
+    });
+
+    it.each([
+      ['the popup reconnect', reconnectDrive],
+      ['a redirect return', (drop: string) => returnFrom('google-drive', drop)],
+    ] as const)('%s leaves tokens another tab saved in between', async (_name, run) => {
+      const theirs = JSON.stringify({ accessToken: 'at-theirs', refreshToken: 'rt-theirs', expiresAt: later() });
+      beforeDrop = () => localStorage.setItem(DRIVE_TOKENS, theirs);
+      await run(DRIVE_CONFIG);
+      expect(localStorage.getItem(DRIVE_TOKENS)).toBe(theirs);
+    });
   });
 });
 
