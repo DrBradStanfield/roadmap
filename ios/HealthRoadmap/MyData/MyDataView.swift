@@ -200,9 +200,7 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
-        // At the hard end the footer's last line sat 2 pt over the floating tab bar (build 11,
-        // US-73): the cards' own compact spacing under it.
-        .contentMargins(.bottom, 12, for: .scrollContent)
+        .contentMargins(.bottom, 12, for: .scrollContent) // The footer clears the floating tab bar (US-73).
         // The worked-out rows read their engine series once per screen drawn (US-73 AC7), then
         // the page is built from them.
         .task(id: Self.pageKey(store)) {
@@ -298,20 +296,12 @@ struct MyDataView: View {
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityHint("Scrolls to the card")
-                // The red as the row's background, in the cards' own corners: drawn on the label,
-                // the list clipped this last row's bottom corners to its radius, under the label's
-                // 12 at the top (build 11, US-73). Inset as the row is, so the room around it stays.
-                .listRowBackground(RoundedRectangle(cornerRadius: Self.cardRadius, style: .continuous)
-                    .fill(Color.status("urgent")).padding(.vertical, 4))
+                .listRowBackground(RoundedRectangle(cornerRadius: .cardRadius, style: .continuous).fill(Color.status("urgent")).padding(.vertical, 4))
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
         }
         .listSectionSpacing(.compact)
     }
-
-    /// The inset list's corner radius, which draws the cards: 26 pt from iOS 26 (read from the
-    /// drawn cards, 2026-11-13), 10 before.
-    static var cardRadius: CGFloat { if #available(iOS 26, *) { 26 } else { 10 } }
 
     /// Lab upload and Sync: on the title line and on the Blood tests heading.
     @ViewBuilder
