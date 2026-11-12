@@ -31,8 +31,8 @@ import { fileURLToPath } from 'node:url';
 export const INDEX = 'docs/user-stories.md';
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const STORY_LINE = /^- \[US-(\d+) · .*\]\((?<target>stories\/US-\1\.md)\)$/;
-const CONSTITUTION_LINE = /^- \[[^\]]+\]\((?<target>stories\/_constitution\.md)\)$/;
+export const STORY_LINE = /^- \[US-(\d+) · .*\]\((?<target>stories\/US-\1\.md)\)$/;
+export const CONSTITUTION_LINE = /^- \[[^\]]+\]\((?<target>stories\/_constitution\.md)\)$/;
 // A markdown link target, as scripts/build-user-stories-html.ts reads one.
 const TARGET = /\]\(([^)\s]+)\)/g;
 const isRelative = (t) => !/^([a-z][a-z0-9+.-]*:|[#/])/i.test(t);
@@ -53,7 +53,7 @@ export function expandIndex(index, readPart) {
     .map((line) => {
       const target = (STORY_LINE.exec(line) || CONSTITUTION_LINE.exec(line))?.groups?.target;
       if (!target) return line;
-      // A story listed twice would be read twice; every reader stops here instead (US-64 AC13).
+      // A story listed twice would be read twice; every reader stops here instead (US-64 AC11).
       if (seen.has(target)) throw new Error(`stories: the index lists ${basename(target, '.md')} twice`);
       seen.add(target);
       const text = readPart(target);
