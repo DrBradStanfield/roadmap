@@ -16,12 +16,15 @@
  * (empty, or holding `[` or `]`), a `### US-` heading lacks its ` · `, the input already holds index lines, or
  * loadStories of the would-be output is not the input byte for byte (checked in a temporary folder first).
  * Writing into the repo (no --out, or an --out whose real path is the repo's toplevel), it runs only from the
- * toplevel, and refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
+ * toplevel. Writing into a repo, that one or any other whose toplevel --out is (another worktree, the main checkout),
+ * it refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
  * - during a merge (MERGE_HEAD exists), unless the incoming side holds exactly the split of the monolith at the merge
  *   base, which is how an open branch takes the split commit and re-splits its own monolith;
  * - otherwise, when docs/stories/ exists and the index or a part differs from the output, unless --replace is given.
+ * A git that cannot run refuses; only git's own "not a git repository" counts as no repo.
  *
- * --normalize rewrites a split tree, in the repo it runs in, into the split's exact form, and only its shape: it
+ * --normalize rewrites a split tree, from a git repo's toplevel with no merge in progress and no conflict marker
+ * line in the tree (the standing check fails on one too), into the split's exact form, and only its shape: it
  * reassembles the tree, splits it again and writes, refusing when the loader refuses or a part's text would change
  * beyond its trailing blank lines and final newline. It fixes a part with no final newline or with trailing blank
  * lines (they move to the index, so the stories text stays the same) and an index line with a long title. It
@@ -31,7 +34,8 @@
  *
  * Usage, from the repo root: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>] [--replace] | --normalize
  *   --from       read the stories at a git ref instead of the working tree.
- *   --out        write under <dir> (a dry run) instead of the repo root. Stale docs/stories/*.md there are removed.
+ *   --out        write under <dir> instead of the repo root: a dry run unless <dir> is a repo's toplevel (guarded
+ *                as above). Stale docs/stories/*.md there are removed.
  *   --replace    outside a merge, overwrite a docs/stories/ that differs from the output.
  *   --normalize  put the repo's split tree into the split's exact form (above); takes no other flag.
  */
@@ -40,7 +44,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INDEX, STORY_LINE, CONSTITUTION_LINE, loadStories, toPart } from './stories.mjs';
-import { SplitRefusal, checkExisting, checkMerge, diffs, gitIn, intoRepo, mergeHead, readTree } from './split-stories-guards.mjs';
+import { SplitRefusal, checkExisting, checkMerge, checkNormalize, conflictMarker, diffs, gitIn, guardedRoot, mergeHead, readTree } from './split-stories-guards.mjs';
 
 export { SplitRefusal };
 
@@ -119,7 +123,7 @@ export function verifyPlan(text, plan) {
  * @returns {{ stories: number, parts: number, indexBytes: number, stale: string[] }}
  */
 export function splitStories({ root = process.cwd(), from, out, replace = false } = {}) {
-  const into = intoRepo(root, out);
+  const guarded = guardedRoot(root, out);
   let text;
   try {
     text = from === undefined
@@ -130,10 +134,10 @@ export function splitStories({ root = process.cwd(), from, out, replace = false 
   }
   const plan = planSplit(text);
   verifyPlan(text, plan);
-  if (into) {
-    const incoming = mergeHead(root);
-    if (incoming !== undefined) checkMerge(root, incoming, planSplit);
-    else if (!replace) checkExisting(root, plan);
+  if (guarded !== undefined) {
+    const incoming = mergeHead(guarded);
+    if (incoming !== undefined) checkMerge(guarded, incoming, planSplit);
+    else if (!replace) checkExisting(guarded, plan);
   }
   const stale = writePlan(out ?? root, plan);
   return {
@@ -162,6 +166,8 @@ function treeAndPlan(root) {
  */
 export function shapeReport(root) {
   const { have, plan } = treeAndPlan(root);
+  const marker = conflictMarker(have);
+  if (marker !== undefined) return `${marker}: resolve the conflict by hand`;
   const [d] = diffs(have, plan);
   if (d === undefined) return undefined;
   if (d.have === undefined || d.want === undefined) return `${d.path} ${d.have === undefined ? 'is missing' : 'is listed in no index line'}`;
@@ -175,8 +181,10 @@ export function shapeReport(root) {
 
 /** --normalize: rewrites the repo's split tree into its exact form, shape only. Returns the paths it changed. */
 export function normalizeStories({ root = process.cwd() } = {}) {
-  intoRepo(root, undefined);
+  checkNormalize(root);
   const { have, plan, text } = treeAndPlan(root);
+  const marker = conflictMarker(have);
+  if (marker !== undefined) throw new SplitRefusal(`${marker}: resolve the conflict by hand`);
   verifyPlan(text, plan);
   const changed = diffs(have, plan);
   for (const d of changed) {
@@ -187,7 +195,8 @@ export function normalizeStories({ root = process.cwd() } = {}) {
     let k = 0;
     while (a[k] === b[k]) k++;
     while (k < a.length - 1 && !a[k].trim()) k++;
-    throw new SplitRefusal(`normalizing would change the text of ${d.path}, not only its shape, from its line ${k + 1}: ${JSON.stringify(a[k])}. Edit it by hand`);
+    const where = k < a.length ? `, from its line ${k + 1}: ${JSON.stringify(a[k])}` : `: it would gain its line ${k + 1}, ${JSON.stringify(b[k])}`;
+    throw new SplitRefusal(`normalizing would change the text of ${d.path}, not only its shape${where}. Edit it by hand`);
   }
   if (changed.length) writePlan(root, plan);
   return changed.map((d) => d.path);
