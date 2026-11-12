@@ -482,9 +482,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(alert.mock.calls[0][0]).toBe(ERASE_DONE_CHAT_UNREAD);
   });
 
-  // Codex final R2 pinned the form, edit and banner as they were. A6 R1 (2026-11-12): an erase that stops short
-  // re-reads, so the page shows the other device's erase it had not been told of, as any read of it does.
-  it('an erase refused while a remote erase is held back re-reads: the other device\'s erase shows, the edit not saved (A6 R1)', async () => {
+  it('an erase refused while a remote erase is held back leaves the form, the unsaved edit and the banner as they were (Codex final R2)', async () => {
     const cloud = new MemoryCloud();
     const view = await cloudGuest(cloud, { sex: 'male', heightCm: 175 });
     chatProposes({ height: { value: 178, unit: 'cm' } });
@@ -503,14 +501,10 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     vi.stubGlobal('alert', alert);
     fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
-    await wait(600);
-    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('');
-    expect(view.container.querySelector<HTMLInputElement>('#birthYear')?.value ?? '').toBe('');
-    expect(banner()).toBeNull();
-    await act(async () => { await flushRoadmapStore(); });
-    expect(((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).profile).not.toHaveProperty('birthYear');
-    // The re-read shows another erase, so it replaces the form whole (US-11 AC6), the 1975 with it, as any read of a remote erase does.
-    expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
+    await wait(100);
+    expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('175');
+    expect(view.container.querySelector<HTMLInputElement>('#birthYear')?.value).toBe('1975');
+    expect(banner()).not.toBeNull();
   });
 
   // US-34 AC4: the relay holds a remote change behind an unsaved profile
@@ -646,9 +640,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
     await wait(600);
     expect(JSON.stringify(chat.context!())).toBe(contextBefore);
-    // The aborted erase re-reads (A6 R1), which writes the mirror again: the same record, a new savedAt.
-    const unstamped = (mirror: string | null) => ({ ...JSON.parse(mirror ?? '{}'), savedAt: null });
-    expect(unstamped(localStorage.getItem(MIRROR_KEY))).toEqual(unstamped(mirrorBefore));
+    expect(localStorage.getItem(MIRROR_KEY)).toBe(mirrorBefore);
     expect(planShown(view)).toBe(true);
   });
 

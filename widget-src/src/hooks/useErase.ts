@@ -20,6 +20,8 @@ import { tellChats } from './chatStore';
  * - clearDrafts, forget: the page's;
  * - read: the page's `shows` (useRecordApply: it ends a hold, clears the
  *   answer mark, and counts nothing);
+ * - rereadRefused: the page's `reread('refused')`, the read writeRefused asks
+ *   for (an erase that refused a save, then stopped short: A6 R1);
  * - countRemoteChange: remote_change_applied, the one count of another
  *   writer's erase (the relay counts other changes only);
  * - alertRefused, sayOutcome: alerts.
@@ -44,7 +46,7 @@ export interface EraseDoorProps {
   clearDrafts: () => void;
   /** This tab's erase moved the record: the page forgets the old one, on the device and on screen. */
   forget: () => void;
-  /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard. */
+  /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard, or one made during an erase that stopped short. */
   reread: (reason: 'refused' | 'left') => void;
   /** The machine's read: another writer's erase shows (useRecordApply `shows`). */
   shows: () => void;
@@ -72,6 +74,7 @@ export function useErase(props: EraseDoorProps): Erase {
     clearDrafts: () => doors.current.clearDrafts(),
     forget: () => doors.current.forget(),
     read: () => doors.current.shows(),
+    rereadRefused: () => doors.current.reread('refused'),
     countRemoteChange: () => trackProductEvent('remote_change_applied', { backend: getBackendKind() }),
     alertRefused: () => window.alert(WRITE_REFUSED),
     sayOutcome: message => window.alert(message),
