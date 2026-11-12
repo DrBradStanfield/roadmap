@@ -4,8 +4,8 @@
  * Every failure, git's included, is a SplitRefusal (exit 1, "refused…"), never a stack trace.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { INDEX } from './stories.mjs';
 
 export class SplitRefusal extends Error {}
@@ -17,20 +17,19 @@ const notARepo = (e) => /not a git repository/.test(String(e.stderr));
 // A line git writes into a conflicted file.
 const MARKER = /^(<{7}|\|{7}|={7}|>{7})( |$)/;
 
-/** The real path of `p` (symlinks, `..` and the disk's own letter case resolved); a missing tail is kept as given. */
-function real(p) {
-  try {
-    return realpathSync.native(p);
-  } catch {
-    const up = dirname(p);
-    return up === p ? p : join(real(up), basename(p));
-  }
+/**
+ * Whether two existing paths are one folder, by identity (device and inode), never by path: a symlink, a `..`,
+ * another letter case or macOS's /System/Volumes/Data firmlink prefix all name the same folder.
+ */
+function sameFolder(a, b) {
+  const [x, y] = [statSync(a), statSync(b)];
+  return x.dev === y.dev && x.ino === y.ino;
 }
 
-/** The real path of the git toplevel holding `root`, or undefined when git answers that `root` is in no repo. */
+/** The git toplevel holding `root`, as git prints it, or undefined when git answers that `root` is in no repo. */
 export function toplevel(root) {
   try {
-    return real(gitIn(root)('rev-parse', '--show-toplevel').trim());
+    return gitIn(root)('rev-parse', '--show-toplevel').trim();
   } catch (e) {
     if (notARepo(e)) return undefined;
     throw new SplitRefusal(`cannot find the repo's toplevel: ${gitError(e)}`);
@@ -39,17 +38,18 @@ export function toplevel(root) {
 
 /**
  * The folder whose guards the run must pass, or undefined for a plain dry run. It is `root` when the run writes into
- * the repo it runs in (no `out`, or an `out` whose real path is its toplevel, or `root` itself outside a repo), and
- * throws SplitRefusal when `root` is not that toplevel. It is `out` when `out` is the toplevel of any other git repo
- * (another worktree, the main checkout, a clone). A folder in no repo, or below another repo's toplevel, is a dry run.
+ * the repo it runs in (no `out`, or an `out` that is the same folder as its toplevel, or `root` itself outside a
+ * repo), and throws SplitRefusal when `root` is not that toplevel. It is `out` when `out` is the toplevel of any other
+ * git repo (another worktree, the main checkout, a clone). A missing folder, one in no repo, or one below another
+ * repo's toplevel is a dry run.
  */
 export function guardedRoot(root, out) {
-  const top = toplevel(root) ?? real(resolve(root));
-  const target = out === undefined ? top : real(resolve(out));
-  if (target !== top) return existsSync(target) && toplevel(target) === target ? target : undefined;
-  if (real(resolve(root)) !== top) {
-    throw new SplitRefusal(`writing into the repo runs from its toplevel, ${top}, not from ${real(resolve(root))}: cd there and run this again`);
+  const top = toplevel(root) ?? root;
+  if (out !== undefined && !(existsSync(out) && sameFolder(out, top))) {
+    const outTop = existsSync(out) ? toplevel(out) : undefined;
+    return outTop !== undefined && sameFolder(out, outTop) ? out : undefined;
   }
+  if (!sameFolder(root, top)) throw new SplitRefusal(`writing into the repo runs from its toplevel, ${top}, not from ${root}: cd there and run this again`);
   return root;
 }
 
@@ -109,15 +109,16 @@ export function readTree(root) {
 /**
  * Throws SplitRefusal unless the commit `incoming` holds exactly the split (by `planSplit`) of the monolith at its
  * merge base with HEAD. When `incoming` is the split commit itself but its parent is not the merge base, main changed
- * the monolith before splitting, and the refusal names the order that keeps those changes.
+ * the monolith before splitting, and the refusal names the order that keeps those changes. When its parent is the
+ * merge base and it holds parts, it is an impure split: the refusal says to port its story edits by hand.
  */
 export function checkMerge(root, incoming, planSplit) {
   const git = gitIn(root);
   const at = incoming.slice(0, 12);
-  let base, diff;
+  let base, diff, names = [];
   try {
     base = git('merge-base', 'HEAD', incoming).trim();
-    const names = git('ls-tree', '--name-only', incoming, 'docs/stories/').split('\n').filter((p) => p.endsWith('.md'));
+    names = git('ls-tree', '--name-only', incoming, 'docs/stories/').split('\n').filter((p) => p.endsWith('.md'));
     const have = { index: git('show', `${incoming}:${INDEX}`), parts: new Map(names.map((p) => [p.slice('docs/stories/'.length), git('show', `${incoming}:${p}`)])) };
     diff = firstDiff(have, planSplit(git('show', `${base}:${INDEX}`)));
   } catch (e) {
@@ -127,14 +128,14 @@ export function checkMerge(root, incoming, planSplit) {
   let parent;
   try {
     parent = git('rev-parse', '-q', '--verify', `${incoming}^1`).trim();
-    if (parent !== base && git('ls-tree', '--name-only', parent, 'docs/stories/').trim()) parent = undefined;
+    if (parent === base ? !names.length : git('ls-tree', '--name-only', parent, 'docs/stories/').trim()) parent = undefined;
   } catch {
     parent = undefined; // no first parent: the general advice stands
   }
   const how = parent === undefined
     ? 'Abort the merge and merge exactly the split commit, nothing after it, then run this again.'
     : parent === base
-      ? `So the split commit ${at} itself differs from a pure split of its parent: ${diff}. This tool cannot re-split the branch: finish the merge taking the split commit's docs/stories/ and index, then port its own story edits into the parts by hand.`
+      ? `So the incoming commit ${at} itself differs from a pure split of its parent. This tool cannot re-split the branch: finish the merge taking the incoming commit's docs/stories/ and index, then port its own story edits into the parts by hand.`
       : `The split commit's parent is not the merge base, so main changed the monolith before splitting: abort this merge, merge ${parent.slice(0, 12)} (the commit before the split) first, commit, then merge ${at}, then run this again.`;
   throw new SplitRefusal(`a merge is in progress, and its incoming side (MERGE_HEAD ${at}) is not exactly the split of the monolith at the merge base${base ? ` ${base.slice(0, 12)}` : ''}: ${diff}. ${how}`);
 }

@@ -577,7 +577,8 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     const before = tree();
     const r = cli(repo, '--from', 'HEAD');
     expect(r.status).toBe(1);
-    expect(r.stderr).toContain(`the split commit ${impure.slice(0, 12)} itself differs from a pure split of its parent: docs/stories/US-01.md differs`);
+    expect(r.stderr).toContain(`at the merge base ${run('merge-base', 'HEAD', impure).trim().slice(0, 12)}: docs/stories/US-01.md differs. So the incoming commit ${impure.slice(0, 12)} itself differs from a pure split of its parent.`);
+    expect(r.stderr.match(/US-01\.md differs/g)).toHaveLength(1);
     expect(r.stderr).toContain('port its own story edits into the parts by hand');
     expect(r.stderr).not.toContain('merge exactly the split commit');
     expect(tree()).toEqual(before);

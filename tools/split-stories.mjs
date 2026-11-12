@@ -15,7 +15,7 @@
  * It refuses, writing nothing (exit 1), when a story id repeats, a short title would not make an index line
  * (empty, or holding `[` or `]`), a `### US-` heading lacks its ` · `, the input already holds index lines, or
  * loadStories of the would-be output is not the input byte for byte (checked in a temporary folder first).
- * Writing into the repo (no --out, or an --out whose real path is the repo's toplevel), it runs only from the
+ * Writing into the repo (no --out, or an --out that is the same folder as the repo's toplevel), it runs only from the
  * toplevel. Writing into a repo, that one or any other whose toplevel --out is (another worktree, the main checkout),
  * it refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
  * - during a merge (MERGE_HEAD exists), unless the incoming side holds exactly the split of the monolith at the merge
@@ -148,16 +148,19 @@ export function splitStories({ root = process.cwd(), from, out, replace = false 
   };
 }
 
-/** The split tree under `root` and its exact form: the plan of its reassembled text. Throws when the loader does. */
+/** The split tree under `root` and its exact form (the plan of its reassembled text), or the first conflict marker in it. Throws when the loader does. */
 function treeAndPlan(root) {
   if (!existsSync(join(root, 'docs/stories'))) throw new SplitRefusal('there is no split tree here: docs/stories/ does not exist');
+  const have = readTree(root);
+  const marker = conflictMarker(have); // on the raw files, before the loader can stumble on a conflict
+  if (marker !== undefined) return { marker: `${marker}: resolve the conflict by hand` };
   let text;
   try {
     text = loadStories(root);
   } catch (e) {
     throw new SplitRefusal(`the loader refuses the tree: ${e.message}`);
   }
-  return { have: readTree(root), plan: planSplit(text), text };
+  return { have, plan: planSplit(text), text };
 }
 
 /**
@@ -165,9 +168,8 @@ function treeAndPlan(root) {
  * naming the first file out of it, the rule, the repair and that file's first differing line.
  */
 export function shapeReport(root) {
-  const { have, plan } = treeAndPlan(root);
-  const marker = conflictMarker(have);
-  if (marker !== undefined) return `${marker}: resolve the conflict by hand`;
+  const { have, plan, marker } = treeAndPlan(root);
+  if (marker !== undefined) return marker;
   const [d] = diffs(have, plan);
   if (d === undefined) return undefined;
   if (d.have === undefined || d.want === undefined) return `${d.path} ${d.have === undefined ? 'is missing' : 'is listed in no index line'}`;
@@ -182,9 +184,8 @@ export function shapeReport(root) {
 /** --normalize: rewrites the repo's split tree into its exact form, shape only. Returns the paths it changed. */
 export function normalizeStories({ root = process.cwd() } = {}) {
   checkNormalize(root);
-  const { have, plan, text } = treeAndPlan(root);
-  const marker = conflictMarker(have);
-  if (marker !== undefined) throw new SplitRefusal(`${marker}: resolve the conflict by hand`);
+  const { have, plan, text, marker } = treeAndPlan(root);
+  if (marker !== undefined) throw new SplitRefusal(marker);
   verifyPlan(text, plan);
   const changed = diffs(have, plan);
   for (const d of changed) {
