@@ -339,7 +339,7 @@ export function StartingInfoVitals({
 
     if (metric !== 'weight' && metric !== 'waist') return null;
     if (metric === 'weight' && withoutWeight) return null; // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
-    if (metric === 'weight') onWeightAnswered?.(true); // Shown here, the chat's weight is an answer given in this tab, as in the box, and never lands (US-62 AC31a).
+    if (metric === 'weight' && !trend.lastW) onWeightAnswered?.(true); // The chat's weight answers here, as in the box, only while the record holds none; it never lands (US-62 AC31a).
     if (date && column && column[metric] == null) {
       type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);

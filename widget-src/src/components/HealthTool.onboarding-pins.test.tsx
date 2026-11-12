@@ -696,6 +696,8 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
   });
 
   describe('US-62 AC31a: the chat\'s weight is an answer given here, in the box or the grid (AC13 Events, AC31)', () => {
+    // Parity pins, marked "(parity pin)": they passed before PR 1331, since the box path already
+    // handled them. They keep the box and the grid alike. The rest are regression tests: they fail without it.
     const chatWeight = (date: string | null = null) =>
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date }]));
     const ready = (view: RenderResult) => q(view, '.mh-ready-title')?.textContent ?? null;
@@ -712,7 +714,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       return view;
     }
 
-    it.each([['the box beside the height', false], ['the grid\'s New cell', true]])('%s: the last answer sends onboarding_step and onboarding_done once, shows the card, and lands nothing', async (_where, waist) => {
+    it.each([['the box beside the height (parity pin)', false], ['the grid\'s New cell', true]])('%s: the last answer sends onboarding_step and onboarding_done once, shows the card, and lands nothing', async (_where, waist) => {
       const view = await chatReady({ waist });
       chatWeight();
       if (waist) expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105');
@@ -759,14 +761,14 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     const typedWeight = (view: RenderResult, grid: boolean) =>
       type(grid ? weightRow(view)!.querySelector('.bt-cell-draft input') : q(view, '#weightKg'), '25'); // may become 250: an 800 ms wait
 
-    it.each([['the box', false], ['the grid', true]])('a waist from the chat is no answer (%s): the last weight typed still lands after its wait', async (_where, grid) => {
+    it.each([['the box (parity pin)', false], ['the grid (parity pin)', true]])('a waist from the chat is no answer (%s): the last weight typed still lands after its wait', async (_where, grid) => {
       const view = await chatReady({ waist: grid });
       typedWeight(view, grid);
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
       await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
     });
 
-    it.each([['the box', false], ['the grid', true]])('the chat\'s weight during a typed weight\'s wait (%s) is the answer: counted once, no landing (AC25b)', async (_where, grid) => {
+    it.each([['the box (parity pin)', false], ['the grid', true]])('the chat\'s weight during a typed weight\'s wait (%s) is the answer: counted once, no landing (AC25b)', async (_where, grid) => {
       const view = await chatReady({ waist: grid });
       typedWeight(view, grid);
       chatWeight();
@@ -777,7 +779,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       expect(calls('onboarding_done')).toHaveLength(1);
     });
 
-    it('a record already holding a weight: the chat\'s grid weight sends nothing and shows no card', async () => {
+    it('a record already holding a weight: the chat\'s grid weight sends nothing and shows no card (parity pin)', async () => {
       const view = await chatReady({ weight: true });
       chatWeight();
       await waitFor(() => expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105'));
@@ -785,6 +787,14 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       expect(calls('onboarding_step')).toEqual([]);
       expect(calls('onboarding_done')).toEqual([]);
       expect(q(view, '.mh-ready')).toBeNull();
+    });
+
+    it('a record already holding a weight: the chat\'s grid weight during the typed birth year\'s wait is no answer, so the year still lands', async () => {
+      const view = await chatReady({ missing: 'birth', weight: true });
+      const frames = heldFrames();
+      birth(view, '5', '1975'); // the last answer; its rest's frame held, so the landing awaits it
+      chatWeight();
+      await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
     });
   });
 });

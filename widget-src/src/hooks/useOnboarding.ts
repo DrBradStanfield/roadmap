@@ -120,7 +120,7 @@ export interface PanelOnboarding extends Pick<Onboarding, 'reached' | 'fullForm'
   /** The first answer the record lacks: 1 height and weight, 2 sex, 3 birth date, 4 none. */
   stage: FormStage;
   profileLeft?: Onboarding['profileLeft'];
-  /** A field typed in: a landing field (the weight, the birth year), or null for a weight that never lands (a past day's) (AC13, AC25b). */
+  /** A field typed in: a landing field (the weight, the birth year), or null for a weight that never lands (a past day's, or the chat's) (AC13, AC25b). */
   answered?: (field: 'weightKg' | 'birthYear' | null) => void;
   rested?: Onboarding['rested'];
   left?: Onboarding['left'];
