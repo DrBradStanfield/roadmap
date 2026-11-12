@@ -90,3 +90,9 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
  *  it here; the iPhone keeps its own copy (`ChatEdits.moved`) until a later
  *  change moves it to this one. */
 export const RECORD_CHANGED_SINCE_ASKED = 'Not saved: your record changed since you asked.';
+
+/** What the web chat shows for a reply that lands while this tab's erase reads
+ *  the record, before it swaps the copy (lead A6). It goes when the erase ends:
+ *  an erase that lands moves the record, and one that stops short deleted
+ *  nothing (ChatEdits drops it, A6 R2). */
+export const ERASE_IN_PROGRESS = 'Your data is being deleted. Try again in a moment.';
