@@ -159,6 +159,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
 export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
   await adapter.connect();
   if (rememberSignIn(backend, gen)) {
+    markSyncPending();
     await liftLocalInto(adapter, backend);
     trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
   }
@@ -167,7 +168,8 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
 
 /** Remember `backend` once its sign-in is saved under the current log-off id,
  *  and only while `gen` is still that id (US-09 AC45). True when both hold:
- *  only then is the device copy lifted into the cloud. */
+ *  only then is the device copy lifted into the cloud, marked pending first
+ *  so a page that stops mid-lift lifts it on the next load. */
 export function rememberSignIn(backend: CloudBackend, gen: LogOffId): boolean {
   return !!adapterFor(backend)?.isConnected() && rememberBackend(backend, gen);
 }
@@ -192,9 +194,10 @@ export function useBusyRun() {
   return { busy, error, setError, run };
 }
 
-/** The adapter for a connected cloud backend (null for the on-device tier). */
-export function adapterFor(backend: Backend): StorageAdapter | null {
-  return providerOf(backend)?.adapter() ?? null;
+/** The adapter for a connected cloud backend (null for the on-device tier);
+ *  `gen` as in Provider.adapter. */
+export function adapterFor(backend: Backend, gen?: LogOffId): StorageAdapter | null {
+  return providerOf(backend)?.adapter(gen) ?? null;
 }
 
 /** The remembered choice, from a browser that may block storage: a blocked

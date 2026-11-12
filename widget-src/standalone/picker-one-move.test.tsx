@@ -437,6 +437,31 @@ describe('US-09 AC45: a log-off in another tab while this page connects', () => 
     expect([localStorage.getItem(GITHUB_CONFIG), localStorage.getItem(BACKEND_KEY)]).toEqual([null, null]);
   });
 
+  it('a move to Google Drive whose Dropbox copy-down answers after that log-off: its return saves nothing', async () => {
+    const DRIVE_PKCE = 'health_roadmap_gdrive_pkce';
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', { value: { ...window.location, reload, assign, search: '' }, writable: true, configurable: true });
+    const dbx = deferred();
+    holdDropbox = dbx.promise;
+    const view = render(<Host />);
+    open(view);
+    await startDriveSwitch(view);
+    await vi.waitFor(() => expect(downloads()).toBe(1));
+
+    await logOffElsewhere();
+    dbx.resolve();
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledTimes(1)); // off to Google
+    const { state } = JSON.parse(sessionStorage.getItem(DRIVE_PKCE) ?? '{}') as { state?: string };
+    window.location.search = `?code=c&state=${state}&scope=${encodeURIComponent('openid email https://www.googleapis.com/auth/drive.file')}`;
+    vi.resetModules();
+    const { resolved } = await (await import('./resolve-backend')).resolveBackend();
+
+    expect(resolved.backend).toBe('local');
+    expect(fetchCalls.some((u) => u.endsWith('/api/google-token'))).toBe(false); // no code exchange
+    expect(['health_roadmap_gdrive_tokens', 'health_roadmap_gdrive', BACKEND_KEY].map((key) => localStorage.getItem(key)))
+      .toEqual([null, null, null]);
+  });
+
   it('control: a guest page\'s GitHub connect begun after that log-off is kept', async () => {
     await logOffElsewhere();
     const view = render(<BackendPickerModal current="local" onClose={() => {}} />);

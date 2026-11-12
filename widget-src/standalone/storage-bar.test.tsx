@@ -14,6 +14,7 @@ vi.mock('../src/storage', () => ({
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
+  markSyncPending: vi.fn(),
   SYNC_PENDING_EVENT: 'hr:sync-pending',
   gisReady: () => true,
   preloadGis: () => undefined,

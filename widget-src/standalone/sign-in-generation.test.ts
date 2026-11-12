@@ -30,6 +30,7 @@ const SELFHOST_CONFIG = 'health_roadmap_selfhost';
 const DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';
 const DROPBOX_EXCHANGE = 'https://api.dropboxapi.com/oauth2/token';
 const DROPBOX_UPLOAD = 'https://content.dropboxapi.com/2/files/upload';
+const DROPBOX_DOWNLOAD = 'https://content.dropboxapi.com/2/files/download';
 const EMAIL = 'person@example.test';
 
 const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -45,6 +46,9 @@ function deferred() {
 let session: Map<string, string>;
 let calls: string[];
 let holdExchange: Promise<void> | null;
+let holdDownload: Promise<void> | null;
+/** The bodies uploaded to Dropbox. */
+let uploads: string[];
 /** Keys whose writes this localStorage drops, as a full one does. */
 let dropped: Set<string>;
 /** What a Drive code exchange hands back: the same account each time. */
@@ -62,7 +66,14 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     if (body.grantType === 'code') return json({ accessToken: driveAccess, refreshToken: 'rt-same', expiresIn: 3600, idToken });
     return json({ accessToken: 'at-refreshed', expiresIn: 3600, idToken });
   }
-  if (url === DROPBOX_UPLOAD) return json({ rev: 'r1' });
+  if (url === DROPBOX_DOWNLOAD && holdDownload) await holdDownload;
+  if (url === DROPBOX_UPLOAD) {
+    uploads.push(String(init?.body));
+    return json({ rev: `r${uploads.length}` });
+  }
+  if (url === DROPBOX_DOWNLOAD && uploads.length) {
+    return new Response(uploads.at(-1), { status: 200, headers: { 'dropbox-api-result': JSON.stringify({ rev: `r${uploads.length}` }) } });
+  }
   return json({ error_summary: 'path/not_found/..' }, 409);
 }
 
@@ -99,6 +110,8 @@ beforeEach(() => {
   vi.stubGlobal('document', document);
   calls = [];
   holdExchange = null;
+  holdDownload = null;
+  uploads = [];
   driveAccess = 'at-first';
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -221,6 +234,33 @@ describe('US-09 AC45: a cloud copy is filled from this device only after its sig
     expect(backend).toBe('dropbox');
     expect(localStorage.getItem(BACKEND_KEY)).toBe('dropbox');
     expect(calls).toContain(DROPBOX_UPLOAD);
+  });
+});
+
+describe('US-09 AC45: a return page that stops while it lifts the device copy', () => {
+  it('the next load lifts the device copy into the cloud', async () => {
+    vi.resetModules();
+    const guest = await (await import('../src/storage/roadmap-store')).RoadmapStore.create(
+      new (await import('../src/storage/local-storage-adapter')).LocalStorageAdapter());
+    guest.addMeasurement('weight', 80, '2026-01-01');
+    await guest.flush();
+    await startSignIn('dropbox');
+    holdDownload = new Promise(() => {}); // the tab closes during the lift's cloud read
+    const page = await returningPage('dropbox');
+    void page.resolveBackend();
+    await vi.waitFor(() => expect(calls).toContain(DROPBOX_DOWNLOAD));
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('dropbox');
+
+    holdDownload = null;
+    location.search = '';
+    vi.resetModules();
+    const { resolveBackend } = await import('./resolve-backend');
+    const { RoadmapStore } = await import('../src/storage/roadmap-store');
+    const { resolved } = await resolveBackend();
+    expect(resolved.backend).toBe('dropbox');
+    const store = await RoadmapStore.create(resolved.adapter);
+    await store.flush();
+    expect(uploads.some((body) => body.includes('"weight"'))).toBe(true);
   });
 });
 

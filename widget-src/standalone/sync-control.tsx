@@ -11,7 +11,7 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
@@ -106,7 +106,10 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
       try {
         const gd = new GoogleDriveAdapter(googleDriveConfig());
         await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-        if (rememberSignIn('google-drive', gd.gen)) await liftLocalInto(gd, 'google-drive');
+        if (rememberSignIn('google-drive', gd.gen)) {
+          markSyncPending();
+          await liftLocalInto(gd, 'google-drive');
+        }
         location.reload();
       } finally {
         reconnectInFlight = false;

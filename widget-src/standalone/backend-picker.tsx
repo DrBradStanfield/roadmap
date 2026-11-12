@@ -155,7 +155,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
       setStep(id);
       return;
     }
-    void runMove({ type: 'start', to: id, step: 'list' }, async ({ navigating }) => {
+    void runMove({ type: 'start', to: id, step: 'list' }, async ({ gen, navigating }) => {
       await prepareSwitch(current);
       if (id === 'local') {
         forgetBackend();
@@ -165,7 +165,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
       trackProductEvent('cloud_connect_started', { provider: id });
       // Full-page OAuth redirect — never resolves; completes in resolve-backend.ts on return.
       navigating();
-      await adapterFor(id)!.connect();
+      await adapterFor(id, gen)!.connect(); // its return is kept only under the move's log-off id
     });
   };
 
