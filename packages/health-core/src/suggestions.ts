@@ -961,7 +961,7 @@ export function generateSuggestions(
     if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
       const [raised, holds, due] = [psaRaised(screenings), psaRuleHolds(screenings), psaNextDue(screenings)];
       if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
-        if (!holds) pushStart(PROSTATE, 'info');
+        if (!raised) pushStart(PROSTATE, 'info');
       } else if (screenings.prostateDiscussion === 'will_screen' && due) {
         const status = now > due ? 'overdue' : 'upcoming';
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.

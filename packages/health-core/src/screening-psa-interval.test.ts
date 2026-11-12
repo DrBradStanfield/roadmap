@@ -278,10 +278,15 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     expect(followupKinds(file, NOW).screening_prostate).toEqual({ kind: 'repeat', name: PHONE_NAME });
   });
 
-  it('no answer recorded: the same card without "You chose not to"; no discussion card while the rule holds', () => {
+  it('no answer recorded: the same card without "You chose not to"; the discussion card still shows (F2, pending Brad\'s yes)', () => {
     const file = fileWith([RAISED, VAGUE_ROW]);
-    expect(fileCards(file)).toEqual([expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED.replace(FIRST_SENTENCE, '') })]);
-    expect(fileIds(file, AUG)).toEqual([]);
+    expect(fileCards(file)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED.replace(FIRST_SENTENCE, '') }),
+      expect.objectContaining({ id: 'screening-prostate' }),
+    ]));
+    expect(fileIds(file)).toHaveLength(2);
+    expect(fileIds(file, AUG)).toEqual(['screening-prostate']);
+    expect(fileIds(fileWith([RAISED, VAGUE_ROW], 'not_yet'), AUG)).toEqual(['screening-prostate']);
     expect(due(file)).toEqual(['2026-09-01']);
   });
 
