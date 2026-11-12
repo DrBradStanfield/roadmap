@@ -14,6 +14,10 @@
 # 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is killed at 60 s,
 # even a hung gh that ignores signals).
+# Every run ends with one JSON line, the last on stdout (`tail -1`), naming its outcome (US-64 AC26):
+#   {"wait_run":"<outcome>","run"|"pr":<id>,"sha":"<head, or empty>","detail":"<short>"}
+# success 0; run_failed, unhealthy, result_unreadable (deploy), checks_failed, untested, conflict, head_unreadable
+# (pr) 1; usage 2 (no id key); timeout, gh_errors 3.
 #
 # Cheap on purpose: many sessions run this at once on one GitHub account, and on 2026-11-10 they spent the
 # 5000/hour REST limit (US-64 AC26). Each poll is ONE gh call: deploy reads the run over REST, pr reads the checks
@@ -32,10 +36,22 @@ max_s=$(( ${WAIT_RUN_MAX_MIN:-90} * 60 ))
 healthz=${WAIT_RUN_HEALTHZ:-https://health-tool-app.fly.dev/healthz}
 case "$id" in ''|*[!0-9]*) mode=bad ;; esac
 case "$interval$max_s" in *[!0-9]*) mode=bad ;; esac
+# The status line. detail can hold a check or job name (outside text): one line, control characters turned to
+# spaces, at most 200 characters, JSON-escaped; sha is kept only if it is hex.
+say_status() {
+  perl -CSA -e 'my ($o, $k, $id, $sha, $d) = @ARGV; $sha = "" unless $sha =~ /\A[0-9a-f]{1,64}\z/;
+    $d =~ s/[\x00-\x1f\x7f-\x9f\x{2028}\x{2029}]+/ /g; $d = substr($d, 0, 200); $d =~ s/(["\\])/\\$1/g;
+    print qq({"wait_run":"$o",), ($k eq "" ? "" : qq("$k":$id,)), qq("sha":"$sha","detail":"$d"}\n)' -- "$@"
+}
 case "$mode" in
   deploy|pr) ;;
-  *) echo "usage: sh tools/wait-run.sh deploy <run-id> | pr <number>" >&2; exit 2 ;;
+  *) echo "usage: sh tools/wait-run.sh deploy <run-id> | pr <number>" >&2
+     say_status usage "" "" "" "usage: deploy <run-id> | pr <number>"; exit 2 ;;
 esac
+key=run; [ "$mode" = pr ] && key=pr
+outcome=interrupted; sha=; detail="ended before a verdict"
+# Each exit path names its outcome; the EXIT trap prints the status line.
+finish() { outcome=$1; detail=$3; exit "$2"; }
 [ "$interval" -ge 60 ] || interval=60
 budget=core; [ "$mode" = pr ] && budget=graphql
 
@@ -61,11 +77,12 @@ say_budget() {
   case "$b" in core=[0-9]*" graphql="[0-9]*) echo "GitHub budget at $1: $b" >&2 ;; esac
 }
 say_budget start
-trap 'say_budget end' EXIT
+trap 'say_budget end; say_status "$outcome" "$key" "$id" "$sha" "$detail"' EXIT
 # Wall-clock, so slow gh calls count too.
 give_up_if_late() {
   waited=$(( $(date +%s) - start ))
-  if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2; exit 3; fi
+  if [ "$waited" -ge "$max_s" ]; then echo "gave up after $((waited / 60)) min; still not finished" >&2
+    finish timeout 3 "gave up after $((waited / 60)) min"; fi
 }
 # Sleep one interval, longer the longer we have waited. If this mode's budget is nearly spent, sleep until it
 # resets instead, never past the time limit.
@@ -99,10 +116,11 @@ poll() {
       errors=0
       [ "$state" = done ] && { conflicts=0; return 0; }
       if [ "$state" = conflict ]; then conflicts=$((conflicts + 1)); else conflicts=0; fi
-      if [ "$conflicts" -ge 2 ]; then echo "PR conflicts with main; merge main in (no new CI runs on a conflicting head)"; exit 1; fi
+      if [ "$conflicts" -ge 2 ]; then echo "PR conflicts with main; merge main in (no new CI runs on a conflicting head)"
+        finish conflict 1 "PR conflicts with main; merge main in"; fi
     else
       errors=$((errors + 1))
-      if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; exit 3; fi
+      if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; finish gh_errors 3 "10 gh errors in a row"; fi
     fi
     give_up_if_late
     nap
@@ -128,14 +146,16 @@ pr_state() {
 if [ "$mode" = deploy ]; then
   poll run_state
   report=$(gh run view "$id" --json conclusion,headSha,jobs \
-    --jq '"conclusion=\(.conclusion)", "head=\(.headSha)", (.jobs[] | "job \(.name)=\(.conclusion)")') \
-    || { echo "could not read the run's result" >&2; exit 1; }
+    --jq '"conclusion=\(.conclusion)", "head=\(.headSha)", (.jobs[] | "job \(.name | gsub("[[:cntrl:]]"; " "))=\(.conclusion)")') \
+    || { echo "could not read the run's result" >&2; finish result_unreadable 1 "could not read the run's result"; }
   echo "$report"
   conclusion=$(echo "$report" | sed -n 's/^conclusion=//p')
+  sha=$(echo "$report" | sed -n 's/^head=//p')
   code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$healthz" 2>/dev/null) || code=000
   echo "healthz=$code ($healthz)"
-  [ "$conclusion" = success ] && [ "$code" = 200 ] && exit 0
-  exit 1
+  [ "$conclusion" = success ] || finish run_failed 1 "conclusion=$conclusion healthz=$code"
+  [ "$code" = 200 ] || finish unhealthy 1 "healthz=$code"
+  finish success 0 "conclusion=success healthz=200"
 fi
 
 # One read gives the counts and the verdict. A check that went back to pending (a re-run or new push between the
@@ -144,7 +164,7 @@ while :; do
   poll pr_state
   checks=$(gh pr checks "$id" --json name,bucket --jq '
     "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" else "no" end) pending=\([.[] | select(.bucket == "pending")] | length)",
-    (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)")' 2>/dev/null)
+    (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name | gsub("[[:cntrl:]]"; " "))")' 2>/dev/null)
   # Verdicts come only from line 1, the fixed-format summary. A check name (outside text) cannot forge it: the
   # names go only into the `failed:` lines, and the one name that counts, tested=, is an exact match on `test`.
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
@@ -154,12 +174,15 @@ while :; do
   nap
 done
 echo "$checks"
-gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
-  --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"' \
-  || { echo "could not read the PR's head and mergeability" >&2; exit 1; }
+view=$(gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
+  --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"') \
+  || { echo "could not read the PR's head and mergeability" >&2; finish head_unreadable 1 "could not read the PR's head and mergeability"; }
+echo "$view"
+sha=$(echo "$view" | sed -n 's/^head=//p')
 # All skipped (a draft PR: CI skips every job) is finished but tested nothing, so it is not a pass.
 case "$summary" in
-  *" fail=0 skipped="*" tested=yes "*) exit 0 ;;
-  *" fail=0 skipped="*) echo "no successful test check (a draft PR? mark it ready: gh pr ready $id)"; exit 1 ;;
+  *" fail=0 skipped="*" tested=yes "*) finish success 0 "$summary" ;;
+  *" fail=0 skipped="*) echo "no successful test check (a draft PR? mark it ready: gh pr ready $id)"
+    finish untested 1 "no successful test check (a draft PR?)" ;;
 esac
-exit 1
+finish checks_failed 1 "${summary%% skipped=*} failed: $(printf '%s\n' "$checks" | sed -n 's/^failed: //p' | paste -sd , -)"

@@ -75,7 +75,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `vitest related` took the load to 19.7). A hook refuses the broad forms on the Mac (US-71 AC10): `npm test`,
    `npm run test:all` and the other whole-suite scripts, `vitest related`, and vitest with no file argument.
    `ALLOW_BROAD_TESTS=<reason>` before the command lets one through, for a flake hunt or a run Brad asks for. The hook is off in CI and outside macOS. Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
-   counts, the head sha and mergeability, exits non-zero on a failure or when no `test` check succeeded, as on a draft PR whose checks all skip, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
+   counts, the head sha and mergeability, exits non-zero on a failure or when no `test` check succeeded, as on a draft PR whose checks all skip, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push). Its last stdout line is always one JSON status, so branch on `tail -1`, not on prose: `{"wait_run":"<outcome>","pr":<n>,"sha":"<head, or empty>","detail":"<short>"}` (`"run":<id>` in deploy mode). Outcomes and exit codes: `success` 0; `checks_failed`, `untested` (no `test` check passed, as on a draft PR), `conflict`, `head_unreadable` 1; `timeout`, `gh_errors` 3; `usage` 2 (no id key). `detail` may hold check names: one line, at most 200 characters, control characters stripped. Never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
    `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
@@ -96,7 +96,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml` (main's CI must be green
    first: it is the only UTC run of a merged tree), find
    the run id with `gh run list --workflow deploy.yml --limit 1`, then wait with `sh tools/wait-run.sh deploy
-   <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code. A manual release follows
+   <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code, then the JSON status line (outcomes `success` 0; `run_failed`, `unhealthy` (healthz not 200), `result_unreadable` 1; `timeout`, `gh_errors` 3). Healthz answers only `{"status":"ok"}`, no sha, so a 200 does not prove the new build is the one answering. A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and
