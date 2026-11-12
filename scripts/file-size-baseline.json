@@ -35,7 +35,6 @@
     "packages/health-core/src/input-form.ts": 582,
     "ios/engine/my-data.ts": 578,
     "ios/HealthRoadmap/Onboarding/OnboardingView.swift": 571,
-    "scripts/build-master-html.mjs": 565,
     "ios/HealthRoadmap/AppleHealthMetrics/LiveMetricPage.swift": 549,
     "tools/youtube-comment-dryrun.ts": 545,
     "ios/engine/cloud.ts": 539,
