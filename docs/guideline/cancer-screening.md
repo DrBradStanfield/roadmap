@@ -211,7 +211,7 @@ Blank: no national source verified.
 
 [27] Castells A et al. Effect of invitation to colonoscopy versus faecal immunochemical test screening on colorectal cancer mortality (COLONPREV). Lancet. 2025;405(10486):1231-1239. PMID: 40158525.
 
-[28] Corley DA et al. Association Between Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer and Cancer Stage at Diagnosis. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
+[28] Corley DA et al. Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
 
 [29] US Preventive Services Task Force. Screening for Breast Cancer. JAMA. 2024;331(22):1918-1930. PMID: 38687503.
 
@@ -237,7 +237,7 @@ Blank: no national source verified.
 
 [40] US Preventive Services Task Force. Vitamin, Mineral, and Multivitamin Supplementation to Prevent Cardiovascular Disease and Cancer. JAMA. 2022;327(23):2326-2333. PMID: 35727271.
 
-[41] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. The effect of vitamin E and beta carotene on the incidence of lung cancer and other cancers in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
+[41] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. Vitamin E and beta carotene and lung cancer in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
 
 [42] Klein EA et al. Vitamin E and the risk of prostate cancer: SELECT. JAMA. 2011;306(14):1549-56. PMID: 21990298.
 
