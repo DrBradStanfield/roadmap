@@ -31,7 +31,7 @@ export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
 // The flag itself is in lib/storage, shared with the mirror and the drafts.
 export function stopRoadmapLocalWrites(): void {
-  noteLogOffSeen();
+  noteLogOffSeen(true);
   stopLocalHealthWrites();
   signalLogOff();
 }

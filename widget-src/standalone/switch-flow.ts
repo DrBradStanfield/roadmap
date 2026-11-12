@@ -16,7 +16,7 @@
  * the picker's component state and die with its mount.
  */
 import { useSyncExternalStore } from 'react';
-import { signInStamp } from '../src/lib/storage';
+import { signInStamp, type SignInStamp } from '../src/lib/storage';
 import type { Backend } from './connect';
 
 /** The picker step a move started from, where a reopened picker shows it. */
@@ -86,7 +86,7 @@ export function dispatch(event: SwitchEvent): boolean {
 /** What a running move is handed: the sign-in stamp it started with, and
  *  `navigating()` to call just before it hands the page to a redirect. */
 export interface Move {
-  startedAt: number;
+  startedAt: SignInStamp;
   navigating: () => void;
 }
 

@@ -20,7 +20,7 @@ import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type SignInStamp } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -156,7 +156,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * resolve-backend.ts on return), so they don't go through here. `startedAt` is
  * the move's sign-in stamp; the adapter was built with it too (US-09 AC45).
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend, startedAt: number): Promise<void> {
+export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend, startedAt: SignInStamp): Promise<void> {
   await adapter.connect();
   await liftLocalInto(adapter, backend);
   if (rememberBackend(backend, startedAt)) trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
@@ -195,7 +195,7 @@ export function rememberedBackend(): Backend | null {
 }
 /** Saved only for a sign-in that started after the latest log-off this page
  *  heard (US-09 AC45); true when saved. */
-export function rememberBackend(backend: Backend, startedAt: number): boolean {
+export function rememberBackend(backend: Backend, startedAt: SignInStamp): boolean {
   return setSignIn(BACKEND_KEY, backend, startedAt);
 }
 export function forgetBackend(): void {

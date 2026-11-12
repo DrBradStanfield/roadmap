@@ -141,10 +141,10 @@ describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no s
     else expect(read(DRIVE_CONFIG)).toEqual({ fileIds: {} });
   });
 
-  it('a sign-in begun after the log-off is saved', async () => {
+  it('a sign-in begun after another tab\'s log-off was heard is saved', async () => {
     returningFrom(DROPBOX_PKCE);
     vi.stubGlobal('fetch', vi.fn(async () => json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 })));
-    await page(true);
+    (await import('../lib/storage')).noteLogOffSeen(); // what this page does on hearing it
     const { DropboxAdapter } = await import('./dropbox');
     await DropboxAdapter.completeRedirect(DROPBOX);
     expect(read(DROPBOX_TOKENS)).toMatchObject({ accessToken: 'at-new', refreshToken: 'rt-new' });
