@@ -1367,6 +1367,44 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       .toEqual(Object.fromEntries(filed.map((d) => [d, 'ok'])));
   });
 
+  // US-32 AC9a: a refusal of a number that is no record value tells the
+  // assistant how to reword it; what is refused stays the same.
+  it('tells the assistant how to reword a number that is no record value', () => {
+    const refusal = reportFeedback({ ...GOOD, detail: 'the line-height 1.5 on the plan is too tight' }, NOW);
+    expect(refusal).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    expect(refusal.text).toContain('“height 1.5” reads as a health value, so nothing was prepared.');
+    expect(refusal.text).toContain('drop the number, or say it without the name or unit beside it.');
+    // The same hint on a number wearing a unit.
+    expect(reportFeedback({ ...GOOD, detail: 'My LDL of 4.2 mmol/L looks wrong' }, NOW).text)
+      .toContain('drop the number, or say it without the name or unit beside it.');
+    // Both rewordings the hint names file.
+    for (const detail of [
+      'the line-height on the plan is too tight',
+      'the spacing between lines on the plan is too tight, set to 1.5',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+  });
+
+  // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
+  // number typed onto the front of a name is one word. These still file (so
+  // does the Sentry scrub's output: it leaves them as written).
+  it('still files a number in non-ASCII digits, or a whole number glued in front of a name', () => {
+    for (const detail of [
+      'my ldl \uFF11\uFF14\uFF10 is wrong', // full-width digits
+      'my ldl is \uFF13.\uFF12 mmol/L',
+      'my bmi \u0663\u0661 is wrong', // Arabic-Indic digits
+      'my 140ldl is wrong',
+      'my 31bmi is wrong',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    // A decimal or a dot ends the word first, so these are refused.
+    for (const detail of ['my 3.2ldl is wrong', 'my 140.ldl is wrong']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
+
   it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {
     for (const detail of [
       'I have HIV. Contact synthetic@example.invalid',

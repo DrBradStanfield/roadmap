@@ -170,7 +170,9 @@ function unsafeFeedback(text: string): { reason: McpRefusalReason; text: string 
     return {
       reason: 'health-value',
       text: `“${value}” reads as a health value, so nothing was prepared. A report leaves the user’s machine when ` +
-        'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
+        'they submit it: say which tool or screen was wrong and what you expected, not what the record holds. ' +
+        'If the number is no record value (a report like “line-height 1.5” holds none), drop the number, or say it ' +
+        'without the name or unit beside it.',
     };
   }
   if (EMAIL.test(text) || phoneShaped(text) || URL_WITH_QUERY.test(text) || FILENAME.test(text)) {
