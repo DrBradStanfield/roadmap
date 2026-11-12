@@ -11,7 +11,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { PERSIST_DEBOUNCE_MS } from '@roadmap/health-core/record-session';
-import { StorageError } from '@roadmap/health-core/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', async (original) => ({
@@ -37,6 +37,7 @@ vi.mock('./connect', () => ({
 import { StorageBar, SyncControl } from './sync-control';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
+import { GitHubAdapter } from '../src/storage/github';
 
 /** A cloud whose writes can fail with a chosen error, counting each one tried. */
 class TestCloud extends MemoryAdapter {
@@ -154,6 +155,21 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
+  });
+
+  // PR 1458 N1: a revoked GitHub token, as the real adapter throws it, is a refused sign-in.
+  it('a GitHub save refused 401: the online event tries nothing, and the waiting line never promises an upload', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 })));
+    const refused = await new GitHubAdapter({ token: 'test-token-good', owner: 'synthetic', repo: 'health' })
+      .read(ROADMAP_FILE_NAME).then(() => null, (e: unknown) => e as Error);
+    vi.unstubAllGlobals();
+    expect(refused).toBeInstanceOf(StorageError);
+    const cloud = await failedSave(refused!);
+    cloud.fail = null;
+    await online();
+    expect(cloud.writes).toBe(1);
+    expect(saveRetries()).toEqual([]);
     expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
   });
 
