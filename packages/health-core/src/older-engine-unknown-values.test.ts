@@ -49,7 +49,7 @@ const stamp = (lamport: number, updatedAt: string) => ({ lamport, updatedAt });
 type Probe = {
   name: string;
   /** The camelCase field a newer engine would store, and the value it writes. */
-  values: Record<string, string>;
+  values: Record<string, string | number>;
   /** Another answer of the same screening, changed on today's engine (snake_case keys, as the form sends them). */
   edits: Array<[string, string]>;
 };
@@ -72,6 +72,10 @@ const PROBES: Probe[] = [
   // No dental screening exists today, so the edit is to another screening's answers.
   { name: "unknown key dentalInterval '6'", values: { dentalInterval: '6' },
     edits: [['dexa_last_date', '2025-03'], ['dexa_result', 'normal']] },
+  // Change 2b (US-07 AC1j): the colonoscopy report's follow-up time, written by the engine that knows it.
+  // The edits keep its parent gate open, so the newer engine (this one, after 2b) keeps it too.
+  { name: "colorectalFollowupIntervalYears 5 (Change 2b)", values: { colorectalFollowupIntervalYears: 5 },
+    edits: [['colorectal_last_date', '2025-03'], ['colorectal_result', 'abnormal']] },
 ];
 
 /** A record as a newer device wrote it: known answers stamped at T_BASE, the probe stamped later. */

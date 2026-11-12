@@ -640,7 +640,7 @@ Source: `lab-limits.ts`. Brad, 2026-11-02: "Only when it decides".
 
 A lab result printed with a symbol ("> 60", "< 5", "≤ 0.1") is saved as its bound with its comparator, never as the bound alone. The plan grades it only when the bound decides: when no cutoff the input is compared against lies inside the band the limit leaves open, so every value in the band grades the same.
 
-- **Two cutoff lists per input.** The plan's grading lines (`LIMIT_CUTOFFS`): every threshold in this section the cards, calculations, gates, on-treatment targets and medication cascades compare the input against, for any sex and any treatment state. eGFR's is 45 alone (the protein cut and the potassium gate); the systolic list holds both targets, 120 and 130; creatinine has none; PSA's line is 4.0 (lab-limits, Change 3). The label lines (`LIMIT_LABEL_CUTOFFS`): what the tiles' status words and the blood-test grid colours compare it against: eGFR 70, 60, 45, 30 and 15; HDL's and creatinine's grid bands by sex, both sexes listed; PSA 4.0; triglycerides' grid line 2.26. The orchestrator split them on 2026-11-02, because the 70 line drives only a label. Non-HDL's lines are in neither list: non-HDL is derived, and never from a limit. A non-core lab graded by its printed reference range uses that range; a printed bound of exactly 0 is no cutoff (CRP's "0–5" leaves "< 1" decided), while a negative bound is one (base excess "−2 to 2").
+- **Two cutoff lists per input.** The plan's grading lines (`LIMIT_CUTOFFS`): every threshold in this section the cards, calculations, gates, on-treatment targets and medication cascades compare the input against, for any sex and any treatment state. eGFR's is 45 alone (the protein cut and the potassium gate); the systolic list holds both targets, 120 and 130; creatinine has none; PSA's line is 4.0. The label lines (`LIMIT_LABEL_CUTOFFS`): what the tiles' status words and the blood-test grid colours compare it against: eGFR 70, 60, 45, 30 and 15; HDL's and creatinine's grid bands by sex, both sexes listed; PSA 4.0; triglycerides' grid line 2.26. The orchestrator split them on 2026-11-02, because the 70 line drives only a label. Non-HDL's lines are in neither list: non-HDL is derived, and never from a limit. A non-core lab graded by its printed reference range uses that range; a printed bound of exactly 0 is no cutoff (CRP's "0–5" leaves "< 1" decided), while a negative bound is one (base excess "−2 to 2").
 - **Decides when:** `< b` and every cutoff is at or above b; `<= b` and every cutoff is above b; `> b` and every cutoff is at or below b; `>= b` and every cutoff is below b. The same lists for everyone, conservative on purpose. The plan decides against its grading lines. A tile word or grid colour shows only when the limit also decides against the label lines; otherwise the tile shows the limit with no word and the grid no colour.
 - **Decided:** the plan grades a representative strictly inside the band, halfway between the bound and the input range's far end (section 12), so no rounding moves it across the bound. It must pass the input range, or the limit is undecided. It is never shown, stored or sent: every surface shows the bound with its symbol.
 - **Undecided:** the input has no graded value. No card, tile grade or cascade step comes from it, it is not counted missing, and no older exact value stands in for it. It is shown with its limit and "Printed as a limit, so the plan cannot grade it against its cutoff.", except for a known minor, whose adult lines grade nothing, exact or limit: there it shows no note (US-12 AC21).
@@ -1116,6 +1116,7 @@ With no sex on record only the unsexed screenings (colorectal, lung) show (US-07
 
 Colorectal method by age (Brad 2026-11-12): Dr Brad's sequence is a FIT test every year until 55, then a colonoscopy every 10 years; the ACS treats them as equal options. The start card names the sequence by age (35-44, 45-54, 55-75). From 55 to 75, a person on `fit_annual` sees one more line on the FIT up-to-date and overdue cards, suggesting a colonoscopy. The FIT schedule and reminder are unchanged until the method changes.
 The line is not shown when the recorded result is abnormal (Brad 2026-11-12), even on the routine card a completed follow-up with no date falls back to.
+After an abnormal result, once the colonoscopy is done, the person is on a colonoscopy schedule: the next is due at the interval the report gave, counted once from the colonoscopy date, or 3 years with none given (Dr Brad's recommendation). colorectalMethod is never rewritten; the person records the next colonoscopy by switching the method to Colonoscopy.
 
 Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
 
@@ -1144,9 +1145,7 @@ After abnormal result + completed follow-up investigation:
 
 | Key | Months | Scenario |
 |-----|--------|----------|
-| `colorectal_fit_annual` | 36 | Positive FIT -> colonoscopy -> 3 years |
-| `colorectal_colonoscopy_10yr` | 36 | Polyps found -> 3 years |
-| `colorectal_other` | 36 | Default 3 years |
+| `colorectal` (all methods) | the report's interval, else 36 | Abnormal result -> colonoscopy -> the next colonoscopy at the interval the colonoscopy report gave (1-10 years, once), else 3 years: Dr Brad's recommendation (Brad 2026-11-12) |
 | `breast_annual` | 12 | Resume annual |
 | `breast_biennial` | 24 | Resume biennial |
 | `cervical_hpv_every_5yr` | 12 | HPV+ -> colposcopy -> 1 year |
@@ -1161,6 +1160,7 @@ For abnormal results, the follow-up status progresses through:
 1. `not_organized` -> **urgent**: organize follow-up
 2. `scheduled` -> **info**: keep appointment
 3. `completed` + follow-up date -> check post-follow-up interval for overdue/upcoming
+4. Colorectal, completed with no follow-up date: the 'Add your colonoscopy date' card (attention); no reminder until the date is added (Brad 2026-11-12).
 
 ### Overdue Calculation
 
@@ -1308,7 +1308,7 @@ Same eligibility criteria as the suggestion algorithm (section 8). Checks both i
 **Follow-up reminders (US-17 AC15, Brad 2026-11-05).** After an abnormal result (osteoporosis for bone density) with a last screening date, the reminder follows the follow-up card and is never later than the routine date:
 - Follow-up to organize (no status, or `not_organized`): due at the last screening's month, which has passed, so the next daily email carries it.
 - Follow-up scheduled: a check-in due 3 months after the last screening date, to record the follow-up result. The date stays put once it has passed.
-- Follow-up completed with a date: the post-follow-up interval, unchanged. Completed with no date: the routine date, unchanged.
+- Follow-up completed with a date: the post-follow-up interval, unchanged. Completed with no date: the routine date, unchanged. Colorectal is the exception: no reminder; the card asks for the date (Brad 2026-11-12).
 
 Neither date depends on today's date, so it never moves. Organize and check-in reminders repeat every 90 days (the screening cooldown) until the status changes. The cooldown is per category and spans follow-up states, so the first organize email can wait up to 90 days after a routine send for the same screening, and a check-in can arrive up to 90 days after the organize email. This covers colorectal, breast, cervical, lung (with the AC1f and AC1g follow-up exception) and bone density. Prostate and endometrial have no follow-up states.
 

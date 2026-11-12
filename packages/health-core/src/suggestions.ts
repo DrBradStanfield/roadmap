@@ -2,6 +2,7 @@ import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, Medicat
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -819,8 +820,6 @@ export function generateSuggestions(
     const sex = inputs.sex;
     const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, ENDOMETRIAL, DEXA] =
       (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'endometrial', 'dexa'] as const).map(ruleOf);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const monthLabel = (d: Date) => `${months[d.getMonth()]} ${d.getFullYear()}`;
     /** A row's card text, with `{due}` and lung's `{packYears}` filled in. */
     const fill = (t: CardText, due = '') => ({
       title: t.title,
@@ -891,6 +890,7 @@ export function generateSuggestions(
         };
       }
 
+      if (r === COLORECTAL) return colonoscopyCard(screenings!, now); // completed: its own schedule, never the routine card (US-07 AC1j)
       const nextDue = getPostFollowupDueDate(type, method, result, followupStatus, followupDate);
       if (nextDue) {
         const nextDueLabel = monthLabel(nextDue);

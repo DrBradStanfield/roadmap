@@ -100,6 +100,9 @@ interface RuleBase {
   readonly dateKey?: string;
   /** Lung keeps its follow-up past the upper age (US-07 AC1g); the pack-years gate is waived too, in code. */
   readonly followupIgnoresUpperAge: boolean;
+  /** The repeat interval the follow-up's report gave, asked once the follow-up is completed: whole years, 1 to
+   *  `maxYears`, the blank answer `notGiven` (colorectal, Change 2b, US-07 AC1j). Last in the result chain. */
+  readonly followupInterval?: { readonly key: string; readonly label: string; readonly notGiven: string; readonly maxYears: number };
   readonly reminder?: { readonly category: ReminderCategory; readonly label: string };
   readonly evidenceKey: string;
   readonly notes: readonly Note[];
@@ -149,6 +152,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     ] },
     notStarted: 'not_yet_started', dateKey: 'colorectal_last_date', result: resultOf('colorectal'),
     followupIgnoresUpperAge: false,
+    followupInterval: { key: 'colorectal_followup_interval_years', label: 'Did the colonoscopy report give a follow-up time?', notGiven: 'Not given', maxYears: 10 },
     reminder: { category: 'screening_colorectal', label: 'Colorectal screening' },
     evidenceKey: 'screening-colorectal',
     notes: [
@@ -375,8 +379,26 @@ export const opensFollowup = (r: ScreeningRule, result: string | undefined): boo
   return !!t && result === t;
 };
 
-/** A row's result chain keys: the result, then the follow-up's status and date. */
-export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
+/** A row's result chain keys: the result, then the follow-up's status and date, then its repeat interval (Change 2b). */
+export const chainKeys = (r: ScreeningRule): string[] => (r.result
+  ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`, ...(r.followupInterval ? [r.followupInterval.key] : [])] : []);
+
+/** The repeat interval question, once the follow-up is completed (US-07 AC1j): its key, label and answers,
+ *  "Not given" (blank) then 1 to maxYears years. None for another status or a row without one. */
+export function intervalQuestion(r: ScreeningRule, status: string): Array<{ key: string; label: string; options: Array<{ value: string; label: string }> }> {
+  const q = r.followupInterval;
+  if (!q || status !== 'completed') return [];
+  const years = Array.from({ length: q.maxYears }, (_, i) => ({ value: String(i + 1), label: `${i + 1} year${i ? 's' : ''}` }));
+  return [{ key: q.key, label: q.label, options: [{ value: '', label: q.notGiven }, ...years] }];
+}
+
+/** The repeat interval an answer closes (US-07 AC1j): a follow-up status other than completed, or a new method
+ *  (`before` is the method's stored answer). The result and "Not yet started" close it with the chain. */
+export function intervalClosedBy(key: string, value: string, before = ''): string[] {
+  const r = SCREENING_RULES.find((x) => x.choice.key === key || `${x.id}_followup_status` === key);
+  if (!r?.followupInterval) return [];
+  return (key === r.choice.key ? value !== before : value !== 'completed') ? [r.followupInterval.key] : [];
+}
 
 // ---------------------------------------------------------------------------
 // Views: today's shared constants, derived from the table. F and S read screeningFollowupInfo, M

@@ -102,7 +102,8 @@ struct FormFieldRow: View {
         // Under a group's name, "Select screening method"; a question ("Discussed…?") goes under the row instead.
         let asks = label.hasSuffix("?")
         let empty = heading == nil || asks ? "Select..." : "Select \(Self.lowercasedFirst(label))"
-        let shown = options.first { $0.value == value && !$0.value.isEmpty }?.label ?? empty
+        // A blank answer an option names ("Not given", US-07 AC1j) shows that name; "Select..." stays the empty prompt.
+        let shown = options.first { $0.value == value && (!$0.value.isEmpty || $0.label != "Select...") }?.label ?? empty
         return labelled(label, hint: heading != nil && asks ? [label, hint].compactMap { $0 }.joined(separator: "\n") : hint) {
             Menu {
                 Picker(label, selection: Binding(get: { value }, set: { picked in

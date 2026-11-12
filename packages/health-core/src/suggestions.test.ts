@@ -1783,8 +1783,9 @@ describe('generateSuggestions', () => {
         // no followupDate
       };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
-      // Should fall back to default logic
-      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')).toBeUndefined();
+      // Since Change 2b (US-07 AC1j) colorectal asks for the colonoscopy date instead of the routine card.
+      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')?.title).toBe('Add your colonoscopy date');
+      expect(suggestions.find(s => s.id === 'screening-colorectal-upcoming')).toBeUndefined();
     });
 
     // --- Breast ---
