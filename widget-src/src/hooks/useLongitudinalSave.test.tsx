@@ -64,13 +64,17 @@ describe('US-03 AC9: the save state', () => {
     expect(hook.result.current.isSavingLongitudinal).toBe(false);
   });
 
-  it('US-03 AC9: an erase forgets the field save waiting on its timer, so a departure after it writes nothing', async () => {
-    const { hook } = setup({ weightKg: 80 });
-    act(() => { hook.result.current.scheduleLongitudinalSave(); });
-    act(() => { hook.result.current.cancelPendingSave(); });
-    act(() => { hook.result.current.stagePendingSave(); });
-    await act(async () => { await Promise.resolve(); });
-    expect(addMeasurement).not.toHaveBeenCalled();
+  it('US-03 AC9: an erase forgets the field save waiting on its timer, so neither the timer nor a departure after it writes', async () => {
+    vi.useFakeTimers();
+    try {
+      const { hook } = setup({ weightKg: 80 });
+      act(() => { hook.result.current.scheduleLongitudinalSave(); });
+      act(() => { hook.result.current.cancelPendingSave(); });
+      act(() => { vi.advanceTimersByTime(1000); });
+      act(() => { hook.result.current.stagePendingSave(); });
+      await act(async () => { await Promise.resolve(); });
+      expect(addMeasurement).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 
   it('US-03 AC9 control: without the erase, the departure writes the waiting save at once', async () => {
@@ -106,16 +110,6 @@ describe('US-06 AC15 / US-03 AC9: the waiting field save', () => {
     act(() => { hook.result.current.stagePendingSave(); });
     await act(async () => { await Promise.resolve(); });
     expect(addMeasurement).toHaveBeenCalledOnce();
-  });
-
-  it('US-03 AC9: an erase drops the waiting save; neither the timer nor a departure writes it', async () => {
-    const { hook } = setup({ weightKg: 80 });
-    act(() => { hook.result.current.scheduleLongitudinalSave(); });
-    act(() => { hook.result.current.cancelPendingSave(); });
-    act(() => { vi.advanceTimersByTime(1000); });
-    act(() => { hook.result.current.stagePendingSave(); });
-    await act(async () => { await Promise.resolve(); });
-    expect(addMeasurement).not.toHaveBeenCalled();
   });
 
   it('US-06 AC15: flushPendingSave runs the waiting save once, under the erase as the field was left', async () => {
