@@ -127,8 +127,8 @@ interface HostBase {
   /** Something the user cannot fix failed and must still be seen: a save
    *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
    *  server teardown; `chat-erase`, the chat history's tombstones), the
-   *  off-file clear an erase taken in owes (`clear-off-file`, retried until it
-   *  lands), or a throw after a save's write landed (`after-save`). `repeat`:
+   *  off-file clear an erase taken in owes (`clear-off-file`, retried in this
+   *  session until it lands), or a throw after a save's write landed (`after-save`). `repeat`:
    *  this kind of device refusal, or this erase's failed clear, was already
    *  reported this session. Gets the error and closed tags only, never
    *  record content. */

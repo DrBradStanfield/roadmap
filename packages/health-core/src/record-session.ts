@@ -536,7 +536,7 @@ export class RecordSession {
     this.clearedFor = this.eraseIdentity;
   }
 
-  /** The clear an erase taken in owes: retried until it lands (US-11 AC7). */
+  /** The clear an erase taken in owes: retried in this session until it lands (US-11 AC7). */
   private settleClear(): void {
     if (this.clearedFor === this.eraseIdentity) return;
     try {
