@@ -9,6 +9,7 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessa
 const SECRET = 'synthetic-proxy-secret';
 const MIN = 60_000;
 let action: typeof import('./api.lab-import-v2').action;
+let loader: typeof import('./api.lab-import-v2').loader;
 let nextId: number;
 let ended: boolean;
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -16,12 +17,12 @@ const lines = [JSON.stringify({ custom_id: 'file-0', result: { type: 'succeeded'
   content: [], stop_reason: 'refusal', stop_details: { category: 'bio' },
 } } })];
 
-function request(body: object, timestamp = Math.floor(Date.now() / 1000), valid = true) {
+function request(body: object, timestamp = Math.floor(Date.now() / 1000), valid = true, ip = `10.0.0.${nextId}`, method = 'POST') {
   const query = new URLSearchParams({ shop: 'synthetic.myshopify.com', timestamp: String(timestamp) });
   const message = [...query].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('');
   query.set('signature', valid ? crypto.createHmac('sha256', SECRET).update(message).digest('hex') : '0'.repeat(64));
   return new Request(`https://synthetic.test/api/lab-import-v2?${query}`, {
-    method: 'POST', headers: { 'fly-client-ip': `10.0.0.${nextId}` }, body: JSON.stringify(body),
+    method, headers: { 'fly-client-ip': ip }, body: method === 'POST' ? JSON.stringify(body) : undefined,
   });
 }
 const call = (body: object) => action({ request: request(body) } as never);
@@ -49,7 +50,7 @@ beforeEach(async () => {
     return url.endsWith('/results') ? new Response(lines.join('\n')) : statusResponse();
   });
   vi.stubGlobal('fetch', fetchMock);
-  ({ action } = await import('./api.lab-import-v2'));
+  ({ action, loader } = await import('./api.lab-import-v2'));
 });
 afterEach(() => {
   vi.clearAllTimers();
@@ -65,7 +66,7 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     let entry: { pollResult?: unknown; pollInFlight?: unknown } | undefined;
     try {
       batch = await upload();
-      entry = set.mock.calls.find(([id, value]) => id === batch.batchId && value?.pollToken === batch.pollToken)?.[1];
+      entry = set.mock.calls.find(([id, value]) => id === batch.batchId && value?.pollTokens?.[0] === batch.pollToken)?.[1];
     } finally {
       set.mockRestore();
     }
@@ -298,5 +299,199 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     expect((await call(batch)).status).toBe(404);
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
     expect(reads()).toBe(4);
+  });
+});
+
+describe('US-12 AC25: the same files sent again while their batch runs join it, uncharged', () => {
+  const IP = '203.0.113.7';
+  const page = (content: string) => ({ type: 'image', content, mimeType: 'image/png' });
+  const twoFiles = [{ pages: [page('AAAA')] }, { pages: [page('BBBB')] }];
+  const post = (body: object, ip = IP) => action({ request: request(body, undefined, true, ip) } as never);
+  const send = async (files: object[] = twoFiles, flags: object = {}, ip = IP) => {
+    const response = await post({ batch: true, files, ...flags }, ip);
+    expect(response.status).toBe(200);
+    return response.json() as Promise<{ success: true; batchId: string; pollToken: string; totalFiles: number }>;
+  };
+  const remaining = async (ip = IP) => (await (await loader({ request: request({}, undefined, true, ip, 'GET') } as never)).json()).remaining;
+  const creates = () => fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST').length;
+  const pollWith = (batchId: string, pollToken: string) => post({ batchId, pollToken });
+
+  it('US-12 AC25: joins a live unserved batch with a new poll token, no charge and no provider batch', async () => {
+    ended = false;
+    const first = await send();
+    const left = await remaining();
+    const joined = await send();
+    expect(joined).toEqual({ success: true, batchId: first.batchId, pollToken: expect.any(String), totalFiles: 2 });
+    expect(joined.pollToken).not.toBe(first.pollToken);
+    expect(creates()).toBe(1);
+    expect(await remaining()).toBe(left);
+    expect(left).toBe(200 - 2);
+  });
+
+  it('US-12 AC25: each token is its own bearer: the first still reads after a join, both read the results, both die with the batch', async () => {
+    ended = false;
+    const first = await send();
+    expect((await pollWith(first.batchId, 'x'.repeat(first.pollToken.length))).status).toBe(404);
+    const joined = await send();
+    ended = true;
+    const a = await (await pollWith(first.batchId, first.pollToken)).json();
+    const b = await (await pollWith(first.batchId, joined.pollToken)).json();
+    expect(a).toMatchObject({ status: 'ended', results: [{ index: 0, errorCode: 'refused' }] });
+    expect(b).toEqual(a);
+    await vi.advanceTimersByTimeAsync(10 * MIN);
+    expect((await pollWith(first.batchId, first.pollToken)).status).toBe(404);
+    expect((await pollWith(first.batchId, joined.pollToken)).status).toBe(404);
+  });
+
+  it('US-12 AC25: a join never extends the batch life: the unserved hour runs from the first upload', async () => {
+    ended = false;
+    const first = await send();
+    await vi.advanceTimersByTimeAsync(50 * MIN);
+    const joined = await send();
+    expect(joined.batchId).toBe(first.batchId);
+    await vi.advanceTimersByTimeAsync(20 * MIN);
+    expect((await pollWith(first.batchId, joined.pollToken)).status).toBe(404);
+  });
+
+  it('US-12 AC25: two identical POSTs in one tick make one provider batch and one charge', async () => {
+    ended = false;
+    const [a, b] = await Promise.all([send(), send()]);
+    expect(b.batchId).toBe(a.batchId);
+    expect(b.pollToken).not.toBe(a.pollToken);
+    expect(creates()).toBe(1);
+    expect(await remaining()).toBe(200 - 2);
+  });
+
+  it.each([
+    ['reordered (the match is order-sensitive: results map by position)', [twoFiles[1], twoFiles[0]], {}, IP],
+    ['one byte different', [twoFiles[0], { pages: [page('BBBC')] }], {}, IP],
+    ['one page fewer', [twoFiles[0]], {}, IP],
+    ['with a different flag', twoFiles, { ownDates: true }, IP],
+    ['from another IP', twoFiles, {}, '203.0.113.8'],
+  ] as const)('US-12 AC25: a set %s is a new batch, charged', async (_, files, flags, ip) => {
+    ended = false;
+    const first = await send();
+    const other = await send(files as unknown as object[], flags, ip);
+    expect(other.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+    expect(await remaining(ip)).toBe(ip === IP ? 200 - 2 - files.length : 200 - files.length);
+  });
+
+  it('US-12 AC25: a served batch, failed files and all, never blocks a fresh upload', async () => {
+    const first = await send();
+    expect(await (await pollWith(first.batchId, first.pollToken)).json()).toMatchObject({ status: 'ended' });
+    const again = await send();
+    expect(again.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+    expect(await remaining()).toBe(200 - 4);
+  });
+
+  it('US-12 AC25: after the sweep drops an unserved batch, the same files are a new batch, charged', async () => {
+    ended = false;
+    const first = await send();
+    await vi.advanceTimersByTimeAsync(70 * MIN);
+    const again = await send();
+    expect(again.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+  });
+
+  it('US-12 AC25: three tokens per batch; a fourth upload gets the existing busy answer, uncharged', async () => {
+    ended = false;
+    await send();
+    await send();
+    await send();
+    const left = await remaining();
+    const refused = await post({ batch: true, files: twoFiles });
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toEqual({ success: false, error: 'Server busy. Please try again later.', code: 'busy' });
+    expect(creates()).toBe(1);
+    expect(await remaining()).toBe(left);
+  });
+
+  it('US-12 AC25: a join is answered when the machine holds 200 batches; a new set is still busy', async () => {
+    ended = false;
+    const first = await send();
+    for (let i = 0; i < 199; i++) await upload();
+    expect(creates()).toBe(200);
+    const joined = await send();
+    expect(joined.batchId).toBe(first.batchId);
+    const busy = await post({ batch: true, files: [twoFiles[1]] });
+    expect(busy.status).toBe(429);
+    expect(creates()).toBe(200);
+  });
+
+  it('US-12 AC25: logs nothing of the pages or the match key', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map(level => vi.spyOn(console, level).mockImplementation(() => {}));
+    try {
+      ended = false;
+      const marker = 'c3ludGhldGljLWxhYi1wYWdl';
+      await send([{ pages: [page(marker)] }]);
+      await send([{ pages: [page(marker)] }]);
+      const out = JSON.stringify(spies.flatMap(spy => spy.mock.calls));
+      expect(out).not.toContain(marker);
+      expect(out).not.toMatch(/[0-9a-f]{64}/);
+      expect(creates()).toBe(1);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+  });
+
+  it.each(['IP', 'machine'])('US-12 AC25: once the %s quota is spent, a re-pick is told the daily limit and cannot join', async which => {
+    ended = false;
+    const first = await send();
+    if (which === 'IP') await send(Array.from({ length: 198 }, (_, i) => ({ pages: [page(`F${i}`)] })));
+    else {
+      const { machineFiles } = await import('../lib/rate-limiter');
+      machineFiles.take('machine', machineFiles.remaining('machine'));
+    }
+    expect((await (await loader({ request: request({}, undefined, true, IP, 'GET') } as never)).json()).allowed).toBe(false);
+    const again = await post({ batch: true, files: twoFiles });
+    expect(again.status).toBe(429);
+    expect(await again.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' });
+    expect((await pollWith(first.batchId, first.pollToken)).status).toBe(200);
+    expect(creates()).toBe(which === 'IP' ? 2 : 1);
+  });
+
+  it('US-12 AC25: a body over 64 KB, within quota, that matches no batch is charged its own files and never joins', async () => {
+    ended = false;
+    const first = await send();
+    const big = [{ pages: [page('C'.repeat(70 * 1024))] }];
+    const other = await send(big);
+    expect(other.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+    expect(await remaining()).toBe(200 - 2 - 1);
+  });
+
+  it('US-12 AC25: when the first create is refused while a twin waits, both get the 500, neither is charged, the reservation is gone', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      fetchMock.mockImplementationOnce(async () => new Response('synthetic refusal', { status: 500 }));
+      const [a, b] = await Promise.all([post({ batch: true, files: twoFiles }), post({ batch: true, files: twoFiles })]);
+      expect([a.status, b.status]).toEqual([500, 500]);
+      expect(creates()).toBe(1);
+      expect(await remaining()).toBe(200);
+      ended = false;
+      expect((await send()).batchId).toBe('batch_1');
+      expect(creates()).toBe(2);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("US-12 AC25: joins only a batch with the browser's 10-minute deadline of life left", async () => {
+    const { BATCH_POLL_DEADLINE_MS } = await import('../../widget-src/src/lib/batch-deadline');
+    const { JOIN_LIFE_MS } = await import('../lib/lab-batches.server');
+    expect(JOIN_LIFE_MS).toBe(BATCH_POLL_DEADLINE_MS);
+    expect(JOIN_LIFE_MS).toBe(10 * MIN);
+    ended = false;
+    const first = await send();
+    await vi.advanceTimersByTimeAsync(50 * MIN);
+    expect((await send()).batchId).toBe(first.batchId); // exactly 10 minutes of life left: joins
+    expect(creates()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    const late = await send(); // 1 ms less: a new batch, charged
+    expect(late.batchId).not.toBe(first.batchId);
+    expect(creates()).toBe(2);
+    expect(await remaining()).toBe(200 - 4);
   });
 });

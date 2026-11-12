@@ -9,6 +9,7 @@ import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { BATCH_POLL_DEADLINE_MS } from './batch-deadline';
 import { isDocx, isLegacyDoc } from './file-kinds';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -343,7 +344,7 @@ export async function processBatch(
   }, FAKE_TICK_INTERVAL);
 
   try {
-    const maxPollTime = Date.now() + 10 * 60_000;
+    const maxPollTime = Date.now() + BATCH_POLL_DEADLINE_MS;
     while (!abort.signal.aborted) {
       await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
       if (abort.signal.aborted) break;
