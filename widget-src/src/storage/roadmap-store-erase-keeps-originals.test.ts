@@ -82,6 +82,7 @@ it('a stale guest tab that takes in the erase keeps an original uploaded after i
 
 it("a cloud page that takes in another device's erase keeps the originals an on-device fallback tab holds (US-11 AC6, US-09 AC23)", async () => {
   const cloud = new MemoryCloud();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
   page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
   await page.flush();
