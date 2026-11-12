@@ -21,6 +21,7 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', async (importOriginal) => ({ ...(await importOriginal<typeof import('./connect')>()), liftLocalInto: lift }));
 
 import { SyncControl } from './sync-control';
+import { GoogleDriveAdapter } from '../src/storage';
 import { dispatch, getSwitchFlow, resetSwitchFlow } from './switch-flow';
 import { openBackendPicker } from '../src/lib/storage-notice';
 
@@ -154,6 +155,43 @@ describe('US-09 AC45: the Drive reconnect is a move, one at a time with the pick
   });
 });
 
+describe('US-09 AC45: once the popup answer is saved, the reconnect runs to its reload', () => {
+  it('Stop is gone and the moves stay locked while local edits go up; then it reloads once, still on Drive', async () => {
+    let release!: () => void;
+    lift.mockImplementationOnce(() => new Promise<void>((done) => { release = done; }));
+    mount();
+    fireEvent.click(reconnectButton());
+    await answerPopup();
+    expect(lift).toHaveBeenCalledTimes(1);
+    act(() => openBackendPicker());
+    expect(document.querySelector('dialog')!.textContent).toContain('Reconnecting Google Drive…');
+    expect(button('Stop reconnecting')).toBeUndefined();
+    expect(option('Dropbox').disabled).toBe(true);
+    expect(option('This browser only').disabled).toBe(true);
+    act(() => { dispatch({ type: 'cancel', run: 1 }); }); // a Stop sent anyway changes nothing
+    fireEvent.click(option('Dropbox'));
+    expect(getSwitchFlow()).toEqual({ kind: 'reconnected', run: 1 });
+    expect(reload).not.toHaveBeenCalled();
+    await act(async () => { release(); });
+    await settle();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(assign).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expect(getSwitchFlow()).toEqual({ kind: 'navigating', run: 1, step: 'list' });
+  });
+
+  it('an answer after another tab left Drive saves nothing and reloads onto what that tab chose', async () => {
+    mount();
+    fireEvent.click(reconnectButton());
+    localStorage.removeItem(BACKEND_KEY); // another tab chose "This browser only"
+    await answerPopup();
+    expect(driveKeys()).toEqual([null, null]);
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(lift).not.toHaveBeenCalled();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('US-09 AC45: "Use this browser only" is a move too', () => {
   it('is disabled and refused while the reconnect runs', async () => {
     mount();
@@ -179,5 +217,15 @@ describe('US-09 AC45: "Use this browser only" is a move too', () => {
     expect(reconnectButton().disabled).toBe(true);
     fireEvent.click(reconnectButton());
     expect(popupsOpened).toBe(0);
+  });
+
+  it('a failure is said in the panel and on the picker, and frees the move', async () => {
+    vi.spyOn(GoogleDriveAdapter.prototype, 'disconnect').mockRejectedValueOnce(new Error('Could not forget Google Drive.'));
+    mount();
+    fireEvent.click(button('Use this browser only')!);
+    await settle();
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Could not forget Google Drive.');
+    expect(getSwitchFlow()).toEqual({ kind: 'idle', run: 1, error: 'Could not forget Google Drive.' });
+    expect(reload).not.toHaveBeenCalled();
   });
 });

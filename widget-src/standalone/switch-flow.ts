@@ -12,9 +12,11 @@
  * `navigating`; only then can the browser's back-forward cache show this page
  * again with nothing running (`restored`), and only then does a reopened
  * picker mean the page did not leave (`reopened`), so the move is over. A move
- * still waiting on a fetch stays claimed. `cancel` ends a running move with no
- * error text: "Stop reconnecting", or a panel move that says its own failure.
- * A popup answer is kept only while `isCurrentRun` holds for its reconnect.
+ * still waiting on a fetch stays claimed. `cancel` is "Stop reconnecting": it
+ * ends only a reconnect whose popup answer is not yet saved, with no error text.
+ * Once the answer is saved (`saved`), the reconnect is `reconnected` and runs
+ * to its reload. A popup answer is kept only while `isCurrentRun` holds for its
+ * reconnect.
  *
  * Never holds a credential: the GitHub token and the WebDAV password stay in
  * the picker's component state and die with its mount.
@@ -32,7 +34,9 @@ export type SwitchFlow =
   | { kind: 'switching'; run: number; to: Backend; step: MoveStep }
   | { kind: 'loggingOff'; run: number }
   | { kind: 'navigating'; run: number; step: MoveStep }
-  | { kind: 'reconnecting'; run: number };
+  | { kind: 'reconnecting'; run: number }
+  /** The popup's grant is saved: local edits go up, then the page reloads. Nothing stops it. */
+  | { kind: 'reconnected'; run: number };
 
 export type SwitchEvent =
   | { type: 'start'; to: Backend; step: Exclude<MoveStep, 'log-off'> }
@@ -42,6 +46,7 @@ export type SwitchEvent =
   | { type: 'settled'; run: number }
   | { type: 'failed'; run: number; message: string }
   | { type: 'cancel'; run: number }
+  | { type: 'saved'; run: number }
   | { type: 'clearError' }
   | { type: 'restored' }
   | { type: 'reopened' };
@@ -49,7 +54,7 @@ export type SwitchEvent =
 /** The step a running state shows on a reopened picker. */
 export function stepOf(state: SwitchFlow): MoveStep | null {
   if (state.kind === 'idle') return null;
-  if (state.kind === 'reconnecting') return 'list';
+  if (state.kind === 'reconnecting' || state.kind === 'reconnected') return 'list';
   return state.kind === 'loggingOff' ? 'log-off' : state.step;
 }
 
@@ -69,7 +74,10 @@ export function transition(state: SwitchFlow, event: SwitchEvent): { next: Switc
   if (!('run' in event) || event.run !== state.run) return same;
   if (event.type === 'failed') return { next: { kind: 'idle', run: state.run, error: event.message }, run: false };
   if (state.kind === 'navigating') return same;
-  if (event.type === 'cancel') return { next: { kind: 'idle', run: state.run, error: null }, run: false };
+  if (event.type === 'cancel' || event.type === 'saved') {
+    if (state.kind !== 'reconnecting') return same;
+    return { next: event.type === 'cancel' ? { kind: 'idle', run: state.run, error: null } : { kind: 'reconnected', run: state.run }, run: false };
+  }
   return { next: { kind: 'navigating', run: state.run, step: stepOf(state)! }, run: false };
 }
 
@@ -81,8 +89,8 @@ export function getSwitchFlow(): SwitchFlow {
 }
 
 /** True only while the move that claimed `run` still runs: for a reconnect,
- *  while the flow is still `reconnecting` at that run. The one place a popup
- *  answer is refused: once the reconnect stopped, it saves nothing. */
+ *  while the flow is still `reconnecting` or `reconnected` at that run. The one
+ *  place a popup answer is refused: once the reconnect stopped, it saves nothing. */
 export function isCurrentRun(run: number, state: SwitchFlow = flow): boolean {
   return state.run === run && state.kind !== 'idle' && state.kind !== 'navigating';
 }

@@ -18,6 +18,7 @@ const CONFIG = {
 const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const CONFIG_KEY = 'health_roadmap_gdrive';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
+const BACKEND_KEY = 'health_roadmap_backend';
 /** What Google appends when the Drive box is left unticked. */
 const SCOPELESS = 'openid https://www.googleapis.com/auth/userinfo.email';
 
@@ -106,6 +107,7 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
     const token = await new GoogleDriveAdapter(CONFIG).acquireViaPopup();
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull(); // the acquire step writes nothing (US-09 AC45)
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
+    localStorage.setItem(BACKEND_KEY, 'google-drive'); // the reconnect session's chosen home
     expect(savePopupGrant(token, null)).toBe(true);
     const adapter = new GoogleDriveAdapter(CONFIG);
     expect(adapter.isConnected()).toBe(true);
@@ -113,9 +115,19 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
   });
 
   it('popup: the save keeps the stored account', () => {
+    localStorage.setItem(BACKEND_KEY, 'google-drive');
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ accountEmail: 'person@example.test' }));
     expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(true);
     expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toMatchObject({ accountEmail: 'person@example.test' });
+  });
+
+  it('popup: once this device is no longer on Google Drive (another tab moved it), the save keeps nothing (US-09 AC45)', () => {
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    localStorage.removeItem(BACKEND_KEY);
+    expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    expect(localStorage.getItem(TOKENS_KEY)).toBeNull();
+    expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
   });
 
   it('the refusal names the box the user has to tick', () => {

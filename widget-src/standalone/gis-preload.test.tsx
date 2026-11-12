@@ -22,6 +22,7 @@ vi.mock('./connect', async (original) => ({
 }));
 
 import { GIS_LOADING, StorageBar } from './sync-control';
+import { resetSwitchFlow } from './switch-flow';
 
 // The GIS loader polls for window.google every 50 ms for up to 10 s, and the
 // script never arrives here. On real timers those polls outlive the file and
@@ -33,6 +34,7 @@ afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
   cleanup();
+  resetSwitchFlow(); // a reconnect a test started holds the one move, which outlives the test
   delete (window as unknown as { google?: unknown }).google;
   document.querySelectorAll('script[src*="gsi/client"]').forEach((s) => s.remove());
 });

@@ -14,7 +14,8 @@ const TO_GITHUB: SwitchFlow = { kind: 'switching', run: 2, to: 'github', step: '
 const LOGGING_OFF: SwitchFlow = { kind: 'loggingOff', run: 2 };
 const LEAVING: SwitchFlow = { kind: 'navigating', run: 2, step: 'list' };
 const RECONNECTING: SwitchFlow = { kind: 'reconnecting', run: 2 };
-const STATES = { IDLE, FAILED, TO_DRIVE, TO_GITHUB, LOGGING_OFF, LEAVING, RECONNECTING };
+const RECONNECTED: SwitchFlow = { kind: 'reconnected', run: 2 };
+const STATES = { IDLE, FAILED, TO_DRIVE, TO_GITHUB, LOGGING_OFF, LEAVING, RECONNECTING, RECONNECTED };
 
 const EVENTS = {
   start: { type: 'start', to: 'github', step: 'github' },
@@ -29,9 +30,12 @@ const EVENTS = {
   failed: { type: 'failed', run: 2, message: 'GitHub rejected the token.' },
   failedOld: { type: 'failed', run: 1, message: 'GitHub rejected the token.' },
   clearError: { type: 'clearError' },
-  // "Stop reconnecting", or a panel move that says its own failure.
+  // "Stop reconnecting": it ends only a reconnect whose popup answer is not yet saved.
   cancel: { type: 'cancel', run: 2 },
   cancelOld: { type: 'cancel', run: 1 },
+  // The reconnect saved the popup's grant: from here it runs to its reload.
+  saved: { type: 'saved', run: 2 },
+  savedOld: { type: 'saved', run: 1 },
   // The browser shows this page again from its back-forward cache.
   restored: { type: 'restored' },
   // The picker opens again on this page.
@@ -53,38 +57,52 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
     start: [NEW_GITHUB, true], logOff: [NEW_LOG_OFF, true], forget: [NEW_LOCAL, true], reconnect: [NEW_RECONNECT, true],
     navigating: S(IDLE), navigatingOld: S(IDLE), settled: S(IDLE), settledOld: S(IDLE),
     failed: S(IDLE), failedOld: S(IDLE), clearError: S(IDLE), cancel: S(IDLE), cancelOld: S(IDLE), restored: S(IDLE), reopened: S(IDLE),
+    saved: S(IDLE), savedOld: S(IDLE),
   },
   FAILED: {
     start: [NEW_GITHUB, true], logOff: [NEW_LOG_OFF, true], forget: [NEW_LOCAL, true], reconnect: [NEW_RECONNECT, true],
     navigating: S(FAILED), navigatingOld: S(FAILED), settled: S(FAILED), settledOld: S(FAILED),
     failed: S(FAILED), failedOld: S(FAILED), clearError: S(IDLE), cancel: S(FAILED), cancelOld: S(FAILED), restored: S(FAILED), reopened: S(FAILED),
+    saved: S(FAILED), savedOld: S(FAILED),
   },
   TO_DRIVE: {
     start: S(TO_DRIVE), logOff: S(TO_DRIVE), forget: S(TO_DRIVE), reconnect: S(TO_DRIVE),
     navigating: S(LEAVING), navigatingOld: S(TO_DRIVE), settled: S(LEAVING), settledOld: S(TO_DRIVE),
-    failed: S(ERROR_2), failedOld: S(TO_DRIVE), clearError: S(TO_DRIVE), cancel: S(IDLE_2), cancelOld: S(TO_DRIVE), restored: S(TO_DRIVE), reopened: S(TO_DRIVE),
+    failed: S(ERROR_2), failedOld: S(TO_DRIVE), clearError: S(TO_DRIVE), cancel: S(TO_DRIVE), cancelOld: S(TO_DRIVE), restored: S(TO_DRIVE), reopened: S(TO_DRIVE),
+    saved: S(TO_DRIVE), savedOld: S(TO_DRIVE),
   },
   TO_GITHUB: {
     start: S(TO_GITHUB), logOff: S(TO_GITHUB), forget: S(TO_GITHUB), reconnect: S(TO_GITHUB),
     navigating: S({ kind: 'navigating', run: 2, step: 'github' }), navigatingOld: S(TO_GITHUB),
     settled: S({ kind: 'navigating', run: 2, step: 'github' }), settledOld: S(TO_GITHUB),
-    failed: S(ERROR_2), failedOld: S(TO_GITHUB), clearError: S(TO_GITHUB), cancel: S(IDLE_2), cancelOld: S(TO_GITHUB), restored: S(TO_GITHUB), reopened: S(TO_GITHUB),
+    failed: S(ERROR_2), failedOld: S(TO_GITHUB), clearError: S(TO_GITHUB), cancel: S(TO_GITHUB), cancelOld: S(TO_GITHUB), restored: S(TO_GITHUB), reopened: S(TO_GITHUB),
+    saved: S(TO_GITHUB), savedOld: S(TO_GITHUB),
   },
   LOGGING_OFF: {
     start: S(LOGGING_OFF), logOff: S(LOGGING_OFF), forget: S(LOGGING_OFF), reconnect: S(LOGGING_OFF),
     navigating: S({ kind: 'navigating', run: 2, step: 'log-off' }), navigatingOld: S(LOGGING_OFF),
     settled: S({ kind: 'navigating', run: 2, step: 'log-off' }), settledOld: S(LOGGING_OFF),
-    failed: S(ERROR_2), failedOld: S(LOGGING_OFF), clearError: S(LOGGING_OFF), cancel: S(IDLE_2), cancelOld: S(LOGGING_OFF), restored: S(LOGGING_OFF), reopened: S(LOGGING_OFF),
+    failed: S(ERROR_2), failedOld: S(LOGGING_OFF), clearError: S(LOGGING_OFF), cancel: S(LOGGING_OFF), cancelOld: S(LOGGING_OFF), restored: S(LOGGING_OFF), reopened: S(LOGGING_OFF),
+    saved: S(LOGGING_OFF), savedOld: S(LOGGING_OFF),
   },
   LEAVING: {
     start: S(LEAVING), logOff: S(LEAVING), forget: S(LEAVING), reconnect: S(LEAVING),
     navigating: S(LEAVING), navigatingOld: S(LEAVING), settled: S(LEAVING), settledOld: S(LEAVING),
     failed: S(ERROR_2), failedOld: S(LEAVING), clearError: S(LEAVING), cancel: S(LEAVING), cancelOld: S(LEAVING), restored: S(IDLE_2), reopened: S(IDLE_2),
+    saved: S(LEAVING), savedOld: S(LEAVING),
   },
   RECONNECTING: {
     start: S(RECONNECTING), logOff: S(RECONNECTING), forget: S(RECONNECTING), reconnect: S(RECONNECTING),
     navigating: S(LEAVING), navigatingOld: S(RECONNECTING), settled: S(LEAVING), settledOld: S(RECONNECTING),
     failed: S(ERROR_2), failedOld: S(RECONNECTING), clearError: S(RECONNECTING), cancel: S(IDLE_2), cancelOld: S(RECONNECTING), restored: S(RECONNECTING), reopened: S(RECONNECTING),
+    saved: S(RECONNECTED), savedOld: S(RECONNECTING),
+  },
+  // The grant is saved: nothing but its own failure or its reload ends it.
+  RECONNECTED: {
+    start: S(RECONNECTED), logOff: S(RECONNECTED), forget: S(RECONNECTED), reconnect: S(RECONNECTED),
+    navigating: S(LEAVING), navigatingOld: S(RECONNECTED), settled: S(LEAVING), settledOld: S(RECONNECTED),
+    failed: S(ERROR_2), failedOld: S(RECONNECTED), clearError: S(RECONNECTED), cancel: S(RECONNECTED), cancelOld: S(RECONNECTED), restored: S(RECONNECTED), reopened: S(RECONNECTED),
+    saved: S(RECONNECTED), savedOld: S(RECONNECTED),
   },
 };
 
@@ -94,7 +112,7 @@ const ROWS = Object.entries(TABLE).flatMap(([stateName, row]) =>
   ] as const));
 
 describe('US-09 AC45: switch-flow transition, every state against every event', () => {
-  it('covers 7 states by 15 events', () => expect(ROWS).toHaveLength(105));
+  it('covers 8 states by 17 events', () => expect(ROWS).toHaveLength(136));
 
   it.each(ROWS)('%s', (_name, state, event, next, run) => {
     expect(transition(state, event)).toEqual({ next, run });
@@ -161,6 +179,7 @@ describe('US-09 AC45: a popup answer is kept only while its reconnect still runs
   // The answer comes from the reconnect that claimed run 2.
   it.each([
     ['still reconnecting at its run', { kind: 'reconnecting', run: 2 }, true],
+    ['its grant saved, before its reload', { kind: 'reconnected', run: 2 }, true],
     ['idle after Stop reconnecting', { kind: 'idle', run: 2, error: null }, false],
     ['idle after the reconnect failed', { kind: 'idle', run: 2, error: 'Google Drive sign-in was cancelled or blocked.' }, false],
     ['a newer picker move', { kind: 'switching', run: 3, to: 'dropbox', step: 'list' }, false],
@@ -180,5 +199,17 @@ describe('US-09 AC45: a popup answer is kept only while its reconnect still runs
     dispatch({ type: 'cancel', run: 1 });
     expect(getSwitchFlow()).toEqual({ kind: 'idle', run: 1, error: null });
     expect(isCurrentRun(1)).toBe(false);
+  });
+
+  it('reads the store: once the grant is saved, Stop changes nothing and no move starts until its reload', () => {
+    resetSwitchFlow();
+    dispatch(EVENTS.reconnect);
+    dispatch({ type: 'saved', run: 1 });
+    dispatch({ type: 'cancel', run: 1 });
+    expect(getSwitchFlow()).toEqual({ kind: 'reconnected', run: 1 });
+    expect(isCurrentRun(1)).toBe(true);
+    for (const event of [EVENTS.start, EVENTS.forget, EVENTS.logOff, EVENTS.reconnect]) expect(dispatch(event)).toBe(false);
+    dispatch({ type: 'navigating', run: 1 });
+    expect(getSwitchFlow()).toEqual({ kind: 'navigating', run: 1, step: 'list' });
   });
 });

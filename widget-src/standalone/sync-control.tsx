@@ -127,7 +127,8 @@ export const GIS_LOADING = 'Google is loading. Tap again.';
  *  synchronously inside the click; local edits made while signed out merge up
  *  before the reload. The others can only try the read again. The Drive
  *  reconnect and "Use this browser only" are moves, one at a time with the
- *  picker (US-09 AC45); a failure is said here, so it leaves the picker no error. */
+ *  picker (US-09 AC45). A reconnect's failure is said only here; a failed "Use this
+ *  browser only" is a picker kind of move, so the picker says it too. */
 function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
   const flow = useSwitchFlow();
   const [error, setError] = useState<string | null>(null);
@@ -138,8 +139,9 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
     setError(null);
     void runMove(event, (m) => body(m).catch((e: unknown) => {
       if (!isCurrentRun(m.run)) return; // it was stopped: nothing to say
-      setError(e instanceof Error ? e.message : 'Connection failed.');
-      dispatch({ type: 'cancel', run: m.run });
+      const message = e instanceof Error ? e.message : 'Connection failed.';
+      setError(message);
+      dispatch(event.type === 'reconnect' ? { type: 'cancel', run: m.run } : { type: 'failed', run: m.run, message });
     }));
   };
   const reconnectNow = (): void => {
@@ -151,14 +153,16 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
       if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+        dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await liftLocalInto(new GoogleDriveAdapter(googleDriveConfig(), gen), 'google-drive');
       }
+      if (!isCurrentRun(run)) return;
       navigating();
       location.reload();
     });
   };
-  return { reconnecting: flow.kind === 'reconnecting', idle: flow.kind === 'idle', error, move, reconnectNow };
+  return { reconnecting: flow.kind === 'reconnecting' || flow.kind === 'reconnected', idle: flow.kind === 'idle', error, move, reconnectNow };
 }
 
 /** US-09 AC30: the title line's storage state. A record that could not be read runs the
