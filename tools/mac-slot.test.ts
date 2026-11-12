@@ -243,9 +243,11 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
   });
 
   // A queued waiter must not spin: macOS lockf in its fd form burns a full core while it blocks, so the slot wait
-  // retries an instant lockf once a second. CPU over a 3 s wait = the live children's time from ps just before
-  // TERM (a blocked lockf) plus /usr/bin/time's count after TERM (the shell and every child it reaped). An exec
-  // drops a process's child counts on macOS, so the waiter is ended by TERM, never by starting its command.
+  // tries an instant lockf every 0.2 s. CPU over a 3 s wait = the live children's time from ps just before TERM
+  // (a blocked lockf) plus /usr/bin/time's count after TERM (the shell and every child it reaped). A live child
+  // the shell then reaps is counted twice, so the sum is an upper bound: the spinning script read 6.06 s, about
+  // 3 s of it the one lockf. An exec drops a process's child counts on macOS, so the waiter is ended by TERM,
+  // never by starting its command.
   it('a slot waiter uses almost no CPU while it waits', async () => {
     const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
     bg('codex', hold('a'), extra);

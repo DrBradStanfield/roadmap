@@ -8,8 +8,8 @@
 # directory for every worktree, as sim-run.sh keeps its lock. A slot is the kernel's lock: lockf on fd 9 opened on
 # that file, which the command inherits through exec, so the slot is held for the command's lifetime (and its
 # children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
-# A waiter never blocks inside lockf (macOS lockf spins a core while it blocks): it retries an instant lockf
-# once a second. A later waiter can win a freed slot over an earlier one, as with the kernel's own order.
+# A waiter never blocks inside lockf (macOS lockf spins a core while it blocks): it tries every slot with an
+# instant lockf every 0.2 s. Waiters are served in arrival order, and a newcomer defers to any live waiter.
 # With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
 # MAC_SLOT_POLL_SECONDS (30). A run never starts over the cap: if the load is still that high after
 # MAC_SLOT_LOAD_WAIT_MIN (10; MAC_SLOT_LOAD_WAIT_SECONDS for the tests) it refuses with one line and exit 75
@@ -92,47 +92,54 @@ fi
 
 MAX=$(slots "$kind")
 CMDLINE=$(printf '%s ' "$@" | tr '\n' ' ' | cut -c1-200)
-# Takes slot $1 on fd 9, trying once a second for up to $2 seconds; on failure fd 9 is closed again. It never
-# waits inside lockf: macOS lockf in its fd form spins a full core while it blocks. Each try is instant, and the
-# lock it takes stays with the shell's fd 9. The 1 s sleep runs in the background under `wait`, so TERM and INT
-# end a slot wait at once.
+# Takes slot $1 on fd 9 with an instant lockf; on failure fd 9 is closed again. It never waits inside lockf:
+# macOS lockf in its fd form spins a full core while it blocks. The lock stays with the shell's fd 9.
 take() {
   exec 9>>"$DIR/$kind.$1"
-  end=$(( $(date +%s) + $2 ))
-  until lockf -s -t 0 9; do
-    [ "$(date +%s)" -lt "$end" ] || { exec 9>&-; return 1; }
-    sleep 1 9>&- & lk=$!
-    wait "$lk"; lk=""
-  done
-  SLOT=$1
+  lockf -s -t 0 9 && { SLOT=$1; return 0; }
+  exec 9>&-; return 1
 }
-# `status` can only probe a slot by locking it for an instant (lockf has no test-only mode), so a slot that
-# refuses is tried once more after 0.2 s: a status probe must not send a caller past a free slot.
+# Tries every slot once. `status` can only probe a slot by locking it for an instant (lockf has no test-only
+# mode), so with $1 set a slot that refuses is tried once more after 0.2 s: a probe must not send a newcomer past
+# a free slot. A waiter's own 0.2 s retry covers that.
 scan() {
   i=1
   while [ "$i" -le "$MAX" ]; do
-    take "$i" 0 && return 0
-    sleep 0.2; take "$i" 0 && return 0
+    take "$i" && return 0
+    [ -n "${1:-}" ] && sleep 0.2 && take "$i" && return 0
     i=$((i + 1))
   done
   return 1
 }
+# True while a live waiter for this kind queued before us. Markers are waiting.<kind>.<ms>.<pid>, so the glob
+# lists them in arrival order (two in the same millisecond by pid, as text). A waiter stops at its own marker; a
+# newcomer has none, so any live waiter is ahead of it. A marker whose pid is dead is removed.
+ahead() {
+  for f in "$DIR"/waiting."$kind".*; do
+    [ -f "$f" ] || continue
+    [ "$f" = "${WFILE:-}" ] && return 1
+    kill -0 "${f##*.}" 2>/dev/null && return 0
+    rm -f "$f"
+  done
+  return 1
+}
 
-SLOT="" lk=""
-if ! scan; then
-  echo "mac-slot: waiting for a $kind slot ($MAX/$MAX held): $(holders "$kind" "$MAX" | sed 's/ (slot [0-9]*)//' | paste -sd ';' - | sed 's/;/; /g')" >&2
-  WFILE="$DIR/waiting.$kind.$$"
-  echo "$CMDLINE" > "$WFILE"
+SLOT="" lk="" WFILE=""
+if ahead || ! scan retry; then
+  WFILE="$DIR/waiting.$kind.$(perl -MTime::HiRes=time -e 'printf "%d", time * 1000').$$"
   trap 'rm -f "$WFILE"' EXIT
   trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 130' INT
   trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 143' TERM
-  # Waiters spread over the slots: each tries slot (pid mod N)+1 once a second for POLL seconds, then re-scans
-  # every slot, then tries the next one. A lock goes to one process only, so waiters never all start at once; a
-  # waiter trying another slot finds a freed one on its next scan. Order is not first-come, first-served: a freed
-  # slot goes to whichever waiter tries it first in that second, or to a newcomer's first scan. The kernel's
-  # blocking lockf gave no FIFO order either, so this changes no promise.
-  j=$(( $$ % MAX + 1 ))
-  until take "$j" "$POLL" || scan; do j=$(( j % MAX + 1 )); done
+  echo "$CMDLINE" > "$WFILE"
+  h=$(holders "$kind" "$MAX")
+  echo "mac-slot: waiting for a $kind slot ($(printf '%s' "$h" | grep -c .)/$MAX held): $(printf '%s' "$h" | sed 's/ (slot [0-9]*)//' | paste -sd ';' - | sed 's/;/; /g')" >&2
+  # Waiters are served in arrival order: only the first live waiter tries the slots, all of them every 0.2 s, so
+  # it takes a freed slot within about 0.2 s, and a newcomer queues behind it. The 0.2 s sleep runs in the
+  # background under `wait`, with fd 9 closed, so TERM and INT end a slot wait at once.
+  until ! ahead && scan; do
+    sleep 0.2 9>&- & lk=$!
+    wait "$lk"; lk=""
+  done
   rm -f "$WFILE"
   trap - EXIT INT TERM
 fi
