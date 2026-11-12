@@ -19,17 +19,32 @@ export const MIRROR_KEY = 'health_roadmap_data';
 export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
-/** Set once this page must stop writing health data to the device: its own
- *  log-off, or, in a cloud-mode page, another tab's (US-09 AC2c). It lives in
- *  this module, which every device writer imports, so the mirror and the
- *  matrix drafts check the same latch as the record's device copy (US-09 AC2e).
- *  Never reset in the page: log-off navigates away. */
-let healthWritesStopped = false;
-export function stopLocalHealthWrites(): void {
-  healthWritesStopped = true;
+/** Where this page may write health data on the device (US-09 AC2c, AC2e).
+ *  'device': its device copy is its only store, so it always may. 'cloud': a
+ *  cloud record opened here, so it may only while this device's log-off id is
+ *  the one the page loaded with. 'stopped': its own log-off, or another tab's
+ *  it heard. One way only: log-off navigates away. It lives in this module,
+ *  which every device writer imports, so all of them check the same state. */
+export type HealthWrites = 'device' | 'cloud' | 'stopped';
+export function healthWritesTransition(state: HealthWrites, event: 'cloudOpened' | 'stop'): HealthWrites {
+  return event === 'stop' || state === 'stopped' ? 'stopped' : 'cloud';
 }
-export function localHealthWritesStopped(): boolean {
-  return healthWritesStopped;
+let healthWrites: HealthWrites = 'device';
+export function stopLocalHealthWrites(): void {
+  healthWrites = healthWritesTransition(healthWrites, 'stop');
+}
+/** A cloud record has opened on this page (the web host's mirror.opened()). */
+export function noteCloudPage(): void {
+  healthWrites = healthWritesTransition(healthWrites, 'cloudOpened');
+}
+/** This page's own log-off, or another tab's it heard: the device was wiped. */
+export function healthWritesStopped(): boolean {
+  return healthWrites === 'stopped';
+}
+/** The one check every on-device health writer makes.
+ *  The single rule for on-device health writes; callers import it, never copy it. */
+export function healthWritesAllowed(): boolean {
+  return healthWrites === 'device' || (healthWrites === 'cloud' && logOffId() === logOffIdAtLoad);
 }
 
 interface StoredData {
@@ -63,7 +78,7 @@ export interface LoadedData {
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: ApiMeasurement | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
   // (patchMirror too) and would put the health copy back (US-09 AC2e).
-  if (healthWritesStopped) return;
+  if (!healthWritesAllowed()) return;
   try {
     const data: StoredData = {
       inputs,
@@ -288,6 +303,8 @@ export type LogOffId = string | null;
 export function logOffId(): LogOffId {
   return safeGetItem(LOG_OFF_ID_KEY);
 }
+/** Read once, as this page loads; never reassigned (US-09 AC2c). */
+const logOffIdAtLoad: LogOffId = logOffId();
 /** Set when this page's own log-off begins and never cleared (the page
  *  reloads), so a full localStorage that drops the new id still stops this
  *  page saving a sign-in. A one-way latch, not a mode. */

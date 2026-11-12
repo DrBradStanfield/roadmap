@@ -36,7 +36,7 @@ export const PROVIDERS = {
   'self-host': { label: 'your own server', adapter: (gen) => new WebDavAdapter(undefined, gen), reminders: false, event: 'webdav' },
 } as const satisfies Record<CloudBackend, Provider>;
 
-/** Every provider's stored sign-in entries, for the page-load sweep (US-09 AC45). */
+/** Every provider's stored sign-in entries, for the page-load sweep and log-off (US-09 AC45). */
 export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY] as const;
 
 /** A backend's entry; undefined for 'local' or a name with none. The
