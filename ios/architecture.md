@@ -605,10 +605,44 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   retries.
   Second re-check (Codex, same day): an open takes its number before any await, so the
   order of the calls decides which open wins, never the order their awaits finish in.
-  "Synced" has one rule (`CloudSync.settled`): the pending marker is clear. The marker is
+  "Synced" has one rule (`CloudConnection.status`; `CloudSync.settled` before S3): the pending marker is clear. The marker is
   set before every edit is taken and cleared by the session only when a save has landed
   and verified, and the engine says 'synced' at that moment; until then the app says
   "Saving…", on open, after a write and after Sync now.
+- **The connection is one state (survey S3 PR 1, 2026-11-12, US-25 AC11m).** CloudSync kept its
+  mode in side-by-side pieces: a stored status, the shown session, a generation, `openingFor`,
+  `editsWhileOpening` and held news. They are now one union, `CloudConnection`
+  (`Sync/CloudConnection.swift`): phone, closed, opening, open, closing. Each case but phone names
+  its cloud, and each carries the attempt it is under. A pure `transition(state, event)`, a switch
+  on the event then the state with no default arm, is the only change, and returns the effects
+  CloudSync runs (keep, open, close the session, show the phone). The provider, the status
+  (`CloudConnection.status`, the one place it is worked out), the open session, and the store's
+  pending marker and account are read from the state. Why: every race the reviews found was a
+  pair of these pieces disagreeing; each now maps to a cell that drops or refuses it. Every async
+  result names its attempt and is dropped once it ended; a sign-in names its connection
+  (`connectedAt`), so a reopen keeps it and a Disconnect voids it. The AC11l guard, the
+  generation checks and the held-news dictionaries are gone: the cells refuse a different cloud
+  in closed, opening and open, and closing refuses any connect while it keeps the cloud named
+  ("Disconnecting…"), which closes S22. A same-cloud sign-in during its open restarts the open
+  under the new tokens, since the old one may already have asked with the revoked grant. The
+  state equals what a relaunch reads: a connect keeps the tokens first and writes the provider
+  file last, and a failed keep removes what it kept; Disconnect copies down, then removes the
+  provider file first, the decision, then the rest as cleanup, which a launch with no provider
+  file finishes. A provider file that will not go leaves the connection exactly as it was and
+  says "Couldn't disconnect from <cloud>. Try again." A late `opened` is only dropped, not
+  closed: the engine has already closed its session, since any newer open or close supersedes
+  it (cloud.ts); the one case with no newer engine call, a failed keep, closes the session
+  itself. An effect runs after the step that decided it (after the store's handover, say), so
+  each open or close names its attempt and is skipped once the connection moved on (review R1).
+  A second Disconnect while one closes is a table cell that closes nothing; each Disconnect
+  step after an await checks its attempt (Codex C1). The account file stays until the Keychain
+  has deleted every cloud's tokens, so launch cleanup retries from it (C2). Disconnect and a
+  failed first connect delete every cloud's tokens, and a connect deletes every other cloud's,
+  never its own: one cloud at a time, so a token a refused delete left never outlives the next
+  cloud (round 2). A sign-in voided by a
+  Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
+  Disconnect (owner): nothing is lost and the existing words show. Not yet (PR 2): `erasing` is still a boolean beside the union; it moves to
+  `DataEraser.phase`, and a one-step cloud switch replaces "Disconnect from <cloud> first".
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.

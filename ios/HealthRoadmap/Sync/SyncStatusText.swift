@@ -12,6 +12,7 @@ enum SyncStatusText {
         case .saving: "Saving to \(provider.label)…"
         case .synced: "Synced to \(provider.label)"
         case .problem: "Not synced"
+        case .disconnecting: "Disconnecting…"
         }
     }
 
@@ -21,7 +22,7 @@ enum SyncStatusText {
         guard provider != nil else { return "iphone" }
         return switch status {
         case .onPhone: "iphone"
-        case .connecting, .saving: "arrow.triangle.2.circlepath.icloud"
+        case .connecting, .saving, .disconnecting: "arrow.triangle.2.circlepath.icloud"
         case .synced: "checkmark.icloud.fill"
         case .problem: "exclamationmark.icloud.fill"
         }
@@ -36,8 +37,13 @@ enum SyncStatusText {
         return switch status {
         case .problem(let problem): problem.words(provider)
         case .connecting, .saving: "Your changes are on this iPhone while they go up."
-        case .synced, .onPhone: nil
+        case .synced, .onPhone, .disconnecting: nil
         }
+    }
+
+    /// A Disconnect that could not remove the cloud's file on this iPhone: still connected (US-25 AC11m).
+    static func disconnectFailed(_ provider: CloudProvider) -> String {
+        "Couldn't disconnect from \(provider.label). Try again."
     }
 
     /// The footer under My data: where the record is kept, and nothing more.
