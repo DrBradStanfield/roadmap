@@ -69,20 +69,26 @@ describe('US-09 AC7j: the generated server scrub', () => {
     expect(committed).not.toMatch(/\b(process|globalThis|console|setTimeout|setInterval|setImmediate|queueMicrotask|fetch)\s*[.([]|import\.meta/);
   });
 
-  // Each line is added to the committed text, just before its export list, and must stop the load.
+  // Each line is added to the committed text, just before its export list. The
+  // trap must record the named reach (a line that swallows the throw still records it).
   it.each([
-    ['a local arrow that calls Date', 'var g = () => Date.now(); var t = g();', /Date is not an allowed global/],
-    ['an array callback that calls Date', 'var t = UNITS.map(() => Date.now());', /Date is not an allowed global/],
-    ['a constructor chain to Function', 'var p = ({}).constructor.constructor("return process")();', /Code generation from strings disallowed/],
-    ['Function by name', 'var p = Function("return this")();', /Function is not an allowed global/],
-    ['a global call', 'var t = Date.now();', /Date is not an allowed global/],
-    ['a new Worker', 'var w = new Worker("x");', /Worker is not defined/],
-    ['a global inside a template', 'var s = `a${Date.now()}`;', /Date is not an allowed global/],
-    ['a method on a global', 'var k = Object.keys(globalThis);', /globalThis is not an allowed global/],
-    ['a bare top-level call', 'fetch("https://example.invalid");', /fetch is not defined/],
-    ['a call through an inline arrow', 'var f = (() => Date.now())();', /Date is not an allowed global/],
-  ])('the load check refuses %s', (_label, line, message) => {
-    expect(loadInVm(committed, line).error).toMatch(message);
+    ['a local arrow that calls Date', 'var g = () => Date.now(); var t = g();', 'Date'],
+    ['an array callback that calls Date', 'var t = UNITS.map(() => Date.now());', 'Date'],
+    ['a constructor chain to Function', 'var p = ({}).constructor.constructor("return process")();', 'Function.prototype.constructor'],
+    ['a constructor chain inside a try', 'var __p; try { __p = ({}).constructor.constructor("return process")().env } catch (e) {}', 'Function.prototype.constructor'],
+    ['a sloppy-mode `this` test before a chain', 'var __q = (function(){ return this })() ? 0 : ({}).constructor.constructor("return process")();', 'Function.prototype.constructor'],
+    ['a typeof test on a Node global the context lacks', 'var __t = typeof performance !== "undefined" ? performance.now() : 0;', 'performance'],
+    ['Function by name', 'var p = Function("return this")();', 'Function'],
+    ['a global call', 'var t = Date.now();', 'Date'],
+    ['a new Worker', 'var w = new Worker("x");', 'Worker'],
+    ['a global inside a template', 'var s = `a${Date.now()}`;', 'Date'],
+    ['a method on a global', 'var k = Object.keys(globalThis);', 'globalThis'],
+    ['a bare top-level call', 'fetch("https://example.invalid");', 'fetch'],
+    ['a call through an inline arrow', 'var f = (() => Date.now())();', 'Date'],
+  ])('the load check refuses %s', (_label, line, name) => {
+    const run = loadInVm(committed, line);
+    expect(run.reached).toContain(name);
+    if (run.error !== undefined) expect(run.error).toMatch(/is not an allowed global|Code generation from strings disallowed/);
   });
 });
 
@@ -91,22 +97,32 @@ describe('US-09 AC7j: the generated server scrub', () => {
 // pattern; Symbol, Proxy and Object build the stand-in catalogue.
 const ALLOWED_GLOBALS = ['Map', 'Object', 'Proxy', 'RegExp', 'Set', 'String', 'Symbol'];
 
-/** Replaces every configurable global outside `allow` with a getter that records and throws. */
-const TRAP = `(function trapGlobals(allow, record) {
+/**
+ * Turns every configurable global outside `allow`, and every name the test's
+ * own global has that the context lacks (performance, process, fetch, Buffer...)
+ * plus Worker, require and module, into a getter that records the name and
+ * throws, so `typeof` records too. Function.prototype.constructor gets the same
+ * getter: the chain
+ * `({}).constructor.constructor` reaches Function with no global name.
+ */
+const TRAP = `(function trapGlobals(allow, missing, record) {
   const g = globalThis, O = Object;
   for (const name of O.getOwnPropertyNames(g)) {
     if (allow.includes(name) || !O.getOwnPropertyDescriptor(g, name).configurable) continue;
     O.defineProperty(g, name, { get() { return record(name); }, configurable: false });
   }
+  for (const name of missing) O.defineProperty(g, name, { get() { return record(name); }, configurable: false });
+  O.defineProperty(O.getPrototypeOf(function () {}), 'constructor', {
+    get() { return record('Function.prototype.constructor'); }, configurable: false,
+  });
 })`;
 
 /**
- * Runs the file's own text in a fresh vm context: its module body, then its
- * export list as a return value, with `inject` just before it. Every global
- * but ALLOWED_GLOBALS is a trap (only undefined, NaN and Infinity, which cannot
- * be redefined, stay), a name the context lacks is a ReferenceError, and code
- * generation from strings is off, so Function reached through a constructor
- * chain cannot compile either.
+ * Runs the file's own text, in strict mode as ESM runs, in a fresh vm context:
+ * its module body, then its export list as a return value, with `inject` just
+ * before it. Code generation from strings is off. This guards against an
+ * accident in the generator or its source (a global reached at load), not a
+ * determined author.
  */
 function loadInVm(source: string, inject = '') {
   const reached: string[] = [];
@@ -115,12 +131,16 @@ function loadInVm(source: string, inject = '') {
     throw new Error(`${name} is not an allowed global`);
   };
   const ctx = vm.createContext({}, { codeGeneration: { strings: false, wasm: false } });
-  vm.runInContext(TRAP, ctx)(ALLOWED_GLOBALS, record);
+  const inside: string[] = vm.runInContext('Object.getOwnPropertyNames(globalThis)', ctx);
+  // The test's own globals, plus names a script reaches that Node keeps off the global object.
+  const outer = [...Object.getOwnPropertyNames(globalThis), 'Worker', 'require', 'module', 'exports', '__dirname', '__filename'];
+  const missing = [...new Set(outer)].filter((name) => !inside.includes(name));
+  vm.runInContext(TRAP, ctx)(ALLOWED_GLOBALS, missing, record);
   const at = source.lastIndexOf('\nexport {');
   const exportList = source.slice(at + '\nexport '.length).replace(/;\s*$/, '');
   expect(exportList, 'the export list is plain names').toMatch(/^\{[\s\w,]*\}$/);
   try {
-    const mod = vm.runInContext(`(function () {\n${source.slice(0, at)}\n${inject}\nreturn ${exportList};\n})()`, ctx);
+    const mod = vm.runInContext(`(function () {\n"use strict";\n${source.slice(0, at)}\n${inject}\nreturn ${exportList};\n})()`, ctx);
     return { mod, reached, error: undefined };
   } catch (error) {
     return { mod: undefined, reached, error: String((error as Error)?.message ?? error) };
