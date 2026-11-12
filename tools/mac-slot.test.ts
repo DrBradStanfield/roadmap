@@ -4,7 +4,7 @@
 // a fixed sleep, so a busy Mac cannot end them early. macOS only (lockf): CI runs Linux, so these run locally:
 //   npx vitest run tools/mac-slot.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -30,6 +30,8 @@ const hold = (name: string, code = 0) =>
   ['sh', '-c', `echo started >> "${fake}/${name}.log"; while [ ! -f "${fake}/${name}.go" ]; do sleep 0.1; done; exit ${code}`];
 const release = (name: string) => writeFileSync(join(fake, `${name}.go`), '');
 const started = (name: string) => existsSync(join(fake, `${name}.log`));
+// A waiter's queue marker: waiting.<kind>.<stamp>.<pid> (or the older waiting.<kind>.<pid>).
+const marker = (pid?: number) => readdirSync(home).filter((f) => new RegExp(`^waiting\\.codex\\.(.*\\.)?${pid}$`).test(f));
 
 function bg(kind: string, cmd: string[], extra: Record<string, string> = {}) {
   const p = spawn('sh', [SCRIPT, kind, '--', ...cmd], { env: env(extra) });
@@ -231,11 +233,12 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     await until(() => started('a'));
     const w = bg('codex', hold('b'), extra);
     await until(() => /waiting for a codex slot/.test(w.err()));
+    expect(marker(w.p.pid)).toHaveLength(1);
     const t = Date.now();
     w.p.kill('SIGTERM');
     expect(await w.done).toBe(143);
     expect(Date.now() - t).toBeLessThan(1000);
-    expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
+    expect(marker(w.p.pid)).toEqual([]);
     expect(started('b')).toBe(false);
   });
 
@@ -273,13 +276,69 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     await until(() => started('a'));
     const w = bg('codex', hold('b'), extra);
     await until(() => /waiting for a codex slot/.test(w.err()));
+    expect(marker(w.p.pid)).toHaveLength(1);
     const t = Date.now();
     w.p.kill('SIGINT');
     expect(await w.done).toBe(130);
     expect(Date.now() - t).toBeLessThan(1000);
-    expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
+    expect(marker(w.p.pid)).toEqual([]);
     expect(started('b')).toBe(false);
   });
+
+  // R1 (PR 1427 review): a caller that reruns straight after its own run scans within milliseconds of the slot
+  // freeing. Waiters queue by marker and a newcomer defers to a live one, so the chain cannot starve them; the old
+  // blocking lockf likewise handed a freed slot to a blocked waiter at once.
+  const chain = (runs: number) => ['sh', '-c', `i=1; while [ $i -le ${runs} ]; do sh "${SCRIPT}" codex -- sh -c "echo C$i >> '${fake}/order'; sleep 0.5"; i=$((i + 1)); done`];
+  const queued = (name: string) => ['sh', '-c', `echo ${name} >> "${fake}/order"; sleep 0.3`];
+  const order = () => (existsSync(join(fake, 'order')) ? readFileSync(join(fake, 'order'), 'utf8').trim().split('\n') : []);
+  it('a waiter runs before a chain of back-to-back runs ends (no starvation)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
+    kids.push(ch);
+    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    await until(() => order().includes('C1'));
+    const w = bg('codex', queued('W'), extra);
+    expect(await chDone).toBe(0);
+    expect(await w.done).toBe(0);
+    const o = order();
+    expect(o.indexOf('W')).toBeGreaterThan(-1);
+    expect(o.indexOf('W')).toBeLessThan(o.indexOf('C6'));
+  }, 30000);
+
+  it('two waiters run in arrival order, before a chain of back-to-back runs ends', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
+    kids.push(ch);
+    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    await until(() => order().includes('C1'));
+    const w1 = bg('codex', queued('W1'), extra);
+    await until(() => /waiting for a codex slot/.test(w1.err()));
+    const w2 = bg('codex', queued('W2'), extra);
+    expect(await chDone).toBe(0);
+    expect(await w1.done).toBe(0);
+    expect(await w2.done).toBe(0);
+    const o = order();
+    expect(o.indexOf('W1')).toBeGreaterThan(-1);
+    expect(o.indexOf('W1')).toBeLessThan(o.indexOf('W2'));
+    expect(o.indexOf('W2')).toBeLessThan(o.indexOf('C6'));
+  }, 30000);
+
+  // R2: a waiter tries every slot on each retry, so a slot freeing while another stays held is taken within ~0.2 s.
+  // The slot released is the one the old code's waiter did not watch (pid mod N + 1), so the pin is deterministic.
+  it('with 2 slots, a waiter takes a freed slot within 1 s while the other stays held', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '2' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    bg('codex', hold('b'), extra);
+    await until(() => started('b'));
+    const w = bg('codex', hold('c'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    const watched = ((w.p.pid ?? 0) % 2) + 1;
+    release(watched === 1 ? 'b' : 'a'); // a holds slot 1, b slot 2
+    const t = Date.now();
+    await until(() => started('c'), 5000);
+    expect(Date.now() - t).toBeLessThan(1000);
+  }, 20000);
 
   // Lead T17: under a decimal-comma locale sysctl prints "6,44", which read as unreadable and failed open. This
   // runs the real sysctl path (no injected reader) under de_DE with a cap of 0, so a read load always waits and a
