@@ -127,6 +127,18 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     );
   });
 
+  it('Settings claims nothing while a retry runs over a failed, unmirrored write (lead A1 step d review)', () => {
+    sync.pending = true; // the marker landed; the device write did not
+    sync.status = 'not-saved';
+    mount('dropbox');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    sync.status = 'saving'; // an edit: the retry runs
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    expect(document.querySelector('.hr-sync-detail')).toBeNull();
+    expect(document.body.textContent).not.toContain('safe in this browser');
+  });
+
   it('the first frame already says what the session knows, never a false Synced (F4)', () => {
     sync.status = 'saving';
     expect(renderToStaticMarkup(<StorageBar backend="dropbox" />)).toContain('Saving to Dropbox…');

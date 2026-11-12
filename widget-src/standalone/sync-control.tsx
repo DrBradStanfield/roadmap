@@ -84,9 +84,10 @@ const SYNCED_TO = (provider: string) => `Synced to ${provider}`;
 
 /** The device copy holds the unsynced changes: a failed save's device write
  *  landed, or an earlier session left its marker. The marker alone never says
- *  so, since it is set before that write (US-09 AC4). */
+ *  so, since it is set before that write (US-09 AC4), and never while a save
+ *  runs, which may run over a failed, unmirrored write. */
 const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
-  status === 'not-saved-on-device' || (pendingSync && status !== 'not-saved');
+  status === 'not-saved-on-device' || (pendingSync && status === 'saved');
 
 /** US-09 AC30: the title line's words, from the real storage state (storageState's
  *  three, the session's save status and the device marker), so they never claim
