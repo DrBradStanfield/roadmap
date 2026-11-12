@@ -107,6 +107,8 @@ by the orchestrator, not a fresh reviewer.
      guide's sourced safety lines (US-58 AC7). iOS tests: 519 passed in UTC; in Pacific/Auckland
      one layout test timed out under heavy load and passed when rerun alone. Not yet added to
      the external test group or sent to beta review: Brad's step in App Store Connect.
+   - **Build 11** (0.2) was uploaded 2026-11-11. **Build 12** (0.2) carries the Needs-attention
+     banner's corners and the My health footer's clearance (US-73) and is the resubmission.
    - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
      Store Connect locks screenshots and app previews while a version waits for review, so
      0.1 went out with the old five plain captures. With the next version, replace them with:
