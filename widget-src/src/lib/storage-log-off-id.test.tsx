@@ -113,6 +113,32 @@ describe('US-09 AC2c controls', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
   });
 
+  it('a page that heard a log-off while loading writes nothing when it opens on the device with the same id', async () => {
+    const { listenForOtherTabsLogOff, LocalStorageAdapter } = await import('../storage/local-storage-adapter');
+    listenForOtherTabsLogOff();
+    window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_log_off_signal' }));
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    await RoadmapStore.create(new LocalStorageAdapter());
+    const { healthWritesAllowed, patchMirror } = await import('./storage');
+    expect(localStorage.getItem(LOG_OFF_ID_KEY)).toBe('id-at-load');
+    expect(healthWritesAllowed()).toBe(false);
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
+  });
+
+  it('a page that finds the id changed as it opens on the device leaves the draft key alone', async () => {
+    const { healthWritesAllowed } = await import('./storage');
+    logOffElsewhere();
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
+    await RoadmapStore.create(new LocalStorageAdapter());
+    expect(healthWritesAllowed()).toBe(false);
+    const theirs = JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} });
+    localStorage.setItem(VITALS_DRAFT_KEY, theirs);
+    await typeWeight('81');
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
+  });
+
   it('a page whose device copy is its only store keeps writing after the id changes', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
@@ -148,16 +174,75 @@ describe('US-09 AC2c controls', () => {
   });
 });
 
-describe('US-09 AC2c: the health-write state moves one way only', () => {
+describe('US-09 AC2h: a page whose record is still opening', () => {
+  it('writes no health data after a log-off elsewhere, before it knows it is a device page', async () => {
+    const { patchMirror } = await import('./storage');
+    const { keepLpaAsIs } = await import('./lpa-unit');
+    logOffElsewhere();
+    patchMirror({ medications: [med] });
+    keepLpaAsIs('lpa-row-1');
+    expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
+    expect(localStorage.getItem(LPA_KEPT_KEY)).toBeNull();
+  });
+
+  it('control: writes while the id is the one it loaded with', async () => {
+    const { patchMirror } = await import('./storage');
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
+  });
+});
+
+describe('US-09 AC2c: a cloud page restored from the back-forward cache', () => {
+  it('still writes nothing after a log-off elsewhere while it was away', async () => {
+    await cloudPage();
+    const { patchMirror, healthWritesAllowed } = await import('./storage');
+    logOffElsewhere();
+    window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    expect(healthWritesAllowed()).toBe(false);
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
+  });
+});
+
+describe('US-09 AC2c, AC2h: the health-write state', () => {
+  const quiet = { mode: 'loading', logOffHeard: false } as const;
+  const heard = { mode: 'loading', logOffHeard: true } as const;
+  const device = { mode: 'device' } as const;
+  const cloud = { mode: 'cloud' } as const;
+  const stopped = { mode: 'stopped' } as const;
+  const same = { type: 'deviceOpened', sameSignIn: true } as const;
+  const changed = { type: 'deviceOpened', sameSignIn: false } as const;
+  const opened = { type: 'cloudOpened' } as const;
+  const hear = { type: 'logOffHeard' } as const;
+  const stop = { type: 'stop' } as const;
   it.each([
-    ['device', 'cloudOpened', 'cloud'],
-    ['device', 'stop', 'stopped'],
-    ['cloud', 'cloudOpened', 'cloud'],
-    ['cloud', 'stop', 'stopped'],
-    ['stopped', 'cloudOpened', 'stopped'],
-    ['stopped', 'stop', 'stopped'],
-  ] as const)('%s + %s -> %s', async (state, event, next) => {
+    [quiet, same, device],
+    [quiet, changed, stopped],
+    [quiet, opened, cloud],
+    [quiet, hear, heard],
+    [quiet, stop, stopped],
+    [heard, same, stopped],
+    [heard, changed, stopped],
+    [heard, opened, stopped],
+    [heard, hear, heard],
+    [heard, stop, stopped],
+    [device, same, device],
+    [device, changed, device],
+    [device, opened, cloud],
+    [device, hear, device],
+    [device, stop, stopped],
+    [cloud, same, device],
+    [cloud, changed, stopped],
+    [cloud, opened, cloud],
+    [cloud, hear, stopped],
+    [cloud, stop, stopped],
+    [stopped, same, stopped],
+    [stopped, changed, stopped],
+    [stopped, opened, stopped],
+    [stopped, hear, stopped],
+    [stopped, stop, stopped],
+  ] as const)('%o + %o -> %o', async (state, event, next) => {
     const { healthWritesTransition } = await import('./storage');
-    expect(healthWritesTransition(state, event)).toBe(next);
+    expect(healthWritesTransition(state, event)).toEqual(next);
   });
 });

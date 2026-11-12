@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T12,tooling,split-stories: an --out inside a work tree that git finds through core.worktree (no .git entry) still writes; the --out shape check runs before verifyPlan and the write runs after,gap,not started,"tools/split-stories-guards.mjs walks up for a .git entry, which a core.worktree layout lacks (reproduced in review of PR 1399); the check-then-write gap is untested. A main checkout plus git worktrees (each with a .git entry) is unaffected",1399,no
