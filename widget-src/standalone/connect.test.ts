@@ -74,6 +74,7 @@ const DROPBOX_TOKENS = 'health_roadmap_dropbox_tokens';
 const LEGACY_DATA = 'health_roadmap_data';
 const AUTH_FLAG = 'health_roadmap_authenticated';
 const UNRELATED = 'some_other_app_key';
+const CLEARED_ERASE = 'health_roadmap_cleared_erase';
 
 describe('logOff teardown', () => {
   let reloadSpy: ReturnType<typeof vi.fn>;
@@ -95,6 +96,7 @@ describe('logOff teardown', () => {
     store.setItem(LEGACY_DATA, '{"inputs":{"heightCm":180,"sex":"male"}}');
     store.setItem(AUTH_FLAG, '1');
     store.setItem(UNRELATED, 'keep-me');
+    store.setItem(CLEARED_ERASE, '[1,"2026-10-21T10:05:00.000Z"]');
 
     reloadSpy = vi.fn();
     Object.defineProperty(globalThis, 'location', {
@@ -121,6 +123,12 @@ describe('logOff teardown', () => {
     await logOff('dropbox');
     expect(store.getItem(LEGACY_DATA)).toBeNull();
     expect(store.getItem(AUTH_FLAG)).toBeNull();
+  });
+
+  // US-11 AC6: the next person on this device starts with no erase kept.
+  it('removes the erase this device last cleared its off-file data for', async () => {
+    await logOff('dropbox');
+    expect(store.getItem(CLEARED_ERASE)).toBeNull();
   });
 
   it('forgets the remembered backend selection', async () => {
