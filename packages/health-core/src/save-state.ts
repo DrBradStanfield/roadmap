@@ -21,16 +21,15 @@
  *   edit a pass already took).
  * - saving: a pass runs; `armed` when an edit during it re-armed the debounce.
  * - failed: a pass failed; its changes wait for the next edit or save.
- * - held: an erase put the debounce aside while it reads, or swapped the
- *   erased copy in before its write starts. Moves as failed does, and never
- *   outlives the erase: eraseEnded, or holdEnded for an erase that never
- *   swapped, settles it to failed, or clean.
- *   Held exists only because of lead A6 (an erase accepts edits while it
- *   reads); it folds into erasing if A6 moves the refusal to the erase's
- *   first line.
- * - erasing: the erase's swap to the end of its write, over the save state
- *   `under` it. Erasing while a pass runs is erasing over saving. An edit is
- *   refused here; RecordSession.refuses() gives the caller that answer.
+ * - erasing: an erase, from its confirm to the end of its write, over the save
+ *   state `under` it (lead A6). An edit is refused throughout;
+ *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
+ *   reads the record and runs the caller's step; the debounce is put aside and
+ *   `under` keeps its mode, so an erase that stops here gives `under` back and
+ *   re-arms its debounce, with no change added. `writing`: the erased copy is
+ *   swapped in and written. Erasing while a pass runs is erasing over saving.
+ *   `writePending` reads `under`, so while an erase reads over a waiting save,
+ *   a refresh from the cloud waits until the erase swaps or stops.
  *
  * Where RecordSession dispatches:
  * - saveLoop: `passFailed` in its catch, clearing `running` in the same turn,
@@ -41,21 +40,19 @@
  *   `adopt()`.
  * - persist(): `save`. While a pass runs it only joins: it clears an armed
  *   debounce and starts no pass.
- * - erase(): read `debounceArmed(state)` before dispatching `hold`.
- * - erase(): `eraseEnded` in a finally around the write, from `eraseStarted`.
- * - erase(): `holdEnded` in a finally that covers the whole erase from `hold`
- *   on, so an aborted erase (beforeErase threw) leaves held too. Never
- *   `eraseEnded` there: a second erase that ends must not unwrap the first's
- *   erasing mid-write (US-16 AC2a).
+ * - erase(): refuses a second erase before any event (ERASE_BUSY), so one
+ *   erase owns the erasing mode. `eraseBegan` on its first line after that;
+ *   `eraseSwapped` after the build; `eraseAborted` in a finally that closes in
+ *   the turn of the swap, so only an erase that stopped before it gives its
+ *   save back; `eraseEnded` in a finally around the write.
  */
 
 export type SaveBase =
   | { mode: 'clean'; changes: number }
   | { mode: 'waiting'; changes: number; saved: number }
   | { mode: 'saving'; changes: number; saved: number; from: number; armed: boolean }
-  | { mode: 'failed'; changes: number; saved: number }
-  | { mode: 'held'; changes: number; saved: number };
-export type SaveState = SaveBase | { mode: 'erasing'; under: SaveBase };
+  | { mode: 'failed'; changes: number; saved: number };
+export type SaveState = SaveBase | { mode: 'erasing'; phase: 'reading' | 'writing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
@@ -63,10 +60,10 @@ export type SaveEvent =
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
   | { type: 'passFailed' }
   | { type: 'synced' } // a synchronous write landed the whole working copy
-  | { type: 'hold' } // an erase puts the debounce aside while it reads
-  | { type: 'eraseStarted' } // the erased copy swapped in: one more change
-  | { type: 'eraseEnded' } // the erase's write ended, landed or not
-  | { type: 'holdEnded' }; // an erase ended; settles only a bare held
+  | { type: 'eraseBegan' } // the erase's first line: every write is refused from here
+  | { type: 'eraseSwapped' } // the erased copy swapped in: one more change
+  | { type: 'eraseAborted' } // the erase stopped before its swap
+  | { type: 'eraseEnded' }; // the erase's write ended, landed or not
 
 /** arm: (re)start the debounce, clearing any armed one. cancel: clear it.
  *  pass: run one save pass of the working copy, from change `from`. */
@@ -78,9 +75,9 @@ export const SAVE_START: SaveState = { mode: 'clean', changes: 0 };
 
 const savedOf = (s: SaveBase): number => (s.mode === 'clean' ? s.changes : s.saved);
 
-/** True while the debounce is armed. */
+/** True while the debounce is armed. Never while erasing: the erase put it
+ *  aside, and an edit, the one thing that arms it, is refused. */
 export function debounceArmed(s: SaveState): boolean {
-  if (s.mode === 'erasing') return debounceArmed(s.under);
   return s.mode === 'waiting' || (s.mode === 'saving' && s.armed);
 }
 
@@ -101,7 +98,7 @@ export type SaveStatus = 'saved' | 'saving' | 'not-saved';
 /** What a status line shows. Step (d) words it. */
 export function saveStatus(s: SaveState): SaveStatus {
   if (s.mode === 'erasing') return saveStatus(s.under);
-  if (s.mode === 'saving' || s.mode === 'held') return 'saving'; // held: an erase is in progress
+  if (s.mode === 'saving') return 'saving';
   if (!unsaved(s)) return 'saved';
   return s.mode === 'waiting' ? 'saving' : 'not-saved';
 }
@@ -112,7 +109,11 @@ function settle(changes: number, saved: number, armed: boolean): SaveBase {
   return changes === saved ? { mode: 'clean', changes } : { mode: 'failed', changes, saved };
 }
 
-function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnded' }>): { state: SaveBase; effects: SaveEffect[] } {
+/** Every event but the erase's. None of them arms the debounce but `edited`,
+ *  which an erase refuses, so a reading erase's debounce stays aside. */
+type BaseEvent = Exclude<SaveEvent, { type: 'eraseBegan' | 'eraseSwapped' | 'eraseAborted' | 'eraseEnded' }>;
+
+function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect[] } {
   const saved = savedOf(s);
   const cancel: SaveEffect[] = debounceArmed(s) ? [{ type: 'cancel' }] : [];
   const same = { state: s, effects: [] };
@@ -131,26 +132,37 @@ function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnd
       return s.mode === 'saving' ? { state: settle(s.changes, s.saved, s.armed), effects: [] } : same;
     case 'synced':
       return { state: s.mode === 'saving' ? { ...s, saved: s.changes, armed: false } : { mode: 'clean', changes: s.changes }, effects: cancel };
-    case 'hold':
-      if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel };
-      if (s.mode !== 'waiting') return same;
-      return { state: s.changes === saved ? { mode: 'clean', changes: s.changes } : { mode: 'held', changes: s.changes, saved }, effects: cancel };
-    case 'eraseStarted':
-      return { state: s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: false } : { mode: 'held', changes: s.changes + 1, saved }, effects: cancel };
   }
+}
+
+/** The erased copy swapped in: one more change. A pass that runs goes on and
+ *  carries it; anything else waits for the erase's write as failed. */
+function swapped(s: SaveBase): SaveBase {
+  return s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: false } : { mode: 'failed', changes: s.changes + 1, saved: savedOf(s) };
 }
 
 /** The only way the save state changes. */
 export function transition(s: SaveState, e: SaveEvent): SaveStep {
-  if (e.type === 'holdEnded') { // held never outlives the erase, even one that ended before eraseStarted
-    return { state: s.mode === 'held' ? settle(s.changes, s.saved, false) : s, effects: [] };
+  if (s.mode !== 'erasing') {
+    if (e.type === 'eraseBegan') return { state: { mode: 'erasing', phase: 'reading', under: s }, effects: debounceArmed(s) ? [{ type: 'cancel' }] : [] };
+    if (e.type === 'eraseSwapped' || e.type === 'eraseAborted' || e.type === 'eraseEnded') return { state: s, effects: [] }; // stale
+    return base(s, e);
   }
-  if (e.type === 'eraseEnded') {
-    const b = s.mode === 'erasing' ? s.under : s;
-    return { state: b.mode === 'held' ? settle(b.changes, b.saved, false) : b, effects: [] };
+  const reading = s.phase === 'reading';
+  switch (e.type) {
+    case 'eraseBegan': // erase() refuses a second erase before dispatching
+    case 'edited': // refused: refuses() answers the caller
+      return { state: s, effects: [] };
+    case 'eraseSwapped':
+      return { state: reading ? { mode: 'erasing', phase: 'writing', under: swapped(s.under) } : s, effects: [] };
+    case 'eraseAborted': // past the swap there is nothing to abort
+      if (!reading) return { state: s, effects: [] };
+      return { state: s.under, effects: debounceArmed(s.under) ? [{ type: 'arm' }] : [] };
+    case 'eraseEnded':
+      return { state: s.under, effects: [] };
+    default: {
+      const step = base(s.under, e);
+      return { state: { ...s, under: step.state }, effects: step.effects };
+    }
   }
-  if (s.mode !== 'erasing' && e.type !== 'eraseStarted') return base(s, e);
-  if (s.mode === 'erasing' && e.type === 'edited') return { state: s, effects: [] }; // refused
-  const step = base(s.mode === 'erasing' ? s.under : s, e);
-  return { state: { mode: 'erasing', under: step.state }, effects: step.effects };
 }
