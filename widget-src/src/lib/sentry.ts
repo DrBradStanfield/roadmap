@@ -172,6 +172,20 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   return event;
 }
 
+/** A throw here must not reach the SDK's internal-error path: the hook
+ *  returns null, so nothing is sent, and one fixed line names the error type,
+ *  never its message or stack (US-09 AC7i). */
+function failClosed<A extends unknown[], R>(hook: (...args: A) => R | null): (...args: A) => R | null {
+  return (...args) => {
+    try {
+      return hook(...args);
+    } catch (err) {
+      console.error(`Sentry scrub failed (${err instanceof Error ? err.name : typeof err}); event dropped`);
+      return null;
+    }
+  };
+}
+
 /** A local dev host (US-20 AC5): localhost, its subdomains, and both loopback addresses. */
 export function isLoopbackHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -235,8 +249,8 @@ export function initSentry() {
       // lives beside index.html. Rehosted copies do not report to our project.
       /^https:\/\/drbradstanfield\.github\.io\/roadmap\/(?:assets\/[^/?#]+\.js|health-upload\.js)(?:[?#].*)?$/,
     ],
-    beforeSend: scrubEvent,
-    beforeBreadcrumb: scrubBreadcrumb,
+    beforeSend: failClosed(scrubEvent),
+    beforeBreadcrumb: failClosed(scrubBreadcrumb),
   });
 }
 

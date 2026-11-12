@@ -13,6 +13,18 @@
 import * as Sentry from "@sentry/react-router";
 import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
 
+// A throw in a scrub must not reach the SDK's internal-error path: the hook
+// returns null, so nothing is sent, and one fixed line names the error type,
+// never its message or stack (US-09 AC7i).
+const failClosed = (hook) => (...args) => {
+  try {
+    return hook(...args);
+  } catch (err) {
+    console.error(`Sentry scrub failed (${err instanceof Error ? err.name : typeof err}); event dropped`);
+    return null;
+  }
+};
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   // Console arguments are raw application text — a logged sentence carries a
@@ -39,7 +51,7 @@ Sentry.init({
     // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
     /cdn\/shopifycloud\/privacy-banner/,
   ],
-  beforeSend(event, hint) {
+  beforeSend: failClosed((event, hint) => {
     // Benign body-stream cancel on client abort: fires when a user closes the tab while
     // request.json() still holds a reader on the body stream. The PRIMARY suppression is the
     // `request.signal.aborted` guard in entry.server.tsx's handleError (it skips capture for
@@ -59,10 +71,10 @@ Sentry.init({
     // Scrub PII/PHI from event data before it leaves the server (shared with
     // the parity test, which runs this exact pipeline against the browser's).
     return scrubServerEvent(event);
-  },
+  }),
   // Sampled transactions carry the request (headers, cookies) too, and
   // beforeSend never sees them.
-  beforeSendTransaction: scrubServerEvent,
+  beforeSendTransaction: failClosed(scrubServerEvent),
   beforeBreadcrumb(breadcrumb) {
     if (
       (breadcrumb.category === "fetch" ||

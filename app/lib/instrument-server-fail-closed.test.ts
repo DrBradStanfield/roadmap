@@ -17,7 +17,7 @@ vi.mock('../../instrument-scrub.mjs', async (original) => {
       if (mode.throw !== null) throw mode.throw;
       if (mode.drop) return null;
       const out = real.scrubServerEvent(event);
-      mode.outputs.push(JSON.parse(JSON.stringify(out)));
+      mode.outputs.push(out);
       return out;
     },
   };
@@ -28,6 +28,14 @@ const FIXED = (name: string) => `Sentry scrub failed (${name}); event dropped`;
 type Item = [{ type: string }, Record<string, any>];
 const envelopes: Array<[unknown, Item[]]> = [];
 const items = () => envelopes.flatMap(([, list]) => list);
+// A client report holds counts and reasons only (no event content); every
+// other item is content the SDK sent.
+const content = () => items().filter(([h]) => h.type !== 'client_report');
+const discarded = () => items().filter(([h]) => h.type === 'client_report')
+  .flatMap(([, p]) => p.discarded_events as Array<{ category: string; reason: string }>);
+async function settle(until: () => void) {
+  await vi.waitFor(async () => { await Sentry.flush(100); until(); }, { timeout: 2000 });
+}
 const internalCaptures: unknown[] = [];
 let errorLog: ReturnType<typeof vi.spyOn>;
 
@@ -79,7 +87,8 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
     mode.throw = failing();
     Sentry.captureException(new Error(`probe ${SENTINEL}`));
     await Sentry.flush(500);
-    expect(items()).toEqual([]);
+    expect(content()).toEqual([]);
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('TypeError')]]);
     expect(JSON.stringify(errorLog.mock.calls)).not.toContain(SENTINEL);
@@ -89,7 +98,8 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
     mode.throw = `thrown string ${SENTINEL}`;
     Sentry.captureException(new Error('probe string throw'));
     await Sentry.flush(500);
-    expect(items()).toEqual([]);
+    expect(content()).toEqual([]);
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('string')]]);
   });
@@ -97,8 +107,9 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
   it('beforeSendTransaction: a throw sends no envelope and no internal event', async () => {
     mode.throw = failing();
     Sentry.startSpan({ name: `tx ${SENTINEL}` }, () => {});
-    await Sentry.flush(500);
-    expect(items()).toEqual([]);
+    await settle(() => expect(discarded()).toContainEqual(expect.objectContaining({ category: 'transaction', reason: 'before_send' })));
+    expect(content()).toEqual([]);
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('TypeError')]]);
   });
@@ -106,13 +117,13 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
   it('a hook that returns normally sends the same scrubbed event as before', async () => {
     Sentry.captureException(new Error('My LDL is 3.2 mmol/L'));
     Sentry.startSpan({ name: 'tx-unchanged' }, () => {});
-    await vi.waitFor(async () => {
-      await Sentry.flush(100);
-      expect(items().map(([h]) => h.type).sort()).toEqual(['event', 'transaction']);
-    }, { timeout: 2000 });
-    const sent = items().map(([, payload]) => payload);
-    for (const payload of sent) expect(mode.outputs).toContainEqual(payload);
-    expect(JSON.stringify(sent)).not.toContain('3.2');
+    await settle(() => expect(content().map(([h]) => h.type).sort()).toEqual(['event', 'transaction']));
+    const sent = content().map(([, payload]) => payload);
+    // The very object each hook returned is what went out.
+    for (const payload of sent) expect(mode.outputs).toContain(payload);
+    // The message is scrubbed (stack frames keep their source lines, which quote this file).
+    const [, event] = content().find(([h]) => h.type === 'event')!;
+    expect(event.exception.values[0].value).not.toContain('3.2');
     expect(errorLog).not.toHaveBeenCalled();
   });
 
@@ -120,8 +131,9 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
     mode.drop = true;
     Sentry.captureException(new Error('probe null'));
     Sentry.startSpan({ name: 'tx-null' }, () => {});
-    await Sentry.flush(500);
-    expect(items()).toEqual([]);
+    await settle(() => expect(discarded()).toContainEqual(expect.objectContaining({ category: 'transaction', reason: 'before_send' })));
+    expect(content()).toEqual([]);
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog).not.toHaveBeenCalled();
   });
