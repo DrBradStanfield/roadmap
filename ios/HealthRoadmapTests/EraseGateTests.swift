@@ -75,7 +75,6 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
             return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: nil, live: nil)
-        sync.waitsFor(eraser) // AppParts' own call
         return App(store: store, sync: sync, chat: chat, eraser: eraser)
     }
 
@@ -356,6 +355,24 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertFalse(app.eraser.erasing)
         XCTAssertFalse(app.sync.eraseRunning(), "false once the words show")
+    }
+
+    /// The owner's ruling (d): DataEraser's init is the wiring. One built on its own, with no
+    /// other call, is what Connect and Disconnect wait for.
+    func testADataEraserBuiltOnItsOwnIsWhatConnectWaitsFor_US25_AC16e() async throws {
+        let engine = try HealthEngine(session: StubHTTP.session())
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        let eraser = DataEraser(store: store, sync: sync, chat: ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test"), reminders: nil, health: nil, live: nil)
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        XCTAssertFalse(sync.eraseRunning())
+        let release = holdLine(store)
+        let erase = Task { await eraser.eraseAll() }
+        try await until("the erase runs") { eraser.erasing }
+        XCTAssertTrue(sync.eraseRunning(), "true while it erases")
+        release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertFalse(sync.eraseRunning(), "false after")
     }
 
     /// Condition (i): a view reading `sync.eraseRunning()` redraws as the eraser's phase moves:

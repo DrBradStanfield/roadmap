@@ -392,7 +392,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
 
     func testAConnectIsRefusedWhileAnEraseRunsBeforeAndAfterItsSignIn() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
-        let (_, sync, _) = try app()
+        let (store, sync, engine) = try app()
         await sync.start()
         let refusal = OAuthClient.Failure.refused("Wait for the erase to finish, then connect.")
         // A sign-in begun before the erase (Codex re-check R2).
@@ -402,9 +402,10 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         let gate = StubHTTP.Gate()
         dropbox.downloadGate = gate
         let read = nextDownload()
-        let erase = Task { try await sync.erase(chatHistory: nil) { _ in true } }
+        // A DataEraser on this sync is what Connect waits for (its init wires eraseRunning, AC16e).
+        let eraser = DataEraser(store: store, sync: sync, chat: ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test"), reminders: nil, health: nil, live: nil)
+        let erase = Task { await eraser.eraseAll() }
         await arrive(read)
-        sync.eraseRunning = { true } // DataEraser's phase, as AppParts wires it: these pins drive CloudSync.erase alone (EraseGateTests: the real one)
         do {
             try await sync.connect(.dropbox, authenticate: signIn())
             XCTFail("a connect must wait for the erase")
@@ -421,7 +422,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r", "neither sign-in was kept")
         XCTAssertNil(text("sync-account"))
         gate.open()
-        _ = try await erase.value
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
     }
 
     // MARK: 8 · Erase
@@ -443,14 +444,15 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
     func testAnEraseIsErasingWhileItRunsRefusesDisconnectAndEndsSynced() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         try write("dbid:A", "sync-account")
-        let (store, sync, _) = try app()
+        let (store, sync, engine) = try app()
         await sync.start()
         let gate = StubHTTP.Gate()
         dropbox.downloadGate = gate
         let read = nextDownload()
-        let erase = Task { try await sync.erase(chatHistory: nil) { _ in true } }
+        // A DataEraser on this sync is what Disconnect waits for (its init wires eraseRunning, AC16e).
+        let eraser = DataEraser(store: store, sync: sync, chat: ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test"), reminders: nil, health: nil, live: nil)
+        let erase = Task { await eraser.eraseAll() }
         await arrive(read)
-        sync.eraseRunning = { true } // DataEraser's phase, as AppParts wires it (EraseGateTests: the real one)
         XCTAssertEqual(sync.status, .saving)
         let copied = await sync.disconnect()
         XCTAssertFalse(copied, "Disconnect is refused while the erase runs")
@@ -461,8 +463,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(text("sync-account"), "dbid:A")
         XCTAssertNotNil(tokens.load(.dropbox))
         gate.open()
-        let result = try await erase.value
-        XCTAssertEqual(result?.success, true)
+        guard case .erased = await erase.value else { return XCTFail("the erase lands in the cloud") }
         guard case .synced = sync.status else { return XCTFail("status is \(sync.status)") }
         XCTAssertEqual(activeDays(store.recordJSON), [])
     }

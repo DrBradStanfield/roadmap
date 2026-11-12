@@ -646,9 +646,9 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   CloudSync's own `erasing` flag is gone; it was set only during the cloud erase's engine call,
   so a phone-only erase left Connect live (a first connect could lift a half-erased record) and a
   cloud erase left Connect and Disconnect live through its last steps. CloudSync now reads
-  `eraseRunning()`, a closure wired once to `eraser.erasing` by `CloudSync.waitsFor(eraser)`, the
-  one call AppParts and the tests share (DataEraser takes `sync` in its init, so CloudSync cannot
-  take the eraser in its own); it is read at each decision, never kept, and an
+  `eraseRunning()`, a closure set only by `CloudSync.waitsFor(eraser)`, which DataEraser's init
+  calls (it takes `sync`, so no app or test can build an eraser and forget the wiring; owner's
+  ruling, option d); it is read at each decision, never kept, and an
   @Observable read through it redraws Sync's rows. An erase begun with no shown session (opening,
   closed, closing) is refused and erases nothing (pinned). Not yet (PR 3, lead S24): a one-step
   cloud switch replaces "Disconnect from <cloud> first", with the web's twin.

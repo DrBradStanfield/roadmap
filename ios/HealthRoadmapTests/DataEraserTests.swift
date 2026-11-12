@@ -57,7 +57,6 @@ final class DataEraserTests: XCTestCase {
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
-        sync.waitsFor(eraser)
         return App(store: store, sync: sync, chat: chat, reminders: reminders, eraser: eraser, health: appleHealth, engine: engine)
     }
 
