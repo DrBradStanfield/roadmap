@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A11,web sync,"Web picker: say that the old cloud's copy stays as it is when switching (iPhone PR 3 wording parity).",lead,"not started, unverified",widget-src/standalone/backend-picker.tsx; widget-src/standalone/connect.ts prepareSwitch; iPhone twin ios/HealthRoadmap/Sync/SwitchCloudRow.swift (US-25 AC11n); owner UI thread,,no

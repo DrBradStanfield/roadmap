@@ -669,7 +669,7 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   "<old> is disconnected and <new> did not connect. Your record is on this iPhone only." Owner D2:
   "Disconnect from <cloud> first, then connect <other>." stays as the race backstop's cell.
   Web twin: the picker already switches in one step (connect.ts prepareSwitch); its wording that
-  the old copy stays is lead A10.
+  the old copy stays is lead A11.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.
