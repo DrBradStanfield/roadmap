@@ -18,7 +18,7 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', async (original) => ({
   ...(await original<typeof import('./connect')>()),
   liftLocalInto: vi.fn(),
-  rememberBackend: vi.fn(),
+  rememberSignIn: vi.fn(() => true),
 }));
 
 import { GIS_LOADING, StorageBar } from './sync-control';

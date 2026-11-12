@@ -57,7 +57,7 @@ describe('GitHubAdapter.connect — refuses a public repo', () => {
     const adapter = new GitHubAdapter(CONFIG);
     await adapter.connect();
 
-    expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toEqual(CONFIG);
+    expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toEqual({ ...CONFIG, gen: null }); // the log-off id it was saved under (US-09 AC45)
     expect(adapter.isConnected()).toBe(true);
   });
 

@@ -14,13 +14,15 @@ import {
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
+  type GitHubAdapter,
   type StorageAdapter,
+  type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -150,17 +152,27 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
 
 /**
  * Form-based connect (GitHub, self-host): validate the pasted credentials via
- * adapter.connect() (throws on failure — the caller surfaces the message), lift
- * on-device data up, remember the choice, then reload so app.tsx re-initialises
+ * adapter.connect() (throws on failure — the caller surfaces the message), remember
+ * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
- * resolve-backend.ts on return), so they don't go through here.
+ * resolve-backend.ts on return), so they don't go through here. `gen` is the
+ * log-off id the move began under; the adapter was built with it too.
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend): Promise<void> {
-  await adapter.connect();
-  await liftLocalInto(adapter, backend);
-  rememberBackend(backend);
-  trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
+export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
+  if (rememberSignIn(await adapter.signIn(), backend, gen)) {
+    markSyncPending();
+    await liftLocalInto(adapter, backend);
+    trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
+  }
   location.reload();
+}
+
+/** Remember `backend` when the connecting adapter `saved` its own sign-in,
+ *  and only while `gen` is still the current log-off id (US-09 AC45). True when both hold:
+ *  only then is the device copy lifted into the cloud, marked pending first
+ *  so a page that stops mid-lift lifts it on the next load. */
+export function rememberSignIn(saved: boolean, backend: CloudBackend, gen: LogOffId): boolean {
+  return saved && rememberBackend(backend, gen);
 }
 
 /**
@@ -183,9 +195,10 @@ export function useBusyRun() {
   return { busy, error, setError, run };
 }
 
-/** The adapter for a connected cloud backend (null for the on-device tier). */
-export function adapterFor(backend: Backend): StorageAdapter | null {
-  return providerOf(backend)?.adapter() ?? null;
+/** The adapter for a connected cloud backend (null for the on-device tier);
+ *  `gen` as in Provider.adapter. */
+export function adapterFor(backend: Backend, gen?: LogOffId): StorageAdapter | null {
+  return providerOf(backend)?.adapter(gen) ?? null;
 }
 
 /** The remembered choice, from a browser that may block storage: a blocked
@@ -193,8 +206,9 @@ export function adapterFor(backend: Backend): StorageAdapter | null {
 export function rememberedBackend(): Backend | null {
   return safeGetItem(BACKEND_KEY) as Backend | null;
 }
-export function rememberBackend(backend: Backend): void {
-  safeSetItem(BACKEND_KEY, backend);
+/** Saved only while `gen` is the current log-off id (US-09 AC45); true when saved. */
+export function rememberBackend(backend: Backend, gen: LogOffId): boolean {
+  return setSignIn(BACKEND_KEY, backend, gen);
 }
 export function forgetBackend(): void {
   safeRemoveItem(BACKEND_KEY);
