@@ -1711,6 +1711,7 @@ describe('US-11: an erase made here', () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldWrite(cloud);
     await adapter.connect();
+    localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
     await initRoadmapStore(adapter);
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');

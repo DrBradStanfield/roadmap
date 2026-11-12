@@ -249,6 +249,7 @@ class HeldCloud extends MemoryAdapter {
   }
 }
 async function cloudGuest(adapter: MemoryAdapter): Promise<RenderResult> {
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   await initRoadmapStore(adapter);
   await saveChangedMeasurements(PROFILE, {});
   await addMeasurement('weight', 82, '2026-09-01');
@@ -378,7 +379,6 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
 describe('US-11 AC6: an out-of-date tab cannot delete data; it is told to reload', () => {
   it('refused at the decision: the page says so, returns to rest, and never forgets the record (clearLocalStorage, forgetRecord)', async () => {
     const cloud = new MemoryCloud();
-    localStorage.setItem(BACKEND_KEY, 'memory');
     const view = await cloudGuest(new HeldCloud(cloud));
     await matrixHoldsDraft(view);
     localStorage.removeItem(BACKEND_KEY); // another tab chooses "This device"

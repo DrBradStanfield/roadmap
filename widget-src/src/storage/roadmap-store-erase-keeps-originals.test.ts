@@ -13,7 +13,7 @@ import { liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { RoadmapStore } from './roadmap-store';
-import { webRecordHost } from './web-record-host';
+import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { clearOffFileAfterErase, deleteUserData, initRoadmapStore, setPreEraseHook } from '../lib/roadmap-data';
 import { setChatHistoryFactory } from '../lib/chat-history-access';
@@ -50,6 +50,7 @@ afterEach(() => {
 async function eraseElsewhere(cloud: MemoryCloud, at: string): Promise<void> {
   const mine = Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)!]));
   localStorage.clear();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // that device's own backend, remembered
   vi.setSystemTime(new Date(at));
   expect((await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteAllData()).success).toBe(true);
   localStorage.clear();
@@ -99,6 +100,7 @@ it("a cloud page that takes in another device's erase keeps the originals an on-
 
 it('a stored original no live document names still goes (US-11 AC6)', async () => {
   const cloud = new MemoryCloud();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
   page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
   await page.flush();
@@ -116,6 +118,7 @@ it('an original the erase listed goes, though a stale device copy still names it
   await upload(guest);
   const cloud = new MemoryCloud();
   expect(await liftDeviceCopy(webRecordHost(new MemoryAdapter(cloud)) as Extract<RecordHost, { tier: 'cloud' }>)).toBe('lifted');
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
   expect(page.loadLatestMeasurements().documents).toHaveLength(1);
 
@@ -128,6 +131,7 @@ it('an original the erase listed goes, though a stale device copy still names it
 
 it('a device record that cannot be read names no original (US-11 AC6)', async () => {
   const cloud = new MemoryCloud();
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
   page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
   await page.flush();
