@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // server, a proxy that rewrote the type, an error status) takes today's path.
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-const store = vi.hoisted(() => ({ recordExchange: vi.fn(async () => {}) }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
+const store = vi.hoisted(() => ({ recordExchange: vi.fn(async () => {}), eraseMarks: vi.fn(() => []) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import { sendMessage, type ChatDelta } from './chat-api';
@@ -131,6 +131,31 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     expect((await sendMessage('q', null, null, [], () => {}, true)).result?.proposedEdits).toEqual([field, profile]);
     fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits: [{ kind: 'goal' }] }]));
     expect((await sendMessage('r', null, null, [], () => {}, true)).result).not.toHaveProperty('proposedEdits');
+  });
+
+  // US-67 AC2: the web reads a reply's edits once, through health-core's readProposedEdits,
+  // as the phone does. An unknown kind is left out; an entry of a known kind that is not its
+  // shape refuses every edit of its part (medications, or values and profile), with the phone's words.
+  it('US-67 AC2: a malformed entry refuses its whole part; the other part still applies', async () => {
+    const field = { kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null };
+    const med = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' };
+    const badMed = { kind: 'medication', medicationKey: 'statin_escalation', drugName: 42, doseValue: null, doseUnit: null };
+    const wrongTypedValue = { kind: 'field', field: 'ldlC', displayValue: '4.1', unitSystem: 'si', date: null };
+    const unknown = { kind: 'goal', target: 5 };
+    const medsWords = "The chat's medication change could not be read, so it was not saved.";
+    const reviewWords = "The chat's suggested values could not be read, so none of them were saved.";
+    const reply = async (proposedEdits: unknown[]) => {
+      fetchMock.mockResolvedValueOnce(ndjson([{ ...done, proposedEdits }]));
+      return (await sendMessage('q', null, null, [], () => {}, true)).result;
+    };
+    expect(await reply([med, badMed, field, unknown])).toMatchObject({ proposedEdits: [field], editRefusals: [{ part: 'medications', words: medsWords }] });
+    expect(await reply([wrongTypedValue, field, med])).toMatchObject({ proposedEdits: [med], editRefusals: [{ part: 'review', words: reviewWords }] });
+    const both = await reply([badMed, med, wrongTypedValue, field, unknown]);
+    expect(both).not.toHaveProperty('proposedEdits');
+    expect(both?.editRefusals).toEqual([{ part: 'medications', words: medsWords }, { part: 'review', words: reviewWords }]);
+    // A readable reply is unchanged: no refusals.
+    expect(await reply([field, med])).toMatchObject({ proposedEdits: [field, med] });
+    expect(await reply([field, med])).not.toHaveProperty('editRefusals');
   });
 
   it('a refusal or fallback done line carries isFallback and replaces the streamed text', async () => {

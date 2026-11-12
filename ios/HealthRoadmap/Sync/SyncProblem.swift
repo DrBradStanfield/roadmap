@@ -3,7 +3,7 @@ import Foundation
 /// Why the record is not synced, as the engine classed it (ios/engine/cloud-adapters.ts,
 /// its private `failureKind`), and the plain words the Sync screen says for it.
 struct SyncProblem: Equatable {
-    enum Kind: String {
+    enum Kind: String, CaseIterable {
         /// The provider refused the sign-in: only signing in again fixes it.
         case signIn = "sign-in"
         /// A newer app wrote the record: this one must update before it syncs.

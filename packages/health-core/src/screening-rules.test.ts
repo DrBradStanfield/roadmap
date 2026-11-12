@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   SCREENING_REFS, SCREENING_RULES, inAges, postFollowupIntervals, screeningFollowupInfo, screeningIntervals,
-  screeningKeys, screeningMinAge, screeningReminderCategories, screeningScheduleLabels,
+  screeningKeys, screeningReminderCategories, BREAST_ANNUAL_OR_BIENNIAL_FROM, BREAST_RECOMMENDED_FROM,
   type Ages, type CardText, type ScreeningId, type ScreeningRule,
 } from './screening-rules';
 import { LUNG_PACK_YEARS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, SCREENING_INTERVALS, SCREENING_MIN_AGE, type ScreeningInputs } from './types';
@@ -24,16 +24,85 @@ describe('US-06, US-07: A2-1 step 2, the screening-rules views equal today\'s co
     expect(Object.keys(view)).toEqual(Object.keys(today));
   };
   it('SCREENING_INTERVALS, in key order', () => same(screeningIntervals(), SCREENING_INTERVALS));
-  it('POST_FOLLOWUP_INTERVALS, in key order', () => same(postFollowupIntervals(), POST_FOLLOWUP_INTERVALS));
   it('SCREENING_FOLLOWUP_INFO, in key order', () => same(screeningFollowupInfo(), SCREENING_FOLLOWUP_INFO));
-  it('SCREENING_MIN_AGE, in key order', () => same(screeningMinAge(), SCREENING_MIN_AGE));
   it('SCREENING_KEYS, in order', () => expect(screeningKeys()).toEqual([...SCREENING_KEYS]));
   it('REMINDER_CATEGORIES, the screening part, in order', () => {
     expect(screeningReminderCategories()).toEqual(REMINDER_CATEGORIES.filter((c) => c.startsWith('screening_')));
   });
-  it('SCHEDULE_LABELS, the screening part', () => {
-    const today = Object.fromEntries(Object.entries(SCHEDULE_LABELS).filter(([c]) => c.startsWith('screening_')));
-    expect(screeningScheduleLabels()).toEqual(today);
+});
+
+// A2-1 step 6: SCREENING_MIN_AGE (types.ts) and SCHEDULE_LABELS' screening part (reminder-schedule.ts)
+// are views of the table now, so their old equality checks would compare the table with itself.
+// These pins hold today's values, written out, in key order.
+describe('US-06, US-23: the table\'s upload gate and reminder labels keep today\'s values', () => {
+  it('SCREENING_MIN_AGE, in key order', () => {
+    const today = {
+      colorectal: { age: 35 },
+      breast: { age: 40, sex: 'female' },
+      cervical: { age: 25, sex: 'female' },
+      lung: { age: 50 },
+      prostate: { age: 45, sex: 'male' },
+      dexa: { age: 50 },
+    };
+    expect(SCREENING_MIN_AGE).toEqual(today);
+    expect(Object.keys(SCREENING_MIN_AGE)).toEqual(Object.keys(today));
+  });
+  // Change 2b made POST_FOLLOWUP_INTERVALS (types.ts) a view of the table too. Colorectal's 36 is now the
+  // months used when the colonoscopy report gave no follow-up time (US-07 AC1j).
+  it('POST_FOLLOWUP_INTERVALS, in key order', () => {
+    const today = {
+      colorectal_fit_annual: 36, colorectal_colonoscopy_10yr: 36, colorectal_other: 36,
+      breast_annual: 12, breast_biennial: 24,
+      cervical_hpv_every_5yr: 12, cervical_pap_every_3yr: 12, cervical_other: 12,
+      lung_annual_ldct: 12, dexa_dexa_scan: 12,
+    };
+    expect(postFollowupIntervals()).toEqual(today);
+    expect(Object.keys(POST_FOLLOWUP_INTERVALS)).toEqual(Object.keys(today));
+    expect(POST_FOLLOWUP_INTERVALS).toEqual(today);
+  });
+  it('SCHEDULE_LABELS, in key order', () => {
+    const today = {
+      screening_colorectal: ['Colonoscopy', 'Colorectal screening'],
+      screening_breast: ['Mammogram'],
+      screening_cervical: ['Cervical screening'],
+      screening_lung: ['Lung screening (low-dose CT)'],
+      screening_prostate: ['PSA test'],
+      screening_dexa: ['DEXA bone density scan'],
+      blood_test_lipids: ['Lipid panel blood test'],
+      blood_test_hba1c: ['HbA1c blood test'],
+      blood_test_creatinine: ['Creatinine blood test'],
+      medication_review: ['Medication review'],
+      annual_checkin: ['Annual health check-in'],
+    };
+    expect(SCHEDULE_LABELS).toEqual(today);
+    expect(Object.keys(SCHEDULE_LABELS)).toEqual(Object.keys(today));
+  });
+});
+
+// A2-1 step 6: the breast 45 and 55 boundaries are named consts; the strings are today's, written out.
+describe('US-06: breast screening\'s by-age text and start-card priority', () => {
+  const OPTIONAL_CARD = 'Mammography is optional at your age (40\u201344). Discuss with your doctor.';
+  const RECOMMENDED_CARD = 'Mammography is recommended at your age. Discuss with your doctor.';
+  const NOTE_40 = 'Annual mammograms are optional at your age (40\u201344).';
+  const NOTE_45 = 'Annual mammograms are recommended at your age (45\u201354).';
+  const NOTE_55 = 'Annual or biennial mammograms are recommended at your age (55+).';
+  it.each([
+    [40, 'info', OPTIONAL_CARD, NOTE_40],
+    [44, 'info', OPTIONAL_CARD, NOTE_40],
+    [45, 'attention', RECOMMENDED_CARD, NOTE_45],
+    [54, 'attention', RECOMMENDED_CARD, NOTE_45],
+    [55, 'attention', RECOMMENDED_CARD, NOTE_55],
+    [70, 'attention', RECOMMENDED_CARD, NOTE_55],
+  ] as const)('at %i: priority %s, today\'s card and note text', (age, priority, description, note) => {
+    expect(SCREENING_REFS.breastStart(age)).toEqual({ title: 'Start breast cancer screening', priority, description });
+    expect(SCREENING_REFS.breastByAge(age)).toBe(note);
+  });
+  it('the plan\'s not-started breast card takes that priority, 44 then 45', () => {
+    const card = (age: number) => generateSuggestions({ sex: 'female' } as never, { age } as never, 'si', undefined, {})
+      .find((c) => c.id === 'screening-breast');
+    expect([card(44)?.priority, card(45)?.priority]).toEqual(['info', 'attention']);
+    expect([card(44)?.description, card(45)?.description]).toEqual([OPTIONAL_CARD, RECOMMENDED_CARD]);
+    expect([BREAST_RECOMMENDED_FROM, BREAST_ANNUAL_OR_BIENNIAL_FROM]).toEqual([45, 55]);
   });
 });
 
@@ -165,15 +234,18 @@ describe('US-06: A2-1 step 2, the screening-rules table', () => {
     expect(Object.values(SCREENING_TEXT).filter((t) => typeof t === 'string').length).toBeGreaterThan(0);
   });
 
+  /** A routine card, and colorectal's with the FIT line from 55 (US-07 AC1h). */
+  const withFitLine = (r: ScreeningRule, c: CardText) => (r.id === 'colorectal' ? [c, SCREENING_REFS.colorectalStatus(c, 55, 'fit_annual')] : [c]);
+
   it('each row\'s whole card template matches that row\'s golden cards, title and description', () => {
     const golden = Object.values(JSON.parse(readFileSync(`${__dirname}/screening-rules.golden.json`, 'utf8')).cards as Record<string, string>);
     const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = (c: CardText) => esc(`${c.title} :: ${c.description}`).replace(/\\\{due\\\}/g, '[A-Z][a-z]{2} \\d{4}').replace(/\\\{packYears\\\}/g, '\\d+');
     for (const r of SCREENING_RULES) {
       const kinds: Array<[string, readonly CardText[]]> = [
-        ['', 'ref' in r.cards.start ? [SCREENING_REFS.breastStart(40), SCREENING_REFS.breastStart(45)] : [r.cards.start]],
-        ['-overdue', r.cards.overdue ? [r.cards.overdue] : []],
-        ['-upcoming', r.cards.upToDate ? [r.cards.upToDate] : []],
+        ['', 'ref' in r.cards.start ? [35, 45, 55].map(SCREENING_REFS[r.cards.start.ref]) : [r.cards.start]],
+        ['-overdue', r.cards.overdue ? withFitLine(r, r.cards.overdue) : []],
+        ['-upcoming', r.cards.upToDate ? withFitLine(r, r.cards.upToDate) : []],
       ];
       for (const [suffix, texts] of kinds) {
         const id = `screening-${r.id}${suffix}`;

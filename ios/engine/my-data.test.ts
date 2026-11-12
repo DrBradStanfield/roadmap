@@ -769,6 +769,34 @@ describe('forms (AC8)', () => {
     expect(file.screenings.colorectalLastDate ?? '').toBe('');
   });
 
+  it('US-07 AC1j: a newer last screening shows the result blank; abnormal is offered and clears the old follow-up', () => {
+    let file = man60(
+      { kind: 'screening', key: 'colorectal_method', value: 'fit_annual' }, { kind: 'screening', key: 'colorectal_last_date', value: '2019-06' },
+      { kind: 'screening', key: 'colorectal_result', value: 'abnormal' }, { kind: 'screening', key: 'colorectal_followup_status', value: 'completed' },
+      { kind: 'screening', key: 'colorectal_followup_date', value: '2020-01' }, { kind: 'screening', key: 'colorectal_last_date', value: '2026-07' });
+    expect(file.screenings).toMatchObject({ colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2020-01' });
+    const colorectal = myData(file, NOW).screenings[0].groups.find((g) => g.id === 'colorectal')!.fields;
+    expect(colorectal.map((f) => ('key' in f ? [f.key, 'value' in f ? f.value : null] : null))).toEqual([
+      ['colorectal_method', 'fit_annual'], ['colorectal_last_date', '2026-07'], ['colorectal_result', '']]);
+    file = edited(file, { kind: 'screening', key: 'colorectal_result', value: 'abnormal' });
+    expect(file.screenings.colorectalResult).toBe('abnormal');
+    expect([file.screenings.colorectalFollowupStatus ?? '', file.screenings.colorectalFollowupDate ?? ''])
+      .toEqual(['', '']);
+  });
+
+  it('US-07 AC1j: the colorectal follow-up date carries the last screening month as its min across the bridge, and the form takes nothing earlier', () => {
+    const file = man60(
+      { kind: 'screening', key: 'colorectal_method', value: 'fit_annual' }, { kind: 'screening', key: 'colorectal_last_date', value: '2025-09' },
+      { kind: 'screening', key: 'colorectal_result', value: 'abnormal' }, { kind: 'screening', key: 'colorectal_followup_status', value: 'completed' });
+    type Field = { key?: string; kind: string; min?: string };
+    const fields = (JSON.parse(screenJson(JSON.stringify(file), NOW, 'phone', '{}')) as { myData: { screenings: { groups: { fields: Field[] }[] }[] } })
+      .myData.screenings.flatMap((s) => s.groups.flatMap((g) => g.fields));
+    expect(fields.find((f) => f.key === 'colorectal_followup_date')).toMatchObject({ kind: 'month', when: 'past', min: '2025-09' });
+    expect(fields.filter((f) => f.kind === 'month' && f.key !== 'colorectal_followup_date').every((f) => !('min' in f))).toBe(true);
+    expect(applyEdit(file, { kind: 'screening', key: 'colorectal_followup_date', value: '2025-08' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(edited(file, { kind: 'screening', key: 'colorectal_followup_date', value: '2025-09' }).screenings.colorectalFollowupDate).toBe('2025-09');
+  });
+
   it('refuses an unknown key, a hidden question, a month out of range and a bad pack-years', () => {
     const file = man60({ kind: 'screening', key: 'lung_smoking_history', value: 'former_smoker' });
     const refused = (key: string, value: string) => expect(applyEdit(file, { kind: 'screening', key, value }, NOW), `${key}=${value}`).toMatchObject({ ok: false });
@@ -790,15 +818,15 @@ describe('forms (AC8)', () => {
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
   });
 
-  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+  it('US-06 AC18 (Brad 2026-11-12, turned round): a PSA of 3.96 reads 3.96, as the web, not 4.0', () => {
     const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
       { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
-    expect(psa(4.04)).toBe('4.04');
-    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    expect(psa(3.96)).toBe('3.96');
+    expect([psa(6.53), psa(4.0), psa(4.04)]).toEqual(['6.5', '4.0', '4.0']);
     // The PSA page's history rows (and its headline) print the same (adversary R1).
     const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
-      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
-    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
+      { kind: 'add', metric: 'psa', value: 3.96, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['3.96', '6.5']);
   });
 
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.

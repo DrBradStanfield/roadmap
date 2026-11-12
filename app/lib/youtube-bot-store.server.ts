@@ -17,15 +17,15 @@ import type { PipelineOutcome } from './youtube-bot-pipeline.server';
 // ---------------------------------------------------------------------------
 
 /**
- * Try to claim a comment for processing. Returns true if this machine should
- * process the comment (we won the race). Returns false if another machine
- * already claimed it (or it was processed earlier).
+ * Try to claim a comment for processing. Returns the claim row's id if this
+ * machine should process the comment (we won the race), or null if another
+ * machine already claimed it (or it was processed earlier).
  *
- * Inserts a row with posted=FALSE as a "claim". If we end up posting, we'll
- * UPDATE the same row with posted=TRUE + full data.
+ * Inserts a row with posted=FALSE as a "claim". Before posting, markPosting
+ * sets posted=TRUE; after a 2xx, markPosted adds the reply and its id.
  */
-export async function claimComment(commentId: string): Promise<boolean> {
-  if (!supabaseAdmin) return false;
+export async function claimComment(commentId: string): Promise<number | null> {
+  if (!supabaseAdmin) return null;
   const { data, error } = await supabaseAdmin
     .from('youtube_bot_log')
     .insert({ youtube_comment_id: commentId, posted: false })
@@ -33,11 +33,11 @@ export async function claimComment(commentId: string): Promise<boolean> {
     .maybeSingle();
   if (error) {
     // 23505 = unique_violation — another machine claimed it. Expected, not an error.
-    if (error.code === '23505') return false;
+    if (error.code === '23505') return null;
     // Any other DB error: surface it.
     throw error;
   }
-  return !!data;
+  return data?.id ?? null;
 }
 
 /** Release the claim row when the pipeline failed before producing a decision
@@ -57,6 +57,64 @@ export async function unclaimComment(commentId: string): Promise<void> {
       extra: { commentId },
     });
   }
+}
+
+/** The posting mark (US-27 AC5): `verified` = this machine marked the comment and may post; `lost` =
+ *  another machine marked it, or its claim is gone, so the row is not ours to touch; `failed` = the mark
+ *  or its read-back errored. The token is the mark's posted_at, to the microsecond; the mark, its read-back
+ *  and its releases also match the claim row's id, so two machines that draw the same token on a re-inserted
+ *  claim cannot both verify. */
+export type PostingMark = { state: 'verified' | 'lost' | 'failed'; token: string };
+
+function reportMark(step: string, commentId: string, error: { code?: unknown }): void {
+  // Fixed words and a code: never the error's message or details.
+  Sentry.captureMessage('YouTube bot: posting mark write failed', {
+    level: 'warning',
+    tags: { feature: 'youtube-bot', subsystem: 'mark', step },
+    extra: { commentId, code: typeof error.code === 'string' && /^\w{1,32}$/.test(error.code) ? error.code : 'unknown' },
+  });
+}
+
+/** Marks a claimed comment as posting before the post: posted=true, its video and a token, no viewer text.
+ *  Once marked, the row counts toward both caps and neither cleanup nor unclaim removes it. */
+export async function markPosting(commentId: string, claimRowId: number, videoId: string): Promise<PostingMark> {
+  // Microseconds from a random draw: two machines marking in the same millisecond still differ.
+  const token = new Date().toISOString().replace('Z', `${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}Z`);
+  if (!supabaseAdmin) return { state: 'failed', token };
+  const { error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .update({ posted: true, video_id: videoId, posted_at: token })
+    .eq('id', claimRowId)
+    .eq('youtube_comment_id', commentId)
+    .eq('posted', false);
+  if (error) {
+    reportMark('mark', commentId, error);
+    return { state: 'failed', token };
+  }
+  // A separate read, never .update().select(): PostgREST answers [] after a self-mutating WHERE (CLAUDE.md).
+  const { data, error: readError } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .select('id')
+    .eq('id', claimRowId)
+    .eq('youtube_comment_id', commentId)
+    .eq('posted', true)
+    .eq('posted_at', token);
+  if (readError || !Array.isArray(data)) {
+    reportMark('verify', commentId, readError ?? {});
+    return { state: 'failed', token };
+  }
+  return { state: data.length === 1 ? 'verified' : 'lost', token };
+}
+
+/** Undoes this machine's mark, matched by its token so it never touches a row another machine marked:
+ *  `revert` leaves a plain claim (not retried), `delete` frees the comment for a later tick. */
+export async function releasePostingMark(commentId: string, claimRowId: number, token: string, how: 'revert' | 'delete'): Promise<void> {
+  if (!supabaseAdmin) return;
+  const rows = supabaseAdmin.from('youtube_bot_log');
+  const { error } = how === 'delete'
+    ? await rows.delete().eq('id', claimRowId).eq('youtube_comment_id', commentId).eq('posted_at', token)
+    : await rows.update({ posted: false, posted_at: null, video_id: null }).eq('id', claimRowId).eq('youtube_comment_id', commentId).eq('posted_at', token);
+  if (error) reportMark(how, commentId, error);
 }
 
 interface MarkPostedParams {

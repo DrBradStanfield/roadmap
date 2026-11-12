@@ -95,7 +95,7 @@ describe('US-12 AC20 — the cutoff set holds every threshold', () => {
     diastolicBp: 'diastolicBp', dia: 'diastolicBp', eGFR: 'labEgfr', egfr: 'labEgfr', labEgfr: 'labEgfr',
   };
   /** The plan's own files: what they compare an input against must be a grading line (adversary R7). */
-  const PLAN_FILES = ['suggestions.ts', 'medication-cascades.ts', 'calculations.ts', 'evidence.ts', 'plan.ts', 'reminders.ts', 'reminder-schedule.ts'];
+  const PLAN_FILES = ['suggestions.ts', 'medication-cascades.ts', 'calculations.ts', 'evidence.ts', 'evidence-screening.ts', 'plan.ts', 'reminders.ts', 'reminder-schedule.ts'];
   /** The tiles and grids: their comparisons must be label lines. The grids' grades moved from the
    *  widget's blood-test-cell.ts into row-grade.ts (US-62 AC8), which both apps read. */
   const LABEL_FILES = ['stat-tiles.ts', 'row-grade.ts'];

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P3,plan view,The email capture survived an erase until reload,behaviour,done,"PlanPdf.tsx useEmailCaptureState.reset() (startState) runs when usePlanView's shownErase moves; the box returns and the pulse stops (US-09 AC19, Brad 2026-11-10). Pinned by ResultsPanel.skip-gate.test.tsx ""an erase resets the email capture""; reset() also releases the send claim (a per-send token), so a send pending at the erase can neither block the fresh box nor write its answer into it (""a send pending at the erase"")",1189,no

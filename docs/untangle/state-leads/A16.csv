@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A16,test hygiene,"The embed pin counts builder calls per file: exempt them by enclosing function using the TypeScript parser, so a new builder fails the pin",lead,"not started","widget-src/src/lib/embed-writes.test.ts keeps the count rule (BUILDER_CALLS 2/1/1). A hand-rolled brace counter tried on PR 1434 could hang CI and missed a new builder, so it was reverted (adversary on PR 1434, 2026-11-12)",,no

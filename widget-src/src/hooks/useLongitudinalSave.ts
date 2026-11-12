@@ -12,7 +12,7 @@ import { localDay } from '@roadmap/health-core/merge';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { activeRowIndex, routeTasksToSaves, slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
 import { addMeasurement, correctValue, getBackendKind, getShownErase, loadAllHistorySync } from '../lib/roadmap-data';
-import { localHealthWritesStopped } from '../lib/storage';
+import { healthWritesAllowed } from '../lib/storage';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
@@ -157,7 +157,7 @@ export function useLongitudinalSave({
       }
     };
     if (now) {
-      if (getBackendKind() === 'local' && localHealthWritesStopped()) return Promise.resolve(new Map());
+      if (getBackendKind() === 'local' && !healthWritesAllowed()) return Promise.resolve(new Map());
       const toSave = tasks ?? fromForm();
       return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
     }
@@ -184,17 +184,14 @@ export function useLongitudinalSave({
   // inputs and saves only diastolic — two POSTs instead of one batched.
   const handleSaveLongitudinalRef = useRef(handleSaveLongitudinal);
   handleSaveLongitudinalRef.current = handleSaveLongitudinal;
-  const longitudinalDebounce = useDebouncedSave(500);
-  // The fields' save waiting on the timer, and the erase it was asked under:
-  // departure stages it at once (US-06 AC15).
-  const pendingSaveRef = useRef<{ erase: string | undefined } | null>(null);
+  // The fields' save waiting on the timer holds the erase it was asked under;
+  // departure takes it and runs it with `now` (US-06 AC15).
+  const longitudinalDebounce = useDebouncedSave<(now?: boolean) => void>(500);
   const scheduleLongitudinalSave = useCallback(() => {
     const erase = getShownErase(); // as the field was left, not as the timer fires
-    pendingSaveRef.current = { erase };
-    longitudinalDebounce.schedule(() => { pendingSaveRef.current = null; void handleSaveLongitudinalRef.current(undefined, erase); });
+    longitudinalDebounce.schedule((now = false) => { void handleSaveLongitudinalRef.current(undefined, erase, now); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
-    pendingSaveRef.current = null;
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
   // The PSA row is committed (US-06 AC15): left, or at once on its tick or Enter.
@@ -204,19 +201,10 @@ export function useLongitudinalSave({
   }, [flushLongitudinalSave, scheduleLongitudinalSave]);
 
   /** The page is going: the fields' waiting save is written at once, with the erase it was asked under. */
-  const stagePendingSave = useCallback(() => {
-    const pending = pendingSaveRef.current;
-    if (!pending) return;
-    pendingSaveRef.current = null;
-    longitudinalDebounce.cancel();
-    void handleSaveLongitudinalRef.current(undefined, pending.erase, true);
-  }, [longitudinalDebounce]);
+  const stagePendingSave = useCallback(() => longitudinalDebounce.take()?.(true), [longitudinalDebounce]);
 
   /** An erase: the fields' waiting save was asked of the old record, so it goes, timer and all (US-03 AC9). */
-  const cancelPendingSave = useCallback(() => {
-    pendingSaveRef.current = null;
-    longitudinalDebounce.cancel();
-  }, [longitudinalDebounce]);
+  const cancelPendingSave = useCallback(() => longitudinalDebounce.cancel(), [longitudinalDebounce]);
   /** A save the page needs landed now (an upload's re-read): the waiting one runs at once. */
   const flushPendingSave = useCallback(() => longitudinalDebounce.flush(), [longitudinalDebounce]);
 

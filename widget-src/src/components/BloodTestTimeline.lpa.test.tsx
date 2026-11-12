@@ -13,9 +13,12 @@ import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import type { MutableRefObject } from 'react';
 import { BloodTestTimeline, ValueCell, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';
-import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, noteDevicePage } from '../lib/storage';
 import type { SaveTask } from '../lib/matrix-save';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+
+// This page's record is open, on this device: the drafts it keeps are its own (US-11 AC6).
+noteDevicePage();
 
 // The record's profile.lpaUnit, in memory: what RoadmapStore keeps (its own suite).
 const record = vi.hoisted(() => ({ lpaUnit: undefined as string | undefined, set: [] as string[] }));
@@ -29,7 +32,8 @@ vi.mock('../lib/server-api', async (original) => ({ ...(await original<typeof im
 
 const LEGACY_KEY = 'health_roadmap_unit_overrides';
 const UNCLEAR = 'Re-enter this value: its unit is unclear after an update.';
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -138,7 +142,7 @@ describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
     const m = matrix({ unitSystem: 'conventional' });
     typeInto(m.draft(), '156');
     await m.leave();
-    expect(m.sent(0)).toEqual([expect.objectContaining({ date: TODAY, values: { lpa: 390 } })]);
+    expect(m.sent(0)).toEqual([expect.objectContaining({ date: localToday(), values: { lpa: 390 } })]);
 
     m.choose('mg/L');
     typeInto(m.draft(), '93');

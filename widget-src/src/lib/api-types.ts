@@ -181,11 +181,13 @@ export type QuotaCheck =
   | { allowed: false; remaining: number; reason: 'quota' | 'no-key'; message?: string };
 
 /** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
- *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34). */
-export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
+ *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34).
+ *  `busy`: the server refused a batch as busy, not the daily limit (US-12 AC9). */
+export type UploadErrorCode = 'rate_limit' | 'busy' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BatchPollResponse {
-  status: 'processing' | 'ended';
+  /** `error`: this poll failed but a later one may not; the caller polls on (US-12 AC24). */
+  status: 'processing' | 'ended' | 'error';
   completed: number;
   total: number;
   /** Each result carries the position of the file it answers in the batch

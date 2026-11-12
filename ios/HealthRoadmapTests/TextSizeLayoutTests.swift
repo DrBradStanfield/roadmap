@@ -93,7 +93,7 @@ final class TextSizeLayoutTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
         let edits = ChatEdits(store: store)
         let proposals = #"[{"kind":"medication","medicationKey":"statin","drugName":"atorvastatin","doseValue":20,"doseUnit":"mg"},{"kind":"field","field":"weightKg","displayValue":84,"unitSystem":"si","date":null},{"kind":"profile","sex":null,"heightCm":181}]"#
-        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.chatMark, today: "2026-11-02")
+        await edits.take(try JSONDecoder().decode(OpaqueJSON.self, from: Data(proposals.utf8)), asked: store.mark, today: "2026-11-02")
         XCTAssertNotNil(edits.saved)
         XCTAssertNotNil(edits.review)
         let chat = ScrollView { ChatEditBanners(edits: edits).padding() }
@@ -370,6 +370,164 @@ final class TextSizeLayoutTests: XCTestCase {
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3)) // the story's size is read after the first layout
         host.view.layoutIfNeeded()
         return host.sizeThatFits(in: room)
+    }
+
+    // MARK: My health's banner and footer (US-73, build 12)
+
+    /// An iPhone 17, an SE, and an 11-inch iPad's width, each in light and dark, at the default and
+    /// the largest size. (The app is iPhone-only, so an iPad runs it in an iPhone-size window; the
+    /// wide one is the case to come.)
+    private let looks: [(name: String, size: CGSize, regular: Bool)] = [("iPhone", CGSize(width: 402, height: 874), false),
+                                                                        ("SE", CGSize(width: 375, height: 667), false),
+                                                                        ("iPad", CGSize(width: 820, height: 1180), true)]
+    private let styles: [UIUserInterfaceStyle] = [.light, .dark]
+
+    /// A store holding the sample record and today's stage 2 blood pressure, so a card is urgent.
+    private func urgentStore() throws -> (RecordStore, HealthEngine) {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "My Health Banner \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let sample = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "sample.record", withExtension: "json"))
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: sample)) as? [String: Any])
+        let day = String(Date.now.ISO8601Format().prefix(10))
+        record["measurements"] = (record["measurements"] as? [[String: Any]] ?? []) + [("systolic_bp", 165), ("diastolic_bp", 102)].map {
+            ["source": "manual", "status": "active", "correctsId": NSNull(), "externalId": NSNull(), "id": "banner-\($0.0)",
+             "metricType": $0.0, "value": $0.1, "recordedAt": day, "createdAt": "\(day)T08:00:00Z"]
+        }
+        try JSONSerialization.data(withJSONObject: record).write(to: folder.appending(path: "health-roadmap.json"))
+        let engine = try HealthEngine()
+        return (try RecordStore(folder: folder, engine: engine, deviceId: "test"), engine)
+    }
+
+    /// `view` in a window of `size`, settled: `.task` has built the page and its springs have stopped.
+    private func settled(_ view: some View, size: CGSize, regular: Bool, style: UIUserInterfaceStyle, at category: UIContentSizeCategory) throws -> UIWindow {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: size)
+        window.overrideUserInterfaceStyle = style
+        window.traitOverrides.preferredContentSizeCategory = category
+        if regular { window.traitOverrides.horizontalSizeClass = .regular }
+        window.rootViewController = UIHostingController(rootView: view)
+        window.makeKeyAndVisible()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 3))
+        return window
+    }
+
+    /// The window as drawn, one byte a channel: `rgb(x, y)` in pixels, `scale` pixels a point.
+    private struct Drawn {
+        let data: Data, stride: Int, step: Int, red: Int, width: Int, height: Int, scale: CGFloat
+        init(_ window: UIWindow) throws {
+            let format = UIGraphicsImageRendererFormat(for: window.traitCollection)
+            format.preferredRange = .standard
+            let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+                window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            }
+            let cg = try XCTUnwrap(image.cgImage)
+            data = try XCTUnwrap(cg.dataProvider?.data as Data?)
+            (stride, step, width, height, scale) = (cg.bytesPerRow, cg.bitsPerPixel / 8, cg.width, cg.height, image.scale)
+            red = cg.bitmapInfo.contains(.byteOrder32Little) ? 2 : 0
+        }
+        func rgb(_ x: Int, _ y: Int) -> (r: Int, g: Int, b: Int) {
+            let i = y * stride + x * step
+            return (Int(data[i + red]), Int(data[i + 1]), Int(data[i + 2 - red]))
+        }
+    }
+
+    /// US-73 (build 12): the Needs-attention banner's four corners are drawn alike, as rounded as
+    /// the cards under it. As the last row of the title's section its top corners were its own
+    /// 12 pt and its bottom ones the list's larger section radius. Read from the drawn red: two
+    /// points in from its top edge and from its bottom edge, the red starts the same way in. The
+    /// room over it (from the pills) and under it (to the next heading) stays as main drew it.
+    func testTheNeedsAttentionBannersFourCornersMatch_US73() throws {
+        let (store, engine) = try urgentStore()
+        for look in looks {
+            for style in styles {
+                for category in [UIContentSizeCategory.large, largest] {
+                    let name = "\(look.name) \(style == .dark ? "dark" : "light") \(category.rawValue)"
+                    // The screen's width, tall enough to hold the whole banner at the largest size.
+                    let room = CGSize(width: look.size.width, height: 1400)
+                    let window = try settled(MyHealthHost.view(store: store, engine: engine), size: room, regular: look.regular, style: style, at: category)
+                    defer { window.isHidden = true }
+                    let drawn = try Drawn(window)
+                    // The banner: the first run of rows whose red spans over half the width.
+                    func reds(_ y: Int) -> ClosedRange<Int>? {
+                        let xs = (0..<drawn.width).filter { let p = drawn.rgb($0, y); return p.r - max(p.g, p.b) > 80 }
+                        guard let first = xs.first, let last = xs.last, last - first > drawn.width / 2 else { return nil }
+                        return first...last
+                    }
+                    guard let top = (0..<drawn.height).first(where: { reds($0) != nil }) else { XCTFail("\(name): the banner is drawn"); continue }
+                    let bottom = (top..<drawn.height).first { reds($0) == nil }.map { $0 - 1 } ?? drawn.height - 1
+                    XCTAssertGreaterThan(CGFloat(bottom - top) / drawn.scale, 30, "\(name): the banner's height")
+                    let inset = Int(2 * drawn.scale)
+                    let (upper, lower, middle) = try (XCTUnwrap(reds(top + inset)), XCTUnwrap(reds(bottom - inset)), XCTUnwrap(reds((top + bottom) / 2)))
+                    let curve = { (row: ClosedRange<Int>) in CGFloat(row.lowerBound - middle.lowerBound) / drawn.scale }
+                    XCTAssertGreaterThan(curve(upper), 1, "\(name): the corners are rounded")
+                    XCTAssertEqual(curve(upper), curve(lower), accuracy: 1, "\(name): the top and bottom left corners match")
+                    XCTAssertEqual(CGFloat(middle.upperBound - upper.upperBound) / drawn.scale,
+                                   CGFloat(middle.upperBound - lower.upperBound) / drawn.scale, accuracy: 1, "\(name): the right corners match")
+                    // The room over it (from the pills) and under it (to Weight & diabetes): the
+                    // first row drawn past the page's background, its colour at the window's left edge.
+                    func drawnRow(_ ys: some Sequence<Int>) -> Int? {
+                        ys.first { y in
+                            let bg = drawn.rgb(1, y)
+                            return (drawn.width / 20..<drawn.width * 19 / 20).contains { let p = drawn.rgb($0, y); return abs(p.r - bg.r) + abs(p.g - bg.g) + abs(p.b - bg.b) > 24 }
+                        }
+                    }
+                    let pills = try XCTUnwrap(drawnRow(stride(from: top - 1, through: 0, by: -1)), "\(name): the pills over it")
+                    let heading = try XCTUnwrap(drawnRow(bottom + 1..<drawn.height), "\(name): the heading under it")
+                    let (over, under) = (CGFloat(top - pills - 1) / drawn.scale, CGFloat(heading - bottom - 1) / drawn.scale)
+                    // As main drew them before the fix (Brad: the room between the pills, the banner and
+                    // the heading is right), measured here on 2026-11-13.
+                    let wide = look.regular, big = category == largest
+                    XCTAssertEqual(over, big ? 8 : 16, accuracy: 1, "\(name): the room over the banner is main's")
+                    XCTAssertEqual(under, big ? (wide ? 45.33 : 45) : (wide ? 43.67 : 38.67), accuracy: 1, "\(name): the room under it is main's")
+                }
+            }
+        }
+    }
+
+    /// US-73 (build 12): at the hard end of My health's scroll the footer's last line ("Worked out
+    /// on this iPhone") ends clearly above the tab bar (on main, 7 pt over its frame). Read from the drawn
+    /// window: the lowest row of words above the bar's top edge.
+    func testMyHealthsFooterEndsAboveTheTabBar_US73() throws {
+        let (store, engine) = try urgentStore()
+        let tabs = TabView {
+            MyHealthHost.view(store: store, engine: engine).tabItem { Label("My health", systemImage: "heart.text.square") }
+            Text("Chat").tabItem { Label("Chat", systemImage: "bubble.left.and.text.bubble.right") }
+        }
+        func all(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(all) }
+        for look in looks {
+            for style in styles {
+                for category in [UIContentSizeCategory.large, largest] {
+                    let name = "\(look.name) \(style == .dark ? "dark" : "light") \(category.rawValue)"
+                    let window = try settled(tabs, size: look.size, regular: look.regular, style: style, at: category)
+                    defer { window.isHidden = true }
+                    let list = try XCTUnwrap(all(window).compactMap { $0 as? UICollectionView }.max { $0.contentSize.height < $1.contentSize.height }, name)
+                    // The hard end, until it holds: rows drawn on the way down change the content's height.
+                    var end = -1.0
+                    for _ in 0..<30 where end != list.contentSize.height {
+                        end = list.contentSize.height
+                        list.setContentOffset(CGPoint(x: 0, y: end + list.adjustedContentInset.bottom - list.bounds.height), animated: false)
+                        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3))
+                    }
+                    XCTAssertEqual(end, list.contentSize.height, "\(name): the list reached its end")
+                    let tabBar = try XCTUnwrap(all(window).first { $0 is UITabBar }, "\(name): the tab bar")
+                    let bar = tabBar.convert(tabBar.bounds, to: window).minY
+                    // On an iPad the bar can sit at the top; then the page ends at the safe area.
+                    let floor = bar > window.bounds.midY ? bar : window.bounds.height - window.safeAreaInsets.bottom
+                    let drawn = try Drawn(window)
+                    let floorRow = Int(floor * drawn.scale) - 1
+                    // A row with words: some pixel well inside the margins far from the row's own background.
+                    let words = { (y: Int) in
+                        let bg = drawn.rgb(1, y)
+                        return (drawn.width / 10..<drawn.width * 9 / 10).contains { let p = drawn.rgb($0, y); return abs(p.r - bg.r) + abs(p.g - bg.g) + abs(p.b - bg.b) > 150 }
+                    }
+                    let last = try XCTUnwrap(stride(from: floorRow, to: floorRow - Int(300 * drawn.scale), by: -1).first(where: words), "\(name): words above the bar")
+                    let gap = CGFloat(floorRow - last) / drawn.scale
+                    XCTAssertGreaterThanOrEqual(gap, 12, "\(name): the footer clears the tab bar")
+                }
+            }
+        }
     }
 }
 

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S15,iPhone state,"LiveHealth.cards is a computed view of LiveAccess.read kept for the views; remove it once they switch on access",surplus,not started,"ios/HealthRoadmap/AppleHealthMetrics/LiveHealth.swift var cards (access.cards), read by LiveCards.swift live.cards[metric], LiveMetricPage.swift live.cards[metric] and many tests. Views should take the cards from LiveShown or a switch on live.access. Found in S4 (PR 1286), 2026-11-11",1286,no

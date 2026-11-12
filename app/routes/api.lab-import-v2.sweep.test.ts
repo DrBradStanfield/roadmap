@@ -55,8 +55,8 @@ async function upload(batchId: string, ip = '10.3.0.1'): Promise<Response> {
   }) } as never);
 }
 
-async function uploaded(batchId: string): Promise<string> {
-  const res = await upload(batchId);
+async function uploaded(batchId: string, ip?: string): Promise<string> {
+  const res = await upload(batchId, ip);
   expect(res.status).toBe(200);
   return (await res.json()).pollToken;
 }
@@ -72,7 +72,7 @@ describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
     await uploaded('batch_idle_first');
     expect(sweepTimerCount()).toBe(1);
     await vi.advanceTimersByTimeAsync(3 * MIN);
-    await uploaded('batch_idle_second');
+    await uploaded('batch_idle_second', '10.3.0.2'); // another IP: the same files from one IP would join (US-12 AC25)
     expect(sweepTimerCount()).toBe(1);
     await vi.advanceTimersByTimeAsync(57 * MIN);
     expect(deleteBatch).not.toHaveBeenCalled(); // exactly one hour is not older than an hour
@@ -126,12 +126,13 @@ describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
   });
 
   // PR #201 review R2: a busy answer charges nothing.
-  it('a full batch table answers busy and charges the IP nothing', async () => {
+  // US-12 AC9 H65: the busy answer says busy with a code, never the daily limit.
+  it('a full batch table answers busy with code busy and charges the IP nothing', async () => {
     deleteBatch.mockResolvedValue(true);
     for (let i = 0; i < 200; i++) expect((await upload(`batch_fill_${i}`, `10.5.${i >> 8}.${i & 255}`)).status).toBe(200);
     const busy = await upload('batch_busy', '10.5.9.9');
     expect(busy.status).toBe(429);
-    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
+    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.', code: 'busy' });
     const { loader } = await import('./api.lab-import-v2');
     const preflight = await loader({ request: new Request(URL, { headers: { 'fly-client-ip': '10.5.9.9' } }) } as never);
     expect((await preflight.json()).remaining).toBe(200);

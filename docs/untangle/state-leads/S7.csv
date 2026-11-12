@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S7,iPhone state,The reminders toggle snaps back while opt-in runs and can be tapped again; an unreadable record turns it off silently,lead,not started,"ios/HealthRoadmap/Reminders/RemindersSection.swift:13-21; ReminderScheduler.swift:23-28,47,86 (reminders == nil means both not loaded and unreadable). Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S7",,no

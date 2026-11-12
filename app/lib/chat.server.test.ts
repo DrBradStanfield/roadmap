@@ -18,6 +18,7 @@ import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-hist
 import { CHAT_EDIT_TOOLS, EDITABLE_FIELDS } from '../../packages/health-core/src/chat-edits';
 import { loadBlogIndex } from './blog-index.server';
 import { MAX_BLOG_CHARS } from './matched-content';
+import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
 
 describe('buildConversationMessages', () => {
   it('adds new message to empty history', () => {
@@ -121,6 +122,9 @@ describe('US-15 AC42: an error line is never replayed to the model as its own an
 });
 
 describe('buildSystemBlocks', () => {
+  // C1: a caller that passes options passes savedChat. A posture call sends a real block; the
+  // other-block calls pass '' (no block), so their block counts stay what they test.
+  const savedChat = savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript);
   // Products and blog index add cached blocks when present, so base count varies
   const baseBlocks = buildSystemBlocks('{}');
   const baseCount = baseBlocks.length;
@@ -146,7 +150,7 @@ describe('buildSystemBlocks', () => {
   // US-07 AC6: the shared base tells every surface what to do for a known minor.
   it('US-07 AC6: the base prompt carries the under-18 rule on every surface', () => {
     for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
-      const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
+      const text = buildSystemBlocks('{}', { surfaceContext, savedChat })[0].text;
       expect(text).toContain('`profile.knownMinor: true`');
       // US-07 AC6: the prompt's rule and health-core's MINOR_CHAT_RULE stay byte-identical.
       expect(text).toContain(MINOR_CHAT_RULE);
@@ -161,7 +165,7 @@ describe('buildSystemBlocks', () => {
   // plan; it asks for them and says why, and grades nothing itself (AC31).
   it('US-15 AC36: the base prompt carries the no-plan rule on every surface, byte-identical to health-core\'s', () => {
     for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
-      const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
+      const text = buildSystemBlocks('{}', { surfaceContext, savedChat })[0].text;
       expect(text).toContain(NO_PLAN_CHAT_RULE);
     }
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
@@ -177,7 +181,7 @@ describe('buildSystemBlocks', () => {
   // US-07 AC8: no sex is a plan with cards but none of the sex parts; its own rule, on every surface.
   it('US-07 AC8: the base prompt carries the no-sex rule on every surface, byte-identical to health-core\'s', () => {
     for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
-      expect(buildSystemBlocks('{}', { surfaceContext })[0].text).toContain(NO_SEX_CHAT_RULE);
+      expect(buildSystemBlocks('{}', { surfaceContext, savedChat })[0].text).toContain(NO_SEX_CHAT_RULE);
     }
     expect(NO_SEX_CHAT_RULE).toMatch(/`missingInputs` naming `sex`, the plan has no ideal body weight, protein target/);
     // Review R4: eGFR needs more than sex.
@@ -223,7 +227,7 @@ describe('buildSystemBlocks', () => {
   });
 
   it('US-15 AC29: every surface shares one byte-identical cached base', () => {
-    const cached = (surfaceContext?: string) => buildSystemBlocks('{}', { surfaceContext }).filter(b => b.cache_control).map(b => b.text);
+    const cached = (surfaceContext?: string) => buildSystemBlocks('{}', { surfaceContext, savedChat }).filter(b => b.cache_control).map(b => b.text);
     expect(cached('DOCTOR')).toEqual(cached('BRAND'));
     expect(cached()).toEqual(cached('BRAND'));
   });
@@ -235,25 +239,26 @@ describe('buildSystemBlocks', () => {
   });
 
   it('adds document block when document content provided', () => {
-    const blocks = buildSystemBlocks('{}', { documentContent: 'Colonoscopy report content...' });
+    const blocks = buildSystemBlocks('{}', { savedChat: '', documentContent: 'Colonoscopy report content...' });
     expect(blocks).toHaveLength(baseCount + 1);
     expect(blocks[baseCount].text).toContain('Colonoscopy report content');
     expect(blocks[baseCount].cache_control).toBeUndefined(); // NOT cached
   });
 
   it('skips document block when document content is null', () => {
-    const blocks = buildSystemBlocks('{}', { documentContent: null });
+    const blocks = buildSystemBlocks('{}', { savedChat: '', documentContent: null });
     expect(blocks).toHaveLength(baseCount);
   });
 
   it('adds order block when order summary provided', () => {
-    const blocks = buildSystemBlocks('{}', { orderSummary: 'Order #1001 — $55.00' });
+    const blocks = buildSystemBlocks('{}', { savedChat: '', orderSummary: 'Order #1001 — $55.00' });
     expect(blocks).toHaveLength(baseCount + 1);
     expect(blocks[baseCount].text).toContain('Order #1001');
   });
 
   it('adds both document and order blocks when both provided', () => {
     const blocks = buildSystemBlocks('{}', {
+      savedChat: '',
       documentContent: 'Lab report',
       orderSummary: 'Order #1001',
     });
@@ -261,7 +266,7 @@ describe('buildSystemBlocks', () => {
   });
 
   it('adds blog article block when blog article provided', () => {
-    const blocks = buildSystemBlocks('{}', { blogArticles: 'Berberine article content...' });
+    const blocks = buildSystemBlocks('{}', { savedChat: '', blogArticles: 'Berberine article content...' });
     expect(blocks).toHaveLength(baseCount + 1);
     expect(blocks[baseCount].text).toContain('Berberine article content');
   });

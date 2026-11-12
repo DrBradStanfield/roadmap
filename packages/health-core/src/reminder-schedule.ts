@@ -15,7 +15,8 @@
  * and specific is the point — but never carry results, values, or reasoning.
  */
 import type { ScreeningInputs } from './types';
-import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, LUNG_PACK_YEARS, SCREENING_FOLLOWUP_INFO } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -37,6 +38,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
+import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
 
 // ===== Types =====
 
@@ -59,15 +61,13 @@ export const ANNUAL_CHECKIN_LABEL = 'Annual health check-in';
  * own verified address, but a typed enrolment names someone else's inbox, so a
  * free-text label field would let an attacker put an arbitrary 80-char string
  * into a victim's email. Every label the schedule builders below use MUST be
- * listed here (a health-core test enforces it).
+ * listed here (a health-core test enforces it). The screening labels are the
+ * screening table's (screening-rules.ts reminder.label and a method's reminderLabel).
  */
 export const SCHEDULE_LABELS: Record<ReminderCategory, readonly string[]> = {
-  screening_colorectal: ['Colonoscopy', 'Colorectal screening'],
-  screening_breast: ['Mammogram'],
-  screening_cervical: ['Cervical screening'],
-  screening_lung: ['Lung screening (low-dose CT)'],
-  screening_prostate: ['PSA test'],
-  screening_dexa: ['DEXA bone density scan'],
+  // The cast hides a missing category from tsc; reminder-schedule.test.ts (every category has labels)
+  // and screening-rules.test.ts (the SCHEDULE_LABELS literal pin) catch one at test time.
+  ...(screeningScheduleLabels() as Record<Extract<ReminderCategory, `screening_${string}`>, string[]>),
   blood_test_lipids: ['Lipid panel blood test'],
   blood_test_hba1c: ['HbA1c blood test'],
   blood_test_creatinine: ['Creatinine blood test'],
@@ -104,11 +104,11 @@ function earliest(...dates: Array<Date | null>): Date | null {
 /** US-17 AC15: a scheduled follow-up's check-in, months after the last screening. */
 const FOLLOWUP_CHECKIN_MONTHS = 3;
 
-/** Which follow-up an abnormal result's card shows: to organize, or scheduled (a check-in). */
+/** Which follow-up card a result that opens one shows: to organize, or scheduled (a check-in). */
 export type FollowupKind = 'organize' | 'checkin';
 
-function followupKindOf(result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
-  if (result !== 'abnormal' || !lastDate) return null;
+function followupKindOf(r: ScreeningRule, result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
+  if (!opensFollowup(r, result) || !lastDate) return null;
   if (!status || status === 'not_organized') return 'organize';
   return status === 'scheduled' ? 'checkin' : null;
 }
@@ -123,8 +123,8 @@ function followupKindOf(result: string | undefined, status: string | undefined, 
  * (no card), is null: the routine and post-follow-up dates decide. Callers take
  * the earliest, so it is never later than the routine date.
  */
-function followupDueDate(result: string | undefined, status: string | undefined, lastDate: string | undefined): Date | null {
-  const kind = followupKindOf(result, status, lastDate);
+function followupDueDate(r: ScreeningRule, result: string | undefined, status: string | undefined, lastDate: string | undefined): Date | null {
+  const kind = followupKindOf(r, result, status, lastDate);
   if (!kind) return null;
   const [year, month] = lastDate!.split('-').map(Number);
   if (!year || !month) return null;
@@ -141,79 +141,81 @@ function screeningSchedule(
   if (!s) return;
   const { age, sex } = profile;
 
-  const push = (category: ReminderCategory, label: string, due: Date | null): void => {
-    if (due) items.push({ category, group: getCategoryGroup(category), label, dueAt: localDay(due) });
+  // Each reminder's age and sex gate is its row's cardAges (screening-rules.ts), the plan card's.
+  const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, DEXA] =
+    (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'dexa'] as const).map(ruleOf);
+  // The row's reminder: its category, and the chosen method's label, else the row's.
+  const push = (r: ScreeningRule, method: string | undefined, due: Date | null): void => {
+    const { category, label } = r.reminder!;
+    const own = r.choice.options.find((o) => o.value === method)?.reminderLabel;
+    if (due) items.push({ category, group: getCategoryGroup(category), label: own ?? label, dueAt: localDay(due) });
   };
+  const takes = (r: ScreeningRule) => ruleTakes(r, r.cardAges, age, sex);
 
-  // Colorectal (age 35-75)
-  if (age >= 35 && age <= 75 && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
-    const label = s.colorectalMethod === 'colonoscopy_10yr' ? 'Colonoscopy' : 'Colorectal screening';
-    push('screening_colorectal', label, earliest(
+  // On the colonoscopy schedule (US-07 AC1j) only its date counts, and an undated colonoscopy has none.
+  if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
+    push(COLORECTAL, s.colorectalMethod, onColonoscopySchedule(s) ? nextColonoscopyDue(s) : earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
-      getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
-      followupDueDate(s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
+      followupDueDate(COLORECTAL, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
     ));
   }
 
-  // Breast (female, age 40+)
-  if (sex === 'female' && age >= 40 && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
-    push('screening_breast', 'Mammogram', earliest(
+  if (takes(BREAST) && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
+    push(BREAST, s.breastFrequency, earliest(
       getScreeningNextDueDate(s.breastLastDate, s.breastFrequency),
       getPostFollowupDueDate('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
-      followupDueDate(s.breastResult, s.breastFollowupStatus, s.breastLastDate),
+      followupDueDate(BREAST, s.breastResult, s.breastFollowupStatus, s.breastLastDate),
     ));
   }
 
-  // Cervical (female, age 25-65)
-  if (sex === 'female' && age >= 25 && age <= 65 && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
-    push('screening_cervical', 'Cervical screening', earliest(
+  if (takes(CERVICAL) && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
+    push(CERVICAL, s.cervicalMethod, earliest(
       getScreeningNextDueDate(s.cervicalLastDate, s.cervicalMethod),
       getPostFollowupDueDate('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
-      followupDueDate(s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate),
+      followupDueDate(CERVICAL, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate),
     ));
   }
 
-  // Lung (age 50-80, smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
+  // Lung (smoker with 20+ pack-years — ACS 2023). Below 20 or past 80, an abnormal CT
   // keeps its reminder exactly while the plan shows its follow-up card (US-07 AC1f, AC1g): a last
   // date, until the follow-up is completed.
-  const lungFollowupCard = s.lungResult === 'abnormal' && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
+  const lungFollowupCard = opensFollowup(LUNG, s.lungResult) && !!s.lungLastDate && s.lungFollowupStatus !== 'completed';
   if (
-    age >= 50 &&
-    (s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker') &&
-    ((age <= 80 && s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS) || lungFollowupCard) &&
+    inAges(LUNG.cardAges, age, sex, LUNG.followupIgnoresUpperAge) && SCREENING_REFS.lungSmoker(s) &&
+    ((inAges(LUNG.cardAges, age, sex) && SCREENING_REFS.lungPackYears(s)) || lungFollowupCard) &&
     s.lungScreening && s.lungScreening !== 'not_yet_started'
   ) {
-    push('screening_lung', 'Lung screening (low-dose CT)', earliest(
+    push(LUNG, s.lungScreening, earliest(
       getScreeningNextDueDate(s.lungLastDate, s.lungScreening),
       getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate),
-      followupDueDate(s.lungResult, s.lungFollowupStatus, s.lungLastDate),
+      followupDueDate(LUNG, s.lungResult, s.lungFollowupStatus, s.lungLastDate),
     ));
   }
 
-  // Prostate (male, age 45+, elected to screen)
-  if (sex === 'male' && age >= 45 && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
-    push('screening_prostate', 'PSA test', getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
+  // Prostate (elected to screen)
+  if (takes(PROSTATE) && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
+    push(PROSTATE, s.prostateDiscussion, getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
   }
 
-  // DEXA bone density (female ≥50, male ≥70); result-based interval
+  // DEXA bone density; result-based interval
   if (
-    ((sex === 'female' && age >= 50) || (sex === 'male' && age >= 70)) &&
+    takes(DEXA) &&
     s.dexaScreening && s.dexaScreening !== 'not_yet_started' && s.dexaLastDate &&
     s.dexaResult !== 'awaiting'
   ) {
     let due: Date | null;
-    if (s.dexaResult === 'osteoporosis') {
+    if (opensFollowup(DEXA, s.dexaResult)) {
       const hasCompletedFollowup = s.dexaFollowupStatus === 'completed' && s.dexaFollowupDate;
       due = hasCompletedFollowup
-        ? getPostFollowupDueDate('dexa', 'dexa_scan', 'abnormal', s.dexaFollowupStatus, s.dexaFollowupDate)
+        ? getPostFollowupDueDate('dexa', 'dexa_scan', s.dexaResult, s.dexaFollowupStatus, s.dexaFollowupDate)
         : earliest(
           getScreeningNextDueDate(s.dexaLastDate, 'dexa_scan'),
-          followupDueDate('abnormal', s.dexaFollowupStatus, s.dexaLastDate),
+          followupDueDate(DEXA, s.dexaResult, s.dexaFollowupStatus, s.dexaLastDate),
         );
     } else {
       due = getScreeningNextDueDate(s.dexaLastDate, s.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal');
     }
-    push('screening_dexa', 'DEXA bone density scan', due);
+    push(DEXA, s.dexaScreening, due);
   }
 }
 
@@ -361,15 +363,15 @@ function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
 export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<ReminderCategory, { kind: FollowupKind; name: string }>> {
   const s = fileScreenings(file, now);
   const kinds: Partial<Record<ReminderCategory, { kind: FollowupKind; name: string }>> = {};
-  const rows: Array<[string, string | undefined, string | undefined, string | undefined, string | undefined]> = [
+  const rows: Array<[ScreeningId, string | undefined, string | undefined, string | undefined, string | undefined]> = [
     ['colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate],
     ['breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastLastDate],
     ['cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalLastDate],
     ['lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungLastDate],
-    ['dexa', 'dexa_scan', s.dexaResult === 'osteoporosis' ? 'abnormal' : undefined, s.dexaFollowupStatus, s.dexaLastDate],
+    ['dexa', 'dexa_scan', s.dexaResult, s.dexaFollowupStatus, s.dexaLastDate],
   ];
   for (const [type, method, result, status, lastDate] of rows) {
-    const kind = followupKindOf(result, status, lastDate);
+    const kind = followupKindOf(ruleOf(type), result, status, lastDate);
     // The card's lookup and fallback (suggestions.ts screeningFollowup).
     const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };

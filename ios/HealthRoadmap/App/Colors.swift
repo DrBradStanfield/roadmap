@@ -90,3 +90,10 @@ struct StatusCapsule: View {
             .background(Color.status(tone).opacity(Color.statusFill), in: Capsule())
     }
 }
+
+extension CGFloat {
+    /// The inset list's corner radius, which draws the cards: 26 pt from iOS 26 (read from the
+    /// drawn cards, 2026-11-13), 10 before. My health's urgent banner draws its red as its row's
+    /// background in it: drawn on the label, the list clipped that last row's bottom corners (US-73).
+    static var cardRadius: CGFloat { if #available(iOS 26, *) { 26 } else { 10 } }
+}

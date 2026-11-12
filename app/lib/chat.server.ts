@@ -20,6 +20,7 @@ import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, REFUSAL_RESPONS
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
+import { CHAT_PROMPT } from './chat-system-prompt.server';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -157,21 +158,12 @@ function serializeEvidence(): string {
 const EVIDENCE_DOC = serializeEvidence();
 
 // ---------------------------------------------------------------------------
-// System prompt — read once at module load from app/lib/chat-system-prompt.md
+// System prompt — read once at import by chat-system-prompt.server.ts (US-15 AC65)
 // ---------------------------------------------------------------------------
 
-let CHAT_SYSTEM_PROMPT: string;
-try {
-  CHAT_SYSTEM_PROMPT = fs.readFileSync(
-    path.join(process.cwd(), 'app/lib/chat-system-prompt.md'), 'utf-8',
-  );
-} catch {
-  console.warn('app/lib/chat-system-prompt.md not found — chat will have no system prompt');
-  CHAT_SYSTEM_PROMPT = '';
-}
-
-// Pre-concatenate at module level to avoid per-request string allocation
-const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_SYSTEM_PROMPT + ALGORITHM_DOC;
+// Pre-concatenate at module level to avoid per-request string allocation.
+// 'missing' has no text; getChatCompletion refuses before any model call.
+const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_PROMPT.kind === 'loaded' ? CHAT_PROMPT.text + ALGORITHM_DOC : '';
 
 // ---------------------------------------------------------------------------
 // Surface posture blocks — the per-surface override layer (identity, voice, and
@@ -297,7 +289,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; savedChat: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -325,10 +317,9 @@ export function buildSystemBlocks(
       text: KNOWLEDGE_OVERVIEW,
       cache_control: PROMPT_CACHE,
     }] : []),
-    ...(opts?.surfaceContext ? [{
-      type: 'text' as const,
-      text: opts.surfaceContext,
-    }] : []),
+    ...(opts?.surfaceContext ? [{ type: 'text' as const, text: opts.surfaceContext }] : []),
+    // C1: what this surface's chat leaves on our server (chat-save-answers.ts), right after the posture. Required in opts: a caller that passes a posture cannot leave it out.
+    ...(opts?.savedChat ? [{ type: 'text' as const, text: opts.savedChat }] : []),
     {
       type: 'text',
       text: `## Current User Health Data\n\n${userContextJson}`,
@@ -540,6 +531,8 @@ export async function getChatCompletion(
   onEvent?: (event: ChatStreamEvent) => void,
   opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
+  // Backstop for any caller that skipped its own guard (US-15 AC65).
+  if (CHAT_PROMPT.kind === 'missing') throw new Error('Chat system prompt missing; no model call');
   const profileEdits = opts?.profileEdits === true;
   const app = opts?.app === true;
   const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];

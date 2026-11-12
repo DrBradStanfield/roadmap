@@ -12,6 +12,7 @@ import {
   COMMENTS_PER_TICK,
   YOUTUBE_TIMEOUT_MS,
 } from './youtube-bot-config.server';
+import { classifyPost, type PostResult } from './youtube-bot-post-result';
 
 let cachedAccessToken: string | null = null;
 let cachedAccessTokenExpiresAt = 0;
@@ -207,30 +208,32 @@ export function addressReply(replyText: string, handle: string | null): string {
   return `${at} ${replyText}`;
 }
 
-export async function postReply(token: string, parentCommentId: string, text: string): Promise<string> {
-  const res = await fetch('https://www.googleapis.com/youtube/v3/comments?part=snippet', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      snippet: {
-        parentId: parentCommentId,
-        textOriginal: text,
+/** Posts a reply. Never throws: the answer is classified (US-27 AC5), and a
+ *  timeout or a network error is `unknown`, since Google may have taken it. */
+export async function postReply(token: string, parentCommentId: string, text: string): Promise<PostResult> {
+  try {
+    const res = await fetch('https://www.googleapis.com/youtube/v3/comments?part=snippet', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-    }),
-    signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
-  });
-  if (!res.ok) {
+      body: JSON.stringify({
+        snippet: {
+          parentId: parentCommentId,
+          textOriginal: text,
+        },
+      }),
+      signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
+    });
+    // The status is known once res is here: a body that cannot be read keeps it, classified as empty. Other
+    // 4xx stay refused, a 2xx or 5xx unknown; a 400 is unknown, since it may be processingFailure (Q4, N3).
     const body = await res.text().catch(() => '');
-    throw new Error(`YouTube post failed: ${res.status} ${body.slice(0, 300)}`);
+    const result = classifyPost({ status: res.status, body });
+    // A 401 means the cached token is bad: the next tick must fetch a fresh one (C15 R3).
+    if (result.kind === 'refused' && result.status === 401) cachedAccessToken = null;
+    return result;
+  } catch (error) {
+    return classifyPost({ error });
   }
-  const data = await res.json() as { id: string };
-  return data.id;
-}
-
-/** The 400 YouTube sends when the thread cannot take replies (canReply false). */
-export function isNotReplyableError(err: unknown): boolean {
-  return err instanceof Error && err.message.includes('YouTube post failed: 400') && err.message.includes('Not all comments can be replied to');
 }

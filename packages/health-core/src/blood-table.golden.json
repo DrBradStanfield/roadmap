@@ -332,7 +332,7 @@
           "id": "weight-med-glp1",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider a GLP-1 medication",
+          "title": "Consider discussing a GLP-1 medication with your doctor",
           "description": "With a BMI of 25.2 and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
@@ -442,11 +442,11 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
-          "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+          "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
-            "ACS"
+            "ACS 2018"
           ],
           "references": [
             {
@@ -456,6 +456,10 @@
             {
               "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
               "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+            },
+            {
+              "label": "Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)",
+              "url": "https://doi.org/10.3322/caac.21457"
             }
           ]
         },
@@ -744,7 +748,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -1141,7 +1145,7 @@
           "id": "weight-med-glp1",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider a GLP-1 medication",
+          "title": "Consider discussing a GLP-1 medication with your doctor",
           "description": "With a BMI of 25.2 and diabetic-range HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
@@ -1166,7 +1170,7 @@
           "category": "bloodwork",
           "priority": "urgent",
           "title": "HbA1c in diabetic range",
-          "description": "Your HbA1c of 60 mmol/mol indicates diabetes. This requires medical management and lifestyle intervention.",
+          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.",
           "ingredients": [],
           "reason": "An HbA1c in the diabetic range (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.",
           "guidelines": [
@@ -1251,11 +1255,11 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
-          "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+          "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
-            "ACS"
+            "ACS 2018"
           ],
           "references": [
             {
@@ -1265,6 +1269,10 @@
             {
               "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
               "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+            },
+            {
+              "label": "Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)",
+              "url": "https://doi.org/10.3322/caac.21457"
             }
           ]
         },
@@ -1553,7 +1561,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -1950,7 +1958,7 @@
           "id": "weight-med-glp1",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider a GLP-1 medication",
+          "title": "Consider discussing a GLP-1 medication with your doctor",
           "description": "With a BMI of 25.2 and diabetic-range HbA1c and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
@@ -1975,7 +1983,7 @@
           "category": "bloodwork",
           "priority": "urgent",
           "title": "HbA1c in diabetic range",
-          "description": "Your HbA1c of 60 mmol/mol indicates diabetes. This requires medical management and lifestyle intervention.",
+          "description": "Your HbA1c of 60 mmol/mol is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.",
           "ingredients": [],
           "reason": "An HbA1c in the diabetic range (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.",
           "guidelines": [
@@ -2060,11 +2068,11 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
-          "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+          "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
-            "ACS"
+            "ACS 2018"
           ],
           "references": [
             {
@@ -2074,6 +2082,10 @@
             {
               "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
               "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+            },
+            {
+              "label": "Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)",
+              "url": "https://doi.org/10.3322/caac.21457"
             }
           ]
         },
@@ -2362,7 +2374,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -2891,7 +2903,7 @@
           "id": "weight-med-glp1",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider a GLP-1 medication",
+          "title": "Consider discussing a GLP-1 medication with your doctor",
           "description": "With a BMI of 25.2 and elevated blood pressure, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
@@ -2965,11 +2977,11 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
-          "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+          "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
-            "ACS"
+            "ACS 2018"
           ],
           "references": [
             {
@@ -2979,6 +2991,10 @@
             {
               "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
               "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+            },
+            {
+              "label": "Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)",
+              "url": "https://doi.org/10.3322/caac.21457"
             }
           ]
         },
@@ -3267,7 +3283,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -3796,7 +3812,7 @@
           "id": "weight-med-glp1",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider a GLP-1 medication",
+          "title": "Consider discussing a GLP-1 medication with your doctor",
           "description": "With a BMI of 27.2 and prediabetic HbA1c, elevated triglycerides, elevated blood pressure and elevated waist-to-height ratio, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
           "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
@@ -3952,11 +3968,11 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.",
           "ingredients": [],
-          "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+          "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
-            "ACS"
+            "ACS 2018"
           ],
           "references": [
             {
@@ -3966,6 +3982,10 @@
             {
               "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
               "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+            },
+            {
+              "label": "Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)",
+              "url": "https://doi.org/10.3322/caac.21457"
             }
           ]
         },
@@ -4238,7 +4258,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],

@@ -86,11 +86,12 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
       const other = eraseIdentityOf(theirs);
       const arrivals: EraseEvent[] = [{ type: 'arrived', identity: other }, ...(store === other || store === before ? [] : [{ type: 'arrived', identity: store } as const])];
       const state = run(idle(pre), [{ type: 'own-start' }, ...arrivals]);
-      const end = transition(state, { type: 'own-end', identity: store });
+      const end = transition(state, { type: 'own-end', identity: store, message: 'erase done (test text)' });
       expect(end.state.phase).toBe('idle');
       expect(end.state.shown).toBe(store);
-      // The other writer's rows are read, and its erase counted, exactly when the store ends at it.
-      const fired = end.effects.filter(e => e.type === 'read' || e.type === 'count-remote-change').map(e => e.type);
+      // The other writer's rows are read, and its erase counted (once its tree commits, 2b-3), exactly when the store ends at it.
+      const commit = transition(end.state, { type: 'committed', identity: store });
+      const fired = [...end.effects, ...commit.effects].filter(e => e.type === 'read' || e.type === 'count-remote-change').map(e => e.type);
       expect(fired).toEqual(store === other ? ['read', 'count-remote-change'] : []);
     });
   });

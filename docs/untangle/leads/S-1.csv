@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-1,S2 server,"One chat-turn module for web, Discord and YouTube",not started,"Brad approved one shared chat-turn module (2026-11-11); master/austin builds it. No chat-turn module; app/routes/api.chat.ts, app/lib/discord-bot.server.ts and app/lib/youtube-bot-pipeline.server.ts each run a turn",,,no

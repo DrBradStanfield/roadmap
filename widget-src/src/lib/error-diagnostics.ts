@@ -15,11 +15,30 @@ type RecordFailure =
   | 'Cloud sync failed'
   | 'Chat-history erase failed'
   | 'Chat-history save failed'
+  | 'Chat-history read failed'
+  | 'Chat send failed'
+  | 'Chat delete failed'
+  | 'Chat stream line was not JSON'
+  | 'Chat stream ended without an answer'
   | 'Pre-erase teardown failed'
+  | 'Record upkeep failed'
+  | 'Erase failed'
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
-  | 'Upload save failed';
+  | 'Upload save failed'
+  | 'Chat load failed'
+  | 'Chat list failed';
+
+/** The device refusing a health write after a log-off (US-09 AC2c): a
+ *  refusal the page asked for, not a failure. The record save and the document
+ *  write do not report it; a chat save on such a page is never attempted (A15). */
+export class WritesStoppedError extends StorageError {
+  constructor() {
+    super('On-device roadmap persistence stopped for logout.');
+    this.name = 'WritesStoppedError';
+  }
+}
 
 /** Fresh exception: no provider text, original cause or document reference. */
 export function recordFailure(error: unknown, message: RecordFailure): Error {

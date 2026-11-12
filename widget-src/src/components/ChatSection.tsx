@@ -13,11 +13,12 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
+import { ChatLoadLine } from './ChatLoadLine';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
 import { MUTED_CHAT } from './chat-muted';
@@ -25,7 +26,6 @@ import { getAssistantName, getChatSurface } from '../lib/assistant-config';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 
 // US-15 AC12: the brand store has no plan, so its chat names products. The
 // brand title reads the metafield-set assistant name at render, not import.
@@ -54,7 +54,7 @@ interface ChatSectionProps {
   onExpand?: () => void;
   guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  onProposeEdit?: ChatEditTarget;
   /** Before the onboarding is done: the general wording, as ChatEmbed's. */
   muted?: boolean;
 }
@@ -172,7 +172,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
         {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
-            {state.messages.length === 0 && !state.isLoading && (
+            {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
               <div className="chat-empty">
                 <p>{muted ? MUTED_CHAT.empty : copy.empty}</p>
               </div>
@@ -189,7 +189,8 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
                 )}
               </React.Fragment>
             ))}
-            {state.isLoading && (
+            <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+            {state.replying && (
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}
             {state.error && <div className="chat-error">{state.error}</div>}

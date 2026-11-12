@@ -110,14 +110,14 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
 const bmiTile = (container: HTMLElement) => Array.from(container.querySelectorAll('.stat-card'))
   .find((c) => c.querySelector('.stat-label')?.textContent === 'BMI')?.querySelector('.stat-value')?.textContent ?? bmiOnRow(container);
 
-/** The plan's "Consider a GLP-1 medication" text, if the plan has it: a card, or on its question (US-62 AC20). */
+/** The plan's "Consider discussing a GLP-1 medication with your doctor" text, if the plan has it: a card, or on its question (US-62 AC20). */
 function planGlp1(container: HTMLElement): string | undefined {
-  return suggestionText(container, 'Consider a GLP-1 medication');
+  return suggestionText(container, 'Consider discussing a GLP-1 medication with your doctor');
 }
 
 /** Whether the plan holds a suggestion whose title is, or (for `weight-med`) is any weight-medication step. */
 function planCard(container: HTMLElement, title: string): string | undefined {
-  const steps = ['Consider a GLP-1 medication', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
+  const steps = ['Consider discussing a GLP-1 medication with your doctor', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
     'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
   const titles = title === 'weight-med' ? steps : [title];
   return planTitles(container).find((t) => titles.includes(t));

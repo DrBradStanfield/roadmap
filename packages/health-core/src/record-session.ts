@@ -8,12 +8,16 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
+import { clearOwed, eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
+import { changesOf, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
+
+export { eraseIdentityOf } from './erase-identity';
 
 /** How long a burst of edits waits before one save carries them all. */
 export const PERSIST_DEBOUNCE_MS = 800;
@@ -29,18 +33,6 @@ export const PERSIST_DEBOUNCE_MS = 800;
  */
 export const REMOTE_POLL_MS = 60_000;
 export const REMOTE_THROTTLE_MS = 5_000;
-
-/** Which erase the record is at. It lives in `meta` beside the clocks but is
- *  not one: an erase that leaves the record as empty as it was is still a
- *  change, and the page drops the chat's banners for it (US-16 AC2a). */
-function eraseOf(file: RoadmapFile): [number, string | null] {
-  return [file.meta.eraseEpoch ?? 0, file.meta.erasedAt ?? null];
-}
-
-/** Which erase this copy is at, as one comparable string (US-16 AC2a). */
-export function eraseIdentityOf(file: RoadmapFile): string {
-  return JSON.stringify(eraseOf(file));
-}
 
 /** The record minus its own clocks — what a person would call a change. Keys
  *  are sorted, as everywhere else content is compared: a merge rebuilds the
@@ -74,12 +66,10 @@ export function visibleContentOf(file: RoadmapFile): string {
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
 export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
-
-/** The stored originals of the documents still live in `file`: an erase
- *  leaves these (US-09 AC20, AC23; US-11 AC6). */
-function liveOriginals(file: RoadmapFile): Set<string> {
-  return new Set(file.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef));
-}
+/** A second erase asked for while one runs; both clients refuse it first. */
+export const ERASE_BUSY = 'Already deleting your data.';
+/** An erase asked in a tab off the record this browser has chosen; refused first (US-11 AC6). */
+export const ERASE_STALE_TAB = 'This tab is out of date. Reload it, then delete your data.';
 
 /** The refusal for a stored record a newer app wrote, read from its raw
  *  `schemaVersion` before any shape check; null for bytes that do not parse,
@@ -130,22 +120,19 @@ function deviceCopyRevision(host: RecordHost): string | null | undefined {
  * write, mirror, announce and erase.
  */
 export class RecordSession {
-  private current: RoadmapFile;
+  private current!: RoadmapFile; // set by open()
+  /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
+   *  handle, and `running`, the claim set and cleared with the saving mode. */
+  private mode: SaveState = SAVE_START;
+  private told: SaveStatus = saveStatus(SAVE_START); // saveStatus(mode), as last told to the host
   private persistTimer: unknown = null;
-  /** The save in flight, if one is: a persist() call made meanwhile joins it. */
   private running: Promise<boolean> | null = null;
-  private dirtyDuringPersist = false;
   /** True when a pending mirror existed but could not be read/merged at
    *  open() — persist success must then LEAVE the marker so the mirror is
    *  retried next load (e.g. once updated assets can parse its newer schema). */
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
-  /** Every change to the working copy counts one (touch). A save moves
-   *  `savedChanges` up to the count it started from, and only when it lands,
-   *  so a failed save leaves its changes unsaved for the next hide to retry. */
-  private changes = 0;
-  private savedChanges = 0;
   /** The kinds of device refusal reported this session: every hide retries
    *  a refused save, and meets the same refusal (US-10 AC5). */
   private readonly refusalsReported = new Set<string>();
@@ -161,32 +148,29 @@ export class RecordSession {
   /** The erase the page shows (`showErase`); null until a page says, and
    *  then no write is checked against it. */
   private shown: string | null = null;
-  /** From the erase's swap to the end of its write. */
-  private erasing = false;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
+  /** The erase this tab's off-file data is cleared up to: a later one owes a clear (US-11 AC6, AC7). */
+  private clearedFor = '';
+  private clearReportedFor = ''; // the erase whose failed clear was reported
 
   private constructor(
     private readonly host: RecordHost,
     private readonly deviceId: string,
     private readonly sync: SyncManager<RoadmapFile>,
-    file: RoadmapFile,
     /** The user chose a cloud this session cannot reach, and runs on-device
      *  meanwhile (US-09 AC13): an erase here is refused (AC23). */
     private readonly cloudUnreachable: boolean,
-  ) {
-    this.current = file;
-  }
+  ) {}
 
   /** Load the record from the host's store and return a ready session. */
   static async open(host: RecordHost, { cloudUnreachable = false } = {}): Promise<RecordSession> {
     const deviceId = host.deviceId();
     const sync = new SyncManager(host.store, deviceId, ROADMAP_DOC, { now: () => new Date(host.clock.now()).toISOString() });
-    const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
-    const copySeen = deviceCopyRevision(host);
-    const session = new RecordSession(host, deviceId, sync, await sync.load(), cloudUnreachable);
-    session.revisionSeen = revision;
-    session.deviceCopySeen = copySeen;
+    const session = new RecordSession(host, deviceId, sync, cloudUnreachable);
+    session.revisionSeen = host.sync?.revision(ROADMAP_FILE_NAME) ?? null; // both before the read
+    session.deviceCopySeen = deviceCopyRevision(host);
+    session.current = session.deviceClosed() ? ROADMAP_DOC.migrate(null, session.ctx()) : await sync.load();
     const mirror = host.tier === 'cloud' ? host.mirror : null;
     if (mirror) {
       mirror.opened();
@@ -197,7 +181,7 @@ export class RecordSession {
     // A previous cloud session failed to save and mirrored its changes on-device
     // (saveLoop()'s catch), or a write missed the connect's lift: merge them in and
     // schedule a save to lift them up; the marker clears once a cloud save does.
-    if (mirror && (liftMissed(mirror, copySeen) || mirror.pending.get())) {
+    if (mirror && (liftMissed(mirror, session.deviceCopySeen) || mirror.pending.get())) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain
@@ -209,7 +193,7 @@ export class RecordSession {
         const { body } = await mirror.adapter.read(ROADMAP_FILE_NAME);
         if (body != null) {
           session.current = ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), session.current, ctx);
-          session.touch();
+          session.dispatch({ type: 'edited' });
         } else {
           mirror.pending.clear(); // stale marker, nothing mirrored
         }
@@ -227,6 +211,8 @@ export class RecordSession {
         }
       }
     }
+    session.clearedFor = clearedAtOpen(host, session.current);
+    session.settleClear();
     return session;
   }
 
@@ -243,6 +229,9 @@ export class RecordSession {
   get lastRefreshAt(): number {
     return this.lastRefresh;
   }
+
+  /** What a status line shows of the save (lead A1). */
+  get saveStatus(): SaveStatus { return saveStatus(this.mode); }
 
   /** Device tier: the stored revision this session last took in (US-34 AC6). */
   get seenRevision(): string | null {
@@ -264,11 +253,11 @@ export class RecordSession {
 
   /** Every write takes `erase`, the erase the page showed when the write was
    *  asked for (a keystroke, a chat reply, a timer armed), and is refused when
-   *  this copy is at another one, or while its own erase swaps in and writes:
+   *  this copy is at another one, or while its own erase runs, from its confirm:
    *  the write would carry a pre-erase screen into the erased record (US-16
    *  AC2a). A refusal is the caller's error answer, never a throw. */
   refuses(erase = this.shownErase): boolean {
-    return this.erasing || erase !== this.eraseIdentity;
+    return this.mode.mode === 'erasing' || erase !== this.eraseIdentity;
   }
 
   /**
@@ -280,7 +269,7 @@ export class RecordSession {
     if (this.refuses(erase)) return false;
     const next = change(this.current);
     if (next) this.current = next;
-    this.touch();
+    this.dispatch({ type: 'edited' });
     return true;
   }
 
@@ -291,79 +280,77 @@ export class RecordSession {
    * refused here has changed nothing anywhere (US-09 AC23).
    */
   async erase(beforeErase?: () => Promise<void>): Promise<EraseResult> {
-    // An erase lists the rows it removes, so it must read the record it
-    // removes them from. A session on-device because the cloud could not be
-    // read cannot, and refuses before anything moves.
-    if (this.cloudUnreachable) return { success: false, error: ERASE_UNREACHABLE };
-    // A change still on the debounce is one the erase throws away: saving it
-    // during the read would only send a pre-erase copy up ahead of the erase.
-    const debounced = this.persistTimer !== null;
-    this.cancelDebounce();
-    // The WHOLE stored record, read now: another tab or device may have erased
-    // and started again since this copy was read, and an erase at an equal
-    // epoch unions with that record instead of beating it (US-11 AC7). On a
-    // cloud an unreadable record refuses the erase, and the change on the
-    // debounce goes back on it. On this device an unreadable record leaves
-    // this copy's epoch, as before: there is no other copy to list.
+    // Refused before anything moves: a session on-device because the cloud could not be read, as an erase
+    // lists the rows it removes from the record it reads (a reload would not help it); a tab off the record
+    // this browser has chosen, read live here (US-11 AC6); and a second erase while one runs (US-16 AC2f).
+    const host = this.host;
+    const refusal = this.cloudUnreachable ? ERASE_UNREACHABLE : host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
+      : this.mode.mode === 'erasing' ? ERASE_BUSY : null;
+    if (refusal) return { success: false, error: refusal };
     // On this device, the revision of the bytes read: an unreadable record is
     // replaced only at it, so another tab's repair is never written over (AC9).
-    const revision = this.host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
     let readError: unknown = null;
-    const stored = await this.sync.load().catch((error) => { readError = error; return null; });
-    // A newer app's record is never written over, whatever else fails in it:
-    // update first (US-11 AC9).
-    const tooNew = readError && this.host.tier === 'device' ? newerSchema(this.host.sync) : null;
-    if (!stored && (this.host.tier === 'cloud' || tooNew)) {
-      if (debounced) this.touch();
-      return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
-    }
-    // The device file, on a cloud, is where other tabs' failed saves wait.
-    // One that cannot be read, or read into a record, lists nothing; a
-    // successful erase removes it below. Read before the caller's step, which
-    // needs its opt-in too.
-    const host = this.host;
-    const device = host.tier === 'device'
-      ? null
-      : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
-        .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
-        .catch(() => null);
-    // The caller's step reads the opt-in from this copy, to cancel its server
-    // row. Another device, or another tab whose save failed, may have opted in
-    // since this copy was read: when the merge of every copy read (epoch
-    // first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
-    // copy, so that row is the one cancelled (US-11 AC4). Never anything
-    // less: an erase this copy missed may hold no opt-in at all, and this
-    // copy's own active row must still be cancelled and turned off. No save
-    // is scheduled; the erase replaces this copy.
-    let optIn: RoadmapFile['reminderOptIn'];
+    // From the confirm on every write is refused, or it would answer "saved"
+    // for a change the erase removes (lead A6). The debounce is put aside.
+    this.dispatch({ type: 'eraseBegan' });
     try {
-      optIn = [stored, device].reduce<RoadmapFile>(
-        (merged, file) => (file ? mergeFiles(merged, file, this.ctx()) : merged),
-        this.current,
-      ).reminderOptIn;
-    } catch {
-      optIn = undefined; // keep this copy's own
+      // The WHOLE stored record, read now: another tab or device may have erased
+      // and started again since this copy was read, and an erase at an equal
+      // epoch unions with that record instead of beating it (US-11 AC7). On a
+      // cloud an unreadable record refuses the erase. On this device an
+      // unreadable record leaves this copy's epoch, as before: there is no
+      // other copy to list.
+      const stored = await this.sync.load().catch((error) => { readError = error; return null; });
+      // A newer app's record is never written over, whatever else fails in it:
+      // update first (US-11 AC9).
+      const tooNew = readError && host.tier === 'device' ? newerSchema(host.sync) : null;
+      if (!stored && (host.tier === 'cloud' || tooNew)) return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
+      // The device file, on a cloud, is where other tabs' failed saves wait. One that cannot be read,
+      // or read into a record, lists nothing; a successful erase removes it below. Read before the
+      // caller's step, which needs its opt-in too.
+      const device = host.tier === 'device'
+        ? null
+        : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
+          .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
+          .catch(() => null);
+      // The caller's step reads the opt-in from this copy, to cancel its server row. Another device,
+      // or another tab whose save failed, may have opted in since this copy was read: when the merge
+      // of every copy read (epoch first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
+      // copy, so that row is the one cancelled (US-11 AC4). Never anything less: an erase this copy
+      // missed may hold no opt-in at all, and this copy's own active row must still be cancelled and
+      // turned off. No save is scheduled; the erase replaces this copy.
+      let optIn: RoadmapFile['reminderOptIn'];
+      try {
+        optIn = [stored, device].reduce<RoadmapFile>(
+          (merged, file) => (file ? mergeFiles(merged, file, this.ctx()) : merged),
+          this.current,
+        ).reminderOptIn;
+      } catch {
+        optIn = undefined; // keep this copy's own
+      }
+      if (optIn?.status === 'active' && stableStringify(optIn) !== stableStringify(this.current.reminderOptIn ?? null)) {
+        this.current = { ...this.current, reminderOptIn: optIn };
+      }
+      await beforeErase?.();
+      // From here every failure comes back as a refusal, never a rejection: the
+      // caller's step has run, and its page must leave its deleting state.
+      this.saveWarning = undefined;
+      try { this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
+      this.clearedFor = this.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
+      this.dispatch({ type: 'eraseSwapped' });
+    } finally {
+      this.dispatch({ type: 'eraseAborted' }); // a no-op in the swap's turn: only an erase stopped short gives its save back
     }
-    if (optIn?.status === 'active' && stableStringify(optIn) !== stableStringify(this.current.reminderOptIn ?? null)) {
-      this.current = { ...this.current, reminderOptIn: optIn };
-    }
-    await beforeErase?.();
-    // From here every failure comes back as a refusal, never a rejection: the
-    // caller's step has run, and its page must leave its deleting state.
     // Once the flush lands the record IS erased: a later cleanup failure is a
     // warning, so the caller still clears its screen and mirror (US-11 AC3b).
     let erased = false;
     try {
-      this.cancelDebounce();
-      this.erasing = true;
-      this.saveWarning = undefined;
-      this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
-      this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
       try {
         if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
         else await this.flush();
       } finally {
-        this.erasing = false;
+        this.dispatch({ type: 'eraseEnded' });
       }
       erased = true;
       // The erase reached the cloud — wipe the on-device residue too (failure
@@ -371,12 +358,10 @@ export class RecordSession {
       // the erase on this device (US-11). On a failed flush we keep the mirror
       // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
       // merge and carries the erase to the cloud next session.
-      // Document blobs and the unsaved drafts sit outside the record file, so
-      // the erased file alone doesn't reach them. They go in every mode — a
-      // device-tier user gets no wipe below (it would delete the erased file
-      // just written), and used to keep them — except the originals of
-      // documents the erase did not remove (another tab's, saved meanwhile).
-      this.clearOffFileData();
+      // Document blobs and the unsaved drafts sit outside the record file. They go in every mode (a device-tier
+      // user gets no wipe below), except the originals of documents the erase did not remove (another tab's, saved
+      // meanwhile). A clear that fails is reported on its own: the cleanup below still runs, the next load clears.
+      this.tryClear();
       if (host.tier === 'device') {
         // The other record files (chat history): their contents are already
         // tombstoned (the caller's beforeErase erases chat history first).
@@ -429,20 +414,7 @@ export class RecordSession {
 
   /** Force-persist any pending changes (call before navigation). */
   async flush(): Promise<void> {
-    this.cancelDebounce();
     if (!(await this.persist())) throw new Error(SAVE_FAILED);
-  }
-
-  /** True while the working copy is AHEAD of the cloud: a save in flight, or
-   *  one still sitting on the debounce. */
-  private get writePending(): boolean {
-    return this.running !== null || this.persistTimer !== null;
-  }
-
-  /** True while a change to the working copy has not landed, a failed save's
-   *  included (US-10 AC5). */
-  private get unsaved(): boolean {
-    return this.changes !== this.savedChanges;
   }
 
   /**
@@ -458,7 +430,7 @@ export class RecordSession {
    * not put back here.
    */
   async refreshFromRemote(): Promise<boolean> {
-    if (this.writePending) return false;
+    if (writePending(this.mode) || this.deviceClosed()) return false;
     const at = this.host.clock.now();
     if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
     this.lastRefresh = at;
@@ -478,6 +450,7 @@ export class RecordSession {
     // change nobody made.
     if (contentOf(merged) === before) {
       this.revisionSeen = revision;
+      this.settleClear();
       return false;
     }
     // A local edit that landed during the read would be lost by taking the
@@ -501,16 +474,15 @@ export class RecordSession {
    * device copy holds the changes meanwhile (mirrorNow).
    */
   flushSync(): void {
-    if (!this.unsaved) return;
-    this.cancelDebounce();
+    if (!unsaved(this.mode)) return;
     const store = this.host.sync;
-    if (store) {
+    if (store && !this.deviceClosed()) {
       try {
         const ctx = this.ctx();
         const { body, version } = store.readSync(ROADMAP_DOC.fileName);
         const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.revisionSeen = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
-        this.savedChanges = this.changes;
+        this.dispatch({ type: 'synced' });
         announce(this.host, this.adopt(merged));
         return;
       } catch {
@@ -548,39 +520,35 @@ export class RecordSession {
     }
   }
 
-  /**
-   * Clear this device's off-file health data for the erase this copy is at
-   * (US-11 AC1, AC6), sparing only the stored originals of documents that
-   * outlive it (US-09 AC20, AC23): those live in this copy, and those live in
-   * the device's own record copy once the erase is applied to it, so an
-   * original the erase listed goes even where a stale device copy still names
-   * it. A device copy that cannot be read names nothing, as in erase().
-   * The page calls it too, after an erase whose write failed.
-   */
+  /** Clear this device's off-file health data for this copy's erase, and keep it once the clear worked; the page
+   *  calls it after an erase whose write failed (record-host `clearOffFile`). */
   clearOffFileData(): void {
-    this.clearOffFile(this.current);
+    clearOffFile(this.host, this.current, this.ctx());
+    keepCleared(this.host, this.eraseIdentity);
+    this.clearedFor = this.eraseIdentity;
   }
 
-  private clearOffFile(after: RoadmapFile): void {
-    const ctx = this.ctx();
-    let kept = after;
-    try {
-      const body = this.host.deviceRecord?.();
-      if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
-    } catch {
-      /* unreadable: it names nothing */
-    }
-    this.host.clearOffFileData(liveOriginals(kept));
+  /** The clear a later erase owes this tab: tried at each load, save and re-read until it lands (US-11 AC6, AC7). */
+  private settleClear(): void {
+    if (clearOwed(this.eraseIdentity, this.clearedFor)) this.tryClear();
   }
+  /** Clear, reporting a failure once per erase per session; the kept erase then stays, so the next load clears again. */
+  private tryClear(): void {
+    try { this.clearOffFileData(); } catch (error) {
+      this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
+      this.clearReportedFor = this.eraseIdentity;
+    }
+  }
+  /** A device page that may not read or write this device's health files: it reads none and saves none (US-09 AC2c). */
+  private deviceClosed(): boolean { return this.host.tier === 'device' && this.host.deviceFilesOpen?.() === false; }
 
   /** Device tier: write the erased record over bytes no record reads, at the
    *  revision they were read at. Another tab that wrote since wins the race:
    *  the save then reads its record and merges, as any save does (US-11 AC9). */
   private async replaceUnreadable(store: SyncStorage, revision: string | null): Promise<void> {
-    this.cancelDebounce();
     try {
       this.revisionSeen = store.writeSync(ROADMAP_FILE_NAME, this.current, revision).version;
-      this.savedChanges = this.changes;
+      this.dispatch({ type: 'synced' });
     } catch (error) {
       if (!(error instanceof ConflictError)) throw error;
       await this.flush();
@@ -602,10 +570,13 @@ export class RecordSession {
     const seen = visibleContentOf(this.current);
     // An erase from elsewhere, a later one at the same epoch included (adversary R6).
     const erasedElsewhere = eraseIdentityOf(merged) !== this.eraseIdentity;
-    if (erasedElsewhere) this.clearOffFile(merged);
+    // Taken in before the clear: an edit the host makes from it lands on the
+    // merge, and a clear that throws never leaves the pre-erase copy nor
+    // hides the erase from the page (US-11 AC7).
     this.current = merged;
+    this.settleClear();
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
-    if (erasedElsewhere && this.host.tier === 'cloud' && !this.unsaved) this.releaseErasedCopy(this.host.mirror);
+    if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);
     return visibleContentOf(merged) === seen ? null : { erase: erasedElsewhere ? eraseIdentityOf(merged) : null };
   }
 
@@ -663,28 +634,26 @@ export class RecordSession {
     }
   }
 
-  /** Mark dirty + schedule a debounced persist. */
-  private touch(): void {
-    this.changes += 1;
-    if (this.running) this.dirtyDuringPersist = true;
-    this.cancelDebounce();
-    this.persistTimer = this.host.timers.set(() => {
-      this.persistTimer = null;
-      void this.persist();
-    }, PERSIST_DEBOUNCE_MS);
-  }
-
-  /** Cancel the debounced save: the caller saves now, or throws the change away. */
-  private cancelDebounce(): void {
-    // `!== null`, as writePending reads it: a host's timer id may be 0.
-    if (this.persistTimer !== null) this.host.timers.clear(this.persistTimer);
-    this.persistTimer = null;
+  /** Move the save state and run the debounce effects it returns (an edit
+   *  arms a debounced persist); answer where a pass it asks for starts. */
+  private dispatch(event: SaveEvent): number | null {
+    const step = transition(this.mode, event);
+    this.mode = step.state;
+    let pass: number | null = null;
+    for (const effect of step.effects) {
+      if (effect.type === 'pass') { pass = effect.from; continue; }
+      if (this.persistTimer !== null) this.host.timers.clear(this.persistTimer); // a host's timer id may be 0
+      const fire = () => { this.persistTimer = null; void this.persist(); };
+      this.persistTimer = effect.type === 'arm' ? this.host.timers.set(fire, PERSIST_DEBOUNCE_MS) : null;
+    }
+    this.told = tellSaveStatus(this.host, this.told, saveStatus(this.mode)); // once the effects run
+    return pass;
   }
 
   /**
    * Serialized read-merge-write, run by saveLoop(). A call made while a save
    * runs joins it, and answers when the whole save ends. It never forces
-   * another pass itself: every change made meanwhile does that in touch(), so
+   * another pass itself: every change made meanwhile does that (passLanded), so
    * a debounce firing mid-pass or an empty flush adds no write (US-10 AC5a).
    * A later pass that fails fails the call too: a false failure, never a false success. Answering at once let
    * an awaited flush, and so an erase, report a save that had not happened
@@ -695,54 +664,70 @@ export class RecordSession {
     // Nothing to save writes nothing: a save always merges, and every merge
     // moves the lamport on. Covers an empty flush and the debounce left over
     // from an edit a save's own next pass already took (US-10 AC5a).
-    if (this.running) return this.running;
-    if (!this.unsaved) return Promise.resolve(true);
-    return (this.running = this.saveLoop());
+    // A running save is joined, never doubled: `running` is the claim, set and
+    // cleared in the same turns as the saving mode.
+    if (this.running) {
+      this.dispatch({ type: 'save' });
+      return this.running;
+    }
+    const from = this.dispatch({ type: 'save' });
+    if (from !== null) {
+      const run: Promise<boolean> = this.saveLoop(from, () => this.running === run);
+      this.running = run;
+    }
+    return this.running ?? Promise.resolve(true);
   }
 
-  /** Re-runs while edits land during the await. */
-  private async saveLoop(): Promise<boolean> {
+  /** Re-runs while edits land during the await. `owns`: `running` is still
+   *  this save's, never one a save asked for from adopt() started since. */
+  private async saveLoop(pass: number | null, owns: () => boolean): Promise<boolean> {
     // A remote change this save folds in is one refreshFromRemote() will never
     // find: it stands aside while a write is pending, and the merge below has
     // already taken the change into the working copy (US-34 AC1). Announce it
     // here or the screen stays stale until a reload.
     let remoteFolded: RemoteChange | null = null;
     try {
-      do {
-        this.dirtyDuringPersist = false;
-        const saving = this.changes;
-        const result = await this.sync.save(this.current);
+      while (pass !== null) {
+        // A closed device page fails the pass before its read, once awaited: the claim is set by then.
+        const result = await (this.deviceClosed() ? Promise.reject(new Error('Device files closed')) : this.sync.save(this.current));
         this.revisionSeen = result.version; // what it wrote, never what its verify read
         if (result.warning) this.saveWarning = result.warning;
-        this.savedChanges = saving;
+        const next = this.dispatch({ type: 'passLanded', from: pass });
+        // The pass and its claim end together, before adopt() or a listener
+        // can ask for a save: that save starts its own pass, never joins this one.
+        if (next === null && owns()) this.running = null;
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
         remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
-      } while (this.dirtyDuringPersist);
-      // Ended before anyone hears of it: a listener that saves again starts a
-      // new save, instead of joining this finished one.
-      this.running = null;
+        pass = next;
+      }
       announce(this.host, remoteFolded);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
       return true;
     } catch (error) {
-      this.running = null; // as above: ended before the marker is announced
+      // A throw once the last pass landed and its claim ended (an adopt() or a
+      // listener after it): the write stands, and a newer save may own the
+      // mode and the copy. It is reported, and fails neither (US-11 AC7).
+      if (!owns()) {
+        this.host.report(error, { op: 'after-save', repeat: false });
+        return true;
+      }
+      this.dispatch({ type: 'passFailed' });
+      this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);
-      // The background cloud save failed — this MUST be observable (unreported,
-      // it's silent data-at-risk), and the changes must NOT stay memory-only:
-      // mirror the working copy on-device so a page close can't lose it, and
-      // leave the marker so the next cloud session merges it back up (US-09
-      // AC4; Sentry JAVASCRIPT-REMIX-3X — a mid-session token-refresh failure
-      // made every save throw while the UI still showed the connected state).
-      // Most persist() call sites are fire-and-forget (`void this.persist()`),
-      // so returning false (not rethrowing) keeps them from re-creating an
-      // unhandled rejection; awaited callers (flush) check the result.
-      // Not once another tab moved this browser off this cloud: the device
-      // file is then that tab's record (US-06 AC13, Brad R1).
+      if (this.deviceClosed()) return false; // nothing to report: the page may not save here
+      // The background cloud save failed — this MUST be observable (unreported, it's silent data-at-risk),
+      // and the changes must NOT stay memory-only: mirror the working copy on-device so a page close can't
+      // lose it, and leave the marker so the next cloud session merges it back up (US-09 AC4; Sentry
+      // JAVASCRIPT-REMIX-3X — a mid-session token-refresh failure made every save throw while the UI still
+      // showed the connected state). Most persist() call sites are fire-and-forget (`void this.persist()`),
+      // so returning false (not rethrowing) keeps them from re-creating an unhandled rejection; awaited
+      // callers (flush) check the result. Not once another tab moved this browser off this cloud: the
+      // device file is then that tab's record (US-06 AC13, Brad R1).
       const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
       if (mirror && !mirror.writesStopped() && mirror.stillChosen?.() !== false) {
         mirror.pending.set();
@@ -755,8 +740,10 @@ export class RecordSession {
         // sync. Immutable measurement/lab createdAt is kept as written.
         try {
           const ctx = this.ctx();
+          const held = changesOf(this.mode); // what this write holds: the device line needs it to land (US-09 AC30)
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           await saveRecordInto(mirror.adapter, this.current, ctx);
+          this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
           /* device storage unavailable — memory-only is the best we have */

@@ -12,11 +12,12 @@ import { render, fireEvent, cleanup } from '@testing-library/react';
 vi.mock('../src/lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/storage', () => ({
-  GoogleDriveAdapter: class { connectViaPopup = vi.fn(async () => {}); },
+  GoogleDriveAdapter: class { acquireViaPopup = vi.fn(async () => {}); },
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => false,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  SAVE_STATUS_EVENT: 'hr:save-status',
   gisReady: () => true,
   preloadGis: () => undefined,
 }));
@@ -32,9 +33,8 @@ vi.mock('./connect', () => ({
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
   connectRefusal: () => null,
-  rememberBackend: vi.fn(),
+  rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 
 import { StorageBar, SyncControl } from './sync-control';

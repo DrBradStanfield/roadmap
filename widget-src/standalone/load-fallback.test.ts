@@ -125,6 +125,37 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     return cloud;
   }
 
+  it('US-09 AC13: with no log-off, a fallback page queues its edits on the device and the next good session merges them', async () => {
+    vi.resetModules(); // a fresh page
+    const page = {
+      connect: await import('./connect'),
+      store: await import('../src/storage/roadmap-store'),
+      lib: await import('../src/lib/storage'),
+      adapter: await import('@roadmap/health-core/adapter'),
+    };
+    // This page's own StorageError: a class from another module graph is not one to its catch.
+    const outage = new page.adapter.StorageError('synthetic outage', undefined, undefined, 503);
+    let fallback!: Awaited<ReturnType<typeof page.store.RoadmapStore.create>>;
+    const cloud = new MemoryAdapter();
+    const started = await page.connect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
+      fallback = await page.store.RoadmapStore.create(adapter);
+    });
+    expect(started.reconnect).toBe('github');
+    expect(page.lib.healthWritesAllowed()).toBe(true);
+    fallback.addMeasurement('weight', 80, '2026-06-01');
+    await fallback.flush();
+    expect(localStorage.getItem('health_roadmap_file_v2')).not.toBeNull();
+    expect(page.store.isSyncPending()).toBe(true);
+
+    vi.resetModules(); // the next load reaches the cloud
+    const next = await import('../src/storage/roadmap-store');
+    const good = await next.RoadmapStore.create(cloud);
+    expect((good as unknown as { file: RoadmapFile }).file.measurements.map((m) => m.value)).toEqual([80]);
+    await good.flush();
+    expect((await cloud.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [{ value: 80 }] });
+    expect(next.isSyncPending()).toBe(false);
+  });
+
   it('US-09 AC23: a weight, a medication and a supplement typed against an erased cloud survive, with their histories', async () => {
     const guest = await RoadmapStore.create(new SaveFails());
     guest.saveMedication('statin', 'atorvastatin', 20, 'mg');

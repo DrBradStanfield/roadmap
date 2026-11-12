@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H46,discord send,Delete the unreachable sentText fallback and shape-check the Sentry code tag,cleanup,done,"app/lib/discord-bot-send.server.ts:87 sentText's `if (at < 0) return ...join` cannot be reached; delete it. The Sentry `code` tag (:28-31) passes any string code through; shape-check it with /^[\w-]{1,40}$/. Do both in the next PR that touches that file (C15 review)",1397,no

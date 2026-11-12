@@ -8,9 +8,10 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import {
-  createEraseStore, epochOf, initialEraseState, refusalIsNews, transition,
+  createEraseStore, initialEraseState, refusal, transition,
   type EraseDoors, type EraseEffect, type EraseEvent, type EraseState,
 } from './erase-machine';
+import { epochOf } from '@roadmap/health-core/erase-identity';
 
 const id = (epoch: number, at: string | null) => JSON.stringify([epoch, at]);
 const W = id(0, null); // the record before any erase
@@ -22,63 +23,80 @@ const M = 'not an identity'; // malformed: epoch -1, the floor
 const O = id(3, '2026-11-01T10:00:12.000Z'); // this tab's own erase, ending above Z
 
 const set = (...ids: string[]) => new Set(ids);
-type Extra = { heard?: string; said?: Set<string>; counted?: Set<string> };
-const state = (phase: EraseState['phase'], shown: string, x: Extra): EraseState =>
-  ({ phase, shown, heard: x.heard ?? null, said: x.said ?? set(), counted: x.counted ?? set() });
-const loading = (shown: string, heard: string | null = null, x: Extra = {}) => state('loading', shown, { ...x, heard: heard ?? undefined });
-const idle = (shown: string, x: Extra = {}) => state('idle', shown, x);
-const erasing = (shown: string, heard: string | null = null, x: Extra = {}) => state('erasing', shown, { ...x, heard: heard ?? undefined });
+type Extra = { heard?: string; said?: Set<string>; counted?: Set<string>; pending?: string; shownBy?: EraseState['shownBy']; refused?: string };
+const common = (shown: string, x: Extra) =>
+  ({ shown, shownBy: x.shownBy ?? 'own', heard: x.heard ?? null, said: x.said ?? set(), counted: x.counted ?? set(), pending: x.pending ?? null });
+const loading = (shown: string, heard: string | null = null, x: Extra = {}): EraseState => ({ phase: 'loading', ...common(shown, { ...x, heard: heard ?? undefined }) });
+const idle = (shown: string, x: Extra = {}): EraseState => ({ phase: 'idle', ...common(shown, x) });
+/** `x.refused`: the erase a save refused during this tab's erase was asked under (A6 R1). */
+const erasing = (shown: string, heard: string | null = null, x: Extra = {}): EraseState =>
+  ({ phase: 'erasing', ...common(shown, { ...x, heard: heard ?? undefined }), refused: x.refused ?? null });
 
 const COUNT: EraseEffect = { type: 'count-remote-change' };
 const READ: EraseEffect = { type: 'read' };
 const CLEAR: EraseEffect = { type: 'clear-drafts' };
 const FORGET: EraseEffect = { type: 'forget' };
-const SAY: EraseEffect = { type: 'say-outcome' };
+// The say-outcome text rides on the event that ends the erase (design Q6): synthetic text.
+const DONE = 'erase done (test text)';
+const FAILED_TEXT = 'erase failed (test text)';
+const end = (identity: string): EraseEvent => ({ type: 'own-end', identity, message: DONE });
+const FAILED: EraseEvent = { type: 'own-failed', message: FAILED_TEXT };
+const SAY: EraseEffect = { type: 'say-outcome', message: DONE };
+const SAY_FAILED: EraseEffect = { type: 'say-outcome', message: FAILED_TEXT };
 const ALERT: EraseEffect = { type: 'alert-refused' };
-const mark = (identity: string): EraseEffect => ({ type: 'mark-store', identity });
+const REREAD_REFUSED: EraseEffect = { type: 'reread-refused' };
 
 /** [rule, row, state, event, next state ('same': unchanged, the same object), effects] */
+// "counted" in a read's or an own-end's row: marked pending, and counted when the tree that shows it commits (the committed rows).
 const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', EraseEffect[]]> = [
   // b: an arrival always reads and never counts; the read shows it. heard: remembered until something shows it.
   ['a b heard', 'idle: another writer\'s new erase arrives: heard, read, not counted, not yet shown', idle(W), { type: 'arrived', identity: X }, idle(W, { heard: X }), [READ]],
   ['a b heard', 'idle: an arrival for the erase already shown: heard, read (it can carry rows), not counted', idle(X), { type: 'arrived', identity: X }, idle(X, { heard: X }), [READ]],
   ['heard order', 'idle: a second arrival, its first read still out: the latest heard, read again', idle(W, { heard: X }), { type: 'arrived', identity: Z }, idle(W, { heard: Z }), [READ]],
-  ['heard a c', 'idle: the read that shows the heard erase: shown, heard cleared, counted', idle(W, { heard: X }), { type: 'read', identity: X }, idle(X, { counted: set(X) }), [CLEAR, mark(X), COUNT]],
+  ['heard a c', 'idle: the read that shows the heard erase: shown, heard cleared, counted', idle(W, { heard: X }), { type: 'read', identity: X }, idle(X, { pending: X, shownBy: 'remote' }), [CLEAR]],
   ['heard', 'idle: a read of the erase already shown, one heard: heard cleared, nothing else', idle(X, { heard: X }), { type: 'read', identity: X }, idle(X), []],
-  ['heard e', 'loading: the first read leaves the heard erase for loaded to read', loading(W, X), { type: 'read', identity: X }, loading(X, X, { counted: set(X) }), [CLEAR, mark(X), COUNT]],
+  ['heard e', 'loading: the first read leaves the heard erase for loaded to read', loading(W, X), { type: 'read', identity: X }, loading(X, X, { pending: X, shownBy: 'remote' }), [CLEAR]],
   ['R1 heard', 'idle, an arrival heard, its read in flight: own-start: erasing, the heard erase carried', idle(W, { heard: Z }), { type: 'own-start' }, erasing(W, Z), []],
   ['R4', 'erasing, an erase heard: a read reporting this tab\'s own new identity changes nothing', erasing(W, Z), { type: 'read', identity: O }, 'same', []],
   ['R4', 'erasing, an erase heard: a read reporting the heard erase changes nothing (reads stay dropped)', erasing(W, Z), { type: 'read', identity: Z }, 'same', []],
   // a, c: a read that shows another writer's erase counts it, once.
-  ['a c', 'idle: a read with a new erase: shown, drafts cleared, the store marked, counted', idle(W), { type: 'read', identity: X }, idle(X, { counted: set(X) }), [CLEAR, mark(X), COUNT]],
-  ['a c', 'idle: a read moving back to an erase already counted: shown, not counted again', idle(Y, { counted: set(X, Y) }), { type: 'read', identity: X }, idle(X, { counted: set(X, Y) }), [CLEAR, mark(X)]],
+  ['a c', 'idle: a read with a new erase: shown, drafts cleared, the store marked, counted', idle(W), { type: 'read', identity: X }, idle(X, { pending: X, shownBy: 'remote' }), [CLEAR]],
+  ['a c', 'idle: a read moving back to an erase already counted: shown, not counted again', idle(Y, { counted: set(X, Y) }), { type: 'read', identity: X }, idle(X, { counted: set(X, Y), shownBy: 'remote' }), [CLEAR]],
   ['c', 'idle: a read with the erase shown: nothing', idle(X), { type: 'read', identity: X }, 'same', []],
   ['c', 'erasing: a read loses to this tab\'s erase', erasing(W), { type: 'read', identity: Y }, 'same', []],
-  ['a c', 'loading: the first read shows its erase, and counts it', loading(W), { type: 'read', identity: X }, loading(X, null, { counted: set(X) }), [CLEAR, mark(X), COUNT]],
+  ['a c', 'loading: the first read shows its erase, and counts it', loading(W), { type: 'read', identity: X }, loading(X, null, { pending: X, shownBy: 'remote' }), [CLEAR]],
   // order: epoch only; within an epoch the latest report, by inequality.
   ['order', 'idle: a read with a lower epoch: nothing', idle(X), { type: 'read', identity: W }, 'same', []],
-  ['order', 'idle: a read at the same epoch with an EARLIER erasedAt (the merge\'s listed-versus-unlisted pick): shown', idle(X), { type: 'read', identity: E }, idle(E, { counted: set(E) }), [CLEAR, mark(E), COUNT]],
-  ['order', 'idle: a read at a higher epoch: shown', idle(Y), { type: 'read', identity: Z }, idle(Z, { counted: set(Z) }), [CLEAR, mark(Z), COUNT]],
+  ['order', 'idle: a read at the same epoch with an EARLIER erasedAt (the merge\'s listed-versus-unlisted pick): shown', idle(X), { type: 'read', identity: E }, idle(E, { pending: E, shownBy: 'remote' }), [CLEAR]],
+  ['order', 'idle: a read at a higher epoch: shown', idle(Y), { type: 'read', identity: Z }, idle(Z, { pending: Z, shownBy: 'remote' }), [CLEAR]],
   ['iii', 'idle: a read with a malformed identity sorts as epoch -1: nothing', idle(W), { type: 'read', identity: M }, 'same', []],
-  ['iii', 'idle: a malformed identity shown: any readable erase replaces it', idle(M), { type: 'read', identity: W }, idle(W, { counted: set(W) }), [CLEAR, mark(W), COUNT]],
+  ['iii', 'idle: a malformed identity shown: any readable erase replaces it', idle(M), { type: 'read', identity: W }, idle(W, { pending: W, shownBy: 'remote' }), [CLEAR]],
   // d: two erases racing. An arrival while erasing is kept, never counted at arrival (Q2).
   ['d Q2', 'erasing: another writer\'s erase arrives: heard, no read, not counted', erasing(W), { type: 'arrived', identity: Z }, erasing(W, Z), []],
   ['d order', 'erasing: a later report at the same epoch replaces the one kept, whatever its erasedAt', erasing(W, X), { type: 'arrived', identity: E }, erasing(W, E), []],
   ['d order', 'erasing: a report at a lower epoch keeps the higher', erasing(W, Z), { type: 'arrived', identity: X }, erasing(W, Z), []],
   ['iii', 'erasing: a malformed report keeps the readable one', erasing(W, X), { type: 'arrived', identity: M }, erasing(W, X), []],
-  ['d', 'erasing: a refused save is no news (no alert-refused for the own erase)', erasing(W), { type: 'refused', askedUnder: W }, 'same', []],
+  // A6 R1: a refusal during this tab's erase is no news, but it is kept, for an own-failed to re-read. The machine
+  // cannot tell a save refused while the erase reads from one refused while it writes: one row.
+  ['d A6 R1', 'erasing: a refused save is no news (no alert-refused for the own erase); its erase is recorded', erasing(W), { type: 'refused', askedUnder: W }, erasing(W, null, { refused: W }), []],
+  ['A6 R1', 'erasing: a second refused save: the first one\'s erase kept', erasing(W, null, { refused: W }), { type: 'refused', askedUnder: X }, 'same', []],
   // g: this tab's erase ends at the store's identity.
-  ['g', 'erasing: own-end, nothing overtook it: its erase shown, the old record forgotten, the pre-erase erase said, not counted', erasing(W), { type: 'own-end', identity: Y }, idle(Y, { said: set(W) }), [FORGET, CLEAR, mark(Y), SAY]],
-  ['d g Q2 R2', 'erasing: own-end at the heard erase (another writer\'s won): shown, its rows read, counted once, not forget-only', erasing(W, Z), { type: 'own-end', identity: Z }, idle(Z, { said: set(W), counted: set(Z) }), [FORGET, CLEAR, mark(Z), READ, COUNT, SAY]],
-  ['d g Q2', 'erasing: own-end at the overtaking erase, already counted: shown and read, not counted again', erasing(W, Z, { counted: set(Z) }), { type: 'own-end', identity: Z }, idle(Z, { said: set(W), counted: set(Z) }), [FORGET, CLEAR, mark(Z), READ, SAY]],
-  ['d g order', 'erasing: own-end at its own erase, an erase overtaken at the same epoch: its own shows, the overtaken one never counts', erasing(W, X), { type: 'own-end', identity: Y }, idle(Y, { said: set(W) }), [FORGET, CLEAR, mark(Y), SAY]],
-  ['d g order', 'erasing: own-end at a merge\'s pick with an EARLIER erasedAt than the shown erase, at that epoch: shown', erasing(X), { type: 'own-end', identity: E }, idle(E, { said: set(X) }), [FORGET, CLEAR, mark(E), SAY]],
-  ['g', 'idle: an own-end with no erase under way: nothing (the newer one stays shown)', idle(Z), { type: 'own-end', identity: Y }, 'same', []],
-  ['-', 'erasing: own-failed, nothing overtook it: back to idle, the failure said', erasing(W), { type: 'own-failed' }, idle(W), [SAY]],
-  ['d i R1', 'erasing: own-failed, another writer\'s erase heard: idle, still heard, read, the failure said; the read shows and counts it', erasing(W, Z), { type: 'own-failed' }, idle(W, { heard: Z }), [READ, SAY]],
-  ['known cost', 'erasing: own-end at the heard erase when that arrival was really this tab\'s own echo (record-session.ts:604/609 rule it out): the person sees their erase done, plus one extra re-read of the empty record (no visible change) and one wrong count', erasing(W, O), { type: 'own-end', identity: O }, idle(O, { said: set(W), counted: set(O) }), [FORGET, CLEAR, mark(O), READ, COUNT, SAY]],
-  ['R3', 'erasing: own-end at this tab\'s own erase, an erase heard: its own shows, the heard one dropped, never counted', erasing(W, Z), { type: 'own-end', identity: O }, idle(O, { said: set(W) }), [FORGET, CLEAR, mark(O), SAY]],
-  ['-', 'idle: own-failed with no erase under way: nothing', idle(W), { type: 'own-failed' }, 'same', []],
+  ['g', 'erasing: own-end, nothing overtook it: its erase shown, the old record forgotten, the pre-erase erase said, not counted', erasing(W), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
+  ['d g Q2 R2', 'erasing: own-end at the heard erase (another writer\'s won): shown, its rows read, counted once, not forget-only', erasing(W, Z), end(Z), idle(Z, { said: set(W), pending: Z, shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
+  ['d g Q2', 'erasing: own-end at the overtaking erase, already counted: shown and read, not counted again', erasing(W, Z, { counted: set(Z) }), end(Z), idle(Z, { said: set(W), counted: set(Z), shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
+  ['d g order', 'erasing: own-end at its own erase, an erase overtaken at the same epoch: its own shows, the overtaken one never counts', erasing(W, X), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
+  ['d g order', 'erasing: own-end at a merge\'s pick with an EARLIER erasedAt than the shown erase, at that epoch: shown', erasing(X), end(E), idle(E, { said: set(X) }), [FORGET, CLEAR, SAY]],
+  ['g', 'idle: an own-end with no erase under way: nothing (the newer one stays shown)', idle(Z), end(Y), 'same', []],
+  // A6 Codex R1: nothing refused, nothing read: a list save still waiting lands on the screen it was made on.
+  ['-', 'erasing: own-failed, nothing overtook it, nothing refused: back to idle, the failure said', erasing(W), FAILED, idle(W), [SAY_FAILED]],
+  // A6 R1: a save refused during the erase was not saved; the record is re-read as any refused save is, then the failure said.
+  ['US-16 AC2a A6 R1', 'erasing: own-failed after a refused save: idle, the refusal dropped, re-read as refused, the failure said', erasing(W, null, { refused: W }), FAILED, idle(W), [REREAD_REFUSED, SAY_FAILED]],
+  ['A6 R1 d i', 'erasing: own-failed after a refused save, an erase heard: the heard erase\'s read only, which shows the record too', erasing(W, Z, { refused: W }), FAILED, idle(W, { heard: Z }), [READ, SAY_FAILED]],
+  ['A6 R1 g', 'erasing: own-end after a refused save: the refusal dropped with the phase, no re-read (the erase forgets the record)', erasing(W, null, { refused: W }), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
+  ['d i R1', 'erasing: own-failed, another writer\'s erase heard: idle, still heard, read, the failure said; the read shows and counts it', erasing(W, Z), FAILED, idle(W, { heard: Z }), [READ, SAY_FAILED]],
+  ['known cost', 'erasing: own-end at the heard erase when that arrival was really this tab\'s own echo (record-session.ts:595/600 rule it out): the person sees their erase done, plus one extra re-read of the empty record (no visible change) and one wrong count', erasing(W, O), end(O), idle(O, { said: set(W), pending: O, shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
+  ['R3', 'erasing: own-end at this tab\'s own erase, an erase heard: its own shows, the heard one dropped, never counted', erasing(W, Z), end(O), idle(O, { said: set(W) }), [FORGET, CLEAR, SAY]],
+  ['-', 'idle: own-failed with no erase under way: nothing', idle(W), FAILED, 'same', []],
   ['-', 'idle: own-start: erasing', idle(W), { type: 'own-start' }, erasing(W), []],
   ['-', 'erasing: a second own-start: nothing', erasing(W), { type: 'own-start' }, 'same', []],
   // Q3: no gate. An erase before the first read takes the held erase along as overtaken.
@@ -100,6 +118,31 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['f', 'loading: a refused save: said once', loading(W), { type: 'refused', askedUnder: W }, loading(W, null, { said: set(W) }), [ALERT]],
   // Q4: keyed on the erase the save was asked under, not the one the store holds when it refuses.
   ['Q4', 'idle: a save asked under W, then X and Z arrive and show, then it is refused: alerted once, W said (today: keyed on Z)', idle(Z, { counted: set(X, Z) }), { type: 'refused', askedUnder: W }, idle(Z, { said: set(W), counted: set(X, Z) }), [ALERT]],
+  // 2b-1 R1: an own-end below the heard erase keeps it heard and reads it; that read shows and counts it.
+  ['2b-1 R1', 'erasing, an erase heard at a HIGHER epoch than the end (a late reader): idle at the end, heard kept, read, not counted here', erasing(W, O), end(Z), idle(Z, { heard: O, said: set(W) }), [FORGET, CLEAR, READ, SAY]],
+  ['2b-1 R1', 'erasing, an erase heard at the SAME epoch as the end: the end shows, the heard one dropped (as R3)', erasing(W, X), end(E), idle(E, { said: set(W) }), [FORGET, CLEAR, SAY]],
+  // 2b-1 R2 (Fable's corrected rule): an idle read clears heard only when it IS heard, or is above heard's epoch.
+  ['2b-1 R2', 'idle: a read BELOW the heard erase\'s epoch: shown and counted, heard kept for a later read', idle(W, { heard: Z }), { type: 'read', identity: X }, idle(X, { heard: Z, pending: X, shownBy: 'remote' }), [CLEAR]],
+  ['2b-1 R2', 'idle: a read of the erase shown, BELOW the heard erase\'s epoch: nothing, heard kept', idle(X, { heard: Z }), { type: 'read', identity: X }, 'same', []],
+  ['2b-1 R2', 'idle: a read at the heard erase\'s epoch, a DIFFERENT identity: shown and counted, heard kept', idle(W, { heard: X }), { type: 'read', identity: E }, idle(E, { heard: X, pending: E, shownBy: 'remote' }), [CLEAR]],
+  ['2b-1 R2', 'idle: a read of the heard erase itself: shown, heard cleared', idle(W, { heard: X }), { type: 'read', identity: X }, idle(X, { pending: X, shownBy: 'remote' }), [CLEAR]],
+  ['2b-1 R2', 'idle: a read ABOVE the heard erase\'s epoch: shown, heard cleared', idle(W, { heard: X }), { type: 'read', identity: Z }, idle(Z, { pending: Z, shownBy: 'remote' }), [CLEAR]],
+  // 2b-1 Q3: a refused save while an erase is heard asks for the read (L1's end); it alerts only when news.
+  ['2b-1 Q3', 'idle: refused under A, C heard, A already said: no alert, one read', idle(X, { heard: Z, said: set(X) }), { type: 'refused', askedUnder: X }, 'same', [READ]],
+  ['2b-1 Q3', 'idle: refused under A, C heard, news: alerted, one read', idle(X, { heard: Z }), { type: 'refused', askedUnder: X }, idle(X, { heard: Z, said: set(X) }), [ALERT, READ]],
+  ['2b-1 Q3', 'idle: refused under A, nothing heard, A already said: nothing', idle(X, { said: set(X) }), { type: 'refused', askedUnder: X }, 'same', []],
+  ['2b-1 Q3', 'loading: refused, an erase held: alerted, one read', loading(W, X), { type: 'refused', askedUnder: W }, loading(W, X, { said: set(W) }), [ALERT, READ]],
+  ['2b-1 Q3', 'erasing: refused, an erase heard: no effect (own-end or own-failed reads it); the refusal recorded', erasing(W, Z), { type: 'refused', askedUnder: W }, erasing(W, Z, { refused: W }), []],
+  // Codex R1 (Fable's conditions): a remote erase counts when the tree that shows it commits, in every phase.
+  ['commit', 'idle: a commit with nothing pending: nothing', idle(X), { type: 'committed', identity: X }, 'same', []],
+  ['commit', 'idle: the commit of the pending erase: counted', idle(X, { pending: X }), { type: 'committed', identity: X }, idle(X, { counted: set(X) }), [COUNT]],
+  ['commit', 'idle: a commit of this tab\'s own erase: nothing (own-end marks nothing pending)', idle(Y, { said: set(W) }), { type: 'committed', identity: Y }, 'same', []],
+  ['commit', 'idle: a commit of an erase already counted: nothing', idle(X, { counted: set(X) }), { type: 'committed', identity: X }, 'same', []],
+  ['commit', 'idle: a commit of an earlier tree, the pending erase not yet on screen: nothing', idle(Z, { pending: Z }), { type: 'committed', identity: X }, 'same', []],
+  ['commit', 'loading: a commit with nothing pending: nothing', loading(W), { type: 'committed', identity: W }, 'same', []],
+  ['commit', 'loading: the commit of the first read\'s erase: counted', loading(X, null, { pending: X }), { type: 'committed', identity: X }, loading(X, null, { counted: set(X) }), [COUNT]],
+  ['commit', 'erasing: a commit with nothing pending: nothing', erasing(W), { type: 'committed', identity: W }, 'same', []],
+  ['commit', 'erasing: the commit of an erase a read showed before this erase began: counted', erasing(X, null, { pending: X }), { type: 'committed', identity: X }, erasing(X, null, { counted: set(X) }), [COUNT]],
 ];
 
 describe('erase machine: transition table (untangle fix 4, US-16 AC2a)', () => {
@@ -115,9 +158,12 @@ describe('erase machine: transition table (untangle fix 4, US-16 AC2a)', () => {
 function run(state: EraseState, events: EraseEvent[]) {
   const effects: EraseEffect[] = [];
   for (const event of events) {
-    const step = transition(state, event);
-    state = step.state;
-    effects.push(...step.effects);
+    // Each event, then the commit of the tree it leaves, as the page's layout effect dispatches it.
+    for (const e of [event, { type: 'committed', identity: '' } as EraseEvent]) {
+      const step = transition(state, e.type === 'committed' ? { type: 'committed', identity: state.shown } : e);
+      state = step.state;
+      effects.push(...step.effects);
+    }
   }
   return { state, effects };
 }
@@ -125,35 +171,55 @@ const counts = (effects: EraseEffect[]) => effects.filter(e => e.type === 'count
 
 describe('erase machine: one remote_change_applied per remote erase SHOWN, on every path (a, US-34 AC1)', () => {
   it.each<[string, EraseState, EraseEvent[], EraseState]>([
-    ['arrival, then its read', idle(W), [{ type: 'arrived', identity: X }, { type: 'read', identity: X }], idle(X, { counted: set(X) })],
+    ['arrival, then its read', idle(W), [{ type: 'arrived', identity: X }, { type: 'read', identity: X }], idle(X, { counted: set(X), shownBy: 'remote' })],
     ['a refused save\'s read first, then the late arrival and its read', idle(W),
       [{ type: 'refused', askedUnder: W }, { type: 'read', identity: X }, { type: 'arrived', identity: X }, { type: 'read', identity: X }],
-      idle(X, { said: set(W), counted: set(X) })],
-    ['held while loading, then loaded and its read', loading(W), [{ type: 'arrived', identity: X }, { type: 'loaded' }, { type: 'read', identity: X }], idle(X, { counted: set(X) })],
+      idle(X, { said: set(W), counted: set(X), shownBy: 'remote' })],
+    ['held while loading, then loaded and its read', loading(W), [{ type: 'arrived', identity: X }, { type: 'loaded' }, { type: 'read', identity: X }], idle(X, { counted: set(X), shownBy: 'remote' })],
     ['held while loading, the first read shows it, then loaded and its read', loading(W),
-      [{ type: 'arrived', identity: X }, { type: 'read', identity: X }, { type: 'loaded' }, { type: 'read', identity: X }], idle(X, { counted: set(X) })],
+      [{ type: 'arrived', identity: X }, { type: 'read', identity: X }, { type: 'loaded' }, { type: 'read', identity: X }], idle(X, { counted: set(X), shownBy: 'remote' })],
     ['overtaking this tab\'s erase, the erase ending there, then the read', idle(W),
-      [{ type: 'own-start' }, { type: 'arrived', identity: Z }, { type: 'own-end', identity: Z }, { type: 'read', identity: Z }], idle(Z, { said: set(W), counted: set(Z) })],
+      [{ type: 'own-start' }, { type: 'arrived', identity: Z }, end(Z), { type: 'read', identity: Z }], idle(Z, { said: set(W), counted: set(Z), shownBy: 'remote' })],
     ['overtaking this tab\'s erase, the erase refused, then the read (i)', idle(W),
-      [{ type: 'own-start' }, { type: 'arrived', identity: Z }, { type: 'own-failed' }, { type: 'read', identity: Z }], idle(Z, { counted: set(Z) })],
+      [{ type: 'own-start' }, { type: 'arrived', identity: Z }, FAILED, { type: 'read', identity: Z }], idle(Z, { counted: set(Z), shownBy: 'remote' })],
     ['held while loading, an erase pressed before the first read, ending at the held erase (Q3)', loading(W),
-      [{ type: 'arrived', identity: Z }, { type: 'own-start' }, { type: 'loaded' }, { type: 'own-end', identity: Z }, { type: 'read', identity: Z }],
-      idle(Z, { said: set(W), counted: set(Z) })],
+      [{ type: 'arrived', identity: Z }, { type: 'own-start' }, { type: 'loaded' }, end(Z), { type: 'read', identity: Z }],
+      idle(Z, { said: set(W), counted: set(Z), shownBy: 'remote' })],
     ['two arrivals folded, A then B, before the read: B only, by design', idle(W),
-      [{ type: 'arrived', identity: X }, { type: 'arrived', identity: Z }, { type: 'read', identity: Z }, { type: 'read', identity: Z }], idle(Z, { counted: set(Z) })],
+      [{ type: 'arrived', identity: X }, { type: 'arrived', identity: Z }, { type: 'read', identity: Z }, { type: 'read', identity: Z }], idle(Z, { counted: set(Z), shownBy: 'remote' })],
     ['two overtaking arrivals, A then B, the erase ending at B: B only, by design', idle(W),
-      [{ type: 'own-start' }, { type: 'arrived', identity: X }, { type: 'arrived', identity: Z }, { type: 'own-end', identity: Z }, { type: 'read', identity: Z }],
-      idle(Z, { said: set(W), counted: set(Z) })],
-  ])('%s: counted once', (_path, start, events, end) => {
+      [{ type: 'own-start' }, { type: 'arrived', identity: X }, { type: 'arrived', identity: Z }, end(Z), { type: 'read', identity: Z }],
+      idle(Z, { said: set(W), counted: set(Z), shownBy: 'remote' })],
+    ['H26: another writer\'s erase of an empty record arrives in idle, then its read (remote-change.test.ts pins the arrival)', idle(W),
+      [{ type: 'arrived', identity: X }, { type: 'read', identity: X }], idle(X, { counted: set(X), shownBy: 'remote' })],
+    ['2b-1 R1: this tab\'s erase ends below an erase heard during it, then that erase\'s read', idle(W),
+      [{ type: 'own-start' }, { type: 'arrived', identity: O }, end(Z), { type: 'read', identity: O }], idle(O, { said: set(W), counted: set(O), shownBy: 'remote' })],
+  ])('%s: counted once', (_path, start, events, last) => {
     const result = run(start, events);
-    expect(result.state).toEqual(end);
+    expect(result.state).toEqual(last);
     expect(counts(result.effects)).toBe(1);
   });
 
   it('this tab\'s own erase, and a read of it afterwards: never counted', () => {
-    const result = run(idle(W), [{ type: 'own-start' }, { type: 'own-end', identity: Y }, { type: 'read', identity: Y }]);
+    const result = run(idle(W), [{ type: 'own-start' }, end(Y), { type: 'read', identity: Y }]);
     expect(result.state).toEqual(idle(Y, { said: set(W) }));
     expect(counts(result.effects)).toBe(0);
+  });
+});
+
+describe('erase machine: an erase overtaken before its tree commits never counts (Codex R1)', () => {
+  it('reads of X then Z, one commit, of Z: Z counted once, X never; a late commit of X counts nothing', () => {
+    let state = idle(W);
+    const effects: EraseEffect[] = [];
+    for (const event of [
+      { type: 'read', identity: X }, { type: 'read', identity: Z }, { type: 'committed', identity: Z }, { type: 'committed', identity: X },
+    ] as EraseEvent[]) {
+      const step = transition(state, event);
+      state = step.state;
+      effects.push(...step.effects);
+    }
+    expect(state).toEqual(idle(Z, { counted: set(Z), shownBy: 'remote' }));
+    expect(counts(effects)).toBe(1);
   });
 });
 
@@ -162,26 +228,26 @@ describe('erase machine: a remote erase heard in idle is never lost to this tab\
   const opening: EraseEvent[] = [{ type: 'arrived', identity: Z }, { type: 'own-start' }, { type: 'read', identity: Z }];
 
   it('R1: own-failed: ends with a read, and Z shown after it', () => {
-    const failed = run(idle(W), [...opening, { type: 'own-failed' }]);
+    const failed = run(idle(W), [...opening, FAILED]);
     expect(failed.state).toEqual(idle(W, { heard: Z }));
-    expect(failed.effects).toEqual([READ, READ, SAY]);
+    expect(failed.effects).toEqual([READ, READ, SAY_FAILED]);
     const shown = run(failed.state, [{ type: 'read', identity: Z }]);
-    expect(shown.state).toEqual(idle(Z, { counted: set(Z) }));
-    expect(shown.effects).toEqual([CLEAR, mark(Z), COUNT]);
+    expect(shown.state).toEqual(idle(Z, { counted: set(Z), shownBy: 'remote' }));
+    expect(shown.effects).toEqual([CLEAR, COUNT]);
   });
   it('R1: own-failed, and that read fails too: Z stays heard, and the next erase carries it', () => {
-    const result = run(idle(W), [...opening, { type: 'own-failed' }, { type: 'own-start' }]);
+    const result = run(idle(W), [...opening, FAILED, { type: 'own-start' }]);
     expect(result.state).toEqual(erasing(W, Z));
   });
   it('R2: own-end with identity Z: read and counted, not forget-only', () => {
-    const result = run(idle(W), [...opening, { type: 'own-end', identity: Z }]);
-    expect(result.state).toEqual(idle(Z, { said: set(W), counted: set(Z) }));
-    expect(result.effects).toEqual([READ, FORGET, CLEAR, mark(Z), READ, COUNT, SAY]);
+    const result = run(idle(W), [...opening, end(Z)]);
+    expect(result.state).toEqual(idle(Z, { said: set(W), counted: set(Z), shownBy: 'remote' }));
+    expect(result.effects).toEqual([READ, FORGET, CLEAR, READ, SAY, COUNT]); // counted at the commit
   });
   it('R3: own-end with identity O: O shown, Z never counted, even when a read of O follows', () => {
-    const result = run(idle(W), [...opening, { type: 'own-end', identity: O }, { type: 'read', identity: O }]);
+    const result = run(idle(W), [...opening, end(O), { type: 'read', identity: O }]);
     expect(result.state).toEqual(idle(O, { said: set(W) }));
-    expect(result.effects).toEqual([READ, FORGET, CLEAR, mark(O), SAY]);
+    expect(result.effects).toEqual([READ, FORGET, CLEAR, SAY]);
   });
   it('R4: a read during the erase that reports this tab\'s own O changes nothing, and Z still waits', () => {
     const result = run(idle(W), [{ type: 'arrived', identity: Z }, { type: 'own-start' }, { type: 'read', identity: O }]);
@@ -190,27 +256,71 @@ describe('erase machine: a remote erase heard in idle is never lost to this tab\
   });
 });
 
+describe('erase machine: a lower-epoch read never loses a heard erase (2b-1 R2)', () => {
+  // F1 (Fable): this pins the rule's safety, not a race reachable today.
+  it('two arrivals at one epoch: the first one\'s read lands, the second\'s fails; heard stays, and a refused save re-reads', () => {
+    const arrivals = run(idle(W), [{ type: 'arrived', identity: Y }, { type: 'arrived', identity: X }]);
+    expect(arrivals.effects).toEqual([READ, READ]); // READ#1, READ#2
+    const first = run(arrivals.state, [{ type: 'read', identity: Y }]); // READ#1 lands at Y
+    expect(first.state).toEqual(idle(Y, { heard: X, counted: set(Y), shownBy: 'remote' }));
+    // READ#2 fails: no event. The screen shows Y, the store holds X: a save from it is refused.
+    const refused = run(first.state, [{ type: 'refused', askedUnder: Y }]);
+    expect(refused.effects).toEqual([ALERT, READ]);
+    expect(refused.state).toEqual(idle(Y, { heard: X, said: set(Y), counted: set(Y), shownBy: 'remote' }));
+  });
+  it('Z heard, a read at X shows X; the later read at Z still shows Z and counts it', () => {
+    const result = run(idle(W), [{ type: 'arrived', identity: Z }, { type: 'read', identity: X }, { type: 'read', identity: Z }]);
+    expect(result.state).toEqual(idle(Z, { counted: set(X, Z), shownBy: 'remote' }));
+    expect(result.effects).toEqual([READ, CLEAR, COUNT, CLEAR, COUNT]);
+  });
+});
+
+describe('erase machine: a refused save while an erase is heard cannot loop by itself (2b-1 Q3, Fable)', () => {
+  // L1: the heard erase's read failed. A failed read dispatches no event, so nothing re-dispatches.
+  it('one read per refused save, and nothing more when each read fails', () => {
+    const start = idle(X, { heard: Z, said: set(X) });
+    const result = run(start, [{ type: 'refused', askedUnder: X }, { type: 'refused', askedUnder: X }]);
+    expect(result.effects).toEqual([READ, READ]);
+    expect(result.state).toBe(start);
+  });
+  it('through the store: the read door fails and dispatches nothing; the refusal ran exactly one read', () => {
+    const d = doors();
+    const store = createEraseStore(X, d);
+    store.dispatch({ type: 'loaded' });
+    store.dispatch({ type: 'arrived', identity: Z }); // its read fails: no event follows
+    expect(refusal(store, X)).toEqual({ news: true, reads: true });
+    expect(refusal(store, X)).toEqual({ news: false, reads: true });
+    expect(d.calls).toEqual(['read', 'alert-refused', 'read', 'read']); // the arrival's, then one per refusal; the first said (2b-3)
+    expect(store.getSnapshot()).toEqual(idle(X, { heard: Z, said: set(X) }));
+  });
+  it('then the read that shows the heard erase ends it: a later refusal reads nothing', () => {
+    const result = run(idle(X, { heard: Z, said: set(X) }), [{ type: 'read', identity: Z }, { type: 'refused', askedUnder: X }]);
+    expect(result.state).toEqual(idle(Z, { said: set(X), counted: set(Z), shownBy: 'remote' }));
+    expect(result.effects).toEqual([CLEAR, COUNT]);
+  });
+});
+
 describe('erase machine: an erase pressed before the first read shows (Q3)', () => {
   it('nothing held: own-start, loaded mid-erase (no-op), own-end: its erase shows, as from idle', () => {
-    const result = run(loading(W), [{ type: 'own-start' }, { type: 'loaded' }, { type: 'own-end', identity: Y }]);
+    const result = run(loading(W), [{ type: 'own-start' }, { type: 'loaded' }, end(Y)]);
     expect(result.state).toEqual(idle(Y, { said: set(W) }));
-    expect(result.effects).toEqual([FORGET, CLEAR, mark(Y), SAY]);
+    expect(result.effects).toEqual([FORGET, CLEAR, SAY]);
   });
   it('nothing held: own-start, own-failed: idle at the old erase, the failure said; a later loaded is a no-op', () => {
-    const result = run(loading(W), [{ type: 'own-start' }, { type: 'own-failed' }, { type: 'loaded' }]);
+    const result = run(loading(W), [{ type: 'own-start' }, FAILED, { type: 'loaded' }]);
     expect(result.state).toEqual(idle(W));
-    expect(result.effects).toEqual([SAY]);
+    expect(result.effects).toEqual([SAY_FAILED]);
   });
   it('an erase held: own-start, own-failed: the held erase is read, and the read shows and counts it', () => {
-    const result = run(loading(W, Z), [{ type: 'own-start' }, { type: 'own-failed' }, { type: 'read', identity: Z }]);
-    expect(result.state).toEqual(idle(Z, { counted: set(Z) }));
-    expect(result.effects).toEqual([READ, SAY, CLEAR, mark(Z), COUNT]);
+    const result = run(loading(W, Z), [{ type: 'own-start' }, FAILED, { type: 'read', identity: Z }]);
+    expect(result.state).toEqual(idle(Z, { counted: set(Z), shownBy: 'remote' }));
+    expect(result.effects).toEqual([READ, SAY_FAILED, CLEAR, COUNT]);
   });
   it('an erase held: own-start, own-end at this tab\'s own higher erase: its erase shows, the held one never counts', () => {
     const later = id(3, '2026-11-01T10:00:10.000Z');
-    const result = run(loading(W, Z), [{ type: 'own-start' }, { type: 'own-end', identity: later }]);
+    const result = run(loading(W, Z), [{ type: 'own-start' }, end(later)]);
     expect(result.state).toEqual(idle(later, { said: set(W) }));
-    expect(result.effects).toEqual([FORGET, CLEAR, mark(later), SAY]);
+    expect(result.effects).toEqual([FORGET, CLEAR, SAY]);
   });
 });
 
@@ -223,7 +333,7 @@ describe('erase machine: a refusal is keyed on the erase it was asked under (Q4,
       { type: 'refused', askedUnder: W },
       { type: 'refused', askedUnder: X },
     ]);
-    expect(result.state).toEqual(idle(Z, { said: set(W, X), counted: set(X, Z) }));
+    expect(result.state).toEqual(idle(Z, { said: set(W, X), counted: set(X, Z), shownBy: 'remote' }));
     expect(result.effects.filter(e => e.type === 'alert-refused')).toEqual([ALERT, ALERT]);
   });
 });
@@ -254,6 +364,27 @@ describe('erase machine: two overlapping reads (pins the read event\'s contract,
   });
 });
 
+// PR 1359 adversary R5: who moved `shown` is its own field, never read off the counter's `pending`.
+describe('erase machine: shownBy, set wherever shown moves', () => {
+  it('a read moves shown back to an erase already counted: remote, though nothing is pending', () => {
+    const { state: next } = transition(idle(Y, { counted: set(X, Y), shownBy: 'own' }), { type: 'read', identity: X }); // same epoch
+    expect(next).toMatchObject({ shown: X, pending: null, shownBy: 'remote' });
+  });
+  it('a read of a new erase: remote', () => {
+    expect(transition(idle(W), { type: 'read', identity: X }).state).toMatchObject({ shown: X, shownBy: 'remote' });
+  });
+  it('this tab\'s erase ends at its own erase: own, even after a remote one was shown', () => {
+    expect(transition(erasing(X, null, { shownBy: 'remote' }), end(Z)).state).toMatchObject({ shown: Z, shownBy: 'own' });
+  });
+  it('this tab\'s erase ends at the erase that overtook it: remote', () => {
+    expect(transition(erasing(W, Z), end(Z)).state).toMatchObject({ shown: Z, shownBy: 'remote' });
+  });
+  it('an erase that shows nothing new leaves shownBy alone', () => {
+    expect(transition(idle(X, { shownBy: 'remote' }), { type: 'read', identity: W }).state.shownBy).toBe('remote');
+    expect(transition(erasing(Z, null, { shownBy: 'remote' }), end(X)).state.shownBy).toBe('remote');
+  });
+});
+
 describe('epochOf: the one order the machine keeps', () => {
   it.each([
     [W, 0], [X, 1], [Z, 2], [M, -1], ['[]', -1], ['["1", null]', -1], ['5', -1], ['null', -1], ['[null, null]', -1],
@@ -266,12 +397,13 @@ function doors(): EraseDoors & { calls: string[] } {
   const calls: string[] = [];
   return {
     calls,
-    markStore: (identity) => calls.push(`mark-store ${identity}`),
     clearDrafts: () => calls.push('clear-drafts'),
     forget: () => calls.push('forget'),
     read: () => calls.push('read'),
+    rereadRefused: () => calls.push('reread-refused'),
     countRemoteChange: () => calls.push('count-remote-change'),
-    sayOutcome: () => calls.push('say-outcome'),
+    alertRefused: () => calls.push('alert-refused'),
+    sayOutcome: (message) => calls.push(`say-outcome ${message}`),
   };
 }
 
@@ -290,8 +422,8 @@ describe('createEraseStore: the state\'s only copy, and the one place effects ru
     expect(store.getSnapshot()).toBe(before);
     expect(heard).toHaveBeenCalledTimes(1);
     store.dispatch({ type: 'own-start' });
-    expect(store.dispatch({ type: 'own-end', identity: Y })).toEqual([FORGET, CLEAR, mark(Y), SAY]);
-    expect(d.calls).toEqual(['forget', 'clear-drafts', `mark-store ${Y}`, 'say-outcome']);
+    expect(store.dispatch(end(Y))).toEqual([FORGET, CLEAR, SAY]);
+    expect(d.calls).toEqual(['forget', 'clear-drafts', `say-outcome ${DONE}`]);
     expect(store.getSnapshot()).toEqual(idle(Y, { said: set(W) }));
     expect(heard).toHaveBeenCalledTimes(3);
     stop();
@@ -302,25 +434,47 @@ describe('createEraseStore: the state\'s only copy, and the one place effects ru
 
   it('a subscriber reads the new state before any effect runs', () => {
     const seen: string[] = [];
-    const store = createEraseStore(W, { ...doors(), markStore: () => seen.push(`effect at ${store.getSnapshot().shown}`) });
+    const store = createEraseStore(W, { ...doors(), clearDrafts: () => seen.push(`effect at ${store.getSnapshot().shown}`) });
     store.subscribe(() => seen.push(`told at ${store.getSnapshot().shown}`));
     store.dispatch({ type: 'read', identity: X });
     expect(seen).toEqual([`told at ${X}`, `effect at ${X}`]);
   });
 
-  it.todo('PR 2b, after HealthTool.chat-profile.test.tsx:777 ("after an erase whose write failed, the screen shows the erased copy the store holds"): the hook sends own-end whenever the store\'s identity moved, whatever result.success says, and own-failed only when it did not (re-check F2)');
-  it.todo('PR 2b: the hook\'s markStore door marks the store only in the layout effect of the commit that shows the identity (US-16 AC2d)');
+  // The two PR 2b todos once here (own-end on any move, whatever result.success says; the mark moving only
+  // when the tree that shows it commits, US-16 AC2d) are now hooks/useErase.test.tsx's.
 
-  it('refusalIsNews (f, F4b): answers true once per erase asked under, false inside this tab\'s erase, and runs no door', () => {
+  it('refusal (f, F4b): news once per erase asked under, false inside this tab\'s erase; the alertRefused door says it (2b-3, Fable Q3)', () => {
     const d = doors();
     const store = createEraseStore(W, d);
     store.dispatch({ type: 'loaded' });
-    expect(refusalIsNews(store, W)).toBe(true);
-    expect(refusalIsNews(store, W)).toBe(false);
-    expect(d.calls).toEqual([]); // the caller says it
+    expect(refusal(store, W)).toEqual({ news: true, reads: false });
+    expect(refusal(store, W)).toEqual({ news: false, reads: false });
+    expect(d.calls).toEqual(['alert-refused']); // said once
     store.dispatch({ type: 'read', identity: X });
+    store.dispatch({ type: 'committed', identity: X }); // as useErase's mark effect does
     store.dispatch({ type: 'own-start' });
-    expect(refusalIsNews(store, X)).toBe(false);
-    expect(d.calls).toEqual(['clear-drafts', `mark-store ${X}`, 'count-remote-change']);
+    expect(refusal(store, X)).toEqual({ news: false, reads: false });
+    expect(d.calls).toEqual(['alert-refused', 'clear-drafts', 'count-remote-change']);
+  });
+
+  it('A6 R1: a save refused during this tab\'s erase, then the erase stops short: the rereadRefused door, then the failure said', () => {
+    const d = doors();
+    const store = createEraseStore(W, d);
+    store.dispatch({ type: 'loaded' });
+    store.dispatch({ type: 'own-start' });
+    expect(refusal(store, W)).toEqual({ news: false, reads: false });
+    store.dispatch(FAILED);
+    expect(d.calls).toEqual(['reread-refused', `say-outcome ${FAILED_TEXT}`]);
+    expect(store.getSnapshot()).toEqual(idle(W));
+  });
+
+  it('2b-3, Fable Q3: a news refusal with an erase heard says it before the read starts', () => {
+    const d = doors();
+    const store = createEraseStore(W, d);
+    store.dispatch({ type: 'loaded' });
+    store.dispatch({ type: 'arrived', identity: X }); // its read fails: no event follows
+    d.calls.length = 0;
+    expect(refusal(store, W)).toEqual({ news: true, reads: true });
+    expect(d.calls).toEqual(['alert-refused', 'read']);
   });
 });

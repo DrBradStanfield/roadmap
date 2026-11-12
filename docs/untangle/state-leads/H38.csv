@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H38,tooling,"fresh-sim.sh exits silently, with status 1 and no message, when the ""HR Demo iPhone"" device does not exist yet, so it never makes it",bug,not started,"ios/scripts/fresh-sim.sh:12 set -euo pipefail; :26 device=$(xcrun simctl list devices available | grep -F ... | head -1 | sed ...): grep finds no device, exits 1, and pipefail ends the script before :27 creates it. Seen 2026-11-11 on PR 1288 (the device made by hand with simctl create)",,no

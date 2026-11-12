@@ -26,6 +26,29 @@ describe('scrubEvent — the upload review boundary (feature upload_review)', ()
   });
 });
 
+// US-16 AC2f: a throwing "Delete all my data" write is captured under area
+// 'erase'. A cloud adapter's error text can quote the record, so it takes the
+// strict branch, as 'cloud-sync' does. Synthetic text.
+describe('scrubEvent — the erase capture (area erase)', () => {
+  it.each([['erase', 'delete-all'], ['cloud-sync', 'load']])('area %s: message, exception text, breadcrumbs and extras go; the stack frames, the area and op %s stay', (area, op) => {
+    const marker = 'zinc-report.pdf weird';
+    const frames = { frames: [{ filename: 'useErase.ts', function: 'eraseAll', lineno: 9 }] };
+    const scrubbed = scrubEvent(makeEvent({
+      message: marker,
+      tags: { area, op, metric: marker },
+      exception: { values: [{ type: 'TypeError', value: marker, stacktrace: frames, mechanism: { type: 'generic', handled: true } }] },
+      breadcrumbs: [{ category: 'fetch', message: marker }],
+      extra: { providerBody: marker },
+      contexts: { storage: { path: marker } },
+      request: { url: `https://example.test/${marker}` },
+    }));
+    expect(scrubbed?.tags).toEqual({ area, op });
+    expect(scrubbed?.message).toBe('Health record operation failed');
+    expect(scrubbed?.exception?.values).toEqual([{ type: 'Error', value: 'Health record operation failed', stacktrace: frames, mechanism: { type: 'generic', handled: true } }]);
+    expect(JSON.stringify(scrubbed)).not.toContain('weird');
+  });
+});
+
 describe('scrubEvent — SDK self-noise filter', () => {
   // Regression: Sentry 7620498452 / 7645126135 — when a third-party error
   // (e.g. the Horizon theme's "@shopify/events" module-specifier TypeError)
@@ -96,6 +119,36 @@ describe('scrubEvent — free-text scrub', () => {
     expect(out.extra!.message).toBe('My LDL is [value] and I have diabetes');
     expect(out.extra!.mailto).toBe('[email]');
     expect(out.breadcrumbs![0].message).toBe('cholesterol [value]');
+  });
+});
+
+// US-09 AC7h: the trace context's ids leave the browser whole; any other value
+// at those paths, and an id-shaped value anywhere else, is scrubbed as before.
+describe('scrubEvent — trace and span ids (US-09 AC7h)', () => {
+  const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+  const SPAN_ID = 'e212345678abcdef';
+  const run = (trace: Record<string, unknown>) => scrubEvent(makeEvent({
+    event_id: TRACE_ID,
+    contexts: { trace: trace as never, other: { trace_id: TRACE_ID } },
+    extra: { span_id: SPAN_ID },
+  }))!;
+
+  it('keeps an id that starts with a hex lab name and digits', () => {
+    const out = run({ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID });
+    expect(out.event_id).toBe(TRACE_ID);
+    expect(out.contexts!.trace).toEqual({ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID });
+    expect(out.contexts!.other).toEqual({ trace_id: 'e2[value]abcdef0123456789abcde' });
+    expect(out.extra).toEqual({ span_id: 'e2[value]abcdef' });
+  });
+
+  it('scrubs text, upper-case hex and wrong-length hex at the id paths', () => {
+    const out = run({ trace_id: 'LDL 3.2 mmol/L', span_id: SPAN_ID.toUpperCase(), parent_span_id: `${SPAN_ID}0` });
+    expect(out.contexts!.trace).toEqual({
+      trace_id: 'LDL [value]', span_id: 'E2[value]ABCDEF', parent_span_id: 'e2[value]abcdef0',
+    });
+    expect(run({ trace_id: 'e2 45', span_id: TRACE_ID, parent_span_id: SPAN_ID.slice(1) }).contexts!.trace).toEqual({
+      trace_id: 'e2 [value]', span_id: 'e2[value]abcdef0123456789abcde', parent_span_id: SPAN_ID.slice(1),
+    });
   });
 });
 

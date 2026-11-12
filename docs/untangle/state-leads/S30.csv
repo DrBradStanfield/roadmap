@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S30,iPhone state,"iPhone at the largest accessibility text size (AX5): suggestion card titles break mid-word (e.g. 'circum-ference') beside the icon and chevron.",lead,not started,"Seen in PR 1415 review shots (iPhone SE, AX5, card sources shot). The card title shares its line with the icon and the chevron (ios/HealthRoadmap/Plan/PlanCardView.swift).",,no

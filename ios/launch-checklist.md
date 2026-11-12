@@ -107,6 +107,8 @@ by the orchestrator, not a fresh reviewer.
      guide's sourced safety lines (US-58 AC7). iOS tests: 519 passed in UTC; in Pacific/Auckland
      one layout test timed out under heavy load and passed when rerun alone. Not yet added to
      the external test group or sent to beta review: Brad's step in App Store Connect.
+   - **Build 11** (0.2) was uploaded 2026-11-11. **Build 12** (0.2) carries the Needs-attention
+     banner's corners and the My health footer's clearance (US-73) and is the resubmission.
    - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
      Store Connect locks screenshots and app previews while a version waits for review, so
      0.1 went out with the old five plain captures. With the next version, replace them with:
@@ -125,7 +127,9 @@ by the orchestrator, not a fresh reviewer.
      A spare 16:9 `header-universal-5244x2950.png` was also uploaded; it isn't needed.
      Open before upload: the plan cards on screen show "ApoB 1.02 Very High" and "Consider a
      GLP-1 medication" for the fictional person (Brad's call), and Sync rows still say
-     "Health Plan by Dr Brad".
+     "Health Plan by Dr Brad". PR 1412 retitled that card "Consider discussing a GLP-1
+     medication with your doctor" (App Review 1.4.1): retake the shots
+     (`ios/scripts/app-store-shots.sh`) from a build that carries it before upload.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
@@ -135,7 +139,7 @@ by the orchestrator, not a fresh reviewer.
     recording to confirm every screen is masked (the supplement search bar included).
     Decide whether to pause Clarity on two-button questions (tap position can show the answer).
 11. **App Store pictures** are in `ios/build/app-store-shots/` (run
-    `ios/scripts/app-store-shots.sh "iPhone 18 Pro"` again after any UI change).
+    `ios/scripts/app-store-shots.sh` again after any UI change; it runs on the shared simulator, an iPhone 18 Pro).
 
 ## To check on a real iPhone
 

@@ -8,7 +8,7 @@
  * statuses retry, which throw immediately, which get silenced from Sentry)
  * is verified without any real network calls or real delays.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({
   captureException: vi.fn(),
@@ -26,6 +26,7 @@ process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractOrClassify, ExtractionStopError } from './anthropic.server';
 import { classifyChatError } from './chat.server';
+import { sleep } from './cron-helpers.server';
 
 const REAL_FETCH = global.fetch;
 
@@ -260,6 +261,70 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // US-52 AC7c: the iPhone app's route. One 90 s budget covers the whole
+  // request, re-send and retries included, inside the phone's 120 s.
+  describe('US-52 AC7c: oneDeadline', () => {
+    const timedOut = () => new DOMException('signal timed out', 'TimeoutError');
+    let timeouts: MockInstance<typeof AbortSignal.timeout>;
+    beforeEach(() => {
+      vi.useFakeTimers();
+      timeouts = vi.spyOn(AbortSignal, 'timeout');
+      vi.mocked(sleep).mockImplementation(async (ms: number) => { vi.advanceTimersByTime(ms); });
+    });
+    afterEach(() => {
+      timeouts.mockRestore();
+      vi.mocked(sleep).mockReset().mockResolvedValue(undefined);
+      vi.useRealTimers();
+    });
+    /** An attempt that runs to its own timeout in fake time. */
+    const hangs = async () => { vi.advanceTimersByTime(timeouts.mock.calls.at(-1)![0]); throw timedOut(); };
+    const after = (ms: number, res: () => Response) => async () => { vi.advanceTimersByTime(ms); return res(); };
+    const ok = () => anthropicMessage(validUnifiedJson);
+
+    it.each([
+      { name: 'a timed-out attempt is not retried', replies: [hangs], windows: [90_000], fails: 'TimeoutError' },
+      { name: 'a 529 is retried with what is left', replies: [after(10_000, () => errResponse(529)), ok], windows: [90_000, 79_000], fails: null },
+      { name: 'a 529 with 7 s left is retried (6 s window)', replies: [after(83_000, () => errResponse(529)), ok], windows: [90_000, 6_000], fails: null },
+      { name: 'a 529 with 5.5 s left is not retried', replies: [after(84_500, () => errResponse(529))], windows: [90_000], fails: 'Error' },
+      { name: 'a slow malformed reply: the re-send gets only what is left', replies: [after(85_000, () => anthropicMessage('not json')), hangs], windows: [90_000, 5_000], fails: 'TimeoutError' },
+    ])('$name, and the request ends inside 100 s', async ({ replies, windows, fails }) => {
+      const fetchMock = vi.fn();
+      for (const r of replies) fetchMock.mockImplementationOnce(r);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      const start = Date.now();
+      const run = extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true });
+      if (fails) await expect(run).rejects.toMatchObject({ name: fails });
+      else await expect(run).resolves.toMatchObject({ classification: 'lab_report' });
+      expect(fetchMock).toHaveBeenCalledTimes(replies.length);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual(windows);
+      expect(Date.now() - start).toBeLessThan(100_000);
+    });
+
+    // US-52 AC7d: the slow-import report says whether this retry ran; a malformed answer's re-send is not it.
+    it.each([
+      { name: 'a 529 then an answer', replies: [after(10_000, () => errResponse(529)), ok], retries: 1 },
+      { name: 'a dropped connection then an answer', replies: [async () => { throw new TypeError('fetch failed'); }, ok], retries: 1 },
+      { name: 'a malformed answer then its re-send', replies: [() => anthropicMessage('not json'), ok], retries: 0 },
+      { name: 'one clean answer', replies: [ok], retries: 0 },
+    ])('US-52 AC7d: onRetry is told of each HTTP retry: $name', async ({ replies, retries }) => {
+      const fetchMock = vi.fn();
+      for (const r of replies) fetchMock.mockImplementationOnce(r);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      const onRetry = vi.fn();
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true, onRetry }))
+        .resolves.toMatchObject({ classification: 'lab_report' });
+      expect(onRetry).toHaveBeenCalledTimes(retries);
+    });
+
+    it('the website keeps its retry of a timed-out attempt, in a fresh window', async () => {
+      const fetchMock = vi.fn(hangs);
+      global.fetch = fetchMock as unknown as typeof fetch;
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([60_000, 60_000]);
+    });
   });
 
   it('documentMode metadata asks for no transcription and caps the answer; the website’s full prompt is unchanged (AC5)', async () => {

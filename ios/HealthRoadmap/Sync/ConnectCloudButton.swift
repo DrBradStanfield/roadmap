@@ -7,13 +7,14 @@ import SwiftUI
 struct ConnectCloudButton<Label: View>: View {
     let sync: CloudSync
     let provider: CloudProvider
+    /// A connect error, shown by the screen's alert: a row can go mid-sign-in (US-25 AC11j).
+    @Binding var message: String?
     /// Runs after a sign-in that connected.
     let connected: () -> Void
     @ViewBuilder let label: () -> Label
 
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var signingIn = false
-    @State private var message: String?
 
     var body: some View {
         Button {
@@ -25,8 +26,7 @@ struct ConnectCloudButton<Label: View>: View {
                 if signingIn { ProgressView().accessibilityLabel("Signing in") }
             }
         }
-        .disabled(signingIn || !provider.isConfigured || sync.erasing)
-        .messageAlert(provider.label, $message)
+        .disabled(signingIn || !provider.isConfigured || sync.eraseRunning())
     }
 
     private func signIn() async {

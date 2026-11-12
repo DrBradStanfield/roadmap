@@ -4,13 +4,16 @@
  */
 import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
-import { getChatHistory } from './chat-history-access';
+import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
+import { askChatHistory, getChatHistory } from './chat-history-access';
+import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
-import { readChatStream } from './chat-stream';
+import { ChatStreamError, readChatStream } from './chat-stream';
 
 // On local-first builds sendMessage tells the server to trust the
 // client-supplied context instead of looking for a DB record.
@@ -24,8 +27,9 @@ import { getChatArticle } from './assistant-config';
 export interface ChatConversation {
   id: string;
   title: string;
-  updatedAt: string;
-  createdAt: string;
+  /** Absent on a thread the chat listed itself as its first reply landed (chat-turn.ts `done`). */
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface ChatMessage {
@@ -47,6 +51,8 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
+  /** Parts of the reply's edits refused as unreadable, with the iPhone's words (US-67 AC2). */
+  editRefusals?: ChatEditRefusal[];
   /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
   subscriptionCard?: SubscriptionCard;
 }
@@ -98,11 +104,6 @@ export interface ChatReply {
   subscriptionCard?: unknown;
 }
 
-/** A reply's guest session token, or undefined when it is not a non-empty string (US-15 AC6b). */
-function tokenOf(data: ChatReply | null): string | undefined {
-  return typeof data?.sessionToken === 'string' && data.sessionToken ? data.sessionToken : undefined;
-}
-
 export interface ChatError {
   error: string;
 }
@@ -131,77 +132,8 @@ export function getChatGate(): ChatGate | null {
 }
 
 // ---------------------------------------------------------------------------
-// Guest session token (localStorage)
-// ---------------------------------------------------------------------------
-
-const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
-
-function getGuestSessionToken(): string | null {
-  try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
-}
-
-function setGuestSessionToken(token: string): void {
-  try { localStorage.setItem(GUEST_SESSION_KEY, token); } catch { /* noop */ }
-}
-
-// ---------------------------------------------------------------------------
 // API functions
 // ---------------------------------------------------------------------------
-
-const TRANSIENT_RETRY_DELAY_MS = 1000;
-
-/**
- * Fetch with ONE retry for transient upstream failures (US-15 AC3). The
- * Shopify app proxy / Fly edge occasionally answers instead of our handler —
- * machine restart or cold start mid-request — as a 5xx with a non-JSON (often
- * empty) body, unlike our handler's JSON errors (Sentry JAVASCRIPT-REMIX-1M,
- * -22). Deterministic answers from our handler (JSON 5xx, 429) are never
- * retried.
- *
- * `retryable`: the send POST is retryable ONLY within an existing
- * conversation — on the stored surfaces the server's consecutive-duplicate
- * dedup (chat-dedup.server.ts) is gated on conversationId, so retrying a
- * thread's FIRST message could mint a ghost conversation + a second LLM
- * spend. On the local-first widget the server keeps no transcript, only a
- * masked question row, so a retry that lands after attempt 1 died
- * mid-pipeline costs one more LLM call and at most one more question row.
- */
-async function fetchWithTransientRetry(input: string, init?: RequestInit, retryable = true): Promise<Response> {
-  const first = await fetch(input, init);
-  if (!retryable || first.status < 500) return first;
-  const contentType = first.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) return first;
-  // Keep the transient-failure rate visible in Sentry even when the retry
-  // rescues the request (the machine-level cause is still an open data gap).
-  Sentry.captureMessage('Chat transient upstream 5xx, retrying once', {
-    level: 'info',
-    tags: { feature: 'chat' },
-    extra: { status: first.status, contentType: contentType || null },
-  });
-  await new Promise((resolve) => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
-  return fetch(input, init);
-}
-
-/** Query-string fragments shared by the GET endpoints: the guest session token
- *  (if any) and the local-first flag (forces the server's guest path). */
-function chatQueryParts(): string[] {
-  const parts: string[] = [];
-  const sessionToken = getGuestSessionToken();
-  if (sessionToken) parts.push(`sessionToken=${encodeURIComponent(sessionToken)}`);
-  if (LOCAL_FIRST) parts.push('localFirst=1');
-  return parts;
-}
-
-/** Body fields shared by the POST/DELETE endpoints — the JSON twin of
- *  chatQueryParts(). localFirst tells the server to use the client-supplied
- *  context even if the visitor happens to be a logged-in Shopify customer
- *  (local-first builds have no DB record to read). Brad still pays. */
-function chatBodyParts(sessionToken = getGuestSessionToken()): Record<string, unknown> {
-  return {
-    ...(sessionToken ? { sessionToken } : {}),
-    ...(LOCAL_FIRST ? { localFirst: true } : {}),
-  };
-}
 
 /**
  * Cloud chat-history store on local-first builds (Phase 6): conversations live
@@ -245,61 +177,54 @@ export async function listConversations(): Promise<ChatListResult | null> {
       isGuest: result.isGuest,
     };
   } catch (error) {
-    console.warn('Error listing conversations:', error);
-    Sentry.captureException(error);
+    console.warn('Chat list failed.'); // as a failed load: the error can quote titles (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind: 'fetch' } });
     return null;
   }
 }
 
-/**
- * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
- * so it is a new guest. Keep the session the server handed back.
- */
-function guestThreadGone(status: number, data: ChatReply | null): boolean {
-  if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
-  const sessionToken = tokenOf(data);
-  if (sessionToken) setGuestSessionToken(sessionToken);
-  return true;
-}
+/** Settles 'failed' when `signal` aborts; never, without one. */
+const untilAborted = (signal?: AbortSignal) => new Promise<'failed'>((resolve) => {
+  if (signal?.aborted) resolve('failed');
+  else signal?.addEventListener('abort', () => resolve('failed'), { once: true });
+});
 
-/** null: the server no longer recognizes this guest thread (US-15 AC6a). */
-export async function loadConversation(conversationId: string): Promise<ChatMessage[] | null> {
-  const store = await cloudHistory();
-  if (store) return store.getMessages(conversationId);
+/**
+ * A thread's turns. 'gone': the server no longer recognizes this thread, a guest's or a customer's (US-15 AC6a).
+ * 'failed': they could not be read (an error answer, a throw, or `signal` aborting), so the
+ * thread never shows as empty and no send goes out with an empty history (N2).
+ */
+export async function loadConversation(conversationId: string, signal?: AbortSignal): Promise<ChatMessage[] | 'gone' | 'failed'> {
+  let kind: 'store' | 'fetch' = 'store';
   try {
+    const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
+    if (store === 'failed') return 'failed';
+    if (store) return store.getMessages(conversationId);
+    kind = 'fetch';
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
-    const response = await fetchWithTransientRetry(
-      `${PROXY_PATH}/api/chat?${params}`,
-    );
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
+      const data = await parseJsonResponse<ChatReply>(response).catch(() => null);
+      if (guestThreadGone(response.status, data) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
         extra: { status: response.status, contentType: response.headers.get('content-type') },
       });
-      return [];
+      return 'failed';
     }
-    const result = await parseJsonResponse<{
-      success: boolean;
-      messages: ChatMessage[];
-    }>(response);
-    if (!result?.success) return [];
-    return result.messages;
+    const result = await parseJsonResponse<{ success: boolean; messages: ChatMessage[] }>(response);
+    return result?.success ? result.messages : 'failed';
   } catch (error) {
-    console.warn('Error loading conversation:', error);
-    Sentry.captureException(error);
-    return [];
+    if (signal?.aborted) return 'failed'; // the caller's timeout, not an error to report
+    console.warn('Chat load failed.'); // never the error: it or its cause can quote chat text (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat load failed'), { tags: { feature: 'chat', kind } });
+    return 'failed';
   }
 }
 
 /** Same window as the server's chat-dedup.server.ts. */
 const DEDUP_WINDOW_MS = 60_000;
-
-/** The server's proposed edits of a kind this build applies; any other is dropped, never applied as something else. */
-const EDIT_KINDS: readonly unknown[] = ['field', 'medication', 'profile'] satisfies ProposedEdit['kind'][];
-const knownEdits = (edits: unknown): ProposedEdit[] =>
-  Array.isArray(edits) ? edits.filter((e): e is ProposedEdit => EDIT_KINDS.includes(e?.kind)) : [];
 
 /**
  * `history` is the conversation so far, from the widget's own file. On
@@ -318,6 +243,10 @@ export async function sendMessage(
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
+  asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
+  // The reply is saved only under the erase marks taken as the question is
+  // asked, without the send waiting (US-11 AC2h).
+  opened: ReturnType<typeof askChatHistory> = LOCAL_FIRST ? askChatHistory() : Promise.resolve({ store: null }),
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
@@ -366,18 +295,14 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked, opened);
     }
 
-    if (response.status === 429) {
-      return {
-        result: null,
-        error: { error: CHAT_LIMIT_MESSAGE },
-      };
-    }
+    if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
 
     if (!response.ok || !data?.success) {
-      Sentry.captureMessage('Chat sendMessage failed', {
+      // A 409 is the server's busy answer (US-15 AC63), not a failure: shown, never reported.
+      if (response.status !== 409) Sentry.captureMessage('Chat sendMessage failed', {
         level: 'error',
         tags: { feature: 'chat' },
         extra: {
@@ -394,11 +319,13 @@ export async function sendMessage(
     }
 
     // Local-first: mirror the exchange into the user's cloud history file,
-    // keyed by the server's canonical conversation id. Fire-and-forget —
-    // history must never block or fail the chat itself.
-    void cloudHistory()
-      .then((store) =>
-        store?.recordExchange({
+    // keyed by the server's canonical conversation id, unless an erase began
+    // since the question (US-11 AC2h). Fire-and-forget — history must never
+    // block or fail the chat itself.
+    void opened
+      .then(({ store, askedMarks }) =>
+        chatAskedUnder() !== asked ? undefined : store?.recordExchange({
+          askedMarks,
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,
@@ -412,6 +339,15 @@ export async function sendMessage(
         Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
       });
 
+    // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind is
+    // left out, and an entry of a known kind that is not its shape refuses every edit of its part.
+    // A missing or non-list `proposedEdits` is no edits, as the iPhone takes it.
+    const read = Array.isArray(data.proposedEdits) ? readProposedEdits(data.proposedEdits) : { edits: [], invalid: [] };
+    // The invalid kinds only: never a value or the reply's words (CLAUDE.md, health values never in telemetry).
+    if (read.invalid.length > 0) {
+      Sentry.captureMessage('Chat edits unreadable', { level: 'warning', tags: { feature: 'chat-edits', invalid: [...new Set(read.invalid)].join(',') } });
+    }
+    const { edits, refusals } = refuseUnreadableEdits(read);
     return {
       result: {
         conversationId: data.conversationId,
@@ -420,18 +356,17 @@ export async function sendMessage(
         sessionToken: newToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
-        ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
+        ...(edits.length > 0 ? { proposedEdits: edits } : {}),
+        ...(refusals.length > 0 ? { editRefusals: refusals } : {}),
         ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,
     };
   } catch (error) {
-    console.warn('Error sending message:', error);
-    Sentry.captureException(error);
-    return {
-      result: null,
-      error: { error: 'Network error' },
-    };
+    // Fixed words only: the error can quote the chat (US-15 AC47).
+    console.warn('Chat send failed');
+    Sentry.captureException(recordFailure(error, error instanceof ChatStreamError ? error.failure : 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
+    return { result: null, error: { error: 'Network error' } };
   }
 }
 
@@ -471,8 +406,8 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
     const data = await parseJsonResponse<{ success: boolean }>(response);
     return data?.success ?? false;
   } catch (error) {
-    console.warn('Error deleting conversation:', error);
-    Sentry.captureException(error);
+    console.warn('Chat delete failed');
+    Sentry.captureException(recordFailure(error, 'Chat delete failed'), { tags: { feature: 'chat', kind: 'delete' } });
     return false;
   }
 }

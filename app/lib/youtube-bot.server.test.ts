@@ -11,9 +11,9 @@ import {
   shouldUnclaim,
   persistYouTubeTurn,
   filterThread,
-  isNotReplyableError,
   type YouTubeReply,
 } from './youtube-bot.server';
+import { classifyPost } from './youtube-bot-post-result';
 import { ROUTER_VERSION } from './chat-router.server';
 import { CHAT_MODEL, FALLBACK_RESPONSE } from './chat.server';
 
@@ -422,9 +422,10 @@ describe('US-53: a comment YouTube will not let us reply to is skipped, not an e
 
   it('AC2: only the canReply 400 counts as not replyable', () => {
     const body = '{"error":{"code":400,"message":"Not all comments can be replied to. Check the comment thread\'s canReply field."}}';
-    expect(isNotReplyableError(new Error(`YouTube post failed: 400 ${body}`))).toBe(true);
-    expect(isNotReplyableError(new Error('YouTube post failed: 403 quota'))).toBe(false);
-    expect(isNotReplyableError(new Error('YouTube post failed: 400 other'))).toBe(false);
+    const notReplyable = { kind: 'refused', status: 400, reason: 'notReplyable' };
+    expect(classifyPost({ status: 400, body })).toEqual(notReplyable);
+    expect(classifyPost({ status: 403, body: 'quota' })).not.toEqual(notReplyable);
+    expect(classifyPost({ status: 400, body: 'other' })).not.toEqual(notReplyable);
   });
 });
 

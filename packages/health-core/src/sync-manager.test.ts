@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -314,6 +314,144 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     expect(told.hint).toContain('Reconnect');
     expect(told.hint).toMatch(/may.*landed/);
     expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
+  });
+
+  // US-31 AC8a: a landed write's warning survives every failure after it. The
+  // hint leads with what landed, then says what failed and what to do, and
+  // never claims the save succeeded.
+  const warning = 'health-roadmap.json was written, but cleanup did not finish: could not remove the lock file.';
+  const earlier = `Earlier in this save: ${warning}`;
+  /** No success claim after an error: "was saved" never sits beside "may or may not". */
+  function expectNoSuccessClaim(hint: string) {
+    expect(hint).not.toMatch(/was saved/);
+    expect(hint).not.toMatch(/may or may not/);
+  }
+
+  it('keeps the write’s warning, first, when verify-after-write then fails (US-31 AC8a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    let reads = 0;
+    adapter.read = async (...args) => {
+      if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint');
+      return read(...args);
+    };
+    adapter.write = async (...args) => ({ ...(await write(...args)), warning });
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(told.message).toBe('synthetic read failure');
+    expect(told.hint).toBe(`${earlier} Then a later step failed, so check what landed: read the record again before trying it a second time.`);
+    expectNoSuccessClaim(told.hint);
+  });
+
+  it('keeps the write’s warning, first, when a conflict storm follows the landed write (US-31 AC8a)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    let reads = 0;
+    let writes = 0;
+    // The verify read after the landed write sees a lost update, so save() retries into the storm.
+    adapter.read = async (...args) => {
+      if (++reads === 2) throw new LostUpdateError('synthetic lost update');
+      return read(...args);
+    };
+    adapter.write = async (...args) => {
+      if (++writes === 1) return { ...(await write(...args)), warning };
+      throw new ConflictError('synthetic conflict');
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    const told = describeStorageFailure(failure, 'Memory');
+    expect(told.message).toContain('conflict storm');
+    expect(told.hint).toBe(`${earlier} Then every later attempt met a sync conflict, so check what landed: read the record again before retrying.`);
+    expectNoSuccessClaim(told.hint);
+  });
+
+  it('keeps the write’s warning, first, when the provider then refuses access (401/403) (US-31 AC8a)', async () => {
+    for (const status of [401, 403]) {
+      const cloud = new MemoryCloud();
+      const adapter = new MemoryAdapter(cloud);
+      const read = adapter.read.bind(adapter);
+      const write = adapter.write.bind(adapter);
+      let reads = 0;
+      adapter.read = async (...args) => {
+        if (++reads === 2) throw new StorageError('synthetic token refused', undefined, undefined, status);
+        return read(...args);
+      };
+      adapter.write = async (...args) => ({ ...(await write(...args)), warning });
+      const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+      expect(failure).toMatchObject({ status });
+      const told = describeStorageFailure(failure, 'Memory');
+      expect(told.message).toBe('Memory refused this connection’s access after a change was sent');
+      expect(told.hint).toBe(`${earlier} Then the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.`);
+      expectNoSuccessClaim(told.hint);
+    }
+  });
+
+  it('words the real FileAdapter warning without a success claim when a failure follows it (US-31 AC8a)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sync-t1-'));
+    try {
+      const path = join(dir, ROADMAP_FILE_NAME);
+      writeFileSync(path, JSON.stringify(makeFile('writer')));
+      const adapter = new FileAdapter(path);
+      vi.spyOn(adapter as any, 'trim').mockImplementation(() => { throw new Error('EIO /private/folder'); });
+      const read = adapter.read.bind(adapter);
+      let reads = 0;
+      adapter.read = async (...args) => {
+        if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint');
+        return read(...args);
+      };
+      const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+      const { hint } = describeStorageFailure(failure, 'Memory');
+      expect(hint.startsWith(`Earlier in this save: ${ROADMAP_FILE_NAME} was written, but cleanup did not finish: could not prune old backups.`)).toBe(true);
+      expect(hint).not.toMatch(/EIO|\//);
+      expectNoSuccessClaim(hint);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * One save, two landed writes: the first verify sees a lost update, so save()
+   * writes again; the second verify then fails. `second` is the second write's warning.
+   */
+  async function twoLandedWrites(second: string | undefined) {
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    let reads = 0;
+    let writes = 0;
+    adapter.read = async (...args) => {
+      reads++;
+      if (reads === 2) throw new LostUpdateError('synthetic lost update');
+      if (reads === 4) throw new StorageError('synthetic read failure', 'synthetic hint');
+      return read(...args);
+    };
+    adapter.write = async (...args) => {
+      const landed = await write(...args);
+      const note = ++writes === 1 ? warning : second;
+      return { ...landed, ...(note ? { warning: note } : {}) };
+    };
+    const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
+    expect(writes).toBe(2);
+    return describeStorageFailure(failure, 'Memory');
+  }
+
+  it('drops an earlier attempt’s warning once a later write lands clean: its cleanup ran (US-31 AC8a)', async () => {
+    const told = await twoLandedWrites(undefined);
+    expect(told.hint.startsWith('Earlier in this save:')).toBe(false);
+    expect(told.hint).not.toContain('cleanup did not finish');
+    expect(told.hint).toBe('The change may or may not have landed. Read the record again before trying it a second time.');
+  });
+
+  it('carries the latest landed write’s warning, not an earlier one, when both warn (US-31 AC8a)', async () => {
+    const later = 'health-roadmap.json was written, but cleanup did not finish: could not prune old backups.';
+    const told = await twoLandedWrites(later);
+    expect(told.hint).toBe(`Earlier in this save: ${later} Then a later step failed, so check what landed: read the record again before trying it a second time.`);
+    expect(told.hint).not.toContain('could not remove the lock file');
+    expectNoSuccessClaim(told.hint);
   });
 
   it('still reports no writes for five ordinary pre-upload conflicts', async () => {

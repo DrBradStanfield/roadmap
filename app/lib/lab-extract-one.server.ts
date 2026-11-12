@@ -11,17 +11,25 @@ import { extractOrClassify, ExtractionStopError, reportExtractionStop } from './
 import type { DayFlags } from './lab-batches.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
+/** The app route's timeout answer, which its slow-import report reads (US-52 AC7c, AC7d). */
+export const TOO_SLOW = 'The server took too long to read this report. Please try again.';
+
 /**
  * One file's extraction and its answer, shared with the iPhone app's route
- * (US-52 AC7). `extra` adds the caller's own fields to a success.
+ * (US-52 AC7). `extra` adds the caller's own fields to a success. The app
+ * passes one 90 s budget with `oneDeadline`: the phone gives up after 120 s
+ * idle, so its call never retries a timed-out attempt (US-52 AC7c).
  */
-export async function extractOneFile(data: LabImportRequest, extra: () => object = () => ({})): Promise<Response> {
+export async function extractOneFile(
+  data: LabImportRequest, extra: () => object = () => ({}), opts: { timeoutMs?: number; oneDeadline?: true; onRetry?: () => void } = {},
+): Promise<Response> {
   const { pages, ownDates, undatedPrev, refusedRows } = data;
   try {
     // One deadline for the file's calls: a malformed answer's re-send gets what
     // is left. A timed-out HTTP attempt is still retried once in a fresh window
     // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
-    const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
+    // Not on the app's route (US-52 AC7c).
+    const result = await extractOrClassify(pages, { timeoutMs: 60_000, ...opts });
     return Response.json({ success: true, data: withRefusalsItReads(withDaysItReads(result, { ownDates, undatedPrev }), refusedRows), ...extra() });
   } catch (error) {
     // Declined or cut off: its own answer, so the widget does not say "try
@@ -35,7 +43,9 @@ export async function extractOneFile(data: LabImportRequest, extra: () => object
       tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },
       extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) },
     });
-    return Response.json({ success: false, error: 'Failed to process request' }, { status: 500 });
+    // The phone shows `error` verbatim, and offers Try again on a 5xx (US-52 AC7c).
+    const tooSlow = opts.oneDeadline && (error as Error)?.name === 'TimeoutError';
+    return Response.json({ success: false, error: tooSlow ? TOO_SLOW : 'Failed to process request' }, { status: 500 });
   }
 }
 

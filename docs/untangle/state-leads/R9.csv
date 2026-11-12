@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+R9,record read,No new A/B conversion after an erase in the tab,behaviour,decided: leave,Brad 2026-11-10 (US-01 AC7),1130,no

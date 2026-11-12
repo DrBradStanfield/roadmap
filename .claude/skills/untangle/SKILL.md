@@ -98,10 +98,11 @@ Examples in this repo:
 - `widget-src/src/lib/remote-replay.ts`: one named state
   (`loading | loading-held | idle | held`), each event a method;
   `remote-replay.test.ts` drives it through its states and events (US-34 AC4).
-- `widget-src/src/hooks/useErase.ts`: names its three states (shown, unshown,
-  erasing) in its header. It still holds `erasing` as a boolean beside the
-  `erasingNow` ref (the synchronous copy), so it is a named-but-not-yet-union
-  case, not the model to copy.
+- `widget-src/src/hooks/useErase.ts`: runs on the erase machine
+  (`widget-src/src/lib/erase-machine.ts`, fix 4): one `EraseState` union
+  (`loading | idle | erasing`, with the erase shown and heard), a pure
+  `transition` with a table test, and effects run through doors. The
+  `erasing` boolean and `erasingNow` ref are gone.
 
 None of these yet has a separate pure `transition` function. The first PR that
 writes one sets the pattern; keep it small.
@@ -144,7 +145,7 @@ numbers in the PR body. They are trend numbers from regexes, not verdicts.
 
 ## Decision log
 
-The log lives in `docs/untangle/`, the ledger every untangle PR updates
+The log lives in `docs/untangle/`, the ledger every untangle PR updates, one file per lead
 (its README says how). Write each fix above the
 problems it solves, so a reader sees why it exists. The shape (names made up):
 

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S11,iPhone state,Switching tabs cancels a document read with no message and no preview,lead,not started,"ios/HealthRoadmap/MyData/DocumentPage.swift:55-58,100,106-117 (onDisappear cancels the read). Tap again works. Verified. iPhone survey 2026-11-11 (main fcc4ed9b) S11",,no

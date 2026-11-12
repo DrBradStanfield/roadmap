@@ -31,12 +31,28 @@ protocol HealthStoreClient: AnyObject {
     /// Calls `onChange` whenever Health gets new data of these kinds, and new lab results
     /// where `supportsHealthRecords`, in the background too.
     func observe(_ kinds: [HealthKind], onChange: @escaping @MainActor () async -> Void)
+    /// An erase disconnected Apple Health (US-72 AC10): stops every observer query and background delivery.
+    func stopObserving()
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
-    /// Readings other apps and devices wrote stay: they are not ours to delete.
-    func deleteOwnSamples() async throws
+    /// Readings other apps and devices wrote stay: they are not ours to delete. Returns the kinds
+    /// asked: a kind whose write access is off is skipped and keeps its samples (US-72 AC16).
+    func deleteOwnSamples() async throws -> Set<HealthKind>
+    /// An erase (US-72 AC10): deletes the samples with these sync ids, the delete this phone
+    /// still owes (`HealthSyncMemory.owed`), and only where this app is their source: never a
+    /// query by source alone. A kind whose write access is off is not asked (edge 2).
+    func deleteSamples(syncIds: [String]) async throws -> HealthDeletion
     /// Sex and birth month and year for onboarding to preselect (US-54 AC3); `.none`
     /// when not allowed or not set. Read on demand, never stored by this call.
     func characteristics() -> HealthCharacteristics
+}
+
+/// What a delete by sync id did (lead H29): the ids whose samples went, and the kinds Health was
+/// asked about. An id absent from a kind asked about has no sample left of that kind.
+struct HealthDeletion: Equatable {
+    /// The kinds the app writes, so the kinds a delete by sync id can ask about.
+    static let kinds: Set<HealthKind> = [.weight, .waist, .bloodPressure]
+    let deleted: Set<String>
+    let asked: Set<HealthKind>
 }
 
 enum HealthStoreError: LocalizedError {

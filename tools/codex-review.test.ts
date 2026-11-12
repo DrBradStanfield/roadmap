@@ -9,6 +9,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { loadStories } from './stories.mjs';
 
 // The suite's own temp dir, inherited by every child through childEnv: other sessions' reviews share the system one (their
 // work dirs broke the "nothing kept" checks), and macOS's per-user TMPDIR (/var/folders/jb/7ypw…0000gn/T) holds a
@@ -543,7 +544,7 @@ describe('US-40 AC8 — the invocation policy says the same thing in all three p
   it('CLAUDE.md, the skill and the story agree on the required classes, the skips, and the CI exception', () => {
     const claude = read('CLAUDE.md');
     const skill = read('.claude/skills/codex-review/SKILL.md');
-    const story = read('docs/user-stories.md').split('### US-40')[1].split('### US-4')[0];
+    const story = loadStories().replace(/\s+/g, ' ').split('### US-40')[1].split('### US-4')[0];
     for (const text of [claude, skill, story]) {
       for (const required of ['clinical', 'merge', 'security', 'agent-contract|agent-facing contract']) {
         expect(new RegExp(required, 'i').test(text)).toBe(true);
@@ -2401,7 +2402,7 @@ describe('Codex finding on c6790d5c — the default model', () => {
 describe('US-40 AC7 — the review-round cap says the same thing in the contract, the skill and the story', () => {
   const read = (p: string) => readFileSync(resolve(__dirname, '..', p), 'utf8').replace(/\s+/g, ' ');
   it('one full review, one fix-scoped re-check, then Brad (Brad, 2026-10-19)', () => {
-    const story = read('docs/user-stories.md').split('### US-40')[1].split('### US-4')[0];
+    const story = loadStories().replace(/\s+/g, ' ').split('### US-40')[1].split('### US-4')[0];
     for (const text of [read('docs/review-format.md'), read('.claude/skills/codex-review/SKILL.md'), story]) {
       expect(/re-?(check|run)[^.]*(ONCE|at most one|one re-check)|at most ONE re-check|one re-check/i.test(text)).toBe(true);
       expect(/fix diff/i.test(text)).toBe(true);

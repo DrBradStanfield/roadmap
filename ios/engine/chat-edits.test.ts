@@ -448,7 +448,7 @@ describe('US-67 AC4: unreadable rows in the pair and the escalation, and a medic
   it('Codex R2: a medication proposal that cannot be read shows a refusal, and its Edit refuses with the same words', () => {
     const broken = [{ kind: 'medication', medicationKey: 'statin', doseValue: 20, doseUnit: 'mg' }];
     const shown = preview(metric(), broken);
-    expect(shown.medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so nothing was saved.' });
+    expect(shown.medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so it was not saved.' });
     expect(apply(metric(), 'medications', broken)).toMatchObject({ ok: false, message: shown.medications!.refusal });
     // A list that is not one is said once, by the review part.
     expect(preview(metric(), 'garbage').medications).toBeNull();

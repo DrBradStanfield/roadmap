@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+D1,onboarding,"""Once per record"" was coded five ways; the landing was lost after an erase in the tab",bug,done,hooks/useOnboarding.ts keeps one record object keyed on the shown erase,1114;1115,no

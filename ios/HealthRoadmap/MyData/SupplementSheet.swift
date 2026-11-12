@@ -13,10 +13,9 @@ struct SupplementSheet: View {
     @State private var dose = ""
     @FocusState private var editingDose: Bool
     @State private var unit = ""
-    @State private var message: String?
     @State private var confirmingStop = false
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): its words show under the fields; Save, Cancel and swipe-down wait while busy.
+    @State private var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
 
     var body: some View {
         sheet.pinsRecord()
@@ -41,10 +40,10 @@ struct SupplementSheet: View {
                         .labelsHidden()
                     }
                 } footer: {
-                    if let message { Text(message).foregroundStyle(.red) } else { Text(row.dayLine(stopped: false)) }
+                    if let message = state.message { Text(message).foregroundStyle(.red) } else { Text(row.dayLine(stopped: false)) }
                 }
                 Section {
-                    Button("Stop taking \(row.name)") { confirmingStop = true }.disabled(saving)
+                    Button("Stop taking \(row.name)") { confirmingStop = true }.disabled(state.busy)
                 } footer: {
                     Text("It stays in your record as stopped, and you can take it again.")
                 }
@@ -52,8 +51,8 @@ struct SupplementSheet: View {
             .navigationTitle(row.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                ToolbarItem(placement: .confirmationAction) { Button("Save", action: saveDose).disabled(!doseReadable || saving) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) }
+                ToolbarItem(placement: .confirmationAction) { Button("Save", action: saveDose).disabled(!doseReadable || state.busy) }
             }
             .confirmationDialog("Stop taking \(row.name)?", isPresented: $confirmingStop, titleVisibility: .visible) {
                 Button("Stop taking") {
@@ -65,7 +64,7 @@ struct SupplementSheet: View {
                 unit = row.unit ?? ""
             }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
     }
 
     /// The listed units, plus the row's own if the list lacks it (a featured default such as "serving").
@@ -83,7 +82,7 @@ struct SupplementSheet: View {
     }
 
     private func submit(_ edit: FormEdit) {
-        SheetSave.run($saving, { await save(edit) }) { SheetSave.close($0, dismiss, $message) }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(edit) }
     }
 
     /// "5" for a whole dose, "2.5" otherwise. `Int(_:)` traps past its range, and the
@@ -100,9 +99,8 @@ struct AddSupplementSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
-    @State private var message: String?
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): its words show under the fields; Save, Cancel and swipe-down wait while busy.
+    @State private var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
 
     var body: some View {
         sheet.pinsRecord()
@@ -111,14 +109,14 @@ struct AddSupplementSheet: View {
     private var sheet: some View {
         NavigationStack {
             List {
-                if let message {
+                if let message = state.message {
                     Text(message).foregroundStyle(.red)
                 }
                 if canAddTyped {
                     Button { submit(.customSupplement(name: typed)) } label: {
                         Label("Add \u{201C}\(typed)\u{201D}", systemImage: "plus.circle.fill")
                     }
-                    .disabled(saving)
+                    .disabled(state.busy)
                 }
                 ForEach(matches) { choice in
                     Button {
@@ -133,15 +131,15 @@ struct AddSupplementSheet: View {
                         }
                     }
                     .tint(.primary)
-                    .disabled(saving)
+                    .disabled(state.busy)
                 }
             }
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search or type a name")
             .navigationTitle("Add a supplement")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) } }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
     }
 
     private var typed: String { String(search.trimmingCharacters(in: .whitespaces).prefix(100)) }
@@ -156,6 +154,6 @@ struct AddSupplementSheet: View {
     }
 
     private func submit(_ edit: FormEdit) {
-        SheetSave.run($saving, { await save(edit) }) { SheetSave.close($0, dismiss, $message) }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(edit) }
     }
 }

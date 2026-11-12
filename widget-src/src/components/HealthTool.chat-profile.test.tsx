@@ -10,14 +10,17 @@
  * own UI are stubbed. Assertions read the record file through its adapter.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
 import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -44,8 +47,8 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: (edits: ProposedEdit[]) => void; guestInputs: () => unknown }) => {
-    chat.proposeEdit = onProposeEdit;
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: ChatEditTarget; guestInputs: () => unknown }) => {
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     chat.context = guestInputs;
     return null;
   },
@@ -75,9 +78,14 @@ const banner = () => document.body.querySelector('.chat-profile-proposal[role="s
 const planShown = (view: RenderResult) =>
   !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.quick-stats .stat-card, .mh-sections .suggestion-card');
 
+/** This tab's store; a cloud page runs with its backend remembered, as a real one does. */
+async function openStore(adapter: StorageAdapter) {
+  if (adapter.id !== 'local') localStorage.setItem(BACKEND_KEY, adapter.id);
+  await initRoadmapStore(adapter);
+}
 /** A guest with a saved weight and no sex or height (unless given): no plan yet. */
 async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}, adapter: StorageAdapter = new LocalStorageAdapter()): Promise<RenderResult> {
-  await initRoadmapStore(adapter);
+  await openStore(adapter);
   await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, ...saved }, {});
   await addMeasurement('weight', 82, '2026-09-01');
   const view = render(<HealthTool />);
@@ -353,7 +361,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     return saved ? guestWithoutProfile(saved, new MemoryAdapter(cloud)) : emptyGuest(new MemoryAdapter(cloud));
   }
   async function emptyGuest(adapter: StorageAdapter = new LocalStorageAdapter()) {
-    await initRoadmapStore(adapter);
+    await openStore(adapter);
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await wait(600);
@@ -528,7 +536,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   /** A cloud guest on a statin and an omega-3, with the page shown. */
   async function cloudGuestOnLists(cloud: MemoryCloud) {
     vi.spyOn(RoadmapStore, 'create');
-    await initRoadmapStore(new MemoryAdapter(cloud));
+    await openStore(new MemoryAdapter(cloud));
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'rosuvastatin', 10, 'mg');
@@ -618,7 +626,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
 
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
     const cloud = new MemoryCloud();
-    await initRoadmapStore(new MemoryAdapter(cloud));
+    await openStore(new MemoryAdapter(cloud));
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'atorvastatin', 20, 'mg');
@@ -688,7 +696,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     }
   }
   async function cloudGuestOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>) {
-    await initRoadmapStore(adapter);
+    await openStore(adapter);
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'rosuvastatin', 10, 'mg');
@@ -770,8 +778,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     expect(stored.profile).not.toHaveProperty('heightCm');
     // Nor in the plan's inputs or the chat's copy. (The field's own typed
     // text can stay on screen until it is edited; it reaches nothing.)
-    expect(JSON.stringify(chat.context!())).not.toContain('191');
-    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('191');
+    expect(numberPaths(chat.context!(), 191)).toEqual([]);
+    expect(numberPaths(localStorage.getItem(MIRROR_KEY) ?? '', 191)).toEqual([]);
   });
 
   it('after an erase whose write failed, the screen shows the erased copy the store holds, and the next chat reply shows its banners', async () => {
@@ -852,7 +860,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     adapter.open();
     await wait(600);
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
-    expect(JSON.stringify(chat.context!())).not.toContain('3.2');
+    expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
   });
 
   it('a medication save scheduled before this tab\'s erase does not land in the erased record', async () => {
@@ -897,7 +905,7 @@ describe('US-11 AC3b / AC8: an erase whose device cleanup fails still clears the
     fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledOnce());
     window.removeEventListener(MIRROR_CHANGED_EVENT, embedNotified);
-    expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('180');
+    expect(numberPaths(localStorage.getItem(MIRROR_KEY) ?? '', 180)).toEqual([]);
     expect(embedNotified).toHaveBeenCalled();
     expect(alert.mock.calls[0][0]).toContain('deleted');
     expect(alert.mock.calls[0][0]).toContain('Could not complete on-device history cleanup.');

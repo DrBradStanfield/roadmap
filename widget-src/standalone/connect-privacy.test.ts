@@ -161,10 +161,11 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
     expect(tags).toEqual({ area: 'cloud-connect', backend: 'google-drive', errorClass: 'other', httpStatus: 'none' });
   });
 
-  it('app.tsx reports both OAuth returns through reportConnectFailure, never raw', () => {
-    const source = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
+  it('the OAuth return reports both providers through reportConnectFailure, never raw', () => {
+    const source = readFileSync(new URL('./resolve-backend.ts', import.meta.url), 'utf8');
+    const app = readFileSync(new URL('./app.tsx', import.meta.url), 'utf8');
     const boot = readFileSync(new URL('./boot.ts', import.meta.url), 'utf8'); // main()'s first part
-    for (const text of [source, boot]) {
+    for (const text of [source, app, boot]) {
       expect(text).not.toMatch(/Sentry\.captureException/);
       expect(text).not.toMatch(/console\.\w+\([^)]*\berror\b/);
     }

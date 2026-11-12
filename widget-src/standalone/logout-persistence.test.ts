@@ -276,7 +276,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
       vi.stubGlobal('localStorage', makeStorage('health_roadmap_local_erase_generation'));
       localStorage.setItem(UNRELATED_KEY, 'keep');
       for (const [key, value] of Object.entries(seeded)) localStorage.setItem(key, value);
-      connect.rememberBackend(backend);
+      localStorage.setItem(connect.BACKEND_KEY, backend);
       const { Sentry } = await import('../src/lib/sentry');
       await connect.logOff(backend);
       for (const key of Object.keys(seeded)) expect(localStorage.getItem(key)).toBeNull();
@@ -367,7 +367,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
 
     await connect.logOff('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
-    expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual([]);
+    expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual(['health_roadmap_log_off_id']); // the id stays; no signal does
     // Its failed cloud save does not mirror the record back on-device.
     store.addMeasurement('weight', 81, '2026-01-01');
     cloud.fail = true;
@@ -396,8 +396,54 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     expectDeviceWriteRefused(other);
   });
 
-  it('a local-mode tab keeps saving after another tab logs off (its device copy is its only store)', async () => {
+  /** A tab for the cloud this browser chose ('memory'), whose first read failed: it runs on its device copy. */
+  async function fallbackTab() {
+    localStorage.setItem('health_roadmap_backend', 'memory');
+    const other = await otherTab();
+    const otherConnect = await import('./connect');
+    const mirror = await import('../src/lib/storage');
+    // That tab's own StorageError: a class from another module graph is not one to its catch.
+    const { StorageError } = await import('@roadmap/health-core/adapter');
+    const outage = new StorageError('synthetic outage', undefined, undefined, 503);
+    let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
+    await otherConnect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
+      store = await other.storage.RoadmapStore.create(adapter);
+    });
+    localStorage.removeItem(PENDING_KEY); // the fallback's own marker, from before the log-off
+    return { ...other, store, mirror };
+  }
+  function expectFallbackWroteNothing(tab: Awaited<ReturnType<typeof fallbackTab>>) {
+    tab.storage.markSyncPending();
+    tab.mirror.patchMirror({ medications: [] });
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+    expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(localStorage.getItem('health_roadmap_data')).toBeNull();
+  }
+
+  it('US-09 AC2c: a fallback tab loaded before another tab\'s log-off writes no device record and no pending marker after it', async () => {
     storageEventsReachOtherTabs();
+    const tab = await fallbackTab();
+
+    await connect.logOff('local');
+    expect(tab.mirror.healthWritesAllowed()).toBe(false);
+    tab.store.addMeasurement('weight', 81, '2026-01-01');
+    await tab.store.flush().catch(() => {});
+    expectFallbackWroteNothing(tab);
+  });
+
+  it('US-09 AC2c: the same when the log-off signal never arrives (a full localStorage): the changed id refuses it', async () => {
+    storageEventsReachOtherTabs((key) => key === SIGNAL_KEY);
+    const tab = await fallbackTab();
+
+    await connect.logOff('local');
+    tab.store.addMeasurement('weight', 81, '2026-01-01');
+    await tab.store.flush().catch(() => {});
+    expectFallbackWroteNothing(tab);
+  });
+
+  it('US-09 AC2c: a guest tab (no cloud chosen) keeps saving after another tab logs off (its device copy is its only store)', async () => {
+    storageEventsReachOtherTabs();
+    expect(localStorage.getItem('health_roadmap_backend')).toBeNull(); // a guest
     const other = await otherTab();
     const store = await other.storage.RoadmapStore.create(new other.local.LocalStorageAdapter());
 

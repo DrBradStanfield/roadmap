@@ -1,0 +1,186 @@
+#!/bin/sh
+# A machine-wide queue for heavy work on this Mac (US-71 AC9, Brad 2026-11-12): sessions each polled the load
+# and started Codex reviews or test runs at the same moment (seven Codex runs at once; load 7-16 for hours).
+#   tools/mac-slot.sh codex -- node tools/codex-review.mjs ...   at most 2 at once
+#   tools/mac-slot.sh tests -- npx vitest run ...                 at most 3 at once
+#   tools/mac-slot.sh status                                      holders and waiters per kind, and the load
+# A kind has N slots, files <kind>.1 .. <kind>.N in ~/Library/Caches/health-roadmap-slots (MAC_SLOT_HOME), one
+# directory for every worktree, as sim-run.sh keeps its lock. A slot is the kernel's lock: lockf on fd 9 opened on
+# that file, which the command inherits through exec, so the slot is held for the command's lifetime (and its
+# children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
+# A waiter never blocks inside lockf (macOS lockf spins a core while it blocks): it tries every slot with an
+# instant lockf every 0.2 s. Waiters are served in arrival order, and a newcomer defers to any live waiter.
+# Every caller queues before its first try: it locks a marker on fd 7 (an instant lockf, then a rename to
+# waiting.<kind>.<ms>.<pid>, which keeps the lock), so a marker is live exactly while its waiter's lock holds.
+# The kernel drops that lock however the waiter ends, even by SIGKILL or a reboot, and a marker anyone can lock
+# is removed; the pid in the name is for order and for humans. Known limit: a stopped (SIGSTOP) waiter still
+# holds its lock, so it holds up the queue for its kind until it is continued or killed.
+# With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
+# MAC_SLOT_POLL_SECONDS (30). A run never starts over the cap: if the load is still that high after
+# MAC_SLOT_LOAD_WAIT_MIN (10; MAC_SLOT_LOAD_WAIT_SECONDS for the tests) it refuses with one line and exit 75
+# (EX_TEMPFAIL, as sim-run.sh gives up), never runs the command, and frees the slot by exiting. A load is a
+# well-formed number (digits, optionally a dot and digits), read with LC_ALL=C so a decimal-comma locale cannot
+# turn it into "6,44"; anything else is unreadable. An unreadable first
+# load does not wait; an unreadable load after a high one keeps waiting. TERM or INT while it waits, for a slot
+# or for the load, exits 143 or 130 at once. Then it execs the command unchanged, so the exit code is the
+# command's. Waiting for a slot has no limit: holders end and the kernel frees their slot. Exit 64: usage.
+# MAC_SLOT_CODEX_MAX, MAC_SLOT_TESTS_MAX and MAC_SLOT_LOAD_CMD (prints the load) are for the test suite.
+# Off a shared Mac (not macOS, no lockf, or CI set and not false/0) it runs the command directly: no queue.
+# Tests: tools/mac-slot.test.ts (macOS only: lockf).
+set -u
+USAGE="usage: tools/mac-slot.sh codex|tests -- <command...> | status"
+die() { echo "mac-slot: $1" >&2; exit "${2:-1}"; }
+
+kind=${1:-}
+if [ "$kind" != status ]; then
+  case "$kind" in codex|tests) ;; *) die "$USAGE" 64 ;; esac
+  shift
+  [ "${1:-}" = -- ] || die "$USAGE" 64
+  shift
+  [ $# -gt 0 ] || die "$USAGE" 64
+fi
+
+shared() {
+  [ "$(uname)" = Darwin ] && command -v lockf >/dev/null 2>&1 || return 1
+  case "${CI:-}" in ''|false|0) return 0 ;; esac
+  return 1
+}
+if ! shared; then
+  [ "$kind" = status ] && { echo "no queue here: not a shared Mac"; exit 0; }
+  exec "$@"
+fi
+
+DIR=${MAC_SLOT_HOME:-$HOME/Library/Caches/health-roadmap-slots}
+mkdir -p "$DIR" || die "cannot make $DIR"
+POLL=${MAC_SLOT_POLL_SECONDS:-30}
+case "$POLL" in ''|*[!0-9]*|0) POLL=30 ;; esac
+MAX_LOAD=${MAC_SLOT_MAX_LOAD:-8}
+LOAD_WAIT=${MAC_SLOT_LOAD_WAIT_SECONDS:-$(( ${MAC_SLOT_LOAD_WAIT_MIN:-10} * 60 ))}
+
+slots() {
+  case "$1" in codex) n=${MAC_SLOT_CODEX_MAX:-2} ;; *) n=${MAC_SLOT_TESTS_MAX:-3} ;; esac
+  case "$n" in ''|*[!0-9]*|0) [ "$1" = codex ] && n=2 || n=3 ;; esac
+  echo "$n"
+}
+load() {
+  if [ -n "${MAC_SLOT_LOAD_CMD:-}" ]; then sh -c "$MAC_SLOT_LOAD_CMD" 2>/dev/null
+  else LC_ALL=C sysctl -n vm.loadavg 2>/dev/null | awk '{ print $2 }'; fi
+}
+# True while some process holds a lock on file $1, a slot or a marker (a probe on its own fd 8, let go at once).
+held() { ! ( exec 8>>"$1" && lockf -s -t 0 8 ) 2>/dev/null; }
+holders() { # kind max: one "pid N (slot i): command" line per held slot
+  i=1
+  while [ "$i" -le "$2" ]; do
+    held "$DIR/$1.$i" && echo "pid $(cut -d' ' -f1 "$DIR/$1.$i.holder" 2>/dev/null) (slot $i): $(cut -d' ' -f2- "$DIR/$1.$i.holder" 2>/dev/null)"
+    i=$((i + 1))
+  done
+}
+
+if [ "$kind" = status ]; then
+  for k in codex tests; do
+    n=$(slots "$k")
+    h=$(holders "$k" "$n")
+    w=""
+    for f in "$DIR"/waiting."$k".*; do
+      [ -f "$f" ] || continue
+      if held "$f"; then w="$w  waiting: pid ${f##*.}: $(cat "$f")
+"; else rm -f "$f"; fi
+    done
+    echo "$k: $(printf '%s' "$h" | grep -c .)/$n held, $(printf '%s' "$w" | grep -c .) waiting"
+    [ -n "$h" ] && printf '%s\n' "$h" | sed 's/^/  /'
+    printf '%s' "$w"
+  done
+  echo "1-minute load: $(load)"
+  exit 0
+fi
+
+MAX=$(slots "$kind")
+CMDLINE=$(printf '%s ' "$@" | tr '\n' ' ' | cut -c1-200)
+# Takes slot $1 on fd 9 with an instant lockf; on failure fd 9 is closed again. It never waits inside lockf:
+# macOS lockf in its fd form spins a full core while it blocks. The lock stays with the shell's fd 9.
+take() {
+  exec 9>>"$DIR/$kind.$1"
+  lockf -s -t 0 9 && { SLOT=$1; return 0; }
+  exec 9>&-; return 1
+}
+# Tries every slot once. `status` can only probe a slot by locking it for an instant (lockf has no test-only
+# mode), so with $1 set a slot that refuses is tried once more after 0.2 s: a probe must not send a newcomer past
+# a free slot. A waiter's own 0.2 s retry covers that.
+scan() {
+  i=1
+  while [ "$i" -le "$MAX" ]; do
+    take "$i" && return 0
+    [ -n "${1:-}" ] && sleep 0.2 && take "$i" && return 0
+    i=$((i + 1))
+  done
+  return 1
+}
+# True while a live waiter for this kind queued before us. Markers are waiting.<kind>.<ms>.<pid>, so the glob
+# lists them in arrival order (two in the same millisecond by pid, as text), and we stop at our own. A marker held
+# by no lock has no live waiter (it died, even by SIGKILL, or the Mac rebooted), so it is removed.
+ahead() {
+  for f in "$DIR"/waiting."$kind".*; do
+    [ -f "$f" ] || continue
+    [ "$f" = "$MARK" ] && return 1
+    held "$f" && return 0
+    rm -f "$f"
+  done
+  return 1
+}
+
+SLOT="" lk="" MARK="" Q="$DIR/queue.$kind.$$"
+trap 'rm -f "$MARK" "$Q"' EXIT
+trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 130' INT
+trap '[ -n "$lk" ] && kill "$lk" 2>/dev/null; exit 143' TERM
+# The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked, and before the first scan,
+# so arrival order is start order.
+exec 7>"$Q"
+lockf -s -t 0 7
+echo "$CMDLINE" >&7
+MARK="$DIR/waiting.$kind.$(perl -MTime::HiRes=time -e 'printf "%d", time * 1000').$$"
+mv "$Q" "$MARK"
+if ahead || ! scan retry; then
+  h=$(holders "$kind" "$MAX")
+  echo "mac-slot: waiting for a $kind slot ($(printf '%s' "$h" | grep -c .)/$MAX held): $(printf '%s' "$h" | sed 's/ (slot [0-9]*)//' | paste -sd ';' - | sed 's/;/; /g')" >&2
+  # Waiters are served in arrival order: only the first live waiter tries the slots, all of them every 0.2 s, so
+  # it takes a freed slot within about 0.2 s, and a newcomer queues behind it. The 0.2 s sleep runs in the
+  # background under `wait`, with fds 7 and 9 closed, so TERM and INT end a slot wait at once.
+  until ! ahead && scan; do
+    sleep 0.2 7>&- 9>&- & lk=$!
+    wait "$lk"; lk=""
+  done
+fi
+rm -f "$MARK"
+exec 7>&-
+trap - EXIT INT TERM
+echo "$$ $CMDLINE" > "$DIR/$kind.$SLOT.holder"
+
+# Helpers here run with fd 9 closed (9>&-), so a waiter killed mid-sleep frees its slot at once; the sleep runs in
+# the background under `wait`, so TERM and INT end the wait at once too. Only the command keeps fd 9: a daemon it
+# leaves behind keeps the slot until that daemon exits (by design: it is still load).
+nap_pid=""
+trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 143' TERM
+trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 130' INT
+start=$(date +%s) said=0 l=""
+while :; do
+  # Only a well-formed number is a load. Only the first read may fail open; after a high reading, an unreadable
+  # one keeps the last and waits on.
+  r=$(load 9>&-)
+  case "$r" in
+    ''|*[!0-9.]*|*.*.*|.*|*.) [ "$said" = 1 ] || { echo "mac-slot: could not read the load; not waiting" >&2; break; } ;;
+    *) l=$r; awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break ;;
+  esac
+  [ "$said" = 1 ] || echo "mac-slot: waiting: 1-minute load $l is $MAX_LOAD or more; holding $kind slot $SLOT/$MAX, re-checking every ${POLL}s" >&2
+  said=1
+  left=$(( LOAD_WAIT - ($(date +%s) - start) ))
+  if [ "$left" -le 0 ]; then
+    w=${LOAD_WAIT}s; [ "$LOAD_WAIT" -eq 0 ] || [ $(( LOAD_WAIT % 60 )) -ne 0 ] || w=$(( LOAD_WAIT / 60 ))m
+    die "refused: the 1-minute load $l is still $MAX_LOAD or more after $w; not starting ${CMDLINE% }. Try again when the Mac is quieter" 75
+  fi
+  [ "$left" -lt "$POLL" ] || left=$POLL
+  sleep "$left" 9>&- & nap_pid=$!
+  wait "$nap_pid"; nap_pid=""
+done
+trap - TERM INT
+echo "mac-slot: starting $kind slot $SLOT/$MAX (load ${l:-?}): $CMDLINE" >&2
+exec "$@"

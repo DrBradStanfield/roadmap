@@ -1,6 +1,6 @@
 import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { comparatorOf } from '@roadmap/health-core/lab-limits';
@@ -9,7 +9,7 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, MAX_FILE_SIZE, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
@@ -31,6 +31,7 @@ export type { UploadPhase } from '../lib/upload-flow-state';
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
+  busy: 'Server busy. Please try again later.',
   timeout: 'Processing took too long. Try uploading fewer files at once.',
   server_restart: 'The server restarted during processing. Please try again.',
   no_files: 'No readable files found. Please check your files and try again.',
@@ -45,7 +46,7 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   network: 'Could not reach Anthropic. Check your connection and try again.',
 };
 
-export const MAX_FILES = IMPORT_LIMITS.websiteFiles; // also the server's per-IP daily limit (US-12 AC17)
+export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 /** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
@@ -149,12 +150,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     /** The run failed as a whole: each file without a verdict yet gets this one.
      *  Verdicts are matched one for one, so two files on one path count twice.
      *  The pick's own notices name files never read, so they settle none. */
-    const failUnread = (reason: 'serverError' | 'limitError') => {
+    const failUnread = (reason: 'serverError' | 'limitError', text?: string) => {
       const settled = runNotices.slice(pickNotices.length).filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
       for (const name of names) {
         const i = settled.indexOf(name);
         if (i >= 0) settled.splice(i, 1);
-        else runNotices.push({ name, reason });
+        else runNotices.push({ name, reason, text });
       }
     };
     // Counts the run, then hands its notices to the transition.
@@ -251,7 +252,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           tags: { feature: 'upload', uploadErrorCode: code },
         });
         trackProductEvent('upload_extract_failed');
-        failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
+        // Busy is a server error, never the daily limit (US-12 AC9/AC10).
+        if (code === 'busy') failUnread('serverError', BUSY_NOTICE_TEXT);
+        else failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
         finish([]);
         dispatch({
           type: 'readFailed', run, notices: runNotices,
@@ -272,10 +275,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     // quota/draft flushing is still pending. Never start a read the state would ignore.
     if (!selectedFiles || (phase !== 'picking' && phase !== 'readFailed') || abortRef.current || savingRef.current) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
-    const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
+    // The kind by name: the upload bundle that knows a ZIP by its type is not loaded yet.
+    const tooLarge = (f: File) => fileVerdict({ name: f.name, bytes: f.size, platform: 'web' }) === 'tooLarge';
+    const valid = fileArray.filter(f => !tooLarge(f));
     const leftOut = selectedFiles.length - fileArray.length;
     const notices: FileNotice[] = [
-      ...fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
+      ...fileArray.filter(tooLarge).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
       ...(leftOut > 0 ? [leftOutNotice(leftOut)] : []),
     ];
     const counts: RunCounts = { picked: noticedFiles(notices) + valid.length, docx: fileArray.filter(isDocx).length };

@@ -6,15 +6,15 @@
  * panel scrolls into view, giving the health widget priority on page load.
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
+import { ChatLoadLine } from './ChatLoadLine';
 import { ChatThreadList } from './ChatThreadList';
 import { MUTED_CHAT } from './chat-muted';
 import { ColumnHeader } from './ColumnHeader';
@@ -24,7 +24,7 @@ interface ChatEmbedProps {
   isLoggedIn: boolean;
   guestInputs?: ChatContextSource;
   muted?: boolean;
-  onProposeEdit?: (edits: ProposedEdit[]) => void;
+  onProposeEdit?: ChatEditTarget;
 }
 
 export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: ChatEmbedProps) {
@@ -126,7 +126,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
           ref={messagesContainerRef}
           onScroll={handleMessagesScroll}
         >
-          {state.messages.length === 0 && !state.isLoading && (
+          {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
             <div className="chat-empty">
               <p>{muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
             </div>
@@ -143,7 +143,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
               )}
             </React.Fragment>
           ))}
-          {state.isLoading && (
+          <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+          {state.replying && (
             <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}
           {state.error && <div className="chat-error">{state.error}</div>}

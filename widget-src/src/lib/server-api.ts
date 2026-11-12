@@ -3,9 +3,10 @@ import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, t
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UsProduct } from '@roadmap/health-core/us-products';
-import { safeGetItem, safeSetItem } from './storage';
+import { safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
+import { randomId } from './random-id';
 
 export const PROXY_PATH = '/apps/health-tool-1';
 
@@ -71,22 +72,17 @@ export async function sendFeedback(
 // ---------------------------------------------------------------------------
 
 let cachedVisitorId: string | null = null;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function getVisitorId(): string {
   if (cachedVisitorId) return cachedVisitorId;
   const KEY = 'hr_vid';
   const stored = safeGetItem(KEY);
-  if (stored) { cachedVisitorId = stored; return stored; }
-  const id = crypto.randomUUID?.() ??
-    Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b, i) => {
-        if (i === 6) b = (b & 0x0f) | 0x40;  // version 4
-        if (i === 8) b = (b & 0x3f) | 0x80;  // variant 1
-        return b.toString(16).padStart(2, '0');
-      })
-      .join('')
-      .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-  safeSetItem(KEY, id);
+  if (stored && UUID.test(stored)) { cachedVisitorId = stored; return stored; }
+  if (stored) safeRemoveItem(KEY);
+  const id = randomId();
+  // The server takes only a UUID: randomId's last-resort id serves this page alone.
+  if (UUID.test(id)) safeSetItem(KEY, id);
   cachedVisitorId = id;
   return id;
 }

@@ -140,14 +140,27 @@ CREATE POLICY "Users can read own audit logs"
 GRANT SELECT ON audit_logs TO authenticated;
 
 -- ===== Cron lock table =====
--- Coordinates the reminder cron job across multiple Fly.io machines.
--- Atomic UPDATE ... WHERE lock_date != today ensures only one machine runs per day.
+-- Coordinates the daily crons (one row per lock name) across Fly.io machines.
+-- An atomic UPDATE whose filter admits only a row free to this machine for
+-- today (US-28 AC9: seed, an earlier day with no live run, its own failed or
+-- dead row, or a run past its stuck limit), then a separate verify SELECT,
+-- ensures only one machine runs a day; run_state records how the run ended.
 CREATE TABLE IF NOT EXISTS cron_lock (
   lock_name TEXT PRIMARY KEY,
   locked_by TEXT,
   locked_at TIMESTAMPTZ,
   lock_date TEXT
 );
+
+-- 2026-11-11 (US-28, cron lock follow-up, Brad's yes): the run's end, so a
+-- finished day is refused to every machine (the one that ran it included) and
+-- a live run blocks the next day. run_state: 'running', 'finished' or 'failed';
+-- NULL means a legacy row (taken before this column existed), read as finished.
+-- No CHECK: old and new code overlap during a rolling deploy; the code validates.
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS run_state TEXT;
+ALTER TABLE cron_lock ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+-- Applied to production 2026-11-11 (about 05:54 UTC, after merge be06b043); verified
+-- from information_schema: both nullable, no default, RLS on.
 
 -- lock_date is seeded with a sentinel past date (not NULL) because
 -- `WHERE lock_date != today` evaluates to NULL on NULL rows (not true), so a
@@ -210,6 +223,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 --    (truncated to 500 chars in the app before insert). Both NULL on success.
 --    'refusal' (2026-09-29, US-15 AC14): the model declined; is_fallback stays
 --    FALSE and the row holds the fixed refusal line. Free text, no migration.
+--    'partial' (2026-11-12, US-15 AC62): a Discord answer cut off part way; the
+--    row holds the text that went out, and the dedup never re-serves it.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;
@@ -641,9 +656,16 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Only the Google-verified lane upserts on email (an owner may replace their
--- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as
--- "the owner already has a row": schedule refresh at most, never a new token.
+-- 2026-11-11 (reminders, Brad's yes): the day a reminder pass stamped before
+-- sending to this row. A later re-run the same day (after a restart) reads it and
+-- skips the send. Not a mutex: the cron lock decides who runs. NULL = never stamped.
+ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
+-- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
+
+-- Both lanes INSERT, and a 23505 on this UNIQUE means a row already exists.
+-- Address-only opt-ins then refresh the schedule at most, never a new token.
+-- The Google-verified lane then rotates the token with one compare-and-set
+-- (only a row not yet verified matches) and reads the token back (US-17 AC16).
 
 -- Service-role only (no policies = zero rows via the anon/authenticated API).
 ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;
@@ -818,6 +840,18 @@ CREATE TABLE IF NOT EXISTS chat_question_archive (
 );
 ALTER TABLE chat_question_archive ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON chat_question_archive FROM anon, authenticated;
+NOTIFY pgrst, 'reload schema';
+
+-- ===== single_use_claims: one-time claims, content-free (US-36 AC9, 2026-11-12) =====
+-- Apply to production BEFORE deploying the code that reads it. Until then every
+-- hosted MCP confirm is refused in words and nothing is written: the claim fails
+-- closed. One row per spent key: a sha256 hex the caller makes, never the thing
+-- it names, and the kind of claim ('mcp-confirm'). Rows of a kind older than an
+-- hour are deleted as each new claim is made. Service role only: RLS on, no
+-- policies. Columns only ever via ADD COLUMN IF NOT EXISTS; never DROP.
+CREATE TABLE IF NOT EXISTS single_use_claims (key text primary key, kind text not null, created_at timestamptz not null default now());
+ALTER TABLE single_use_claims ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON single_use_claims FROM anon, authenticated;
 NOTIFY pgrst, 'reload schema';
 
 -- ===== Lock down SECURITY DEFINER functions (2026-10-21) =====

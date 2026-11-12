@@ -23,10 +23,11 @@ enum EraseText {
     static func confirm(provider: CloudProvider?, earlier: CloudProvider?, appleHealth: Bool = false) -> String {
         var text = "This deletes your health record, your chat history and your reminders on this iPhone."
         if appleHealth {
-            text += " It also deletes the readings this app wrote to Apple Health. Readings from other apps and devices stay in Apple Health."
+            text += " It also deletes the readings this app wrote to Apple Health and disconnects Apple Health, so nothing more comes in from it. Readings from other apps and devices stay in Apple Health. If you connect it again, the app reads everything in Apple Health again, older readings included."
         }
         if let provider {
             text += " It also erases your record in \(provider.label), and the website's chat history there when the app can reach it. The file stays there with your values erased from it, so your other devices erase their copies when they next sync."
+            text += " Another iPhone using this record disconnects Apple Health and deletes the readings this app wrote there when it next syncs."
             text += "\n\nA value another device has not synced yet is kept, and arrives later."
         } else if let earlier {
             // A later connect lifts this erase up: its higher epoch and its list of rows win
@@ -83,8 +84,20 @@ enum EraseText {
         return text
     }
 
+    /// Apple Health was connected: the erase disconnected it (US-72 AC10).
+    static let healthDisconnected = " Apple Health is disconnected. Connect it again in Settings to bring your readings back in."
+
+    /// How a person deletes this app's samples themselves (US-72 AC16, Brad 2026-11-12): the
+    /// Settings path the live cards name (`LiveFooter.healthPath`, "Apps ›" from iOS 18) and the
+    /// system's own labels, seen on the iOS 27.2 simulator 2026-11-11.
+    private static let healthDeleteSteps = "open \(LiveFooter.healthPath), tap Data from “Health Roadmap”, then Delete All Data from “Health Roadmap”"
+
     /// Apple Health refused to delete the app's samples: the record erase still stands.
-    static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. You can delete them in the Health app."
+    static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. To delete them yourself, \(healthDeleteSteps)."
+
+    /// Settings' Apple Health footer while the owed delete is stuck (US-72 AC16, Brad's text 2026-11-12).
+    /// No count and no reading.
+    static let healthOwed = "Some readings this app wrote to Apple Health could not be deleted. The app tries again each time you open it. To delete them yourself, \(healthDeleteSteps). This removes everything this app wrote to Apple Health."
 
     static func unreachable(_ provider: CloudProvider) -> String {
         "\(provider.label) could not be reached, so nothing was deleted. An erase must read the record it erases. Try again once you are online."

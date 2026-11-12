@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H37,composition,"hasApiResponse is a third copy of ""loaded"" beside the read relay's and the erase machine's, and it also gates saves",implicit state,not started,"widget-src/src/components/HealthTool.tsx:110 useState(false), passed as loaded (:153, :277) and read at :246, :585, :678; the relay holds its own loading phase (useRecordApply.ts) and lib/erase-machine.ts its loading phase. Out of fix 4 PR 2b's scope because it gates saves, a different flow; its own PR later (fix 4 design Q7)",,no

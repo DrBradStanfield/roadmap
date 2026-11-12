@@ -12,6 +12,8 @@
  * real `trackProductEvent` runs, so the event tests read the POSTs.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
+import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
@@ -37,7 +39,7 @@ vi.mock('../lib/chat-api', async original => ({
 // The chat column: what it was told about muting.
 const chat = vi.hoisted(() => ({ muted: [] as boolean[], proposeEdit: null as null | ((edits: unknown[]) => void) }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: (edits: unknown[]) => void }) => { chat.muted.push(!!muted); chat.proposeEdit = onProposeEdit; return null; },
+  ChatEmbed: ({ muted, onProposeEdit }: { muted?: boolean; onProposeEdit: ChatEditTarget }) => { chat.muted.push(!!muted); chat.proposeEdit = (edits) => onProposeEdit.take(edits as ProposedEdit[], onProposeEdit.ask(), true); return null; },
 }));
 // The desktop floating chat's panel: whether it is open and muted.
 const floating = vi.hoisted(() => ({ muted: [] as boolean[] }));
@@ -47,7 +49,8 @@ vi.mock('./ChatSection', () => ({
 import { HealthTool } from './HealthTool';
 import { closeSettings, deleteButton, openSettings } from '../testing/settings';
 
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 const WHY_SEX = 'Used to calculate ideal body weight, kidney function, and screening programs.';
 const WHY_BIRTH = 'Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.';
 
@@ -125,7 +128,7 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#heightCm'));
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
+  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), localToday()]]), { timeout: 2000 });
 }
 /** One animation frame: what a click scheduled with requestAnimationFrame
  *  (a stage's reveal focusing the next question) has run. */
@@ -261,7 +264,7 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
     if (field) fireEvent.click(field); // the saved weight, clicked open to type today's again
     type(q(view, '#weightKg'), '79');
     leave(q(view, '#weightKg'));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[79, TODAY]]), { timeout: 2000 });
+    await waitFor(async () => expect(await activeWeights()).toEqual([[79, localToday()]]), { timeout: 2000 });
     const rows = (await recordOnDisk()).measurements.filter((m) => m.metricType === 'weight');
     expect(rows.map((r) => r.status).sort()).toEqual(['active', 'entered-in-error']);
   });
@@ -361,7 +364,7 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
     expect(line()).toBe(`Previous: 90 kg · ${formatShortDate('2024-03-03')}`);
     view.unmount();
 
-    await addMeasurement('weight', 89, TODAY);
+    await addMeasurement('weight', 89, localToday());
     await flushRoadmapStore();
     const again = await open();
     const today = await waitFor(() => { const b = q(again, '#weightKg') as HTMLInputElement; expect(b?.value).toBe('89'); return b; });
@@ -873,7 +876,7 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
 
   it('a returning user with all four answers never sees it', async () => {
     await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('weight', 70, TODAY);
+    await addMeasurement('weight', 70, localToday());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());

@@ -92,7 +92,7 @@ struct MyDataView: View {
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
-            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
+            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }.labSaveAllDemo($addingLabs)
             .sheet(isPresented: $addingTest, onDismiss: {
                 if let pickedTest { entry = Self.entry(for: pickedTest, now: store.screen, data: store.myData) }
                 pickedTest = nil
@@ -200,6 +200,7 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
+        .contentMargins(.bottom, 12, for: .scrollContent) // The footer clears the floating tab bar (US-73).
         // The worked-out rows read their engine series once per screen drawn (US-73 AC7), then
         // the page is built from them.
         .task(id: Self.pageKey(store)) {
@@ -292,11 +293,10 @@ struct MyDataView: View {
                         .foregroundStyle(Color(.systemBackground))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
-                        .background(Color.status("urgent"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityHint("Scrolls to the card")
-                .listRowBackground(Color.clear)
+                .listRowBackground(RoundedRectangle(cornerRadius: .cardRadius, style: .continuous).fill(Color.status("urgent")).padding(.vertical, 4))
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
         }
@@ -643,15 +643,5 @@ struct MyDataView: View {
     private func addedTest(_ result: RecordStore.ApplyResult) -> RecordStore.ApplyResult {
         if result == .saved() { analytics?.event(.bloodTestAdded) }
         return saved(result)
-    }
-}
-
-extension View {
-    /// For a tab with no title bar, My health's: iOS 26's edge effect leaves rows
-    /// legible under the clock. A zero-height inset whose background reaches into the status bar hides them.
-    func solidStatusBar() -> some View {
-        safeAreaInset(edge: .top, spacing: 0) {
-            Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
-        }
     }
 }

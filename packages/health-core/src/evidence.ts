@@ -14,6 +14,7 @@
  * - All DOIs verified via web lookup against roadmap_text.html citations
  */
 import type { UsProductCardId } from './types';
+import { SCREENING_EVIDENCE } from './evidence-screening';
 
 export interface SuggestionReference {
   label: string;
@@ -110,10 +111,6 @@ const REFS_SGLT2I: SuggestionReference[] = [
 const REFS_BP_TRIALS: SuggestionReference[] = [
   { label: 'SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1511939' },
   { label: 'Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(24)01028-6' },
-];
-
-const REFS_SCREENING_ACS: SuggestionReference[] = [
-  { label: 'American Cancer Society – Screening Guidelines', url: 'https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html' },
 ];
 
 const GUIDELINES_LIPIDS = ['ACC/AHA 2026', 'ESC/EAS 2019'];
@@ -331,7 +328,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial of LDL-C targets and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time, even in young, apparently healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended. Discuss it with your doctor.\n\nESC/EAS 2019 recommends ApoB below 65 mg/dL for very high risk; based on the Ez-PAVE trial of LDL-C targets and the PESA study, this tool aims lower, for ApoB below 50 mg/dL (0.5 g/L). PESA demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time, even in young, apparently healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, REF_EZ_PAVE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
@@ -349,7 +346,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'ldl-very-high': {
-    reason: 'Very high LDL cholesterol may indicate familial hypercholesterolaemia, a genetic condition causing elevated LDL from birth. The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. A causal relationship between LDL particles and atherosclerosis is well-established through Mendelian randomisation studies and decades of clinical trials.\n\nNote: ApoB is a more accurate marker than LDL cholesterol for cardiovascular risk. If available, ask your doctor about testing ApoB.',
+    reason: 'Very high LDL cholesterol may indicate familial hypercholesterolaemia, a genetic condition causing elevated LDL from birth. The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. Discuss it with your doctor. A causal relationship between LDL particles and atherosclerosis is well-established through Mendelian randomisation studies and decades of clinical trials.\n\nNote: ApoB is a more accurate marker than LDL cholesterol for cardiovascular risk. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_LDL_SAFETY],
   },
@@ -367,7 +364,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'non-hdl-very-high': {
-    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Treatment with statins and lifestyle modification is typically recommended.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
+    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Treatment with statins and lifestyle modification is typically recommended. Discuss it with your doctor.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: REFS_LIPID_EVIDENCE,
   },
@@ -448,7 +445,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Stage 2 hypertension (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    reason: 'Stage 2 hypertension (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -518,73 +515,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     ],
   },
 
-  // ── Cancer Screening ───────────────────────────────────────
-
-  'screening-colorectal': {
-    reason: 'The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.',
-    guidelines: ['ACS'],
-    references: [
-      ...REFS_SCREENING_ACS,
-      { label: 'Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)', url: 'https://doi.org/10.1136/gutjnl-2019-319511' },
-    ],
-  },
-
-  'screening-breast': {
-    reason: 'Mammography screening reduces breast cancer mortality by detecting cancers early, when treatment is most effective. The ACS recommends annual mammograms starting at age 45 (optional from 40). The benefits and appropriate frequency should be discussed with your doctor based on your individual risk.',
-    guidelines: ['ACS'],
-    references: REFS_SCREENING_ACS,
-  },
-
-  'screening-cervical': {
-    reason: 'Cervical screening (HPV testing or Pap smear) detects precancerous changes caused by human papillomavirus. Catching these changes early prevents cervical cancer from developing. HPV testing every 5 years is now preferred over Pap smears every 3 years due to higher sensitivity.',
-    guidelines: ['ACS'],
-    references: REFS_SCREENING_ACS,
-  },
-
-  'screening-lung': {
-    reason: 'The American Cancer Society (2023) recommends annual low-dose CT screening for adults aged 50–80 who smoke or used to smoke and have a smoking history of 20 pack-years or more, however long ago they quit. The USPSTF (2021) also limits it to people who quit within the past 15 years; this plan follows the ACS because it does not ask when you quit. Low-dose CT can detect lung cancer at an early, treatable stage, significantly reducing lung cancer mortality. If a scan finds something that needs follow-up, the plan keeps that follow-up until it is done, even past age 80 or below 20 pack-years: finishing it is part of diagnosis, not routine screening.',
-    guidelines: ['ACS 2023', 'USPSTF 2021'],
-    references: [
-      ...REFS_SCREENING_ACS,
-      { label: 'Wolf 2023 – Screening for lung cancer: 2023 guideline update from the American Cancer Society (CA Cancer J Clin)', url: 'https://doi.org/10.3322/caac.21811' },
-      { label: 'USPSTF – Lung Cancer Screening Recommendation', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/lung-cancer-screening' },
-    ],
-  },
-
-  'screening-prostate': {
-    reason: 'Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence.',
-    guidelines: [],
-    references: [
-      ...REFS_SCREENING_ACS,
-      { label: 'Goodman 2019 – Finasteride & prostate cancer mortality (NEJM)', url: 'https://doi.org/10.1056/NEJMc1809961' },
-    ],
-  },
-
-  'screening-prostate-elevated': {
-    reason: 'A PSA above 4.0 ng/mL is above the typical reference range, but elevated PSA can have multiple causes including benign prostatic hyperplasia (BPH), infection, or prostate cancer. Further evaluation by your doctor is needed to determine the cause.',
-    guidelines: [],
-    references: REFS_SCREENING_ACS,
-  },
-
-  'screening-endometrial-bleeding': {
-    reason: 'Abnormal uterine bleeding — especially after menopause — can be an early sign of endometrial cancer. Prompt evaluation is important because endometrial cancer detected early has a very high cure rate.',
-    guidelines: ['ACS'],
-    references: REFS_SCREENING_ACS,
-  },
-
-  'screening-endometrial': {
-    reason: 'Women at menopause should be aware of the symptoms of endometrial cancer, particularly unexpected vaginal bleeding. The ACS recommends that women be informed about risks and symptoms at the onset of menopause.',
-    guidelines: ['ACS'],
-    references: REFS_SCREENING_ACS,
-  },
-
-  'screening-dexa': {
-    reason: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Early detection allows treatment with medications that reduce fracture risk. The USPSTF recommends screening for women aged 65+ and postmenopausal women under 65 with risk factors.',
-    guidelines: ['USPSTF'],
-    references: [
-      { label: 'USPSTF – Osteoporosis Screening Recommendation', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/osteoporosis-screening' },
-    ],
-  },
+  // ── Cancer Screening (evidence-screening.ts) ───────────────
+  ...SCREENING_EVIDENCE,
 
   // ── Supplements ────────────────────────────────────────────
 

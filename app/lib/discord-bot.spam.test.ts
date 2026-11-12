@@ -27,6 +27,11 @@ vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, capture
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: edge.fallback, generateTitle: () => 'Synthetic', CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
+// The turn claim (US-15 AC63) takes and frees its row in an in-memory store.
+vi.mock('./supabase-client.server', async () => {
+  const helpers = await import('./single-use-claims.test-helpers');
+  return { supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+});
 vi.mock('./supabase.server', () => ({ supabaseAdmin: {
   from: (table: string) => {
     const query = { select: () => query, eq: () => query, gte: () => query, order: () => query, limit: () => query,
@@ -57,7 +62,7 @@ beforeEach(async () => {
   for (const [key, value] of Object.entries({ DISCORD_BOT_TOKEN: 'synthetic', DISCORD_FORCE_START: 'true',
     DISCORD_SERVER_ID: 'guild', DISCORD_BOT_PROFILE_ID: 'synthetic',
     DISCORD_DEDICATED_AI_CHANNEL_ID: 'ai', DISCORD_EXCLUDED_CHANNEL_IDS: '',
-    DISCORD_DrBradStanfield_USER_ID: '' })) vi.stubEnv(key, value);
+    DISCORD_DrBradStanfield_USER_ID: '', SHOPIFY_API_SECRET: 'test-secret-good' })) vi.stubEnv(key, value);
   edge.complete.mockResolvedValue({ silent: true, content: '', usage, isFallback: false, routerResult: null, replaced: [],
     classifier: { classification: 'SPAM', routerSkipped: true, latencyMs: 1, error: null } });
   stop = (await import('./discord-bot.server')).stopDiscordBot;

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-3,S8 web big components,Remove the old first-visit vitals fields,not started,InputPanel.tsx:212 vitalsViewMode 'legacy' | 'matrix'; :877 first-time vitals field; useLongitudinalSave.ts:1,,,no

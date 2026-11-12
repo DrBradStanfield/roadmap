@@ -11,16 +11,21 @@ vi.mock('@sentry/react', () => sentry);
 vi.mock('./sentry', () => ({ Sentry: sentry }));
 const store = vi.hoisted(() => ({
   recordExchange: vi.fn(async () => {}),
+  eraseMarks: vi.fn(() => []),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {},
   callAnthropicDirectRaw: async () => ({ text: 'synthetic answer', blocks: [] }),
 }));
 
+import { StorageError } from '@roadmap/health-core/adapter';
+import { ChatSession } from '@roadmap/health-core/chat-session';
+import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
+import type { RecordHost } from '@roadmap/health-core/record-host';
 import { sendMessage as sendWebsite } from './chat-api';
 import { sendMessage as sendPages } from './byok-chat';
 
@@ -66,6 +71,34 @@ describe.each([
     await send('hello', null, null);
     await settle();
     expect((sentry.captureException.mock.calls[0] as unknown as [Error])[0].message).toBe('Network request did not answer');
+  });
+
+  it('US-09 AC2c: a page that may not write this device makes no chat write, so nothing is reported, and the answer still shows', async () => {
+    const device = { readSync: vi.fn(() => ({ body: null, version: null })), writeSync: vi.fn(() => ({ version: '1' })) };
+    const host = {
+      store: new MemoryAdapter(), deviceId: () => 'laptop', clock: { now: () => Date.parse('2026-11-13T10:00:00.000Z') },
+      timers: { set: () => 0, clear: () => {} }, remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
+      clearOffFileData: () => {}, tier: 'device', sync: device, clearNamedFiles: () => {}, eraseFence: () => null,
+      deviceFilesOpen: () => false,
+    } as unknown as RecordHost;
+    const session = await ChatSession.open(host);
+    store.recordExchange.mockImplementationOnce((...args: unknown[]) => session.recordExchange(args[0] as Parameters<ChatSession['recordExchange']>[0]));
+    const { result, error } = await send('hello', null, null);
+    await settle();
+    expect(error).toBeNull();
+    expect(result?.content).toBe('synthetic answer');
+    expect(store.recordExchange).toHaveBeenCalledOnce();
+    expect(device.readSync).not.toHaveBeenCalled();
+    expect(device.writeSync).not.toHaveBeenCalled();
+    expect(sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('a real device failure (storage full) is still reported once', async () => {
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic storage full'));
+    await send('hello', null, null);
+    await settle();
+    expect(sentry.captureException).toHaveBeenCalledOnce();
+    expect((sentry.captureException.mock.calls[0] as unknown as [Error])[0].message).toBe('Chat-history save failed');
   });
 
   it('reports nothing when the save succeeds', async () => {

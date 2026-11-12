@@ -25,9 +25,11 @@
  * this tab's own erase. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { render, fireEvent, waitFor, act, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { rowRootIds } from '@roadmap/health-core/merge';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
@@ -37,7 +39,9 @@ import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, flushRoadmapStore, getEraseIdentity, getShownErase, initRoadmapStore, saveChangedMeasurements, saveMedication,
 } from '../lib/roadmap-data';
-import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, MIRROR_CHANGED_EVENT } from '../lib/storage';
+import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
 import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -63,8 +67,8 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: (edits: ProposedEdit[]) => void; guestInputs: () => unknown }) => {
-    chat.proposeEdit = onProposeEdit;
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: ChatEditTarget; guestInputs: () => unknown }) => {
+    chat.proposeEdit = (edits) => onProposeEdit.take(edits, onProposeEdit.ask(), true); // asked and answered at once
     chat.context = guestInputs;
     return null;
   },
@@ -137,12 +141,12 @@ async function matrixHoldsDraft(view: RenderResult) {
   act(() => chat.proposeEdit!([ldlDraft()]));
   await settle(50);
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
-  expect(JSON.stringify(chat.context!())).toContain('3.2');
+  expect(numberPaths(chat.context!(), 3.2)).not.toEqual([]);
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(true);
 }
 const draftGone = (view: RenderResult) => {
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
-  expect(JSON.stringify(chat.context!())).not.toContain('3.2');
+  expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(false);
 };
 
@@ -197,6 +201,25 @@ describe('US-16 AC2a, US-11 AC6: another tab\'s erase, heard through the storage
   });
 });
 
+describe('US-11 AC6: another tab of this browser erased and already cleared storage up to its erase', () => {
+  it('the page drops its screen copy, and its matrix removes the draft it stored', async () => {
+    await seedGuest(PROFILE, [['weight', 82]]);
+    const view = await openPage();
+    await matrixHoldsDraft(view);
+    await act(async () => {
+      await anotherWriterErases(new LocalStorageAdapter());
+      // What the erasing tab's clear left: the erase it cleared storage for (cleared-erase.ts).
+      const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+      const meta = (body as RoadmapFile).meta;
+      localStorage.setItem('health_roadmap_cleared_erase', JSON.stringify({ lineage: 'local', erase: JSON.stringify([meta.eraseEpoch, meta.erasedAt]) }));
+      window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
+      await drain();
+    });
+    await settle();
+    draftGone(view);
+  });
+});
+
 describe('US-34 AC4 (loading-held), US-16 AC2a: an erase heard before the page has shown its first read', () => {
   it('waits for that read, then shows, once', async () => {
     await seedGuest(PROFILE, [['weight', 82]]);
@@ -245,6 +268,7 @@ class HeldCloud extends MemoryAdapter {
   }
 }
 async function cloudGuest(adapter: MemoryAdapter): Promise<RenderResult> {
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   await initRoadmapStore(adapter);
   await saveChangedMeasurements(PROFILE, {});
   await addMeasurement('weight', 82, '2026-09-01');
@@ -305,7 +329,7 @@ describe('US-16 AC2a, US-11 AC6: each DRAFTS_CLEARED listener drops its state on
     expect(cleared).toHaveBeenCalledTimes(1); // the store's adopt, not the page
     expect(valuePage(view)).toBeNull();
     const file = JSON.parse(localStorage.getItem(FILE_KEY)!) as RoadmapFile;
-    expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('2.2');
+    expect(numberPaths([...file.measurements, ...file.labValues], 2.2)).toEqual([]);
     expect(getShownErase()).toBe(getEraseIdentity());
   });
 
@@ -320,7 +344,7 @@ describe('US-16 AC2a, US-11 AC6: each DRAFTS_CLEARED listener drops its state on
   });
 });
 
-describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (HealthTool handleDeleteData: clearOffFileAfterErase)', () => {
+describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase eraseAll: the forget door, clearOffFileAfterErase)', () => {
   // What the machine PR must keep. On a failed write the session clears nothing off the file
   // (record-session erase(): clearOffFileData runs only once the flush lands), so the page's own
   // clearOffFileAfterErase is the ONLY DRAFTS_CLEARED. On success it is the second.
@@ -369,6 +393,59 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (HealthTool
     expect(getShownErase()).toBe(getEraseIdentity());
     draftGone(view);
   });
+
+  it('US-11 AC3b, AC6: the write lands but the draft\'s removal is refused: the screen still resets, and the next load clears', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    chatMakesBanners();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const remove = Storage.prototype.removeItem;
+    const refusing = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === BT_TIMELINE_DRAFT_KEY) return; // refused, silently
+      remove.call(this, key);
+    });
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+      expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).not.toBeNull(); // still stored: the clear stays owed
+      expect(getShownErase()).toBe(getEraseIdentity());
+      expect(banners()).toHaveLength(0);
+      expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
+      expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(false);
+    } finally {
+      refusing.mockRestore();
+    }
+    await initRoadmapStore(new MemoryAdapter(cloud)); // the next load
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+  });
+});
+
+describe('US-11 AC6: an out-of-date tab cannot delete data; it is told to reload', () => {
+  it('refused at the decision: the page says so, returns to rest, and never forgets the record (clearLocalStorage, forgetRecord)', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    localStorage.removeItem(BACKEND_KEY); // another tab chooses "This device"
+    const before = getEraseIdentity();
+    const device = Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)]));
+    const forgot = vi.fn(); // clearLocalStorage's event, the forget door's first step
+    window.addEventListener(MIRROR_CHANGED_EVENT, forgot);
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+    } finally {
+      window.removeEventListener(MIRROR_CHANGED_EVENT, forgot);
+    }
+    expect(alerts).toEqual([ERASE_STALE_TAB]);
+    expect(forgot).not.toHaveBeenCalled();
+    expect(getEraseIdentity()).toBe(before);
+    expect(Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)]))).toEqual(device);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2'); // the draft stays
+    expect(deleteButton().hasAttribute('disabled')).toBe(false); // back at rest
+  });
 });
 
 /** A cloud that sends this tab's save round twice: `during` runs as the first record write goes out (an edit
@@ -411,21 +488,25 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const view = await openPage();
     showTables(view.container);
     const cells = await waitFor(() => { const c = ldlRow(view)!.querySelectorAll('.bt-cell-clickable'); expect(c.length).toBeGreaterThan(0); return c; });
-    fireEvent.click(cells[cells.length - 1]);
-    fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
+    // About you first: its rows focus their fields in a frame, which would blur the correction editor and arm its click-away.
     openAboutYou(view.container); // the form's height field shows
     const height = heightShown(view);
     expect(height).not.toBeNull();
     expect(height).not.toBe('');
+    await settle(50);
+    fireEvent.click(cells[cells.length - 1]);
+    fireEvent.change(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { target: { value: '1.9' } });
     const before = getEraseIdentity();
     const heard: string[] = [];
     const onRemote = () => { heard.push(getEraseIdentity()); };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
+    let releaseLoop = () => {};
     try {
       // Another device erases; this tab's next save folds it in, and an edit made while its first write is out
       // sends it round again. The second write waits: the window.
       await anotherWriterErases(new MemoryAdapter(cloud));
       const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      releaseLoop = loop.release;
       await addMeasurement('weight', 81, '2026-09-05');
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
@@ -452,6 +533,7 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
 
       await act(async () => { loop.release(); await flushed; await drain(); });
     } finally {
+      releaseLoop(); // a failed assertion must not leave the second write hung for afterEach's flush
       window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
     }
     await settle(50);
@@ -461,7 +543,8 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0); // no saved LDL shows
     expect(heightShown(view) ?? '').not.toBe(height); // nor the old record's form
     const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-    expect(JSON.stringify([...file.measurements, ...file.labValues])).not.toContain('1.9'); // the correction never landed
+    expect(numberPaths([...file.measurements, ...file.labValues], 1.9)).toEqual([]); // the correction never landed
+    expect([...file.measurements, ...file.labValues].some(r => r.correctsId)).toBe(false);
     expect(alerts).not.toContain(ERASE_FAILED);
   });
 
@@ -487,9 +570,11 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const onRemote = () => { heard.push(getEraseIdentity()); };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemote);
     let afterReread = '';
+    let releaseLoop = () => {};
     try {
       await anotherWriterErases(new MemoryAdapter(cloud));
       const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      releaseLoop = loop.release;
       await addMeasurement('weight', 81, '2026-09-05');
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
@@ -508,23 +593,64 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
       expect(getShownErase()).toBe(getEraseIdentity());
       expect(ldlRow(view)?.querySelectorAll('.bt-cell-clickable').length ?? 0).toBe(0);
       expect(heightShown(view) ?? '').toBe('');
-      // 0 so far: a 'refused' re-read counts remote_change_applied only when it ends a hold (READ_POLICY), and none was held.
-      expect(remoteApplied()).toBe(0);
+      // 1 already (fix 4 2b-3, Fable Q1): the erase machine counts another writer's erase where the screen first shows it,
+      // and the refusal's re-read showed it. Before the machine, the late arrival counted it instead: the same total, earlier.
+      expect(remoteApplied()).toBe(1);
       afterReread = view.container.innerHTML;
 
       await act(async () => { loop.release(); await flushed; await drain(); });
     } finally {
+      releaseLoop(); // a failed assertion must not leave the second write hung for afterEach's flush
       window.removeEventListener(REMOTE_CHANGED_EVENT, onRemote);
     }
     await settle(50);
     expect(heard).toEqual([getEraseIdentity()]); // the late REMOTE_CHANGED, heard once
     expect(alerts).toEqual([WRITE_REFUSED]); // one alert in total
-    // 1 in total, today: the late arrival is not held (its erase is the one shown, the profile clean), so the relay
-    // re-reads and counts it, though it re-reads the record already shown (fix 4 D2, an identity already shown).
+    // 1 in total: the late arrival re-reads the record already shown and counts nothing more (fix 4 D2, an identity
+    // already shown; the machine counts each erase once).
     expect(remoteApplied()).toBe(1);
     expect(view.container.innerHTML).toBe(afterReread); // nothing visible changes
     expect(getShownErase()).toBe(getEraseIdentity());
     const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
     expect(file.profile.heightCm ?? null).not.toBe(190); // the refused height never landed
+  });
+
+  // fix 4 2b-3 R1 (Fable): the late REMOTE_CHANGED carries the erase the screen already shows, so it is a plain
+  // remote change: held behind a dirty profile like any other. (Height, not birth year: on the erased record the
+  // year field is not shown yet.)
+  it('US-34 AC4, US-16 AC2a: typing after that refusal\'s re-read, the late REMOTE_CHANGED is held: the typed height stays, and its save lands', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new TwoPassCloud(cloud);
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements(PROFILE, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await openPage();
+    openAboutYou(view.container);
+    const before = getEraseIdentity();
+    await anotherWriterErases(new MemoryAdapter(cloud));
+    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+    await addMeasurement('weight', 81, '2026-09-05');
+    let flushed: Promise<void> = Promise.resolve();
+    await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
+    expect(getShownErase()).toBe(before); // the window
+    fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '190' } });
+    fireEvent.blur(view.container.querySelector('#heightCm')!);
+    await settle(700);
+    expect(alerts).toEqual([WRITE_REFUSED]);
+    expect(getShownErase()).toBe(getEraseIdentity()); // the refusal's re-read showed the new erase
+
+    // The person types a height on the new record, still in the field: the profile is dirty.
+    const height = view.container.querySelector<HTMLInputElement>('#heightCm')!;
+    height.focus();
+    fireEvent.change(height, { target: { value: '175' } });
+    await act(async () => { loop.release(); await flushed; await drain(); }); // the late REMOTE_CHANGED
+    expect(heightShown(view)).toBe('175'); // held: the typing stays
+
+    fireEvent.blur(height);
+    await settle(1500); // the profile save (500 ms), then the store writes
+    await act(async () => { await flushRoadmapStore().catch(() => {}); await drain(); });
+    const file = (await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile;
+    expect(file.profile.heightCm).toBe(175); // the form stayed dirty, so its save carried the height up
   });
 });

@@ -108,10 +108,8 @@ const values = (o: object): number[] => Object.values(o).flatMap((v) => (typeof 
  * literal is in neither this list nor `LIMIT_LABEL_CUTOFFS`. Non-HDL's lines
  * are absent on purpose: non-HDL is derived, and never derived from a limit.
  * Creatinine has none: the plan grades it only through eGFR. PSA's is the
- * "Elevated PSA" card's 4.0 (US-06 AC14). A line is reached at or above it,
- * though that card fires only above 4.0, so "<= 4.0" stays undecided and
- * reads as ungraded: conservative, and kept so HbA1c's "<=" at a line stays
- * undecided too (US-12 AC20).
+ * "Elevated PSA" card's 4.0 (US-06 AC14), reached at or above it, so "<= 4.0"
+ * stays undecided and ">= 4.0" decides (`decides`, Brad 2026-11-12).
  */
 export const LIMIT_CUTOFFS: Readonly<Record<LimitField, readonly number[]>> = {
   hba1c: values(HBA1C_THRESHOLDS),
@@ -182,8 +180,13 @@ export function egfrAsPrinted(inputs: Pick<Partial<HealthInputs>, 'limits'>, adu
  */
 export function limitLabelValue(field: LimitField, comparator: Comparator, bound: number): number | null {
   const value = limitRepresentative(field, comparator, bound);
-  return value !== null && bandDecides(LIMIT_LABEL_CUTOFFS[field], comparator, bound) ? value : null;
+  return value !== null && decides(field, LIMIT_LABEL_CUTOFFS[field], comparator, bound) ? value : null;
 }
+
+/** `bandDecides` for a field's own lines. PSA is raised at 4.0 or above (Brad 2026-11-12), so ">= 4.0"
+ *  decides for PSA alone; every other field's ">=" at a line stays undecided, conservative (US-12 AC20). */
+const decides = (field: LimitField, cutoffs: readonly number[], comparator: Comparator, bound: number) =>
+  bandDecides(cutoffs, comparator, bound) || (field === 'psa' && comparator === '>=' && cutoffs.every((c) => c <= bound));
 
 /**
  * Whether a limit decides against every cutoff in a list (an input's lines,
@@ -259,7 +262,7 @@ export function referenceGradeValue(limit: Pick<InputLimit, 'comparator' | 'boun
  * passes the schema: the input then has no graded value.
  */
 export function limitRepresentative(field: LimitField, comparator: Comparator, bound: number): number | null {
-  if (!Number.isFinite(bound) || !bandDecides(LIMIT_CUTOFFS[field], comparator, bound)) return null;
+  if (!Number.isFinite(bound) || !decides(field, LIMIT_CUTOFFS[field], comparator, bound)) return null;
   const { min, max } = fieldBounds(field)!;
   const below = comparator === '<' || comparator === '<=';
   const value = below ? (min + bound) / 2 : (bound + max) / 2;

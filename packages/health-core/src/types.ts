@@ -1,4 +1,5 @@
 import type { InputLimits } from './lab-limits';
+import { LUNG_PACK_YEARS, opensFollowup, postFollowupIntervals, ruleOf, screeningMinAge, type ScreeningId } from './screening-rules';
 
 /**
  * Health input data from user.
@@ -367,6 +368,8 @@ export interface ScreeningInputs {
   colorectalResult?: ScreeningResult;
   colorectalFollowupStatus?: ScreeningFollowupStatus;
   colorectalFollowupDate?: string; // YYYY-MM
+  /** The colonoscopy report's follow-up time, whole years 1 to 10 (US-07 AC1j); read only while abnormal and completed. */
+  colorectalFollowupIntervalYears?: number;
 
   // Breast
   breastFrequency?: 'annual' | 'biennial' | 'not_yet_started';
@@ -437,19 +440,12 @@ export const SCREENING_INTERVALS: Record<string, number> = {
  * DEXA gates at age 50 to allow saving a one-off male scan (e.g. doctor-
  * ordered for non-routine reasons); the algorithm only suggests DEXA for
  * males at 70+, but blocking save would be hostile.
+ * The values are the screening table's rows (screening-rules.ts uploadMinAge, uploadSex).
  */
-export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
-  colorectal: { age: 35 },
-  breast:     { age: 40, sex: 'female' },
-  cervical:   { age: 25, sex: 'female' },
-  lung:       { age: 50 },
-  prostate:   { age: 45, sex: 'male' },
-  dexa:       { age: 50 },
-};
+export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = screeningMinAge();
 
-/** Lung screening's smoking history, ACS 2023: 20 pack-years or more. The plan, the
- *  reminders and both forms read it, so they cannot disagree again (#285). */
-export const LUNG_PACK_YEARS = 20;
+/** Lung screening's pack-years threshold lives with the screening table; re-exported for its readers. */
+export { LUNG_PACK_YEARS };
 
 export function isScreeningEligible(
   screeningType: string,
@@ -477,39 +473,31 @@ export function getScreeningNextDueDate(lastDate: string | undefined, method: st
 }
 
 /**
- * Post-follow-up repeat intervals in months.
- * After an abnormal result + completed follow-up, use these instead of SCREENING_INTERVALS.
- * Keyed by "{screeningType}_{method}".
+ * Post-follow-up repeat intervals in months, keyed by "{screeningType}_{method}": after an abnormal
+ * result + completed follow-up, use these instead of SCREENING_INTERVALS. A view of the rules table
+ * (each method's or result's `postMonths`, screening-rules.ts); colorectal's 36 applies when the
+ * colonoscopy report gave no follow-up time (US-07 AC1j).
  */
-export const POST_FOLLOWUP_INTERVALS: Record<string, number> = {
-  colorectal_fit_annual: 36,       // Positive FIT → colonoscopy → repeat in 3 years
-  colorectal_colonoscopy_10yr: 36, // Polyps found → repeat colonoscopy in 3 years
-  colorectal_other: 36,            // Default 3 years post-follow-up
-  breast_annual: 12,               // Resume normal annual schedule
-  breast_biennial: 24,             // Resume normal biennial schedule
-  cervical_hpv_every_5yr: 12,     // HPV+ → colposcopy → rescreen in 1 year
-  cervical_pap_every_3yr: 12,     // Abnormal Pap → colposcopy → rescreen in 1 year
-  cervical_other: 12,              // Default 1 year
-  lung_annual_ldct: 12,           // Resume annual LDCT
-  dexa_dexa_scan: 12,             // Osteoporosis follow-up → recheck in 1 year
-};
+export const POST_FOLLOWUP_INTERVALS: Record<string, number> = postFollowupIntervals();
 
 /**
- * The repeat due date after an abnormal result + completed follow-up, or null
+ * The repeat due date after the result that opens the follow-up + its completion, or null
  * when the post-follow-up pattern doesn't apply. Single home for the interval
  * resolution — used by v1 reminders (overdue = now > due) and the v2 schedule
- * (emits the date itself).
+ * (emits the date itself). `intervalYears`, the colonoscopy report's follow-up
+ * time, replaces the table's months (colorectal only, US-07 AC1j).
  */
 export function getPostFollowupDueDate(
-  type: string,
+  type: ScreeningId,
   method: string | undefined,
   result: string | undefined,
   followupStatus: string | undefined,
   followupDate: string | undefined,
+  intervalYears?: number,
 ): Date | null {
-  if (result !== 'abnormal' || followupStatus !== 'completed' || !followupDate) return null;
+  if (!opensFollowup(ruleOf(type), result) || followupStatus !== 'completed' || !followupDate) return null;
   const methodKey = method ? `${type}_${method}` : `${type}_other`;
-  const months = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
+  const months = intervalYears ? intervalYears * 12 : POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
   const [year, month] = followupDate.split('-').map(Number);
   if (!year || !month) return null;
   return new Date(year, month - 1 + months);

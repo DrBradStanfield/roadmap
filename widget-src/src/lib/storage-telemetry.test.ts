@@ -10,6 +10,7 @@ import { LocalStorageAdapter } from '../storage';
 import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
+import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -219,10 +220,29 @@ describe('cloud-storage telemetry boundary', () => {
       expect(await persistTags(() => { frozen = true; })).toEqual({ ...local, causeClass: 'ConflictError' });
     });
 
+    it('A15: a real device write failure (a plain StorageError) is still reported once', async () => {
+      let armed = false;
+      const writeSync = LocalStorageAdapter.prototype.writeSync;
+      vi.spyOn(LocalStorageAdapter.prototype, 'writeSync').mockImplementation(function (this: LocalStorageAdapter, ...args) {
+        if (armed) throw new StorageError('Synthetic storage full');
+        return writeSync.apply(this, args);
+      });
+      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'none' });
+    });
+
     // Last on purpose: the logout latch is page-lifetime module state with no
     // reset, so no device-tier save in this file may run after it.
-    it('a write refused for logout reads none', async () => {
-      expect(await persistTags(() => stopRoadmapLocalWrites())).toEqual({ ...local, causeClass: 'none' });
+    it('A15: a device write refused for logout sends no Cloud sync failed report, and the save still fails', async () => {
+      localStorage.clear();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const store = await RoadmapStore.create(new LocalStorageAdapter());
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      await store.flush();
+      stopRoadmapLocalWrites();
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      await expect(store.flush()).rejects.toThrow();
+      await Sentry.flush();
+      expect(envelopes).toHaveLength(0);
     });
   });
 
@@ -266,6 +286,11 @@ describe('cloud-storage telemetry boundary', () => {
     expect(JSON.stringify(scrubbed)).not.toContain(marker);
   });
 
+  // US-12 AC9 H65: a busy batch counts as a server error, so only this tag tells it apart.
+  it.each(['busy', 'rate_limit'])('keeps the upload error code %s', uploadErrorCode => {
+    expect(scrubEvent({ type: undefined, tags: { feature: 'upload', uploadErrorCode } })!.tags).toEqual({ feature: 'upload', uploadErrorCode });
+  });
+
   it('prevents storage request paths reaching an unrelated later event', async () => {
     Sentry.addBreadcrumb({ category: 'console', message: marker, data: { arguments: [marker] } });
     for (const url of [
@@ -277,7 +302,7 @@ describe('cloud-storage telemetry boundary', () => {
     await Sentry.flush();
     expect(JSON.stringify(envelopes)).not.toContain(marker);
     expect(JSON.stringify(envelopes)).toContain('api.github.com');
-    expect(JSON.stringify(envelopes)).toContain('503');
+    expect(numberPaths(envelopes, 503)).not.toEqual([]);
   });
 
   it.each(['Dropbox did not answer', 'Failed to fetch', 'Load failed', 'The operation was aborted'])('keeps %s suppressed after constructing a safe exception', async message => {

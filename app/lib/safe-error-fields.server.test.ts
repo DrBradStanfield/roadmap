@@ -47,6 +47,7 @@ const SITES = [
   'app/lib/trending-cron.server.ts',
   'app/lib/reminder-v2-cron.server.ts',
   'app/lib/chat-purge-cron.server.ts',
+  'app/lib/chat-question-archive.server.ts',
   'app/lib/discord-bot.server.ts',
   'app/lib/youtube-bot.server.ts',
   'app/routes/webhooks.orders-paid.ts',

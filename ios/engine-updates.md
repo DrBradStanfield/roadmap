@@ -44,6 +44,32 @@ the floor, so no phone runs anything older (use it to kill a bad release);
 highest version each phone accepted also live in its Keychain, so a damaged state
 file on the phone cannot lower them.
 
+**Required floor: PR 1218 (US-72 AC10).** The first engine release built from a `main` that
+holds PR 1218 MUST pass `--min-app-build 11`: build 11 is the first app build with PR 1218's
+Apple Health disconnect (build 10, commit 305725de, is the highest uploaded). That engine
+drops the importers' `erasedAt` checks: the app now disconnects Apple Health on an erase
+instead. An older build running it would read pre-erase Health readings back into an
+erased record. `ios/engine-floor.json` holds the floor, and the build refuses a manifest
+whose `minAppBuild` is below it, so the automatic release after a Deploy (below), which
+passes no `--min-app-build`, fails until you release once from your Mac with
+`--min-app-build 11`; `--min-app-build` then carries over to later releases (the last
+manifest's value). **From that release on, builds below 11 get no engine updates until
+they install the next app build.** Raise the floor file, never lower it. Brad confirmed on
+2026-11-11 that the highest uploaded build is 10, so the floor of 11 stands.
+
+Cutting build 11:
+
+- [ ] Build 11 is cut from a commit that contains PR 1218 (the floor assumes it).
+- [ ] The owed-delete kind fix (lead H29) is on main. A false 'Health not erased' on every erase must not ship.
+- [ ] The PR 1253 follow-up is merged (the panel fix: report-level dates strict, cancelled reports not read). '1253 merged' alone is not the signal.
+- [ ] The contributor confirms on build 11 that his own labs import.
+- [ ] Leads H33 and H34 are fixed on main: a remote erase that joins a pay already running must also pay the ids it just owed, and an erase waits on at most one 2 s drain.
+
+Build 12:
+
+- Build 11 (0.2) was uploaded 2026-11-11. Build 12 carries the Needs-attention banner and My health footer fix and is the resubmission; the floor stays 11.
+- [ ] U14 (build 12): replace the Swift upload-rule copy (UploadRules.swift `Rules.swift`, swiftVerdict, swiftMemberVerdict, lastComponent, pathExtension, and the LabFileReader limit constants it alone reads) with a fail-closed refusal with words. No floor bump is needed: the engine bundled with build 11 and later carries uploadVerdictsJson, and an OTA engine must beat the bundled one. Its own PR, on hold for the owner.
+
 **What only an app update can change** (the app refuses these in a download): the
 native bridge (`ios/engine/bridge-contract.json`: its hash is the bridge id, and a new
 bridge gets its own folder), the record schema version, and the pinned keys.
@@ -168,8 +194,24 @@ commits only the new files.
   Actions, Engine release, Run workflow on `main` with **reissue** ticked. It skips
   `--if-changed`, so the same engine gets a fresh 30-day manifest at a new version; if
   no artifact arrives, `verify` fails rather than skipping.
-- **One queue for all runs** (`concurrency: engine-release`), whatever the ref: every
-  run writes the same folder on `main`.
+- **Only `sign` queues** (`concurrency: engine-release-sign`, `cancel-in-progress`): it
+  alone writes the folder on `main`. A newer run's `sign` replaces an older one still
+  waiting for approval, so a forgotten approval never blocks later releases. First the
+  `fresh` job checks that main has not moved on the engine paths since the build; a
+  stale run fails there ("dispatch Engine release again") and never enters the queue.
+  `sign` runs only on `main` and only in the attempt `fresh` ran in. So a re-run that
+  reuses `fresh` ("Re-run failed jobs" after `fresh` passed, or re-running `sign`
+  alone) skips `sign` and ends green with nothing released. To retry a release, use
+  "Re-run all jobs" or dispatch Engine release again. A rare interleaving can still let
+  an older run cancel a newer request. That loses one release (the next Deploy or a
+  dispatch brings it) and never publishes an older engine: after approval, sign's "Main
+  has not moved" step refuses a stale engine before signing, and a signature reaches
+  `main` only past the version check before the commit and a push that only
+  fast-forwards.
+- **A forgotten approval reaches you.** stale-pr-watch opens one issue assigned to you
+  when a run is waiting for approval now and the oldest run that reached `sign` since
+  the last release commit started over 12 hours ago, so a chain of replaced requests
+  still counts as one wait. It closes the issue once nothing waits.
 - Actions are pinned to commit SHAs; the workflow has no permissions by default, the
   build and `verify` read the repo, and only `sign` may write.
   `ios/scripts/engine-release-workflow.test.ts` holds these guards in place and signs a

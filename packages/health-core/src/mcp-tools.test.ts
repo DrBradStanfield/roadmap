@@ -2435,6 +2435,14 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
   });
 });
 
+describe('US-36 AC8: the empty-folder refusal offers the chat drop on any device', () => {
+  it('points to the chat without limiting it to a computer', () => {
+    // The assistant reads a dropped file itself (file_results), so a phone works too.
+    expect(IMPORT_REFUSALS.emptyFolder).toMatch(/drop them into the chat, from any device\. Nothing was read\.$/);
+    expect(IMPORT_REFUSALS.emptyFolder).not.toMatch(/computer/);
+  });
+});
+
 describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or nothing', () => {
   function payloadFor(file: RoadmapFile, files: ExtractedFile[]): ImportPayload {
     return prepareImport(file, bundleOf(files), IMPORT_CTX).payload;
@@ -3644,6 +3652,7 @@ describe('US-32 AC29 — a refusal says why, in a closed vocabulary', () => {
 // US-21 phase 3 — the receipt and the commit read ONE name
 // ---------------------------------------------------------------------------
 import { labSlotKey } from './lab-catalog';
+import { numberPaths } from './number-leak.test-helpers';
 
 /**
  * The bug this pins: the dry run that builds the receipt resolved the PRINTED
@@ -3868,7 +3877,7 @@ describe('US-65 AC3 — write tools never echo a hidden value', () => {
     for (const [name, value, unit, id] of [['ferritin', 210, 'ug/L', 'h2'], ['vitamin_b12', 300, 'pmol/L', 'h3']] as const) {
       const { payload } = prepareImport(file, bundleOf([extracted(`${name}.pdf`, answer(name, value, unit))]), IMPORT_CTX);
       expect(payload.candidates[0].slot).toEqual({ state: 'held_different', existingRowId: id, replaceable: false });
-      expect(JSON.stringify(payload)).not.toContain('777');
+      expect(numberPaths(payload, 777)).toEqual([]);
     }
   });
 

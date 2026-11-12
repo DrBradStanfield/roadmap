@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H4,composition,"A chat value revealed in a matrix on a phone saved on the next tap outside, without Save",bug,done,"lib/useSaveOnLeave.ts arms only on the user's own act: a press, typing or Tab (US-16 AC1a); checked by the US-16 AC1a tests in HealthTool.phone-handoffs.test.tsx",1187,no

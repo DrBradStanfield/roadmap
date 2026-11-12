@@ -16,6 +16,16 @@ import UIKit
 /// goes through `RecordStore.applyNow`, in the store's one ordered line, so an import
 /// and a typed save never overlap: each edit reads the record as it is at its turn.
 /// A run asked for while one is going sets `again`, and the running one loops.
+///
+/// An erase disconnects Apple Health (US-72 AC10): every anchor resets and nothing is read
+/// until the person connects again, which reads everything from the start. Each pass first
+/// asks `EraseGate` about the record's erase, and every batch is saved on the record's mark
+/// taken before it was read, so a batch read before an erase never lands after it.
+///
+/// The one rule: no HealthKit read or write proceeds unless the connection generation it
+/// started under is still current, checked at entry and after every suspension. Every erase
+/// disconnect moves the generation (`disconnect`). A pass checks it with the record's mark
+/// (`still`); the live cards and pages check it through `LiveHealth.ticket` (`connection`).
 @MainActor
 @Observable
 final class AppleHealthSync {
@@ -33,19 +43,29 @@ final class AppleHealthSync {
     }
 
     private(set) var status: Status
+    /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
+    /// A cache of `memory.owed`, so every writer of owed that can change it must refresh it: init,
+    /// `pay` and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
+    /// Set only by `refreshOwedFooter`.
+    private(set) var owedFooter = false
 
-    private let store: RecordStore
+    let store: RecordStore // internal only for AppleHealthSync+Owed.swift
     private let engine: HealthEngine
-    private let client: HealthStoreClient
-    private let memory: HealthSyncMemory
+    let client: HealthStoreClient // internal only for AppleHealthSync+Owed.swift
+    let memory: HealthSyncMemory // internal only for AppleHealthSync+Owed.swift
     /// US-56's cards, read as soon as the sheet is answered (`connect`).
     private let live: LiveHealth?
-    private var running = false
+    var running = false // internal only for AppleHealthSync+Owed.swift
+    /// The connection generation of the one rule above: moves on every erase disconnect.
+    private var generation = 0
     private var again = false
-    private var waiting: [CheckedContinuation<Void, Never>] = []
+    /// Who waits for the running pass to end: a refresh asked for during it, an erase's `drained`.
+    var waiting: [UUID: CheckedContinuation<Void, Never>] = [:] // internal only for AppleHealthSync+Owed.swift
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
+    /// The owed delete in flight, the one claim every caller awaits (`deleteOwed`).
+    var paying: Task<Bool, Never>? // internal only for AppleHealthSync+Owed.swift
     /// Where the two Health Records events go (US-72 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
@@ -62,7 +82,16 @@ final class AppleHealthSync {
         self.live = live
         self.reread = reread
         status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
+        refreshOwedFooter()
+        // After an erase disconnected Health, the cards read nothing until Connect (US-72 AC10).
+        live?.connection = { [weak self] in self?.connection }
     }
+
+    /// The one writer of `owedFooter` (US-72 AC16): its rule, read from what is owed.
+    func refreshOwedFooter() { owedFooter = memory.owed.showsFooter }
+
+    /// The generation a read may start under; nil while an erase has Apple Health disconnected.
+    var connection: Int? { memory.connected || memory.eraseSeen == nil ? generation : nil }
 
     /// True once the person connected Apple Health on this phone, a failed refresh included:
     /// the erase names Apple Health and deletes its samples (US-25 AC16).
@@ -82,26 +111,14 @@ final class AppleHealthSync {
         memory.connected && client.isAvailable ? client.characteristics() : .none
     }
 
-    /// "Delete all my data" (US-25 AC16): deletes the samples this app wrote to Health
-    /// and forgets their versions. The import anchors stay, so readings already in
-    /// Health from before the erase are not imported again (D6). False when Health
-    /// refused, for the erase to say so. Never connected: nothing to delete.
-    func eraseOwnSamples() async -> Bool {
-        guard memory.connected, client.isAvailable else { return true }
-        do {
-            try await client.deleteOwnSamples()
-        } catch {
-            return false
-        }
-        memory.forgetWritten()
-        return true
-    }
-
     /// The app's one Apple Health connect (US-56 AC4): Apple's permission sheet for
     /// everything, then the first import. The cards read as soon as the sheet is answered,
     /// beside the import, never after it (always read: the answer is new, N2).
     func connect() async {
         guard client.isAvailable else { return }
+        // Not connected: the record's erase is taken as seen. Still connected (Connect is offered
+        // after a failed refresh) with a newer erase pending: it disconnects, then connects again.
+        _ = followErase()
         do {
             // Health showed its lab results sheet because HealthKit said one was needed (AC13).
             if try await client.requestAuthorization() {
@@ -112,6 +129,9 @@ final class AppleHealthSync {
             status = .failed(error.localizedDescription)
             return
         }
+        // What an erase left owed goes first. A delete that fails (locked) still connects: those
+        // ids stay owed, apart from what this connection writes (edge 1).
+        await deleteOwed()
         memory.connected = true
         start()
         async let imported: Void = refresh()
@@ -126,6 +146,7 @@ final class AppleHealthSync {
     /// so a sheet once shown is remembered and coming on screen never shows one again.
     /// Then the refresh, which imports what they allowed.
     func foreground() async {
+        await deleteOwed()
         if memory.labResultsAsked == nil { _ = await askForLabResults() }
         await refresh()
     }
@@ -153,14 +174,19 @@ final class AppleHealthSync {
 
     /// At launch and on connect: refresh when Health has new data (in the background
     /// too), when the phone unlocks, and when a typed value changes the record. The
-    /// app's `follow` refreshes when it comes forward. Once per launch. At launch the
-    /// observers are already in place (`observeAtLaunch`), so the client keeps those.
+    /// app's `follow` refreshes when it comes forward. Health's observers on each connect
+    /// (an erase stopped them); at launch they are already in place (`observeAtLaunch`),
+    /// so the client keeps those. The unlock and record watchers once per launch.
     func start() {
-        guard memory.connected, client.isAvailable, !started else { return }
-        started = true
+        guard memory.connected, client.isAvailable else { return }
         client.observe(HealthKind.allCases) { [weak self] in await self?.refresh() }
+        guard !started else { return }
+        started = true
         NotificationCenter.default.addObserver(forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in await self?.refresh() }
+            Task { @MainActor in
+                await self?.deleteOwed()
+                await self?.refresh()
+            }
         }
         watchRecord()
     }
@@ -187,22 +213,30 @@ final class AppleHealthSync {
         guard memory.connected else { status = .notConnected; return }
         if running {
             again = true
-            await withCheckedContinuation { waiting.append($0) }
+            await withCheckedContinuation { waiting[UUID()] = $0 }
             return
         }
         running = true
         defer {
             running = false
-            waiting.forEach { $0.resume() }
-            waiting = []
+            waiting.values.forEach { $0.resume() }
+            waiting = [:]
         }
         repeat {
             again = false
+            guard followErase(), memory.connected else { status = .notConnected; return }
             status = .working
+            // Taken before anything is read: an erase from here on refuses this pass's saves.
+            let pass = Pass(mark: store.mark, generation: generation)
             do {
-                try await importNew()
-                try await writeTyped()
+                try await importNew(on: pass)
+                try still(pass)
+                try await writeTyped(on: pass)
+                try still(pass)
                 status = noAccess ? .notAllowed : .upToDate(.now)
+            } catch is RecordMoved {
+                // An erase landed meanwhile: the next pass meets it at the gate.
+                again = true
             } catch HealthStoreError.locked {
                 status = .waitingForUnlock
                 return
@@ -213,29 +247,82 @@ final class AppleHealthSync {
         } while again
     }
 
+    /// The gate (US-72 AC10) on the record shown now: a newer erase on the record seen before
+    /// disconnects; a first look or a new record source is taken as seen. False: disconnected.
+    /// A connected cloud whose record is not open yet decides nothing.
+    private func followErase() -> Bool {
+        guard let source = store.recordSource, let data = store.myData else { return true }
+        let now = EraseSeen(epoch: data.eraseEpoch ?? 0, source: source)
+        switch EraseGate.decide(connected: memory.connected, seen: memory.eraseSeen, recordErase: now.epoch, recordSource: source) {
+        case .keep: return true
+        case .adopt:
+            memory.eraseSeen = now
+            return true
+        case .disconnect:
+            memory.eraseSeen = now
+            disconnect()
+            // As a local erase does (DataEraser): nothing read before it stays on screen or on disk (edge 3).
+            let deadline = ContinuousClock.now + Self.drainBound
+            Task {
+                await live?.forget()
+                await deleteOwed(erasing: deadline)
+            }
+            return false
+        }
+    }
+
+    /// Disconnected by an erase: nothing is observed or read, and every anchor resets, so
+    /// the next Connect reads everything from the start. Every value written is owed a delete.
+    /// What Health showed is kept (`labResultsAsked`), so that Connect asks nothing again.
+    func disconnect() { // internal only for AppleHealthSync+Owed.swift
+        generation += 1
+        memory.oweWritten()
+        refreshOwedFooter()
+        guard memory.connected else { return }
+        memory.connected = false
+        for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
+        memory.labResultsAnchor = nil
+        client.stopObserving()
+        status = .notConnected
+    }
+
+    /// What a pass began under: the record's mark and the connection generation.
+    private struct Pass {
+        let mark: RecordStore.Mark
+        let generation: Int
+    }
+
+    /// The one rule, for a pass: its mark no longer holds (an erase landed since it began), or
+    /// its connection generation moved (an erase disconnected Apple Health).
+    private func still(_ pass: Pass) throws {
+        guard pass.mark.holds(at: store.mark), pass.generation == generation else { throw RecordMoved() }
+    }
+
     /// No kind may be written and none has given a reading (US-25 AC15b). iOS hides a refused
     /// read, so an empty Health whose writes were refused looks the same, and says the same.
     private var noAccess: Bool {
         !HealthKind.allCases.contains { client.canWrite($0) || memory.anchor(for: $0) != nil } && memory.labResultsAnchor == nil
     }
 
-    private func importNew() async throws {
+    private func importNew(on pass: Pass) async throws {
         for kind in HealthKind.allCases {
             let anchor = memory.anchor(for: kind)
             let batch = try await client.samples(of: kind, after: anchor)
+            try still(pass)
             // A refused read looks like an empty one (iOS hides which), and a blood pressure
             // with one half refused shows only the other. Until a kind has given a whole
             // reading, keep no anchor, so allowing it later still brings in its past.
             if anchor == nil, !Self.hasWholeReading(batch.samples, kind) { continue }
-            if !batch.samples.isEmpty { try await save(.appleHealth(batch.samples)) }
+            if !batch.samples.isEmpty { try await save(.appleHealth(batch.samples), on: pass) }
+            try still(pass)
             memory.setAnchor(batch.anchor, for: kind)
         }
-        try await importLabResults()
+        try await importLabResults(on: pass)
     }
 
     /// Lab results (US-72), as a kind: no anchor until a batch brought some (a refused read
     /// looks like an empty one), and the anchor moves only once the record holding them is saved.
-    private func importLabResults() async throws {
+    private func importLabResults(on pass: Pass) async throws {
         guard client.supportsHealthRecords else { return }
         // A build that reads results the last one refused reads them all again; AC5's dedup keeps that safe.
         if memory.labResultsRules != HealthSyncMemory.labResultsRulesVersion {
@@ -244,10 +331,12 @@ final class AppleHealthSync {
         }
         let anchor = memory.labResultsAnchor
         let batch = try await client.labResults(after: anchor)
+        try still(pass)
         if anchor == nil, batch.records.isEmpty { return }
-        if !batch.records.isEmpty, try await save(.healthRecords(batch.records))?.landed == true {
+        if !batch.records.isEmpty, try await save(.healthRecords(batch.records), on: pass)?.landed == true {
             analytics?.event(.healthRecordsImported)
         }
+        try still(pass)
         memory.labResultsAnchor = batch.anchor
     }
 
@@ -255,27 +344,44 @@ final class AppleHealthSync {
     /// the erase guard), checked against the record as it is now: an import is not a
     /// sheet, so a sheet's pin never refuses it. A refusal reads the record again and
     /// tries once more; a second refusal keeps the anchor, so the batch comes again.
+    /// On the pass's mark, the record the batch was read from: after an erase it never lands,
+    /// and the pass ends silently (`RecordMoved`) for the next one to meet the erase.
     /// Returns what a Health Records batch did (nil for any other edit).
     @discardableResult
-    private func save(_ edit: RecordEdit) async throws -> HealthRecordCounts? {
-        if case .saved(let counts) = await store.applyNow(edit) { return counts }
+    private func save(_ edit: RecordEdit, on pass: Pass) async throws -> HealthRecordCounts? {
+        guard let first = await store.applyNow(edit, on: pass.mark) else { throw RecordMoved() }
+        if case .saved(let counts) = first { return counts }
+        try still(pass)
         await reread()
-        switch await store.applyNow(edit) {
+        try still(pass)
+        guard let second = await store.applyNow(edit, on: pass.mark) else { throw RecordMoved() }
+        switch second {
         case .saved(let counts): return counts
-        case .refused(let message, _): throw ImportRefused(message: message)
+        case .refused(let message, _):
+            try still(pass)
+            throw ImportRefused(message: message)
         }
     }
 
     /// Each value once per version. One Health refuses does not hold back the rest:
     /// it is tried again next time, and the first refusal is reported after the others.
-    private func writeTyped() async throws {
+    /// Each save starts only while the pass holds. One that lands is listed at once: as written,
+    /// or, once an erase has disconnected Health, as owed, so the delete covers it (`deleteOwed`).
+    /// A pass never writes an owed id; it is written again once its delete is paid.
+    private func writeTyped(on pass: Pass) async throws {
         let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        memory.learnKinds(writes)
         var refused: Error?
-        for write in writes where write.version > memory.writtenVersion(write.syncId) {
+        for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed.ids[write.syncId] == nil {
             guard let kind = write.kind, client.canWrite(kind) else { continue }
+            try still(pass)
             do {
                 try await client.save(write)
-                memory.setWritten(write.version, for: write.syncId)
+                if pass.generation == generation {
+                    memory.setWritten(write.version, for: write.syncId)
+                } else {
+                    memory.owe(write.version, for: write.syncId)
+                }
             } catch HealthStoreError.locked {
                 throw HealthStoreError.locked
             } catch {
@@ -302,6 +408,8 @@ final class AppleHealthSync {
             }
         }
     }
+
+    private struct RecordMoved: Error {}
 
     private struct ImportRefused: LocalizedError {
         let message: String

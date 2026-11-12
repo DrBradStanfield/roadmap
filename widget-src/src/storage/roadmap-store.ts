@@ -24,7 +24,7 @@
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
-import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove, type LabUnitRefusal, type MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
@@ -32,7 +32,7 @@ import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/heal
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
-import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication } from '@roadmap/health-core/mappings';
 import { fileProfileToApi, fileScreeningRows } from '@roadmap/health-core/file-inputs';
 import { isClinicalDay, latestActivePerMetric } from '@roadmap/health-core/measurement-history';
 import { localDay } from '@roadmap/health-core/merge';
@@ -52,7 +52,7 @@ import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -61,75 +61,12 @@ export { ROADMAP_DOC };
 
 /** The pending-mirror marker (US-09 AC4) is the web host's; re-exported for
  *  the modules that import it from the store. */
-export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
+export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
-// --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
-
-export interface ApiReminderPreference {
-  reminderCategory: string;
-  enabled: boolean;
-}
-export interface ApiSupplement {
-  id: string;
-  supplementKey: string;
-  supplementName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  status: string;
-  startedAt: string | null;
-  updatedAt: string;
-}
-export interface ApiDocument {
-  id: string;
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  createdAt: string;
-  /** Cloud/device ref of the original uploaded file (mirrors api-types.ApiDocument). */
-  fileRef?: string | null;
-  /** 'sha256-<hex>' of the original's bytes (mirrors api-types.ApiDocument). */
-  contentHash?: string | null;
-}
-export interface ApiLabValue {
-  id: string;
-  metricName: string;
-  value: number;
-  unit: string;
-  referenceLow: number | null;
-  referenceHigh: number | null;
-  recordedAt: string;
-  source: string;
-  createdAt: string;
-}
-export interface ApiMedicationHistory {
-  id: string;
-  medicationKey: string;
-  drugName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  changeType: string;
-  /** When the change was recorded, not a claimed treatment date. */
-  recordedAt: string;
-}
-export interface LatestMeasurementsResult {
-  inputs: Partial<HealthInputs>;
-  previousMeasurements: ApiMeasurement[];
-  medications: ApiMedication[];
-  screenings: ApiScreening[];
-  supplements: ApiSupplement[];
-  reminderPreferences: ApiReminderPreference[];
-  documents: ApiDocument[];
-}
-export type AddMeasurementResult =
-  | { status: 'inserted'; row: ApiMeasurement }
-  | { status: 'duplicate' }
-  | { status: 'invalid' }
-  | { status: 'error' };
+// App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
+import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkLabValuesResult, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
@@ -148,20 +85,6 @@ export interface BirthRefusal { birthYear: number; birthMonth: number | undefine
 export type ProfileRangeRefusal = Partial<Record<keyof HealthInputs, string>>;
 /** `added`: the rows the save inserted as new, never a correction or a refused number (US-07 AC11's usage signal). */
 export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; added: ApiMeasurement[]; refused?: ProfileRangeRefusal };
-export interface BulkSaveResult {
-  saved: ApiMeasurement[];
-  skippedDuplicates: number;
-  errorCount: number;
-  refused: MeasurementRefusal[];
-}
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  skippedDuplicates: number;
-  errorCount: number;
-  refused: LabUnitRefusal[];
-  /** Core values (a core test's name, US-66 AC6) refused for their number. */
-  measurementRefusals?: MeasurementRefusal[];
-}
 /** One reviewed upload row. `correctsId` is set only when the reviewer ticked
  *  "Replace" on a slot another writer (a connector, another device) already
  *  holds — it turns the write into a FHIR correction instead of a skip. */
@@ -284,9 +207,9 @@ export class RoadmapStore {
     return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m) && !(answered && m.drugName === 'not_yet'));
   }
 
-  get backendId() {
-    return this.session.backendId;
-  }
+  get backendId() { return this.session.backendId; }
+  /** What the storage line says of the save (US-09 AC30); see the session. */
+  get saveStatus() { return this.session.saveStatus; }
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
@@ -303,7 +226,7 @@ export class RoadmapStore {
   /** Every write below takes `erase`, the erase the page showed when the
    *  write was asked for, and is refused as the session's `refuses` says
    *  (US-16 AC2a). A refusal is the method's error answer, never a throw. */
-  private refuses(erase?: string): boolean {
+  refuses(erase?: string): boolean {
     return this.session.refuses(erase);
   }
 
@@ -508,7 +431,7 @@ export class RoadmapStore {
       write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
-        if (this.refuses(erase)) return; // a refusal, not a failure
+        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal, not a failure (A15)
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
@@ -637,10 +560,10 @@ export class RoadmapStore {
     };
   }
 
-  /** Clear the off-file health data for the erase this copy is at, sparing
-   *  the originals of documents that outlive it (US-11 AC6); see the session. */
+  /** Clear the off-file health data for this copy's erase, sparing outliving originals (US-11 AC6; see the session).
+   *  A failed clear is reported ('Record upkeep failed') and not retried in this session: it never stops the page's reset. */
   clearOffFileData(): void {
-    this.session.clearOffFileData();
+    try { this.session.clearOffFileData(); } catch (error) { this.host.report(error, { op: 'clear-off-file', repeat: false }); }
   }
 
   /** Last-ditch save for tab close and hide (US-10 AC5); see the session. */

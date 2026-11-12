@@ -116,4 +116,52 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.arrived(false);
     expect(apply.mock.calls).toEqual([[true]]);
   });
+
+  it('fix 4 2b-3: the erase machine\'s read (`shows`) ends a hold and counts nothing; the save that cleans the form reads nothing more', () => {
+    const apply = vi.fn();
+    const relay = ready(apply);
+    relay.arrived(true);
+    relay.shows();
+    expect(apply.mock.calls).toEqual([[false]]);
+    relay.saved();
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it('fix 4 2b-3: before the first read is shown, `shows` ends a wait but the relay stays loading: loaded reads nothing more, a later change still waits', () => {
+    const apply = vi.fn();
+    const relay = createRemoteChangeRelay(apply);
+    relay.arrived(false); // loading-held
+    relay.shows();
+    relay.loaded();
+    expect(apply.mock.calls).toEqual([[false]]);
+    const early = vi.fn();
+    const other = createRemoteChangeRelay(early);
+    other.shows();
+    other.arrived(false);
+    expect(early.mock.calls).toEqual([[false]]); // the change waits for the first read
+    other.loaded();
+    expect(early.mock.calls).toEqual([[false], [true]]);
+  });
+
+  // fix 4 2b-3 R1/F2: the late echo of the erase the screen shows is a remote change that counts nothing.
+  // apply(remote, counts): remote clears the answer mark (US-62 AC13); counts fires remote_change_applied.
+  type Relay = ReturnType<typeof createRemoteChangeRelay<void>>;
+  it.each<[string, boolean, (relay: Relay) => void, unknown[][]]>([
+    ['a held echo waits, then the save that cleans the form applies it: clears, counts nothing', true,
+      r => { r.arrived(true, false); r.saved(); }, [[true, false]]],
+    ['a clean echo applies at once: clears, counts nothing', true, r => { r.arrived(false, false); }, [[true, false]]],
+    ['an echo held with a plain change: one read, counted once', true, r => { r.arrived(true, false); r.arrived(true); r.saved(); }, [[true]]],
+    ['a plain change held, then an echo: one read, counted once', true, r => { r.arrived(true); r.arrived(true, false); r.saved(); }, [[true]]],
+    ['a held echo ended by a reread (an upload, a \'left\' re-read): clears, counts nothing', true,
+      r => { r.arrived(true, false); r.reread(); }, [[true, false]]],
+    ['a loading-held echo ended by loaded: clears, counts nothing', false, r => { r.arrived(false, false); r.loaded(); }, [[true, false]]],
+    ['a held echo ended by saved: clears, counts nothing; a second save reads nothing', true,
+      r => { r.arrived(true, false); r.saved(); r.saved(); }, [[true, false]]],
+    ['a reread with nothing held: neither', true, r => { r.reread(); }, [[false]]],
+  ])('F2: %s', (_name, loaded, steps, calls) => {
+    const apply = vi.fn();
+    const relay = loaded ? ready(apply) : createRemoteChangeRelay(apply);
+    steps(relay);
+    expect(apply.mock.calls).toEqual(calls);
+  });
 });

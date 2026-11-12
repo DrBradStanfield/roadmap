@@ -215,7 +215,7 @@ const TEXTS = [
 ];
 
 describe('free-text scrub parity', () => {
-  // sentry-scrub.ts DERIVES both lists from UNIT_DEFS, METRIC_LABELS and the
+  // scrub-vocabulary.ts DERIVES both lists from UNIT_DEFS, METRIC_LABELS and the
   // lab catalogue; the .mjs cannot import, so it carries them as literals. When
   // the catalogue moves, these two fail and print the array to paste back.
   const paste = (name: string, words: readonly string[]) =>
@@ -520,6 +520,95 @@ describe('free-text scrub parity', () => {
     const a = build(); const b = build();
     source.scrubEventText(a); copy.scrubEventText(b);
     expect(b).toEqual(a);
+  });
+
+  // US-09 AC7h: the trace context's ids survive in their exact shape and are
+  // scrubbed in any other, the same way on both copies.
+  it('US-09 AC7h — trace and span ids: kept in their exact shape at their exact paths, on both copies', () => {
+    const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+    const SPAN_ID = 'e212345678abcdef';
+    const trace = (trace_id: string, span_id: string, parent_span_id: string) => ({
+      trace_id, span_id, parent_span_id, links: [{ trace_id, span_id, sampled: false }],
+    });
+    const ID_CASES = [
+      trace(TRACE_ID, SPAN_ID, SPAN_ID),
+      trace('LDL 3.2 mmol/L', 'e2 45', 'e2 45'),
+      trace(TRACE_ID.toUpperCase(), SPAN_ID.toUpperCase(), SPAN_ID.toUpperCase()),
+      trace(TRACE_ID.slice(1), `${SPAN_ID}0`, TRACE_ID),
+    ];
+    const build = (t: ReturnType<typeof trace>) => ({
+      event_id: TRACE_ID,
+      contexts: { trace: t, other: { trace_id: TRACE_ID, span_id: SPAN_ID } },
+      spans: [{ span_id: SPAN_ID, parent_span_id: SPAN_ID, trace_id: TRACE_ID }],
+      extra: { trace_id: TRACE_ID, span_id: SPAN_ID },
+      tags: { trace_id: TRACE_ID },
+    });
+    for (const [i, t] of ID_CASES.entries()) {
+      const a = build(t); const b = build(t);
+      source.scrubEventText(a); copy.scrubEventText(b);
+      expect(b).toEqual(a);
+      const kept = i === 0;
+      expect(a.contexts.trace).toEqual(kept ? t : trace(
+        source.scrubText(t.trace_id), source.scrubText(t.span_id), source.scrubText(t.parent_span_id)));
+      expect(a.event_id).toBe(TRACE_ID);
+      expect(a.spans).toEqual(build(t).spans);
+      expect(a.contexts.other).toEqual({ trace_id: source.scrubText(TRACE_ID), span_id: source.scrubText(SPAN_ID) });
+      expect(a.extra).toEqual({ trace_id: source.scrubText(TRACE_ID), span_id: source.scrubText(SPAN_ID) });
+      expect(a.tags).toEqual({ trace_id: source.scrubText(TRACE_ID) });
+    }
+  });
+
+  // Adversary R2 of PR #1300: attacker-shaped inputs at and near the id paths
+  // keep nothing they should not, and add no key, the same way on both copies.
+  it('US-09 AC7h — odd shapes at the id paths: scrubbed or untouched, never kept as text, on both copies', () => {
+    const TRACE_ID = 'e2123456789abcdef0123456789abcde';
+    const SPAN_ID = 'e212345678abcdef';
+    const TEXT = 'LDL 3.2 mmol/L e2 45';
+    const t = source.scrubText(TRACE_ID); const s = source.scrubText(SPAN_ID); const x = source.scrubText(TEXT);
+    expect(t).not.toBe(TRACE_ID);
+    expect(x).not.toBe(TEXT);
+    const both = (make: () => Record<string, unknown>) => {
+      const a = { contexts: make() }; const b = { contexts: make() };
+      source.scrubEventText(a); copy.scrubEventText(b);
+      expect(b).toEqual(a);
+      return a.contexts as Record<string, unknown>;
+    };
+
+    // links as a plain object, not an array: no exemption, everything scrubbed.
+    expect(both(() => ({ trace: { links: { 0: { trace_id: TRACE_ID, span_id: SPAN_ID, note: TEXT } } } })))
+      .toEqual({ trace: { links: { 0: { trace_id: t, span_id: s, note: x } } } });
+
+    // A trace nested one level deeper, under trace or any other context: scrubbed.
+    expect(both(() => ({ other: { trace: { trace_id: TRACE_ID } }, trace: { trace: { trace_id: TEXT } } })))
+      .toEqual({ other: { trace: { trace_id: t } }, trace: { trace: { trace_id: x } } });
+
+    // Inside a link only trace_id and span_id are kept; parent_span_id and note are scrubbed.
+    expect(both(() => ({ trace: { links: [{ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: SPAN_ID, note: TEXT }] } })))
+      .toEqual({ trace: { links: [{ trace_id: TRACE_ID, span_id: SPAN_ID, parent_span_id: s, note: x }] } });
+    expect(both(() => ({ trace: { links: [{ parent_span_id: TEXT }] } })))
+      .toEqual({ trace: { links: [{ parent_span_id: x }] } });
+
+    // An empty link, or a trace with no ids: no key is added.
+    expect(both(() => ({ trace: { links: [{}] } }))).toEqual({ trace: { links: [{}] } });
+    expect(both(() => ({ trace: { op: 'http.server' } }))).toEqual({ trace: { op: 'http.server' } });
+
+    // A non-string id gets what the same value gets at any other path; an id inside it is scrubbed.
+    for (const make of [() => [TRACE_ID], () => 12345, () => new String(TRACE_ID)]) {
+      const out = both(() => ({ trace: { trace_id: make(), links: [{ span_id: make() }] }, other: { trace_id: make() } }));
+      const elsewhere = (out.other as Record<string, unknown>).trace_id;
+      expect(out.trace).toEqual({ trace_id: elsewhere, links: [{ span_id: elsewhere }] });
+      expect(JSON.stringify(out.trace)).not.toContain(TRACE_ID);
+    }
+    expect(both(() => ({ trace: { trace_id: [TRACE_ID] } }))).toEqual({ trace: { trace_id: [t] } });
+
+    // A getter that returns text on its first read and an id on its second: the text never leaves.
+    const flipping = () => {
+      let reads = 0;
+      return { trace: { get trace_id() { return reads++ ? TRACE_ID : TEXT; } } };
+    };
+    const out = both(flipping);
+    expect(JSON.stringify(out)).not.toContain('3.2');
+    expect(JSON.stringify(out)).not.toContain('LDL');
   });
 
   // The .mjs cannot import units.ts (it loads before the bundle, outside the

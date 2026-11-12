@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C14,reminders,"Verified reminder opt-in: security class, detail private until the fix is live",bug,decided: change,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: security class; master/austin builds; detail private,,yes

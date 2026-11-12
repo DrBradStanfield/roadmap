@@ -1,7 +1,8 @@
 /**
  * The one screening-rules table (audit A2-1). The rules lived in five copies; each
  * PR moves one copy onto this table, with screening-rules.golden.test.ts proving
- * nothing changed. F and S read it (steps 3 and 4); Q, R and M still keep their own copies.
+ * nothing changed. F, S and R read it (steps 3 to 5), M too (step 6), and Q's ScreeningQuestions
+ * through screeningForm (step 7); BoneDensity's DEXA questions still restate F's field gates.
  *   S  plan cards     suggestions.ts (cancer screening and DEXA)
  *   F  form data      input-form.ts screeningForm, screeningWrites
  *   Q  web JSX        ScreeningQuestions.tsx, BoneDensity.tsx
@@ -37,14 +38,16 @@
  *   endometrial screening-endometrial #cancer-screening, "Endometrial Cancer"
  *   dexa        screening-dexa        #other-health-screening, "Osteoporosis Screening"
  *
- * Imports: health-core only. Server code that reads this later deep-imports it
+ * Imports: health-core only, and types only, since types.ts and reminder-schedule.ts
+ * read their views from here. Server code that reads this later deep-imports it
  * (../../packages/health-core/src/screening-rules), never @roadmap/health-core.
- * When types.ts turns its constants into views, LUNG_PACK_YEARS must move here
- * first, or types.ts and this file import each other.
  */
 import type { ReminderCategory } from './reminders';
 import type { ScreeningInputs } from './types';
-import { LUNG_PACK_YEARS } from './types';
+
+/** Lung screening's smoking history, ACS 2023: 20 pack-years or more. The plan, the
+ *  reminders and both forms read it, so they cannot disagree again (#285). */
+export const LUNG_PACK_YEARS = 20;
 
 export type ScreeningId = 'colorectal' | 'breast' | 'cervical' | 'lung' | 'prostate' | 'endometrial' | 'dexa';
 export type AgeRange = readonly [min: number, max?: number];
@@ -97,11 +100,14 @@ interface RuleBase {
   readonly dateKey?: string;
   /** Lung keeps its follow-up past the upper age (US-07 AC1g); the pack-years gate is waived too, in code. */
   readonly followupIgnoresUpperAge: boolean;
+  /** The repeat interval the follow-up's report gave, asked once the follow-up is completed: whole years, 1 to
+   *  `maxYears`, the blank answer `notGiven` (colorectal, Change 2b, US-07 AC1j). Last in the result chain. */
+  readonly followupInterval?: { readonly key: string; readonly label: string; readonly notGiven: string; readonly maxYears: number };
   readonly reminder?: { readonly category: ReminderCategory; readonly label: string };
   readonly evidenceKey: string;
   readonly notes: readonly Note[];
   readonly cards: {
-    readonly start: CardText | { readonly ref: 'breastStart' };
+    readonly start: CardText | { readonly ref: 'breastStart' | 'colorectalStart' };
     readonly overdue?: CardText;
     readonly upToDate?: CardText;
   };
@@ -146,14 +152,15 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     ] },
     notStarted: 'not_yet_started', dateKey: 'colorectal_last_date', result: resultOf('colorectal'),
     followupIgnoresUpperAge: false,
+    followupInterval: { key: 'colorectal_followup_interval_years', label: 'Did the colonoscopy report give a follow-up time?', notGiven: 'Not given', maxYears: 10 },
     reminder: { category: 'screening_colorectal', label: 'Colorectal screening' },
     evidenceKey: 'screening-colorectal',
     notes: [
-      { below: 45, text: 'Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.' },
+      { below: 45, text: 'Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.' },
       { above: 75, text: 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.' },
     ],
     cards: {
-      start: { title: 'Start colorectal cancer screening', description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.' },
+      start: { ref: 'colorectalStart' },
       overdue: { title: 'Colorectal screening overdue', description: 'Your next colorectal screening was due {due}. Please schedule your screening.' },
       upToDate: { title: 'Colorectal screening up to date', description: 'Next screening due {due}.' },
     },
@@ -285,16 +292,28 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
   },
 ];
 
+/** Breast: mammography moves from optional to recommended at 45 (the start card's priority and
+ *  text, and the by-age note), and the note's annual or biennial interval starts at 55. */
+export const BREAST_RECOMMENDED_FROM = 45;
+export const BREAST_ANNUAL_OR_BIENNIAL_FROM = 55;
+/** Colorectal (Brad 2026-11-12): from 35 is Dr Brad's recommendation, the ACS starts at 45; his
+ *  sequence is FIT every year until 55, then colonoscopy every 10 years. */
+export const COLORECTAL_GUIDELINE_FROM = 45;
+export const COLORECTAL_COLONOSCOPY_FROM = 55;
+
 /** Everything a row names but cannot hold as data, each in one place: the gates (`extraGates`)
  *  and the age-dependent prose (a note's or a card's `ref`). screening-rules.test.ts checks the
  *  gates; the golden pin guards the prose. */
 export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) => boolean }
-  & { readonly [K in NoteRef]: (age: number) => string } & { readonly breastStart: (age: number) => CardText } = {
+  & { readonly [K in NoteRef]: (age: number) => string }
+  & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } }
+  & { readonly colorectalStart: (age: number) => CardText }
+  & { readonly colorectalStatus: (card: CardText, age: number, method: string | undefined, result?: string) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
-  breastByAge: (age) => age <= 44
+  breastByAge: (age) => age < BREAST_RECOMMENDED_FROM
     ? 'Annual mammograms are optional at your age (40–44).'
-    : age <= 54
+    : age < BREAST_ANNUAL_OR_BIENNIAL_FROM
       ? 'Annual mammograms are recommended at your age (45–54).'
       : 'Annual or biennial mammograms are recommended at your age (55+).',
   prostateByAge: (age) => age < 50
@@ -302,10 +321,25 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
     : 'PSA testing is an option after an informed discussion with your doctor.',
   breastStart: (age) => ({
     title: 'Start breast cancer screening',
-    description: age >= 45
+    priority: age >= BREAST_RECOMMENDED_FROM ? 'attention' : 'info',
+    description: age >= BREAST_RECOMMENDED_FROM
       ? 'Mammography is recommended at your age. Discuss with your doctor.'
       : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
   }),
+  colorectalStart: (age) => ({
+    title: 'Start colorectal cancer screening',
+    description: age < COLORECTAL_GUIDELINE_FROM
+      ? 'Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.'
+      : age < COLORECTAL_COLONOSCOPY_FROM
+        ? 'Colorectal screening is recommended. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. The American Cancer Society treats these and other tests as equal options. Discuss with your doctor.'
+        : 'Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.',
+  }),
+  /** The routine up-to-date and overdue cards (never the follow-up's): yearly FIT from 55 adds the colonoscopy line,
+   *  never after an abnormal result (Brad 2026-11-12). */
+  colorectalStatus: (card, age, method, result) => method === 'fit_annual' && age >= COLORECTAL_COLONOSCOPY_FROM
+    && !opensFollowup(ruleOf('colorectal'), result)
+    ? { ...card, description: `${card.description} From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor.` }
+    : card,
 };
 
 /** The cancer section opens from 35 for anyone, with no upper bound (input-form.ts
@@ -339,12 +373,38 @@ export const ruleNotes = (r: ScreeningRule, age: number): string[] => r.notes.fl
 /** A row's result answer that opens its follow-up (abnormal; DEXA's osteoporosis). */
 export const followupTrigger = (r: ScreeningRule): string | undefined => r.result?.options.find((o) => o.followup)?.value;
 
-/** A row's result chain keys: the result, then the follow-up's status and date. */
-export const chainKeys = (r: ScreeningRule): string[] => (r.result ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`] : []);
+/** Whether this result opens the row's follow-up; never for a row with no result (prostate, endometrial). */
+export const opensFollowup = (r: ScreeningRule, result: string | undefined): boolean => {
+  const t = followupTrigger(r);
+  return !!t && result === t;
+};
+
+/** A row's result chain keys: the result, then the follow-up's status and date, then its repeat interval (Change 2b). */
+export const chainKeys = (r: ScreeningRule): string[] => (r.result
+  ? [r.result.key, `${r.id}_followup_status`, `${r.id}_followup_date`, ...(r.followupInterval ? [r.followupInterval.key] : [])] : []);
+
+/** The repeat interval question, once the follow-up is completed (US-07 AC1j): its key, label and answers,
+ *  "Not given" (blank) then 1 to maxYears years. None for another status or a row without one. */
+export function intervalQuestion(r: ScreeningRule, status: string): Array<{ key: string; label: string; options: Array<{ value: string; label: string }> }> {
+  const q = r.followupInterval;
+  if (!q || status !== 'completed') return [];
+  const years = Array.from({ length: q.maxYears }, (_, i) => ({ value: String(i + 1), label: `${i + 1} year${i ? 's' : ''}` }));
+  return [{ key: q.key, label: q.label, options: [{ value: '', label: q.notGiven }, ...years] }];
+}
+
+/** The repeat interval an answer closes (US-07 AC1j): a follow-up status other than completed, completed written
+ *  over another status (a time an older engine left), or a new method. `before` is the key's stored answer.
+ *  The result and "Not yet started" close it with the chain. */
+export function intervalClosedBy(key: string, value: string, before = ''): string[] {
+  const r = SCREENING_RULES.find((x) => x.choice.key === key || `${x.id}_followup_status` === key);
+  if (!r?.followupInterval) return [];
+  return (key === r.choice.key ? value !== before : value !== 'completed' || before !== 'completed') ? [r.followupInterval.key] : [];
+}
 
 // ---------------------------------------------------------------------------
-// Views: today's shared constants, derived from the table. Only F and S read one yet
-// (screeningFollowupInfo); screening-rules.test.ts proves each deep-equals the constant it replaces.
+// Views: today's shared constants, derived from the table. F and S read screeningFollowupInfo, M
+// screeningMinAge (types.ts), R screeningScheduleLabels (reminder-schedule.ts). screening-rules.test.ts
+// proves each other view deep-equals the constant it will replace.
 // ---------------------------------------------------------------------------
 
 type Entry = readonly [key: string, months: number];

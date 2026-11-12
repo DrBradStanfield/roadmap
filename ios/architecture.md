@@ -140,16 +140,17 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
   - **The cloud handover** (`handOver`): after an open resolves, one step decides whether to show it. Every edit asked for before that step has landed on the phone's file and been counted; if any came in, the app opens again, and that reopen merges the phone's file in whatever its marker says (`cloudOpen`'s `mergePhone`). An edit asked for after the step lands after the cloud record is shown. A record or a failure the opening session sends meanwhile is held and shown with it, not dropped, and the status is set in the same turn the session is shown: news after that turn is never overwritten by the open finishing.
   - **The phone erase** (`erasePhone`): the record is read, erased by the engine, the chat tombstones kept and the erase written, in one step, so an import accepted meanwhile lands after the erase, never under it. It is marked and counted like any phone edit, so a first connect that lifted the pre-erase file opens again and merges the erase in, whose higher eraseEpoch wins (US-09 AC23).
   - **The master units switch** holds entry while it lands, as a per-test switch does (`unitSwitches`).
+- **Which record is shown is one value (2026-11-12, US-25 AC11, leads S10, S23, H28).** `RecordStore.source` is a `Source` union: `phone(link:)`, `leaving(from:)` (showPhone's read of the phone's file), or `cloud(Cloud)`, where a `Cloud` carries its erase, its engine session, the link and the account it was drawn under (`drawnAccount`, set when a session's first record is drawn, kept by a re-read, an edit or an erase in the same session, and never moved by a link; engine sessions only rise, so the session alone tells a re-read from a new open: Apple Health's source is that account only while the link still names it, else nil, so a switch that links a new account over the old record adopts nothing; review R1), and a `Link` is CloudSync's account and pending marker (compared by identity). It changes only through the pure `Source.transition` (RecordStore+Source.swift: 3 states by 7 events, no default arm, `RecordSourceTests`), landed by one private door, `land`, which sets the record, the drawing and the problem in the same synchronous step and assigns `source` only on change. `cloudErase`, `screen`, `mark` and `recordSource` derive from it; `recordJSON` and `problem` are `private(set)`. Why: the fields it replaced (`cloudErase`, `cloudSession`, `cloudName`, `cloudAccount`, `marksPending`) were hand-pushed copies that could disagree. In `leaving` the screen still draws and reports the cloud, so an edit asked during the read is checked against the cloud and refused in its turn with the usual words, never written to the phone's file; Apple Health's gate reads no source then. `applyNow(_:on:)` also refuses a mark taken on the other side (cloud or phone); `Mark.holds` is unchanged, so the chat still reads connecting or disconnecting as no erase (US-67). Cells no caller reaches today are `drop`: nothing moves. Known gap (lead S27): a failed phone read keeps the previous record text.
 - **The marker's generation (engine, cloud.ts).** The pending marker is a number that rises at every set. A session holds the generation it saw as it read the phone's file, or set itself, and clears only that one (`clear-if:<n>`; there is no plain clear), so a marker set after it read the phone (an edit during an open) outlives its save (adversary R1). Disconnect and erase remove the marker file directly. The set and restore pair (`myDataAndWrite`, `PhoneFiles.restore(_:ifStill:)`) is atomic only because every call runs on the engine's actor; Disconnect's remove (`CloudSync`, `files.remove(files.pending)`) takes no lock and is a known narrow exception, healed by the next open's get and clear-if.
 - **The captured Screen.** A value sheet opened from My data or a metric page carries the row and the `Screen` taken at its tap, and its save is checked against that (`apply(_:as:)`), so its unit label and the units its value is read in agree; nothing is pinned at the tap. Every sheet that edits the record, these included, still pins on appear and unpins on disappear (`pinsRecord`); for these the carried Screen wins over the pin. A sheet's edit takes `pinned ?? screen` before it waits, and the erase check runs when its turn comes, so a sheet that closes mid-save still saves against the record it showed. An import (`applyNow`) reads the screen at its turn: the record as it is now, never a sheet's pin. On the phone, as in the cloud session (`dependsOnUnits`), a value or height typed before the record's units changed is refused.
 - **Unit switches hold entry.** While a per-test or master switch, or an Lp(a) unit choice, is still landing (`unitSwitches`), the units menu, Add Data, corrections, height and My data's value rows wait.
 - **A lab report's summary and its import are one step.** On the phone, both run against the record of that turn. In the cloud, one engine door (`cloudLabImport`) takes the summary against the session's working copy and runs the import on it in the same synchronous JavaScript step, so a value another device brought in is never counted as saved. Swift keeps no copy of the session's record.
 - **The cloud stamp.** The engine queue stamps every cloud record it hands to Swift (open, edit, erase and document save as their Promise resolves, each notify as it is sent). An edit's answer can arrive after news of a re-read made before it, so the screen keeps the record with the higher stamp.
-- Sheets set `saving` in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. PlanView asks the engine nothing: it draws the plan the store keeps (below).
+- Sheets claim their save in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. **One named save state (2026-11-11, US-25 AC21e, iPhone survey S5).** `SheetSave.State` is editing (with the engine's words), saving, finding the day's rows, asking to replace, declined (the question dismissed), or done, changed only by the pure `SheetSave.transition`; `SheetSaveTests` holds the table of every state and event. `tapped` is the synchronous claim (US-25 AC21d): it moves editing to saving in the tap's own turn, so no flag sits beside it. `busy` (saving or finding rows) holds Save, Cancel and swipe-down. Blood pressure reads the day's rows after a refusal names one, still held, and asks only when it finds them: rows it cannot read show the engine's words, so a replace never names no rows. A value sheet holds the named row at once; its Lp(a) unit choice is a saving step too, so a Save then does nothing. `done` is terminal; a save whose screen stays open (`landed` with `closes: false`, "Taking again") goes back to editing. A replace dialog is bound with `presenting:` the held rows, so "Replace it" sends `confirmed(held)` carrying them; it is taken only from asking, or from `declined(held)` when the dismissal landed first, and only for those same rows; a `declined` after it meets saving and is ignored, so no order drops the tap. `declined(held)` looks like editing to the person (Save live, no words, no dialog: the dialog presents only for asking); an edit or a Day change (`wordsStale`), a unit choice or a Save leaves it as from editing, so a late "Replace it" after the person changed the value, unit or day is ignored (owner's ruling N1, 2026-11-12). Each view's landing choice (`closes`, `asks`) is a static the table test reads. Every sheet holds the state: BloodPressureSheet, ValueEntrySheet, SupplementsSection's "Taking again", and (second S5 PR, 2026-11-12) the month wheel (`MonthPickerSheet`), FeetInchesSheet, SupplementSheet and AddSupplementSheet, which never ask (`NoHeld`) and save through `SheetSave.submit`. `SheetSave.run`, the `Bool` binding they used, and its `close` are gone. PlanView asks the engine nothing: it draws the plan the store keeps (below).
 - **One engine call draws both screens (2026-10-25, US-25 AC2; Brad: "one engine call that answers both My data and the plan").** Measured in the simulator with a temporary counter (removed): one edit on My data ran `applyEditJson` (a medication or screening answer plans inside it, in `applyFormEdit`; a value plans nothing), then `myDataJson`, whose medication and screening questions plan the record (`basisOf`, 1 computePlan), then `remindersJson` (none); opening My plan then ran `planViewJson`, a second computePlan of the same record and units, and every return to the tab ran it again, with no edit between. The door `screenJson` now reads the record once, plans it once and answers `{myData, plan}`: the plan half is `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned, so a plan that throws never blanks My data and a tile that cannot be drawn never blanks the plan. My data that cannot be drawn still throws the whole call, on purpose: the store then shows the record's problem on both tabs (adversary R3), never a plan of a record My data cannot show. `ms` is the engine's own time from computePlan through the tiles and the layout (`planSections`), in whole milliseconds (JavaScriptCore has no finer clock), so the plan screen's "Worked out on this iPhone in N ms" is D2's plan budget, not My data's. `RecordStore` keeps one `drawn` from that call, set together with the record (`display`); `myData` and `plan` read it, so the two always show the same record revision. PlanView draws `store.plan` and never calls the engine. **Every return redraws (Codex R1):** the plan reads the time (ages, screening due dates, minor status), so `redraw` draws the same record again, in line (`chain`), each time the app becomes active, and at `.NSCalendarDayChanged` while active; between returns the tabs share the plan drawn. Not on a new calendar day only: health-core's minor-to-adult switch falls at midday UTC on the 1st of the birth month (`isKnownMinor` judges the date at UTC-12), so a calendar-day check missed it (RecordStoreTests `testAReturnWithinOneLocalDayCrossesTheMiddayUTCSwitchToAdult`). A draw takes about a millisecond. The trial confirms in `display`, from the same stored plan, so it needs no engine call either. After: one edit is `applyEditJson` then `screenJson` (one computePlan; a form answer's `applyFormEdit` plans once more inside `applyEditJson`), and the Plan tab adds none (RecordStoreTests `testOneEditDrawsMyDataAndThePlanInOneEngineCall`, engine `screen.test.ts`). `myDataJson`, `planViewJson`, `HealthEngine.planSections` and `EngineTrial.planned` went with it; the bridge id moved (D3), so a downloaded engine built before it is refused at its manifest check and the bundled engine runs. What still plans on its own: `historyJson` (a metric page and a value sheet, for the plan's `excluded` rows) and the self-test's `planJson`.
 - `blocking` is a test-target extension (`EngineTestDoors.swift`), so app code cannot call it at all: the compiler is the rule. It runs its body on the engine's queue through a cast of the isolated closure (not `assumeIsolated`, whose dispatch-queue check needs iOS 18's `checkIsolated`; the app supports iOS 17) with `queue.async`, the waiting thread held on a semaphore, so the body never runs on the main thread. `enqueue` is the app's one copy of the cast.
 - **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
-  - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` until it is done: My data's plain background, no mark, read as "Loading". The system launch screen has the same colour (`UILaunchScreen` > `UIColorName` = `LaunchBackground`, an asset equal to `systemGroupedBackground` in light and dark, normal and high contrast, set in `HealthRoadmap-Info.plist`, which the generated plist merges), and so does the welcome screen and the questions (`OnboardingView`); the first-run cover is presented without animation (`RootView.decideFirstRun`). So the opening never flashes: one background from the tap to My data, or to the welcome screen (Brad 2026-10-26; the logo showed for about 100 ms). The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and `marksPending` is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
+  - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` until it is done: My data's plain background, no mark, read as "Loading". The system launch screen has the same colour (`UILaunchScreen` > `UIColorName` = `LaunchBackground`, an asset equal to `systemGroupedBackground` in light and dark, normal and high contrast, set in `HealthRoadmap-Info.plist`, which the generated plist merges), and so does the welcome screen and the questions (`OnboardingView`); the first-run cover is presented without animation (`RootView.decideFirstRun`). So the opening never flashes: one background from the tap to My data, or to the welcome screen (Brad 2026-10-26; the logo showed for about 100 ms). The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and the store's link (`RecordStore.link`: the account and the pending marker) is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0; "1,234" read as thousands only inside the input range My data's `inputRanges` gives with the decimal reading below it, never as the decimal, else nil, with the screen's message line asking `TypedNumber.question`; grouped thousands only against a range, US-02 AC7, 2026-10-27); NumberReadingTests holds it to the engine's `numberJson` on 59 texts, and on them and four more under six ranges against the rule written once in the test over the engine's readings. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
   - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units; the eGFR and waist-to-height series once per draw too, review round 3); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm needs no engine call: the store confirms as it draws.
@@ -291,7 +292,12 @@ A signature means "the key holder approved this bundle", nothing more.
   AC12): `documentOriginal(id)`, the first that answers a Promise, of an ArrayBuffer; Swift reaches it
   through `optionalCall`'s async form (`read:`), and `bridge.test.ts` freezes its arguments and checks it
   refuses with no cloud open (its bytes answer is pinned in `cloud.test.ts`). Beside it, a sixth
-  optional field: `screenJson`'s `myData.documents`.
+  optional field: `screenJson`'s `myData.documents`. Third (2026-11-11, shared upload PR 3, US-52 AC7):
+  `uploadVerdictsJson(request)`, health-core `upload-rules.ts` (`UPLOAD_LIMITS`, `fileVerdict`,
+  `zipMemberVerdict`) for the files and ZIP members one read step names; `LabFileReader` asks it through
+  `HealthEngine.uploadRules` and keeps its Swift rules when the door is absent (`UploadRules.swift`;
+  lead U14 deletes them once the engine floor guarantees the door). No floor bump: an older app never
+  calls it and keeps its Swift rules, which answer the same today.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
@@ -470,7 +476,7 @@ tab (`ios/engine/my-data.ts`) writes through health-core's `record-edits` direct
 record is the phone's file, one pure edit per call. **When a cloud is connected (built
 2026-10-21):** each edit runs `applyEdit` on the session's working copy and then
 `RecordSession.edit` with the erase stamp the screen showed (`ios/engine/cloud.ts`
-`cloudEdit`; Swift keeps the stamp in `RecordStore.cloudErase`), so it gets the save loop,
+`cloudEdit`; Swift keeps the stamp in `RecordStore.source`, read as `cloudErase`), so it gets the save loop,
 the merge on conflict and the erase guard. The phone-file path stays outside a session:
 the device tier has one writer, and a session there would add a second copy of the file in
 memory for no gain. Revisit when Apple Health import becomes a second writer (D6).
@@ -569,7 +575,20 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   sign-in. The account a sign-in belongs to is kept (`sync-account`); signing in again as
   another account is refused, because merging would put one person's record into
   another's: the user disconnects first, then connects the other account (a fresh connect
-  then lifts the phone's record, as any first connect does). After a Disconnect,
+  then lifts the phone's record, as any first connect does). Connecting a different cloud
+  while an open is in flight is refused once the sign-in returns, before any token or file
+  is kept (US-25 AC11j, review of PR 1281, 2026-11-11): the open is single-flight, so the
+  connect would join the other cloud's open and leave the cloud on file naming one cloud
+  while the open session is the other's, with the new cloud's first-connect merge never run.
+  The cloud on file must match the open session. Signing in again to the same cloud joins its
+  open. The survey's S3 `CloudConnection` union will make the mismatch unrepresentable.
+  Since 2026-11-12 (US-25 AC11l, review of PR 1328) the rule is wider and that check is gone:
+  a different cloud is refused whenever one is connected, in any state ("Disconnect from Google
+  Drive first, then connect Dropbox."); S3's union will make it true by construction and delete it.
+  It runs before the sign-in shows (the post-sign-in check is a backstop for races), and the welcome sheet at failed offers only "Sign in to <cloud> again" and, since S3 PR 3, a "Switch to <cloud>" row for each other cloud (US-54 AC2d; it was "Use a different cloud", a Disconnect).
+  A sign-in carries the connection generation it began under: one returning after a Disconnect moved it is dropped before anything is kept (US-25 AC11l).
+  Connect errors show in the screen's alert, not the row's, since the welcome sheet hides its
+  rows while a record opens. After a Disconnect,
   `sync-history` remembers the cloud, and the words say a copy stays there. The background
   save has an expiration handler. Drive runs through the shim in Node against a fake
   Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
@@ -587,10 +606,71 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   retries.
   Second re-check (Codex, same day): an open takes its number before any await, so the
   order of the calls decides which open wins, never the order their awaits finish in.
-  "Synced" has one rule (`CloudSync.settled`): the pending marker is clear. The marker is
+  "Synced" has one rule (`CloudConnection.status`; `CloudSync.settled` before S3): the pending marker is clear. The marker is
   set before every edit is taken and cleared by the session only when a save has landed
   and verified, and the engine says 'synced' at that moment; until then the app says
   "Saving…", on open, after a write and after Sync now.
+- **The connection is one state (survey S3 PR 1, 2026-11-12, US-25 AC11m).** CloudSync kept its
+  mode in side-by-side pieces: a stored status, the shown session, a generation, `openingFor`,
+  `editsWhileOpening` and held news. They are now one union, `CloudConnection`
+  (`Sync/CloudConnection.swift`): phone, closed, opening, open, closing. Each case but phone names
+  its cloud, and each carries the attempt it is under. A pure `transition(state, event)`, a switch
+  on the event then the state with no default arm, is the only change, and returns the effects
+  CloudSync runs (keep, open, close the session, show the phone). The provider, the status
+  (`CloudConnection.status`, the one place it is worked out), the open session, and the store's
+  pending marker and account are read from the state. Why: every race the reviews found was a
+  pair of these pieces disagreeing; each now maps to a cell that drops or refuses it. Every async
+  result names its attempt and is dropped once it ended; a sign-in names its connection
+  (`connectedAt`), so a reopen keeps it and a Disconnect voids it. The AC11l guard, the
+  generation checks and the held-news dictionaries are gone: the cells refuse a different cloud
+  in closed, opening and open, and closing refuses any connect while it keeps the cloud named
+  ("Disconnecting…"), which closes S22. A same-cloud sign-in during its open restarts the open
+  under the new tokens, since the old one may already have asked with the revoked grant. The
+  state equals what a relaunch reads: a connect keeps the tokens first and writes the provider
+  file last, and a failed keep removes what it kept; Disconnect copies down, then removes the
+  provider file first, the decision, then the rest as cleanup, which a launch with no provider
+  file finishes. A provider file that will not go leaves the connection exactly as it was and
+  says "Couldn't disconnect from <cloud>. Try again." A late `opened` is only dropped, not
+  closed: the engine has already closed its session, since any newer open or close supersedes
+  it (cloud.ts); the one case with no newer engine call, a failed keep, closes the session
+  itself. An effect runs after the step that decided it (after the store's handover, say), so
+  each open or close names its attempt and is skipped once the connection moved on (review R1).
+  A second Disconnect while one closes is a table cell that closes nothing; each Disconnect
+  step after an await checks its attempt (Codex C1). The account file stays until the Keychain
+  has deleted every cloud's tokens, so launch cleanup retries from it (C2). Disconnect and a
+  failed first connect delete every cloud's tokens, and a connect deletes every other cloud's,
+  never its own: one cloud at a time, so a token a refused delete left never outlives the next
+  cloud (round 2). A sign-in voided by a
+  Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
+  Disconnect (owner): nothing is lost and the existing words show.
+  PR 2 (2026-11-12, US-25 AC16e): "an erase is running" has one source, `DataEraser.phase`.
+  CloudSync's own `erasing` flag is gone; it was set only during the cloud erase's engine call,
+  so a phone-only erase left Connect live (a first connect could lift a half-erased record) and a
+  cloud erase left Connect and Disconnect live through its last steps. CloudSync now reads
+  `eraseRunning()`, a closure set only by `CloudSync.waitsFor(eraser)`, which DataEraser's init
+  calls (it takes `sync`, so no app or test can build an eraser and forget the wiring; owner's
+  ruling, option d); it is read at each decision, never kept, and an
+  @Observable read through it redraws Sync's rows. An erase begun with no shown session (opening,
+  closed, closing) is refused and erases nothing (pinned).
+  PR 3 (2026-11-12, US-25 AC11n, lead S24): switching clouds is one step, as on the web. Sync's
+  connected branch and the welcome sheet at failed show a "Switch to <cloud>" row per other
+  configured cloud (`SwitchCloudRow`), with a confirmation that names the cloud the record is in,
+  read when the dialog shows; with no session open it promises no copy, read from `recordOpen`, the
+  fact that makes the engine answer 'none' (review R2). The sign-in session is read by the screen,
+  which stays while the Disconnect drops the row (R1). `CloudSync.switchTo` is Disconnect, then connect, with no await
+  between the Disconnect's end and connect's `signInStarted`, so no erase or connect slips in; it
+  adds no state and the table is unchanged (the design page's `switchRequested`/`closing(then:)`
+  was dropped as unnecessary). Why the composition: every existing cell (the erase gate, a second
+  Disconnect while closing, a sign-in voided by the Disconnect) already covers each half. Owner
+  D1 (a): a switch stops when the copy-down could not reach the cloud with a session open, or the
+  engine threw; the old cloud stays connected (the existing `closeFailed` and reopen) and no
+  sign-in starts. A plain Disconnect still never stops. For this `HealthEngine.cloudClose` returns
+  the engine's answer (`CloudClose`), not a Bool. A sign-in cancelled or failed after the
+  Disconnect ends on the phone with the record whole and no tokens (web parity); the row says
+  "<old> is disconnected and <new> did not connect. Your record is on this iPhone only." Owner D2:
+  "Disconnect from <cloud> first, then connect <other>." stays as the race backstop's cell.
+  Web twin: the picker already switches in one step (connect.ts prepareSwitch); its wording that
+  the old copy stays is lead A12.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.
@@ -628,7 +708,8 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
     and written only when that step ran. With a cloud open, the `chat-history.json` the
     website saved there is tombstoned first, by `ChatSession` on the cloud host, as the web's
-    erase does (2026-10-22). It is best effort and reported on its own (`cloudChatErased`):
+    erase does (2026-10-22). The cloud chat erase also writes an erase mark (US-11 AC2h); the
+    phone's own chat file gets none. It is best effort and reported on its own (`cloudChatErased`):
     a corrupt file or a newer website's schema never blocks the phone's chat erase
     (adversary R1). The confirmation names the website's chat in the cloud, and the result
     says whether it is gone or still there (R2): a provider that did not answer gets "Try
@@ -640,11 +721,12 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Units are kept** (a setting; the web keeps its unit preference through an erase), the
     welcome flag and the AI consent are kept, the sync connection is kept.
   - **Reminders** need no step of their own: the opt-in ends when the epoch moves (D7).
-  - **Apple Health** (merged in the same evening): after the record erase, `AppleHealthSync.
-    eraseOwnSamples` deletes every sample this app wrote (HealthKit's source predicate, kinds
-    it may write) and clears `HealthSyncMemory`'s written versions. The import anchors stay,
-    so other apps' readings from before the erase are not imported again. A refused delete
-    never undoes the record erase; the words say so. Not checked on a real iPhone.
+  - **Apple Health** (merged in the same evening; disconnect 2026-11-11, D6): after the record
+    erase, `AppleHealthSync.erased` disconnects Health and resets every import anchor, then
+    deletes every sample this app wrote (HealthKit's source predicate, kinds it may write) and
+    clears `HealthSyncMemory`'s written versions. Another device's erase disconnects the same
+    way and deletes only the sync ids that memory lists (`deleteSamples(syncIds:)`). A refused
+    delete never undoes the record erase; the words say so. Not checked on a real iPhone.
   - **Export** is the record as shown (`store.recordJSON`) through the share sheet, written by
     the share sheet itself (`RecordExport`, a `DataRepresentation`), so the app keeps no
     stray copy. The website has no "load a file" flow; that would be a web feature.
@@ -672,8 +754,15 @@ exact list matched to `types.ts` in the spike).
   Otherwise a scale re-sync would undo a user's correction every time.
 - **A sample deleted in the Health app is ignored.** The row stays. The record is
   append-only (FHIR; Brad 2026-09-24): we never remove or retract a value.
-- After taking in an erase, the importer skips samples older than the erase. The import
-  anchor is kept outside the record.
+- *Superseded 2026-11-11 (Brad's yes):* after taking in an erase, the importer skips
+  samples older than the erase. The import anchor is kept outside the record.
+- **An erase disconnects Apple Health (Brad 2026-11-11; US-72 AC10).** A local
+  erase, or a newer erase taken in from another device on the same record source, disconnects
+  Health and resets every import anchor, vitals and lab results alike. The first open of a
+  record (a new cloud included) adopts its erase as seen and never disconnects. One stored
+  value holds the erase seen and its source; a pure gate decides keep, disconnect or adopt.
+  Order on a local erase: the record mark, the erase, then the disconnect. Connect reads
+  everything from the start; the importers keep no erase rule. Anchors stay outside the record.
 - Merge orders rows by when they were written, not when they were measured. Rules such as
   "the latest reading of the day wins across devices" would need the sample time in the
   record and a merge change: merge-class work, adversary plus Codex.
@@ -825,7 +914,8 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   says one is needed, then refreshes. A deliberate connect can still show it too, but once
   connected the live cards' Turn On shows only while the live types are due. No screen of
   ours comes before the sheet (guideline 5.1.1).
-- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (2 since 2026-11-02: results
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (3 since 2026-11-10: results
+  contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
@@ -965,7 +1055,16 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   is not readable, so the writer with the most staged time draws the stages; with none, every
   writer's "asleep" is joined; "In Bed" comes from all. Overlaps count once.
 - `LiveHealth` (`@Observable`, main actor; one per app in `AppParts`, in the environment) holds only
-  the access state and the cards. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
+  the access state and the cards, as one named state: `access: LiveAccess` (`LiveAccess.swift`:
+  unknown, needsAccess, granted, read(cards)), changed only through its pure `transition` on four
+  events (the sheet check, a read landed, a read failed, the erase). `cards` is a read-only view of
+  `read(cards)`. Why (iPhone survey S4, US-56 AC5d, 2026-11-11): three properties side by side
+  (`needsAccess`, `cards`, `hasRead`) drifted; an access reset cleared the cards but kept "read", so
+  a locked first read after a re-allow drew the Open Settings row. `granted` means access answered
+  and nothing read since; it promises no read in flight. A read that lands in unknown or needsAccess
+  is dropped. Defensive: unreachable while readOnce is the only sender of `checked`; the ticket
+  guard is what keeps a read from before an erase or a disconnect from landing. Kept so a later
+  sender cannot draw cards whose access was withdrawn. **The cards' last readings are kept on the phone (US-56 AC2, AC15;
   Brad 2026-10-27, option A).** Why: on a cold start My data drew the record, then 0.1 to 0.2 s later
   the cards arrived under blood pressure and pushed the blood tests down; Brad: "I don't want us to
   wait for anything." The cards (`[LiveMetric: LiveCard]` and a version) live in
@@ -974,7 +1073,7 @@ VO2 max shows FRIEND fitness bands for the person's age and sex (the bands note 
   it: sync, export and the chat summary read only the record, so they never see it. Written
   atomically, `.completeFileProtectionUntilFirstUserAuthentication` (a launch after the first unlock
   reads it). Read synchronously in `init` (a few hundred bytes), so the first frame has the cards;
-  a missing, damaged or other-version file is none. Kept cards count as access granted and read, so
+  a missing, damaged or other-version file is none. Kept cards start as `read` (`LiveAccess.launch`), so
   `LiveCardsSection.shown` draws them, never the Turn On or Open Settings row, until the first read. A read that
   changes the cards replaces the file (`keep`), one with none always deletes it (even a file the
   launch could not read, adversary R3), a locked or cancelled read changes nothing, a sheet due
@@ -1369,7 +1468,7 @@ usual path (`applyOnPhone`, or `cloudEdit` with its erase guard): `chatEdits` (p
 `medications` or `review`, the proposals as received, the phone's day) and the engine's own
 Undo edit, passed back as it came. A medication change saves at once with Undo; values,
 height and sex wait in a banner with Save and Not now (`Chat/ChatEdits.swift`). A reply to a
-question asked before an erase, and a banner made before one, write nothing: `RecordStore.ChatMark`
+question asked before an erase, and a banner made before one, write nothing: `RecordStore.Mark`
 (the cloud erase, the eraseEpoch and the phone's erase count) is checked in the write's turn,
 and ChatView drops the banners when it moves (US-16 AC2a).
 
@@ -1397,10 +1496,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   "My plan" went with the merged tab), "Chat", "Apple Health metric".
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly nineteen fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad):**
+- **Custom events, exactly twenty-one fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad; "Lab save all" and "Lab save one" added 2026-11-11 for US-52 AC8b, Fable on Brad's hand-over):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3",
-  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value).
+  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value), "Lab save all" (save all tapped on the lab-upload review, once per run), "Lab save one" (a lab report's own Save tapped; neither carries a count or a name).
   Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
@@ -1469,6 +1568,9 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   sit on the About you header, the unit switch on the Vitals header. With no bar, iOS 26's
   scroll edge effect left rows legible behind the clock (checked in the simulator), so a
   zero-height top inset carries the list's background into the status bar (`solidStatusBar`).
+  On an iPad running the iPhone app (iPadOS 26) the window controls sit at the top left, over
+  the title: the inset grows to clear their corner (`containerCornerInsets` less the status bar's
+  height; zero on an iPhone, because the app is portrait-only and its status bar covers the corner).
   My plan lost its bar too (Brad 2026-11-03, US-25 AC26): "Your health snapshots" heads the
   tiles in the sections' own `PlanHeading` and scrolls with them; same inset, plus `firmTopEdge`.
 - **Blood pressure is one engine edit.** `bloodPressure` (`engine/blood-pressure.ts`)
@@ -1595,7 +1697,27 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
 - `scripts/app-store-shots.sh`: the App Store screenshots (US-25 AC10, app-store.md step 6).
-- `scripts/fresh-sim.sh [device]`: builds and starts the app in the simulator as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
+- `scripts/sim-run.sh`: the one door to the simulator (US-71 AC7, 2026-11-11). Every session takes turns on
+  one device, "HR Shared iPhone" (iPhone 18 Pro, newest iOS runtime), under a kernel lock: `lockf` on a
+  file descriptor the wrapper opens in `~/Library/Caches/health-roadmap-sim`. The kernel frees it when the
+  holder exits, however it exits, so there is no stale lock to take over (a hand-made mkdir lease came first,
+  and review found five races in it; Fable 2026-11-11). lockf's command form was not used: it drops the lock
+  when lockf itself is signalled while its command runs on, and its timeout exit (75) is a command's too.
+  A perl shim keeps the descriptor while the device steps and the command run in their own process group,
+  and stops the group (TERM, then KILL) at the time limit, on a signal, or if the wrapper is killed outright,
+  before the lock frees. The device stays booted between runs and a detached sleep shuts it down after 20
+  idle minutes. Why: each test run booted its own simulator (load spikes of 33 to 47 on 2026-11-11), and 171
+  simulator-runtime processes from runs 9 and 11 days old were still alive. The test scripts here run through
+  it. Demos use their own device: a demo hold on the shared one was built and dropped the same day, because a
+  second lock with its own lifetime on top of the first kept handing the device to two callers. Tested by
+  `scripts/sim-run.test.ts` with a fake xcrun (macOS only; CI skips it).
+- `scripts/sim-guard.sh`: sim-run's one-booted-simulator guard, sourced by it (US-71 AC7, 2026-11-12): the
+  refusal (75) while another device is booted and the watchdog that stops a run (76) when one boots. Every
+  `simctl list` call is bounded, and its whole process group is killed when it ends, however it ends; the
+  watchdog runs in its own process group, which gets TERM then, 2 s later, KILL. So neither a hung list nor
+  a child it leaves holding the output keeps the lock or sim-run's stderr (review of PR 1435, R1, R5, R6).
+  A list that times out fails open and says so on one line. Split out to keep sim-run.sh under 500 lines.
+- `scripts/fresh-sim.sh`: builds and starts the app on the demo device, "HR Demo iPhone" (made once by name, never the shared one; only with the hatch in ios/CLAUDE.md), as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
 - `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per
   process, so `setenv("TZ")` inside a test does not reach the engine; the first
@@ -1619,7 +1741,9 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
 - `HealthRoadmap/`: the SwiftUI app, one folder per feature:
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
-    `WelcomeView`, `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
+    `WelcomeView` and `WelcomeConnect` (its cloud connect derives its phase from CloudSync
+    each time and keeps no copy, so a relaunch waits on the launch open; US-54 AC2b; a failed open shows
+    the Sync screen's words for its problem and offers Try again only where it can help, `failure`, AC2c), `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
     the original road-to-heart icon, our own drawing, redrawn as Shapes on 2026-10-25; never an
     SF Symbol, traced or not, US-25 AC10), `Analytics` (Clarity, masked, D9), `Colors` (the app-wide colour helpers)
     and `MessageAlert` (the one-button alert every tab uses).
@@ -1640,8 +1764,10 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     `Engine/` as `HealthEngine+<Feature>.swift` (`+Cloud`, `+Erase`). Both are extensions of
     `HealthEngine`; the core doors (plan, My data, edits) stay in `HealthEngine.swift`. This is
     the split the files already follow (two of each), so neither moves.
-  - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow) and
-    `LabUploadExplainer`, `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
+  - `LabUpload/`: "Add medical records" (US-52). `LabUploadSheet` (the flow), its one
+    named state `LabUploadFlow` (a pure `transition`, AC8b), `LabReportSave` (a report's
+    defaults, its save plan and the one save that its Save and Save all both run),
+    `LabSaveAllViews`, and `LabUploadExplainer`, `DocumentScanner`, `EngineLabDoors` (the engine doors it calls),
     `LabUploadClient` (the server's extraction), `LabReview` and `LabReviewView` (the
     engine's answers and their screen), `LabReadingDiagram`, `LabFileReader` and `ZipReader`.
   - `EngineUpdates/`: over-the-air engines (D3, AC18). `EngineRelease` (pins, bridge,

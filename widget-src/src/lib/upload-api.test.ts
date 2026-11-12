@@ -62,6 +62,97 @@ describe('the batch poll carries the token the upload was given', () => {
     expect(calls[0].body).toEqual({ batchId: 'batch_stranger', pollToken: '' });
     expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_restart' });
   });
+
+  // US-12 AC25: a re-pick joins the same batch id with a new token. A cancelled
+  // poll that answers late must not erase the joiner's token.
+  it.each([
+    ['ended', () => jsonResponse({ status: 'ended', completed: 1, total: 1, results: [] })],
+    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404)],
+  ])('US-12 AC25: a late %s answer to the old token keeps the token a join stored since', async (_, late) => {
+    let release!: (response: Response) => void;
+    let joined = false;
+    stubFetch((call) => {
+      if (call.body && 'batch' in call.body) {
+        const pollToken = joined ? 'tok-join' : 'tok-first';
+        joined = true;
+        return jsonResponse({ success: true, batchId: 'batch_join', pollToken });
+      }
+      return jsonResponse({ status: 'processing', completed: 0, total: 1 });
+    });
+    const fetchMock = vi.mocked(fetch);
+    await labImportBatch(FILES);
+    fetchMock.mockImplementationOnce(async (url, init) => {
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+      return new Promise<Response>(resolve => { release = resolve; });
+    });
+    const cancelled = pollBatchStatus('batch_join');
+    await labImportBatch(FILES);
+    release(late());
+    await cancelled;
+    await pollBatchStatus('batch_join');
+    expect(calls.at(-1)?.body).toEqual({ batchId: 'batch_join', pollToken: 'tok-join' });
+  });
+});
+
+// US-12 AC24: a failed poll that can change answers `error`, and the caller
+// polls on to its deadline. One that cannot change ends the watch at once.
+describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
+  it.each([
+    ['a 500 from our route', () => jsonResponse({ success: false }, 500)],
+    ['a network throw', () => { throw new TypeError('synthetic network failure'); }],
+  ])('%s answers error, never "processing 0"', async (_, reply) => {
+    stubFetch(reply);
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 0, total: 0 });
+  });
+
+  it.each([
+    ['a 401', () => jsonResponse({ error: 'Unauthorized' }, 401), 'server_error'],
+    ['a 403', () => jsonResponse({ success: false, error: 'Forbidden' }, 403), 'server_error'],
+    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404), 'server_restart'],
+    ['a page that is not JSON', () => new Response('<html>synthetic</html>', { headers: { 'content-type': 'text/html' } }), 'server_error'],
+    ['JSON that does not parse', () => new Response('{"status":', { headers: { 'content-type': 'application/json' } }), 'server_error'],
+    ['an answer with no known status', () => jsonResponse({ ok: true }), 'server_error'],
+  ] as const)('%s ends the watch with an error', async (_, reply, errorCode) => {
+    stubFetch(reply);
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode });
+    expect(poll.error).toBeTruthy();
+  });
+
+  it('a connection drop while the body streams answers error and keeps the poll token', async () => {
+    let n = 0;
+    stubFetch((call) => {
+      if (call.body && 'batch' in call.body) return jsonResponse({ success: true, batchId: 'batch_drop', pollToken: 'tok-drop' });
+      return n++ === 0
+        ? new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"status":')); c.error(new TypeError('synthetic connection drop')); } }),
+          { headers: { 'content-type': 'application/json' } })
+        : jsonResponse({ status: 'processing', completed: 3, total: 20 });
+    });
+    await labImportBatch(FILES);
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'error', completed: 0, total: 0 });
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'processing', completed: 3, total: 20 });
+    expect(calls[2].body).toEqual({ batchId: 'batch_drop', pollToken: 'tok-drop' });
+  });
+
+  it.each([
+    ['no `completed`', { status: 'processing', total: 20 }],
+    ['a NaN count (JSON carries it as null)', { status: 'processing', completed: NaN, total: 20 }],
+    ['a negative count', { status: 'error', completed: -1, total: 20 }],
+    ['a fractional count', { status: 'processing', completed: 1.5, total: 20 }],
+    ['an `ended` with neither results nor an error', { status: 'ended', completed: 20, total: 20 }],
+    ['an `ended` with a code but no error text', { status: 'ended', completed: 20, total: 20, errorCode: 'server_error' }],
+    ['an `ended` with an empty error', { status: 'ended', completed: 20, total: 20, error: '' }],
+  ])('an answer with %s ends the watch with a server error', async (_, body) => {
+    stubFetch(() => jsonResponse(body));
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_error' });
+    expect(poll.error).toBeTruthy(); // what the pipeline ends on
+  });
+
+  it('passes the server\'s own `error` answer through, its count kept', async () => {
+    stubFetch(() => jsonResponse({ status: 'error', completed: 3, total: 20 }));
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 3, total: 20 });
+  });
 });
 
 // Privacy: a file name can hold a patient's name ("Jane Citizen bloods.pdf").
@@ -197,5 +288,30 @@ describe('US-12 AC10: the quota preflight says why it refused', () => {
   it('a 200 that allows passes the remaining count through', async () => {
     stubFetch(() => jsonResponse({ allowed: true, remaining: 12 }));
     expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 12 });
+  });
+});
+
+// US-12 AC9 (H65): a 429 says which with a code. Busy is not the daily limit;
+// a missing or unknown code reads as the daily limit, as an older server meant.
+describe('US-12 AC9 H65: a 429 is read by its code', () => {
+  const DAILY = { error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
+  const BUSY = { error: 'Server busy. Please try again later.', errorCode: 'busy' };
+  const cases: Array<[string, () => Response, typeof DAILY]> = [
+    ['code busy', () => jsonResponse({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }, 429), BUSY],
+    ['code daily_limit', () => jsonResponse({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' }, 429), DAILY],
+    ['no code', () => jsonResponse({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' }, 429), DAILY],
+    ['an unknown code', () => jsonResponse({ success: false, error: 'x', code: 'later' }, 429), DAILY],
+    ['no body', () => new Response(null, { status: 429 }), DAILY],
+    ['a body that is not JSON', () => new Response('Too many', { status: 429, headers: { 'content-type': 'application/json' } }), DAILY],
+  ];
+
+  it.each(cases)('a batch 429 with %s', async (_, reply, expected) => {
+    stubFetch(reply);
+    expect(await labImportBatch(FILES)).toEqual({ batchId: null, ...expected });
+  });
+
+  it.each(cases)('a single-file 429 with %s', async (_, reply, expected) => {
+    stubFetch(reply);
+    expect(await labImport(FILES[0].pages, 'si')).toEqual({ result: null, ...expected });
   });
 });
