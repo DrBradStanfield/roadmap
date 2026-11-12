@@ -1,5 +1,6 @@
 // Reading the codex event stream (JSONL on stdout) for tools/codex-review.mjs: kept metadata, search hostnames, and
 // what an exit 1 shows. Side-effect free. Spec: US-40 AC5, AC14, AC18.
+import { PATTERNS } from "./secret-rules.mjs";
 
 /** Each JSONL line that parses as an object; anything else is skipped. */
 function parseEvents(jsonl) {
@@ -39,15 +40,18 @@ export function eventMetadata(jsonl) {
 }
 
 const MESSAGE_LIMIT = 200;
+/** A known credential shape (US-40 AC11's PATTERNS) and the token characters after it: an error may echo a masked key. */
+const CREDENTIAL = new RegExp(`(?:${Object.values(PATTERNS).join("|")})[A-Za-z0-9_./+-]*`, "g");
 
 /**
  * The last `error` event's message: Codex's own text, so data, never instructions. One line (control, format and
- * line-separator characters collapse to a space), at most 200 characters. null when no error event carries one.
+ * line-separator characters collapse to a space), credential shapes redacted, at most 200 characters. null when no
+ * error event carries one.
  */
 export function lastErrorMessage(events) {
   const last = events.filter((ev) => ev.type === "error" && typeof ev.message === "string").at(-1);
   if (!last) return null;
-  const line = last.message.replace(/[\p{Cc}\p{Cf}\u2028\u2029]+/gu, " ").replace(/ {2,}/g, " ").trim();
+  const line = last.message.replace(/[\p{Cc}\p{Cf}\u2028\u2029]+/gu, " ").replace(/ {2,}/g, " ").trim().replace(CREDENTIAL, "[redacted]");
   return [...line].slice(0, MESSAGE_LIMIT).join("");
 }
 

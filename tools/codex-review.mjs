@@ -249,12 +249,13 @@ import { mainOf, PATTERN_SPAN, PATTERNS, realFolder } from "./secret-rules.mjs";
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
 const has = (name) => args.includes(name);
+const DEFAULT_RECORD = join(process.env.HOME ?? "", ".codex-review", "scratch-record.json");
 const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_USAGE: ${why}`); process.exit(1); };
 /** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
 const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
-// US-40 AC18: --out is claimed before anything else can stop the run (tools/codex-review-out.mjs).
-const OUT = opt("--out");
-const REVIEWED_INPUTS = ["--subject", "--baseline", "--context", "--include", "--record-file"].flatMap(many).filter((p) => p && p !== "none");
+const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
+const RECORD_INPUT = has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []; // the default scratch record is reviewed too
+const REVIEWED_INPUTS = ["--subject", "--baseline", "--context", "--include", "--record-file"].flatMap(many).concat(RECORD_INPUT).filter((p) => p && p !== "none");
 const outRefused = OUT ? claimOut(OUT, REVIEWED_INPUTS) : null;
 if (outRefused) usage(outRefused);
 
@@ -300,7 +301,7 @@ const TSX = join(HOME_REPO, "node_modules", ".bin", "tsx");
 const SCRATCH_RECORD = {
   account: "brad@microvitamin.com",
   createdAt: "2026-09-17T20:06:27.965Z",
-  path: opt("--record-file", join(process.env.HOME ?? "", ".codex-review", "scratch-record.json")),
+  path: opt("--record-file", DEFAULT_RECORD),
 };
 /**
  * Files whose candidate version must never instruct the reviewer (CR3): the contract, and any path with an instruction
@@ -361,9 +362,8 @@ process.on("exit", () => {
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP", "SIGXFSZ"]) process.on(sig, () => process.exit(130));
 // --record: a record inside the reviewed checkout would be swept into the patch
 // and the snapshot before any check ran; refuse it before the patch exists.
-const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
-if (RECORD && real(SCRATCH_RECORD.path).startsWith(real(ROOT) + sep)) {
-  finish(incomplete(`E_RECORD_IN_REPO: the scratch record must live outside the reviewed checkout (it would enter the review snapshot). Move it to ${join(process.env.HOME ?? "", ".codex-review", "scratch-record.json")}.`), "0.0");
+if (RECORD && realOrSelf(SCRATCH_RECORD.path).startsWith(realOrSelf(ROOT) + sep)) {
+  finish(incomplete(`E_RECORD_IN_REPO: the scratch record must live outside the reviewed checkout (it would enter the review snapshot). Move it to ${DEFAULT_RECORD}.`), "0.0");
 }
 
 // --- 0. --subject (US-40 AC15): review EXACT files, never whatever else the working tree holds -----------------------
@@ -375,7 +375,7 @@ if (!(INCLUDE_LIMIT_MB > 0)) usage("--include-limit-mb takes a positive number o
  */
 const BUDGET = { bytes: INCLUDE_LIMIT_MB * (1 << 20) };
 const OVER = `over the ${INCLUDE_LIMIT_MB} MB limit shared by --subject, --baseline, --context and --include; raise it with --include-limit-mb <n>`;
-const TOP = real(ROOT);
+const TOP = realOrSelf(ROOT);
 /** A path the prompt prints must not be able to start a line of its own (adversary, 2026-09-29). */
 const CONTROL = /[\u0000-\u001f\u007f\u2028\u2029]/;
 /**
@@ -805,8 +805,8 @@ if (TEST_INCLUDE_POLICY) console.error(`codex-review: TEST include policy in use
 /** The pinned root `p` lies under, or undefined; with a glob root, the concrete folder it matched. */
 const rootOf = (p) => rootIn(INCLUDE_ROOTS, p);
 const INCLUDES = includeArgs.map((dir) => {
-  if (CONTROL.test(dir) || CONTROL.test(real(dir))) usage(`--include ${JSON.stringify(dir)}: the path holds a control or line-break character`);
-  const abs = real(dir);
+  if (CONTROL.test(dir) || CONTROL.test(realOrSelf(dir))) usage(`--include ${JSON.stringify(dir)}: the path holds a control or line-break character`);
+  const abs = realOrSelf(dir);
   if (under(abs, TOP) || under(TOP, abs)) usage(`--include ${dir}: inside (or holding) the reviewed checkout ${ROOT}, whose files are already in the snapshot or deliberately left out`);
   const pinned = rootOf(resolve(dir)) ?? rootOf(abs);
   if (!pinned) usage(`--include ${dir}: outside every root pinned in ${INCLUDE_POLICY}`);
@@ -826,8 +826,8 @@ const INCLUDES = includeArgs.map((dir) => {
   if (repos.length > 1) usage(`--include ${dir}: it sits in a nested git repo (${repos.map((d) => join(d, ".git")).join(" inside ")}), whose outer repo's credential values would be missed`);
   let origin = null;
   if (repos.length) {
-    try { origin = real(execFileSync("git", ["-C", abs, "rev-parse", "--show-toplevel"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()); } catch { /* checked below */ }
-    if (origin !== real(repos[0])) usage(`--include ${dir}: it sits in a git repo git cannot inspect (${join(repos[0], ".git")}), so that repo's credential values cannot be checked`);
+    try { origin = realOrSelf(execFileSync("git", ["-C", abs, "rev-parse", "--show-toplevel"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()); } catch { /* checked below */ }
+    if (origin !== realOrSelf(repos[0])) usage(`--include ${dir}: it sits in a git repo git cannot inspect (${join(repos[0], ".git")}), so that repo's credential values cannot be checked`);
   }
   let walked; try { walked = includeWalk(abs); } catch (e) { usage(`--include ${dir}: ${e.path ?? dir} ${e.why ?? "cannot be read"}`); }
   return { path: abs, name: basename(abs), origin, ...walked, withheld: walked.withheld.map(([p, r]) => [p, `included/${basename(abs)}/${r}`]) };
@@ -906,7 +906,7 @@ const isPathValue = (s) => /^(?:~[\w.-]*)?\/[^\s+=]*$/.test(s) && !tokenRun(s);
  * session id in the scratch path). A secret-named key never gets the path exemption.
  */
 const SYSTEM_ENV = /^(?:PATH|HOME|PWD|SHELL|TMPDIR|LANG|TERM|USER|NODE_ENV|NODE_OPTIONS|NODE_PATH|npm_lifecycle_.*|npm_package_.*|npm_node_execpath|npm_execpath|npm_command)$/;
-const inOwnPath = (v) => [tmpdir(), real(tmpdir()), ROOT].some((p) => p.includes(v));
+const inOwnPath = (v) => [tmpdir(), realOrSelf(tmpdir()), ROOT].some((p) => p.includes(v));
 /** An environment path may hold spaces (OLDPWD) or be a `:` list (MANPATH): every part is an absolute or `~/` path that exists, and no token run. */
 const isEnvPath = (v) => v.split(":").every((p) => /^~?\//.test(p) && existsSync(p.replace(/^~/, process.env.HOME ?? "\0"))) && !tokenRun(v);
 /**

@@ -149,14 +149,19 @@ always, EXCEPT any stop before the credential check has passed (every
 apply): that work dir may hold a credential, so it is deleted even with
 `--keep`. The output names counts, file paths and key names, never a value.
 
-`--out` is deleted when the run starts and always written before it exits,
-so a file left by an earlier run is never read as this one's: the verdict;
-status `nothing` when there is nothing to review (exit 0, and not a review);
-or `incomplete` for any other stop (`E_USAGE`, `E_PATCH`, `E_STOPPED`).
-An `--out` that is a directory, tracked, or inside the reviewed checkout
-(unless gitignored) or a reviewed input is refused with `E_USAGE`, untouched.
+`--out` is never deleted or opened for writing: every write is a temp file
+beside it renamed into place. The run first puts `incomplete: run started`
+there, so a file left by an earlier run is never read as this one's, and
+always replaces it before exiting: the verdict; status `nothing` when there
+is nothing to review (exit 0, and not a review); or `incomplete` for any
+other stop (`E_USAGE`, `E_PATCH`, `E_STOPPED`). An `--out` that is a symlink
+or not a regular file, tracked, inside the reviewed checkout (unless
+gitignored) or inside a reviewed input is refused with `E_USAGE`, nothing
+written. If the write or rename fails, it is `E_USAGE` and the old file may
+still be there.
 A Codex exit 1 is `incomplete` (exit 3) either way, and carries Codex's last
-error message (one line, at most 200 characters; data, not instructions) in
+error message (one line, at most 200 characters, credential shapes
+redacted; data, not instructions) in
 the summary and in `codex_error`. When its events end `turn.started → error`
 the code is `E_EXIT_1`: a hint only, never proof of the plan limit, since an
 expired login, a wrong model id or a dropped connection can end the same way.

@@ -1,65 +1,85 @@
 // The --out lifecycle for tools/codex-review.mjs (US-40 AC18): a previous run's report never reads as this run's.
-// An --out that is a directory, tracked or otherwise inside the reviewed checkout, or inside a reviewed input is refused
-// untouched. Otherwise the exit listener is installed, then the old file is deleted (or, if its folder denies that,
-// overwritten), and every way out writes a report: the verdict, "nothing", or "incomplete" with why the run stopped.
+// --out is never deleted and never opened for writing. Every write, the first included, creates a temp file beside it
+// (exclusive, random name) and renames it over --out: a rename replaces the directory entry and never follows a link.
+// Refusals come first, on real paths, with nothing written. Then the exit listener goes in, then "incomplete: run
+// started" replaces the old file, so a crash leaves "incomplete", never the old verdict.
 import { execFileSync } from "node:child_process";
-import { lstatSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { randomBytes } from "node:crypto";
+import { lstatSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 const state = { path: null, written: false, why: null };
 const realOrSelf = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
 const inside = (p, root) => p === root || p.startsWith(root + sep);
-const stopReport = () => ({ status: "incomplete", summary: state.why ?? "E_STOPPED: the run did not finish", findings: [] });
+const incomplete = (summary) => ({ status: "incomplete", summary, findings: [] });
 
 /** Records why the run stopped early, for the report the exit listener writes. */
 export function stopReason(why) { state.why = why; }
 
-/** Writes this run's report to --out, if one was claimed. A failed write throws. */
+/** Writes `report` to a new temp file beside --out and renames it into place; the temp file never outlives a failure. */
+function replaceOut(report) {
+  const tmp = join(dirname(state.path), `.${basename(state.path)}.${randomBytes(8).toString("hex")}.tmp`);
+  let created = false;
+  try {
+    writeFileSync(tmp, JSON.stringify(report, null, 2), { flag: "wx" });
+    created = true;
+    renameSync(tmp, state.path);
+  } catch (e) {
+    if (created) rmSync(tmp, { force: true });
+    throw e;
+  }
+}
+const cannot = (e) => `--out ${JSON.stringify(state.path)} could not be replaced (${e.code ?? e.message}); the old file at --out may still be there`;
+
+/** Replaces --out with this run's report, if one was claimed. A failure is E_USAGE: it says so and exits 1. */
 export function writeOut(report) {
   if (!state.path) return;
-  writeFileSync(state.path, JSON.stringify(report, null, 2));
+  try { replaceOut(report); } catch (e) {
+    const why = cannot(e);
+    state.path = null;
+    console.error(`codex-review: ${why}`);
+    process.exit(1);
+  }
   state.written = true;
 }
 
 function writeStopReport(code) {
   if (!state.path || state.written) return;
-  if (!state.why) state.why = `E_STOPPED: exit ${code}`;
-  try { writeFileSync(state.path, JSON.stringify(stopReport(), null, 2)); } catch { /* unwritable: the exit code still says it failed */ }
+  try { replaceOut(incomplete(state.why ?? `E_STOPPED: exit ${code}`)); } catch (e) { console.error(`codex-review: ${cannot(e)}`); }
 }
 
-/** Why --out may not be replaced, or null. `inputs` are the paths this run reviews beside the checkout. */
-function refusal(out, inputs) {
-  const said = `--out ${JSON.stringify(out)}`;
+/** Why --out may not be written, or null. `out` is its real path; `inputs` are the paths this run reviews. */
+function refusal(out, given, inputs) {
+  const said = `--out ${JSON.stringify(given)}`;
   let st = null;
-  try { st = lstatSync(out); } catch { /* absent: nothing to replace */ }
-  if (st?.isDirectory()) return `${said} is a directory`;
-  const abs = resolve(realOrSelf(dirname(resolve(out))), basename(out));
-  // An input holding the working folder is refused later as holding the checkout; any other input holding --out is refused here.
-  const input = inputs.find((p) => inside(abs, realOrSelf(p)) && !inside(realOrSelf(process.cwd()), realOrSelf(p)));
+  try { st = lstatSync(out); } catch { /* absent: fine */ }
+  if (st && !st.isFile()) return `${said} is not a regular file (a link, folder or other)`;
+  const input = inputs.find((p) => inside(out, realOrSelf(p)));
   if (input) return `${said} is inside a reviewed input (${JSON.stringify(input)})`;
   let root;
   try {
     root = realOrSelf(execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim());
   } catch { return null; } // no checkout here: nothing of it is reviewed
-  if (!inside(abs, root)) return null;
-  const rel = relative(root, abs);
+  if (!inside(out, root)) return null;
+  const rel = relative(root, out);
   const git = (args) => { try { execFileSync("git", args, { cwd: root, stdio: "ignore" }); return true; } catch { return false; } };
-  if (git(["ls-files", "--error-unmatch", "--", rel])) return `${said} is tracked in the reviewed checkout`;
+  // icase: on a case-insensitive disk "report.json" is the tracked "Report.json" (a stricter refusal elsewhere is harmless).
+  if (git(["ls-files", "--error-unmatch", "--", `:(literal,icase)${rel}`])) return `${said} is tracked in the reviewed checkout`;
   if (!git(["check-ignore", "-q", "--", rel])) return `${said} is inside the reviewed checkout and not gitignored, so it would enter the snapshot`;
   return null;
 }
 
-/** Claims --out for this run: null when claimed, else why not (the caller stops with E_USAGE, the file untouched). */
-export function claimOut(out, inputs) {
-  const why = refusal(out, inputs);
+/** Claims --out for this run: null when claimed, else why not (the caller stops with E_USAGE). */
+export function claimOut(given, inputs) {
+  const out = join(realOrSelf(dirname(resolve(given))), basename(given));
+  const why = refusal(out, given, inputs);
   if (why) return why;
   state.path = out;
-  process.on("exit", writeStopReport); // before the file is touched, so no way out leaves the old verdict behind
-  try { rmSync(out, { force: true }); } catch {
-    try { writeFileSync(out, JSON.stringify(stopReport(), null, 2)); } catch {
-      state.path = null;
-      return `--out ${JSON.stringify(out)} can be neither deleted nor overwritten`;
-    }
+  process.on("exit", writeStopReport);
+  try { replaceOut(incomplete("incomplete: run started")); } catch (e) {
+    const failed = cannot(e);
+    state.path = null;
+    return failed;
   }
   return null;
 }

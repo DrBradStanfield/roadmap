@@ -504,10 +504,13 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     }
     expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
   });
-  it('the copy is gone even when the wrapper itself throws after the run (unwritable --out)', () => {
-    const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', '/nonexistent-dir-4471/out.json'], { cwd: repo, encoding: 'utf8', env: childEnv() });
+  it('the copy is gone even when the wrapper itself fails after the run (an --out folder made read-only during it)', () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'cr-out-ro-'));
+    const f = fake({ output: CLEAN, during: `chmod 555 ${JSON.stringify(outDir)}` });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', join(outDir, 'out.json')], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    chmodSync(outDir, 0o755);
     expect(r.status).not.toBe(0);
+    expect(r.stderr).toContain('the old file at --out may still be there');
     const argv: string[] = JSON.parse(f.read('argv.json'));
     const args = JSON.parse(argv.find((a) => a.startsWith('mcp_servers.health.args='))!.slice('mcp_servers.health.args='.length));
     const copy = args[args.indexOf('--file') + 1];
@@ -1560,7 +1563,9 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
   it('usage errors name the path: inside or holding the checkout, outside every pinned root, missing, not a folder, a control character, a shared name, a credential- or instruction-named folder, --loop', () => {
     const dir = changed();
     refused(dir, ['--include', join(dir, 'docs')], `--include ${join(dir, 'docs')}: inside (or holding) the reviewed checkout`);
-    refused(dir, ['--include', join(dir, '..')], 'inside (or holding) the reviewed checkout');
+    const outside = mkdtempSync('/tmp/cr-out-outside-'); // the suite root holds outJson, and an --out inside a reviewed input is refused first (AC18)
+    refused(dir, ['--include', join(dir, '..'), '--out', join(outside, 'out.json')], 'inside (or holding) the reviewed checkout');
+    rmSync(outside, { recursive: true, force: true });
     const loose = mkdtempSync(join(tmpdir(), 'cr-include-loose-'));
     refused(dir, ['--include', loose], `--include ${loose}: outside every root pinned in ${policy}`);
     refused(dir, ['--include', join(pinned, 'no-such-folder')], `--include ${join(pinned, 'no-such-folder')}: no such directory`);
@@ -2423,7 +2428,7 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
   function runStale(bin: string, extra: string[], cwd = repo, env = childEnv()) {
     const out = staleOut();
     const r = spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', out], { cwd, encoding: 'utf8', env });
-    return { r, report: readOut(out) };
+    return { r, report: readOut(out), out };
   }
   const ev = (type: string, extra: object = {}) => JSON.stringify({ type, ...extra });
   it('nothing to review: a stale --out is replaced by status "nothing", exit 0', () => {
@@ -2473,15 +2478,51 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(report.summary).toContain(report.codex_error);
     expect(r.stdout).toContain(report.codex_error);
   });
-  it('an --out whose folder denies deleting it is overwritten with an incomplete report, never left as the old verdict', () => {
+  it('a read-only --out folder (the temp write or rename fails) is E_USAGE saying the old file may still be there', () => {
     const out = staleOut();
     chmodSync(join(out, '..'), 0o555);
     try {
-      const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--live', '--record', '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
+      const f = fake({ output: CLEAN });
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
       expect(r.status).toBe(1);
-      expect(readOut(out).status).toBe('incomplete');
-      expect(readOut(out).summary).toMatch(/^E_USAGE: --live is refused/);
+      expect(r.stderr).toContain('the old file at --out may still be there');
+      expect(readOut(out)).toEqual(STALE);
+      expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     } finally { chmodSync(join(out, '..'), 0o755); }
+  });
+  it('a symlink at --out pointing at a tracked file is refused, even in a folder that denies deletes, and the target is byte-unchanged', () => {
+    const dir = freshRepo({ 'tracked.json': 'TRACKED BYTES\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const folder = mkdtempSync(join(tmpdir(), 'cr-out-link-'));
+    symlinkSync(join(dir, 'tracked.json'), join(folder, 'out.json'));
+    chmodSync(folder, 0o555);
+    try {
+      const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', join(folder, 'out.json')], { cwd: dir, encoding: 'utf8', env: childEnv() });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain('is not a regular file');
+      expect(readFileSync(join(dir, 'tracked.json'), 'utf8')).toBe('TRACKED BYTES\n');
+      expect(lstatSync(join(folder, 'out.json')).isSymbolicLink()).toBe(true);
+    } finally { chmodSync(folder, 0o755); }
+  });
+  it('a run started inside a context folder, with --out in that folder, is refused and the folder is unchanged', () => {
+    const dir = freshRepo({ '.gitignore': 'ctx/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'notes.md'), 'CONTEXT NOTES\n');
+    const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--context', '.', '--out', 'notes.md'], { cwd: join(dir, 'ctx'), encoding: 'utf8', env: childEnv() });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('inside a reviewed input');
+    expect(readdirSync(join(dir, 'ctx'))).toEqual(['notes.md']);
+    expect(readFileSync(join(dir, 'ctx', 'notes.md'), 'utf8')).toBe('CONTEXT NOTES\n');
+  });
+  it('the normal path ends with the final verdict over a stale one, and leaves no temp file beside it', () => {
+    writeFileSync(join(repo, 'a.txt'), 'normal path check\n');
+    const { r, report, out } = runStale(fake({ output: CLEAN }).bin, []);
+    expect(r.status).toBe(0);
+    expect([report.status, report.summary]).toEqual(['complete', 'clean']);
+    expect(report.target).not.toBe('old');
+    expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
   });
   it('an --out that is a directory, or tracked in the reviewed checkout, is refused (E_USAGE) and left untouched', () => {
     const folder = mkdtempSync(join(tmpdir(), 'cr-out-dir-'));
@@ -2489,7 +2530,7 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     const d = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', folder], { cwd: repo, encoding: 'utf8', env: childEnv() });
     expect(d.status).toBe(1);
     expect(d.stderr).toContain('codex-review: --out');
-    expect(d.stderr).toContain('is a directory');
+    expect(d.stderr).toContain('is not a regular file');
     expect(readFileSync(join(folder, 'inside.txt'), 'utf8')).toBe('kept\n');
     const dir = freshRepo({ 'report.json': JSON.stringify(STALE) });
     writeFileSync(join(dir, 'a.txt'), 'two\n');
@@ -2533,5 +2574,45 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     const code = await new Promise((res) => child.on('close', (c, sig) => res(c ?? sig)));
     expect(code).toBe(130);
     expect(readOut(out)).toEqual({ status: 'incomplete', summary: 'E_STOPPED: exit 130', findings: [] });
+  });
+  it('--record with --out at the default scratch record is refused (a reviewed input), and the record is untouched', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    const bytes = readFileSync(scratchFile, 'utf8');
+    writeFileSync(record, bytes);
+    writeFileSync(join(repo, 'a.txt'), 'default record check\n');
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--out', record], { cwd: repo, encoding: 'utf8', env: childEnv({ HOME: home }) });
+    expect([r.status, r.stderr.includes('inside a reviewed input')]).toEqual([1, true]);
+    expect(readFileSync(record, 'utf8')).toBe(bytes);
+    expect(readdirSync(join(home, '.codex-review'))).toEqual(['scratch-record.json']);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('inside the checkout: an untracked, not-ignored --out is refused; a gitignored one is written; a tracked one in an ignored folder is refused under another letter case', () => {
+    const dir = freshRepo({ '.gitignore': 'reports/\nign/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const go = (out: string) => spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', out], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    const loose = go('loose.json');
+    expect([loose.status, loose.stderr.includes('not gitignored')]).toEqual([1, true]);
+    expect(existsSync(join(dir, 'loose.json'))).toBe(false);
+    mkdirSync(join(dir, 'reports'));
+    const ignored = go('reports/out.json');
+    expect(ignored.status).toBe(0);
+    expect(JSON.parse(readFileSync(join(dir, 'reports', 'out.json'), 'utf8')).status).toBe('complete');
+    expect(readdirSync(join(dir, 'reports'))).toEqual(['out.json']);
+    mkdirSync(join(dir, 'ign'));
+    writeFileSync(join(dir, 'ign', 'Report.json'), 'TRACKED REPORT\n');
+    sh(dir, 'git add -f ign/Report.json && git commit -q -m tracked-in-ignored');
+    const cased = go('ign/report.json');
+    expect([cased.status, cased.stderr.includes('is tracked')]).toEqual([1, true]);
+    expect(readFileSync(join(dir, 'ign', 'Report.json'), 'utf8')).toBe('TRACKED REPORT\n');
+  });
+  it('a credential shape in the Codex error message is redacted before --out and stdout', () => {
+    writeFileSync(join(repo, 'a.txt'), 'redaction check\n');
+    const message = 'Request rejected by hooks.slack.com/services/TESTONLY/more; check the hook';
+    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('turn.started'), ev('error', { message })] }).bin, []);
+    expect(report.codex_error).toBe('Request rejected by [redacted]; check the hook');
+    expect(JSON.stringify(report) + r.stdout).not.toContain('TESTONLY');
   });
 });
