@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T24,tooling,"build-master-html: renderBlocks holds a parser mode in `let inRefs`; extractCarried holds its heading mode in a nullable object beside a counter; stripForCommerce holds a skip mode as a heading level; placeCarried and fallbackPlace return an untagged union; the store names repeat across MARKERS and buildMasterHtml, now across two files",implicit state,not started,Found splitting scripts/build-master-html.mjs (PR 1443); see scripts/build-master-html.mjs and scripts/build-master-carry.mjs,1443,no
