@@ -30,11 +30,14 @@ export const BANNER =
   '// Regenerate after any change to the scrub source, its vocabulary or esbuild.';
 
 // What the server file exports: everything instrument.server.mjs and the parity
-// tests read, under the names the hand-written copy used.
+// tests read, under the names the hand-written copy used. TEST_ONLY_VOCABULARY is
+// for the freshness test, which compares its regexes with the real module's.
 const ENTRY = `
 export { SCRUB_METRIC_WORDS, SCRUB_UNIT_PATTERN, SCRUB_UNITS, SENSITIVE_EXACT_KEYS } from './scrub-vocabulary';
 export { dropLongStrings, scrubBreadcrumbData, scrubStrings, scrubText, scrubUrl } from './sentry-scrub';
 export { scrubEventText, scrubSensitiveData, scrubServerEvent } from './sentry-scrub-server';
+import { EMAIL_SOURCE, METRIC_THEN_VALUE_RE, UNIT_VALUE_RE, VALUE_THEN_METRIC_RE } from './scrub-vocabulary';
+export const TEST_ONLY_VOCABULARY = { EMAIL_SOURCE, METRIC_THEN_VALUE_RE, UNIT_VALUE_RE, VALUE_THEN_METRIC_RE };
 `;
 
 const PINNED = {
@@ -64,16 +67,42 @@ export async function realVocabulary() {
 const list = (words) => `[\n${words.map((w) => `  ${JSON.stringify(w)},`).join('\n')}\n]`;
 
 /** ./lab-catalog as scrub-vocabulary.ts reads it, holding the finished lists. Its
- *  own additions are already in them, so the vocabulary returns them unchanged. */
+ *  own additions are already in them, so the vocabulary returns them unchanged.
+ *  It allows exactly the reads the vocabulary makes today: one spread of
+ *  CATALOG_UNITS, two LAB_CATALOG.flatMap calls, one metricNameWords(3). Any
+ *  other read throws, and the generator runs the output, so a vocabulary that
+ *  derives something new fails generation by name instead of reading the
+ *  finished lists as if they were the catalogue. */
 const literalCatalog = ({ units, metricWords }) => `
 // The finished word lists, in place of ./lab-catalog (${COMMAND}).
-export const CATALOG_UNITS = ${list(units)};
-export const LAB_CATALOG = [];
-export const metricNameWords = () => ${list(metricWords)};
+const UNITS = ${list(units)};
+const METRIC_WORDS = ${list(metricWords)};
+const refuse = (read) => {
+  throw new Error(\`instrument-scrub stand-in catalogue: \${read} is a read scrub-vocabulary.ts did not make when the stand-in was written; update tools/generate-instrument-scrub.mjs\`);
+};
+function standIn(name, reads) {
+  return new Proxy({}, {
+    get(_, prop) {
+      const read = reads.get(prop);
+      if (!read || read.left === 0) refuse(\`\${name}[\${String(prop)}]\${read ? " (once more)" : ""}\`);
+      read.left--;
+      return read.value;
+    },
+  });
+}
+export const CATALOG_UNITS = standIn("CATALOG_UNITS", new Map([[Symbol.iterator, { left: 1, value: () => UNITS[Symbol.iterator]() }]]));
+export const LAB_CATALOG = standIn("LAB_CATALOG", new Map([["flatMap", { left: 2, value: () => [] }]]));
+let metricNameWordsCalls = 0;
+export function metricNameWords(minLength) {
+  if (minLength !== 3 || metricNameWordsCalls++ > 0) refuse(\`metricNameWords(\${minLength})\`);
+  return METRIC_WORDS;
+}
 `;
 
-/** Builds the server file. Throws if any catalogue-graph module is an input. */
-export async function generate() {
+/** Builds the server file. Throws if any catalogue-graph module is an input, or
+ *  if the output, run once, trips the stand-in catalogue. `vocabularySource`
+ *  replaces scrub-vocabulary.ts's text: for the test that pins the stand-in only. */
+export async function generate({ vocabularySource } = {}) {
   const vocabulary = await realVocabulary();
   const swap = {
     name: 'scrub-vocabulary-literals',
@@ -81,6 +110,9 @@ export async function generate() {
       b.onResolve({ filter: /^\.\/lab-catalog$/ }, (args) =>
         args.importer.endsWith('/scrub-vocabulary.ts') ? { path: 'lab-catalog', namespace: 'scrub-literals' } : undefined);
       b.onLoad({ filter: /.*/, namespace: 'scrub-literals' }, () => ({ contents: literalCatalog(vocabulary), loader: 'js' }));
+      if (vocabularySource !== undefined) {
+        b.onLoad({ filter: /\/scrub-vocabulary\.ts$/ }, () => ({ contents: vocabularySource, loader: 'ts' }));
+      }
     },
   };
   const result = await build({
@@ -92,7 +124,10 @@ export async function generate() {
   const inputs = Object.keys(result.metafile.inputs);
   const leaked = inputs.filter((f) => vocabulary.catalogInputs.includes(f));
   if (leaked.length) throw new Error(`instrument-scrub.mjs would carry the catalogue's graph: ${leaked.join(', ')}`);
-  return { code: result.outputFiles[0].text, inputs, vocabulary };
+  const code = result.outputFiles[0].text;
+  // Run it once: the stand-in throws on any read the vocabulary did not make.
+  await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+  return { code, inputs, vocabulary };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

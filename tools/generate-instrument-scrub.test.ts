@@ -5,6 +5,7 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as vocabulary from '../packages/health-core/src/scrub-vocabulary';
 import * as browser from '../packages/health-core/src/sentry-scrub';
@@ -58,14 +59,79 @@ describe('US-09 AC7j: the generated server scrub', () => {
   });
 
   it('does nothing at load but define its lists, regexes and functions', () => {
-    // Every top-level statement is a declaration or the export list; nothing
-    // reads the process, the environment, the console, a timer or the network.
-    const topLevel = committed.split('\n').filter((line) => /^\S/.test(line) && !/^(\/\/|var |function |export \{|\}|\]|\))/.test(line));
-    expect(topLevel).toEqual([]);
+    expect(loadTimeWork(committed).join('\n')).toBe('');
     // (The words "console" and "fetch" appear only as breadcrumb category strings.)
     expect(committed).not.toMatch(/\b(process|globalThis|console|setTimeout|setInterval|setImmediate|queueMicrotask|fetch)\s*[.([]|import\.meta/);
   });
+
+  it.each([
+    ['a global call', 'var t = Date.now();'],
+    ['a new Worker', 'var w = new Worker("x");'],
+    ['a global inside a template', 'var s = `a${Date.now()}`;'],
+    ['a method on a global', 'var k = Object.keys(globalThis);'],
+    ['a bare top-level call', 'fetch("https://example.invalid");'],
+    ['a call through a local arrow that runs a global', 'var f = (() => Date.now())();'],
+  ])('the load check refuses %s', (_label, line) => {
+    expect(loadTimeWork(`${committed}\n${line}\n`)).not.toEqual([]);
+  });
 });
+
+/**
+ * What a module runs at load beyond defining things: every top-level statement
+ * must be a function, the export list or a `var` whose initialiser is a
+ * literal, an array or object literal of those, a template of those, an arrow
+ * or function (not called), new Set/Map/RegExp, String.raw, Symbol.iterator, a
+ * call to a function declared in the file, or a method call on a value made
+ * in the file (a chain of them too). Returns the offending source text.
+ */
+function loadTimeWork(source: string): string[] {
+  const file = ts.createSourceFile('m.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const declared = new Set<string>();
+  const functions = new Set<string>();
+  for (const s of file.statements) {
+    if (ts.isFunctionDeclaration(s) && s.name) { declared.add(s.name.text); functions.add(s.name.text); }
+    if (ts.isVariableStatement(s)) {
+      for (const d of s.declarationList.declarations) {
+        if (!ts.isIdentifier(d.name)) continue;
+        declared.add(d.name.text);
+        if (d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) functions.add(d.name.text);
+      }
+    }
+  }
+  const ok = (n: ts.Node): boolean => {
+    if (ts.isStringLiteral(n) || ts.isNumericLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isRegularExpressionLiteral(n)) return true;
+    if ([ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)) return true;
+    if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return true;
+    if (ts.isIdentifier(n)) return declared.has(n.text) || n.text === 'undefined';
+    if (ts.isParenthesizedExpression(n) || ts.isSpreadElement(n)) return ok(n.expression);
+    if (ts.isPrefixUnaryExpression(n)) return ok(n.operand);
+    if (ts.isBinaryExpression(n)) return ok(n.left) && ok(n.right);
+    if (ts.isConditionalExpression(n)) return ok(n.condition) && ok(n.whenTrue) && ok(n.whenFalse);
+    if (ts.isTemplateExpression(n)) return n.templateSpans.every((s) => ok(s.expression));
+    if (ts.isArrayLiteralExpression(n)) return n.elements.every(ok);
+    if (ts.isObjectLiteralExpression(n)) {
+      return n.properties.every((p) => (ts.isShorthandPropertyAssignment(p) ? declared.has(p.name.text)
+        : ts.isPropertyAssignment(p) && (!ts.isComputedPropertyName(p.name) || ok(p.name.expression)) && ok(p.initializer)));
+    }
+    if (ts.isPropertyAccessExpression(n)) return n.getText() === 'Symbol.iterator';
+    if (ts.isNewExpression(n)) return ts.isIdentifier(n.expression) && ['Set', 'Map', 'RegExp'].includes(n.expression.text) && (n.arguments ?? []).every(ok);
+    if (ts.isTaggedTemplateExpression(n)) return n.tag.getText() === 'String.raw' && ok(n.template);
+    if (ts.isCallExpression(n)) {
+      const callee = n.expression;
+      const own = ts.isIdentifier(callee) ? functions.has(callee.text)
+        : ts.isPropertyAccessExpression(callee) && ok(callee.expression); // a method on a value the file made
+      return own && n.arguments.every(ok);
+    }
+    return false;
+  };
+  const bad: string[] = [];
+  for (const s of file.statements) {
+    if (ts.isFunctionDeclaration(s) || (ts.isExportDeclaration(s) && !s.moduleSpecifier)) continue;
+    if (ts.isVariableStatement(s) && s.declarationList.declarations.every((d) => !d.initializer || ok(d.initializer))) continue;
+    bad.push(s.getText().slice(0, 120));
+  }
+  return bad;
+}
 
 describe('US-09 AC7j: it loads with nothing installed', () => {
   let dir: string;
@@ -96,6 +162,34 @@ describe('US-09 AC7j: the swapped-in literal lists equal the real vocabulary', (
   });
   it('SENSITIVE_EXACT_KEYS', () => {
     expect([...generated.SENSITIVE_EXACT_KEYS]).toEqual([...vocabulary.SENSITIVE_EXACT_KEYS]);
+  });
+  it('EMAIL_SOURCE', () => {
+    expect(generated.TEST_ONLY_VOCABULARY.EMAIL_SOURCE).toBe(vocabulary.EMAIL_SOURCE);
+  });
+  it.each(['UNIT_VALUE_RE', 'METRIC_THEN_VALUE_RE', 'VALUE_THEN_METRIC_RE'] as const)('%s: same source and flags', (name) => {
+    const ours: RegExp = generated.TEST_ONLY_VOCABULARY[name];
+    expect({ source: ours.source, flags: ours.flags }, `${name} moved: run ${COMMAND}`)
+      .toEqual({ source: vocabulary[name].source, flags: vocabulary[name].flags });
+  });
+});
+
+// The stand-in catalogue allows only the reads scrub-vocabulary.ts makes today.
+// A vocabulary that reads it any other way fails generation, by name.
+describe('US-09 AC7j: the stand-in catalogue fails closed', () => {
+  const real = readFileSync(join(ROOT, 'packages/health-core/src/scrub-vocabulary.ts'), 'utf8');
+  const edit = (from: string, to: string) => {
+    expect(real, `scrub-vocabulary.ts no longer holds ${from}: update this pin`).toContain(from);
+    return real.replace(from, to);
+  };
+  const LABEL_READ = '...LAB_CATALOG.flatMap((entry) => [entry.key';
+  it.each([
+    ['metricNameWords(2)', edit('...metricNameWords(3),', '...metricNameWords(2),'), /metricNameWords\(2\)/],
+    ['metricNameWords(3) twice', edit('...metricNameWords(3),', '...metricNameWords(3), ...metricNameWords(3),'), /metricNameWords\(3\)/],
+    ['LAB_CATALOG read once more', edit(LABEL_READ, `...LAB_CATALOG.flatMap((entry) => entry.aliases), ${LABEL_READ}`), /LAB_CATALOG\[flatMap\] \(once more\)/],
+    ['LAB_CATALOG read another way', edit(LABEL_READ, `...LAB_CATALOG.map((entry) => entry.key), ${LABEL_READ}`), /LAB_CATALOG\[map\]/],
+    ['CATALOG_UNITS spread twice', edit('  ...CATALOG_UNITS,', '  ...CATALOG_UNITS,\n  ...CATALOG_UNITS,'), /CATALOG_UNITS\[Symbol\(Symbol\.iterator\)\] \(once more\)/],
+  ])('%s makes generation fail', async (_label, vocabularySource, message) => {
+    await expect(generate({ vocabularySource })).rejects.toThrow(message);
   });
 });
 

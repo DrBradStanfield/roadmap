@@ -2,7 +2,7 @@
 // Regenerate after any change to the scrub source, its vocabulary or esbuild.
 
 // scrub-literals:lab-catalog
-var CATALOG_UNITS = [
+var UNITS = [
   "%",
   "IU/L",
   "IU/mL",
@@ -86,8 +86,7 @@ var CATALOG_UNITS = [
   "units",
   '"'
 ];
-var LAB_CATALOG = [];
-var metricNameWords = () => [
+var METRIC_WORDS = [
   "acr",
   "acth",
   "adrenocorticotropic",
@@ -785,6 +784,26 @@ var metricNameWords = () => [
   "height",
   "vit"
 ];
+var refuse = (read) => {
+  throw new Error(`instrument-scrub stand-in catalogue: ${read} is a read scrub-vocabulary.ts did not make when the stand-in was written; update tools/generate-instrument-scrub.mjs`);
+};
+function standIn(name, reads) {
+  return new Proxy({}, {
+    get(_, prop) {
+      const read = reads.get(prop);
+      if (!read || read.left === 0) refuse(`${name}[${String(prop)}]${read ? " (once more)" : ""}`);
+      read.left--;
+      return read.value;
+    }
+  });
+}
+var CATALOG_UNITS = standIn("CATALOG_UNITS", /* @__PURE__ */ new Map([[Symbol.iterator, { left: 1, value: () => UNITS[Symbol.iterator]() }]]));
+var LAB_CATALOG = standIn("LAB_CATALOG", /* @__PURE__ */ new Map([["flatMap", { left: 2, value: () => [] }]]));
+var metricNameWordsCalls = 0;
+function metricNameWords(minLength) {
+  if (minLength !== 3 || metricNameWordsCalls++ > 0) refuse(`metricNameWords(${minLength})`);
+  return METRIC_WORDS;
+}
 
 // packages/health-core/src/scrub-vocabulary.ts
 var REDACTED = "[Filtered]";
@@ -1202,11 +1221,15 @@ function scrubServerEvent(event) {
   if (event.extra) event.extra = dropLongStrings(event.extra);
   return event;
 }
+
+// packages/health-core/src/instrument-scrub-entry.js
+var TEST_ONLY_VOCABULARY = { EMAIL_SOURCE, METRIC_THEN_VALUE_RE, UNIT_VALUE_RE, VALUE_THEN_METRIC_RE };
 export {
   SCRUB_METRIC_WORDS,
   SCRUB_UNITS,
   SCRUB_UNIT_PATTERN,
   SENSITIVE_EXACT_KEYS,
+  TEST_ONLY_VOCABULARY,
   dropLongStrings,
   scrubBreadcrumbData,
   scrubEventText,
