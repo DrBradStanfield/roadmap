@@ -52,7 +52,7 @@ import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -61,7 +61,7 @@ export { ROADMAP_DOC };
 
 /** The pending-mirror marker (US-09 AC4) is the web host's; re-exported for
  *  the modules that import it from the store. */
-export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
+export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
@@ -207,9 +207,9 @@ export class RoadmapStore {
     return this.file.medications.some((m) => m.medicationKey === key && !isReadableRow('medications', m) && !(answered && m.drugName === 'not_yet'));
   }
 
-  get backendId() {
-    return this.session.backendId;
-  }
+  get backendId() { return this.session.backendId; }
+  /** What the storage line says of the save (US-09 AC30); see the session. */
+  get saveStatus() { return this.session.saveStatus; }
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
@@ -226,7 +226,7 @@ export class RoadmapStore {
   /** Every write below takes `erase`, the erase the page showed when the
    *  write was asked for, and is refused as the session's `refuses` says
    *  (US-16 AC2a). A refusal is the method's error answer, never a throw. */
-  private refuses(erase?: string): boolean {
+  refuses(erase?: string): boolean {
     return this.session.refuses(erase);
   }
 
@@ -431,7 +431,7 @@ export class RoadmapStore {
       write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
-        if (this.refuses(erase)) return; // a refusal, not a failure
+        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal, not a failure (A15)
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
@@ -560,10 +560,10 @@ export class RoadmapStore {
     };
   }
 
-  /** Clear the off-file health data for the erase this copy is at, sparing
-   *  the originals of documents that outlive it (US-11 AC6); see the session. */
+  /** Clear the off-file health data for this copy's erase, sparing outliving originals (US-11 AC6; see the session).
+   *  A failed clear is reported ('Record upkeep failed') and not retried in this session: it never stops the page's reset. */
   clearOffFileData(): void {
-    this.session.clearOffFileData();
+    try { this.session.clearOffFileData(); } catch (error) { this.host.report(error, { op: 'clear-off-file', repeat: false }); }
   }
 
   /** Last-ditch save for tab close and hide (US-10 AC5); see the session. */

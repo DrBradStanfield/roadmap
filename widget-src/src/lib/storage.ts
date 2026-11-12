@@ -8,6 +8,7 @@ import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { isComparator } from '@roadmap/health-core/lab-limits';
 import { isClinicalDay } from '@roadmap/health-core/measurement-history';
 import type { ApiReminderPreference } from './api-types';
+import { randomId } from './random-id';
 
 /** The mirror: HealthTool's copy of the saved record, which the chatbot embed
  *  and the blog bubble read (US-15 AC10). It holds what is saved, never a
@@ -18,17 +19,115 @@ export const MIRROR_KEY = 'health_roadmap_data';
 export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
-/** Set once this page must stop writing health data to the device: its own
- *  log-off, or, in a cloud-mode page, another tab's (US-09 AC2c). It lives in
- *  this module, which every device writer imports, so the mirror and the
- *  matrix drafts check the same latch as the record's device copy (US-09 AC2e).
- *  Never reset in the page: log-off navigates away. */
-let healthWritesStopped = false;
-export function stopLocalHealthWrites(): void {
-  healthWritesStopped = true;
+/** Where this page may write health data on the device (US-09 AC2c, AC2e,
+ *  AC2h). 'loading': no record has opened yet; it may write only while this
+ *  device's log-off id is the one the page loaded with, and it holds another
+ *  tab's log-off heard meanwhile until it knows which kind of page it is. A
+ *  page that never opens a record (the chat embed, the blog bubble) stays
+ *  'loading' for life. 'device': a guest, whose device copy is its only store,
+ *  so it always may. 'fallback': a page on its device copy while this browser
+ *  has chosen `backend`, a cloud; the copy is a queue for that cloud, so it
+ *  takes the cloud rule. 'cloud': a cloud record opened here, so it may write
+ *  only while the id is the one it loaded with. 'stopped': its own log-off, or
+ *  another tab's heard on a page that is not a guest, or found as a changed id
+ *  when the page opens on the device. Never back: log-off navigates away. It
+ *  lives in this module, which every device writer imports, so all of them
+ *  check the same state. */
+export type HealthWrites =
+  | { mode: 'loading'; logOffHeard: boolean }
+  | { mode: 'device' }
+  | { mode: 'fallback'; backend: string }
+  | { mode: 'cloud'; storeId: string }
+  | { mode: 'stopped' };
+/** deviceOpened's `sameSignIn`: the log-off id is still the one the page loaded
+ *  with; `chosen`: the store this browser has chosen ('local': none, a guest). */
+export type HealthWritesEvent =
+  | { type: 'deviceOpened'; sameSignIn: boolean; chosen: string }
+  | { type: 'cloudOpened'; storeId: string }
+  | { type: 'logOffHeard' }
+  | { type: 'stop' };
+export function healthWritesTransition(state: HealthWrites, event: HealthWritesEvent): HealthWrites {
+  if (state.mode === 'stopped' || event.type === 'stop') return { mode: 'stopped' };
+  if (event.type === 'logOffHeard') {
+    if (state.mode === 'loading') return { mode: 'loading', logOffHeard: true };
+    // A guest's copy is its only store, so a heard log-off never stops it.
+    return state.mode === 'device' ? state : { mode: 'stopped' };
+  }
+  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud', storeId: event.storeId };
+  // A second host on the same page (the chat history's) changes nothing.
+  if (state.mode === 'device' || state.mode === 'fallback') return state;
+  // A heard log-off, or a changed id, which proves one: the device copy may
+  // be a new sign-in's mirror, so the page stops. Otherwise the device store
+  // decides.
+  if (state.mode === 'loading' && state.logOffHeard) return { mode: 'stopped' };
+  // No caller reaches cloud + deviceOpened today: the fallback follows a cloud
+  // host only when init throws, and nothing after mirror.opened() does: the
+  // rest of RecordSession.open catches, RoadmapStore.create does not await
+  // writeMovedRecord, and initRoadmapStore's later steps raise no storage failure.
+  if (!event.sameSignIn) return { mode: 'stopped' };
+  return event.chosen === 'local' ? { mode: 'device' } : { mode: 'fallback', backend: event.chosen };
 }
-export function localHealthWritesStopped(): boolean {
-  return healthWritesStopped;
+let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };
+const stopListeners = new Set<() => void>();
+const dispatchHealthWrites = (event: HealthWritesEvent) => {
+  const was = healthWrites;
+  healthWrites = healthWritesTransition(was, event);
+  if (was.mode !== 'stopped' && healthWrites.mode === 'stopped') stopListeners.forEach((onStop) => onStop());
+};
+export function stopLocalHealthWrites(): void {
+  dispatchHealthWrites({ type: 'stop' });
+}
+/** The record of `storeId`, a cloud, has opened on this page (the web host's mirror.opened()). */
+export function noteCloudPage(storeId: string): void {
+  dispatchHealthWrites({ type: 'cloudOpened', storeId });
+}
+/** This page runs on the device tier: a guest, or a cloud load's fallback while a cloud is chosen. */
+export function noteDevicePage(): void {
+  dispatchHealthWrites({ type: 'deviceOpened', sameSignIn: logOffId() === logOffIdAtLoad, chosen: chosenStore() });
+}
+/** Another tab's log-off signal reached this page. */
+export function noteLogOffHeard(): void {
+  dispatchHealthWrites({ type: 'logOffHeard' });
+}
+/** Calls `onChange` when healthWritesAllowed() may have changed: this page's writes stop, another tab
+ *  changes the log-off id, or the page comes back from the back-forward cache, where no storage event
+ *  reaches it (useSyncExternalStore's subscribe). */
+export function onHealthWritesChange(onChange: () => void): () => void {
+  const idChanged = (event: StorageEvent) => { if (event.key === LOG_OFF_ID_KEY) onChange(); };
+  const restored = (event: PageTransitionEvent) => { if (event.persisted) onChange(); };
+  stopListeners.add(onChange);
+  window.addEventListener('storage', idChanged);
+  window.addEventListener('pageshow', restored);
+  return () => { stopListeners.delete(onChange); window.removeEventListener('storage', idChanged); window.removeEventListener('pageshow', restored); };
+}
+/** The one check every on-device health writer makes.
+ *  The single rule for on-device health writes; callers import it, never copy it. */
+export function healthWritesAllowed(): boolean {
+  if (healthWrites.mode === 'device') return true;
+  return healthWrites.mode !== 'stopped' && logOffId() === logOffIdAtLoad;
+}
+/** The backend this browser uses, as the standalone picker remembers it
+ *  (standalone/connect.ts); absent on the device tier. */
+export const BACKEND_KEY = 'health_roadmap_backend';
+/** The store this browser has chosen: a cloud's id, or 'local' (none: the device record). */
+function chosenStore(): string {
+  return safeGetItem(BACKEND_KEY) ?? 'local';
+}
+/** The one owner rule for this browser's off-file health data (the drafts, stored originals, the Lp(a) kept
+ *  answer): the record `storeId` ('local' is the device record) is the one this browser has chosen, and
+ *  no log-off came on this device since the page loaded, a device page's included. Only the store that owns
+ *  it erases or clears that data (US-11 AC6): a fallback page's store is the device, so it clears nothing while
+ *  a cloud is chosen. Read live; callers import it, never copy it. */
+export function ownsOffFileData(storeId: string): boolean {
+  return healthWritesAllowed() && logOffId() === logOffIdAtLoad && chosenStore() === storeId;
+}
+/** The same rule for the record this page is on: the device record for a guest, the cloud it fell back from for a
+ *  fallback page, the cloud whose record opened last on a cloud. A page still loading is on no record yet and owns
+ *  nothing. useMatrixDraft reads and writes its draft key, and keepLpaAsIs writes its answer, only while it holds. */
+export function pageOnChosenRecord(): boolean {
+  const record = healthWrites.mode === 'device' ? 'local' : healthWrites.mode === 'fallback' ? healthWrites.backend
+    : healthWrites.mode === 'cloud' ? healthWrites.storeId : null;
+  return record !== null && ownsOffFileData(record);
 }
 
 interface StoredData {
@@ -62,7 +161,7 @@ export interface LoadedData {
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: ApiMeasurement | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
   // (patchMirror too) and would put the health copy back (US-09 AC2e).
-  if (healthWritesStopped) return;
+  if (!healthWritesAllowed()) return;
   try {
     const data: StoredData = {
       inputs,
@@ -188,34 +287,47 @@ export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
  * Lp(a) check's kept answers — the on-device health data an erase would
  * otherwise leave behind. `keepDocument` spares the blobs of documents an
  * erase did not remove (US-09 AC20, AC23): by default none is spared.
+ * Answers whether every key it removed reads back as gone: safeRemoveItem
+ * drops the error of a remove the storage refused (US-11 AC6). The check reads
+ * strictly: a read or a listing that throws is not clean.
  */
-export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
-  clearMatrixDrafts();
-  removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
+export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): boolean {
+  const keep = (key: string) => keepDocument(key.slice(DOC_KEY_PREFIX.length));
+  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  safeRemoveItem(VITALS_DRAFT_KEY);
+  dropDraftsOnScreen();
+  removeByPrefix(DOC_KEY_PREFIX, keep);
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
+  try {
+    return Object.keys(localStorage).filter((key) => key.startsWith(DOC_KEY_PREFIX)).every(keep)
+      && [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY].every((key) => localStorage.getItem(key) === null);
+  } catch {
+    return false;
+  }
 }
 
-/** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of
+/** Fired by `dropDraftsOnScreen`: a matrix on screen drops its own copy of
  *  the draft too (useMatrixDraft), or its next keystroke writes it back. */
 export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
-/** Remove both matrices' unsaved drafts: an erase, made here or on another
- *  device, leaves none behind (US-11). */
-function clearMatrixDrafts(): void {
-  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
-  safeRemoveItem(VITALS_DRAFT_KEY);
+/** An erase reached this page: what its screen holds of the drafts goes, on
+ *  every page, the owner of the stored drafts or not (US-11 AC6). */
+export function dropDraftsOnScreen(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 
 /** Remove every stored key under `prefix` (document blobs, named record
  *  files), except those `keep` names. */
 export function removeByPrefix(prefix: string, keep: (key: string) => boolean = () => false): void {
+  for (const key of keysUnder(prefix)) if (!keep(key)) safeRemoveItem(key);
+}
+
+/** The stored keys under `prefix`; none when storage is unavailable. */
+function keysUnder(prefix: string): string[] {
   try {
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix) && !keep(key)) safeRemoveItem(key);
-    }
+    return Object.keys(localStorage).filter((key) => key.startsWith(prefix));
   } catch {
-    /* storage unavailable — nothing to clear */
+    return [];
   }
 }
 
@@ -275,6 +387,81 @@ export function getJson<T>(key: string): T | null {
 /** JSON-stringify + write a localStorage value. */
 export function setJson(key: string, value: unknown): void {
   safeSetItem(key, JSON.stringify(value));
+}
+
+// health_roadmap_log_off_id: a random id, new at every log-off on this device,
+// never an account or email. A cloud sign-in carries the id it began under and
+// counts only while that id is current (US-09 AC45). It sits outside every
+// prefix a log-off or an erase wipes, so neither can set it back to an old id.
+const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
+/** The id a sign-in began under: null before this device's first log-off. */
+export type LogOffId = string | null;
+export function logOffId(): LogOffId {
+  return safeGetItem(LOG_OFF_ID_KEY);
+}
+/** Read once at load; a page restored from the back-forward cache keeps it and is refused. Do not re-read it on pageshow (US-09 AC2c). */
+const logOffIdAtLoad: LogOffId = logOffId();
+/** A synchronous claim, not a mode: set before log-off's first await and never
+ *  cleared (the page reloads), so a sign-in finishing during log-off's awaits
+ *  is refused even when a full localStorage dropped the new id. It is not
+ *  'stopped': a log-off heard from another tab stops health writes but leaves
+ *  a sign-in begun under the new id free to save. Only this page may remove
+ *  the shared draft keys (useMatrixDraft). */
+let ownLogOffBegun = false;
+export function ownLogOffHasBegun(): boolean {
+  return ownLogOffBegun;
+}
+/** At log-off, before any await. */
+export function newLogOffId(): void {
+  ownLogOffBegun = true;
+  safeSetItem(LOG_OFF_ID_KEY, randomId());
+}
+
+/** Save a cloud sign-in entry with `gen` inside it, in one write, or the
+ *  chosen provider as plain text, only while `gen` is this device's current
+ *  log-off id (US-09 AC45). True when it was written. */
+export function setSignIn(key: string, value: object | string, gen: LogOffId): boolean {
+  if (ownLogOffBegun || gen !== logOffId()) return false;
+  try {
+    localStorage.setItem(key, signInText(value, gen));
+    return true;
+  } catch {
+    return false;
+  }
+}
+const signInText = (value: object | string, gen: LogOffId): string =>
+  (typeof value === 'string' ? value : JSON.stringify({ ...value, gen }));
+
+/** Save a sign-in kept in several entries, in order. When one is not saved,
+ *  those this call saved are removed, each only while it still holds what this
+ *  call wrote, so no partial sign-in is left. True when all were saved. */
+export function setSignIns(entries: Record<string, object>, gen: LogOffId): boolean {
+  const saved: string[] = [];
+  for (const [key, value] of Object.entries(entries)) {
+    if (setSignIn(key, value, gen)) { saved.push(key); continue; }
+    for (const done of saved) if (safeGetItem(done) === signInText(entries[done], gen)) safeRemoveItem(done);
+    return false;
+  }
+  return true;
+}
+
+/** The id an entry was saved under; one with none was saved before the first log-off. */
+const genOf = (entry: object): LogOffId => (entry as { gen?: LogOffId }).gen ?? null;
+
+/** A sign-in entry saved under the current log-off id, without that id; null otherwise. */
+export function getSignIn<T>(key: string): T | null {
+  const entry = getJson<object>(key);
+  if (!entry || typeof entry !== 'object' || genOf(entry) !== logOffId()) return null;
+  const { gen: _gen, ...rest } = entry as { gen?: LogOffId };
+  return rest as T;
+}
+
+/** At page load: remove the entries under `keys` saved under another log-off id. */
+export function sweepStaleSignIns(keys: readonly string[]): void {
+  for (const key of keys) {
+    const entry = getJson<object>(key);
+    if (entry && typeof entry === 'object' && genOf(entry) !== logOffId()) safeRemoveItem(key);
+  }
 }
 
 

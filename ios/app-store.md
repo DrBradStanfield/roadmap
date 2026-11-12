@@ -117,7 +117,7 @@ declares the three rows below; declare them as written.
   year. A person who declines can turn access on later in iOS Settings (My health shows
   Open Settings); one who came in through 'I already use Health Roadmap' connects from
   My data's Apple Health row. To see a full plan quickly, add LDL cholesterol 160 mg/dL
-  and systolic blood pressure 145 mmHg.
+  and systolic blood pressure 145 mmHg. Tap a step marked "Sources" to see its sources.
 - Cloud sync is optional (My data, Sync). A reviewer Dropbox account: give the
   details in the notes field, never in this file.
 - Chat and lab upload use Apple's App Attest to prove the request comes from this
@@ -136,8 +136,9 @@ declares the three rows below; declare them as written.
   Brad Stanfield founded and owns the company that sells them. Nothing is sold in the
   app; there is no in-app purchase.
 - Guideline 1.4.1: the app gives educational information drawn from published
-  guidelines (each step cites them), shows a medical disclaimer on the first screen
-  and under every plan, and tells users to talk to their doctor. It does not diagnose,
+  guidelines, and each suggestion's sources open from its card (a card that has them
+  shows "Sources"). It shows a medical disclaimer on the welcome screen, in Chat's
+  empty state and at the foot of My health, and tells users to talk to their doctor. It does not diagnose,
   dose or measure anything with the phone's sensors.
 - Apple Health (guideline 2.5.1): the app imports Health values into the person's
   record and writes typed values back. In the same single permission sheet, shown once

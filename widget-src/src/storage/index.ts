@@ -9,7 +9,7 @@ export { SyncManager, type SaveResult } from '@roadmap/health-core/sync-manager'
 // the data shim (lib/roadmap-data.ts) — not re-exported here to avoid a second
 // canonical copy of its names (the Api* types live in lib/api-types.ts). standalone/ lifts
 // and copies the record through health-core's record-transfer.ts.
-export { markSyncPending, isSyncPending, SYNC_PENDING_EVENT } from './roadmap-store';
+export { markSyncPending, isSyncPending, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT } from './roadmap-store';
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core/migrate';
@@ -19,4 +19,5 @@ export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { GitHubAdapter, type GitHubConfig } from './github';
 export { WebDavAdapter, type WebDavConfig } from './webdav';
 export { GoogleDriveAdapter, DriveGrantRefusedError, DRIVE_FILE_SCOPE, gisReady, preloadGis, type GoogleDriveConfig } from './drive';
+export { savePopupGrant } from './drive-popup-grant';
 export { getDeviceId } from './device-id';

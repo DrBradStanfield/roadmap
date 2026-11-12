@@ -196,4 +196,12 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(ChartData(history).points.map(\.id), ["e"])
         XCTAssertNil(history.rows.first?.note)
     }
+
+    /// US-07 AC1j: a month field carries the engine's `min` (colorectal's follow-up date: the last screening's
+    /// month); an older engine sends none. The picker's filter on it sits in FormFieldRow's view body, out of a test's reach.
+    func testAMonthFieldDecodesItsMin_US07AC1j() throws {
+        let decode = { (extra: String) in try JSONDecoder().decode(FormField.self, from: Data(#"{"kind":"month","key":"colorectal_followup_date","label":"Date","value":"","when":"past"\#(extra)}"#.utf8)) }
+        XCTAssertEqual(try decode(#","min":"2025-11""#), .month(key: "colorectal_followup_date", label: "Date", value: "", future: false, min: "2025-11"))
+        XCTAssertEqual(try decode(""), .month(key: "colorectal_followup_date", label: "Date", value: "", future: false, min: nil))
+    }
 }

@@ -19,7 +19,7 @@ const OFF_FILE: Record<string, string> = {
 /** Keys an erase must not touch (connection, consent, the typed key). */
 const KEEP: Record<string, string> = {
   health_roadmap_dropbox_tokens: '{"access_token":"secret"}',
-  health_roadmap_backend: 'dropbox',
+  health_roadmap_backend: 'memory', // the pages' cloud (MemoryAdapter), as connect.ts remembers it (US-11 AC6)
   health_roadmap_device_id: 'device-1',
   hr_anthropic_key: 'sk-ant-typed-by-the-user',
 };

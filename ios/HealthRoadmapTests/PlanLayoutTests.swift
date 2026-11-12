@@ -68,6 +68,28 @@ final class PlanLayoutTests: XCTestCase {
         }
     }
 
+    /// US-25 AC10b (App Review 1.4.1): a closed card marks "Sources" exactly when its suggestion
+    /// has references; one with none or an empty list shows nothing new.
+    func testACardMarksSourcesOnlyWhenItHasReferences_US25_AC10b() throws {
+        let shown = try view().sections.flatMap(\.cards).flatMap(\.suggestions)
+        XCTAssertTrue(shown.contains(where: \.hasSources), "the sample has cited cards")
+        for suggestion in shown {
+            XCTAssertEqual(suggestion.hasSources, !(suggestion.references ?? []).isEmpty, suggestion.id)
+        }
+        func decoded(_ references: String) throws -> Suggestion {
+            let json = #"{"id":"x","category":"general","priority":"info","title":"T","description":"D"\#(references)}"#
+            return try JSONDecoder().decode(Suggestion.self, from: Data(json.utf8))
+        }
+        XCTAssertFalse(try decoded("").hasSources)
+        XCTAssertFalse(try decoded(#","references":[]"#).hasSources)
+        XCTAssertTrue(try decoded(#","references":[{"label":"A guideline","url":"https://example.org/a"}]"#).hasSources)
+    }
+
+    /// US-25 AC10b: the education line is the welcome screen's sentence, byte for byte, in one place.
+    func testTheEducationLineIsTheApprovedSentence_US25_AC10b() {
+        XCTAssertEqual(EducationNote.text, "For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
+    }
+
     /// US-25 AC22: the summary tiles reach the screen as the engine wrote them, the web's
     /// Quick Stats, each with its why. Their wording is pinned in ios/engine/stat-tiles.test.ts.
     func testSampleSummaryTilesAreTheEngines() throws {

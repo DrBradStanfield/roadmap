@@ -23,8 +23,9 @@
  *
  * Split by concern (issue #429): youtube-bot-config.server.ts (limits, env),
  * youtube-bot-api.server.ts (OAuth, YouTube Data API),
- * youtube-bot-store.server.ts (Supabase claim, caps, chat persistence) and
- * youtube-bot-pipeline.server.ts (filters, follow-up gates, chat pipeline).
+ * youtube-bot-store.server.ts (Supabase claim, caps, chat persistence),
+ * youtube-bot-pipeline.server.ts (filters, follow-up gates, chat pipeline) and
+ * youtube-bot-post.server.ts (mark, post, record: US-27 AC5).
  * This file keeps the start/stop, the cron tick and the follow-up scan, and
  * re-exports every name it exported before the split.
  *
@@ -52,15 +53,12 @@ import {
   resolveHandle,
   getChannelHandle,
   addressReply,
-  postReply,
-  isNotReplyableError,
   type YouTubeThread,
   type YouTubeReply,
 } from './youtube-bot-api.server';
 import {
   claimComment,
   unclaimComment,
-  markPosted,
   readPostingCaps,
   persistYouTubeTurn,
   cleanupSkippedRows,
@@ -77,10 +75,13 @@ import {
   type PipelineOutcome,
 } from './youtube-bot-pipeline.server';
 import { safeErrorFields } from './safe-error-fields.server';
+import { postClaimed, countSent } from './youtube-bot-post.server';
+import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
+import { CHAT_PROMPT } from './chat-system-prompt.server';
 
 // Every name this file exported before the split (issue #429).
 export { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
-export { addressReply, isNotReplyableError, type YouTubeReply } from './youtube-bot-api.server';
+export { addressReply, type YouTubeReply } from './youtube-bot-api.server';
 export { readPostingCaps, persistYouTubeTurn } from './youtube-bot-store.server';
 export {
   filterThread,
@@ -100,6 +101,7 @@ let isRunning = false;
 /** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3). */
 let tickInFlight = false;
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
+let firstTickId: ReturnType<typeof setTimeout> | null = null;
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown
@@ -121,6 +123,11 @@ export function startYouTubeBot(): void {
     return;
   }
 
+  if (CHAT_PROMPT.kind === 'missing') {
+    console.warn('YouTube bot: chat system prompt missing — bot disabled');
+    return;
+  }
+
   // Block auto-start during local `npm run dev` so dev reloads don't spawn
   // posting loops. Developers can force-start with YOUTUBE_BOT_FORCE_START=true.
   if (!process.env.FLY_APP_NAME && process.env.YOUTUBE_BOT_FORCE_START !== 'true') {
@@ -136,7 +143,7 @@ export function startYouTubeBot(): void {
   console.log(`YouTube bot started (cron every ${POLL_INTERVAL_MS / 60_000} min, daily cap ${DAILY_REPLY_CAP})`);
 
   // Run first tick after a short delay to avoid blocking app boot.
-  setTimeout(() => { runTick().catch(logTickError); }, 30_000);
+  firstTickId = setTimeout(() => { firstTickId = null; runTick().catch(logTickError); }, 30_000);
 
   cronIntervalId = setInterval(() => {
     runTick().catch(logTickError);
@@ -146,6 +153,11 @@ export function startYouTubeBot(): void {
 }
 
 export function stopYouTubeBot(): void {
+  // A stop in the first 30 s (SIGTERM at boot) must not leave the first tick armed (US-27 AC5).
+  if (firstTickId) {
+    clearTimeout(firstTickId);
+    firstTickId = null;
+  }
   if (cronIntervalId) {
     clearInterval(cronIntervalId);
     cronIntervalId = null;
@@ -177,25 +189,27 @@ function logTickError(err: unknown): void {
 // Follow-up scan — runs after the top-level loop, inside the same daily cap
 // ---------------------------------------------------------------------------
 
+type FollowUpTally = { posted: number; unknown: number; skipped: number; gates: Record<string, number>; posting: Posting };
+
 async function processFollowUps(
   token: string,
   budget: number,
   videoPostCounts: Map<string, number>,
-): Promise<{ posted: number; skipped: number; gates: Record<string, number> }> {
-  let posted = 0;
-  let skipped = 0;
+  posting: Posting,
+): Promise<FollowUpTally> {
+  const tally = { posted: 0, unknown: 0, skipped: 0 };
   // Which gate stopped each thread — the only way to see the gates working in prod.
   const gates: Record<string, number> = {};
   const gate = (reason: string) => { gates[reason] = (gates[reason] ?? 0) + 1; };
 
-  if (budget <= 0) return { posted, skipped, gates };
+  if (budget <= 0) return { ...tally, gates, posting };
 
   const recent = await fetchRecentPostedThreads();
-  if (recent.threadIds.length === 0) return { posted, skipped, gates };
+  if (recent.threadIds.length === 0) return { ...tally, gates, posting };
   const channelHandle = await getChannelHandle(token);
 
   for (const threadId of recent.threadIds.slice(0, FOLLOWUP_THREADS_PER_TICK)) {
-    if (posted >= budget) break;
+    if (tally.posted + tally.unknown >= budget) break;
     const meta = recent.threadMeta.get(threadId)!;
 
     let replies: YouTubeReply[];
@@ -221,18 +235,18 @@ async function processFollowUps(
 
     if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
-    let claimed: boolean;
+    let claimRowId: number | null;
     try {
-      claimed = await claimComment(reply.id);
+      claimRowId = await claimComment(reply.id);
     } catch (err) {
       logTickError(err);
       continue;
     }
-    if (!claimed) continue;
+    if (claimRowId === null) continue;
 
     const video = loadVideoBody(meta.videoId);
     if (!video) {
-      skipped++;
+      tally.skipped++;
       continue;
     }
 
@@ -257,14 +271,14 @@ async function processFollowUps(
     } catch (err) {
       logTickError(err);
       await unclaimComment(reply.id);
-      skipped++;
+      tally.skipped++;
       continue;
     }
 
     if (!outcome.posted) {
       await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
       if (shouldUnclaim(outcome)) await unclaimComment(reply.id);
-      skipped++;
+      tally.skipped++;
       continue;
     }
 
@@ -273,32 +287,13 @@ async function processFollowUps(
     const askerHandle = reply.authorChannelId ? await resolveHandle(token, reply.authorChannelId) : null;
     const replyText = addressReply(outcome.replyText!, askerHandle);
 
-    let postedId: string;
-    try {
-      postedId = await postReply(token, threadId, replyText);
-    } catch (err) {
-      if (!isNotReplyableError(err)) logTickError(err);
-      skipped++;
-      continue;
-    }
-
-    await markPosted({
-      commentId: reply.id,
-      videoId: meta.videoId,
-      userChannel: reply.authorDisplayName,
-      userComment: reply.text,
-      replyText,
-      postedYoutubeId: postedId,
-      classification: outcome.classification ?? 'ERROR',
-      routerHandles: outcome.routerHandles ?? [],
-    });
-    await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: postedId, followUpCommentId: reply.id });
-
-    videoPostCounts.set(meta.videoId, (videoPostCounts.get(meta.videoId) ?? 0) + 1);
-    posted++;
+    const sent = await postClaimed(token, pseudoThread, { id: reply.id, rowId: claimRowId }, replyText, outcome);
+    countSent(sent, tally, videoPostCounts, meta.videoId);
+    posting = nextPosting(posting, sent);
+    if (posting.kind === 'halted') break;
   }
 
-  return { posted, skipped, gates };
+  return { ...tally, gates, posting };
 }
 
 // ---------------------------------------------------------------------------
@@ -323,8 +318,8 @@ async function tick(): Promise<void> {
     return;
   }
 
-  let postedThisTick = 0;
-  let skippedThisTick = 0;
+  const tally = { posted: 0, unknown: 0, skipped: 0 };
+  let posting = OPEN_POSTING; // an account-wide refusal or a second unreadable 400 ends this tick's posting
   let startingDailyCount: number;
   let videoPostCounts: Map<string, number>;
   try {
@@ -337,34 +332,34 @@ async function tick(): Promise<void> {
   }
 
   for (const thread of threads) {
-    if (startingDailyCount + postedThisTick >= DAILY_REPLY_CAP) {
+    if (startingDailyCount + tally.posted + tally.unknown >= DAILY_REPLY_CAP) {
       console.log(`YouTube bot: daily cap (${DAILY_REPLY_CAP}) reached, stopping tick`);
       break;
     }
 
-    let claimed: boolean;
+    let claimRowId: number | null;
     try {
-      claimed = await claimComment(thread.topLevelCommentId);
+      claimRowId = await claimComment(thread.topLevelCommentId);
     } catch (err) {
       logTickError(err);
       continue;
     }
-    if (!claimed) continue;
+    if (claimRowId === null) continue;
 
     const filt = filterThread(thread);
     if (!filt.pass) {
-      skippedThisTick++;
+      tally.skipped++;
       continue;
     }
 
     const video = loadVideoBody(thread.videoId);
     if (!video) {
-      skippedThisTick++;
+      tally.skipped++;
       continue;
     }
 
     if ((videoPostCounts.get(thread.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) {
-      skippedThisTick++;
+      tally.skipped++;
       continue;
     }
 
@@ -377,7 +372,7 @@ async function tick(): Promise<void> {
       // via Sentry on the underlying call.
       logTickError(err);
       await unclaimComment(thread.topLevelCommentId);
-      skippedThisTick++;
+      tally.skipped++;
       continue;
     }
 
@@ -393,51 +388,23 @@ async function tick(): Promise<void> {
       // AC48) / blog-missing / refusal cases leave the claim intact so we don't
       // waste LLM tokens re-evaluating the same comment.
       if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
-      skippedThisTick++;
+      tally.skipped++;
       continue;
     }
 
-    // Post to YouTube
-    let postedId: string;
-    try {
-      postedId = await postReply(token, thread.topLevelCommentId, outcome.replyText!);
-    } catch (err) {
-      if (!isNotReplyableError(err)) logTickError(err);
-      // Row stays as posted=FALSE — won't retry, but post failure is visible
-      // via the audit. Could become retry-able later via a status column.
-      skippedThisTick++;
-      continue;
-    }
-
-    // Persist the success
-    await markPosted({
-      commentId: thread.topLevelCommentId,
-      videoId: thread.videoId,
-      userChannel: thread.authorDisplayName,
-      userComment: thread.text,
-      replyText: outcome.replyText!,
-      postedYoutubeId: postedId,
-      classification: outcome.classification ?? 'ERROR',
-      routerHandles: outcome.routerHandles ?? [],
-    });
-
-    // Durable, queryable copy in the shared chat tables (training + audit).
-    await persistYouTubeTurn({ thread, outcome, postedYoutubeId: postedId });
-
-    videoPostCounts.set(thread.videoId, (videoPostCounts.get(thread.videoId) ?? 0) + 1);
-    postedThisTick++;
+    const sent = await postClaimed(token, thread, { id: thread.topLevelCommentId, rowId: claimRowId }, outcome.replyText!, outcome);
+    countSent(sent, tally, videoPostCounts, thread.videoId);
+    posting = nextPosting(posting, sent);
+    if (posting.kind === 'halted') break;
   }
 
   // Follow-up pass: replies directed at the bot in threads it already
   // answered, within whatever daily budget the top-level loop left.
-  let followUps: { posted: number; skipped: number; gates: Record<string, number> } =
-    { posted: 0, skipped: 0, gates: {} };
+  let followUps: FollowUpTally = { posted: 0, unknown: 0, skipped: 0, gates: {}, posting };
   try {
-    followUps = await processFollowUps(
-      token,
-      DAILY_REPLY_CAP - startingDailyCount - postedThisTick,
-      videoPostCounts,
-    );
+    if (posting.kind === 'open') {
+      followUps = await processFollowUps(token, DAILY_REPLY_CAP - startingDailyCount - tally.posted - tally.unknown, videoPostCounts, posting);
+    }
   } catch (err) {
     logTickError(err);
   }
@@ -448,12 +415,16 @@ async function tick(): Promise<void> {
     evt: 'youtube_bot_tick',
     durationMs: Date.now() - t0,
     threads: threads.length,
-    posted: postedThisTick,
-    skipped: skippedThisTick,
+    posted: tally.posted,
+    unknown: tally.unknown,
+    skipped: tally.skipped,
     followUpsPosted: followUps.posted,
+    followUpsUnknown: followUps.unknown,
     followUpsSkipped: followUps.skipped,
     followUpGates: followUps.gates,
-    dailyTotal: startingDailyCount + postedThisTick + followUps.posted,
+    dailyTotal: startingDailyCount + tally.posted + tally.unknown + followUps.posted + followUps.unknown,
+    // Why this tick stopped posting; absent when it ran to its end (N2).
+    ...(followUps.posting.kind === 'halted' && { halted: followUps.posting.reason }),
   }));
 }
 

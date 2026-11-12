@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H58,hosted mcp,"An import commit that replaces values has no pause before it, unlike the other permanent writes",lead,not started,"app/lib/mcp-step.server.ts STEP_WINDOWS: import has nbfSeconds 0, proposal has nbfSeconds 10. docs/mcp-architecture.md:155 calls a replace exactly as permanent as a correct_value correction. Found writing the PR 1420 docs",,no

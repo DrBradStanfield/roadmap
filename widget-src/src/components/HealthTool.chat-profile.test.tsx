@@ -20,6 +20,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -77,9 +78,14 @@ const banner = () => document.body.querySelector('.chat-profile-proposal[role="s
 const planShown = (view: RenderResult) =>
   !view.container.querySelector('.plan-empty-preview') && !!view.container.querySelector('.quick-stats .stat-card, .mh-sections .suggestion-card');
 
+/** This tab's store; a cloud page runs with its backend remembered, as a real one does. */
+async function openStore(adapter: StorageAdapter) {
+  if (adapter.id !== 'local') localStorage.setItem(BACKEND_KEY, adapter.id);
+  await initRoadmapStore(adapter);
+}
 /** A guest with a saved weight and no sex or height (unless given): no plan yet. */
 async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}, adapter: StorageAdapter = new LocalStorageAdapter()): Promise<RenderResult> {
-  await initRoadmapStore(adapter);
+  await openStore(adapter);
   await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, ...saved }, {});
   await addMeasurement('weight', 82, '2026-09-01');
   const view = render(<HealthTool />);
@@ -355,7 +361,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     return saved ? guestWithoutProfile(saved, new MemoryAdapter(cloud)) : emptyGuest(new MemoryAdapter(cloud));
   }
   async function emptyGuest(adapter: StorageAdapter = new LocalStorageAdapter()) {
-    await initRoadmapStore(adapter);
+    await openStore(adapter);
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     await wait(600);
@@ -530,7 +536,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   /** A cloud guest on a statin and an omega-3, with the page shown. */
   async function cloudGuestOnLists(cloud: MemoryCloud) {
     vi.spyOn(RoadmapStore, 'create');
-    await initRoadmapStore(new MemoryAdapter(cloud));
+    await openStore(new MemoryAdapter(cloud));
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'rosuvastatin', 10, 'mg');
@@ -620,7 +626,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
 
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
     const cloud = new MemoryCloud();
-    await initRoadmapStore(new MemoryAdapter(cloud));
+    await openStore(new MemoryAdapter(cloud));
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'atorvastatin', 20, 'mg');
@@ -690,7 +696,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     }
   }
   async function cloudGuestOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>) {
-    await initRoadmapStore(adapter);
+    await openStore(adapter);
     await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
     await saveMedication('statin', 'rosuvastatin', 10, 'mg');

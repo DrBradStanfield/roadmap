@@ -4,10 +4,10 @@
 // macOS only (lockf, BSD stat and date): CI runs Linux, so these run locally:
 //   npx vitest run ios/scripts/sim-run.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { basename, join } from 'node:path';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 // SIM_RUN_SCRIPT runs these tests against another copy (how an older version was shown to fail them).
 const SCRIPT = process.env.SIM_RUN_SCRIPT ?? join(__dirname, 'sim-run.sh');
@@ -19,6 +19,8 @@ while [ "\${1#-}" != "$1" ]; do case "$1" in --sdk|-sdk) shift 2;; *) shift;; es
 [ "$1" = xcodebuild ] && { shift; exec xcodebuild "$@"; }
 [ "$1" = simctl ] || exit 0
 shift
+devset=""
+[ "$1" = --set ] && { devset=$2; shift 2; }
 case "$1" in
   list)
     if [ "$2" = runtimes ]; then
@@ -28,10 +30,19 @@ case "$1" in
       exit 0
     fi
     echo "== Devices =="
+    # $FAKE/hang-list: a booted-device list that hangs (a child keeps the pipe open, as a hung simctl would).
+    [ "\${3:-}" = booted ] && [ -f "$FAKE/hang-list" ] && sleep 20
+    # $FAKE/hang-default: the same, in the default set only. $FAKE/linger-list: the list exits at once but
+    # leaves a child holding its output open (a stuck helper of a finished simctl).
+    [ "\${3:-}" = booted ] && [ -z "$devset" ] && [ -f "$FAKE/hang-default" ] && sleep 20
+    [ "\${3:-}" = booted ] && [ -f "$FAKE/linger-list" ] && { sleep 60 & echo $! >> "$FAKE/linger.pids"; exit 0; }
+    # Other booted devices: $FAKE/booted (the default set) and $FAKE/booted-testing (--set testing).
+    [ "$devset" = testing ] && { cat "$FAKE/booted-testing" 2>/dev/null; exit 0; }
     if [ -f "$FAKE/udid" ]; then
       st=$(cat "$FAKE/state")
       [ "\${3:-}" = booted ] && [ "$st" != Booted ] || echo "    HR Shared iPhone ($(cat "$FAKE/udid")) ($st) "
-    fi;;
+    fi
+    cat "$FAKE/booted" 2>/dev/null || true;;
   create) echo ${UDID} > "$FAKE/udid"; echo Shutdown > "$FAKE/state"; echo ${UDID};;
   bootstatus) [ -f "$FAKE/hang-boot" ] && { echo $$ > "$FAKE/boot.pid"; exec sleep 60; }; echo Booted > "$FAKE/state";;
   shutdown) echo Shutdown > "$FAKE/state";;
@@ -52,6 +63,27 @@ echo "{ $l 1.00 1.00 }"
 const PS = '#!/bin/bash\ncat "$FAKE/ps.txt"\n';
 
 let dir: string, fake: string, home: string, work: string;
+// T22 (2026-11-13): a sim-run that outlived its test lost its fake xcrun with the temp folder, fell
+// through PATH to the real one and listed booted devices every second for 30 minutes. So a test's PATH
+// is the fake, then tools/bin, then /bin, and no real xcrun is on it. tools/bin (one per file) holds
+// links to the few /usr/bin tools the scripts use, never /usr/bin itself, which holds the xcrun shim,
+// plus a guard xcrun (xcodebuild, simctl) that fails loudly and leaves REACHED, which afterEach checks.
+// With the test's folder gone the guard answers; with tools gone too, /bin has no xcrun at all.
+// sim-run.sh calls xcrun by name only, never by path, so nothing goes round the fake.
+let tools: string;
+const USR_BIN = ['awk', 'basename', 'cut', 'dirname', 'env', 'false', 'grep', 'head', 'lockf', 'nice', 'nohup', 'perl',
+  'sed', 'sort', 'stat', 'tail', 'tee', 'time', 'touch', 'tr', 'true', 'wc'];
+const reached = () => join(tools, 'real-xcrun-reached');
+beforeAll(() => {
+  tools = realpathSync(mkdtempSync(join(tmpdir(), 'sim-run-tools-')));
+  mkdirSync(join(tools, 'bin'));
+  for (const t of USR_BIN) symlinkSync(`/usr/bin/${t}`, join(tools, 'bin', t));
+  const guard = `#!/bin/sh\necho "$(basename "$0") $*" >> "${reached()}"\n`
+    + 'echo "sim-run.test: a real $(basename "$0") was reached ($*): its fake is gone or was bypassed (T22)" >&2\nexit 97\n';
+  for (const t of ['xcrun', 'xcodebuild', 'simctl']) writeFileSync(join(tools, 'bin', t), guard, { mode: 0o755 });
+});
+afterAll(() => rmSync(tools, { recursive: true, force: true }));
+const testPath = () => `${fake}:${join(tools, 'bin')}:/bin`;
 const setLoads = (...loads: string[]) => writeFileSync(join(fake, 'loads'), `${loads.join('\n')}\n`);
 const setPs = (lines: string[]) => writeFileSync(join(fake, 'ps.txt'), ['    1 /sbin/launchd', ...lines].join('\n') + '\n');
 const CODEX = '  101 /opt/homebrew/bin/node /Users/x/repo/tools/codex-review.mjs --base main';
@@ -77,27 +109,102 @@ beforeEach(() => {
   setPs([]);
 });
 // Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
-// Whatever a test leaves running (a failed assertion included) is released and stopped here.
-// Keep it that way: a waiter queued behind a holder that ignores the release file (a plain sleep)
-// would block cleanup, because bash defers SIGTERM while the wrapper waits in lockf.
+// Whatever a test leaves running (a failed assertion or a timeout included) is released and stopped
+// here, process groups and all (sweep), before the folder goes. A waiter stops at once on SIGTERM
+// (its 0.2 s sleep runs in the background), so cleanup never waits on one.
 const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');
-  for (const { p, done } of live.splice(0)) {
-    if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
-    await done;
+  const tracked = live.splice(0);
+  try {
+    await sweep(tracked.map(({ p }) => p.pid!).filter(Boolean));
+  } finally {
+    for (const { p, done } of tracked) {
+      if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
+      await done;
+    }
+    rmSync(dir, { recursive: true, force: true });
   }
-  rmSync(dir, { recursive: true, force: true });
-});
+  if (existsSync(reached())) throw new Error(`a real xcrun was reached (T22): ${readFileSync(reached(), 'utf8')}`);
+}, 30_000); // the sweep is bounded (three passes of a 1.5 s grace), but a loaded Mac slows each ps
+
+type Proc = { pid: number; ppid: number; pgid: number; cmd: string };
+const procs = (): Proc[] => spawnSync('/bin/ps', ['-axo', 'pid=,ppid=,pgid=,command='], { encoding: 'utf8' }).stdout
+  .split('\n').flatMap((l) => {
+    const m = l.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);
+    return m ? [{ pid: +m[1], ppid: +m[2], pgid: +m[3], cmd: m[4] }] : [];
+  });
+/** Each pid's working directory (lsof), for the pids given. */
+const cwds = (pids: number[]) => {
+  const out = new Map<number, string>();
+  if (!pids.length) return out;
+  let pid = 0;
+  for (const l of spawnSync('/usr/sbin/lsof', ['-a', '-d', 'cwd', '-Fn', '-p', pids.join(',')], { encoding: 'utf8' }).stdout.split('\n')) {
+    if (l[0] === 'p') pid = Number(l.slice(1));
+    if (l[0] === 'n') out.set(pid, l.slice(1));
+  }
+  return out;
+};
+/** Every live process this test started, whatever its group or session. Seeds: a command line naming the
+ * test's folder; a sim-run.sh process (its shim, its watchdog subshell, an idle sleeper that left the
+ * session with setsid) whose working directory is the test's `work`, which every sim-run here starts in;
+ * and the tracked children (those that start a sim-run are spawned detached, so the pid stays its group's
+ * id after it dies).
+ * Then, until nothing is added: children of a found process (the watchdog's and the shim's own groups
+ * are sim-run's children) and members of a group led by one (an orphaned sim-run in a dead wrapper's
+ * group; a list call whose parent died). This process and its ancestors are never included. */
+const ours = (roots: number[]) => {
+  const rows = procs();
+  const self = new Set<number>();
+  for (let p = process.pid; p > 1 && !self.has(p); p = rows.find((r) => r.pid === p)?.ppid ?? 0) self.add(p);
+  const workDir = realpathSync(work);
+  const named = (cmd: string) => cmd.includes('sim-run.sh') || cmd.includes(basename(SCRIPT)); // SIM_RUN_SCRIPT may be a copy
+  const cwd = cwds(rows.filter((r) => !r.cmd.includes(dir) && named(r.cmd)).map((r) => r.pid));
+  const found = new Set(rows.filter((r) => r.cmd.includes(dir) || cwd.get(r.pid) === workDir).map((r) => r.pid));
+  const leaders = new Set([...roots, ...found]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const r of rows) {
+      if (found.has(r.pid) || self.has(r.pid) || !(found.has(r.ppid) || leaders.has(r.pgid))) continue;
+      found.add(r.pid);
+      leaders.add(r.pid);
+      grew = true;
+    }
+  }
+  return rows.filter((r) => found.has(r.pid) && !self.has(r.pid));
+};
+const signal = (target: number, sig: NodeJS.Signals) => {
+  try { process.kill(target, sig); } catch (e) { if (!['ESRCH', 'EPERM'].includes((e as NodeJS.ErrnoException).code!)) throw e; }
+};
+const running = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+/** TERM every group led by one of ours (or by a tracked child) and every process of ours, then KILL
+ * what is left after 1.5 s; again, in case one forked on its way out (the shim's idle sleeper). Anything
+ * still alive after three passes fails the test that leaked it, rather than a later one its sleeper's
+ * xcrun call would trip. */
+async function sweep(roots: number[]) {
+  for (let pass = 0; pass < 3; pass++) {
+    const found = ours(roots);
+    if (!found.length) return;
+    const pids = new Set(found.map((r) => r.pid));
+    const groups = new Set(found.map((r) => r.pgid).filter((g) => pids.has(g) || roots.includes(g)));
+    for (const sig of ['SIGTERM', 'SIGKILL'] as const) {
+      for (const g of groups) signal(-g, sig);
+      for (const p of pids) signal(p, sig);
+      for (const end = Date.now() + 1500; sig === 'SIGTERM' && [...pids].some(running) && Date.now() < end;) await sleep(50);
+    }
+  }
+  const left = ours(roots);
+  if (left.length) throw new Error(`sweep: still alive after three passes (T22): ${left.map((r) => `${r.pid} ${r.cmd}`).join('; ')}`);
+}
 
 const env = (extra: Record<string, string> = {}) => ({
-  ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
-  HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', ...extra,
+  ...process.env, PATH: testPath(), FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
+  HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', HR_SIM_ALLOW_SECOND: '', ALLOW_EXTRA_SIMULATOR: '', ...extra,
 });
 const run = (args: string[], extra: Record<string, string> = {}) =>
   spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8', env: env(extra), timeout: 30_000, cwd: work });
 const start = (args: string[], extra: Record<string, string> = {}) => {
-  const p = spawn('bash', [SCRIPT, ...args], { env: env(extra), cwd: work });
+  const p = spawn('bash', [SCRIPT, ...args], { env: env(extra), cwd: work, detached: true });
   let err = '';
   p.stderr.on('data', (d) => { err += d; });
   const done = new Promise<{ code: number | null; err: string }>((res) => p.on('exit', (code) => res({ code, err })));
@@ -115,10 +222,34 @@ const until = async (check: () => boolean, ms = 10_000) => {
   for (const end = Date.now() + ms; Date.now() < end; await sleep(50)) if (check()) return;
   throw new Error('timed out waiting');
 };
+/** The queue's waiting.<start>.<pid> markers, in name order. */
+const markers = () => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith('waiting.')).sort() : []);
 const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status === 0;
 /** True while the lock is taken: lockf on the lock file cannot take it at once (75). Changes nothing. */
 const busy = () => existsSync(join(home, 'lock'))
   && spawnSync('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9', '_', join(home, 'lock')]).status === 75;
+/** Another process holding the lock, not through sim-run, until release(). */
+const holdLock = () => {
+  mkdirSync(home, { recursive: true });
+  const p = spawn('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9 || exit 1; until [ -f "$2" ]; do sleep 0.1; done',
+    '_', join(home, 'lock'), join(dir, 'release')]);
+  const done = new Promise((res) => p.on('exit', res));
+  live.push({ p, done });
+  return { p, done };
+};
+/** CPU seconds used by a process and its live descendants, exited children summed in (ps -S). The
+ * real /bin/ps, not the fake on PATH. Measured live, since exec drops a process's accumulated child CPU. */
+const treeCpu = (root: number) => {
+  const rows = spawnSync('/bin/ps', ['-S', '-axo', 'pid=,ppid=,time='], { encoding: 'utf8' }).stdout
+    .trim().split('\n').map((l) => l.trim().split(/\s+/));
+  const secs = (t: string) => t.split(':').reduce((s, part) => s * 60 + Number(part), 0);
+  const tree = new Set([String(root)]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [pid, ppid] of rows) if (tree.has(ppid) && !tree.has(pid)) { tree.add(pid); grew = true; }
+  }
+  return rows.filter(([pid]) => tree.has(pid)).reduce((s, [, , t]) => s + secs(t), 0);
+};
 
 describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macOS: lockf, load guard)', () => {
   describe('lock: who runs and who waits', () => {
@@ -163,6 +294,134 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.stderr).toMatch(/gave up after 1s: the simulator is still in use by pid \d+ .*: sh -c until .*release/);
       release();
       expect((await a.done).code).toBe(0);
+    });
+
+    // macOS lockf in its fd form spins a core while it waits (lockf -s -t 5 9 used 4.97 s of CPU in 5 s).
+    it('a waiter barely uses the CPU: under 0.3 s over a 3 s wait', async () => {
+      holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      const before = treeCpu(b.p.pid!);
+      await sleep(3000);
+      const used = treeCpu(b.p.pid!) - before;
+      expect(b.p.exitCode).toBe(null);
+      expect(used).toBeLessThan(0.3);
+    });
+
+    it('a waiter takes the lock within about a second of it freeing', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      await sleep(1500);
+      release();
+      await h.done;
+      const freed = Date.now();
+      await until(() => existsSync(join(home, 'holder')) && info('pid') === String(b.p.pid));
+      expect(Date.now() - freed).toBeLessThan(1500);
+      expect((await b.done).code).toBe(0);
+    });
+
+    it('a caller that reruns straight after its own run does not starve a waiter queued behind it', async () => {
+      // Six back-to-back runs; the waiter queues during the first and must run before the sixth.
+      const chain = spawn('bash', ['-c', 'for i in 1 2 3 4 5 6; do bash "$0" -- sh -c \'echo c >> "$FAKE/order"; sleep 0.5\'; done', SCRIPT],
+        { env: env(), cwd: work, detached: true });
+      const chainDone = new Promise((res) => chain.on('exit', res));
+      live.push({ p: chain, done: chainDone });
+      await until(() => busy() && log('order') === 'c\n');
+      const w = start(['--', 'sh', '-c', 'echo W >> "$FAKE/order"'], { HR_SIM_WAIT_SECONDS: '60' });
+      await until(() => w.err().includes('waiting up to'));
+      expect((await w.done).code).toBe(0);
+      await chainDone;
+      const order = log('order').trim().split('\n');
+      expect(order.filter((x) => x === 'c')).toHaveLength(6);
+      expect(order.indexOf('W')).toBeLessThan(order.length - 1);
+    });
+
+    it('a caller\'s marker is in the queue before its first try for the lock, so no later caller slips in', async () => {
+      // A lockf on PATH that records, at each try for the lock (fd 9), the queue's markers, then runs the real one.
+      const shim = join(dir, 'shim');
+      mkdirSync(shim);
+      writeFileSync(join(shim, 'lockf'), '#!/bin/bash\n[ "${!#}" = 9 ] && echo "$(cd "$HR_SIM_HOME" && echo waiting.*)" >> "$FAKE/tries"\nexec /usr/bin/lockf "$@"\n',
+        { mode: 0o755 });
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30', PATH: `${shim}:${testPath()}` });
+      await until(() => b.err().includes('waiting up to'));
+      expect(log('tries').split('\n')[0]).toMatch(new RegExp(`^waiting\\.\\d+\\.${b.p.pid}$`));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    // The queue's failure modes: a waiter is live only while it holds the kernel lock on its marker.
+    it('a stale marker naming a live unrelated process does not hold up a run while the lock is free', () => {
+      const other = spawn('sleep', ['300']);
+      live.push({ p: other, done: new Promise((res) => other.on('exit', res)) });
+      mkdirSync(home, { recursive: true });
+      writeFileSync(join(home, `waiting.1000000000.${other.pid}`), '');
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('a waiter SIGKILLed mid-wait holds no one up: the next run proceeds at once and its marker goes', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      expect(markers()).toHaveLength(1);
+      b.p.kill('SIGKILL');
+      await b.done;
+      release();
+      await h.done;
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('removes its marker when it gives up (75), and on TERM and INT', async () => {
+      holdLock();
+      await until(busy);
+      expect(run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
+      expect(markers()).toEqual([]);
+      for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+        const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+        await until(() => b.err().includes('waiting up to'));
+        expect(markers()).toHaveLength(1);
+        b.p.kill(sig);
+        expect((await b.done).code).toBe(sig === 'SIGTERM' ? 143 : 130);
+        expect(markers()).toEqual([]);
+      }
+    });
+
+    it('a stale marker with the caller\'s own pid does not let it skip a live waiter queued earlier', async () => {
+      mkdirSync(home, { recursive: true });
+      // A live waiter: a process holding the lock on its own marker.
+      const w = spawn('/bin/bash', ['-c', 'm="$1/waiting.1500000000.$$"; exec 7>>"$m"; lockf -s -t 0 7 || exit 1; touch "$1/w-ready"; until [ -f "$2" ]; do sleep 0.1; done',
+        '_', home, join(dir, 'release')]);
+      live.push({ p: w, done: new Promise((res) => w.on('exit', res)) });
+      await until(() => existsSync(join(home, 'w-ready')));
+      // The caller leaves a marker with its own pid that sorts first, then becomes sim-run (exec keeps the pid).
+      const r = spawnSync('bash', ['-c', 'touch "$1/waiting.1000000000.$$"; exec bash "$0" -- sh -c \'echo ran > "$FAKE/ran"\'', SCRIPT, home],
+        { encoding: 'utf8', env: env({ HR_SIM_WAIT_SECONDS: '2' }), timeout: 30_000, cwd: work });
+      expect(r.status).toBe(75);
+      expect(log('ran')).toBe('');
+      expect(markers()).toEqual([`waiting.1500000000.${w.pid}`]);
+    });
+
+    it('a waiter\'s command gets neither the marker\'s descriptor (7) nor the lock\'s (9)', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'sh', '-c', '{ for f in 7 9; do [ -e /dev/fd/$f ] && echo "fd$f"; done; echo done; } >> "$FAKE/fds"'],
+        { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(log('fds')).toBe('done\n');
     });
 
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
@@ -226,7 +485,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('a script that re-runs itself through sim-run (ui-test.sh\'s first line) runs once, under the lock', async () => {
       const script = join(dir, 'self.sh');
       writeFileSync(script, `#!/bin/sh\n[ "\${HR_SIM_INNER:-}" = "$$" ] || exec bash ${SCRIPT} -- "$0"\necho ran >> ${dir}/count\nuntil [ -f ${dir}/release ]; do sleep 0.1; done\n`, { mode: 0o755 });
-      const a = spawn(script, [], { env: env({ HR_SIM_INNER: '1' }), cwd: work });
+      const a = spawn(script, [], { env: env({ HR_SIM_INNER: '1' }), cwd: work, detached: true });
       const done = new Promise((res) => a.on('exit', res));
       live.push({ p: a, done });
       await until(busy);
@@ -239,7 +498,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       run(['--', 'true']);
       const old = info('token');
       const a = start(['--', ...hold()]);
-      await until(busy);
+      // The holder file names the new run a moment after the lock is taken.
+      await until(() => busy() && info('token') !== old);
       expect(run(['--', 'true'], { HR_SIM_LEASE: old, HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
       release();
       expect((await a.done).code).toBe(0);
@@ -470,7 +730,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
 
     it('caps the guard wait plus the lock wait at the wait limit', async () => {
       const a = start(['--', 'sleep', '15']);
-      await until(busy);
+      // The holder has read the load twice (before the lock and after it), so it cannot read the 9s below.
+      await until(() => busy() && log('sysctl.log').trim().split('\n').length >= 2);
       // Trips at 0, 1 and 2 s, clears at 3 s; the lock then gets what is left of 4 s, not 4 s more.
       setLoads('9.00', '9.00', '9.00', '2.00');
       const t = Date.now();
@@ -572,6 +833,271 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('ran');
       expect(r.stderr.match(/sim-run: load guard could not read the load; not waiting/g)).toHaveLength(1);
+    });
+  });
+
+  describe('one booted simulator (US-71 AC7)', () => {
+    const IPAD = `    iPad Air 13-inch (M3) (${OTHER}) (Booted) `;
+    const DEMO_LINE = `    HR Demo iPhone (${OTHER}) (Booted) `;
+    const setBooted = (line: string, file = 'booted') => writeFileSync(join(fake, file), `${line}\n`);
+    /** Live processes whose command line names this test's folder: the command, sim-run, its watchdog. */
+    const leftovers = () => spawnSync('/bin/ps', ['-axo', 'pid=,command='], { encoding: 'utf8' }).stdout
+      .split('\n').filter((l) => l.includes(dir) && !l.includes('/bin/ps'));
+    const ran = ['sh', '-c', 'echo ran >> "$FAKE/ran"'];
+
+    it('refuses at once with 75 when another device is booted, naming it and its shutdown command; the command never runs', () => {
+      run(['--', 'true']);
+      setBooted(IPAD);
+      const r = run(['--', ...ran], { HR_SIM_WAIT_SECONDS: '30' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain(`iPad Air 13-inch (M3) (${OTHER})`);
+      expect(r.stderr).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(r.stderr.trim().split('\n')).toHaveLength(1);
+      expect(log('ran')).toBe('');
+      expect(busy()).toBe(false);
+      expect(log('xcrun.log')).not.toContain(`shutdown ${OTHER}`);
+    });
+
+    it('refuses a booted parallel-test clone in the testing set, with the --set testing shutdown command', () => {
+      setBooted(`    Clone 1 of HR Shared iPhone (${OTHER}) (Booted) `, 'booted-testing');
+      const r = run(['--', ...ran]);
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain(`Clone 1 of HR Shared iPhone (${OTHER})`);
+      expect(r.stderr).toContain(`xcrun simctl --set testing shutdown ${OTHER}`);
+      expect(log('ran')).toBe('');
+    });
+
+    it('a booted demo device blocks a run, even with ALLOW_EXTRA_SIMULATOR; HR_SIM_ALLOW_SECOND=1 runs beside it', () => {
+      setBooted(DEMO_LINE);
+      expect(run(['--', ...ran]).status).toBe(75);
+      expect(run(['--', ...ran], { ALLOW_EXTRA_SIMULATOR: 'other-device' }).status).toBe(75);
+      expect(log('ran')).toBe('');
+      const r = run(['--', ...ran], { HR_SIM_ALLOW_SECOND: '1' });
+      expect(r.status).toBe(0);
+      expect(log('ran')).toBe('ran\n');
+    });
+
+    it('the shared device booted alone does not block, and status still lists another booted device', () => {
+      expect(run(['--', ...ran]).status).toBe(0);
+      expect(run(['--', ...ran]).status).toBe(0);
+      setBooted(IPAD);
+      const s = run(['status']);
+      expect(s.status).toBe(0);
+      expect(s.stdout).toContain(OTHER);
+    });
+
+    it('a device booted mid-run ends the command with 76 and one line naming it, shuts nothing down, leaves no watchdog', async () => {
+      const pidFile = join(dir, 'cmd.pid');
+      // The command boots the second device itself (the fake reports it once the file exists), then waits.
+      const a = start(['--', 'sh', '-c', `echo $$ > ${pidFile}; printf '%s\\n' "$1" > "$FAKE/booted"; until [ -f "$0" ]; do sleep 0.1; done`,
+        join(dir, 'release'), IPAD], { HR_SIM_GUARD_SECONDS: '1' });
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      const line = r.err.split('\n').filter((l) => l.includes(OTHER));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toContain('iPad Air 13-inch (M3)');
+      expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(alive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+      expect(log('xcrun.log')).not.toContain(`shutdown ${OTHER}`);
+      expect(busy()).toBe(false);
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    it('the watchdog ends a command that boots a clone in the testing set', async () => {
+      const a = start(['--', 'sh', '-c', 'printf "%s\\n" "$1" > "$FAKE/booted-testing"; until [ -f "$0" ]; do sleep 0.1; done',
+        join(dir, 'release'), `    Clone 2 of HR Shared iPhone (${OTHER}) (Booted) `], { HR_SIM_GUARD_SECONDS: '1' });
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      expect(r.err).toContain(`xcrun simctl --set testing shutdown ${OTHER}`);
+    });
+
+    it('the watchdog spares the demo device under ALLOW_EXTRA_SIMULATOR=other-device, and stops when the command ends', async () => {
+      const r = run(['--', 'sh', '-c', 'printf "%s\\n" "$1" > "$FAKE/booted"; sleep 3; echo "$0" > /dev/null', join(dir, 'x'), DEMO_LINE],
+        { HR_SIM_GUARD_SECONDS: '1', ALLOW_EXTRA_SIMULATOR: 'other-device' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain(OTHER);
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    it('HR_SIM_ALLOW_SECOND=1 turns the watchdog off too', () => {
+      const r = run(['--', 'sh', '-c', 'printf "%s\\n" "$0" > "$FAKE/booted"; sleep 3', IPAD],
+        { HR_SIM_GUARD_SECONDS: '1', HR_SIM_ALLOW_SECOND: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain(OTHER);
+    });
+
+    it('a run that fails, or is stopped by TERM or INT, leaves no watchdog behind', async () => {
+      expect(run(['--', 'sh', '-c', 'sleep 2; exit 3', join(dir, 'x')], { HR_SIM_GUARD_SECONDS: '1' }).status).toBe(3);
+      for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+        const a = start(['--', ...hold()], { HR_SIM_GUARD_SECONDS: '1' });
+        await until(busy);
+        await sleep(1500);
+        a.p.kill(sig);
+        expect((await a.done).code).toBe(sig === 'SIGTERM' ? 143 : 130);
+      }
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    // Review of PR 1435 (R1): a hung `simctl list devices booted` held the lock with no bound, 41 s at a 3 s limit.
+    it('a hung booted-device list before the run ends within about the run limit, and the lock is free', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-list'), '');
+      const t0 = Date.now();
+      const r = await start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' }).done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(0);
+      expect(secs).toBeLessThan(11);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    it('a hung booted-device list mid-run ends within about the run limit, and the lock is free', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' });
+      // The lock is taken before the booted-device check, so wait for the command itself.
+      await until(() => existsSync(join(dir, 'started')));
+      const t0 = Date.now();
+      writeFileSync(join(fake, 'hang-list'), '');
+      const r = await a.done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(124);
+      expect(secs).toBeLessThan(7);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    // R5: a list whose own process exited while a child kept its output open held the lock with no bound.
+    it('a list that exits leaving a child holding its output ends within about the run limit, lock free, child gone', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'linger-list'), '');
+      const t0 = Date.now();
+      const a = start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' });
+      const pids = () => log('linger.pids').trim().split('\n').filter(Boolean).map(Number);
+      try {
+        const r = await Promise.race([a.done, sleep(12_000).then(() => null)]);
+        const secs = (Date.now() - t0) / 1000;
+        expect(r?.code).toBe(0);
+        expect(secs).toBeLessThan(8);
+        expect(busy()).toBe(false);
+        expect(pids().length).toBeGreaterThan(0);
+        expect(pids().filter(alive)).toEqual([]);
+      } finally {
+        for (const pid of pids()) if (alive(pid)) process.kill(pid, 'SIGKILL');
+      }
+    }, 30_000);
+
+    // R6: the watchdog's list subshell outlived it, holding sim-run's stderr open well after the lock was free.
+    it('with a hung list mid-run, a reader of sim-run\'s stderr gets EOF within a few seconds of the command ending', async () => {
+      const p = spawn('bash', ['-c', 'bash "$0" "$@" 2>&1 | cat', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done',
+        join(dir, 'release'), join(dir, 'started')], { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
+      const done = new Promise((res) => p.on('exit', res));
+      live.push({ p, done });
+      await until(() => existsSync(join(dir, 'started')));
+      writeFileSync(join(fake, 'hang-list'), '');
+      await sleep(2500);
+      const t0 = Date.now();
+      release();
+      await done;
+      expect((Date.now() - t0) / 1000).toBeLessThan(5);
+    }, 60_000);
+
+    // R8a: a list that timed out failed open without a word.
+    const SKIPPED = 'sim-run: the booted-device list timed out; the one-simulator check is skipped this time';
+    it('a pre-check whose lists both time out says so once, and runs', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-list'), '');
+      const r = await start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '2', HR_SIM_GUARD_SECONDS: '30' }).done;
+      expect(r.code).toBe(0);
+      expect(r.err.split('\n').filter((l) => l === SKIPPED)).toHaveLength(1);
+    }, 30_000);
+
+    it('a list that keeps timing out says so once for the pre-check and once for the watchdog, not every tick', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-default'), '');
+      // The command ignores TERM, so the run lasts the limit plus the grace: about three watchdog ticks.
+      const r = await start(['--', 'sh', '-c', 'trap "" TERM; while :; do sleep 0.1; done'],
+        { HR_SIM_RUN_LIMIT_SECONDS: '2', HR_SIM_KILL_SECONDS: '8', HR_SIM_GUARD_SECONDS: '1' }).done;
+      expect(r.code).toBe(124);
+      expect(log('xcrun.log').split('\n').filter((l) => /^simctl list devices booted$/.test(l)).length).toBeGreaterThanOrEqual(3);
+      expect(r.err.split('\n').filter((l) => l === SKIPPED)).toHaveLength(2);
+    }, 60_000);
+
+    // R8b: a found-file left by an old run whose pid is reused reported a device that was never there.
+    it('a stale found-file under sim-run\'s pid is cleared at the start, so it cannot report 76', () => {
+      mkdirSync(home, { recursive: true });
+      const r = spawnSync('bash', ['-c', 'echo "iPad (X)|xcrun simctl shutdown X" > "$HR_SIM_HOME/booted.$$"; exec bash "$0" -- true', SCRIPT],
+        { encoding: 'utf8', env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, timeout: 30_000 });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('another simulator');
+    });
+
+    // R2: kill -0 on sim-run's pid succeeds on an unreaped zombie, so the watchdog outlived it.
+    it('a SIGKILLed sim-run under a parent that never reaps it leaves no watchdog after a tick', async () => {
+      const p = spawn('perl', ['-e', '$| = 1; my $p = fork // die; if (!$p) { exec @ARGV } print "$p\\n"; sleep 60',
+        'bash', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
+      live.push({ p, done: new Promise((res) => p.on('exit', res)) });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; });
+      // sim-run forks its watchdog before the command starts (the device setup runs first).
+      await until(() => out.includes('\n') && existsSync(join(dir, 'started')));
+      process.kill(Number(out.trim()), 'SIGKILL');
+      await sleep(3000);
+      expect(leftovers().filter((l) => !l.trim().startsWith(`${p.pid} `) && !l.includes('defunct'))).toEqual([]);
+    }, 30_000);
+
+    // R4: a command that had already ended was reported "stopped".
+    it('a device found after the command ended exits 76 without claiming it stopped the command', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$2"; until [ -f "$0" ]; do sleep 0.1; done; printf "%s\\n" "$1" > "$FAKE/booted"',
+        join(dir, 'release'), IPAD, join(dir, 'started')], { HR_SIM_GUARD_SECONDS: '1' });
+      await until(() => existsSync(join(dir, 'started')));
+      // sim-run stopped: it cannot reap the shim or stop the watchdog, which finds the device after the command is gone.
+      process.kill(a.p.pid!, 'SIGSTOP');
+      release();
+      await sleep(2500);
+      process.kill(a.p.pid!, 'SIGCONT');
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      const line = r.err.split('\n').filter((l) => l.includes(OTHER));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(line[0]).not.toContain('stopped the command');
+    }, 30_000);
+  });
+
+  // T22 (2026-11-13): a sim-run outlived its test (parent pid 1), its folder and fake xcrun went, and
+  // its watchdog ran the real `simctl list devices booted` once a second until the 30-minute limit.
+  // The first test is that test: its sim-run is orphaned (the shell that started it SIGKILLed) with the
+  // watchdog ticking and a command that ignores the release file, and then the test fails. The command
+  // names the test's folder, so sim-run, its shim and its watchdog all carry it on their command lines.
+  // The second checks, after afterEach, that nothing of it is left and no real xcrun was reached. It is
+  // the real check: vitest flips the first test's result after afterEach, so a sweep error there is swallowed.
+  describe('a test that fails mid-run leaves nothing behind (T22)', () => {
+    const killed = { dir: '', log: '', ready: false };
+    it.fails('(fails on purpose) a test fails while its orphaned sim-run and watchdog run', async () => {
+      killed.dir = dir;
+      const p = spawn('bash', ['-c', 'bash "$0" "$@"; :', SCRIPT, '--', 'sh', '-c', 'while :; do sleep 0.2; done', join(dir, 'T22')],
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
+      live.push({ p, done: new Promise((res) => p.on('exit', res)) });
+      const ticks = () => log('xcrun.log').split('\n').filter((l) => l === 'simctl list devices booted').length;
+      await until(() => ticks() >= 3, 15_000);
+      p.kill('SIGKILL');
+      await sleep(500);
+      killed.log = log('xcrun.log');
+      killed.ready = procs().some((r) => r.ppid === 1 && r.cmd.includes(`sim-run.sh -- sh -c while :; do sleep 0.2; done ${dir}`));
+      throw new Error('a test failing mid-run');
+    }, 30_000);
+
+    it('afterEach left no process of it and no real xcrun was reached, two watchdog ticks later too', async () => {
+      expect(killed.ready).toBe(true);
+      // The watchdog's calls reached the fake, which logs each one (a real xcrun would not).
+      expect(killed.log).toContain('simctl --set testing list devices booted');
+      const named = () => procs().filter((r) => r.cmd.includes(killed.dir));
+      expect(named()).toEqual([]);
+      await sleep(2500);
+      expect(named()).toEqual([]);
+      expect(existsSync(reached())).toBe(false);
     });
   });
 

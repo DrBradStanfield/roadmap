@@ -1,4 +1,4 @@
-// US-71 AC8 (lead M17): test.sh tells a sim-run give-up (exit 75, nothing ran) from a test failure.
+// US-71 AC7 + AC8 (lead M17): test.sh tells a sim-run refusal or give-up (75) and a stop (76) from a test failure.
 // test.sh runs from a copy of ios/ in a temp folder, with fake build-engine, sim-run and clone cleanup
 // beside it, so nothing builds or boots. The fake sim-run logs each zone and exits $FAKE_EXIT.
 //   npx vitest run ios/scripts/test-sh.test.ts
@@ -15,6 +15,7 @@ echo "$TEST_RUNNER_TZ" >> "$FAKE_LOG"
 case "$FAKE_EXIT" in
   0) echo "** TEST SUCCEEDED **";;
   75) echo "sim-run: gave up after 30m (load guard, not the lock): load 20.00 is over 12" >&2;;
+  76) echo "sim-run: stopped the command (exit 76): another simulator booted during the run" >&2;;
   *) echo "** TEST FAILED **";;
 esac
 exit "$FAKE_EXIT"
@@ -45,10 +46,20 @@ function run(exitCode: number) {
 describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
   it('a give-up (exit 75) prints NOT RUN, exits 75 and skips the next zone', () => {
     const r = run(75);
-    expect(r.out).toContain('NOT RUN in UTC: sim-run gave up waiting (not a test failure)');
+    expect(r.out).toContain('NOT RUN in UTC: sim-run refused or gave up; see its line above (not a test failure)');
     expect(r.out).toContain('sim-run: gave up after');
     expect(r.out).not.toContain('FAILED in');
     expect(r.status).toBe(75);
+    expect(r.zones).toEqual(['UTC']);
+  });
+
+  // Review of PR 1435 (R3): a 76 read as a test failure.
+  it('a second simulator booted mid-run (exit 76) prints STOPPED, exits 76 and skips the next zone', () => {
+    const r = run(76);
+    expect(r.out).toContain("STOPPED in UTC: another simulator booted during the run; see sim-run's line above (not a test failure)");
+    expect(r.out).toContain('sim-run: stopped the command');
+    expect(r.out).not.toContain('FAILED in');
+    expect(r.status).toBe(76);
     expect(r.zones).toEqual(['UTC']);
   });
 

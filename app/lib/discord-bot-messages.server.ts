@@ -21,14 +21,39 @@ export function isExcludedChannel(message: GuildMessage): boolean {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** The error's name, Discord code and HTTP status, never the error itself
+/** A code or name kept only when shaped like one (H46; `[]` for discord.js's
+ *  `DiscordAPIError[50013]`); anything else is 'unknown', so no free text rides
+ *  in a log line or a Sentry tag. */
+const shaped = (value: string): string => (/^[\w[\]-]{1,40}$/.test(value) ? value : 'unknown');
+
+/** An error's code as a shaped string, or undefined when it has none. */
+function shapedCode(code: unknown): string | undefined {
+  return typeof code === 'number' || typeof code === 'string' ? shaped(String(code)) : undefined;
+}
+
+/** The error's shaped name and Discord code and its numeric HTTP status, never the error itself
  *  (US-09 AC6d): discord.js keeps the body it sent on `requestBody`, so
  *  console.error(err) would put the reply, with any values and the asker's
  *  mention, in the host log. */
 export function errorKind(err: unknown): string {
   const { name, code, status } = (err ?? {}) as { name?: unknown; code?: unknown; status?: unknown };
-  return [name, code, status].filter((v) => typeof v === 'string' || typeof v === 'number').join(' ') || 'unknown';
+  return [typeof name === 'string' ? shaped(name) : undefined, shapedCode(code), typeof status === 'number' ? status : undefined]
+    .filter((v) => v !== undefined).join(' ') || 'unknown';
 }
+
+/** A Sentry tag for an error: its shaped code, or its shaped name when it has none. */
+export function errorTag(err: unknown): string {
+  const { name, code } = (err ?? {}) as { name?: unknown; code?: unknown };
+  return shapedCode(code) ?? (typeof name === 'string' ? shaped(name) : 'unknown');
+}
+
+/** What the message handler's outer catch sends Sentry in place of the error
+ *  (US-15 AC62, H47): fixed words and its own stack, built at the catch. Nothing
+ *  of the original goes: not its message, stack, cause or properties. */
+export class DiscordHandleError extends Error {
+  constructor() { super('Discord: handleMessage failed'); }
+}
+DiscordHandleError.prototype.name = 'DiscordHandleError';
 
 export async function safeReply(message: GuildMessage, text: string): Promise<void> {
   try {

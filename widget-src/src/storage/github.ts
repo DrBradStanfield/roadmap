@@ -17,11 +17,11 @@
  * cap later if needed. See the implementation build log.
  */
 import { ConflictError, StorageError, fetchOrFail, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
-const CONFIG_KEY = 'health_roadmap_github';
+export const CONFIG_KEY = 'health_roadmap_github';
 const API = 'https://api.github.com';
 /** A document read or upload gets Drive's upload cap: a large original on a
  *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
@@ -35,7 +35,7 @@ export interface GitHubConfig {
 }
 
 function loadConfig(): GitHubConfig | null {
-  return getJson<GitHubConfig>(CONFIG_KEY);
+  return getSignIn<GitHubConfig>(CONFIG_KEY);
 }
 
 export class GitHubAdapter implements StorageAdapter {
@@ -44,8 +44,9 @@ export class GitHubAdapter implements StorageAdapter {
   private config: GitHubConfig | null;
   private privacyCheck?: Promise<void>;
 
-  /** First connect: pass the pasted config. Reconnect: omit, loads from storage. */
-  constructor(config?: GitHubConfig) {
+  /** First connect: pass the pasted config. Reconnect: omit, loads from storage.
+   *  `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
+  constructor(config?: GitHubConfig, readonly gen: LogOffId = logOffId()) {
     this.config = config ?? loadConfig();
   }
 
@@ -83,11 +84,16 @@ export class GitHubAdapter implements StorageAdapter {
    * No redirect — the credential is user-supplied, not OAuth.
    */
   async connect(): Promise<void> {
+    await this.signIn();
+  }
+
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
+  async signIn(): Promise<boolean> {
     if (!this.config?.token || !this.config.owner || !this.config.repo) {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    setJson(CONFIG_KEY, this.config);
+    return setSignIn(CONFIG_KEY, this.config, this.gen);
   }
 
   async disconnect(): Promise<void> {

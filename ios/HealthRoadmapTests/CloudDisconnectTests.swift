@@ -381,6 +381,9 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         }
         XCTAssertEqual(sync.provider, .dropbox, "still connected")
         XCTAssertFalse(sync.recordOpen, "closed, nothing behind the phone's record")
+        // The step's showPhone is queued, not awaited: the screen reports the cloud until the
+        // phone's record lands (US-25 AC11o).
+        await drawn(store) { store.cloudErase == nil }
         XCTAssertNil(store.cloudErase)
         XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r", "the old tokens stay")
         XCTAssertEqual(text("sync-provider"), "dropbox")

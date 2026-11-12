@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 /// The first screen a new user sees, once (US-25 AC8): what the app does, where
@@ -15,6 +16,8 @@ struct WelcomeView: View {
     /// A connect error from the sheet: held here, since its row can hide mid-sign-in (US-25 AC11j).
     @State private var connectMessage: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The switch rows' sign-in, read here: this view stays while the sheet drops them (US-25 AC11n).
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
     /// until measured, so the first frame shows the words, never a cut story.
@@ -105,7 +108,7 @@ struct WelcomeView: View {
     }
 
     private var disclaimer: some View {
-        Text("For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
+        Text(EducationNote.text)
             .font(.footnote)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
@@ -153,7 +156,7 @@ struct WelcomeView: View {
                         ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
                             Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
                         }
-                        Button("Use a different cloud") { apply(.useDifferentCloud) }
+                        ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, authenticate: webAuthenticationSession.signIn, message: $connectMessage) }
                     }
                 }
             }
@@ -193,9 +196,6 @@ struct WelcomeView: View {
             choosingCloud = true
             openRecord()
         case .open: openRecord()
-        case .disconnect:
-            guard let sync, let provider = sync.provider else { return }
-            Task { if await sync.disconnectOutcome() == .failed { connectMessage = SyncStatusText.disconnectFailed(provider) } }
         case .nothing: break
         }
     }

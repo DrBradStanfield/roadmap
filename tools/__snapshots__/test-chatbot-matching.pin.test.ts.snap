@@ -1,0 +1,1135 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`test-chatbot-matching golden pins (pre-split) > --estimate prices the run, needs no key and makes no call 1`] = `
+{
+  "calls": [],
+  "err": "",
+  "out": "Pending (skipped; --include-pending runs them): 1
+  [pin] "q-pending": waits on content
+ESTIMATE router calls=37 $<N>; answer calls=24 up to $<N>; total up to $<N>. No API call made.
+",
+  "status": 0,
+}
+`;
+
+exports[`test-chatbot-matching golden pins (pre-split) > --fixed-handles-only runs only the fixed-handle checks and gates on them 1`] = `
+{
+  "calls": [
+    {
+      "answer": "q-fixed",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-fixed",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-fixed",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-context",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "cached": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ],
+        "kind": "blocks",
+        "n": 7,
+        "user": true,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-context",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "cached": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ],
+        "kind": "blocks",
+        "n": 7,
+        "user": true,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-context",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "cached": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ],
+        "kind": "blocks",
+        "n": 7,
+        "user": true,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-history",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-history",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-history",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+  ],
+  "err": "",
+  "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+
+=== LLM Router Test Harness ===
+
+Index:       3 entries
+Queries:     0 + 3 fixed-handle answer checks
+Runs each:   3
+Concurrency: 1
+Answer model: claude-sonnet-5-5
+Threshold:   ≤5% variance
+
+
+  1/3 queries
+  2/3 queries
+  3/3 queries
+
+=== Results (<T>s) ===
+
+Total:       0
+Passing:     0
+Failing:     0
+SUMMARY answer model=claude-sonnet-5-5 arm=effort-low pass=3/3 (100.0%) calls=9 apiErrors=0 p50=<T>ms p90=<T>ms tokens in=9 cacheRead=0 cacheWrite=0 out=9 cost=$<N> per1000calls=$<N>
+Fixed-handle answer checks: 3/3 ✓
+
+--- By category ---
+
+",
+  "status": 0,
+}
+`;
+
+exports[`test-chatbot-matching golden pins (pre-split) > a full router and answer-check run: report, request shapes, exit code 1`] = `
+{
+  "calls": [
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "health",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-pass",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-pass",
+    },
+    {
+      "answer": "q-pass",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-miss",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-miss",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-forbid",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-forbid",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-empty",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-empty",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-repair",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-repair",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-parse",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-parse",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-500",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-500",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-fail",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-fail",
+    },
+    {
+      "answer": "q-answer-fail",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-refusal",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-refusal",
+    },
+    {
+      "answer": "q-refusal",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-timeout",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-timeout",
+    },
+    {
+      "answer": "q-answer-timeout",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-429",
+    },
+    {
+      "answer": "q-answer-429",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+        "run_roadmap",
+      ],
+    },
+    {
+      "answer": "q-answer-429",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+        "run_roadmap",
+      ],
+    },
+    {
+      "answer": "q-fixed",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-context",
+      "roles": [
+        "user",
+      ],
+      "system": {
+        "cached": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ],
+        "kind": "blocks",
+        "n": 7,
+        "user": true,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+    {
+      "answer": "q-history",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+      ],
+      "system": {
+        "kind": "string",
+        "refs": false,
+        "user": false,
+      },
+      "tools": [
+        "propose_field_edit",
+        "propose_medication_edit",
+        "propose_profile_edit",
+      ],
+    },
+  ],
+  "err": "",
+  "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+Pending (skipped; --include-pending runs them): 1
+  [pin] "q-pending": waits on content
+
+=== LLM Router Test Harness ===
+
+Index:       3 entries
+Queries:     12 + 3 fixed-handle answer checks
+Runs each:   2
+Concurrency: 1
+Answer model: claude-sonnet-5-5
+Threshold:   ≤5% variance
+
+Warming prompt cache...
+Cache warmed. Running test suite.
+
+
+  1/15 queries
+  2/15 queries
+  3/15 queries
+  4/15 queries
+  5/15 queries [parse-error: Unexpected token 'o', "no json here" is not valid JSON] [parse-error: Unexpected token 'o', "no json here" is not valid JSON]
+  6/15 queries [api-error 500: synthetic outage] [api-error 500: synthetic outage]
+  7/15 queries [429, waiting 0s]
+  8/15 queries
+  9/15 queries
+  10/15 queries [api-error timeout]
+  11/15 queries [429, waiting 0s]
+  12/15 queries
+  13/15 queries
+  14/15 queries
+  15/15 queries
+
+=== Results (<T>s) ===
+
+⚠ 5 API calls errored or did not parse, scored as ∅ — this run's numbers are NOT trustworthy
+
+Total:       12
+Passing:     5
+Failing:     7
+Pass rate:   41.7% ✗ need ≥90%
+Variance:    58.3% ✗ max 5%
+SUMMARY router model=claude-sonnet-5-5 arm=thinking-off pass=5/12 (41.7%) calls=22 apiErrors=5 p50=<T>ms p90=<T>ms tokens in=22 cacheRead=0 cacheWrite=0 out=22 cost=$<N> per1000calls=$<N>
+SUMMARY answer model=claude-sonnet-5-5 arm=effort-low pass=5/8 (62.5%) calls=7 apiErrors=5 p50=<T>ms p90=<T>ms tokens in=7 cacheRead=0 cacheWrite=0 out=7 cost=$<N> per1000calls=$<N>
+Fixed-handle answer checks: 3/3 ✓
+
+--- By category ---
+  pin                  5/12 (42%)
+
+--- Failing queries ---
+
+✗ [pin] "q-miss"
+    Expected:     pin-b
+    Intersection: ∅ (nothing consistent across 2 runs)
+    Runs:         [1]∅ [2]∅
+
+✗ [pin] "q-forbid"
+    ✗ routed forbidden handle pin-c
+    Expected:     pin-a
+    Intersection: pin-a, pin-c
+    Runs:         [1]pin-a,pin-c [2]pin-a,pin-c
+
+✗ [pin] "q-parse"
+    Expected:     pin-a
+    Intersection: ∅ (nothing consistent across 2 runs)
+    Runs:         [1]∅ [2]∅
+
+✗ [pin] "q-500"
+    Expected:     pin-a
+    Intersection: ∅ (nothing consistent across 2 runs)
+    Runs:         [1]∅ [2]∅
+
+✗ [pin] "q-answer-fail"
+    Answer check: FAIL
+      → run 1: claimed: "lowers blood pressure"
+      → run 1: no match: /gamma/
+      → run 1: matched forbidden: /delta/
+      → run 1: found forbidden: "beta"
+      → run 1: length 50 chars > cap 20
+    Response (last run):
+      Beta. It lowers blood pressure. delta delta delta.
+
+✗ [pin] "q-refusal"
+    Answer check: FAIL
+      → run 1: refusal (bio)
+    Response (last run):
+      
+
+✗ [pin] "q-answer-timeout"
+    Answer check: FAIL
+      → run 1: API error timeout
+    Response (last run):
+      
+
+--- Passing queries ---
+✓ [pin] "q-pass" → pin-a
+✓ [pin] "q-empty" → (router-empty)
+✓ [pin] "q-repair" → pin-b
+✓ [pin] "q-429" → pin-a
+✓ [pin] "q-answer-429" → pin-a
+✓ [pin2] "q-fixed" (doctor) → (router-empty)
+✓ [pin2] "q-context" (doctor) → (router-empty)
+✓ [pin2] "q-history" (brand) → (router-empty)
+
+",
+  "status": 1,
+}
+`;
+
+exports[`test-chatbot-matching golden pins (pre-split) > a router-only run makes no answer call 1`] = `
+{
+  "calls": [
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "health",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-pass",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-miss",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-forbid",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-empty",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-repair",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-parse",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-500",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-429",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-fail",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-refusal",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-timeout",
+    },
+    {
+      "blocks": 2,
+      "cached": [
+        true,
+        true,
+      ],
+      "count": true,
+      "index": "[guideline] pin-b: Synthetic summary B.
+[reference] pin-c: Synthetic summary C.
+[article] pin-a: Synthetic summary A.",
+      "router": "q-answer-429",
+    },
+  ],
+  "err": "",
+  "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+Pending (skipped; --include-pending runs them): 1
+  [pin] "q-pending": waits on content
+
+=== LLM Router Test Harness ===
+
+Index:       3 entries
+Queries:     12
+Runs each:   1
+Concurrency: 1
+Threshold:   ≤5% variance
+
+Warming prompt cache...
+Cache warmed. Running test suite.
+
+
+  1/12 queries
+  2/12 queries
+  3/12 queries
+  4/12 queries
+  5/12 queries [parse-error: Unexpected token 'o', "no json here" is not valid JSON]
+  6/12 queries [api-error 500: synthetic outage]
+  7/12 queries [429, waiting 0s]
+  8/12 queries
+  9/12 queries
+  10/12 queries
+  11/12 queries
+  12/12 queries
+
+=== Results (<T>s) ===
+
+⚠ 2 API calls errored or did not parse, scored as ∅ — this run's numbers are NOT trustworthy
+
+Total:       12
+Passing:     8
+Failing:     4
+Pass rate:   66.7% ✗ need ≥90%
+Variance:    33.3% ✗ max 5%
+SUMMARY router model=claude-sonnet-5-5 arm=thinking-off pass=8/12 (66.7%) calls=11 apiErrors=2 p50=<T>ms p90=<T>ms tokens in=11 cacheRead=0 cacheWrite=0 out=11 cost=$<N> per1000calls=$<N>
+
+--- By category ---
+  pin                  8/12 (67%)
+
+--- Failing queries ---
+
+✗ [pin] "q-miss"
+    Expected:     pin-b
+    Intersection: ∅ (nothing consistent across 1 runs)
+
+✗ [pin] "q-forbid"
+    ✗ routed forbidden handle pin-c
+    Expected:     pin-a
+    Intersection: pin-a, pin-c
+
+✗ [pin] "q-parse"
+    Expected:     pin-a
+    Intersection: ∅ (nothing consistent across 1 runs)
+
+✗ [pin] "q-500"
+    Expected:     pin-a
+    Intersection: ∅ (nothing consistent across 1 runs)
+
+",
+  "status": 1,
+}
+`;
+
+exports[`test-chatbot-matching golden pins (pre-split) > exports nothing (a CLI) 1`] = `[]`;
+
+exports[`test-chatbot-matching golden pins (pre-split) > invalid fixtures, no match, no key and the wrong folder each exit before any call 1`] = `
+{
+  "badContext": {
+    "calls": [],
+    "err": "user_context needs a surface on: badContext
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "badFixed": {
+    "calls": [],
+    "err": "answer_handles that would not load: no-such-handle (no file)
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "badForbidden": {
+    "calls": [],
+    "err": "must_not_route names handles not in the index: nope
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "badHistory": {
+    "calls": [],
+    "err": "history must alternate user and assistant text, ending on the assistant, on: badHistory
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "badProfile": {
+    "calls": [],
+    "err": "expect_profile_edit must name sex (male or female) and/or heightCm (a number), on: badProfile
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "badRegex": {
+    "calls": [],
+    "err": "must_match / must_not_match regexes that do not compile: (
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "noKey": {
+    "calls": [],
+    "err": "Error: ANTHROPIC_TEST_API_KEY or ANTHROPIC_API_KEY must be set
+",
+    "out": "",
+    "status": 1,
+  },
+  "noMatch": {
+    "calls": [],
+    "err": "No queries match category "nothing-here"
+",
+    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
+",
+    "status": 1,
+  },
+  "wrongCwd": {
+    "calls": [],
+    "err": "YouTube bot: chat-youtube-prompt.md not found — bot will not start
+CHAT PROMPT MISSING: app/lib/chat-system-prompt.md is missing or empty; chat is off
+health_roadmap_algorithm.md not found — chat will have limited context
+docs/products.md not found — chat will not have product knowledge
+CHAT KNOWLEDGE MISSING: docs/writing-style.md not found — the chatbot answers without it
+CHAT KNOWLEDGE MISSING: docs/chatbot/answer-bank.md not found — the chatbot answers without it
+docs/blog/index.json not found at <DIR>/docs/blog/index.json — features depending on blog data will be empty
+Chat: chat-posture-doctor.md not found — surface posture missing
+Chat: chat-posture-brand.md not found — surface posture missing
+Run from the repo root (<ROOT>): the article loader reads from the working directory.
+",
+    "out": "",
+    "status": 1,
+  },
+}
+`;

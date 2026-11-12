@@ -16,7 +16,8 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, useBusyRun, type Backend } from './connect';
+import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, type Backend } from './connect';
+import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
@@ -124,8 +125,20 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   unreachable?: boolean;
   onClose: () => void;
 }) {
-  const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>('list');
-  const { busy, error, setError, run } = useBusyRun();
+  // One move at a time, for the page's life (US-09 AC45): a picker reopened
+  // while one runs opens at its step, with that step's busy label. Opening it
+  // first ends a move whose page did not leave. It runs here, not in a layout
+  // effect, so the first frame is never the locked picker: the store reaches
+  // this hook only through its passive-effect subscription, and a forcing
+  // setStep bails out when the step stays 'list'. A second 'reopened' changes
+  // nothing, and this picker is the store's only subscriber.
+  const [step, setStep] = useState<MoveStep>(() => {
+    dispatch({ type: 'reopened' });
+    return stepOf(getSwitchFlow()) ?? 'list';
+  });
+  const flow = useSwitchFlow();
+  const busy = flow.kind !== 'idle';
+  const error = flow.kind === 'idle' ? flow.error : null;
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
   const dialogRef = useModalDialog();
@@ -133,17 +146,16 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   onCloseRef.current = onClose;
 
   const choose = (id: Backend): void => {
-    if (busy) return;
     if (id === current) {
       onClose();
       return;
     }
     if (id === 'github' || id === 'self-host') {
-      setError(null);
+      dispatch({ type: 'clearError' });
       setStep(id);
       return;
     }
-    void run(async () => {
+    void runMove({ type: 'start', to: id, step: 'list' }, async ({ gen, navigating }) => {
       await prepareSwitch(current);
       if (id === 'local') {
         forgetBackend();
@@ -151,20 +163,21 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
         return;
       }
       trackProductEvent('cloud_connect_started', { provider: id });
-      // Full-page OAuth redirect — never resolves; completes in app.tsx on return.
-      await adapterFor(id)!.connect();
+      // Full-page OAuth redirect — never resolves; completes in resolve-backend.ts on return.
+      navigating();
+      await adapterFor(id, gen)!.connect(); // its return is kept only under the move's log-off id
     });
   };
 
   const submitForm = (id: 'github' | 'self-host'): void => {
-    void run(async () => {
+    void runMove({ type: 'start', to: id, step: id }, async ({ gen }) => {
       await prepareSwitch(current);
       trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
         id === 'github'
-          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() })
-          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password });
-      await finishFormConnect(adapter, id); // validates → migrates → reloads
+          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() }, gen)
+          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password }, gen);
+      await finishFormConnect(adapter, id, gen); // validates → migrates → reloads
     });
   };
 
@@ -189,6 +202,14 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             <h2 tabIndex={-1} data-initial-focus>{PICKER_TITLE}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
+            {/* The Drive reconnect is a move too (AC45): its moves wait, and Stop ends it with no
+                error until its popup answer is saved; from then it runs to its reload. */}
+            {(flow.kind === 'reconnecting' || flow.kind === 'reconnected') && (
+              <div className="hr-modal-logoff">
+                <p className="hr-modal-sub" role="status">Reconnecting Google Drive…</p>
+                {flow.kind === 'reconnecting' && <button type="button" className="hr-sync-link" onClick={() => dispatch({ type: 'cancel', run: flow.run })}>Stop reconnecting</button>}
+              </div>
+            )}
             {OPTIONS.map((o, i) => (
               <React.Fragment key={o.id}>
                 {o.advanced && !OPTIONS[i - 1]?.advanced && <div className="hr-opt-divider">Advanced</div>}
@@ -214,7 +235,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             ))}
             {current !== 'local' && !unreachable && (
               <div className="hr-modal-logoff">
-                <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { setError(null); setStep('log-off'); }}>
+                <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { dispatch({ type: 'clearError' }); setStep('log-off'); }}>
                   Log off this device
                 </button>
               </div>
@@ -232,7 +253,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
               restore everything.
             </p>
             <div className="hr-sync-form">
-              <button className="hr-sync-btn" disabled={busy} onClick={() => void run(() => logOff(current))}>
+              <button className="hr-sync-btn" disabled={busy} onClick={() => void runMove({ type: 'logOff' }, () => logOff(current))}>
                 {busy ? 'Logging off…' : 'Log off'}
               </button>
             </div>

@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { CAUSE_CLASS_TAGS, ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core/sentry-scrub';
+import { isSelfReportBreadcrumb, selfReportIntegration, selfReportTransport } from '../../../instrument-self-report.mjs';
 
 declare const __SENTRY_RELEASE__: string;
 
@@ -31,6 +32,9 @@ function elementPath(target: unknown): string | undefined {
 
 /** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
 export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
+  // A scrub that throws sends nothing: the SDK's own report is rebuilt at the
+  // transport, and its breadcrumb is dropped (US-09 AC7i).
+  if (isSelfReportBreadcrumb(hint)) return null;
   // The SDK names a clicked or typed-in element by its aria-label, type, name,
   // title and alt, and a label can quote values that scrubText misses (the
   // review's Replace label did, "… zinc value 0.4 … with 0.7 …", until US-13 AC10). Keep tag, id and classes only
@@ -87,7 +91,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
-      ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
+      ...(['rate_limit', 'busy', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
       ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
       ...(ERROR_CLASS_TAGS.includes(String(errorClass)) ? { errorClass } : {}),
       ...(HTTP_STATUS_TAGS.includes(String(httpStatus)) ? { httpStatus } : {}),
@@ -172,6 +176,28 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   return event;
 }
 
+/** A throw here must never reach the SDK's own error report: the hook returns
+ *  null, so nothing is sent, and one fixed line names the error type, never its
+ *  message or stack (US-09 AC7i). Naming and logging are guarded too, so the
+ *  null always comes back. Exported for the end-to-end test. */
+export function failClosed<A extends unknown[], R>(hook: (...args: A) => R | null): (...args: A) => R | null {
+  return (...args) => {
+    try {
+      return hook(...args);
+    } catch (err) {
+      let name = 'unknown';
+      try {
+        const n = err instanceof Error ? err.name : typeof err;
+        if (typeof n === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(n)) name = n;
+      } catch { /* keep 'unknown' */ }
+      try {
+        console.error('Sentry scrub failed (' + name + '); event dropped');
+      } catch { /* the null still comes back */ }
+      return null;
+    }
+  };
+}
+
 /** A local dev host (US-20 AC5): localhost, its subdomains, and both loopback addresses. */
 export function isLoopbackHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '[::1]';
@@ -187,7 +213,8 @@ export function initSentry() {
     release: typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : undefined,
     // A release switches Sentry sessions on (the default browserSessionIntegration
     // sends one per page load and route change). US-49 AC4 allows errors only.
-    integrations: (defaults) => defaults.filter((i) => i.name !== 'BrowserSession'),
+    integrations: (defaults) => [selfReportIntegration, ...defaults.filter((i) => i.name !== 'BrowserSession')],
+    transport: selfReportTransport(Sentry.makeFetchTransport),
     environment: local
       ? 'development'
       : window.location.hostname === 'drbradstanfield.github.io'
@@ -235,8 +262,8 @@ export function initSentry() {
       // lives beside index.html. Rehosted copies do not report to our project.
       /^https:\/\/drbradstanfield\.github\.io\/roadmap\/(?:assets\/[^/?#]+\.js|health-upload\.js)(?:[?#].*)?$/,
     ],
-    beforeSend: scrubEvent,
-    beforeBreadcrumb: scrubBreadcrumb,
+    beforeSend: failClosed(scrubEvent),
+    beforeBreadcrumb: failClosed(scrubBreadcrumb),
   });
 }
 

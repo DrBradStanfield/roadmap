@@ -158,6 +158,8 @@ describe('coChange (US-64 AC29)', () => {
           'src/a.save.test.tsx',
           'docs/user-stories.md',
           'docs/user-stories.html',
+          'docs/stories/US-15.md',
+          'docs/stories/_constitution.md',
           'docs/reference.md',
           'scripts/file-size-baseline.json',
           'package-lock.json',

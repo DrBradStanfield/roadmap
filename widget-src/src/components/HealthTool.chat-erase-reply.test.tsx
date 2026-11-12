@@ -17,13 +17,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
+import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { stampFields } from '@roadmap/health-core/merge';
+import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import type { SendMessageResult } from '../lib/chat-api';
+import { trackProductEvent } from '../lib/server-api';
 
 /** The chat's one request: held until the test answers it. */
 const chatCall = vi.hoisted(() => ({
@@ -74,6 +77,27 @@ class HeldCloud extends MemoryAdapter {
     const reached = new Promise<void>((r) => { this.entered = r; });
     return { reached, release };
   }
+  private readGate: Promise<void> | null = null;
+  private readEntered: () => void = () => {};
+  private readFails = false;
+  /** Stops the next read of the record (the erase's stored read) until released; `fail`: it then finds the cloud unreachable. */
+  holdRead(fail = false) {
+    let release!: () => void;
+    this.readGate = new Promise<void>((r) => { release = r; });
+    this.readFails = fail;
+    const reached = new Promise<void>((r) => { this.readEntered = r; });
+    return { reached, release };
+  }
+  override async read(name: string, signal?: AbortSignal) {
+    const gate = name === ROADMAP_FILE_NAME ? this.readGate : null;
+    if (gate) {
+      this.readGate = null;
+      this.readEntered();
+      await gate;
+      if (this.readFails) throw new Error('Synthetic: cloud did not answer');
+    }
+    return super.read(name, signal);
+  }
   override async write(name: string, body: object, version: string | null, signal?: AbortSignal) {
     if (this.gate && name === ROADMAP_FILE_NAME && ((body as RoadmapFile).meta?.eraseEpoch ?? 0) > 0) {
       this.entered();
@@ -84,11 +108,13 @@ class HeldCloud extends MemoryAdapter {
 }
 
 /** A synthetic returning user on rosuvastatin, with the chat column open. */
-async function userOnStatin(adapter: HeldCloud): Promise<RenderResult> {
+async function userOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>): Promise<RenderResult> {
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
   await initRoadmapStore(adapter);
   await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
   await addMeasurement('weight', 82, '2026-09-01');
   await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+  await seed?.();
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.health-tool-chat textarea')).toBeTruthy());
@@ -188,6 +214,53 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(bodyText()).not.toContain('Medication updated from chat.');
     // The words outlast the erase they report.
     expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('erase still reading when the reply lands: nothing is applied, and the words say the data is being deleted (lead A6)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter);
+    await ask(view);
+    const read = adapter.holdRead();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await read.reached;
+    await replyLands();
+    expect(bodyText()).not.toContain('Medication updated from chat.');
+    expect(profileBanner()).toBeNull();
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
+    expect(bodyText()).toContain(ERASE_IN_PROGRESS);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(await cloudMedications(cloud)).not.toContain('atorvastatin');
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
+    expect(bodyText()).not.toContain('Medication updated from chat.');
+    // The erase it reported has landed and shows: the banner goes.
+    expect(bodyText()).not.toContain(ERASE_IN_PROGRESS);
+  });
+
+  it('erase still reading when the reply lands, then the erase stops short: the in-progress words go with it (A6 R2)', async () => {
+    const adapter = new HeldCloud(new MemoryCloud());
+    const view = await userOnStatin(adapter);
+    await ask(view);
+    const read = adapter.holdRead(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await read.reached;
+    await replyLands();
+    expect(bodyText()).toContain(ERASE_IN_PROGRESS);
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(600);
+    // Nothing was deleted: "being deleted" never stands beside that.
+    expect(bodyText()).not.toContain(ERASE_IN_PROGRESS);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
   });
 
   it('the notice goes at the next question', async () => {
@@ -321,5 +394,75 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(profileBanner()).not.toBeNull();
     expect(bodyText()).toContain('Medication updated from chat.');
     expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+});
+
+/** Whole re-reads of the record the page asks the store for (useRecordReads reloadValues). */
+const recordReads = () => vi.mocked(RoadmapStore.prototype.loadLatestMeasurements).mock.calls.length;
+const remoteChangesCounted = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied').length;
+
+describe('US-16 AC2a (A6 R1): a profile save refused while this tab\'s erase reads, then the erase stops short', () => {
+  it('the form shows the record stored, read once through the refused path; a remote change held behind the unsaved edit is released and counted once (US-34 AC4)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    vi.spyOn(RoadmapStore, 'create');
+    const view = await userOnStatin(adapter);
+    const field = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
+    fireEvent.change(field('heightCm'), { target: { value: '191' } });
+    // Another device changes the birth year; the page holds it behind the unsaved height (US-34 AC4).
+    const other = new MemoryAdapter(cloud);
+    const { body, version } = await other.read(ROADMAP_FILE_NAME);
+    const file = body as RoadmapFile;
+    await other.write(ROADMAP_FILE_NAME, { ...file, profile: stampFields(file.profile, { birthYear: 1980 }, new Date(Date.now() + 1000).toISOString()) }, version);
+    const created = vi.mocked(RoadmapStore.create).mock.results;
+    await act(async () => { await (await (created[created.length - 1].value as Promise<RoadmapStore>)).refreshFromRemote(); });
+    expect(field('birthYear').value).toBe('1974');
+    expect(remoteChangesCounted()).toBe(0); // held
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements');
+    const read = adapter.holdRead(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await read.reached;
+    await wait(800); // the profile save comes due while the erase reads, and is refused
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(600);
+    await act(async () => { await flushRoadmapStore(); });
+    const stored = ((await new MemoryAdapter(cloud).read(ROADMAP_FILE_NAME)).body as RoadmapFile).profile;
+    expect({ heightCm: stored.heightCm, birthYear: stored.birthYear }).toEqual({ heightCm: 180, birthYear: 1980 });
+    // The screen shows what is stored: the refused height is gone, the held birth year shows.
+    expect({ heightCm: field('heightCm').value, birthYear: field('birthYear').value }).toEqual({ heightCm: '180', birthYear: '1980' });
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(recordReads()).toBe(1); // one reread('refused'), the read a refused save gets outside an erase
+    expect(remoteChangesCounted()).toBe(1);
+  });
+});
+
+describe('US-16 AC2a (A6 Codex R1): a dose changed just before "Delete all my data", the erase stops short, nothing refused', () => {
+  it('the record is not re-read: the waiting save lands, and the screen and the stored record agree on the new dose', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01')); // the statin's dose shows with an LDL
+    const dose = await waitFor(() => { const select = view.container.querySelector<HTMLSelectElement>('#statin-dose'); expect(select).not.toBeNull(); return select!; });
+    expect(dose.value).toBe('10');
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements');
+    const read = adapter.holdRead(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(dose, { target: { value: '20' } }); // saves in 300 ms
+    fireEvent.click(deleteButton()!); // before that save comes due
+    await read.reached;
+    read.release(); // the erase's read fails at once: it stops short, the dose save still waiting
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    expect(recordReads()).toBe(0); // the erase stopped short: nothing re-read
+    await wait(600); // the dose save comes due, after the erase
+    expect(recordReads()).toBe(1); // the save's own copy of the saved lists for the chat (useListSaves mirrorSavedLists), not a re-read
+    const stored = JSON.parse(await cloudMedications(cloud)) as RoadmapFile['medications'];
+    expect(stored.find(m => m.medicationKey === 'statin')?.doseValue).toBe(20);
+    expect(view.container.querySelector<HTMLSelectElement>('#statin-dose')!.value).toBe('20');
+    expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
   });
 });

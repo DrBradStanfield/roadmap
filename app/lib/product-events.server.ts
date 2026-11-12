@@ -81,6 +81,9 @@ const metadataSchema = z
 
 /** US-36 AC9: the two halves of a two-phase write, on `mcp_tool_call`. */
 const MCP_TOOL_STEPS = ['propose', 'confirm'] as const;
+/** US-36 AC9 (H59): which kind of refused confirm, beside `reason: confirm` on `mcp_tool_call`. Fixed words, never the receipt. */
+export const MCP_CONFIRM_REASONS = ['confirm-invalid', 'confirm-expired', 'confirm-early', 'confirm-approval', 'confirm-spent', 'confirm-unavailable'] as const;
+export type McpConfirmReason = (typeof MCP_CONFIRM_REASONS)[number];
 
 /**
  * US-32 AC29's refusal word, on the server list only: it can ride on
@@ -101,6 +104,7 @@ const serverMetadataSchema = metadataSchema.extend({
   via: z.enum(['reviewer']).optional(),
   /** US-36 AC9: which half of a two-phase write a tool call was, on `mcp_tool_call`; the browser's onboarding steps too, so its rows survive this list (checkEventKeys). */
   step: z.enum([...ONBOARDING_STEPS, ...MCP_TOOL_STEPS]).optional(),
+  confirmReason: z.enum(MCP_CONFIRM_REASONS).optional(),
   /** US-15 AC33: how many stated values run_roadmap refused. A count only. Server-only, owned by `chat_run_roadmap`. */
   rejected: z.number().int().min(0).max(1000).optional(),
   /** US-15 AC44: one purge run's question archive. Counts only. Server-only, owned by `chat_question_archived`. */
@@ -120,6 +124,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   metric: ['measurement_refused'],
   refusal: ['measurement_refused'],
   via: ['mcp_connect'],
+  confirmReason: ['mcp_tool_call'],
   detail: ['mcp_authorize_refused', 'mcp_connect_failed'],
   rejected: ['chat_run_roadmap'],
   eligible: ['chat_question_archived'],
@@ -231,6 +236,10 @@ function checkEventKeys(
   if (metadata.detail !== undefined && !details.includes(metadata.detail)) {
     ctx.addIssue({ code: 'custom', path: ['metadata', 'detail'], message: 'detail is not one this reason may carry' });
   }
+  // A confirm's kind rides only on a refused confirm (H59).
+  if (metadata.confirmReason !== undefined && reason !== 'confirm') {
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'confirmReason'], message: 'confirmReason is not one this reason may carry' });
+  }
   if (reason === undefined) return;
   const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
   if (!allowed.includes(reason as string)) {
@@ -311,8 +320,8 @@ function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clea
   const dropped: string[] = [];
   for (const [key, value] of Object.entries(metadata)) {
     // The EVENT, one key at a time: `reason` is judged against its own event.
-    // A detail is judged beside its reason, so a valid pair survives an unrelated bad key.
-    const probe = key === 'detail' ? { reason: metadata.reason, detail: value } : { [key]: value };
+    // A detail or a confirm's kind is judged beside its reason, so a valid pair survives an unrelated bad key.
+    const probe = key === 'detail' || key === 'confirmReason' ? { reason: metadata.reason, [key]: value } : { [key]: value };
     if (serverEventSchema.safeParse({ ...event, metadata: probe }).success) clean[key] = value;
     else dropped.push(key);
   }

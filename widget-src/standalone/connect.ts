@@ -5,7 +5,6 @@
  * (sync-control.tsx), so it lives here to avoid a circular import between those
  * two modules.
  */
-import { useState } from 'react';
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
@@ -14,13 +13,16 @@ import {
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
+  type GitHubAdapter,
   type StorageAdapter,
+  type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
-import { PROVIDERS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
+import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
+import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -150,42 +152,33 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
 
 /**
  * Form-based connect (GitHub, self-host): validate the pasted credentials via
- * adapter.connect() (throws on failure — the caller surfaces the message), lift
- * on-device data up, remember the choice, then reload so app.tsx re-initialises
+ * adapter.connect() (throws on failure — the caller surfaces the message), remember
+ * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
- * app.tsx on return), so they don't go through here.
+ * resolve-backend.ts on return), so they don't go through here. `gen` is the
+ * log-off id the move began under; the adapter was built with it too.
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend): Promise<void> {
-  await adapter.connect();
-  await liftLocalInto(adapter, backend);
-  rememberBackend(backend);
-  trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
+export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
+  if (rememberSignIn(await adapter.signIn(), backend, gen)) {
+    markSyncPending();
+    await liftLocalInto(adapter, backend);
+    trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
+  }
   location.reload();
 }
 
-/**
- * Shared busy/error scaffold for connect-flow buttons (picker + sync control).
- * Success is expected to end in a navigation or reload, so busy stays true.
- */
-export function useBusyRun() {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = async (fn: () => Promise<void>): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Connection failed.');
-      setBusy(false);
-    }
-  };
-  return { busy, error, setError, run };
+/** Remember `backend` when the connecting adapter `saved` its own sign-in,
+ *  and only while `gen` is still the current log-off id (US-09 AC45). True when both hold:
+ *  only then is the device copy lifted into the cloud, marked pending first
+ *  so a page that stops mid-lift lifts it on the next load. */
+export function rememberSignIn(saved: boolean, backend: CloudBackend, gen: LogOffId): boolean {
+  return saved && rememberBackend(backend, gen);
 }
 
-/** The adapter for a connected cloud backend (null for the on-device tier). */
-export function adapterFor(backend: Backend): StorageAdapter | null {
-  return providerOf(backend)?.adapter() ?? null;
+/** The adapter for a connected cloud backend (null for the on-device tier);
+ *  `gen` as in Provider.adapter. */
+export function adapterFor(backend: Backend, gen?: LogOffId): StorageAdapter | null {
+  return providerOf(backend)?.adapter(gen) ?? null;
 }
 
 /** The remembered choice, from a browser that may block storage: a blocked
@@ -193,8 +186,9 @@ export function adapterFor(backend: Backend): StorageAdapter | null {
 export function rememberedBackend(): Backend | null {
   return safeGetItem(BACKEND_KEY) as Backend | null;
 }
-export function rememberBackend(backend: Backend): void {
-  safeSetItem(BACKEND_KEY, backend);
+/** Saved only while `gen` is the current log-off id (US-09 AC45); true when saved. */
+export function rememberBackend(backend: Backend, gen: LogOffId): boolean {
+  return setSignIn(BACKEND_KEY, backend, gen);
 }
 export function forgetBackend(): void {
   safeRemoveItem(BACKEND_KEY);
@@ -232,7 +226,8 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  * What it clears:
  *  - the active provider's auth tokens/credentials (adapter.disconnect() —
  *    each adapter only does safeRemoveItem on its OWN local token/config keys,
- *    no network delete is issued against the remote file)
+ *    no network delete is issued against the remote file), then every other
+ *    provider's sign-in entries (SIGN_IN_KEYS)
  *  - the local RoadmapFile cache (health_roadmap_file_v2 + _rev), any named
  *    record files (chat-history.json, …) and stored documents
  *    (LocalStorageAdapter.disconnect())
@@ -257,6 +252,8 @@ export async function logOff(backend: Backend): Promise<void> {
     console.warn('Cloud disconnect during log-off failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
+  // Every provider's sign-in on this device (US-09 AC45).
+  for (const key of SIGN_IN_KEYS) safeRemoveItem(key);
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
   // Only its content-free erase-fence write can throw, after the health keys
   // are gone; log-off still finishes (US-09 AC2c).
@@ -270,6 +267,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
+  safeRemoveItem(CLEARED_ERASE_KEY); // the next sign-in's record adopts its own erase (US-11 AC6)
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();

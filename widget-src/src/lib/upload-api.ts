@@ -22,6 +22,16 @@ import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, Uploa
 
 const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 
+const tooManyAnswer = z.object({ code: z.enum(['daily_limit', 'busy']) });
+/** A 429, read once by its code (US-12 AC9): busy is not the daily limit. A missing or
+ *  unknown code, or no readable body, is the daily limit, as an older server meant. */
+async function tooMany(response: Response): Promise<{ error: string; errorCode: UploadErrorCode }> {
+  const body = await parseJsonResponse<unknown>(response).catch(() => null);
+  return tooManyAnswer.safeParse(body).data?.code === 'busy'
+    ? { error: 'Server busy. Please try again later.', errorCode: 'busy' }
+    : { error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
+}
+
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL);
@@ -48,9 +58,7 @@ export async function labImport(
       // `refusedRows`: it lists refused values under "Not saved" (AC15).
       body: JSON.stringify({ pages, unitSystem, ownDates: true, undatedPrev: true, refusedRows: true }),
     });
-    if (response.status === 429) {
-      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
+    if (response.status === 429) return { result: null, ...(await tooMany(response)) };
     if (response.status === 422) {
       // A file Claude declined or stopped short on: the code says which (US-15 AC34).
       const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
@@ -91,9 +99,7 @@ export async function labImportBatch(
       // server. Drop it once every live server strips it.
       body: JSON.stringify({ batch: true, ownDates: true, undatedPrev: true, refusedRows: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
     });
-    if (response.status === 429) {
-      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
+    if (response.status === 429) return { batchId: null, ...(await tooMany(response)) };
     if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
     const data = await parseJsonResponse<{ success: boolean; batchId?: string; pollToken?: string; error?: string }>(response);
     if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
@@ -121,14 +127,16 @@ export const batchPollAnswer = z.union([
  *  `error` and the caller polls on. One that cannot (404, 401, 403, an answer that is not a poll)
  *  ends the watch (US-12 AC24). */
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
+  const token = pollTokens.get(batchId) ?? '';
+  // A late answer to an old token never drops the newer one a join stored since (US-12 AC25).
+  const drop = () => { if (pollTokens.get(batchId) === token) pollTokens.delete(batchId); };
   const ended = (error: string, errorCode: UploadErrorCode): BatchPollResponse => {
-    pollTokens.delete(batchId);
+    drop();
     return { status: 'ended', completed: 0, total: 0, error, errorCode };
   };
   let response: Response;
   let text = '';
   try {
-    const token = pollTokens.get(batchId) ?? '';
     // A POST so the token travels in the body: the server logs request URLs
     // (morgan) and a logged token reads the extracted lab text back.
     response = await fetch(LAB_IMPORT_V2_URL, {
@@ -149,7 +157,7 @@ export async function pollBatchStatus(batchId: string): Promise<BatchPollRespons
   } catch { /* malformed: refused below */ }
   const poll = batchPollAnswer.safeParse(body);
   if (!poll.success) return ended('Batch poll answer unreadable', 'server_error');
-  if (poll.data.status === 'ended') pollTokens.delete(batchId);
+  if (poll.data.status === 'ended') drop();
   // The schema checks what the loop reads; each result's own shape is the review's to read.
   return poll.data as BatchPollResponse;
 }

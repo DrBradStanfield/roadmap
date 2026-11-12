@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-W1-6,S8 web big components,Matrix kit moves out of BloodTestTimeline,not started,"BloodTestTimeline.tsx:98 Sparkline, :734 useLiveRegion, :751 UNIT_CHANGED; AddLabTest and AdditionalLabRows import from it; no components/matrix/",,,no
+W1-6,S8 web big components,Matrix kit moves out of BloodTestTimeline,partial,"BloodTestTimeline.tsx:91 Sparkline; the saved-value cells (BatchDateCell, ValueCell, useLiveRegion :94, UNIT_CHANGED :111, SAVE_ERRORS) moved to MatrixSavedCells.tsx in PR 1456, so part of the kit is out; AddLabTest and AdditionalLabRows import from it; no components/matrix/",1456,,no

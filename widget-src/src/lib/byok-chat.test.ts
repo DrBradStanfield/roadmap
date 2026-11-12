@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   store: null as null | { getMessages: (id: string) => Array<{ role: string; content: string }>; recordExchange: () => Promise<void>; eraseMarks: () => string[] },
 }));
 
+vi.mock('@sentry/react', async (importOriginal) => ({ ...(await importOriginal<object>()), captureException: vi.fn() }));
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(state.store), askChatHistory: () => Promise.resolve({ store: state.store, askedMarks: state.store?.eraseMarks() }) }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {
@@ -33,6 +34,8 @@ vi.mock('./byok-anthropic', () => ({
 import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core/chat-context';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { sendMessage } from './byok-chat';
+import * as Sentry from '@sentry/react';
+import { StorageError } from '@roadmap/health-core/adapter';
 
 const SNAPSHOT = {
   sex: 'male',
@@ -379,5 +382,32 @@ describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the hi
   it('control: a new conversation sends no earlier turns', async () => {
     await sendMessage('What is my LDL target?', null, null, SHOWN);
     expect(state.bodies[0].messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+  });
+});
+
+describe('US-09 AC2c: a Pages chat answer whose history save the device refuses still shows', () => {
+  beforeEach(() => {
+    const keys = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => keys.get(k) ?? null,
+      setItem: (k: string, v: string) => void keys.set(k, v),
+      removeItem: (k: string) => void keys.delete(k),
+    });
+    state.replies = [{ text: 'Synthetic answer', blocks: [] }];
+    state.store = {
+      getMessages: () => [],
+      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal'))),
+      eraseMarks: () => [],
+    };
+    vi.mocked(Sentry.captureException).mockClear();
+  });
+
+  it('returns the answer, and the report names no chat text', async () => {
+    const { result, error } = await sendMessage('SYNTHETIC_REFUSED_QUESTION', null, null);
+    expect(error).toBeNull();
+    expect(result?.content).toBe('Synthetic answer');
+    await vi.waitFor(() => expect(Sentry.captureException).toHaveBeenCalledWith(expect.objectContaining({ message: 'Chat-history save failed' }), { tags: { area: 'chat-history', op: 'save' } }));
+    expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toContain('SYNTHETIC_REFUSED_QUESTION');
+    state.store = null;
   });
 });

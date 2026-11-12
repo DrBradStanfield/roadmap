@@ -746,14 +746,14 @@ function rowsSince(
     : null;
 }
 
-/** The later of two erase times, as instants, as a meta fragment; empty when
- *  neither has one. A tie between two spellings of one instant takes the
- *  larger string, so the merge stays symmetric. */
-function laterErase(a: string | undefined, b: string | undefined): { erasedAt?: string } {
+/** Erase time `b` is later than `a`, the merge's and the erase identity's one order (US-11 AC6): none is earliest, then
+ *  instants (no time is -Infinity), a tie takes the larger string. `laterErase`: the later as a meta fragment, or none. */
+export function eraseTimeLater(b: string | undefined, a: string | undefined): boolean {
   const [ta, tb] = [a, b].map((s) => (Number.isNaN(stampInstant(s)) ? -Infinity : stampInstant(s)));
-  const bLater = a === undefined || (b !== undefined && (tb > ta || (tb === ta && b > a)));
-  const at = bLater ? b : a;
-  return at === undefined ? {} : { erasedAt: at };
+  return b !== undefined && (a === undefined || tb > ta || (tb === ta && b > a));
+}
+function laterErase(a: string | undefined, b: string | undefined): { erasedAt?: string } {
+  return eraseTimeLater(b, a) ? { erasedAt: b! } : a === undefined ? {} : { erasedAt: a };
 }
 
 /**

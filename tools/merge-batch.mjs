@@ -5,7 +5,8 @@
  * --skip builds the list without those PRs, so dropping a rejected PR is one rerun on a fresh worktree.
  * After a build, a pre-flight gives the worktree its package clones and scans the batch's added lines for
  * secret-shaped text. Exit 0 done; 1 head moved, bad input or a worktree that is not clean; 2 conflict for a
- * human (a stories conflict that is not only added, non-duplicate `- AC` lines counts); 3 stories proof failed
+ * human (a stories conflict that is not only added, non-duplicate `- AC` lines, or index lines of new stories,
+ * counts, as does an index that lists a story twice after any merge, clean or not); 3 stories proof failed
  * (merge aborted, tree as before); 4 a git command failed; 5 pre-flight found secret-shaped text (the batch
  * commits stay; fix the fixture).
  */
@@ -13,8 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { mainOf, PATTERNS } from './secret-rules.mjs';
-
-const MD = 'docs/user-stories.md';
+import { INDEX, isStoriesPath } from './stories.mjs';
 
 // A batch's diff can pass the default 1 MB output cap (ENOBUFS, exit 4).
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
@@ -46,8 +46,18 @@ const byAc = (a, b) => {
 };
 
 const acId = (line) => acKey(line).join('');
+// An index line of the split stories (tools/stories.mjs): `- [US-74 · title](stories/US-74.md)`.
+const indexId = (line) => /^- \[(US-\d+) · .*\]\(stories\/\1\.md\)$/.exec(line)?.[1];
+/** A story id the index in the tree lists twice: two PRs that each took the next free number, merged cleanly or not. */
+const listedTwice = () => {
+  const ids = existsSync(INDEX) ? readFileSync(INDEX, 'utf8').split('\n').map(indexId).filter(Boolean) : [];
+  return ids.find((id, k) => ids.indexOf(id) !== k);
+};
 
-/** Keep both sides of every conflict block when each is only added `- AC` lines; { fail } otherwise. */
+/**
+ * Keep both sides of every conflict block when each is only added `- AC` lines, or only new stories' index
+ * lines (blank lines between them allowed, ours first); { fail } otherwise.
+ */
 function resolveStories(text) {
   const lines = text.split('\n');
   const out = [];
@@ -68,6 +78,11 @@ function resolveStories(text) {
       } else if (!base) sides[side].push(lines[i]);
     }
     const all = [...sides[0], ...sides[1]];
+    if (i < lines.length && all.some(indexId) && all.every((l) => l === '' || indexId(l))) {
+      // diff3 blocks are untrimmed: each side holds exactly the lines its PR added, blanks included.
+      out.push(...all);
+      continue;
+    }
     if (i >= lines.length || all.length === 0 || !all.every((l) => acKey(l))) return { fail: 'is not only added "- AC" lines' };
     const seen = new Set();
     const kept = all.filter((l) => !seen.has(l) && seen.add(l)).sort(byAc);
@@ -259,33 +274,38 @@ function main() {
       // refresh then did not, and it failed: "fatal: stash failed" (US-64 AC20). Ignoring ctime is safe here: the
       // clean-tree check above trusts ctime (an edit that kept its mtime, as `touch -r` or `cp -p` can, still
       // shows), and after it only git writes the tree.
-      git('-c', 'core.trustctime=false', 'merge', '--no-ff', '--no-edit', '-m', msg, sha);
+      // --no-commit: every merge, clean or not, is checked below before it commits. diff3: git's default style
+      // moves lines both sides added (a shared blank) out of a block, so its sides would not be each PR's own.
+      git('-c', 'core.trustctime=false', '-c', 'merge.conflictStyle=diff3', 'merge', '--no-ff', '--no-commit', sha);
     } catch (err) {
       mergeErr = String(err.stderr || err.message).trim();
     }
     if (mergeErr !== null) {
       const unmerged = git('diff', '--name-only', '--diff-filter=U').split('\n').filter(Boolean);
       if (unmerged.length === 0) stop(2, `PR #${pr}: merge failed with no conflicted file; resolve by hand. git said: ${mergeErr || '(nothing)'}`);
-      const other = unmerged.find((f) => f !== MD);
+      const other = unmerged.find((f) => !isStoriesPath(f));
       if (other) stop(2, `PR #${pr}: conflict in ${other}; resolve by hand`);
-      if (unmerged.includes(MD)) {
-        const fixed = resolveStories(readFileSync(MD, 'utf8'));
-        if (fixed.fail) stop(2, `PR #${pr}: conflict in ${MD} ${fixed.fail}; resolve by hand`);
-        writeFileSync(MD, fixed.text);
-        git('add', '--', MD);
-        // Prove before committing: on a mismatch the merge is aborted and the tree is as it was.
-        const merged = plusMinus(git('diff', '--cached', 'HEAD', '--', MD));
-        const own = plusMinus(git('diff', `origin/main...${sha}`, '--', MD));
+      // Every conflicted file is stories text: the monolith, or the split's index and parts.
+      for (const md of unmerged) {
+        const fixed = resolveStories(readFileSync(md, 'utf8'));
+        if (fixed.fail) stop(2, `PR #${pr}: conflict in ${md} ${fixed.fail}; resolve by hand`);
+        writeFileSync(md, fixed.text);
+        git('add', '--', md);
+      }
+      // Prove before committing: on a mismatch the merge is aborted and the tree is as it was.
+      for (const md of unmerged) {
+        const merged = plusMinus(git('diff', '--cached', 'HEAD', '--', md));
+        const own = plusMinus(git('diff', `origin/main...${sha}`, '--', md));
         if (merged !== own) {
           git('merge', '--abort');
-          stop(3, `PR #${pr}: merge would change ${MD} by more than the PR's own lines; merge aborted`);
+          stop(3, `PR #${pr}: merge would change ${md} by more than the PR's own lines; merge aborted`);
         }
-        git('commit', '-q', '-m', msg);
-        note.push('stories ACs merged, proof ok');
-      } else {
-        git('commit', '-q', '-m', msg);
       }
+      note.push('stories ACs merged, proof ok');
     }
+    const twice = listedTwice();
+    if (twice) stop(2, `PR #${pr}: ${INDEX} lists ${twice} twice after the merge; resolve by hand`);
+    if (gitOk('rev-parse', '-q', '--verify', 'MERGE_HEAD')) git('commit', '-q', '-m', msg); // none when already merged
     console.log(`PR #${pr} ${sha.slice(0, 8)} merged${note.length ? ` (${[...new Set(note)].join('; ')})` : ''}`);
   }
   console.log(`HEAD ${git('rev-parse', 'HEAD').trim()}`);
