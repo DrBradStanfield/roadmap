@@ -18,7 +18,7 @@ import {
   stopRoadmapLocalWrites,
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
-import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearOffFileHealthData, logOffId, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -101,13 +101,17 @@ export function isSyncPending(): boolean {
  *  else a cloud with localStorage as its mirror. Every global is read at each
  *  call, never captured, so tests' fake timers and clocks apply. */
 export function webRecordHost(store: StorageAdapter): RecordHost {
+  // Stand-in, replaced by PR C's healthWritesAllowed() from lib/storage (the one rule; delete this then):
+  // a device page, or a cloud page with no log-off on this device since it loaded.
+  const loadedLogOff = logOffId();
+  const healthWritesAllowed = () => !roadmapLocalWritesStopped() && (store instanceof LocalStorageAdapter || logOffId() === loadedLogOff);
   const base = {
     store,
     clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
-    // The off-file data is the chosen record's: the device record ('local')
-    // when no cloud is chosen. A tab on another record, or after log-off,
-    // takes an erase in without clearing it (US-11 AC6).
-    ownsOffFileData: () => !roadmapLocalWritesStopped() && (safeGetItem(BACKEND_KEY) ?? 'local') === store.id,
+    // The off-file data is the chosen record's: the device record ('local') when no cloud is chosen, and only
+    // while no log-off came since this page loaded. Another tab takes an erase in without clearing it, and its
+    // own erase is refused first (US-11 AC6). Read live at each call.
+    ownsOffFileData: () => healthWritesAllowed() && (safeGetItem(BACKEND_KEY) ?? 'local') === store.id,
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,

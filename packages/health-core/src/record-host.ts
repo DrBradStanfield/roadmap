@@ -118,7 +118,8 @@ interface HostBase {
    *  every other original goes. */
   clearOffFileData(keepOriginals: ReadonlySet<string>): void;
   /** True while this tab's record is the one this device has chosen, so the
-   *  off-file data is its own to clear (US-11 AC6). Read at each clear. Leave
+   *  off-file data is its own to clear, and an erase its own to make: another
+   *  tab's erase is refused first (US-11 AC6). Read at each clear and erase. Leave
    *  it out when the device has one record (the iPhone): it always owns. */
   ownsOffFileData?(): boolean;
   /** The raw body of the record copy this device keeps beside the session's

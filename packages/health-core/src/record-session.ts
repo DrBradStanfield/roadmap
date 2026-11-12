@@ -68,6 +68,8 @@ export function visibleContentOf(file: RoadmapFile): string {
 export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
 /** A second erase asked for while one runs; both clients refuse it first. */
 export const ERASE_BUSY = 'Already deleting your data.';
+/** An erase asked in a tab off the record this browser has chosen; refused first (US-11 AC6). */
+export const ERASE_STALE_TAB = 'This tab is out of date. Reload it, then delete your data.';
 
 /** The refusal for a stored record a newer app wrote, read from its raw
  *  `schemaVersion` before any shape check; null for bytes that do not parse,
@@ -282,14 +284,15 @@ export class RecordSession {
    * refused here has changed nothing anywhere (US-09 AC23).
    */
   async erase(beforeErase?: () => Promise<void>): Promise<EraseResult> {
-    // An erase lists the rows it removes, so it must read the record it
-    // removes them from. A session on-device because the cloud could not be
-    // read cannot, and refuses before anything moves.
-    if (this.cloudUnreachable) return { success: false, error: ERASE_UNREACHABLE };
-    if (this.mode.mode === 'erasing') return { success: false, error: ERASE_BUSY }; // one at a time (US-16 AC2f)
+    // Refused before anything moves: a tab off the record this browser has chosen, read live here (US-11
+    // AC6); a session on-device because the cloud could not be read, as an erase lists the rows it removes
+    // from the record it reads; and a second erase while one runs (US-16 AC2f).
+    const host = this.host;
+    const refusal = host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
+      : this.cloudUnreachable ? ERASE_UNREACHABLE : this.mode.mode === 'erasing' ? ERASE_BUSY : null;
+    if (refusal) return { success: false, error: refusal };
     // On this device, the revision of the bytes read: an unreadable record is
     // replaced only at it, so another tab's repair is never written over (AC9).
-    const host = this.host;
     const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
     let readError: unknown = null;
     // From the confirm on every write is refused, or it would answer "saved"
@@ -307,23 +310,20 @@ export class RecordSession {
       // update first (US-11 AC9).
       const tooNew = readError && host.tier === 'device' ? newerSchema(host.sync) : null;
       if (!stored && (host.tier === 'cloud' || tooNew)) return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
-      // The device file, on a cloud, is where other tabs' failed saves wait.
-      // One that cannot be read, or read into a record, lists nothing; a
-      // successful erase removes it below. Read before the caller's step, which
-      // needs its opt-in too.
+      // The device file, on a cloud, is where other tabs' failed saves wait. One that cannot be read,
+      // or read into a record, lists nothing; a successful erase removes it below. Read before the
+      // caller's step, which needs its opt-in too.
       const device = host.tier === 'device'
         ? null
         : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
           .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, this.ctx())))
           .catch(() => null);
-      // The caller's step reads the opt-in from this copy, to cancel its server
-      // row. Another device, or another tab whose save failed, may have opted in
-      // since this copy was read: when the merge of every copy read (epoch
-      // first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
-      // copy, so that row is the one cancelled (US-11 AC4). Never anything
-      // less: an erase this copy missed may hold no opt-in at all, and this
-      // copy's own active row must still be cancelled and turned off. No save
-      // is scheduled; the erase replaces this copy.
+      // The caller's step reads the opt-in from this copy, to cancel its server row. Another device,
+      // or another tab whose save failed, may have opted in since this copy was read: when the merge
+      // of every copy read (epoch first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
+      // copy, so that row is the one cancelled (US-11 AC4). Never anything less: an erase this copy
+      // missed may hold no opt-in at all, and this copy's own active row must still be cancelled and
+      // turned off. No save is scheduled; the erase replaces this copy.
       let optIn: RoadmapFile['reminderOptIn'];
       try {
         optIn = [stored, device].reduce<RoadmapFile>(
