@@ -20,7 +20,7 @@
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
 const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
@@ -98,7 +98,7 @@ export class DropboxAdapter implements StorageAdapter {
     const challenge = await deriveCodeChallenge(verifier);
     const state = generateState();
     try {
-      sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+      sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state));
     } catch {
       throw new StorageError('Cannot start Dropbox sign-in: session storage is blocked.');
     }

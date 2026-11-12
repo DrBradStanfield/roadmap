@@ -145,6 +145,8 @@ describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no s
     returningFrom(DROPBOX_PKCE);
     vi.stubGlobal('fetch', vi.fn(async () => json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 })));
     await page(true);
+    const { pkceEntry } = await import('./pkce');
+    sessionStorage.setItem(DROPBOX_PKCE, pkceEntry('v', 's')); // the sign-in begins after the log-off
     const { DropboxAdapter } = await import('./dropbox');
     await DropboxAdapter.completeRedirect(DROPBOX);
     expect(read(DROPBOX_TOKENS)).toMatchObject({ accessToken: 'at-new', refreshToken: 'rt-new' });

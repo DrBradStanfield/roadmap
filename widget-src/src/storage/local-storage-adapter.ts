@@ -9,7 +9,7 @@
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
 import {
-  DOC_KEY_PREFIX, localHealthWritesStopped, noteLogOffSeen, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
+  DOC_KEY_PREFIX, localHealthWritesStopped, newLogOffId, noteLogOffSeen, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
@@ -38,6 +38,7 @@ export function stopRoadmapLocalWrites(): void {
 /** Tell the other tabs. A full localStorage drops the write silently, so
  *  log-off sends it again once the device wipe has freed space (Codex R1). */
 export function signalLogOff(): void {
+  newLogOffId();
   safeSetItem(LOG_OFF_SIGNAL_KEY, '1');
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
 }

@@ -268,6 +268,17 @@ export function noteLogOffSeen(): void {
 export function signInStamp(): number {
   return logOffSeen;
 }
+// health_roadmap_log_off_id: a random id, new at every log-off on this device.
+// A redirect sign-in saves it when it starts and completes only if it still
+// matches (US-09 AC45). Never an account or email. It sits outside the
+// prefixes a log-off or erase wipes, so neither can reset it to a match.
+const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
+export function logOffId(): string | null {
+  return safeGetItem(LOG_OFF_ID_KEY);
+}
+export function newLogOffId(): void {
+  safeSetItem(LOG_OFF_ID_KEY, crypto.randomUUID());
+}
 /** What each stamp has saved on this page, so a stale one can take it back. */
 const savedBy = new Map<number, Map<string, string>>();
 

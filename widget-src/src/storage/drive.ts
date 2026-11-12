@@ -29,7 +29,7 @@ import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloa
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply } from './drive-token-reply';
 import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
@@ -281,7 +281,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const challenge = await deriveCodeChallenge(verifier);
     const state = generateState();
     try {
-      sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+      sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state));
     } catch {
       throw new StorageError('Cannot start Google sign-in: session storage is blocked.');
     }
