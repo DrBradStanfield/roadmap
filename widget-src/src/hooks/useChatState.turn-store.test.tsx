@@ -5,7 +5,7 @@
  * - N1: a thread read that rejects, throws, or never answers ends; Send never stays locked by it.
  * - N2: a failed read is never an empty thread: it says so, offers Try again, and no send goes out.
  * - N4: other tabs hear only a request in flight, never this tab's thread load.
- * - R5: an older bundle's wait still ends at this tab's own end, now the store's own-ended effect.
+ * - R5: an older bundle's wait still ends at this tab's own end, now the store's own-ended effect, run before the end post.
  * - PR 1359 review: R1 (a post whose thread is not read), R2 (a read left stops), R3 (words beside a locked Send),
  *   R4 (an older bundle's isLoading).
  */
@@ -271,5 +271,23 @@ describe('R5: an older bundle\'s wait ends at this tab\'s own end', () => {
     await replyLands();
     expect(hook.result.current.state).toMatchObject({ isLoading: false, wait: null });
     expect(hook.result.current.state.messages).toEqual([]);
+  });
+});
+
+describe('R5 (Codex on 44b6e0f): three tabs, the middle one an older bundle', () => {
+  it('tab A\'s end frees tab C even while C still tracks older-bundle tab B\'s mirror of A\'s reply', async () => {
+    // A and C are this bundle's hooks. B is an older bundle: it mirrors A's pending reply and posts
+    // isLoading true with no `sending`, so A and C both track it as a legacy wait.
+    const tabA = renderHook(() => useChatState({ isLoggedIn: false, prefetchedData: atNew }));
+    const tabC = renderHook(() => useChatState({ isLoggedIn: false, prefetchedData: atNew }));
+    await sendHere(tabA);
+    oldBundleBusy(); // tab B
+    expect(tabC.result.current.state.isLoading).toBe(true);
+    vi.mocked(postSync).mockClear();
+    await replyLands();
+    expect(tabC.result.current.state.isLoading).toBe(false); // C's Send unlocks now, not at REMOTE_PENDING_MS
+    // A's real end post, as A's postSync sent it to C: B's wait has ended with A's own, so A is not busy.
+    const end = statePosts().find((m) => m.payload.sending === false)!;
+    expect(end.payload).toMatchObject({ sending: false, isLoading: false });
   });
 });

@@ -50,7 +50,7 @@ const SEND_FX: Effect[] = [
   { type: 'set-input', text: '' }, { type: 'edits-ask' }, { type: 'post-state' },
   { type: 'request', turn: 1, question: 'hi', convId: 'A', history: [m1] },
 ];
-const ENDED: Effect[] = [{ type: 'post-state' }, { type: 'own-ended' }];
+const ENDED: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
 const step = (s: ChatState, ...events: ChatEvent[]) => events.reduce((acc, e) => transition(acc.state, e), { state: s, effects: [] as Effect[] });
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ describe('§3 Turn table', () => {
     it('done × idle → same', () => {
       expect(transition(S, { type: 'done', turn: 1, now: T1, result: RES_R })).toEqual({ state: S, effects: [] });
     });
-    it('done × sending, key same → landed: idle, take-edits(stayed) with the refusals as parsed, post-state, own-ended (US-67 AC2)', () => {
+    it('done × sending, key same → landed: idle, take-edits(stayed) with the refusals as parsed, own-ended, post-state (US-67 AC2)', () => {
       const { state, effects } = transition(PHASES.sending, { type: 'done', turn: 1, now: T1, result: { ...RES_R, subscriptionCard: { plan: 'x' } } });
       expect(state.turn).toEqual({ phase: 'idle' });
       expect(effects).toEqual([
@@ -131,7 +131,7 @@ describe('§3 Turn table', () => {
       expect(state.turn).toEqual({ phase: 'idle' });
       expect(effects).toEqual([{ type: 'edits-leave' }, { type: 'take-edits', edits: [], refusals: [REFUSAL], erase: 'E0', stayed: true }, ...ENDED]);
     });
-    it('done × sending, key differs → left: idle, take-edits(not stayed), post-state, own-ended (US-15 AC7a, US-67 AC2)', () => {
+    it('done × sending, key differs → left: idle, take-edits(not stayed), own-ended, post-state (US-15 AC7a, US-67 AC2)', () => {
       const { state, effects } = transition(withTurn(S, SENDING_NEW), { type: 'done', turn: 1, now: T1, result: RES_R });
       expect(state.turn).toEqual({ phase: 'idle' });
       expect(effects).toEqual([{ type: 'take-edits', edits: [], refusals: [REFUSAL], erase: 'E0', stayed: false }, ...ENDED]);
@@ -195,7 +195,7 @@ describe('§3 Turn table', () => {
     it('failed × sending, key same, box not empty → nothing put back (AC57)', () => {
       expect(transition(PHASES.sending, { ...F, boxEmpty: false }).effects).toEqual(ENDED);
     });
-    it.each(['sending', 'streaming'] as const)('failed × %s, key differs → idle, post-state, own-ended', (p) => {
+    it.each(['sending', 'streaming'] as const)('failed × %s, key differs → idle, own-ended, post-state', (p) => {
       const t: Turn = p === 'sending' ? SENDING_NEW : { ...SENDING_NEW, phase: 'streaming', pending: PENDING };
       const { state, effects } = transition(withTurn(S, t), F);
       expect(state.turn).toEqual({ phase: 'idle' });

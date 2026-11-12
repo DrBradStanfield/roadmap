@@ -180,7 +180,8 @@ function send(s: ChatState, e: Extract<ChatEvent, { type: 'send' }>): Step {
 
 function done(s: ChatState, t: Extract<Turn, { phase: 'sending' | 'streaming' }>, r: SendResult, now: string): Step {
   const idle: ChatState = { ...s, turn: { phase: 'idle' } };
-  const ended: Effect[] = [{ type: 'post-state' }, { type: 'own-ended' }];
+  // own-ended first: an older bundle's wait ends before the post counts it as another tab busy (PR 1359 R5).
+  const ended: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
   const restarted = t.convId !== null && r.conversationId !== t.convId;
   const saved = t.convId === null || restarted; // a new thread on the server
   const conversations = saved
@@ -205,7 +206,7 @@ function done(s: ChatState, t: Extract<Turn, { phase: 'sending' | 'streaming' }>
 function turnStep(s: ChatState, e: Extract<ChatEvent, { type: 'delta' | 'done' | 'failed' }>): Step {
   const t = s.turn;
   if (t.phase === 'idle' || t.turn !== e.turn) return same(s);
-  const ended: Effect[] = [{ type: 'post-state' }, { type: 'own-ended' }];
+  const ended: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
   if (t.phase === 'orphaned') {
     if (e.type === 'delta') return same(s);
     const idle: ChatState = { ...s, turn: { phase: 'idle' } };
