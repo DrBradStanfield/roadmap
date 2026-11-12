@@ -1200,7 +1200,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(reads).toHaveBeenCalledTimes(saved + 1);
   });
 
-  it('refuses() is true from the erase swap to the end of its write, and false once the erase is done (US-16 AC2a)', async () => {
+  it('refuses() is true through the erase write, and false once the erase is done (US-16 AC2a)', async () => {
     const store = new TestStore();
     const session = await RecordSession.open(fakeHost(store).host);
     add(session, 'a');
@@ -1705,8 +1705,9 @@ describe('RecordSession: a pass and its claim end together (lead A1)', () => {
         let erase: Promise<unknown> | null = null;
         await midPass(async () => {
           erase = session.erase();
-          for (let i = 0; i < 50 && inside.mode.mode !== 'erasing'; i += 1) await tick();
-          expect(inside.mode.mode).toBe('erasing');
+          const swapped = () => inside.mode.mode === 'erasing' && inside.mode.phase === 'writing';
+          for (let i = 0; i < 50 && !swapped(); i += 1) await tick();
+          expect(swapped()).toBe(true);
         });
         expect(await erase).toEqual({ success: true });
       }],
@@ -1734,7 +1735,7 @@ describe('RecordSession: a pass and its claim end together (lead A1)', () => {
 
     expect(broken).toEqual([]);
     expect([...seen]).toEqual(expect.arrayContaining([
-      'passLanded mid-pass', 'passFailed mid-pass', 'edited mid-pass', 'save mid-pass', 'synced mid-pass', 'eraseStarted mid-pass',
+      'passLanded mid-pass', 'passFailed mid-pass', 'edited mid-pass', 'save mid-pass', 'synced mid-pass', 'eraseBegan mid-pass', 'eraseSwapped mid-pass',
     ]));
     expect(inside.running).toBeNull();
     expect(session.saveStatus).toBe('saved');
