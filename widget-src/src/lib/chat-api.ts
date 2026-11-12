@@ -10,7 +10,7 @@ import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
 import { askChatHistory, getChatHistory } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
-import { recordFailure } from './error-diagnostics';
+import { recordFailure, WritesStoppedError } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { ChatStreamError, readChatStream } from './chat-stream';
@@ -335,8 +335,8 @@ export async function sendMessage(
         }),
       )
       .catch((error) => {
-        // A turn missing from the history file is reported, not only dropped (US-15 AC47).
-        Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
+        // A turn missing from the history file is reported, not only dropped (US-15 AC47); a log-off refusal is not (A15).
+        if (!(error instanceof WritesStoppedError)) Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
       });
 
     // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind is

@@ -35,7 +35,7 @@ import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core/chat
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { sendMessage } from './byok-chat';
 import * as Sentry from '@sentry/react';
-import { StorageError } from '@roadmap/health-core/adapter';
+import { WritesStoppedError } from './error-diagnostics';
 
 const SNAPSHOT = {
   sex: 'male',
@@ -396,17 +396,19 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     state.replies = [{ text: 'Synthetic answer', blocks: [] }];
     state.store = {
       getMessages: () => [],
-      recordExchange: () => Promise.reject(new StorageError('On-device roadmap persistence stopped for logout.')),
+      recordExchange: vi.fn(() => Promise.reject(new WritesStoppedError())),
       eraseMarks: () => [],
     };
+    vi.mocked(Sentry.captureException).mockClear();
   });
 
-  it('returns the answer, and the report names no chat text', async () => {
+  it('returns the answer, and the refusal is not reported (A15)', async () => {
     const { result, error } = await sendMessage('SYNTHETIC_REFUSED_QUESTION', null, null);
     expect(error).toBeNull();
     expect(result?.content).toBe('Synthetic answer');
-    await vi.waitFor(() => expect(Sentry.captureException).toHaveBeenCalledWith(expect.objectContaining({ message: 'Chat-history save failed' }), { tags: { area: 'chat-history', op: 'save' } }));
-    expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toContain('SYNTHETIC_REFUSED_QUESTION');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(state.store!.recordExchange).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
     state.store = null;
   });
 });
