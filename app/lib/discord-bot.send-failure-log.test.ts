@@ -126,11 +126,12 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
 });
 
 // H47 (US-15 AC62, US-09 AC6d): the message handler's outer catch sends Sentry
-// a synthetic error: fixed words, the original's stack frames only (an
-// allow-list of frame lines), a shaped tag and a fingerprint. A model or
-// history error can carry the question or a request body in its message,
-// its cause or its own properties, and none of them may leave.
-describe('US-15 AC62: the outer catch reaches Sentry as fixed words, frames and a shaped tag', () => {
+// a stand-in error with its own stack, fixed words, a shaped tag and the stage
+// the handler had reached. No part of the original error leaves: a model or
+// history error can carry the question or a request body in its message, its
+// stack, its cause or its own properties, and a frame it names would be read
+// from disk by Sentry's ContextLines.
+describe('US-15 AC62: the outer catch reaches Sentry as fixed words, its own stack and a stage', () => {
   const SENTINEL = 'zz-sentinel-question-text';
   function okMessage(id: string) {
     const reply = vi.fn().mockResolvedValue({ id: `r-${id}` });
@@ -159,53 +160,44 @@ describe('US-15 AC62: the outer catch reaches Sentry as fixed words, frames and 
     expect(error.cause).toBeUndefined();
     expect('errors' in error).toBe(false);
     expect(Object.keys(error)).toEqual([]);
-    expect(options).toEqual({ level: 'error', fingerprint: ['discord-handle', 'Error'],
-      tags: { platform: 'discord', subsystem: 'handle', code: 'Error' } });
+    expect(options).toEqual({ level: 'error', fingerprint: ['discord-handle', 'Error', 'ask'],
+      tags: { platform: 'discord', subsystem: 'handle', code: 'Error', stage: 'ask' } });
     // The person still gets the same error line.
     expect(m.reply).toHaveBeenLastCalledWith(expect.objectContaining(
       { content: 'Something went wrong on my end. Please try again in a moment.' }));
   });
 
-  it('a multi-line message whose later lines are prose leaves no prose in the stack', async () => {
-    edge.complete.mockRejectedValue(new Error(`first line\n${SENTINEL} said they take statins\n{"messages":[{"content":"${SENTINEL}"}]}`));
+  it("no part of the error's stack is sent: frame-shaped prose, a file frame and a CJK frame", async () => {
+    const err = new Error('upstream failed');
+    err.stack = ['Error: upstream failed',
+      '    at rosuvastatin_20mg (/request:1:2)',
+      '    at x (/proc/self/environ:1:1)',
+      '    at \u8a3a\u65ad\u7d50\u679c (/app/build/server/zz-real-looking.js:10:5)',
+      '    at handler (/app/build/server/zz-real-looking.js:12:7)'].join('\n');
+    edge.complete.mockRejectedValue(err);
     await deliver(okMessage('u7'));
-    expect(sentryText()).not.toContain(SENTINEL);
-    expect(captured().error.stack).not.toContain('first line');
-  });
-
-  it('frame-shaped prose lines in a message: no location or a non-path location is dropped', async () => {
-    // The pattern needs a frame to end in a location whose path starts with
-    // /, node:, file:// or a drive letter, with no spaces. Pinned: the first
-    // two lines are dropped. A line shaped exactly like a frame, one word and
-    // a space-free absolute path, would pass; that is the pattern's limit.
-    edge.complete.mockRejectedValue(new Error(['m',
-      `    at I was diagnosed with ${SENTINEL}`,
-      `    at something (${SENTINEL} prose:1:2)`,
-      `    at zz-shaped (/zz-path:1:2)`].join('\n')));
-    await deliver(okMessage('u8'));
+    const text = sentryText();
+    for (const part of ['upstream', 'rosuvastatin', '/request', 'environ', '\u8a3a\u65ad', 'zz-real-looking']) {
+      expect(text).not.toContain(part);
+    }
+    // Its own stack: the header, then frames in our code, the catch among them.
     const { stack } = captured().error;
-    expect(sentryText()).not.toContain(SENTINEL);
-    expect(stack).toContain('    at zz-shaped (/zz-path:1:2)');
+    expect(stack).toMatch(/^DiscordHandleError: Discord: handleMessage failed\n {4}at /);
+    expect(stack).toMatch(/at .*discord-bot\.server\.ts:\d+:\d+/);
   });
 
-  it('a normal TypeError keeps its real frames and its fingerprint', async () => {
+  it('a failure at two stages gives two stage tags and fingerprints', async () => {
     edge.complete.mockImplementation(() => (null as unknown as { x: { y: number } }).x.y);
     await deliver(okMessage('u9'));
-    const { error, options } = captured();
-    expect(error.stack).toMatch(/^DiscordHandleError: Discord: handleMessage failed\n {4}at /);
-    expect(error.stack).toMatch(/at .*discord-bot\.send-failure-log\.test\.ts:\d+:\d+/);
-    expect(error.stack).not.toContain('Cannot read');
-    expect(options.fingerprint).toEqual(['discord-handle', 'TypeError']);
-  });
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'TypeError', 'ask'], tags: { stage: 'ask' } });
+    expect(captured().error.stack).not.toContain('Cannot read');
 
-  it('an error with no frames sends the synthetic error with its own stack', async () => {
-    const err = new Error(`no frames ${SENTINEL}`);
-    err.stack = `Error: no frames ${SENTINEL}`;
-    edge.complete.mockRejectedValue(err);
+    edge.capture.mockClear();
+    // An answer with no content fails where it is split for sending.
+    edge.complete.mockResolvedValue({ content: undefined, usage: {}, isFallback: false, routerResult: null,
+      classifier: { classification: 'ANSWER', routerSkipped: true } });
     await deliver(okMessage('u10'));
-    const { stack } = captured().error;
-    expect(sentryText()).not.toContain(SENTINEL);
-    expect(stack).toMatch(/^DiscordHandleError: Discord: handleMessage failed\n {4}at .*discord-bot-messages\.server\.ts:\d+:\d+/);
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'TypeError', 'send'], tags: { stage: 'send' } });
   });
 
   it('a free-text code becomes the placeholder tag in the outer catch', async () => {
@@ -214,7 +206,18 @@ describe('US-15 AC62: the outer catch reaches Sentry as fixed words, frames and 
     expect(sentryText()).not.toContain(SENTINEL);
     expect(logged.join('\n')).not.toContain(SENTINEL);
     expect(logged.join('\n')).toContain('Discord handleMessage error: Error unknown');
-    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'unknown'], tags: { code: 'unknown' } });
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'unknown', 'ask'], tags: { code: 'unknown' } });
+  });
+});
+
+describe('US-09 AC6d: errorKind keeps only shaped parts', () => {
+  it.each([
+    ['a free-text name becomes unknown', { name: 'zz name with words', code: 50013, status: 403 }, 'unknown 50013 403'],
+    ['a string status is dropped', { name: 'TypeError', status: 'zz status words' }, 'TypeError'],
+    ['a Discord error keeps name, code and status', { name: 'DiscordAPIError[50013]', code: 50013, status: 403 }, 'DiscordAPIError[50013] 50013 403'],
+  ])('%s', async (_case, err, expected) => {
+    const { errorKind } = await import('./discord-bot-messages.server');
+    expect(errorKind(err)).toBe(expected);
   });
 });
 

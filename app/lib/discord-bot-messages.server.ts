@@ -21,22 +21,24 @@ export function isExcludedChannel(message: GuildMessage): boolean {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** A code or name kept only when shaped like one (H46); anything else is
- *  'unknown', so no free text rides in a log line or a Sentry tag. */
-const shaped = (value: string): string => (/^[\w-]{1,40}$/.test(value) ? value : 'unknown');
+/** A code or name kept only when shaped like one (H46; `[]` for discord.js's
+ *  `DiscordAPIError[50013]`); anything else is 'unknown', so no free text rides
+ *  in a log line or a Sentry tag. */
+const shaped = (value: string): string => (/^[\w[\]-]{1,40}$/.test(value) ? value : 'unknown');
 
 /** An error's code as a shaped string, or undefined when it has none. */
 function shapedCode(code: unknown): string | undefined {
   return typeof code === 'number' || typeof code === 'string' ? shaped(String(code)) : undefined;
 }
 
-/** The error's name, shaped Discord code and HTTP status, never the error itself
+/** The error's shaped name and Discord code and its numeric HTTP status, never the error itself
  *  (US-09 AC6d): discord.js keeps the body it sent on `requestBody`, so
  *  console.error(err) would put the reply, with any values and the asker's
  *  mention, in the host log. */
 export function errorKind(err: unknown): string {
   const { name, code, status } = (err ?? {}) as { name?: unknown; code?: unknown; status?: unknown };
-  return [name, shapedCode(code), status].filter((v) => typeof v === 'string' || typeof v === 'number').join(' ') || 'unknown';
+  return [typeof name === 'string' ? shaped(name) : undefined, shapedCode(code), typeof status === 'number' ? status : undefined]
+    .filter((v) => v !== undefined).join(' ') || 'unknown';
 }
 
 /** A Sentry tag for an error: its shaped code, or its shaped name when it has none. */
@@ -45,25 +47,13 @@ export function errorTag(err: unknown): string {
   return shapedCode(code) ?? (typeof name === 'string' ? shaped(name) : 'unknown');
 }
 
-/** A stack frame line that ends in a location: `at [async] [new] fn (path:l:c)` or
- *  `at [async] path:l:c`, the path starting /, node:, file:// or a drive letter. */
-const FRAME_LOCATION = String.raw`(?:file:\/\/|node:|\/|[A-Za-z]:\\)[^\s()]+:\d+:\d+`;
-const FRAME_LINE = new RegExp(String.raw`^\s+at (?:async )?(?:(?:new )?[^\s()[\]]+(?: \[as [^\s()[\]]+\])? \(${FRAME_LOCATION}\)|${FRAME_LOCATION})$`);
-
-class DiscordHandleError extends Error {}
-DiscordHandleError.prototype.name = 'DiscordHandleError';
-
-/** What the message handler's outer catch sends Sentry (US-15 AC62, H47): fixed
- *  words and the original's frame lines only (an allow-list, so a multi-line
- *  message never survives), with no cause and no copied properties. With no
- *  frames, its own stack. */
-export function handleFailure(err: unknown): Error {
-  const failure = new DiscordHandleError('Discord: handleMessage failed');
-  const { stack } = (err ?? {}) as { stack?: unknown };
-  const frames = typeof stack === 'string' ? stack.split('\n').filter((line) => FRAME_LINE.test(line)) : [];
-  if (frames.length > 0) failure.stack = `${failure.name}: ${failure.message}\n${frames.join('\n')}`;
-  return failure;
+/** What the message handler's outer catch sends Sentry in place of the error
+ *  (US-15 AC62, H47): fixed words and its own stack, built at the catch. Nothing
+ *  of the original goes: not its message, stack, cause or properties. */
+export class DiscordHandleError extends Error {
+  constructor() { super('Discord: handleMessage failed'); }
 }
+DiscordHandleError.prototype.name = 'DiscordHandleError';
 
 export async function safeReply(message: GuildMessage, text: string): Promise<void> {
   try {

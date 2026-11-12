@@ -49,7 +49,7 @@ import {
   isExcludedChannel,
   errorKind,
   errorTag,
-  handleFailure,
+  DiscordHandleError,
   safeReply,
   getRepliedToUsers,
   stripBotMention,
@@ -251,6 +251,9 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   // ----- Load conversation history if this is a reply to the bot -----
   activeLlmCalls++;
   let typingInterval: NodeJS.Timeout | null = null;
+  // How far the turn got, for the outer catch's Sentry report (H47). Plain
+  // progress state inside one function, not a mode beside a union.
+  let stage: 'prepare' | 'history' | 'ask' | 'send' | 'store' = 'prepare';
 
   try {
     const strippedContent = stripBotMention(content, clientUserId);
@@ -273,6 +276,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // Explicit reply chain wins. Otherwise, outside a thread (threads carry their
     // own history via loadThreadHistory), continue this user's recent conversation
     // so channel follow-ups aren't each answered from scratch.
+    stage = 'history';
     let dbResult = await loadConversationForReply(message, authorId);
     if (!dbResult.conversationId && !message.channel.isThread()) {
       dbResult = await loadRecentConversation(authorId);
@@ -299,6 +303,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
           typingInterval = null;
         }
         // US-15 AC62: a partial re-send stores nothing; the 60 s window bounds a repeat.
+        stage = 'send';
         const resent = await sendAnswer(message, splitForDiscord(dup.content, DISCORD_SPLIT_CHARS));
         if (resent.kind === 'none-sent') await safeReply(message, ERROR_REPLY);
         return;
@@ -312,6 +317,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       ? dbResult.history.map(h => ({ role: h.role, content: h.content }))
       : (message.channel.isThread() ? await loadThreadHistory(message, clientUserId) : []);
 
+    stage = 'ask';
     const tBeforeLlm = Date.now();
     const result = await platformChatCompletion({
       message: truncatedInput,
@@ -340,6 +346,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // ~22 chars. Splitting at 2000 exactly caused Discord to reject the first
     // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
     // US-15 AC48: a silent (SPAM) turn sends nothing; below, only its match event is stored.
+    stage = 'send';
     const chunks = result.silent ? [] : splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
     const sent = await sendAnswer(message, chunks);
     // US-15 AC62: nothing went out, so say so and store nothing. A partial is
@@ -351,6 +358,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 
     // Fire-and-forget: persist the conversation and the router event.
     // All DB errors go to Sentry but never block the Discord response.
+    stage = 'store';
     persistConversation({
       conversationId,
       authorId,
@@ -381,10 +389,11 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   } catch (err) {
     if (typingInterval) clearInterval(typingInterval);
     console.error('Discord handleMessage error:', errorKind(err));
-    // Fixed words, frames and a shaped tag, never the error: a model or history
-    // error can carry the question or a request body (US-15 AC62, H47).
-    Sentry.captureException(handleFailure(err), { level: 'error', fingerprint: ['discord-handle', errorTag(err)],
-      tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: errorTag(err) } });
+    // A stand-in with its own stack, a shaped tag and the stage, never the error:
+    // a model or history error can carry the question or a request body, and
+    // ContextLines would read any file a frame names (US-15 AC62, H47).
+    Sentry.captureException(new DiscordHandleError(), { level: 'error', fingerprint: ['discord-handle', errorTag(err), stage],
+      tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: errorTag(err), stage } });
     await safeReply(message, ERROR_REPLY);
   } finally {
     activeLlmCalls--;
