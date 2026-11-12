@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
+import { ADOPT_ERASE } from '@roadmap/health-core/record-host';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
   DriveGrantRefusedError,
@@ -159,7 +160,7 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
   await adapter.connect();
   await liftLocalInto(adapter, backend);
   rememberBackend(backend);
-  forgetClearedErase();
+  adoptNextErase();
   trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
   location.reload();
 }
@@ -202,10 +203,11 @@ export function forgetBackend(): void {
 }
 
 /** A sign-in, or a switch to another record: the erase kept as cleared for
- *  was the old record's, so the next record's first load keeps its own (US-11
- *  AC6). Never a reload, a token refresh or a reconnect of the same record. */
-export function forgetClearedErase(): void {
-  safeRemoveItem(CLEARED_ERASE_KEY);
+ *  was the old record's, so the next record adopts its own at its first load,
+ *  clearing nothing (US-11 AC6). Never a reload, a token refresh or a
+ *  reconnect of the same record. */
+export function adoptNextErase(): void {
+  safeSetItem(CLEARED_ERASE_KEY, ADOPT_ERASE);
 }
 
 /** The remembered choice, or the on-device tier. The credential/token lives
@@ -279,7 +281,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
-  forgetClearedErase();
+  safeRemoveItem(CLEARED_ERASE_KEY);
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();
@@ -312,7 +314,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     );
   }
   await adapter.disconnect();
-  forgetClearedErase();
+  adoptNextErase();
   preparedFrom = current;
 }
 

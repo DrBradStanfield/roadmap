@@ -22,7 +22,7 @@
     "packages/health-core/src/lab-catalog.ts": 811,
     "tools/knowledge-lint.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 786,
-    "packages/health-core/src/record-session.ts": 771,
+    "packages/health-core/src/record-session.ts": 770,
     "widget-src/src/storage/drive.ts": 757,
     "packages/health-core/src/mcp-tools.ts": 747,
     "widget-src/src/components/StartingInfoVitals.tsx": 735,

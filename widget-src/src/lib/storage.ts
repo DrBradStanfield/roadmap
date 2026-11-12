@@ -183,7 +183,8 @@ export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 /** The Lp(a) rows the user kept as saved when asked (US-05 AC3, lpa-unit.ts). */
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
 /** The erase identity the off-file data below was last cleared for, and nothing
- *  else (RecordHost.clearedErase, US-11 AC6). Log-off removes it. */
+ *  else (RecordHost.clearedErase, US-11 AC6); a connect writes the mark
+ *  ADOPT_ERASE in its place. Log-off removes it. */
 export const CLEARED_ERASE_KEY = 'health_roadmap_cleared_erase';
 
 /**

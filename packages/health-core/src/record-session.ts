@@ -212,7 +212,7 @@ export class RecordSession {
         }
       }
     }
-    session.clearedFor = clearedAtOpen(host, session.current);
+    session.clearedFor = clearedAtOpen(host, session.current, cloudUnreachable);
     session.settleClear();
     return session;
   }

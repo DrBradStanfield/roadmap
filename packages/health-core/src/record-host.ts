@@ -54,18 +54,30 @@ export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncCont
  * for, so a clear is owed once the record is at a later one (US-11 AC6). With
  * none kept, or one that cannot be read, a record that was erased owes one
  * (''), and a record never erased owes none and is kept as cleared, so its
- * live drafts stay.
+ * live drafts stay. On the mark a connect leaves (ADOPT_ERASE), the record
+ * adopts: it owes none, and its erase replaces the mark, except on an
+ * on-device `fallback`, which leaves the mark for the cloud's first open.
  */
-export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
+export function clearedAtOpen(host: RecordHost, file: RoadmapFile, fallback: boolean): string {
   const kept = host.clearedErase();
+  if (kept === ADOPT_ERASE) {
+    if (!fallback) host.noteCleared(eraseIdentityOf(file));
+    return eraseIdentityOf(file);
+  }
   if (kept != null && readErase(kept)) return kept;
   return eraseOf(file)[0] > 0 ? '' : keepCleared(host, eraseIdentityOf(file));
 }
 
+/** What a connect (a sign-in, a switch) writes as the erase kept: no erase and
+ *  no identity, only "the next record opened keeps its own" (US-11 AC6). */
+export const ADOPT_ERASE = 'adopt';
+
 /** Keep `identity` as the erase last cleared for, unless the one kept is later:
- *  the kept erase never moves back (US-11 AC6). Answers the erase now kept. */
+ *  the kept erase never moves back (US-11 AC6). Answers the erase now kept.
+ *  The mark stays, so the record the connect opens still adopts. */
 export function keepCleared(host: RecordHost, identity: string): string {
   const kept = host.clearedErase();
+  if (kept === ADOPT_ERASE) return identity;
   if (kept != null && !eraseLater(identity, kept)) return kept;
   host.noteCleared(identity);
   return identity;
