@@ -10,7 +10,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { LIPID_MEDS_IN_STEPS, type LipidMarker } from '@roadmap/health-core/suggestions';
-import { medicationForm, screeningForm, type FormSection } from '@roadmap/health-core/input-form';
+import { medicationForm, screeningForm, screeningMonths, type FormSection } from '@roadmap/health-core/input-form';
+import { localDay } from '@roadmap/health-core/merge';
 import { medicationsToInputs, screeningsToInputs, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { InputPanel, type PlanBasis } from './InputPanel';
@@ -77,7 +78,14 @@ function expectParity(container: HTMLElement, sections: FormSection[]) {
     expect(texts(card!, 'label')).toEqual(fields.filter(f => !('key' in f && f.key.endsWith('_dose'))).map(f => f.label));
     expect(texts(card!, '.med-step-hint, .field-hint')).toEqual(fields.flatMap(f => ('hint' in f && f.hint ? [f.hint] : [])));
     for (const field of fields) {
-      if (field.kind === 'month') expect(card!.querySelector(`#${field.key}-month`), field.key).not.toBeNull();
+      if (field.kind === 'month') {
+        // One select of the months the iPhone offers (US-06 AC16), holding the record's month.
+        const month = card!.querySelector<HTMLSelectElement>(`select#${field.key}`);
+        expect(month, field.key).not.toBeNull();
+        expect(month!.value, field.key).toBe(field.value);
+        expect([...month!.querySelectorAll('optgroup option')].map(o => (o as HTMLOptionElement).value).sort(), field.key)
+          .toEqual(screeningMonths(field.when, localDay(new Date())));
+      }
       if (field.kind !== 'choice') continue;
       const select = card!.querySelector<HTMLSelectElement>(`#${selectId(field.key)}`);
       expect(select, field.key).not.toBeNull();
