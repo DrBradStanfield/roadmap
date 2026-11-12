@@ -222,6 +222,34 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.recordSource, "googleDrive:B", "B's own record names B")
     }
 
+    /// Review round 2 (US-72 AC10): a re-read of the old cloud in its own session, queued behind a
+    /// held step, lands after a switch linked another account. It keeps the account its session's
+    /// first record was drawn under, so the source stays nil until the new cloud's own record.
+    func testASameSessionReReadAfterARelinkKeepsTheDrawnAccount() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let pending = PhoneFiles(record: nil, pending: nil)
+        let a = RecordStore.Source.Link(account: "dropbox:A", pending: pending)
+        let b = RecordStore.Source.Link(account: "googleDrive:B", pending: pending)
+        store.link(a)
+        let cloud = try cloudRecord(from: store.recordJSON, day: "2026-10-02", engine: engine)
+        let view = HealthEngine.CloudView(record: cloud, erase: "e-1", session: 7)
+        await store.showCloud(view).value
+        XCTAssertEqual(store.recordSource, "dropbox:A")
+
+        let release = holdEngine(engine)
+        let reread = store.showCloud(view)  // the old session's news, queued behind the held engine
+        store.link(b)                       // the switch's keep
+        release()
+        await reread.value
+        XCTAssertEqual(store.source, .cloud(.init(erase: "e-1", session: 7, link: b, drawnAccount: "dropbox:A")))
+        XCTAssertNil(store.recordSource, "A's record is shown: no source while the link says B")
+
+        await store.showPhone().value
+        await store.showCloud(HealthEngine.CloudView(record: cloud, erase: "e-2", session: 8)).value
+        XCTAssertEqual(store.recordSource, "googleDrive:B", "B's own record names B")
+    }
+
     // MARK: H28 · a cloud mark never lands on the phone
 
     /// Lead H28: an Apple Health batch read from the cloud record writes nothing once the phone's

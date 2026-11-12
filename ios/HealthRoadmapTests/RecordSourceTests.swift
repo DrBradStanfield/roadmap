@@ -39,14 +39,16 @@ final class RecordSourceTests: XCTestCase {
             ("leaving × phoneWritten", leaving, .phoneWritten, leaving, .drop),
             // A cloud record open. A link never moves the account the record was drawn under.
             ("cloud × linked", open, .linked(other), relinked, .none),
-            ("cloud × cloudShown", relinked, .cloudShown(erase: "e-2", session: 8), .cloud(.init(erase: "e-2", session: 8, link: other, drawnAccount: "dropbox:b")), .show),
+            // One cell, two sessions: a re-read in the same session keeps the account it was drawn under.
+            ("cloud × cloudShown, same session", relinked, .cloudShown(erase: "e-2", session: 7), .cloud(.init(erase: "e-2", session: 7, link: other, drawnAccount: "dropbox:a")), .show),
+            ("cloud × cloudShown, new session", relinked, .cloudShown(erase: "e-2", session: 8), .cloud(.init(erase: "e-2", session: 8, link: other, drawnAccount: "dropbox:b")), .show),
             ("cloud × cloudEdited", relinked, .cloudEdited(erase: "e-2"), .cloud(.init(erase: "e-2", session: 7, link: other, drawnAccount: "dropbox:a")), .show),
             ("cloud × phoneRequested", open, .phoneRequested, leaving, .none),
             ("cloud × phoneLoaded", open, .phoneLoaded, open, .drop),
             ("cloud × phoneUnreadable", open, .phoneUnreadable, open, .drop),
             ("cloud × phoneWritten", open, .phoneWritten, open, .drop),
         ]
-        XCTAssertEqual(rows.count, 21, "three states by seven events")
+        XCTAssertEqual(rows.count, 22, "three states by seven events; cloud × cloudShown twice, by session")
         for (cell, state, event, next, effect) in rows {
             let step = Source.transition(state, event)
             XCTAssertEqual(step.next, next, cell)
@@ -64,6 +66,8 @@ final class RecordSourceTests: XCTestCase {
         XCTAssertNil(Source.cloud(.init(erase: "e-1", session: 7, link: other, drawnAccount: "dropbox:a")).recordSource, "relinked over the shown record")
         XCTAssertNil(Source.cloud(.init(erase: "e-1", session: 7, link: nil, drawnAccount: "dropbox:a")).recordSource, "unlinked over the shown record")
         XCTAssertNil(Source.cloud(.init(erase: "e-1", session: 7, link: nil, drawnAccount: nil)).recordSource, "drawn with no link")
+        let reread = Source.transition(.cloud(.init(erase: "e-1", session: 7, link: other, drawnAccount: "dropbox:a")), .cloudShown(erase: "e-1", session: 7)).next
+        XCTAssertNil(reread.recordSource, "a same-session re-read after a relink names no account")
     }
 
     /// A link compares its pending marker by identity: another PhoneFiles is another link.
