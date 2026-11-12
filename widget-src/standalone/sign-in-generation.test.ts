@@ -194,7 +194,7 @@ async function driveSignIn() {
   const { resolved } = await page.resolveBackend();
   expect(resolved.backend).toBe('google-drive');
   page.local.listenForOtherTabsLogOff();
-  (await import('../src/lib/storage')).noteCloudPage(); // a loaded cloud page stops on other tabs' log-offs
+  (await import('../src/lib/storage')).noteCloudPage('google-drive'); // a loaded cloud page stops on other tabs' log-offs
   return resolved.adapter as unknown as { tryServerRefresh(): Promise<boolean>; rememberFileId(name: string, id: string): void };
 }
 

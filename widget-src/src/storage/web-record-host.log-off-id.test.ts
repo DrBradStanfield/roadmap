@@ -77,6 +77,7 @@ function phoneHost(cloud: MemoryCloud): RecordHost {
   return {
     ...host,
     clearOffFileData: () => {},
+    ownsOffFileData: () => true, // a phone keeps no browser off-file data and is the owner on its own device
     deviceRecord: undefined,
     mirror: {
       ...host.mirror, adapter: new MemoryAdapter(new MemoryCloud()), sync: undefined,

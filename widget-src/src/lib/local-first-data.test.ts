@@ -21,6 +21,16 @@ describe('explicit local-first data path', () => {
   beforeEach(async () => {
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Health CRUD must not use HTTP')));
+    // The page's cloud, remembered as connect.ts does: the erase is this tab's to make (US-11 AC6).
+    const keys = new Map([['health_roadmap_backend', 'memory']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => keys.get(k) ?? null,
+      setItem: (k: string, v: string) => void keys.set(k, v),
+      removeItem: (k: string) => void keys.delete(k),
+      key: (i: number) => [...keys.keys()][i] ?? null,
+      get length() { return keys.size; },
+      clear: () => keys.clear(),
+    });
     cloud = new MemoryCloud();
     await initRoadmapStore(new MemoryAdapter(cloud));
   });

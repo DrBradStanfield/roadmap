@@ -13,7 +13,7 @@ import { SchemaTooNewError } from '@roadmap/health-core/migrate';
 import { SyncManager } from '@roadmap/health-core/sync-manager';
 import { GoogleDriveAdapter } from './drive';
 import { ChatHistoryStore } from './chat-history-store';
-import { webRecordHost } from './web-record-host';
+import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { describeStorageFailure } from '../../../packages/health-core/src/sync-manager';
 
 const NOW = '2026-10-01T00:00:00.000Z';
@@ -99,6 +99,7 @@ class Drive {
 }
 
 function adapter(kind: Kind, fileIds?: Record<string, string>, folderId: string | null = FOLDER): StorageAdapter {
+  localStorage.setItem(BACKEND_KEY, 'google-drive'); // the page's chosen backend, as a real Drive page remembers it
   if (kind === 'hosted') return new DriveAdapter('synthetic');
   // Each adapter captures its own config before any save; persisted ids cannot
   // act as cross-device coordination. No token exchange or live provider call.

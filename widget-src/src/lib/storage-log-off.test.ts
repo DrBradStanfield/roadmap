@@ -29,7 +29,7 @@ describe('US-09 AC2e: the device mirror after another tab logs off', () => {
 
   it('writes the mirror before log-off, and nothing after another tab logs off', () => {
     listenForOtherTabsLogOff();
-    noteCloudPage();
+    noteCloudPage('memory');
     // Negative control: before any log-off the mirror is written (passes today and after the fix).
     expect(roadmapLocalWritesStopped()).toBe(false);
     patchMirror({ medications: [med] });

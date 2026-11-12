@@ -13,6 +13,10 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, turnFrom, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
+import { noteDevicePage } from '../lib/storage';
+
+// This page's record is open, on this device: the drafts it keeps are its own (US-11 AC6).
+noteDevicePage();
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => {

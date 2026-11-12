@@ -10,7 +10,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Refused, SaveTask } from './matrix-save';
 import { StartingInfoVitals } from '../components/StartingInfoVitals';
-import { noteCloudPage, VITALS_DRAFT_KEY } from './storage';
+import { noteCloudPage, noteDevicePage, VITALS_DRAFT_KEY } from './storage';
 import { listenForOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
 
 afterEach(() => { cleanup(); localStorage.clear(); });
@@ -31,13 +31,14 @@ function weightInput() {
 
 describe('US-09 AC2e: matrix drafts after another tab logs off', () => {
   it('control: before any log-off a typed value is kept as a draft', () => {
+    noteDevicePage(); // the page's record is open, on this device (US-11 AC6)
     fireEvent.change(weightInput(), { target: { value: '80' } });
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
   });
 
   it('after a heard log-off, a typed value is not written, and the draft key is left alone', () => {
     listenForOtherTabsLogOff();
-    noteCloudPage();
+    noteCloudPage('memory');
     window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_log_off_signal' }));
     expect(roadmapLocalWritesStopped()).toBe(true);
     // A page that did not begin the log-off leaves the draft key alone: it may

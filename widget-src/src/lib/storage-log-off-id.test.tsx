@@ -139,7 +139,7 @@ describe('US-09 AC2c controls', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
   });
 
-  it('a page whose device copy is its only store keeps writing after the id changes', async () => {
+  it('a page whose device copy is its only store keeps writing after the id changes; its typed draft stays on screen only', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
@@ -154,7 +154,8 @@ describe('US-09 AC2c controls', () => {
     await store.flush();
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     expect(localStorage.getItem(LPA_KEPT_KEY)).not.toBeNull();
-    expect(localStorage.getItem(VITALS_DRAFT_KEY)).not.toBeNull();
+    // A page whose log-off id changed since load owns no off-file data, so it writes no draft (US-11 AC6).
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
 
@@ -208,11 +209,13 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
   const quiet = { mode: 'loading', logOffHeard: false } as const;
   const heard = { mode: 'loading', logOffHeard: true } as const;
   const device = { mode: 'device' } as const;
-  const cloud = { mode: 'cloud' } as const;
+  const cloud = { mode: 'cloud', storeId: 'memory' } as const;
+  const otherCloud = { mode: 'cloud', storeId: 'google-drive' } as const;
   const stopped = { mode: 'stopped' } as const;
   const same = { type: 'deviceOpened', sameSignIn: true } as const;
   const changed = { type: 'deviceOpened', sameSignIn: false } as const;
-  const opened = { type: 'cloudOpened' } as const;
+  const opened = { type: 'cloudOpened', storeId: 'memory' } as const;
+  const otherOpened = { type: 'cloudOpened', storeId: 'google-drive' } as const;
   const hear = { type: 'logOffHeard' } as const;
   const stop = { type: 'stop' } as const;
   it.each([
@@ -234,11 +237,13 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
     [cloud, same, device],
     [cloud, changed, stopped],
     [cloud, opened, cloud],
+    [cloud, otherOpened, otherCloud], // two cloud hosts in a row (the OAuth return's lift, then the store): the last one's id
     [cloud, hear, stopped],
     [cloud, stop, stopped],
     [stopped, same, stopped],
     [stopped, changed, stopped],
     [stopped, opened, stopped],
+    [stopped, otherOpened, stopped],
     [stopped, hear, stopped],
     [stopped, stop, stopped],
   ] as const)('%o + %o -> %o', async (state, event, next) => {
