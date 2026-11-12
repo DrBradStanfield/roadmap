@@ -8,10 +8,11 @@ import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-
 import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
+import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
-import { readChatStream } from './chat-stream';
+import { ChatStreamError, readChatStream } from './chat-stream';
 
 // On local-first builds sendMessage tells the server to trust the
 // client-supplied context instead of looking for a DB record.
@@ -316,6 +317,7 @@ export async function sendMessage(
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
+  asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
@@ -364,7 +366,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked);
     }
 
     if (response.status === 429) {
@@ -392,11 +394,12 @@ export async function sendMessage(
     }
 
     // Local-first: mirror the exchange into the user's cloud history file,
-    // keyed by the server's canonical conversation id. Fire-and-forget —
-    // history must never block or fail the chat itself.
+    // keyed by the server's canonical conversation id, unless an erase began
+    // since the question (US-11 AC2h). Fire-and-forget — history must never
+    // block or fail the chat itself.
     void cloudHistory()
       .then((store) =>
-        store?.recordExchange({
+        chatAskedUnder() !== asked ? undefined : store?.recordExchange({
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,
@@ -434,8 +437,9 @@ export async function sendMessage(
       error: null,
     };
   } catch (error) {
-    console.warn('Error sending message:', error);
-    Sentry.captureException(error);
+    // Fixed words only: the error can quote the chat (US-15 AC47).
+    console.warn('Chat send failed');
+    Sentry.captureException(recordFailure(error, error instanceof ChatStreamError ? error.failure : 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
     return {
       result: null,
       error: { error: 'Network error' },
