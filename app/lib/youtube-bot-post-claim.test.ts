@@ -493,6 +493,41 @@ describe('US-27 AC5: a definite refusal releases the mark (Q3)', () => {
 // The owner's conditions
 // ---------------------------------------------------------------------------
 
+/** Google answered with a status, then the body stream broke (a reset socket, or the deadline mid-body). */
+const brokenBody = (status: number) => async () => new Response(
+  new ReadableStream({ start(c) { c.error(new TypeError(`terminated ${GOOGLE_BODY}`)); } }), { status });
+
+describe('Codex review: a status whose body cannot be read keeps its status', () => {
+  for (const status of [401, 429]) {
+    it(`a ${status} with a broken body still deletes the claim by its token and halts the tick`, async () => {
+      g.threads = ['c1', 'c2'];
+      g.plan = [brokenBody(status)];
+      const tokenCalls = () => g.calls.filter((c) => c === 'POST /token').length;
+      await bootMachine();
+      await tickTo(FIRST_TICK_MS, 1);
+
+      expect(ctl.pipelineCalls).toEqual(['c1']); // no model call for c2
+      expect(row('c1')).toBeUndefined();
+      const del = tableReqs('DELETE').find((r) => r.params.get('youtube_comment_id') === 'eq.c1');
+      expect(del?.params.get('posted_at')).toBe(`eq.${markToken(markReqs()[0])}`);
+
+      await tickTo(TICK_MS, 2);
+      if (status === 401) expect(tokenCalls()).toBe(2); // the bad token was dropped
+      expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    });
+  }
+
+  it('a 200 with a broken body is unknown: the mark is kept and counted', async () => {
+    g.threads = ['c1'];
+    g.plan = [brokenBody(200)];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1 });
+  });
+});
+
 describe('R3: a 401 drops the cached Google token', () => {
   it('the next tick asks Google for a fresh token', async () => {
     g.threads = ['c1'];
