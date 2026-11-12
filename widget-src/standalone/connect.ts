@@ -20,7 +20,7 @@ import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -164,7 +164,7 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
 }
 
 /**
- * Shared busy/error scaffold for connect-flow buttons (picker + sync control).
+ * Busy/error scaffold for the sync control's connect buttons (the picker uses switch-flow.ts).
  * Success is expected to end in a navigation or reload, so busy stays true.
  */
 export function useBusyRun() {
@@ -194,7 +194,7 @@ export function rememberedBackend(): Backend | null {
   return safeGetItem(BACKEND_KEY) as Backend | null;
 }
 export function rememberBackend(backend: Backend): void {
-  safeSetItem(BACKEND_KEY, backend);
+  setSignIn(BACKEND_KEY, backend);
 }
 export function forgetBackend(): void {
   safeRemoveItem(BACKEND_KEY);

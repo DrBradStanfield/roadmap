@@ -17,7 +17,7 @@
  * cap later if needed. See the implementation build log.
  */
 import { ConflictError, StorageError, fetchOrFail, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
@@ -87,7 +87,7 @@ export class GitHubAdapter implements StorageAdapter {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    setJson(CONFIG_KEY, this.config);
+    setSignIn(CONFIG_KEY, JSON.stringify(this.config));
   }
 
   async disconnect(): Promise<void> {

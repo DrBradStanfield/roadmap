@@ -16,7 +16,8 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, useBusyRun, type Backend } from './connect';
+import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, type Backend } from './connect';
+import { dispatch, runMove, useSwitchFlow } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
@@ -124,8 +125,14 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   unreachable?: boolean;
   onClose: () => void;
 }) {
-  const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>('list');
-  const { busy, error, setError, run } = useBusyRun();
+  // One move at a time, for the page's life (US-09 AC45): a picker reopened
+  // while one runs opens at its step, with that step's busy label.
+  const flow = useSwitchFlow();
+  const busy = flow.kind !== 'idle';
+  const error = flow.kind === 'idle' ? flow.error : null;
+  const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>(
+    flow.kind === 'switching' ? flow.step : flow.kind === 'loggingOff' ? 'log-off' : 'list',
+  );
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
   const dialogRef = useModalDialog();
@@ -133,17 +140,16 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   onCloseRef.current = onClose;
 
   const choose = (id: Backend): void => {
-    if (busy) return;
     if (id === current) {
       onClose();
       return;
     }
     if (id === 'github' || id === 'self-host') {
-      setError(null);
+      dispatch({ type: 'clearError' });
       setStep(id);
       return;
     }
-    void run(async () => {
+    void runMove({ type: 'start', to: id, step: 'list' }, async () => {
       await prepareSwitch(current);
       if (id === 'local') {
         forgetBackend();
@@ -157,7 +163,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   };
 
   const submitForm = (id: 'github' | 'self-host'): void => {
-    void run(async () => {
+    void runMove({ type: 'start', to: id, step: id }, async () => {
       await prepareSwitch(current);
       trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
@@ -214,7 +220,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             ))}
             {current !== 'local' && !unreachable && (
               <div className="hr-modal-logoff">
-                <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { setError(null); setStep('log-off'); }}>
+                <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { dispatch({ type: 'clearError' }); setStep('log-off'); }}>
                   Log off this device
                 </button>
               </div>
@@ -232,7 +238,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
               restore everything.
             </p>
             <div className="hr-sync-form">
-              <button className="hr-sync-btn" disabled={busy} onClick={() => void run(() => logOff(current))}>
+              <button className="hr-sync-btn" disabled={busy} onClick={() => void runMove({ type: 'logOff' }, () => logOff(current))}>
                 {busy ? 'Logging off…' : 'Log off'}
               </button>
             </div>

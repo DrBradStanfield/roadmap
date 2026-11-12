@@ -19,7 +19,7 @@
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
@@ -59,7 +59,7 @@ function loadTokens(): DropboxTokens | null {
 }
 
 function saveTokens(tokens: DropboxTokens): void {
-  setJson(TOKEN_KEY, tokens);
+  setSignIn(TOKEN_KEY, JSON.stringify(tokens));
 }
 
 /** A token reply holds a non-empty access token and a finite expiry, and at

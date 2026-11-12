@@ -257,6 +257,12 @@ export function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch {}
 }
 
+/** A cloud sign-in, its config or the remembered provider. Refused once this
+ *  page's log-off has begun, so nothing signs the device back in (US-09 AC45). */
+export function setSignIn(key: string, value: string): void {
+  if (!healthWritesStopped) safeSetItem(key, value);
+}
+
 export function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch {}
 }
