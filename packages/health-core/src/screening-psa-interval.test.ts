@@ -275,8 +275,8 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     ]);
     expect(CARRIED.startsWith(FIRST_SENTENCE)).toBe(true);
     expect(fileCards(file)[0].description).not.toContain('Your last PSA');
-    // F4 (Brad 2026-11-13): the iPhone list's repeat name is for a newest PSA of 4.0 or above only.
-    expect(followupKinds(file, NOW).screening_prostate).toBeUndefined();
+    // F4 (Brad 2026-11-13): still the repeat (first-seen, re-check R1), named plain, as the email names it.
+    expect(followupKinds(file, NOW).screening_prostate).toEqual({ kind: 'repeat', name: EMAIL_LABEL });
   });
 
   it('no answer recorded: the same card without "You chose not to"; the discussion card still shows (F2, Brad 2026-11-13)', () => {

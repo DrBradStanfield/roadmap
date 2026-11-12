@@ -40,9 +40,10 @@
  *     metric and HISTORY_CAP_TOTAL in all; saved points only (a draft point
  *     lends the creatinine's day, then is dropped). A PSA point's
  *     `raisedBefore` passes only as `true` (US-06 AC21 item 6): the client
- *     worked it out from the full record, and the plan takes it as sent. It
- *     is derived, one boolean ("an earlier PSA was 4.0 or above"); no earlier
- *     PSA value or date is sent for it.
+ *     worked it out from the full record, and the plan takes it as sent; the
+ *     model-facing JSON drops it (the Repeat card states it). It is derived,
+ *     one boolean ("an earlier PSA was 4.0 or above"); no earlier PSA value
+ *     or date is sent for it.
  *   - medications: medicationsToInputs over rows whose key is a MEDICATION_KEY.
  *     A drug name on that key's list (the form's own options) passes; an
  *     empty name drops its key, a non-string name its row (medicationsToInputs
@@ -329,8 +330,8 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
     // or was a blood pressure the wrong way up (US-02 AC8).
     // Without it the model reads the gap as "never entered".
     ...(excludedFields.length > 0 ? { excludedFields } : {}),
-    // Chronological per metric; the LAST entry is the most recent, in SI.
-    ...(hasHistory ? { measurementHistory } : {}),
+    // Chronological per metric; the LAST entry is the most recent, in SI. The plan above read `raisedBefore`; the model never sees it.
+    ...(hasHistory ? { measurementHistory: { ...measurementHistory, ...(measurementHistory.psa && { psa: measurementHistory.psa.map(({ raisedBefore: _, ...p }) => p) }) } } : {}),
     medications,
     screenings,
     ...(results ? {

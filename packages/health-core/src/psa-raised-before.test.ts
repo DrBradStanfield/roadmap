@@ -53,6 +53,17 @@ describe('the chat takes the flag, never works it out (US-06 AC21 item 6)', () =
     expect(prostateIds(payload)).toEqual(['screening-prostate-repeat']);
   });
 
+  it('the model never sees the flag: its measurementHistory holds the same points, and the Repeat card states the fact (re-check, adversary R1)', () => {
+    const { inputs, screenings } = man('elected_not_to');
+    const payload = chatContextOf(inputs, 'si', [], screenings as never, [RAISED, ...vague(25)]);
+    const json = buildChatContextJson(payload)!;
+    expect(json).not.toContain('raisedBefore');
+    expect(JSON.parse(json).measurementHistory.psa).toEqual(payload.measurementHistory!.psa.map(({ raisedBefore: _, ...p }) => p));
+    expect(JSON.parse(json).currentSuggestions).toContainEqual(expect.objectContaining({
+      id: 'screening-prostate-repeat', description: expect.stringContaining('An earlier PSA was 4.0 or higher'),
+    }));
+  });
+
   it('carries no earlier PSA value or date: the anchor reading is not added, only the one key', () => {
     const { inputs, screenings } = man('elected_not_to');
     const rows = [RAISED, ...vague(25)];

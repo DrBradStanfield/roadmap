@@ -39,7 +39,7 @@ import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
-import { PSA_REPEAT_NAME, psaNextDue, psaRaised } from './psa-schedule';
+import { PSA_REPEAT_NAME, psaNextDue, psaRaised, psaRuleHolds } from './psa-schedule';
 
 // ===== Types =====
 
@@ -375,8 +375,8 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
     const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
   }
-  // The repeat name follows a newest PSA of 4.0 or above, never a vague newer one (AC21 item 6, review F4).
-  if (psaRaised(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: PSA_REPEAT_NAME };
+  // A repeat while the rule holds (first-seen); its name only for a newest PSA of 4.0 or above, else plain (AC21 item 6, F4).
+  if (psaRuleHolds(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: psaRaised(s) ? PSA_REPEAT_NAME : ruleOf('prostate').reminder!.label };
   return kinds;
 }
 

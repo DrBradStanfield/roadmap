@@ -262,6 +262,29 @@ describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)',
     }
   });
 
+  it('first-seen: a repeat already due notifies the morning the app first sees it, raised or vague newest (AC21 item 6, re-check R1)', () => {
+    const vague = psa(4.5, 'elected_not_to');
+    vague.measurements = [...vague.measurements, { ...vague.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+      recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+    const cases: Array<[string, RoadmapFile, string, string, string]> = [
+      ['raised', psa(4.5, 'elected_not_to'), '2026-07-02', '2026-07-03', '2026-09-30'],
+      ['vague', vague, '2026-09-02', '2026-09-03', '2026-12-01'],
+    ];
+    for (const [name, file, day, nextDay, step] of cases) {
+      const days = (seen: Record<string, string>, at: string) => {
+        const out = phoneReminders(file, new Date(`${at}T08:00:00.000`), undefined, seen);
+        return { firstSeen: out.firstSeen, days: out.notifications.filter((n) => n.categories.includes('screening_prostate')).map((n) => n.fireDay) };
+      };
+      const first = days({}, day);
+      expect(first.firstSeen, name).toEqual({ 'screening_prostate:repeat': day });
+      expect(first.days.slice(0, 2), name).toEqual([day, step]);
+      // The next launch keeps the entry and the same days.
+      const next = days(first.firstSeen!, nextDay);
+      expect(next.firstSeen, name).toEqual(first.firstSeen);
+      expect(next.days[0], name).toBe(step);
+    }
+  });
+
   it('below 4.0 the list keeps the plain label; one who declined has no item', () => {
     expect(prostate(psa(3.0, 'will_screen'))).toMatchObject({ label: 'PSA test', dueAt: '2027-04-01' });
     expect(prostate(psa(3.0, 'elected_not_to'))).toBeUndefined();

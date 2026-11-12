@@ -34,8 +34,10 @@ async function chat(answer: string, rows: ApiMeasurement[]) {
     previousMeasurements: [rows.at(-1)!], medications: [], supplements: [],
     screenings: [{ id: 's', screeningKey: 'prostate_discussion', value: answer, updatedAt: '2026-01-01T00:00:00.000Z' }],
   } as never);
-  const context = JSON.parse(buildChatContextJson(loadGuestInputs())!);
+  const payload = loadGuestInputs();
+  const context = JSON.parse(buildChatContextJson(payload)!);
   return {
+    sent: payload!.measurementHistory!.psa,
     cards: (context.currentSuggestions as Array<{ id: string; description: string }>).filter(s => s.id.startsWith('screening-prostate')),
     psa: context.measurementHistory.psa,
   };
@@ -49,7 +51,9 @@ describe('the mirror carries the flag (US-06 AC21 item 6)', () => {
     const got = await chat('elected_not_to', [RAISED, VAGUE]);
     expect(got.cards.map(c => c.id)).toEqual(['screening-prostate-repeat']);
     expect(got.cards[0].description).not.toContain('Your last PSA');
-    expect(got.psa).toEqual([{ date: '2026-06-01', value: 5, comparator: '<', raisedBefore: true }]);
+    expect(got.sent).toEqual([{ date: '2026-06-01', value: 5, comparator: '<', raisedBefore: true }]);
+    // The plan reads the flag; the model-facing JSON drops it (re-check, adversary R1).
+    expect(got.psa).toEqual([{ date: '2026-06-01', value: 5, comparator: '<' }]);
     expect(localStorage.getItem(MIRROR_KEY)).not.toContain('2026-04-10');
   });
 
