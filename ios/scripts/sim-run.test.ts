@@ -4,7 +4,7 @@
 // macOS only (lockf, BSD stat and date): CI runs Linux, so these run locally:
 //   npx vitest run ios/scripts/sim-run.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -115,6 +115,8 @@ const until = async (check: () => boolean, ms = 10_000) => {
   for (const end = Date.now() + ms; Date.now() < end; await sleep(50)) if (check()) return;
   throw new Error('timed out waiting');
 };
+/** The queue's waiting.<start>.<pid> markers, in name order. */
+const markers = () => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith('waiting.')).sort() : []);
 const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status === 0;
 /** True while the lock is taken: lockf on the lock file cannot take it at once (75). Changes nothing. */
 const busy = () => existsSync(join(home, 'lock'))
@@ -228,6 +230,74 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       const order = log('order').trim().split('\n');
       expect(order.filter((x) => x === 'c')).toHaveLength(6);
       expect(order.indexOf('W')).toBeLessThan(order.length - 1);
+    });
+
+    // The queue's failure modes: a waiter is live only while it holds the kernel lock on its marker.
+    it('a stale marker naming a live unrelated process does not hold up a run while the lock is free', () => {
+      const other = spawn('sleep', ['300']);
+      live.push({ p: other, done: new Promise((res) => other.on('exit', res)) });
+      mkdirSync(home, { recursive: true });
+      writeFileSync(join(home, `waiting.1000000000.${other.pid}`), '');
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('a waiter SIGKILLed mid-wait holds no one up: the next run proceeds at once and its marker goes', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      expect(markers()).toHaveLength(1);
+      b.p.kill('SIGKILL');
+      await b.done;
+      release();
+      await h.done;
+      const r = run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '2' });
+      expect(r.status).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
+    it('removes its marker when it gives up (75), and on TERM and INT', async () => {
+      holdLock();
+      await until(busy);
+      expect(run(['--', 'true'], { HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
+      expect(markers()).toEqual([]);
+      for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+        const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+        await until(() => b.err().includes('waiting up to'));
+        expect(markers()).toHaveLength(1);
+        b.p.kill(sig);
+        expect((await b.done).code).toBe(sig === 'SIGTERM' ? 143 : 130);
+        expect(markers()).toEqual([]);
+      }
+    });
+
+    it('a stale marker with the caller\'s own pid does not let it skip a live waiter queued earlier', async () => {
+      mkdirSync(home, { recursive: true });
+      // A live waiter: a process holding the lock on its own marker.
+      const w = spawn('/bin/bash', ['-c', 'm="$1/waiting.1500000000.$$"; exec 7>>"$m"; lockf -s -t 0 7 || exit 1; touch "$1/w-ready"; until [ -f "$2" ]; do sleep 0.1; done',
+        '_', home, join(dir, 'release')]);
+      live.push({ p: w, done: new Promise((res) => w.on('exit', res)) });
+      await until(() => existsSync(join(home, 'w-ready')));
+      // The caller leaves a marker with its own pid that sorts first, then becomes sim-run (exec keeps the pid).
+      const r = spawnSync('bash', ['-c', 'touch "$1/waiting.1000000000.$$"; exec bash "$0" -- sh -c \'echo ran > "$FAKE/ran"\'', SCRIPT, home],
+        { encoding: 'utf8', env: env({ HR_SIM_WAIT_SECONDS: '2' }), timeout: 30_000, cwd: work });
+      expect(r.status).toBe(75);
+      expect(log('ran')).toBe('');
+      expect(markers()).toEqual([`waiting.1500000000.${w.pid}`]);
+    });
+
+    it('a waiter\'s command gets neither the marker\'s descriptor (7) nor the lock\'s (9)', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'sh', '-c', 'for f in 7 9; do [ -e /dev/fd/$f ] && echo "fd$f"; done; echo done >> "$FAKE/fds"'],
+        { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(log('fds')).toBe('done\n');
     });
 
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
