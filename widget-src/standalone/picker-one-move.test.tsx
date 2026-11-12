@@ -413,3 +413,62 @@ describe('US-09 AC45: a move whose page did not leave ends when the picker is re
     expect(assign).not.toHaveBeenCalled();
   });
 });
+
+describe('US-09 AC45: a log-off in another tab while this page connects', () => {
+  const GITHUB_CONFIG = 'health_roadmap_github';
+  /** Another tab logs off: its own module graph, sharing this localStorage. */
+  async function logOffElsewhere(): Promise<void> {
+    vi.resetModules();
+    await (await import('./connect')).logOff('local');
+  }
+
+  it('a GitHub connect still waiting on its repository check saves no sign-in and no chosen provider', async () => {
+    const gh = deferred();
+    holdGitHub = gh.promise;
+    const view = render(<Host />);
+    open(view);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect(fetchCalls.some((u) => u.startsWith('https://api.github.com/'))).toBe(true));
+
+    await logOffElsewhere();
+    gh.resolve();
+    await vi.waitFor(() => expect(reload.mock.calls.length).toBeGreaterThanOrEqual(2)); // the other tab's, then this page's
+    await settle();
+    expect([localStorage.getItem(GITHUB_CONFIG), localStorage.getItem(BACKEND_KEY)]).toEqual([null, null]);
+  });
+
+  it('a move to Google Drive whose Dropbox copy-down answers after that log-off: its return saves nothing', async () => {
+    const DRIVE_PKCE = 'health_roadmap_gdrive_pkce';
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', { value: { ...window.location, reload, assign, search: '' }, writable: true, configurable: true });
+    const dbx = deferred();
+    holdDropbox = dbx.promise;
+    const view = render(<Host />);
+    open(view);
+    await startDriveSwitch(view);
+    await vi.waitFor(() => expect(downloads()).toBe(1));
+
+    await logOffElsewhere();
+    dbx.resolve();
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledTimes(1)); // off to Google
+    const { state } = JSON.parse(sessionStorage.getItem(DRIVE_PKCE) ?? '{}') as { state?: string };
+    window.location.search = `?code=c&state=${state}&scope=${encodeURIComponent('openid email https://www.googleapis.com/auth/drive.file')}`;
+    vi.resetModules();
+    const { resolved } = await (await import('./resolve-backend')).resolveBackend();
+
+    expect(resolved.backend).toBe('local');
+    expect(fetchCalls.some((u) => u.endsWith('/api/google-token'))).toBe(false); // no code exchange
+    expect(['health_roadmap_gdrive_tokens', 'health_roadmap_gdrive', BACKEND_KEY].map((key) => localStorage.getItem(key)))
+      .toEqual([null, null, null]);
+  });
+
+  it('control: a guest page\'s GitHub connect begun after that log-off is kept', async () => {
+    await logOffElsewhere();
+    const view = render(<BackendPickerModal current="local" onClose={() => {}} />);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect(reload.mock.calls.length).toBeGreaterThanOrEqual(2));
+    await settle();
+    expect(JSON.parse(localStorage.getItem(GITHUB_CONFIG) ?? 'null')).toMatchObject({ token: GOOD_TOKEN, owner: 'someone', repo: 'health' });
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
+  });
+});

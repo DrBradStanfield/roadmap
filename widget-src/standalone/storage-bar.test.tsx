@@ -16,6 +16,7 @@ vi.mock('../src/storage', () => ({
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
+  markSyncPending: vi.fn(),
   SYNC_PENDING_EVENT: 'hr:sync-pending',
   SAVE_STATUS_EVENT: 'hr:save-status',
   gisReady: () => true,
@@ -34,7 +35,7 @@ vi.mock('./connect', () => ({
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
   connectRefusal: () => null,
-  rememberBackend: vi.fn(),
+  rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
   // Runs the action at once, inside the click, as the real one does up to its first await.
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),

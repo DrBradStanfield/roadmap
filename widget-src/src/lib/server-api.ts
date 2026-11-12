@@ -6,6 +6,7 @@ import type { UsProduct } from '@roadmap/health-core/us-products';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
+import { randomId } from './random-id';
 
 export const PROXY_PATH = '/apps/health-tool-1';
 
@@ -77,15 +78,7 @@ export function getVisitorId(): string {
   const KEY = 'hr_vid';
   const stored = safeGetItem(KEY);
   if (stored) { cachedVisitorId = stored; return stored; }
-  const id = crypto.randomUUID?.() ??
-    Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b, i) => {
-        if (i === 6) b = (b & 0x0f) | 0x40;  // version 4
-        if (i === 8) b = (b & 0x3f) | 0x80;  // variant 1
-        return b.toString(16).padStart(2, '0');
-      })
-      .join('')
-      .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  const id = randomId();
   safeSetItem(KEY, id);
   cachedVisitorId = id;
   return id;

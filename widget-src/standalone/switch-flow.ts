@@ -17,6 +17,7 @@
  * the picker's component state and die with its mount.
  */
 import { useSyncExternalStore } from 'react';
+import { logOffId, type LogOffId } from '../src/lib/storage';
 import type { Backend } from './connect';
 
 /** The picker step a move started from, where a reopened picker shows it. */
@@ -84,9 +85,10 @@ export function dispatch(event: SwitchEvent): boolean {
   return run;
 }
 
-/** What a running move is handed: `navigating()`, to call just before it
- *  hands the page to a redirect. */
+/** What a running move is handed: the log-off id it began under (US-09
+ *  AC45), and `navigating()`, to call just before it hands the page to a redirect. */
 export interface Move {
+  gen: LogOffId;
   navigating: () => void;
 }
 
@@ -94,8 +96,9 @@ export interface Move {
 export async function runMove(event: SwitchEvent, move: (m: Move) => Promise<void>): Promise<void> {
   if (!dispatch(event)) return;
   const { run } = flow;
+  const gen = logOffId();
   try {
-    await move({ navigating: () => dispatch({ type: 'navigating', run }) });
+    await move({ gen, navigating: () => dispatch({ type: 'navigating', run }) });
     dispatch({ type: 'settled', run });
   } catch (e) {
     dispatch({ type: 'failed', run, message: e instanceof Error ? e.message : 'Connection failed.' });

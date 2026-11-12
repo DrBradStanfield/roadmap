@@ -11,11 +11,11 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
 import { currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
@@ -133,9 +133,11 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
     void run(async () => {
       try {
         const gd = new GoogleDriveAdapter(googleDriveConfig());
-        await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-        await liftLocalInto(gd, 'google-drive');
-        rememberBackend('google-drive');
+        const saved = await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
+        if (rememberSignIn(saved, 'google-drive', gd.gen)) {
+          markSyncPending();
+          await liftLocalInto(gd, 'google-drive');
+        }
         location.reload();
       } finally {
         reconnectInFlight = false;
