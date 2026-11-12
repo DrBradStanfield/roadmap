@@ -232,6 +232,23 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(order.indexOf('W')).toBeLessThan(order.length - 1);
     });
 
+    it('a caller\'s marker is in the queue before its first try for the lock, so no later caller slips in', async () => {
+      // A lockf on PATH that records, at each try for the lock (fd 9), the queue's markers, then runs the real one.
+      const shim = join(dir, 'shim');
+      mkdirSync(shim);
+      writeFileSync(join(shim, 'lockf'), '#!/bin/bash\n[ "${!#}" = 9 ] && echo "$(cd "$HR_SIM_HOME" && echo waiting.*)" >> "$FAKE/tries"\nexec /usr/bin/lockf "$@"\n',
+        { mode: 0o755 });
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30', PATH: `${shim}:${fake}:${process.env.PATH}` });
+      await until(() => b.err().includes('waiting up to'));
+      expect(log('tries').split('\n')[0]).toMatch(new RegExp(`^waiting\\.\\d+\\.${b.p.pid}$`));
+      release();
+      await h.done;
+      expect((await b.done).code).toBe(0);
+      expect(markers()).toEqual([]);
+    });
+
     // The queue's failure modes: a waiter is live only while it holds the kernel lock on its marker.
     it('a stale marker naming a live unrelated process does not hold up a run while the lock is free', () => {
       const other = spawn('sleep', ['300']);
@@ -291,7 +308,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('a waiter\'s command gets neither the marker\'s descriptor (7) nor the lock\'s (9)', async () => {
       const h = holdLock();
       await until(busy);
-      const b = start(['--', 'sh', '-c', 'for f in 7 9; do [ -e /dev/fd/$f ] && echo "fd$f"; done; echo done >> "$FAKE/fds"'],
+      const b = start(['--', 'sh', '-c', '{ for f in 7 9; do [ -e /dev/fd/$f ] && echo "fd$f"; done; echo done; } >> "$FAKE/fds"'],
         { HR_SIM_WAIT_SECONDS: '30' });
       await until(() => b.err().includes('waiting up to'));
       release();
@@ -605,7 +622,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
 
     it('caps the guard wait plus the lock wait at the wait limit', async () => {
       const a = start(['--', 'sleep', '15']);
-      await until(busy);
+      // The holder has read the load twice (before the lock and after it), so it cannot read the 9s below.
+      await until(() => busy() && log('sysctl.log').trim().split('\n').length >= 2);
       // Trips at 0, 1 and 2 s, clears at 3 s; the lock then gets what is left of 4 s, not 4 s more.
       setLoads('9.00', '9.00', '9.00', '2.00');
       const t = Date.now();

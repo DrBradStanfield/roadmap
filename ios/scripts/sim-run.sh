@@ -144,22 +144,23 @@ ahead() {
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
+  # The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked, and before the
+  # first try, so no caller that starts later can take the lock ahead of this one.
+  exec 7>>"$HOME_DIR/queue.$$"
+  lockf -s -t 0 7
+  MARK="$HOME_DIR/waiting.$(now).$$"
+  mv "$HOME_DIR/queue.$$" "$MARK"
   if ahead || ! lockf -s -t 0 9; then
-    # The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked.
-    exec 7>>"$HOME_DIR/queue.$$"
-    lockf -s -t 0 7
-    MARK="$HOME_DIR/waiting.$(now).$$"
-    mv "$HOME_DIR/queue.$$" "$MARK"
     echo "sim-run: the shared simulator is $(describe)" >&2
     echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
     until ! ahead && lockf -s -t 0 9; do
       [ "$(left)" -gt 0 ] || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
       sleep 0.2 7>&- 9>&- & wait $!
     done
-    rm -f "$MARK"
-    MARK=""
-    exec 7>&-
   fi
+  rm -f "$MARK"
+  MARK=""
+  exec 7>&-
   OWN=1
 }
 
