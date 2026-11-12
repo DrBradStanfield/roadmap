@@ -645,13 +645,3 @@ struct MyDataView: View {
         return saved(result)
     }
 }
-
-extension View {
-    /// For a tab with no title bar, My health's: iOS 26's edge effect leaves rows
-    /// legible under the clock. A zero-height inset whose background reaches into the status bar hides them.
-    func solidStatusBar() -> some View {
-        safeAreaInset(edge: .top, spacing: 0) {
-            Color.clear.frame(height: 0).background(Color(uiColor: .systemGroupedBackground), ignoresSafeAreaEdges: .top)
-        }
-    }
-}

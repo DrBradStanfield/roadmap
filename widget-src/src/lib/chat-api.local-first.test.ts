@@ -50,7 +50,7 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
 
   it('US-09 AC2c: an answer whose history save the device refuses still reaches the page, and the report names no chat text', async () => {
     const { StorageError } = await import('@roadmap/health-core/adapter');
-    store.recordExchange.mockRejectedValueOnce(new StorageError('On-device roadmap persistence stopped for logout.'));
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic device refusal'));
     const { result, error } = await sendMessage('SYNTHETIC_REFUSED_QUESTION', null, null);
     expect(error).toBeNull();
     expect(result?.content).toBe('fresh answer');

@@ -48,18 +48,19 @@ function consumeQuota(ip: string, count: number): boolean {
   return false;
 }
 
+// A 429's `code` tells the browser the daily limit from a busy server (US-12 AC9).
 const dailyLimit = () => Response.json(
-  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' },
   { status: 429 },
 );
-const serverBusy = () => Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
+const serverBusy = () => Response.json({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }, { status: 429 });
 
+const daySpent = (ip: string) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
 /**
  * US-12 AC17b: with no file left today for this IP or the machine, only a poll
  * can succeed, so no more than a poll's body is read, and a larger one gets the
  * daily-limit answer.
  */
-const daySpent = (ip: string) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
 function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
   if (daySpent(ip)) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
   return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };

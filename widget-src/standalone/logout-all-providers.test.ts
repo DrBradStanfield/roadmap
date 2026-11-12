@@ -74,6 +74,14 @@ describe('US-09 AC45: log off removes every provider sign-in on this device', ()
     }
   }
 
+  it('US-11 AC6: log-off removes the erase this browser last cleared its off-file data for', async () => {
+    seedAll('gen-1');
+    localStorage.setItem('health_roadmap_backend', 'dropbox');
+    localStorage.setItem('health_roadmap_cleared_erase', JSON.stringify({ lineage: 'dropbox', erase: '[1,"2026-10-21T10:05:00.000Z"]' }));
+    await connect.logOff('dropbox');
+    expect(localStorage.getItem('health_roadmap_cleared_erase')).toBeNull();
+  });
+
   it('after a log-off from the device-only tier, no provider sign-in remains', async () => {
     seedAll('gen-1');
     await connect.logOff('local');

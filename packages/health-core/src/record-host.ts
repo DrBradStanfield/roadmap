@@ -6,6 +6,7 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
@@ -55,12 +56,41 @@ export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStat
 export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
   let kept = after;
   try {
-    const body = host.deviceRecord?.();
+    const body = host.ownsOffFileData?.() !== false ? host.deviceRecord?.() : null; // a non-owner reads no device record
     if (body != null) kept = mergeFiles(after, ROADMAP_DOC.migrate(body, ctx), ctx);
   } catch {
     /* unreadable: it names nothing */
   }
   host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)));
+}
+
+/**
+ * At a session's open: the erase this tab's off-file data counts as cleared up
+ * to (US-11 AC6). The erase the host keeps for this store, when it keeps a
+ * readable one: a record at a later erase then owes a clear (`clearOwed`), and
+ * one at an earlier erase (a lagging copy) owes none until a later erase than
+ * the kept one. With none kept (a first run, another record, log-off, or a page
+ * that does not own the off-file data) the record adopts its erase, the host
+ * keeps it, and nothing is cleared. Always a readable identity.
+ */
+export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
+  const kept = keptErase(host);
+  if (kept != null) return kept;
+  host.noteCleared(eraseIdentityOf(file));
+  return eraseIdentityOf(file);
+}
+
+/** After a clear for `identity` worked: keep it as the erase cleared up to,
+ *  unless the one kept is later (another tab's): the kept erase never moves back. */
+export function keepCleared(host: RecordHost, identity: string): void {
+  const kept = keptErase(host);
+  if (kept == null || eraseLater(identity, kept)) host.noteCleared(identity);
+}
+
+/** The erase the host keeps as cleared up to; null when none, or it cannot be read. */
+function keptErase(host: RecordHost): string | null {
+  const kept = host.clearedErase();
+  return kept != null && readErase(kept) ? kept : null;
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).
@@ -115,8 +145,17 @@ interface HostBase {
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
    *  originals stay, the engine's call (`RecordSession.clearOffFileData`);
    *  every other original goes. A host whose tab does not own that data
-   *  (`ownsOffFileData`) clears none of it, and drops only what its screen holds. */
+   *  (`ownsOffFileData`) clears none of it, and drops only what its screen holds.
+   *  Throws when the owner's clear cannot say every store it meant to clear is clear. */
   clearOffFileData(keepOriginals: ReadonlySet<string>): void;
+  /** The erase identity (`eraseIdentityOf`) this device's off-file data was
+   *  last cleared for, kept across loads with the store id it was cleared on and
+   *  nothing else: the erase's epoch and time only. Null unless this host's
+   *  store owns the off-file data and the kept one is this store's (US-11 AC6). */
+  clearedErase(): string | null;
+  /** Keep `identity`, with this store's id, as the erase last cleared for;
+   *  nothing unless this host's store owns the off-file data. Never throws. */
+  noteCleared(identity: string): void;
   /** True while this tab's record is the one this device has chosen, and no
    *  log-off came on this device since the tab loaded, so the off-file data is its own to clear, and an erase its own to make: another
    *  tab's erase is refused first (US-11 AC6). Read at each clear and erase. Leave
@@ -178,6 +217,8 @@ export type RecordHost =
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
       eraseFence(): string | null;
+      /** True while this page may read and write this device's health files; read at each use, and left out means open (the iPhone), as with ownsOffFileData. */
+      deviceFilesOpen?(): boolean;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
 

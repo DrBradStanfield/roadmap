@@ -126,12 +126,13 @@ describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
   });
 
   // PR #201 review R2: a busy answer charges nothing.
-  it('a full batch table answers busy and charges the IP nothing', async () => {
+  // US-12 AC9 H65: the busy answer says busy with a code, never the daily limit.
+  it('a full batch table answers busy with code busy and charges the IP nothing', async () => {
     deleteBatch.mockResolvedValue(true);
     for (let i = 0; i < 200; i++) expect((await upload(`batch_fill_${i}`, `10.5.${i >> 8}.${i & 255}`)).status).toBe(200);
     const busy = await upload('batch_busy', '10.5.9.9');
     expect(busy.status).toBe(429);
-    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
+    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.', code: 'busy' });
     const { loader } = await import('./api.lab-import-v2');
     const preflight = await loader({ request: new Request(URL, { headers: { 'fly-client-ip': '10.5.9.9' } }) } as never);
     expect((await preflight.json()).remaining).toBe(200);

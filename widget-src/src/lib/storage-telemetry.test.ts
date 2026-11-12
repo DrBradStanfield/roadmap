@@ -220,10 +220,29 @@ describe('cloud-storage telemetry boundary', () => {
       expect(await persistTags(() => { frozen = true; })).toEqual({ ...local, causeClass: 'ConflictError' });
     });
 
+    it('A15: a real device write failure (a plain StorageError) is still reported once', async () => {
+      let armed = false;
+      const writeSync = LocalStorageAdapter.prototype.writeSync;
+      vi.spyOn(LocalStorageAdapter.prototype, 'writeSync').mockImplementation(function (this: LocalStorageAdapter, ...args) {
+        if (armed) throw new StorageError('Synthetic storage full');
+        return writeSync.apply(this, args);
+      });
+      expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'none' });
+    });
+
     // Last on purpose: the logout latch is page-lifetime module state with no
     // reset, so no device-tier save in this file may run after it.
-    it('a write refused for logout reads none', async () => {
-      expect(await persistTags(() => stopRoadmapLocalWrites())).toEqual({ ...local, causeClass: 'none' });
+    it('A15: a device write refused for logout sends no Cloud sync failed report, and the save still fails', async () => {
+      localStorage.clear();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const store = await RoadmapStore.create(new LocalStorageAdapter());
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      await store.flush();
+      stopRoadmapLocalWrites();
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      await expect(store.flush()).rejects.toThrow();
+      await Sentry.flush();
+      expect(envelopes).toHaveLength(0);
     });
   });
 
@@ -265,6 +284,11 @@ describe('cloud-storage telemetry boundary', () => {
       exception: { values: [{ value: marker }] },
     });
     expect(JSON.stringify(scrubbed)).not.toContain(marker);
+  });
+
+  // US-12 AC9 H65: a busy batch counts as a server error, so only this tag tells it apart.
+  it.each(['busy', 'rate_limit'])('keeps the upload error code %s', uploadErrorCode => {
+    expect(scrubEvent({ type: undefined, tags: { feature: 'upload', uploadErrorCode } })!.tags).toEqual({ feature: 'upload', uploadErrorCode });
   });
 
   it('prevents storage request paths reaching an unrelated later event', async () => {

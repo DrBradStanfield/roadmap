@@ -396,9 +396,10 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     state.replies = [{ text: 'Synthetic answer', blocks: [] }];
     state.store = {
       getMessages: () => [],
-      recordExchange: () => Promise.reject(new StorageError('On-device roadmap persistence stopped for logout.')),
+      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal'))),
       eraseMarks: () => [],
     };
+    vi.mocked(Sentry.captureException).mockClear();
   });
 
   it('returns the answer, and the report names no chat text', async () => {

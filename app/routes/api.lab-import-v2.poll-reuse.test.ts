@@ -182,7 +182,7 @@ describe('US-12 AC18: capability-safe in-flight reuse and value-free pacing', ()
     expect(reads()).toBe(400);
     const busy = await call({ batch: true, files: [{ pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }] });
     expect(busy.status).toBe(429);
-    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
+    expect(await busy.json()).toEqual({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }); // US-12 AC9 H65
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(200);
     await vi.advanceTimersByTimeAsync(10 * MIN);
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(200);

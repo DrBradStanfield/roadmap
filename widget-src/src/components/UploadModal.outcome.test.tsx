@@ -152,6 +152,17 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
   });
 
+  // US-12 AC9 H65: the server sends busy only on a batch today; a single file read as busy says the same words.
+  it('US-12 AC9 H65: a single file the server calls busy gets the busy notice, counted as a server error', async () => {
+    vi.mocked(labImport).mockImplementation(async pages => (
+      pages[0].content === 'busy.pdf' ? { result: null, error: 'Server busy. Please try again later.', errorCode: 'busy' } : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('busy.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('busy.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
+  });
+
   // US-15 AC34: Haiku 5.5 can decline a file or stop at its token cap, and the
   // same request stops the same way again: neither says "try again".
   it.each([true, false])('says a declined file and a too-long one will not read on a retry (Shopify build: %s)', async shopify => {
@@ -404,6 +415,18 @@ describe('US-12 AC9: the batch path (20+ files) names each file by its own resul
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 20, limitError: 20, serverError: 0 })]);
   });
 
+  // US-12 AC9/AC10 (H65): a busy server is not the daily limit, in words or in the count.
+  it('US-12 AC9 H65: a busy batch is not the daily limit', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'Server busy. Please try again later.', errorCode: 'busy' });
+    render_(); pick(...twenty());
+    await screen.findByText('Server busy. Please try again later.');
+    expect(reasonFor('r0.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    expect(reasonFor('r19.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    expect(screen.queryByText(/daily upload limit/i)).toBeNull();
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()).toEqual([expect.objectContaining({ picked: 20, serverError: 20, limitError: 0 })]);
+  });
+
   it('names every unread file with a server error when the poll fails, and a file that would not open only once', async () => {
     extractFromPdf.mockImplementation(async (f: File) => {
       if (f.name === 'r1.pdf') throw new Error('PasswordException');
@@ -607,6 +630,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
 describe('US-12 AC9: the Shopify build keeps its server wording', () => {
   it.each([
     ['rate_limit', 'Daily upload limit reached. You can upload more tomorrow.'],
+    ['busy', 'Server busy. Please try again later.'],
     ['server_error', 'Something went wrong on the server. Please try again.'],
     ['network', 'Network error. Please check your connection and try again.'],
   ] as const)('a whole run that fails with %s says so on the error screen', async (errorCode, text) => {

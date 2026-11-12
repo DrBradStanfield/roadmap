@@ -9,7 +9,7 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
@@ -31,6 +31,7 @@ export type { UploadPhase } from '../lib/upload-flow-state';
 const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
+  busy: 'Server busy. Please try again later.',
   timeout: 'Processing took too long. Try uploading fewer files at once.',
   server_restart: 'The server restarted during processing. Please try again.',
   no_files: 'No readable files found. Please check your files and try again.',
@@ -149,12 +150,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     /** The run failed as a whole: each file without a verdict yet gets this one.
      *  Verdicts are matched one for one, so two files on one path count twice.
      *  The pick's own notices name files never read, so they settle none. */
-    const failUnread = (reason: 'serverError' | 'limitError') => {
+    const failUnread = (reason: 'serverError' | 'limitError', text?: string) => {
       const settled = runNotices.slice(pickNotices.length).filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
       for (const name of names) {
         const i = settled.indexOf(name);
         if (i >= 0) settled.splice(i, 1);
-        else runNotices.push({ name, reason });
+        else runNotices.push({ name, reason, text });
       }
     };
     // Counts the run, then hands its notices to the transition.
@@ -251,7 +252,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           tags: { feature: 'upload', uploadErrorCode: code },
         });
         trackProductEvent('upload_extract_failed');
-        failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
+        // Busy is a server error, never the daily limit (US-12 AC9/AC10).
+        if (code === 'busy') failUnread('serverError', BUSY_NOTICE_TEXT);
+        else failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
         finish([]);
         dispatch({
           type: 'readFailed', run, notices: runNotices,

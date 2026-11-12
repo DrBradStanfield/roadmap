@@ -25,7 +25,7 @@ function cloudHost(store: FailingStore, told: SaveStatus[]): { host: RecordHost;
   const host: RecordHost = {
     store,
     tier: 'cloud',
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceId: () => 'phone',
     clock: { now: () => Date.parse('2026-11-12T10:00:00.000Z') },
     timers: { set: (run) => { timer = run; return 1; }, clear: () => { timer = null; } },

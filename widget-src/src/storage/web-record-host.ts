@@ -18,8 +18,9 @@ import {
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
 import { BACKEND_KEY, clearOffFileHealthData, dropDraftsOnScreen, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { clearedEraseFor, noteClearedFor } from '../lib/cleared-erase';
 import { Sentry } from '../lib/sentry';
-import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
+import { failureTags, recordFailure, storageCauseClass, storageFailureClass, WritesStoppedError } from '../lib/error-diagnostics';
 
 /**
  * Set while the on-device copy may hold changes a cloud backend hasn't seen
@@ -115,8 +116,13 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     store,
     // Another tab takes an erase in without clearing, dropping only the drafts on its screen, and its own erase
     // is refused first (US-11 AC6).
-    clearOffFileData: (keepOriginals: ReadonlySet<string>) => (ownsOffFileData(store.id)
-      ? clearOffFileHealthData((ref) => keepOriginals.has(ref)) : dropDraftsOnScreen()),
+    // An owner's clear that does not read back throws, so the erase cleared for stays and the next load clears again.
+    clearOffFileData: (keepOriginals: ReadonlySet<string>) => {
+      if (!ownsOffFileData(store.id)) return dropDraftsOnScreen();
+      if (!clearOffFileHealthData((ref) => keepOriginals.has(ref))) throw new Error('Off-file data still stored');
+    },
+    clearedErase: () => clearedEraseFor(store.id),
+    noteCleared: (identity: string) => noteClearedFor(store.id, identity),
     ownsOffFileData: () => ownsOffFileData(store.id),
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
@@ -124,7 +130,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     ...(store.watch ? {
       watch(onChange: () => void) {
         const watching = new AbortController();
-        store.watch!(ROADMAP_FILE_NAME, onChange, watching.signal);
+        // A device page that may not write here hears no change either (US-09 AC2c).
+        store.watch!(ROADMAP_FILE_NAME, () => { if (!(store instanceof LocalStorageAdapter) || healthWritesAllowed()) onChange(); }, watching.signal);
         return () => watching.abort();
       },
     } : {}),
@@ -138,6 +145,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     saveStatusChanged: (status: SaveStatus) => notify(SAVE_STATUS_EVENT, status),
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }) {
+      if (error instanceof WritesStoppedError) return; // a log-off refusal, not a failure (A15)
       // The erase's best-effort steps: an orphaned server row or chat history
       // left behind is reported, never silently swallowed, and only as a fixed
       // message (an error can quote the chat file, e.g. a medication's name).
@@ -172,7 +180,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // named-file prefix, which only disconnect() clears — and disconnect()
     // after an erase would delete the erased record file just written.
     noteDevicePage();
-    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
+    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration, deviceFilesOpen: healthWritesAllowed };
   }
   const device = new LocalStorageAdapter();
   // Note a log-off from another page from now, not only once the first cloud
