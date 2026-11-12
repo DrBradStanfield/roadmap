@@ -72,8 +72,8 @@ describe('the monolith (today\'s shape)', () => {
 
   it('returns a monolith as is when no stories/ folder sits beside it', () => {
     mkdirSync(join(dir, 'docs'));
-    writeFileSync(join(dir, 'docs/user-stories.md'), INDEX);
-    expect(loadStories(dir)).toBe(INDEX);
+    writeFileSync(join(dir, 'docs/user-stories.md'), MONOLITH);
+    expect(loadStories(dir)).toBe(MONOLITH);
   });
 });
 
@@ -136,6 +136,36 @@ describe('the split shape', () => {
     const odd = '- [US-01 · One](stories/US-02.md)';
     writeFileSync(join(dir, 'docs/user-stories.md'), `${odd}\n`);
     expect(loadStories(dir)).toBe(`${odd}\n`);
+  });
+});
+
+describe('fails closed rather than return a raw index that defines no story (US-64 AC11)', () => {
+  it('an index that links parts, with no stories/ folder, throws on disk and at a ref', () => {
+    mkdirSync(join(dir, 'docs'));
+    writeFileSync(join(dir, 'docs/user-stories.md'), INDEX);
+    git(dir, 'init', '-q');
+    commit(dir, 'index alone');
+    for (const ref of [undefined, 'HEAD']) expect(() => loadStories(dir, { ref }), String(ref)).toThrow(/no stories\/ folder/);
+  });
+
+  it('a stories tree git cannot read at the ref throws, never falls back to the index', () => {
+    writeSplit(dir);
+    git(dir, 'init', '-q');
+    commit(dir, 'split');
+    const tree = git(dir, 'rev-parse', 'HEAD:docs/stories').trim();
+    rmSync(join(dir, '.git/objects', tree.slice(0, 2), tree.slice(2)), { force: true }); // a broken tree: `cat-file -e` exits 1, silent
+    rmSync(join(dir, 'docs'), { recursive: true });
+    expect(() => loadStories(dir, { ref: 'HEAD' })).toThrow();
+  });
+});
+
+describe('a story listed twice (US-64 AC13)', () => {
+  it('the loader refuses an index that lists one story twice, naming it, on disk and at a ref', () => {
+    writeSplit(dir);
+    writeFileSync(join(dir, 'docs/user-stories.md'), `${INDEX}- [US-02 · Two](stories/US-02.md)\n`);
+    git(dir, 'init', '-q');
+    commit(dir, 'listed twice');
+    for (const ref of [undefined, 'HEAD']) expect(() => loadStories(dir, { ref }), String(ref)).toThrow(/US-02 twice/);
   });
 });
 

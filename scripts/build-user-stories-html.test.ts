@@ -243,7 +243,9 @@ describe('the split stories (tools/stories.mjs): the build reads the reassembled
       writeFileSync(src, working);
     });
     expect(r.ok).toBe(false);
-    expect(r.stderr).toContain('cannot read git ref');
+    // The loader's own reason, not only "cannot read git ref" (adversary R3): the missing part, named.
+    expect(r.stderr).toContain('stories/US-03.md');
+    expect(r.stderr).not.toMatch(/\n\s+at /); // no stack
   });
 });
 
