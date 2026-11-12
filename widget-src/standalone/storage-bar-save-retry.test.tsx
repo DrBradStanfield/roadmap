@@ -115,6 +115,23 @@ describe('US-09 AC30: a failed cloud save is retried when the browser comes back
     expect(cloud.writes).toBe(1);
     expect(saveRetries()).toEqual([]);
   });
+
+  // PR 1458 N1: a revoked GitHub token, as the real adapter throws it, is a refused sign-in.
+  // Kept before any test that leaves an offline failed save: an earlier page's online listener
+  // would answer this test's online event.
+  it('a GitHub save refused 401: the online event tries nothing, and the waiting line never promises an upload', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 }));
+    const refused = await new GitHubAdapter({ token: 'test-token-good', owner: 'synthetic', repo: 'health' })
+      .read(ROADMAP_FILE_NAME).then(() => null, (e: unknown) => e as Error).finally(() => { globalThis.fetch = realFetch; });
+    expect(refused).toBeInstanceOf(StorageError);
+    const cloud = await failedSave(refused!);
+    cloud.fail = null;
+    await online();
+    expect(cloud.writes).toBe(1);
+    expect(saveRetries()).toEqual([]);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
+  });
 });
 
 describe('US-09 AC30: Settings says a retry will come only when one will (lead A1 step e)', () => {
@@ -155,21 +172,6 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
-    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
-  });
-
-  // PR 1458 N1: a revoked GitHub token, as the real adapter throws it, is a refused sign-in.
-  it('a GitHub save refused 401: the online event tries nothing, and the waiting line never promises an upload', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 })));
-    const refused = await new GitHubAdapter({ token: 'test-token-good', owner: 'synthetic', repo: 'health' })
-      .read(ROADMAP_FILE_NAME).then(() => null, (e: unknown) => e as Error);
-    vi.unstubAllGlobals();
-    expect(refused).toBeInstanceOf(StorageError);
-    const cloud = await failedSave(refused!);
-    cloud.fail = null;
-    await online();
-    expect(cloud.writes).toBe(1);
-    expect(saveRetries()).toEqual([]);
     expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
   });
 

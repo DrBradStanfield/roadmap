@@ -96,6 +96,7 @@ interface Engine {
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
   chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
   cloudVisible(): string;
+  cloudHidden(): string;
   /** US-09 AC30 (lead A1 step e): Swift calls it when NWPathMonitor says the path is satisfied. */
   cloudOnline(): string;
   cloudFlush(): Promise<string>;
