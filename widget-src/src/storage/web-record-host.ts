@@ -98,11 +98,13 @@ export function isSyncPending(): boolean {
 }
 
 /**
- * The cloud page's device copy is still its mirror only while ALL hold
- * (US-09 AC2, AC2c): this page may write health data here at all
- * (healthWritesAllowed), no log-off on this device since `openedUnder`, heard
- * or not, and this browser still names this provider. Keep every part: after
- * a log-off and a new sign-in to the same provider, the name alone matches again.
+ * The record host's `stillChosen` on the web. The cloud page's device copy is
+ * still its mirror only while ALL hold (US-09 AC2, AC2c): this page may write
+ * health data here at all (healthWritesAllowed); the same sign-in, so no
+ * log-off on this device since `openedUnder`, heard or not; and the same
+ * provider, still named by this browser. Both the sign-in half and the
+ * provider half must stay: after a log-off and a new sign-in to the same
+ * provider the name alone matches again, and after a switch the id alone does.
  */
 function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): boolean {
   return healthWritesAllowed() && logOffId() === openedUnder && safeGetItem(BACKEND_KEY) === store.id;

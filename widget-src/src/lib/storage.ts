@@ -41,7 +41,8 @@ export function noteCloudPage(): void {
 export function healthWritesStopped(): boolean {
   return healthWrites === 'stopped';
 }
-/** The one check every on-device health writer makes. */
+/** The one check every on-device health writer makes.
+ *  The single rule for on-device health writes; callers import it, never copy it. */
 export function healthWritesAllowed(): boolean {
   return healthWrites === 'device' || (healthWrites === 'cloud' && logOffId() === logOffIdAtLoad);
 }
