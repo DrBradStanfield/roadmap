@@ -134,16 +134,19 @@ echo "$$ $CMDLINE" > "$DIR/$kind.$SLOT.holder"
 nap_pid=""
 trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 143' TERM
 trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 130' INT
-start=$(date +%s) said=0
+start=$(date +%s) said=0 l=""
 while :; do
-  l=$(load 9>&-)
-  case "$l" in ''|*[!0-9.]*) echo "mac-slot: could not read the load; not waiting" >&2; break ;; esac
-  awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break
+  # Only the first read may fail open; after a high reading, an unreadable one keeps the last and waits on.
+  r=$(load 9>&-)
+  case "$r" in
+    ''|*[!0-9.]*) [ "$said" = 1 ] || { echo "mac-slot: could not read the load; not waiting" >&2; break; } ;;
+    *) l=$r; awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break ;;
+  esac
   [ "$said" = 1 ] || echo "mac-slot: waiting: 1-minute load $l is $MAX_LOAD or more; holding $kind slot $SLOT/$MAX, re-checking every ${POLL}s" >&2
   said=1
   left=$(( LOAD_WAIT - ($(date +%s) - start) ))
   if [ "$left" -le 0 ]; then
-    w=$(( LOAD_WAIT / 60 ))m; [ "$LOAD_WAIT" -ge 60 ] || w=${LOAD_WAIT}s
+    w=${LOAD_WAIT}s; [ $(( LOAD_WAIT % 60 )) -ne 0 ] || w=$(( LOAD_WAIT / 60 ))m
     die "refused: the 1-minute load $l is still $MAX_LOAD or more after $w; not starting ${CMDLINE% }. Try again when the Mac is quieter" 75
   fi
   [ "$left" -lt "$POLL" ] || left=$POLL
