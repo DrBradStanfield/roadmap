@@ -125,7 +125,9 @@ by the orchestrator, not a fresh reviewer.
      A spare 16:9 `header-universal-5244x2950.png` was also uploaded; it isn't needed.
      Open before upload: the plan cards on screen show "ApoB 1.02 Very High" and "Consider a
      GLP-1 medication" for the fictional person (Brad's call), and Sync rows still say
-     "Health Plan by Dr Brad".
+     "Health Plan by Dr Brad". PR 1412 retitled that card "Consider discussing a GLP-1
+     medication with your doctor" (App Review 1.4.1): retake the shots
+     (`ios/scripts/app-store-shots.sh`) from a build that carries it before upload.
 8. **Regulatory advice** on whether the app counts as a medical device in your markets.
 9. **Clinical call:** should the value pages show target bands (blood pressure goal,
    healthy waist, ideal weight)? The targets live only in the website's code today;
