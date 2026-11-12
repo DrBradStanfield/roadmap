@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { flushRoadmapStore, getEraseIdentity, initRoadmapStore } from './roadmap-data';
-import { getChatHistory } from './chat-history-access';
+import { askChatHistory, getChatHistory, setChatHistoryFactory } from './chat-history-access';
+import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { ChatSession } from '@roadmap/health-core/chat-session';
 import * as Sentry from '@sentry/react';
 
@@ -267,5 +268,37 @@ describe.each([
   it('before its history opens, a read that fails: the answer arrives and nothing is saved', async () => {
     vi.spyOn(ChatSession.prototype, 'eraseMarks').mockImplementation(fail);
     await answeredAndNothingSaved(send(QUESTION, null, null));
+  });
+});
+
+describe('US-11 AC2h: a chat history reload from an earlier session that ends late', () => {
+  /** A session copy whose marks are what it last read at the record's erase identity. */
+  function copy(identity: () => string, gate?: Promise<void>) {
+    let marks = [`mark-${identity()}`];
+    return {
+      eraseMarks: () => marks,
+      reload: async () => { await gate; marks = [`mark-${identity()}`]; },
+    } as unknown as ChatHistoryStore;
+  }
+
+  it('leaves the current session\'s read alone, so a question\'s marks come from a read at the record\'s erase', async () => {
+    let identity = 'P0';
+    const at = () => identity;
+    let release = () => {};
+    const late = new Promise<void>((r) => { release = r; });
+    // Session 1 opens at P0, then the record moves to Q and its reload starts and hangs.
+    setChatHistoryFactory(async () => copy(at, late), at);
+    await getChatHistory();
+    identity = 'Q';
+    void getChatHistory();
+    // The data layer starts again on a record at P; session 2 opens there and resolves.
+    identity = 'P';
+    setChatHistoryFactory(async () => copy(at), at);
+    await getChatHistory();
+    // Session 1's reload resolves late; then the record moves to Q.
+    release();
+    await settle();
+    identity = 'Q';
+    expect((await askChatHistory()).askedMarks).toEqual(['mark-Q']);
   });
 });

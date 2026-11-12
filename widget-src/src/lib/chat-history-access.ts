@@ -65,10 +65,10 @@ function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | n
   const now = eraseIdentity();
   if (now !== readAt) {
     store = opened.then((s) => s.reload().then(() => {
-      readyAt = now;
+      if (session === opened) readyAt = now;
       return s;
     }, () => {
-      readAt = null;
+      if (session === opened) readAt = null;
       return null;
     }), () => null);
   }
