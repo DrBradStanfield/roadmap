@@ -30,6 +30,8 @@ case "$1" in
       exit 0
     fi
     echo "== Devices =="
+    # $FAKE/hang-list: a booted-device list that hangs (a child keeps the pipe open, as a hung simctl would).
+    [ "\${3:-}" = booted ] && [ -f "$FAKE/hang-list" ] && sleep 20
     # Other booted devices: $FAKE/booted (the default set) and $FAKE/booted-testing (--set testing).
     [ "$devset" = testing ] && { cat "$FAKE/booted-testing" 2>/dev/null; exit 0; }
     if [ -f "$FAKE/udid" ]; then
@@ -396,7 +398,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       run(['--', 'true']);
       const old = info('token');
       const a = start(['--', ...hold()]);
-      await until(busy);
+      // The holder file names the new run a moment after the lock is taken.
+      await until(() => busy() && info('token') !== old);
       expect(run(['--', 'true'], { HR_SIM_LEASE: old, HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
       release();
       expect((await a.done).code).toBe(0);
@@ -837,6 +840,65 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       await sleep(1500);
       expect(leftovers()).toEqual([]);
     });
+
+    // Review of PR 1435 (R1): a hung `simctl list devices booted` held the lock with no bound, 41 s at a 3 s limit.
+    it('a hung booted-device list before the run ends within about the run limit, and the lock is free', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-list'), '');
+      const t0 = Date.now();
+      const r = await start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' }).done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(0);
+      expect(secs).toBeLessThan(11);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    it('a hung booted-device list mid-run ends within about the run limit, and the lock is free', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' });
+      // The lock is taken before the booted-device check, so wait for the command itself.
+      await until(() => existsSync(join(dir, 'started')));
+      const t0 = Date.now();
+      writeFileSync(join(fake, 'hang-list'), '');
+      const r = await a.done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(124);
+      expect(secs).toBeLessThan(7);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    // R2: kill -0 on sim-run's pid succeeds on an unreaped zombie, so the watchdog outlived it.
+    it('a SIGKILLed sim-run under a parent that never reaps it leaves no watchdog after a tick', async () => {
+      const p = spawn('perl', ['-e', '$| = 1; my $p = fork // die; if (!$p) { exec @ARGV } print "$p\\n"; sleep 60',
+        'bash', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work });
+      live.push({ p, done: new Promise((res) => p.on('exit', res)) });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; });
+      // sim-run forks its watchdog before the command starts (the device setup runs first).
+      await until(() => out.includes('\n') && existsSync(join(dir, 'started')));
+      process.kill(Number(out.trim()), 'SIGKILL');
+      await sleep(3000);
+      expect(leftovers().filter((l) => !l.trim().startsWith(`${p.pid} `) && !l.includes('defunct'))).toEqual([]);
+    }, 30_000);
+
+    // R4: a command that had already ended was reported "stopped".
+    it('a device found after the command ended exits 76 without claiming it stopped the command', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$2"; until [ -f "$0" ]; do sleep 0.1; done; printf "%s\\n" "$1" > "$FAKE/booted"',
+        join(dir, 'release'), IPAD, join(dir, 'started')], { HR_SIM_GUARD_SECONDS: '1' });
+      await until(() => existsSync(join(dir, 'started')));
+      // sim-run stopped: it cannot reap the shim or stop the watchdog, which finds the device after the command is gone.
+      process.kill(a.p.pid!, 'SIGSTOP');
+      release();
+      await sleep(2500);
+      process.kill(a.p.pid!, 'SIGCONT');
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      const line = r.err.split('\n').filter((l) => l.includes(OTHER));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(line[0]).not.toContain('stopped the command');
+    }, 30_000);
   });
 
   describe('status', () => {
