@@ -185,6 +185,7 @@ final class RecordStore {
             display(drawn)
             self.problem = problem
         case .unreadable:
+            recordJSON = ""
             display(nil)
             self.problem = problem
         case .none, .drop: break
