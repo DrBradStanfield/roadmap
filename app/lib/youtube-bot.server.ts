@@ -77,6 +77,7 @@ import {
 import { safeErrorFields } from './safe-error-fields.server';
 import { postClaimed, countSent } from './youtube-bot-post.server';
 import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
+import { CHAT_PROMPT } from './chat-system-prompt.server';
 
 // Every name this file exported before the split (issue #429).
 export { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
@@ -119,6 +120,11 @@ export function startYouTubeBot(): void {
 
   if (!YOUTUBE_PROMPT_TEMPLATE) {
     console.warn('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
+    return;
+  }
+
+  if (CHAT_PROMPT.kind === 'missing') {
+    console.warn('YouTube bot: chat system prompt missing — bot disabled');
     return;
   }
 

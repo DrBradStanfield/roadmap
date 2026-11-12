@@ -81,6 +81,7 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
     // may be excluded.
     const needed = [
       'app/lib/chat.server.ts',
+      'app/lib/chat-system-prompt.md', // US-15 AC65: chat refuses without it
       'packages/health-core/src/merge.ts',
       'docs/products.md',
       'docs/writing-style.md',
@@ -135,8 +136,14 @@ describe('secret files are ignored by git and Docker (US-64 AC14)', () => {
   });
 
   it('.dockerignore keeps .env.example and the server inputs in the build context', () => {
-    for (const path of ['.env.example', 'package.json', 'app/lib/chat.server.ts', 'app/lib/rate-limiter.env-cap.test.txt']) {
+    for (const path of ['.env.example', 'package.json', 'app/lib/chat.server.ts', 'app/lib/chat-system-prompt.md', 'app/lib/rate-limiter.env-cap.test.txt']) {
       expect(dockerIgnores(path), path).toBe(false);
     }
+  });
+
+  // US-15 AC65: CI builds the image from the checkout, so a tracked, non-ignored,
+  // non-blank prompt file is in the build context.
+  it('app/lib/chat-system-prompt.md exists in the repo and is not blank (US-15 AC65)', () => {
+    expect(readFileSync(join(ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8').trim().length).toBeGreaterThan(0);
   });
 });
