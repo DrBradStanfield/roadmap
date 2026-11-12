@@ -49,11 +49,29 @@ function reach(entry: string): Set<string> {
 /** The record host's own modules: they write only inside a host, which only the calls OPENS_A_RECORD names build. */
 const HOST_ONLY = ['storage/web-record-host.ts', 'storage/roadmap-store.ts'].map((f) => resolve(SRC, f));
 const OPENS_A_RECORD = /(?<!function )\b(initRoadmapStore|webRecordHost|RoadmapStore\.create|ChatHistoryStore\.create)\s*\(/g;
-/** The builders' own bodies: each call here runs only inside one of the builders above. A new call in
- *  one of these files changes its count and fails the pin. */
-const BUILDER_CALLS = new Map([['lib/roadmap-data.ts', 2], ['storage/roadmap-store.ts', 1], ['storage/chat-history-store.ts', 1]]
-  .map(([f, n]) => [resolve(SRC, f as string), n as number]));
-const opensARecord = (file: string) => [...readFileSync(file, 'utf8').matchAll(OPENS_A_RECORD)].length !== (BUILDER_CALLS.get(file) ?? 0);
+/** A builder: initRoadmapStore, a static create, or a create: property. A call inside one runs only when
+ *  that builder runs, and a call to the builder is itself caught. Each builder's span, from its parameter
+ *  list to the end of its body (an expression arrow: the rest of its line). */
+const BUILDER = /\b(?:function\s+initRoadmapStore|static\s+(?:async\s+)?create|create\s*:\s*(?:async\s*)?)\s*\(/g;
+function builderSpans(src: string): Array<[number, number]> {
+  return [...src.matchAll(BUILDER)].map((m) => {
+    let i = m.index! + m[0].length;
+    for (let depth = 1; depth > 0; i++) depth += src[i] === '(' ? 1 : src[i] === ')' ? -1 : 0;
+    const arrow = /^[^{=]*=>\s*(?!\{)/.exec(src.slice(i));
+    if (arrow) return [m.index!, src.indexOf('\n', i)] as [number, number];
+    let j = src.indexOf('{', i) + 1;
+    for (let depth = 1; depth > 0; j++) depth += src[j] === '{' ? 1 : src[j] === '}' ? -1 : 0;
+    return [m.index!, j] as [number, number];
+  });
+}
+/** The files that hold the builders: only there is a call inside a builder's body allowed. */
+const BUILDER_FILES = ['lib/roadmap-data.ts', 'storage/roadmap-store.ts', 'storage/chat-history-store.ts'].map((f) => resolve(SRC, f));
+/** A call that opens a record or builds a host, outside the builders' own bodies. */
+const opensARecord = (file: string) => {
+  const src = readFileSync(file, 'utf8');
+  const spans = BUILDER_FILES.includes(file) ? builderSpans(src) : [];
+  return [...src.matchAll(OPENS_A_RECORD)].some((m) => !spans.some(([from, to]) => m.index! > from && m.index! < to));
+};
 
 describe('US-09 AC2c: the pages that open no record', () => {
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s reaches the mirror but calls no device health writer outside the record host', (entry) => {
@@ -65,7 +83,7 @@ describe('US-09 AC2c: the pages that open no record', () => {
 
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s never opens a record, so the record host\'s writers never run there', (entry) => {
     const files = reach(entry);
-    expect([...BUILDER_CALLS.keys()].every((f) => files.has(f))).toBe(true); // the walk reaches the builders' files
+    expect(BUILDER_FILES.every((f) => files.has(f))).toBe(true); // the walk reaches the builders' files
     expect([...files].filter(opensARecord)).toEqual([]);
   });
 

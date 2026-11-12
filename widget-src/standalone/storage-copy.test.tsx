@@ -286,15 +286,17 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
   it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {
     const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
     expect(shown.container.textContent).toContain('kept in this browser');
-    act(() => {
-      // Changed while the page sat in the cache: no storage event reaches it.
-      localStorage.setItem('health_roadmap_log_off_id', 'id-after');
-      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
-    });
-    expect(shown.container.textContent).toContain('Your record is safe in your');
-    expect(shown.container.textContent).not.toContain('kept in this browser');
-    shown.unmount();
-    localStorage.removeItem('health_roadmap_log_off_id');
+    try {
+      act(() => {
+        // Changed while the page sat in the cache: no storage event reaches it.
+        localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+      });
+      expect(shown.container.textContent).toContain('Your record is safe in your');
+      expect(shown.container.textContent).not.toContain('kept in this browser');
+    } finally {
+      localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+    }
   });
 
   it('an unmounted sync control hears no log-off id change and no back-forward restore', () => {
@@ -314,15 +316,19 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
       window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
       window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
     });
-    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
-    fire();
-    expect(heard).toHaveBeenCalledWith('storage');
-    expect(heard).toHaveBeenCalledWith('pageshow');
-    shown.unmount();
-    heard.mockClear();
-    fire();
-    expect(heard).not.toHaveBeenCalled();
-    vi.restoreAllMocks();
+    try {
+      const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+      fire();
+      expect(heard).toHaveBeenCalledWith('storage');
+      expect(heard).toHaveBeenCalledWith('pageshow');
+      shown.unmount();
+      heard.mockClear();
+      fire();
+      expect(heard).not.toHaveBeenCalled();
+    } finally {
+      cleanup(); // unmount through the wrapped removal first, so no wrapped listener outlives the test
+      vi.restoreAllMocks();
+    }
   });
 });
 

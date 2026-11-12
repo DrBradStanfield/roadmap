@@ -134,7 +134,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     // read/merge began BEFORE logout. A catch-only guard is too early.
     // Every named file takes the record's write rule (US-09 AC2c): each one
     // written here holds health data (the record, the chat history), so a new
-    // file is refused by default. A guest always may write.
+    // file is refused by default. A guest page that opened with no log-off on
+    // this device since it loaded always may write.
     if (roadmapLocalWritesStopped()) {
       throw new StorageError('On-device roadmap persistence stopped for logout.');
     }

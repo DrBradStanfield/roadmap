@@ -1,8 +1,9 @@
 /** @vitest-environment jsdom */
 // US-09 AC2c: every named file the on-device adapter writes takes the record's
 // write rule. A page that may not write health values to this device stores no
-// named file; a guest always may. Each test runs in a fresh module graph, as a
-// fresh page, because the write state lives for the page.
+// named file; a guest page that opened with no log-off on this device since it
+// loaded always may. Each test runs in a fresh module graph, as a fresh page,
+// because the write state lives for the page.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
