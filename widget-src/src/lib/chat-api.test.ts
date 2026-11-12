@@ -281,3 +281,41 @@ describe('chat-api: the open blog post (US-50 AC14)', () => {
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).articleHandle).toBe('some-post');
   });
 });
+
+// US-15 AC47b: a failed delete reports fixed words only. The
+// error and its cause chain reach neither the console nor Sentry.
+describe.each([
+  ['delete', 'Chat delete failed', () => deleteConversation('c1')],
+] as const)('US-15 AC47b: a failed %s reports fixed words only', (kind, words, call) => {
+  const MARKER = 'zz-thread-marker';
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('neither the error nor its cause reaches the console or Sentry', async () => {
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.mocked(Sentry.captureMessage).mockClear();
+    const failure = Object.assign(new Error(`failed for ${MARKER}`), { cause: new Error(`cause ${MARKER}`) });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure));
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+
+    await call();
+
+    const captured = vi.mocked(Sentry.captureException).mock.calls;
+    expect(captured).toHaveLength(1);
+    const [reported, context] = captured[0] as unknown as [Error, { tags: Record<string, string> }];
+    expect(reported.message).toBe(words);
+    expect('cause' in reported).toBe(false);
+    expect(context.tags).toEqual({ feature: 'chat', kind });
+    const printed = spies.flatMap((s) => s.mock.calls);
+    expect(printed).toEqual([[words]]);
+    const text = (x: unknown): string => {
+      if (x instanceof Error) return `${x.message} ${text((x as { cause?: unknown }).cause)}`;
+      return x === undefined ? '' : JSON.stringify(x) ?? String(x);
+    };
+    const all = [...printed, ...captured, ...vi.mocked(Sentry.captureMessage).mock.calls];
+    expect(all.flat().map(text).join(' ')).not.toContain(MARKER);
+  });
+});

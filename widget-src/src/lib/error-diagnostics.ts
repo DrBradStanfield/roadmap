@@ -16,6 +16,7 @@ type RecordFailure =
   | 'Chat-history erase failed'
   | 'Chat-history save failed'
   | 'Chat send failed'
+  | 'Chat delete failed'
   | 'Chat stream line was not JSON'
   | 'Chat stream ended without an answer'
   | 'Pre-erase teardown failed'
