@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T5,merge batch,"merge-batch exits 2 and 4 leave earlier PRs merged and a merge in progress, though its header says the tree is as before",implicit state,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now. tools/merge-batch.mjs,,no

@@ -21,6 +21,8 @@ beforeAll(() => {
 echo "$*" | tr "\\n" " " >> "$STATE.calls"; echo >> "$STATE.calls"
 [ -n "\${GH_FAIL:-}" ] && exit 1
 [ -n "\${GH_SLEEP:-}" ] && exec /bin/sleep "$GH_SLEEP" # one process, as the real gh is
+# Like Go's gh: deaf to ALRM and TERM, so only a SIGKILL ends it.
+[ -n "\${GH_HANG:-}" ] && { trap '' ALRM TERM; exec /bin/sleep 30; }
 n=$(cat "$STATE" 2>/dev/null || echo 0)
 # Poll and rate-limit calls answer with fixture JSON, run through the script's own --jq filter as gh would.
 jqf=; prev=
@@ -39,7 +41,10 @@ case "$*" in
     [ -n "\${MERGE:-}" ] && { poll_n; json "{$MERGE,\\"statusCheckRollup\\":$pend}"; exit; }
     if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
     else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
-  *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1; echo "pass=3 fail=$FAILS skipped=0 pending=0"; [ "$FAILS" = 0 ] || echo "failed: \${FAILNAME:-test}" ;;
+  *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1
+    c='{"name":"checks","bucket":"pass"},{"name":"test","bucket":"pass"},{"name":"unit (1, UTC)","bucket":"pass"}'
+    [ "$FAILS" = 0 ] || c="$c,{\\"name\\":\\"\${FAILNAME:-test}\\",\\"bucket\\":\\"fail\\"}"
+    json "\${CHECKS:-[$c]}" ;;
   *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
 `);
@@ -126,6 +131,14 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(r.status).toBe(1);
     expect(r.stdout).toContain('failed: test');
   });
+  it('US-64 AC26: pr: a draft PR (every check SKIPPED) is not a pass: no successful test check exits 1', () => {
+    const skipped = JSON.stringify(['review', 'checks', 'unit (1, UTC)', 'test'].map((name) => ({ name, bucket: 'skipping' })));
+    const r = run(['pr', '42'], { CHECKS: skipped });
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain('no successful test check (a draft PR? mark it ready: gh pr ready 42)');
+    const noTest = JSON.stringify([{ name: 'checks', bucket: 'pass' }, { name: 'tests', bucket: 'pass' }]);
+    expect(run(['pr', '42'], { CHECKS: noTest }).status).toBe(1);
+  });
   it('gives up with exit 3 after 10 gh errors in a row, never hangs', () => {
     expect(run(['deploy', '123'], { GH_FAIL: '1' }).status).toBe(3);
     expect(run(['pr', '42'], { GH_FAIL: '1' }).status).toBe(3);
@@ -143,6 +156,11 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('cuts off a gh call that hangs, so the time limit still holds', () => {
     const t = Date.now();
     expect(run(['deploy', '123'], { GH_SLEEP: '30', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
+    expect(Date.now() - t).toBeLessThan(10_000);
+  });
+  it('US-64 AC26: kills a hung gh that ignores ALRM and TERM (as Go does), so the time limit still holds', () => {
+    const t = Date.now();
+    expect(run(['deploy', '123'], { GH_HANG: '1', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
     expect(Date.now() - t).toBeLessThan(10_000);
   });
   it('gives up with exit 3 at the time limit', () => {

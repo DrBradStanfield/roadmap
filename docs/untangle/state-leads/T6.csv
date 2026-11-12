@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T6,tooling,Small tooling states: test-all-locked treats a reused pid as alive and exits 1 on a lock timeout like failed tests; worktree-new's note to subagents contradicts its own comment,implicit state,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now. scripts/test-all-locked.mjs; tools/worktree-new.sh,,no

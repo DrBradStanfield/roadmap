@@ -34,6 +34,16 @@ const MAX_SAVE_ATTEMPTS = 5;
 /** The write landed and the re-read disagreed, so the caller cannot say either way. */
 const VERIFY_HINT = 'The change may or may not have landed. Read the record again before trying it a second time.';
 
+/**
+ * A failure after a write that landed with a warning: what landed comes first,
+ * then what failed and what to do, and nothing claims the save succeeded
+ * (US-31 AC8a). `describeStorageFailure` passes such a hint through as it is.
+ */
+const EARLIER = 'Earlier in this save: ';
+function afterLanded(warning: string, then: string): string {
+  return `${EARLIER}${warning} Then ${then}`;
+}
+
 /** Every synced document carries the lamport meta the verify step relies on. */
 export interface SyncedFile {
   meta: { lamport: number };
@@ -111,6 +121,8 @@ export class SyncManager<T extends SyncedFile> {
   async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
     let lastError: unknown;
     let mayHaveWritten = false;
+    // The adapter's note on a landed write, kept for a failure that follows it.
+    let landedWarning: string | undefined;
     for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
       try {
         const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName, signal);
@@ -119,6 +131,7 @@ export class SyncManager<T extends SyncedFile> {
         try {
           const { version: newVersion, warning } = await this.adapter.write(this.doc.fileName, merged, version, signal);
           mayHaveWritten = true;
+          landedWarning = warning;
           if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
           return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}) };
         } catch (error) {
@@ -139,16 +152,22 @@ export class SyncManager<T extends SyncedFile> {
         // undo an earlier write. Preserve the cause, but not its no-write/status certainty.
         if (!mayHaveWritten) throw error;
         // The status stays, so a 401 still refreshes the token (iOS).
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', VERIFY_HINT, error, error instanceof StorageError ? error.status : undefined);
+        const status = error instanceof StorageError ? error.status : undefined;
+        const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, status === 401 || status === 403
+          ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
+          : 'a later step failed, so check what landed: read the record again before trying it a second time.');
+        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status);
       }
     }
     throw new StorageError(
       `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm`,
       // Any earlier attempt may have written, even if the final conflict
       // refused its upload. Track the whole save, not just the last error.
-      mayHaveWritten
-        ? 'Some of it may have landed. Read the record again before retrying.'
-        : 'Your data is unharmed and nothing was written. Try again.',
+      landedWarning
+        ? afterLanded(landedWarning, 'every later attempt met a sync conflict, so check what landed: read the record again before retrying.')
+        : mayHaveWritten
+          ? 'Some of it may have landed. Read the record again before retrying.'
+          : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
     );
   }
@@ -231,7 +250,9 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
     if (error.hint?.includes('landed')) {
       return {
         message: `${provider} refused this connection’s access after a change was sent`,
-        hint: 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+        hint: error.hint.startsWith(EARLIER)
+          ? error.hint
+          : 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
       };
     }
     return {

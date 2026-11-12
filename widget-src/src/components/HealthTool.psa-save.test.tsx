@@ -364,13 +364,13 @@ describe('"Replaces" shows only while a value is typed (US-06 AC15, Codex R6)', 
   });
 });
 
-describe('a raised PSA prints on its side of 4.0 (US-06 AC18, Brad 2026-11-03)', () => {
-  it('a saved 4.04 reads 4.04 under the field and in "Replaces", not 4.0', async () => {
-    const { view, psa, day, note } = await page([[4.04, '2025-01-14']]);
-    await waitFor(() => expect(note()).toContain('4.04 ng/mL ·'));
+describe('a PSA prints on its side of 4.0 (US-06 AC18, Brad 2026-11-03; turned round 2026-11-12)', () => {
+  it('a saved 3.96 reads 3.96 under the field and in "Replaces", not 4.0', async () => {
+    const { view, psa, day, note } = await page([[3.96, '2025-01-14']]);
+    await waitFor(() => expect(note()).toContain('3.96 ng/mL ·'));
     pick(day, '2025-01-14');
     type(psa(), '3.2');
-    await waitFor(() => expect(note()).toContain('Replaces 4.04 ng/mL'));
+    await waitFor(() => expect(note()).toContain('Replaces 3.96 ng/mL'));
     view.unmount();
   });
 

@@ -152,7 +152,7 @@ function coreMetricOf(row: Row): MetricType | undefined {
  */
 function shownValue(row: Row): string {
   const metric = coreMetricOf(row);
-  // A raised PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
+  // A PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
   if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
   return metric && UNIT_DEFS[metric] ? formatDisplayValue(metric, row.value, 'si') : String(row.value);
 }
@@ -240,7 +240,7 @@ export async function run(argv: string[]): Promise<number> {
     const sync = recordSync(adapter, 'edit-record-cli', now);
     const file = await sync.load();
     const change = args.command === 'add' ? runAdd(args, file, now) : runCorrect(args, file, now);
-    await sync.save(change.file);
+    const saved = await sync.save(change.file);
 
     const { row, unit, previous } = change;
     const verb = args.command === 'add' ? 'Added' : 'Corrected';
@@ -252,6 +252,7 @@ export async function run(argv: string[]): Promise<number> {
         ? `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`
         : `Wrote ${oneLine(adapter.path)}. No backup kept (erase).\n`),
     );
+    if (saved.warning) process.stderr.write(`edit_record: ${oneLine(saved.warning)}\n`);
     return 0;
   } catch (error) {
     // A rule the user broke, or the record refusing to be written — both are

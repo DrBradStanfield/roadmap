@@ -185,7 +185,8 @@ export type QuotaCheck =
 export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BatchPollResponse {
-  status: 'processing' | 'ended';
+  /** `error`: this poll failed but a later one may not; the caller polls on (US-12 AC24). */
+  status: 'processing' | 'ended' | 'error';
   completed: number;
   total: number;
   /** Each result carries the position of the file it answers in the batch

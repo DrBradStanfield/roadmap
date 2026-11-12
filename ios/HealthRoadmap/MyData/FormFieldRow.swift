@@ -102,7 +102,8 @@ struct FormFieldRow: View {
         // Under a group's name, "Select screening method"; a question ("Discussed…?") goes under the row instead.
         let asks = label.hasSuffix("?")
         let empty = heading == nil || asks ? "Select..." : "Select \(Self.lowercasedFirst(label))"
-        let shown = options.first { $0.value == value && !$0.value.isEmpty }?.label ?? empty
+        // A blank answer an option names ("Not given", US-07 AC1j) shows that name; "Select..." stays the empty prompt.
+        let shown = options.first { $0.value == value && (!$0.value.isEmpty || $0.label != "Select...") }?.label ?? empty
         return labelled(label, hint: heading != nil && asks ? [label, hint].compactMap { $0 }.joined(separator: "\n") : hint) {
             Menu {
                 Picker(label, selection: Binding(get: { value }, set: { picked in
@@ -202,9 +203,8 @@ struct MonthPickerSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var picked = ""
-    @State private var message: String?
-    /// A save is under way: the sheet stays open and its buttons wait.
-    @State private var saving = false
+    /// The save (US-25 AC21e): its words show under the fields; Save, Cancel and swipe-down wait while busy.
+    @State private var state: SheetSave.State<SheetSave.NoHeld> = .editing(message: nil)
 
     var body: some View {
         sheet.pinsRecord()
@@ -218,28 +218,28 @@ struct MonthPickerSheet: View {
                 }
                 .pickerStyle(.wheel)
                 .labelsHidden()
-                if let message {
+                if let message = state.message {
                     Text(message).foregroundStyle(.red)
                 }
                 if !current.isEmpty {
-                    Button("Clear this date") { submit("") }.disabled(saving)
+                    Button("Clear this date") { submit("") }.disabled(state.busy)
                 }
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { submit(picked) }.disabled(picked.isEmpty || saving) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(state.busy) }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { submit(picked) }.disabled(picked.isEmpty || state.busy) }
             }
             .onAppear { picked = months.contains(current) ? current : ordered.first ?? "" }
         }
-        .interactiveDismissDisabled(saving)
+        .interactiveDismissDisabled(state.busy)
     }
 
     /// A past date lists the latest month first; a future one the soonest.
     private var ordered: [String] { future ? months : months.reversed() }
 
     private func submit(_ month: String) {
-        SheetSave.run($saving, { await save(month) }) { SheetSave.close($0, dismiss, $message) }
+        SheetSave.submit($state, dismiss: { dismiss() }) { await save(month) }
     }
 }
