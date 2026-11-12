@@ -119,6 +119,28 @@ const alive = (pid: number) => spawnSync('kill', ['-0', String(pid)]).status ===
 /** True while the lock is taken: lockf on the lock file cannot take it at once (75). Changes nothing. */
 const busy = () => existsSync(join(home, 'lock'))
   && spawnSync('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9', '_', join(home, 'lock')]).status === 75;
+/** Another process holding the lock, not through sim-run, until release(). */
+const holdLock = () => {
+  mkdirSync(home, { recursive: true });
+  const p = spawn('/bin/bash', ['-c', 'exec 9>>"$1"; lockf -s -t 0 9 || exit 1; until [ -f "$2" ]; do sleep 0.1; done',
+    '_', join(home, 'lock'), join(dir, 'release')]);
+  const done = new Promise((res) => p.on('exit', res));
+  live.push({ p, done });
+  return { p, done };
+};
+/** CPU seconds used by a process and its live descendants, exited children summed in (ps -S). The
+ * real /bin/ps, not the fake on PATH. Measured live, since exec drops a process's accumulated child CPU. */
+const treeCpu = (root: number) => {
+  const rows = spawnSync('/bin/ps', ['-S', '-axo', 'pid=,ppid=,time='], { encoding: 'utf8' }).stdout
+    .trim().split('\n').map((l) => l.trim().split(/\s+/));
+  const secs = (t: string) => t.split(':').reduce((s, part) => s * 60 + Number(part), 0);
+  const tree = new Set([String(root)]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [pid, ppid] of rows) if (tree.has(ppid) && !tree.has(pid)) { tree.add(pid); grew = true; }
+  }
+  return rows.filter(([pid]) => tree.has(pid)).reduce((s, [, , t]) => s + secs(t), 0);
+};
 
 describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macOS: lockf, load guard)', () => {
   describe('lock: who runs and who waits', () => {
@@ -163,6 +185,33 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.stderr).toMatch(/gave up after 1s: the simulator is still in use by pid \d+ .*: sh -c until .*release/);
       release();
       expect((await a.done).code).toBe(0);
+    });
+
+    // macOS lockf in its fd form spins a core while it waits (lockf -s -t 5 9 used 4.97 s of CPU in 5 s).
+    it('a waiter barely uses the CPU: under 0.3 s over a 3 s wait', async () => {
+      holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      const before = treeCpu(b.p.pid!);
+      await sleep(3000);
+      const used = treeCpu(b.p.pid!) - before;
+      expect(b.p.exitCode).toBe(null);
+      expect(used).toBeLessThan(0.3);
+    });
+
+    it('a waiter takes the lock within about a second of it freeing', async () => {
+      const h = holdLock();
+      await until(busy);
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30' });
+      await until(() => b.err().includes('waiting up to'));
+      await sleep(1500);
+      release();
+      await h.done;
+      const freed = Date.now();
+      await until(() => existsSync(join(home, 'holder')) && info('pid') === String(b.p.pid));
+      expect(Date.now() - freed).toBeLessThan(1500);
+      expect((await b.done).code).toBe(0);
     });
 
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
