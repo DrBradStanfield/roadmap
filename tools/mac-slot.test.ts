@@ -156,6 +156,15 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     expect(n.stderr).not.toMatch(/waiting for a codex slot/);
   });
 
+  it('an unreadable load after a high one keeps waiting and refuses at the bound (only the first read fails open)', async () => {
+    setLoads('12.00', 'xx');
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '2' });
+    expect(await r.done).toBe(75);
+    expect(existsSync(join(fake, 'ran'))).toBe(false);
+    expect(r.err()).toMatch(/^mac-slot: refused: /m);
+    expect(r.err()).not.toMatch(/could not read the load|starting tests slot/);
+  });
+
   it('a load that drops below the cap within the bound starts the command', async () => {
     setLoads('12.00', '12.00', '2.00');
     const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`], { MAC_SLOT_LOAD_WAIT_SECONDS: '10' });
