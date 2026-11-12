@@ -284,12 +284,12 @@ export class RecordSession {
    * refused here has changed nothing anywhere (US-09 AC23).
    */
   async erase(beforeErase?: () => Promise<void>): Promise<EraseResult> {
-    // Refused before anything moves: a tab off the record this browser has chosen, read live here (US-11
-    // AC6); a session on-device because the cloud could not be read, as an erase lists the rows it removes
-    // from the record it reads; and a second erase while one runs (US-16 AC2f).
+    // Refused before anything moves: a session on-device because the cloud could not be read, as an erase
+    // lists the rows it removes from the record it reads (a reload would not help it); a tab off the record
+    // this browser has chosen, read live here (US-11 AC6); and a second erase while one runs (US-16 AC2f).
     const host = this.host;
-    const refusal = host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
-      : this.cloudUnreachable ? ERASE_UNREACHABLE : this.mode.mode === 'erasing' ? ERASE_BUSY : null;
+    const refusal = this.cloudUnreachable ? ERASE_UNREACHABLE : host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
+      : this.mode.mode === 'erasing' ? ERASE_BUSY : null;
     if (refusal) return { success: false, error: refusal };
     // On this device, the revision of the bytes read: an unreadable record is
     // replaced only at it, so another tab's repair is never written over (AC9).
