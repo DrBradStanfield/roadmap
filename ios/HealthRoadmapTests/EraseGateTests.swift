@@ -110,13 +110,17 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         }
     }
 
-    /// The error `connect` threw, or nil if it connected. Fails if it has not returned
-    /// within 5 s: a connect that waits on something the test still holds.
+    struct StillRunning: Error {}
+
+    /// The error `connect` threw, or nil if it connected. `StillRunning` if it has not
+    /// returned within 5 s: a connect that waits on something the test still holds.
     private func connectError(_ connect: Task<Void, Error>, file: StaticString = #filePath, line: UInt = #line) async -> Error? {
         let done = XCTestExpectation(description: "the connect returns")
         Task { _ = try? await connect.value; done.fulfill() }
-        let waited = await XCTWaiter().fulfillment(of: [done], timeout: 5)
-        XCTAssertEqual(waited, .completed, "the connect returned while the erase was held", file: file, line: line)
+        guard await XCTWaiter().fulfillment(of: [done], timeout: 5) == .completed else {
+            XCTFail("the connect did not return while the erase was held", file: file, line: line)
+            return StillRunning()
+        }
         do {
             try await connect.value
             return nil
@@ -229,6 +233,87 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         gate.open()
         guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertEqual(app.sync.provider, .dropbox)
+        XCTAssertEqual(activeDays(dropbox.record), [], "the erase reached the cloud")
+    }
+
+    // MARK: AC16e: Connect and Disconnect wait for the whole erase
+
+    /// No sign-in kept and nothing lifted: no provider or account file, the tokens as
+    /// they were, and no record in the cloud.
+    private func assertNothingKept(_ app: App, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertNil(app.sync.provider, "still on the phone", file: file, line: line)
+        XCTAssertNil(text("sync-provider"), "no provider file", file: file, line: line)
+        XCTAssertNil(text("sync-account"), file: file, line: line)
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r", "the sign-in was not kept", file: file, line: line)
+        XCTAssertNil(dropbox.file, "nothing was lifted into the cloud", file: file, line: line)
+        XCTAssertEqual(dropbox.uploads, 0, file: file, line: line)
+    }
+
+    func testAConnectDuringAPhoneOnlyEraseIsRefused_US25_AC16e() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        let release = holdLine(app.store)
+        let erase = Task { await app.eraser.eraseAll() }
+        try await until("the erase runs") { app.eraser.erasing }
+        let authenticate = signIn()
+        let connect = Task { try await app.sync.connect(.dropbox, authenticate: authenticate) }
+        let error = await connectError(connect)
+        XCTAssertEqual(error as? OAuthClient.Failure, refusal, "refused before the sign-in shows")
+        release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        _ = try? await connect.value
+        assertNothingKept(app)
+    }
+
+    /// Condition 3: a sign-in begun before a phone-only erase, returning during it, never
+    /// lifts the half-erased record into the cloud.
+    func testASignInThatReturnsDuringAPhoneOnlyEraseLiftsNothing_US25_AC16e() async throws {
+        let app = try app(connected: false)
+        await XCTAssertSaved(await app.store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        let held = heldSignIn()
+        let connect = Task { try await app.sync.connect(.dropbox, authenticate: held.authenticate) }
+        for await _ in held.shown { break }
+        let release = holdLine(app.store)
+        let erase = Task { await app.eraser.eraseAll() }
+        try await until("the erase runs") { app.eraser.erasing }
+        held.release()
+        let error = await connectError(connect)
+        XCTAssertEqual(error as? OAuthClient.Failure, refusal, "refused as the sign-in returns")
+        release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        _ = try? await connect.value
+        assertNothingKept(app)
+        XCTAssertEqual(activeDays(app.store.recordJSON), [], "the erase landed on the phone")
+    }
+
+    /// A cloud erase held at its last step: its engine call is over, its words do not show yet.
+    func testConnectAndDisconnectWaitForACloudErasesLastSteps_US25_AC16e() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        let app = try app(connected: true)
+        await app.sync.start()
+        let held = heldSignIn()
+        let late = Task { try await app.sync.connect(.dropbox, authenticate: held.authenticate) }
+        for await _ in held.shown { break }
+        lastStep.armed = true
+        let erase = Task { await app.eraser.eraseAll() }
+        for await _ in lastStep.reached { break }
+        XCTAssertTrue(app.eraser.erasing, "the cloud's part is over, the erase is not")
+        held.release()
+        let lateError = await connectError(late)
+        XCTAssertEqual(lateError as? OAuthClient.Failure, refusal, "a sign-in begun before the erase keeps nothing")
+        let authenticate = signIn()
+        let now = Task { try await app.sync.connect(.dropbox, authenticate: authenticate) }
+        let nowError = await connectError(now)
+        XCTAssertEqual(nowError as? OAuthClient.Failure, refusal, "a connect is refused before its sign-in")
+        let disconnect = await app.sync.disconnectOutcome()
+        XCTAssertEqual(disconnect, .refused, "Disconnect waits for the erase's words")
+        XCTAssertEqual(app.sync.provider, .dropbox)
+        XCTAssertEqual(text("sync-provider"), "dropbox")
+        XCTAssertEqual(text("sync-account"), "dbid:A")
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r", "no sign-in was kept")
+        lastStep.release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
         XCTAssertEqual(activeDays(dropbox.record), [], "the erase reached the cloud")
     }
 }
