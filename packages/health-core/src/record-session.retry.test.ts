@@ -105,7 +105,8 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
     const { store, session } = await failedSession(OFFLINE());
     expect(await session.retry()).toBe(false);
     expect(store.writes).toBe(2);
-    expect(session.saveStatus).toBe('not-saved');
+    expect(session.saveStatus).toBe('not-saved-on-device'); // the failure mirror wrote the device copy again
+    expect(session.retryDue).toBe(true);
     store.fail = null;
     expect(await session.retry()).toBe(true);
     expect(store.writes).toBe(3);

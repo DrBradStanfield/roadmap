@@ -12,7 +12,7 @@
  */
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
-import { currentSaveStatus } from '../src/lib/roadmap-data';
+import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
@@ -31,14 +31,15 @@ const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 let storageCtaSeen = false;
 
 /** What a connected record's save is doing: the session's save status (US-09
- *  AC30), and the store's pending-sync marker ("still waiting to sync"), set by
- *  a failed cloud save or a failed connect-time lift and cleared by the next
- *  successful cloud save. Each fires its event on every change; no polling. */
-interface SaveFacts { status: SaveStatus; pendingSync: boolean }
-const readSaveFacts = (): SaveFacts => ({ status: currentSaveStatus(), pendingSync: isSyncPending() });
+ *  AC30), whether a retry of a failed save will come, and the store's
+ *  pending-sync marker ("still waiting to sync"), set by a failed cloud save or
+ *  a failed connect-time lift and cleared by the next successful cloud save.
+ *  Each fires its event on every change; no polling. */
+interface SaveFacts { status: SaveStatus; pendingSync: boolean; retry: boolean }
+const readSaveFacts = (): SaveFacts => ({ status: currentSaveStatus(), pendingSync: isSyncPending(), retry: currentRetryDue() });
 function useSaveFacts(backend: Backend): SaveFacts {
   // Read at mount, so the first frame never says a false Synced.
-  const [facts, setFacts] = useState<SaveFacts>(() => (backend === 'local' ? { status: 'saved', pendingSync: false } : readSaveFacts()));
+  const [facts, setFacts] = useState<SaveFacts>(() => (backend === 'local' ? { status: 'saved', pendingSync: false, retry: false } : readSaveFacts()));
   useEffect(() => {
     if (backend === 'local') return;
     const check = () => setFacts(readSaveFacts());
@@ -273,7 +274,8 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         {deviceHolds(facts) && (
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            Your data is safe in this browser meanwhile.
+            {/* Only while a retry will come: never after a refused sign-in (US-09 AC30). */}
+            {facts.retry && ' It will upload automatically.'} Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>

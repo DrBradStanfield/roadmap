@@ -10,7 +10,8 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 const sync = vi.hoisted(() => ({ pending: false, status: 'saved' as 'saved' | 'saving' | 'not-saved' | 'not-saved-on-device', popup: vi.fn(async () => {}) }));
-vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status }));
+// No retry due: these rows pin the line without the retry clause (storage-bar-save-retry.test.tsx pins it, US-09 AC30).
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status, currentRetryDue: () => false }));
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class { connectViaPopup = sync.popup; },
   GitHubAdapter: class {},

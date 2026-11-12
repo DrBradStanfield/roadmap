@@ -210,6 +210,7 @@ export class RoadmapStore {
   get backendId() { return this.session.backendId; }
   /** What the storage line says of the save (US-09 AC30); see the session. */
   get saveStatus() { return this.session.saveStatus; }
+  get retryDue() { return this.session.retryDue; } // US-09 AC30: Settings says an upload will come
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {
@@ -544,19 +545,18 @@ export class RoadmapStore {
   /**
    * Start the live re-read (US-34): health-core's LiveRefresh decides when to
    * read; the page tells it when the tab shows or hides. visibilitychange and
-   * focus both ask where the tab is now. Returns the stop.
+   * focus both ask where the tab is now; `online` retries a failed save (US-09 AC30). Returns the stop.
    */
   startLiveRefresh(): () => void {
     const isVisible = () => document.visibilityState !== 'hidden';
     const live = new LiveRefresh(this.session, this.host, { reread: () => this.refreshFromRemote(), isVisible });
     const check = () => (isVisible() ? live.visible() : live.hidden());
-    document.addEventListener('visibilitychange', check);
-    window.addEventListener('focus', check);
+    const signals: Array<[EventTarget, string, () => void]> = [[document, 'visibilitychange', check], [window, 'focus', check], [window, 'online', () => live.online()]];
+    for (const [target, name, run] of signals) target.addEventListener(name, run);
     live.start();
     return () => {
       live.stop();
-      document.removeEventListener('visibilitychange', check);
-      window.removeEventListener('focus', check);
+      for (const [target, name, run] of signals) target.removeEventListener(name, run);
     };
   }
 

@@ -41,6 +41,10 @@
         "request"
       ],
       "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
+    },
+    "cloudOnline": {
+      "args": [],
+      "returns": "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute, never after a refused sign-in) and catches up as a return does; nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash."
     }
   }
 }

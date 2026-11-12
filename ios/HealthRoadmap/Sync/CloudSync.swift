@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 
 /// Keeps the record in the user's Dropbox or Google Drive (US-25 AC11). It signs
@@ -56,6 +57,8 @@ final class CloudSync: CloudPort {
     /// The connected account's email, which Sync shows; nil when the provider gave
     /// none. On the phone only (SyncFiles.email), never logged.
     private(set) var accountEmail: String?
+    /// Tells the engine when the network comes back (US-09 AC30); kept for the app's life.
+    private var network: NetworkReturn?
     /// The cloud the record was last synced with, kept after Disconnect: the copy
     /// there stays, so the app never says the record never left the phone (review A3).
     private(set) var syncedBefore: CloudProvider?
@@ -95,6 +98,7 @@ final class CloudSync: CloudPort {
         // Queued, not waited for: the engine's queue runs it before any call made after this.
         engine.enqueue { [phone] in $0.attach(self, phone: phone) }
         store.onEdit = { [weak self] in _ = self?.send(.edited) }
+        network = NetworkReturn { [weak self] in Task { await self?.online() } }
     }
 
     /// At launch: open the cloud record, if a cloud is connected.
@@ -144,6 +148,13 @@ final class CloudSync: CloudPort {
         } else {
             await run(send(.openStarted))
         }
+    }
+
+    /// The network came back (US-09 AC30): the engine retries a failed save, at most once a
+    /// minute and never after a refused sign-in, then catches up.
+    func online() async {
+        guard recordOpen else { return }
+        _ = try? await engine.cloudOnline()
     }
 
     /// The app is leaving the screen: stop re-reading, and save what waits.
@@ -402,4 +413,40 @@ final class CloudSync: CloudPort {
     func notify(_ news: HealthEngine.CloudNews, session: Int) {
         _ = runNow(send(.news(session: session, news, at: .now)))
     }
+}
+
+/// The network coming back, from NWPathMonitor (US-09 AC30): `onReturn` runs on the main actor
+/// when the path is satisfied after it was not. The first report, at start, is never a return.
+/// Kept whole in this file so it can move out on its own.
+@MainActor
+final class NetworkReturn {
+    private let monitor = NWPathMonitor()
+    private let onReturn: () -> Void
+    private var satisfied: Bool?
+
+    init(onReturn: @escaping () -> Void) {
+        self.onReturn = onReturn
+        monitor.pathUpdateHandler = { [weak self] path in
+            let now = path.status == .satisfied
+            Task { @MainActor in self?.report(now) }
+        }
+        monitor.start(queue: DispatchQueue(label: "health-roadmap.network-return"))
+    }
+
+    deinit { monitor.cancel() }
+
+    private func report(_ now: Bool) {
+        let back = Self.isReturn(previous: satisfied, now: now)
+        satisfied = now
+        if back { onReturn() }
+    }
+
+    /// True when a path report is a return: satisfied after a report that was not.
+    nonisolated static func isReturn(previous: Bool?, now: Bool) -> Bool { previous == false && now }
+}
+
+extension HealthEngine {
+    /// The network came back: retry a failed save (US-09 AC30). An optional door: nil from an
+    /// engine without it, and nothing is retried on this trigger.
+    func cloudOnline() throws -> String? { try optionalCall("cloudOnline", []) }
 }

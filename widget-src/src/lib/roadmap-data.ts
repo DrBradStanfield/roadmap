@@ -118,6 +118,12 @@ export function currentSaveStatus(): SaveStatus {
   return store?.saveStatus ?? 'saved';
 }
 
+/** True while a failed save will be retried (US-09 AC30), for Settings' waiting line; it
+ *  follows SAVE_STATUS_EVENT too. False while no record is open. */
+export function currentRetryDue(): boolean {
+  return store?.retryDue ?? false;
+}
+
 // --- synchronous prefill seed for HealthTool's initial inputs state ---
 // The store is initialised before render (app.tsx awaits initRoadmapStore), so
 // InputPanel's FIRST render can see the saved prefill (sex/height/birth) and

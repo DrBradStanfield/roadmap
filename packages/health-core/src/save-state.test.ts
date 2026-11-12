@@ -11,7 +11,8 @@ import {
 const clean = (changes: number): SaveBase => ({ mode: 'clean', changes });
 const waiting = (changes: number, saved: number): SaveBase => ({ mode: 'waiting', changes, saved });
 const saving = (changes: number, saved: number, from: number, armed = false): SaveBase => ({ mode: 'saving', changes, saved, from, armed });
-const failed = (changes: number, saved: number, mirrored = false): SaveBase => ({ mode: 'failed', changes, saved, mirrored });
+// Lead A1 step e: every failed row here fails for a reason other than a refused grant (save-retry.test.ts has both).
+const failed = (changes: number, saved: number, mirrored = false): SaveBase => ({ mode: 'failed', changes, saved, mirrored, cause: 'other' });
 const reading = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'reading', under });
 const writing = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'writing', under });
 
@@ -23,7 +24,7 @@ const EVENTS: Record<string, SaveEvent> = {
   edited: { type: 'edited' },
   save: { type: 'save' },
   landed: { type: 'passLanded', from: 6 },
-  failed: { type: 'passFailed' },
+  failed: { type: 'passFailed', cause: 'other' },
   synced: { type: 'synced' },
   began: { type: 'eraseBegan' },
   swapped: { type: 'eraseSwapped' },

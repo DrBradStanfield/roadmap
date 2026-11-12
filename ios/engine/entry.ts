@@ -207,6 +207,14 @@ export function uploadVerdictsJson(request: string): string {
   });
 }
 
+/** The network came back (the app's NWPathMonitor, US-09 AC30): retry a failed save, at most once a
+ *  minute and never after a refused sign-in (LiveRefresh), then catch up. Optional, like labSearchJson:
+ *  an app before it never calls it. Answers '{}', nothing to read. */
+export function cloudOnline(): string {
+  open?.live.online();
+  return '{}';
+}
+
 /** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View
  *  original file", US-14): the document page's door, optional like labSearchJson. By the document's
  *  id, so only a file the record names is read. Rejects with the failure JSON Swift reads (review R6
