@@ -402,7 +402,7 @@ if [ -n "${HR_SIM_LEASE:-}" ] && [ "$HR_SIM_LEASE" = "$(field token)" ] && held;
   exec "$SELF" _inner "$RESET" "$@"
 fi
 
-on_exit() { [ -n "$WATCH" ] && kill "$WATCH" 2>/dev/null; rm -f "$FOUND"; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
+on_exit() { [ -n "$WATCH" ] && kill -- -"$WATCH" 2>/dev/null; rm -f "$FOUND"; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
 # A signal goes to the shim, which stops the command's group; this script waits for it, then exits.
 on_signal() { [ -n "$SHIM" ] && { kill -TERM "$SHIM" 2>/dev/null; wait "$SHIM"; }; exit "$1"; }
 trap on_exit EXIT
@@ -426,7 +426,9 @@ GUARD=1
 HR_SIM_LEASE="$TOKEN" perl -e "$SHIM" "$RUN_LIMIT" "$KILL_SECONDS" "$SELF" "$HOME_DIR" "$IDLE_SECONDS" \
   "$SELF" _inner "$RESET" "$@" <&0 &
 SHIM=$!
-[ "$GUARD" = 1 ] && { watch_devices </dev/null >/dev/null 7>&- 9>&- & WATCH=$!; }
+# The watchdog gets its own process group (set -m), so end_watch can stop its list calls with it. A
+# found-file left under a reused pid is cleared first.
+[ "$GUARD" = 1 ] && { rm -f "$FOUND"; set -m; watch_devices </dev/null >/dev/null 7>&- 9>&- & WATCH=$!; set +m; }
 wait "$SHIM"
 RC=$?
 SHIM=""
