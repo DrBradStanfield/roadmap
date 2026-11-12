@@ -82,10 +82,11 @@ export class LiveRefresh {
     this.catchUp();
   }
 
-  /** The device is back online: retry a failed save, then catch up as a return does. */
+  /** The device is back online: retry a failed save, whatever the page's
+   *  visibility; catch up as a return does only while it shows. */
   online(): void {
     this.retryIfDue('online');
-    this.catchUp();
+    if (this.opts.isVisible()) this.catchUp();
   }
 
   /** Catch up on what the page missed (a return, or a poll tick). */

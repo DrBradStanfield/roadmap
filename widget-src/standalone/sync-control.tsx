@@ -46,7 +46,9 @@ function useSaveFacts(backend: Backend): SaveFacts {
     check();
     const events = [SYNC_PENDING_EVENT, SAVE_STATUS_EVENT];
     for (const name of events) window.addEventListener(name, check);
-    return () => { for (const name of events) window.removeEventListener(name, check); };
+    // A log-off in another tab stops this page's writes, so no retry will come (US-09 AC30); no save event says so.
+    const stopWatchingWrites = onHealthWritesChange(check);
+    return () => { for (const name of events) window.removeEventListener(name, check); stopWatchingWrites(); };
   }, [backend]);
   return facts;
 }

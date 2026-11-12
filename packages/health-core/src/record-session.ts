@@ -232,10 +232,10 @@ export class RecordSession {
 
   /** What a status line shows of the save (lead A1). */
   get saveStatus(): SaveStatus { return saveStatus(this.mode); }
-  /** A retry of a failed save would start one (US-09 AC30): one is owed, and the page may still
-   *  save: not stopped by a log-off elsewhere (US-09 AC2c), nor a device page closed to its files. */
+  /** A retry of a failed save would start one (US-09 AC30): a cloud's, one is owed, and the page
+   *  may still save, not stopped by a log-off elsewhere (US-09 AC2c). Never on the device tier. */
   get retryDue(): boolean {
-    return retryOwed(this.mode) && !this.deviceClosed() && !(this.host.tier === 'cloud' && this.host.mirror.writesStopped());
+    return this.host.tier === 'cloud' && retryOwed(this.mode) && !this.host.mirror.writesStopped();
   }
   /** Retry a failed save (LiveRefresh's triggers): the whole save's answer, or null when none is due. */
   retry(): Promise<boolean> | null { return this.retryDue ? this.persist() : null; }

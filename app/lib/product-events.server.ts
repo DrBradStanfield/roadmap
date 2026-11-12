@@ -161,14 +161,14 @@ const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = 
 
 /** Events that mean nothing without their key: a tool tab with no device, or
  *  a step with no name, would be a row no breakdown can place (US-62 AC1). */
-const EVENT_REQUIRED_KEY: Partial<Record<string, string>> = {
+const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = {
   tool_opened: 'device',
   onboarding_step: 'step',
   signin_opened: 'placement',
   us_product_shown: 'product', // US-61 AC8: a row without its product counts nothing
   us_product_link_clicked: 'product',
   measurement_added: 'measure', // US-07 AC11
-  save_retry: 'trigger', // US-09 AC30
+  save_retry: ['trigger', 'outcome'], // US-09 AC30: how it started and how it ended
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
@@ -211,9 +211,8 @@ function checkEventKeys(
   ctx: z.RefinementCtx,
 ): void {
   const metadata = event.metadata;
-  const required = EVENT_REQUIRED_KEY[event.eventName];
-  if (required && metadata?.[required] === undefined) {
-    ctx.addIssue({ code: 'custom', path: ['metadata', required], message: 'this event needs its key' });
+  for (const required of [EVENT_REQUIRED_KEY[event.eventName] ?? []].flat()) {
+    if (metadata?.[required] === undefined) ctx.addIssue({ code: 'custom', path: ['metadata', required], message: 'this event needs its key' });
   }
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {

@@ -24,7 +24,7 @@
  *   retry (`retryOwed`). `mirrored`: the session's device write of them landed
  *   (US-09 AC30). The marker is set before that write (US-09 AC4), so only
  *   this says the device holds them. False until the write lands. `cause`:
- *   'auth' when the provider refused the grant (`saveFailureCause`), which
+ *   'auth' when the provider refused the sign-in (`saveFailureCause`), which
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
  *   erase's failed write included.
  * - erasing: an erase, from its confirm to the end of its write, over the save
@@ -117,11 +117,12 @@ export function retryOwed(s: SaveState): boolean {
 }
 
 /** Why a pass failed, from its error alone: 'auth' for a refused grant (a
- *  provider's 401 or 403, or a revoked grant the adapter names `reconnect`),
- *  'other' for anything else. Never the message. */
+ *  provider's 401, or a revoked grant the adapter names `reconnect`), 'other'
+ *  for anything else. A 403 is 'other': a rate or daily limit passes, so it is
+ *  retried, a true refusal included (owner, 2026-11-13). Never the message. */
 export function saveFailureCause(error: unknown): SaveCause {
   if (!(error instanceof StorageError)) return 'other';
-  return error.status === 401 || error.status === 403 || error.reason === 'reconnect' ? 'auth' : 'other';
+  return error.status === 401 || error.reason === 'reconnect' ? 'auth' : 'other';
 }
 
 /** not-saved-on-device: not saved, and the device copy holds the changes. */
