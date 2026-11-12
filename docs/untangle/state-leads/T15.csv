@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T15,tooling,Test files sit outside every CI typecheck: about 150 errors under the full tsconfig,gap,not started,"typecheck:server covers app/ only and no script covers tools/ or test files; `npx tsc --noEmit -p tsconfig.json` reports about 150 errors repo-wide (app/lib/mcp-import.server.test.ts 44, scripts/build-master-html.test.ts 27, app/lib/app-lab-slow.server.test.ts 10, an unused @ts-expect-error at scripts/test-all-locked.test.ts:7). Whether CI should typecheck tests is open",,no

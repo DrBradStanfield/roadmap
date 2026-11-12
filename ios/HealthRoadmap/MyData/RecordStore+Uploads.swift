@@ -33,6 +33,7 @@ extension RecordStore {
                 result = await shown(answer.outcome, of: edit)
                 summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
+                if let problem { return .failure(LabRefusal(message: problem.words)) }
                 // The phone's file: nothing else changes the record before this turn ends.
                 summary = try await engine.labSaveSummary(recordJSON: recordJSON, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: .now, deviceId: deviceId)
                 guard case .success = summary else { return summary }

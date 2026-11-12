@@ -8,7 +8,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { PLATFORM_DISCORD } from './discord-bot-config.server';
-import { errorKind, type GuildMessage } from './discord-bot-messages.server';
+import { errorKind, errorTag, type GuildMessage } from './discord-bot-messages.server';
 
 export type SentChunk = { id: string; text: string };
 
@@ -23,12 +23,10 @@ export type PostChunk = (text: string, index: number) => Promise<string | null>;
 
 export const CUT_OFF_NOTICE = 'This answer was cut off. Please ask again.';
 
-/** Reports a failed post as fixed words, tags and the Discord code (or the error kind). */
+/** Reports a failed post as fixed words, tags and the shape-checked Discord code (or error name). */
 function reportSendFailure(what: string, chunk: 'first' | 'later' | 'notice', err: unknown): void {
-  const { code } = (err ?? {}) as { code?: unknown };
-  const tag = typeof code === 'number' || typeof code === 'string' ? String(code) : errorKind(err);
   console.error(`${what}:`, errorKind(err));
-  Sentry.captureMessage(what, { level: 'error', tags: { platform: PLATFORM_DISCORD, subsystem: 'send', chunk, code: tag } });
+  Sentry.captureMessage(what, { level: 'error', tags: { platform: PLATFORM_DISCORD, subsystem: 'send', chunk, code: errorTag(err) } });
 }
 
 export async function sendChunks(post: PostChunk, chunks: string[]): Promise<SendResult> {
@@ -79,12 +77,14 @@ export async function sendAnswer(message: GuildMessage, chunks: string[]): Promi
 
 /** The answer exactly as far as its sent chunks reach, the original separators
  *  included: splitForDiscord trims the whitespace at each cut, so joining the
- *  chunks would not give back what went out. */
+ *  chunks would not give back what went out. Each sent chunk is a slice of
+ *  `content` after the one before (splitForDiscord); a chunk not found means a
+ *  caller passed other content, and throws rather than store a wrong prefix. */
 export function sentText(content: string, sent: SentChunk[]): string {
   let end = 0;
   for (const { text } of sent) {
     const at = content.indexOf(text, end);
-    if (at < 0) return sent.map((c) => c.text).join('\n\n');
+    if (at < 0) throw new Error('Discord: sent chunk not found in the answer');
     end = at + text.length;
   }
   return content.slice(0, end);

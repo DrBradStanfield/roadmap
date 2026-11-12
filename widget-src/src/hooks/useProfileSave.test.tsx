@@ -29,7 +29,7 @@ vi.mock('../lib/roadmap-data', () => ({
   },
 }));
 const mirror = vi.hoisted(() => ({ patches: [] as unknown[] }));
-vi.mock('../lib/storage', () => ({ localHealthWritesStopped: () => store.stopped, patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
+vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => !store.stopped, patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
 
 import { useProfileSave } from './useProfileSave';
 

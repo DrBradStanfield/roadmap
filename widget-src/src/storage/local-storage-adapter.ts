@@ -9,7 +9,7 @@
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
 import {
-  DOC_KEY_PREFIX, localHealthWritesStopped, newLogOffId, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
+  DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteCloudPage, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
@@ -37,6 +37,8 @@ export function stopRoadmapLocalWrites(): void {
 /** Tell the other tabs. A full localStorage drops the write silently, so
  *  log-off sends it again once the device wipe has freed space (Codex R1). */
 export function signalLogOff(): void {
+  // Log-off calls this twice, so the id changes twice: the second write is the
+  // retry for a full disk, and a sign-in begun between the two is refused by design.
   newLogOffId();
   safeSetItem(LOG_OFF_SIGNAL_KEY, '1');
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
@@ -64,6 +66,7 @@ export function noteOtherTabsLogOffWhileLoading(): void {
  *  page's device copy is its only store, so latching would lose its edits.
  *  Re-adding the same listener is a no-op. */
 export function latchOnOtherTabsLogOff(): void {
+  noteCloudPage();
   if (logOffHeardWhileLoading) stopLocalHealthWrites();
   if (typeof window !== 'undefined') {
     window.removeEventListener('storage', noteLogOffSignal);
@@ -71,7 +74,7 @@ export function latchOnOtherTabsLogOff(): void {
   }
 }
 export function roadmapLocalWritesStopped(): boolean {
-  return localHealthWritesStopped();
+  return !healthWritesAllowed();
 }
 
 // Content-free invalidation only: no message ids, text, health values or times.

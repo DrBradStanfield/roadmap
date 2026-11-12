@@ -103,3 +103,51 @@ describe('Sentry ignoreErrors patterns', () => {
     }
   });
 });
+
+// US-09 AC46: the visitor id is kept only in the UUID form the server accepts.
+describe('getVisitorId: stored only as a UUID', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const UUID_A = '0b5f1c2e-4d3a-4b6c-8d7e-9f0a1b2c3d4e';
+  async function freshVisitorId(crypto: object | undefined, before?: string) {
+    const values = new Map<string, string>(before ? [['hr_vid', before]] : []);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => values.get(k) ?? null,
+      setItem: (k: string, v: string) => void values.set(k, v),
+      removeItem: (k: string) => void values.delete(k),
+    });
+    vi.stubGlobal('crypto', crypto);
+    vi.resetModules();
+    const { getVisitorId } = await import('./server-api');
+    return { id: getVisitorId(), again: getVisitorId(), stored: values.get('hr_vid') ?? null };
+  }
+
+  it('with no crypto, the id lasts this page only and is not saved', async () => {
+    const { id, again, stored } = await freshVisitorId(undefined);
+    expect(id).not.toBe('');
+    expect(again).toBe(id);
+    expect(stored).toBeNull();
+  });
+
+  it('control: a UUID is saved', async () => {
+    const { id, stored } = await freshVisitorId({ randomUUID: () => UUID_A });
+    expect(stored).toBe(id);
+  });
+
+  it('a stored id that is not a UUID is replaced by a new UUID', async () => {
+    const { id, stored } = await freshVisitorId({ randomUUID: () => UUID_A }, 'mwd2h3tg-1');
+    expect([id, stored]).toEqual([UUID_A, UUID_A]);
+  });
+
+  it('a stored id that is not a UUID is removed when no UUID can replace it', async () => {
+    const { id, stored } = await freshVisitorId(undefined, 'mwd2h3tg-1');
+    expect(id).not.toBe('mwd2h3tg-1');
+    expect(stored).toBeNull();
+  });
+
+  it('control: a stored UUID is kept', async () => {
+    const kept = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+    const { id, stored } = await freshVisitorId({ randomUUID: () => UUID_A }, kept);
+    expect([id, stored]).toEqual([kept, kept]);
+  });
+});
