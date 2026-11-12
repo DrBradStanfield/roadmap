@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, healthWritesAllowed, healthWritesStopped, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, healthWritesAllowed, ownLogOffHasBegun, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -141,10 +141,10 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   useEffect(() => {
     // After log-off, typed values stay on screen only: writing them would put
     // health values back on a device the user meant to leave clean (US-09 AC2e).
-    // After a log-off begun or heard here, the device was wiped, so a stale
-    // draft goes. After one this page did not hear, the draft key may hold the
-    // next person's draft: leave it (AC2c).
-    if (!healthWritesAllowed()) { if (healthWritesStopped()) safeRemoveItem(storageKey); return; }
+    // After a log-off this page began, the device was wiped, so a stale draft
+    // goes. A page that did not begin the log-off leaves the draft key alone:
+    // it may hold a draft written under the new sign-in (AC2c).
+    if (!healthWritesAllowed()) { if (ownLogOffHasBegun()) safeRemoveItem(storageKey); return; }
     if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);

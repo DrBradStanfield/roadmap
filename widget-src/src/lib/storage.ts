@@ -26,9 +26,9 @@ const UNIT_PREF_KEY = 'health_roadmap_unit_system';
  *  'device': its device copy is its only store, so it always may. 'cloud': a
  *  cloud record opened here, so it may write only while the id is the one it
  *  loaded with. 'stopped': its own log-off, or another tab's heard on a cloud
- *  page, or found as a changed id when the page opens on the device. Never
- *  back: log-off navigates away. It lives in this module, which every device
- *  writer imports, so all of them check the same state. */
+ *  page or while loading, or found as a changed id when the page opens on the
+ *  device. Never back: log-off navigates away. It lives in this module, which
+ *  every device writer imports, so all of them check the same state. */
 export type HealthWrites =
   | { mode: 'loading'; logOffHeard: boolean }
   | { mode: 'device' }
@@ -49,8 +49,14 @@ export function healthWritesTransition(state: HealthWrites, event: HealthWritesE
   }
   if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
   if (state.mode === 'device') return state;
-  // The device store decides, but a changed id proves a log-off: the device
-  // copy may be a new sign-in's mirror, so the page stops as if it had heard.
+  // A heard log-off, or a changed id, which proves one: the device copy may
+  // be a new sign-in's mirror, so the page stops. Otherwise the device store
+  // decides.
+  if (state.mode === 'loading' && state.logOffHeard) return { mode: 'stopped' };
+  // No caller reaches cloud + deviceOpened today: only startOnBackend's
+  // fallback builds a device host after a cloud one, and only when the load
+  // throws, while every step of RecordSession.open after mirror.opened()
+  // catches its own errors.
   return event.sameSignIn ? { mode: 'device' } : { mode: 'stopped' };
 }
 let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };
@@ -343,8 +349,12 @@ const logOffIdAtLoad: LogOffId = logOffId();
  *  cleared (the page reloads), so a sign-in finishing during log-off's awaits
  *  is refused even when a full localStorage dropped the new id. It is not
  *  'stopped': a log-off heard from another tab stops health writes but leaves
- *  a sign-in begun under the new id free to save. */
+ *  a sign-in begun under the new id free to save. Only this page may remove
+ *  the shared draft keys (useMatrixDraft). */
 let ownLogOffBegun = false;
+export function ownLogOffHasBegun(): boolean {
+  return ownLogOffBegun;
+}
 /** At log-off, before any await. */
 export function newLogOffId(): void {
   ownLogOffBegun = true;

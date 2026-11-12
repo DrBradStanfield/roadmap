@@ -41,6 +41,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { SyncControl } from './sync-control';
+import { stopLocalHealthWrites } from '../src/lib/storage';
 import { BackendPickerModal } from './backend-picker';
 
 beforeAll(() => {
@@ -252,5 +253,15 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
     const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce) {'));
     expect(reduced).toMatch(/^@media \(prefers-reduced-motion: reduce\) \{ \.hr-sync-btn-attention \{ -webkit-animation: none; animation: none; box-shadow: [^;}]+; \} \}/);
     expect(css).toContain('@media print { .hr-sync-btn-attention { -webkit-animation: none; animation: none; box-shadow: none; } }');
+  });
+});
+
+describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
+  // Last in this file: the stop lasts for the module's life.
+  it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {
+    stopLocalHealthWrites();
+    const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);
+    expect(container.textContent).toContain('Your record is safe in your');
+    expect(container.textContent).not.toContain('kept in this browser');
   });
 });

@@ -113,6 +113,32 @@ describe('US-09 AC2c controls', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
   });
 
+  it('a page that heard a log-off while loading writes nothing when it opens on the device with the same id', async () => {
+    const { listenForOtherTabsLogOff, LocalStorageAdapter } = await import('../storage/local-storage-adapter');
+    listenForOtherTabsLogOff();
+    window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_log_off_signal' }));
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    await RoadmapStore.create(new LocalStorageAdapter());
+    const { healthWritesAllowed, patchMirror } = await import('./storage');
+    expect(localStorage.getItem(LOG_OFF_ID_KEY)).toBe('id-at-load');
+    expect(healthWritesAllowed()).toBe(false);
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
+  });
+
+  it('a page that finds the id changed as it opens on the device leaves the draft key alone', async () => {
+    const { healthWritesAllowed } = await import('./storage');
+    logOffElsewhere();
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
+    await RoadmapStore.create(new LocalStorageAdapter());
+    expect(healthWritesAllowed()).toBe(false);
+    const theirs = JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} });
+    localStorage.setItem(VITALS_DRAFT_KEY, theirs);
+    await typeWeight('81');
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
+  });
+
   it('a page whose device copy is its only store keeps writing after the id changes', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
@@ -195,7 +221,7 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
     [quiet, opened, cloud],
     [quiet, hear, heard],
     [quiet, stop, stopped],
-    [heard, same, device],
+    [heard, same, stopped],
     [heard, changed, stopped],
     [heard, opened, stopped],
     [heard, hear, heard],
