@@ -69,36 +69,56 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** User 1's tab: their cloud is chosen, and its first read fails, so it runs on its device copy. */
+async function userOneFallback() {
+  localStorage.setItem(BACKEND_KEY, 'github');
+  const userOne = await tab();
+  let fallback!: Awaited<ReturnType<typeof userOne.storage.RoadmapStore.create>>;
+  await userOne.connect.startOnBackend({ adapter: unreachable(userOne), backend: 'github' }, async (adapter) => {
+    fallback = await userOne.storage.RoadmapStore.create(adapter);
+  });
+  return fallback;
+}
+/** User 1's tab saves a weight and is put away. */
+async function saveWeight(fallback: Awaited<ReturnType<typeof userOneFallback>>) {
+  fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01');
+  await fallback.flush().catch(() => {});
+  fallback.flushSync();
+}
+/** The reloaded page signs user 2 in to their own cloud: remembered, marked pending, the device copy lifted (AC3). */
+async function userTwoSignsIn() {
+  const signIn = await tab();
+  const cloud = Object.defineProperty(new MemoryAdapter(new MemoryCloud()), 'id', { value: 'dropbox' });
+  expect(signIn.connect.rememberSignIn(true, 'dropbox', signIn.lib.logOffId())).toBe(true);
+  signIn.storage.markSyncPending();
+  await signIn.connect.liftLocalInto(cloud, 'dropbox');
+  return cloud;
+}
+/** User 2's page opens their cloud record (the pending merge runs); neither it nor the device holds user 1's weight. */
+async function expectNothingOfUserOne(cloud: MemoryAdapter) {
+  const userTwo = await tab();
+  const store = await userTwo.storage.RoadmapStore.create(cloud);
+  await store.flush();
+  expect(store.loadAllHistory().map((m) => m.value)).not.toContain(USER_ONE_WEIGHT);
+  expect(weights((await cloud.read(ROADMAP_FILE_NAME)).body as never)).not.toContain(USER_ONE_WEIGHT);
+  expect(weights(new userTwo.local.LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as never)).not.toContain(USER_ONE_WEIGHT);
+}
+
 describe('US-09 AC2c, AC3: a sign-in after a log-off lifts nothing of a fallback tab\'s user', () => {
   it("user 2's sign-in lifts nothing of user 1's, through the connect's lift or the pending merge", async () => {
-    // User 1's tab: their cloud is chosen, and its first read fails.
-    localStorage.setItem(BACKEND_KEY, 'github');
-    const userOne = await tab();
-    let fallback!: Awaited<ReturnType<typeof userOne.storage.RoadmapStore.create>>;
-    await userOne.connect.startOnBackend({ adapter: unreachable(userOne), backend: 'github' }, async (adapter) => {
-      fallback = await userOne.storage.RoadmapStore.create(adapter);
-    });
-
-    // Another tab logs user 1 off; the reloaded page signs user 2 in to their own cloud.
-    await (await tab()).connect.logOff('github');
-    const signIn = await tab();
-    const userTwoCloud = Object.defineProperty(new MemoryAdapter(new MemoryCloud()), 'id', { value: 'dropbox' });
-    expect(signIn.connect.rememberSignIn(true, 'dropbox', signIn.lib.logOffId())).toBe(true);
-    signIn.storage.markSyncPending();
-    await signIn.connect.liftLocalInto(userTwoCloud, 'dropbox');
-
-    // User 1's tab saves a weight and is put away.
-    fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01');
-    await fallback.flush().catch(() => {});
-    fallback.flushSync();
+    const fallback = await userOneFallback();
+    await (await tab()).connect.logOff('github'); // another tab logs user 1 off
+    const cloud = await userTwoSignsIn();
+    await saveWeight(fallback);
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
+    await expectNothingOfUserOne(cloud);
+  });
 
-    // User 2's page opens their cloud record: the pending merge runs.
-    const userTwo = await tab();
-    const store = await userTwo.storage.RoadmapStore.create(userTwoCloud);
-    await store.flush();
-    expect(store.loadAllHistory().map((m) => m.value)).not.toContain(USER_ONE_WEIGHT);
-    expect(weights((await userTwoCloud.read(ROADMAP_FILE_NAME)).body as never)).not.toContain(USER_ONE_WEIGHT);
-    expect(weights(new userTwo.local.LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as never)).not.toContain(USER_ONE_WEIGHT);
+  it("a weight user 1's tab saves after the log-off and before user 2's sign-in is lifted nowhere", async () => {
+    const fallback = await userOneFallback();
+    await (await tab()).connect.logOff('github');
+    await saveWeight(fallback);
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+    await expectNothingOfUserOne(await userTwoSignsIn());
   });
 });

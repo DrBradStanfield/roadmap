@@ -425,7 +425,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     const tab = await fallbackTab();
 
     await connect.logOff('local');
-    expect(tab.mirror.healthWritesStopped()).toBe(true);
+    expect(tab.mirror.healthWritesAllowed()).toBe(false);
     tab.store.addMeasurement('weight', 81, '2026-01-01');
     await tab.store.flush().catch(() => {});
     expectFallbackWroteNothing(tab);
@@ -436,7 +436,6 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     const tab = await fallbackTab();
 
     await connect.logOff('local');
-    expect(tab.mirror.healthWritesStopped()).toBe(false); // nothing heard
     tab.store.addMeasurement('weight', 81, '2026-01-01');
     await tab.store.flush().catch(() => {});
     expectFallbackWroteNothing(tab);

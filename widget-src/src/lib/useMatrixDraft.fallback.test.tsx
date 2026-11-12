@@ -52,8 +52,28 @@ async function vitals() {
     unitOverrides={{}} onToggleFieldUnit={() => {}}/>);
   const row = Array.from(view.container.querySelectorAll<HTMLElement>('.bt-row'))
     .find(r => r.querySelector('.bt-name-label')?.textContent === 'Weight')!;
-  return { weight: row.querySelector<HTMLElement>('.bt-cell-draft')!.querySelector('input')!, onSave, unmount: view.unmount };
+  return { weight: row.querySelector<HTMLElement>('.bt-cell-draft')!.querySelector('input')!, onSave, unmount: view.unmount, view };
 }
+
+describe('US-11 AC6: a matrix mounted before the record opens', () => {
+  it.each([
+    ['its device copy, as a fallback', async () => { await fallbackPage(); }],
+    ['its cloud', async () => { (await import('./storage')).noteCloudPage('memory'); }],
+  ] as const)('keeps typing on screen only, then on the device from the first change after the record opens on %s', async (_, open) => {
+    const { fireEvent } = await import('@testing-library/react');
+    const m = await vitals(); // the page is still loading
+    fireEvent.change(m.weight, { target: { value: '80' } });
+    expect(m.weight.value).toBe('80');
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+
+    await open();
+    const waist = Array.from(m.view.container.querySelectorAll<HTMLElement>('.bt-row'))
+      .find(r => r.querySelector('.bt-name-label')?.textContent === 'Waist Circumference')!
+      .querySelector<HTMLElement>('.bt-cell-draft')!.querySelector('input')!;
+    fireEvent.change(waist, { target: { value: '90' } });
+    expect(JSON.parse(localStorage.getItem(VITALS_DRAFT_KEY)!).draft.values).toEqual({ weight: '80', waist: '90' });
+  });
+});
 
 describe('US-11 AC6: a fallback page while its cloud stays chosen', () => {
   it('keeps a typed value as a draft, removes it once the value is saved, and the next good load shows no draft', async () => {

@@ -85,6 +85,8 @@ const TYPED_SOURCES: readonly unknown[] = ['manual', 'manual_correction', 'lab_i
 // panel waiting on a question that is no longer shown (US-04 AC5).
 const keptHere = new Set<string>();
 
+// Read on every page, ungated: kept ids are random row ids, so another record's ids never match this
+// page's rows, and gating the read would only make a page off the chosen record ask again.
 const keptIds = (): unknown[] => {
   const kept = getJson<unknown>(LPA_CHECK_KEPT_KEY);
   return [...(Array.isArray(kept) ? kept : []), ...keptHere];

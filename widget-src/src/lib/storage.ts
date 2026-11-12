@@ -89,14 +89,13 @@ export function noteDevicePage(): void {
 export function noteLogOffHeard(): void {
   dispatchHealthWrites({ type: 'logOffHeard' });
 }
-/** This page's own log-off, or another tab's it heard: the device was wiped. */
-export function healthWritesStopped(): boolean {
-  return healthWrites.mode === 'stopped';
-}
-/** Calls `onStop` when this page's writes stop (useSyncExternalStore's subscribe). */
-export function onHealthWritesStopped(onStop: () => void): () => void {
-  stopListeners.add(onStop);
-  return () => { stopListeners.delete(onStop); };
+/** Calls `onChange` when healthWritesAllowed() may have changed: this page's writes stop, or another tab
+ *  changes the log-off id (useSyncExternalStore's subscribe). */
+export function onHealthWritesChange(onChange: () => void): () => void {
+  const idChanged = (event: StorageEvent) => { if (event.key === LOG_OFF_ID_KEY) onChange(); };
+  stopListeners.add(onChange);
+  window.addEventListener('storage', idChanged);
+  return () => { stopListeners.delete(onChange); window.removeEventListener('storage', idChanged); };
 }
 /** The one check every on-device health writer makes.
  *  The single rule for on-device health writes; callers import it, never copy it. */

@@ -176,6 +176,33 @@ describe('US-09 AC2c controls', () => {
   });
 });
 
+describe('US-09 AC2c: document originals on a page that runs on its device copy', () => {
+  const DOC_PREFIX = 'health_roadmap_doc_v2:';
+  const scan = () => [{ documentType: 'other', title: 'Synthetic scan', documentDate: '2026-10-01', contentMd: '',
+    metadata: {}, sourceFileName: 'synthetic-scan.pdf', file: new Blob(['synthetic'], { type: 'application/pdf' }) }];
+  const storedOriginals = () => Object.keys(localStorage).filter((key) => key.startsWith(DOC_PREFIX));
+  async function devicePage() {
+    const { RoadmapStore } = await import('../storage/roadmap-store');
+    const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
+    return RoadmapStore.create(new LocalStorageAdapter());
+  }
+
+  it('a fallback page that saves a document after a log-off elsewhere stores no original, and the save still answers', async () => {
+    const store = await devicePage(); // the chosen cloud ('memory') could not be read
+    logOffElsewhere();
+    const result = await store.bulkSaveDocuments(scan());
+    expect(storedOriginals()).toEqual([]);
+    expect(result.errorCount).toBe(0); // the details stand on the page; the record write is refused
+  });
+
+  it('control: a guest page still stores the original', async () => {
+    localStorage.removeItem(BACKEND_KEY);
+    const store = await devicePage();
+    await store.bulkSaveDocuments(scan());
+    expect(storedOriginals()).toHaveLength(1);
+  });
+});
+
 describe('US-09 AC2h: a page whose record is still opening', () => {
   it('writes no health data after a log-off elsewhere, before it knows it is a device page', async () => {
     const { patchMirror } = await import('./storage');
@@ -194,7 +221,7 @@ describe('US-09 AC2h: a page whose record is still opening', () => {
   });
 
   it('a page that never opens a record (the chat embed, the blog bubble) writes only while the id is the one it loaded with', async () => {
-    const { patchMirror, healthWritesAllowed, healthWritesStopped } = await import('./storage');
+    const { patchMirror, healthWritesAllowed } = await import('./storage');
     patchMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     localStorage.removeItem(MIRROR_KEY);
@@ -202,7 +229,6 @@ describe('US-09 AC2h: a page whose record is still opening', () => {
     patchMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
     expect(healthWritesAllowed()).toBe(false);
-    expect(healthWritesStopped()).toBe(false); // no record opened: it stays loading
   });
 });
 

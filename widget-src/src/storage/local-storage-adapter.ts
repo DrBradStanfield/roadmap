@@ -210,6 +210,8 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const dataUrl = await blobToDataUrl(bytes);
+    // The record's write rule (US-09 AC2c): every device document's bytes pass here.
+    if (roadmapLocalWritesStopped()) throw new StorageError('On-device roadmap persistence stopped for logout.');
     try {
       // Direct setItem (not safeSetItem) so a quota overflow surfaces instead of
       // silently dropping the document — no silent data loss.

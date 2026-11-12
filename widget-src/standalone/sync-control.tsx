@@ -21,7 +21,7 @@ import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
-import { healthWritesStopped, onHealthWritesStopped, safeGetItem, safeSetItem } from '../src/lib/storage';
+import { healthWritesAllowed, onHealthWritesChange, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
@@ -194,7 +194,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
   const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
   const { busy, error, run, reconnectNow } = useReconnect(reconnect);
-  const writesStopped = useSyncExternalStore(onHealthWritesStopped, healthWritesStopped);
+  const writesAllowed = useSyncExternalStore(onHealthWritesChange, healthWritesAllowed);
 
   // Every route to the picker passes here, so any opening stops the pulse.
   useEffect(() => {
@@ -242,9 +242,9 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         </button>
         <span className="hr-sync-detail">
           Your record is safe in your {label}.
-          {/* A page whose device writes stopped keeps nothing in this browser. */}
+          {/* A page whose device writes are refused keeps nothing in this browser. */}
           {drive && ' Sign in again to keep it in step.'}
-          {!writesStopped && (drive
+          {writesAllowed && (drive
             ? ' Anything you change meanwhile is kept in this browser and merges when you reconnect.'
             : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
