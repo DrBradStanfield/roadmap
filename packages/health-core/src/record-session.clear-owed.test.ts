@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { ROADMAP_FILE_NAME } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { RecordSession } from './record-session';
-import type { RecordHost } from './record-host';
+import { keepCleared, type RecordHost } from './record-host';
 import { createMeasurement, type FileDocument } from './roadmap-file';
 
 let clock = Date.parse('2026-10-21T10:00:00.000Z');
@@ -335,13 +335,12 @@ describe('US-11 AC6: a clear is owed only for a later erase', () => {
   it('a switch to a record at a lower epoch, then an erase there, clears', async () => {
     const { fake } = await cloudAtEpoch(3);
     const lower = await cloudAtEpoch(1);
-    // The switch: the connect removes the kept erase (connect.ts), so the
-    // record switched to keeps its own at its first load. Its erase came
-    // before the switch: the drafts are the old record's, and go once.
-    fake.device.clearedFor = null;
+    // The switch: the connect marks the kept erase (connect.ts), so the
+    // record switched to keeps its own at its first load, clearing nothing.
+    fake.device.clearedFor = 'adopt';
     fake.device.drafts.set('vitals', 'typed-on-the-old-record');
     const switched = await RecordSession.open(onStore(fake, new MemoryAdapter(lower.cloud)));
-    expect(fake.clears.calls).toBe(1);
+    expect(fake.clears.calls).toBe(0);
     expect(fake.device.clearedFor).toBe(switched.eraseIdentity);
 
     fake.device.drafts.set('vitals', 'typed-after-the-switch');
@@ -350,7 +349,7 @@ describe('US-11 AC6: a clear is owed only for a later erase', () => {
     clock += 60_000;
     expect(await switched.refreshFromRemote()).toBe(true);
     expect(JSON.parse(switched.eraseIdentity)[0]).toBe(2);
-    expect(fake.clears.calls).toBe(2);
+    expect(fake.clears.calls).toBe(1);
     cleared(fake.device);
     expect(fake.device.clearedFor).toBe(switched.eraseIdentity);
   });
@@ -391,5 +390,131 @@ describe('US-11 AC6: a clear is owed only for a later erase', () => {
     expect(fake.clears.calls).toBe(1);
     cleared(fake.device);
     expect(fake.device.clearedFor).toBe(session.eraseIdentity);
+  });
+});
+
+/** The content-free mark a connect writes: the next record opened keeps its own erase, clearing nothing. */
+const ADOPT = 'adopt';
+
+describe('US-11 AC6: a connect marks the key, and the next record adopts its erase', () => {
+  it('case 1: a page closed through another device\'s erase, with no connect in between, still clears', async () => {
+    const { other, fake } = await cloudAtEpoch(3);
+    fake.device.drafts.set('vitals', 'typed-before-erase');
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    const reopened = await RecordSession.open(fake.host);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(reopened.eraseIdentity);
+    expect(JSON.parse(reopened.eraseIdentity)[0]).toBe(4);
+  });
+
+  it('case 2: a switch made after such an erase: the load before it cleared, the record switched to adopts', async () => {
+    const { other, fake } = await cloudAtEpoch(3);
+    fake.device.drafts.set('vitals', 'typed-before-erase');
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    await RecordSession.open(fake.host);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+
+    fake.device.drafts.set('vitals', 'typed-after-the-clear');
+    fake.device.clearedFor = ADOPT; // the switch
+    const target = await cloudAtEpoch(1);
+    const switched = await RecordSession.open(onStore(fake, new MemoryAdapter(target.cloud)));
+    expect(fake.clears.calls).toBe(1);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed-after-the-clear']]);
+    expect(fake.device.clearedFor).toBe(switched.eraseIdentity);
+  });
+
+  it('case 3: log-off, then sign-in: no key after log-off, the guest load keeps [0,null], the sign-in mark adopts', async () => {
+    const { cloud } = await cloudAtEpoch(2);
+    const fake = fakeHost(new MemoryAdapter(new MemoryCloud()));
+    expect(fake.device.clearedFor).toBeNull(); // log-off removed it, and cleared the drafts
+    await RecordSession.open(fake.host);
+    expect(fake.device.clearedFor).toBe('[0,null]');
+    fake.device.drafts.set('vitals', 'typed-as-guest');
+    fake.device.clearedFor = ADOPT; // the sign-in
+    const signedIn = await RecordSession.open(onStore(fake, new MemoryAdapter(cloud)));
+    expect(fake.clears.calls).toBe(0);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed-as-guest']]);
+    expect(fake.device.clearedFor).toBe(signedIn.eraseIdentity);
+  });
+
+  it('case 4: a guest\'s draft survives a sign-in to an account erased before; a later erase there still clears', async () => {
+    const { cloud, other } = await cloudAtEpoch(2);
+    const fake = fakeHost(new MemoryAdapter(cloud));
+    fake.device.drafts.set('vitals', 'typed-as-guest');
+    fake.device.clearedFor = ADOPT;
+    const signedIn = await RecordSession.open(fake.host);
+    expect(JSON.parse(signedIn.eraseIdentity)[0]).toBe(2);
+    expect(fake.clears.calls).toBe(0);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed-as-guest']]);
+    expect(fake.device.clearedFor).toBe(signedIn.eraseIdentity);
+
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    expect(await signedIn.refreshFromRemote()).toBe(true);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+  });
+
+  // Case 5: X kept at [3] with a draft typed there; a switch to Y, then back
+  // to X after another device erased X to [4]. What each connect rule leaves
+  // at X's open: the mark adopts [4]; (b), the key set at the connect to the
+  // lifted record's identity, is [4] too; the old remove leaves no key.
+  it.each([
+    ['the mark', ADOPT, 0],
+    ['(b) the lifted identity', 'lifted', 0],
+    ['the old remove', null, 1],
+  ] as const)('case 5: back to X after its erase, with %s at the connect (key %j), clears %i times', async (_rule, key, clears) => {
+    const x = await cloudAtEpoch(3);
+    const { fake } = x;
+    fake.device.drafts.set('vitals', 'typed-on-x-before-its-erase');
+    fake.device.clearedFor = ADOPT; // the switch to Y
+    const y = await cloudAtEpoch(1);
+    await RecordSession.open(onStore(fake, new MemoryAdapter(y.cloud)));
+    expect(fake.clears.calls).toBe(0);
+    clock += 60_000;
+    expect((await x.other.erase()).success).toBe(true);
+    clock += 60_000;
+    const lifted = (await RecordSession.open(fakeHost(new MemoryAdapter(x.cloud)).host)).eraseIdentity;
+    expect(JSON.parse(lifted)[0]).toBe(4);
+    fake.device.clearedFor = key === 'lifted' ? lifted : key; // the switch back to X
+    const back = await RecordSession.open(fake.host);
+    expect(back.eraseIdentity).toBe(lifted);
+    expect(fake.clears.calls).toBe(clears);
+    expect([...fake.device.drafts]).toEqual(clears ? [] : [['vitals', 'typed-on-x-before-its-erase']]);
+    expect(fake.device.clearedFor).toBe(lifted);
+  });
+
+  it('a fallback first load right after a connect leaves the mark; the cloud open adopts it', async () => {
+    const { cloud } = await cloudAtEpoch(2);
+    const fake = fakeHost(new MemoryAdapter(cloud));
+    fake.device.drafts.set('vitals', 'typed-as-guest');
+    fake.device.clearedFor = ADOPT; // the connect
+    const fallback = await RecordSession.open(onStore(fake, new MemoryAdapter(new MemoryCloud())), { cloudUnreachable: true });
+    expect(fallback.eraseIdentity).toBe('[0,null]');
+    expect(fake.device.clearedFor).toBe(ADOPT);
+    fake.device.drafts.set('vitals', 'typed-in-fallback');
+    fallback.edit((file) => void file.measurements.push(weight('b', '2026-10-02')), fallback.eraseIdentity);
+    await fallback.flush();
+    expect(fake.device.clearedFor).toBe(ADOPT);
+
+    const back = await RecordSession.open(fake.host);
+    expect(JSON.parse(back.eraseIdentity)[0]).toBe(2);
+    expect(fake.clears.calls).toBe(0);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed-in-fallback']]);
+    expect(fake.device.clearedFor).toBe(back.eraseIdentity);
+  });
+
+  it('a clear made while the mark stands keeps the mark, so the next record still adopts', () => {
+    const fake = fakeHost(new MemoryAdapter(new MemoryCloud()));
+    fake.device.clearedFor = ADOPT;
+    expect(keepCleared(fake.host, '[1,"2026-10-21T10:05:00.000Z"]')).toBe('[1,"2026-10-21T10:05:00.000Z"]');
+    expect(fake.device.clearedFor).toBe(ADOPT);
   });
 });

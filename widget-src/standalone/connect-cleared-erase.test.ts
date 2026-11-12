@@ -1,8 +1,9 @@
 /**
  * US-11 AC6: the erase a device last cleared its off-file data for is kept
  * per record. A deliberate connect (a sign-in, or a switch of provider)
- * removes it, so the record connected to keeps its own erase at its first
- * load. A reload, a token refresh and a reconnect of the same record keep it.
+ * writes a content-free mark ('adopt') in its place, so the record connected
+ * to adopts its own erase at its first load, clearing nothing. Log-off removes
+ * it. A reload, a token refresh and a reconnect of the same record keep it.
  * (The reconnect and "use this browser only" pins live in storage-bar.test.tsx.)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -39,24 +40,24 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('US-11 AC6: a connect removes the kept erase', () => {
-  it('a Dropbox sign-in (the OAuth return) removes it', async () => {
+describe('US-11 AC6: a connect marks the kept erase to adopt the next record', () => {
+  it('a Dropbox sign-in (the OAuth return) marks it to adopt', async () => {
     vi.mocked(DropboxAdapter.completeRedirect).mockResolvedValue(Object.create(DropboxAdapter.prototype));
     expect((await resolveBackend()).resolved.backend).toBe('dropbox');
-    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
+    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
   });
 
-  it('a Google Drive sign-in (the OAuth return) removes it', async () => {
+  it('a Google Drive sign-in (the OAuth return) marks it to adopt', async () => {
     vi.mocked(GoogleDriveAdapter.completeRedirect).mockResolvedValue(Object.create(GoogleDriveAdapter.prototype));
     expect((await resolveBackend()).resolved.backend).toBe('google-drive');
-    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
+    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
   });
 
-  it('a form connect (GitHub, self-host) removes it', async () => {
+  it('a form connect (GitHub, self-host) marks it to adopt', async () => {
     const adapter = new LocalStorageAdapter();
     vi.spyOn(adapter, 'connect').mockResolvedValue();
     await finishFormConnect(adapter, 'github');
-    expect(backing.has(CLEARED_ERASE_KEY)).toBe(false);
+    expect(backing.get(CLEARED_ERASE_KEY)).toBe('adopt');
     expect(backing.get(BACKEND_KEY)).toBe('github');
   });
 });

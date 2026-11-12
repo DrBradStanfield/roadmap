@@ -123,3 +123,19 @@ describe('US-11 AC6: a load after another device\'s erase, on the web', () => {
     expect(localStorage.getItem(CLEARED_KEY)).toBe(ERASED);
   });
 });
+
+describe('US-11 AC6: the mark a connect leaves, on the web', () => {
+  it('a fallback first load leaves the mark; the cloud load adopts the erased record and keeps the drafts', async () => {
+    const cloud = await savedRecord();
+    eraseInCloud(cloud);
+    localStorage.setItem(CLEARED_KEY, 'adopt');
+    offFileData();
+    await RecordSession.open(webRecordHost(new MemoryAdapter(new MemoryCloud())), { cloudUnreachable: true });
+    expect(localStorage.getItem(CLEARED_KEY)).toBe('adopt');
+
+    const session = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    expect(session.eraseIdentity).toBe(ERASED);
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe('{"draft":1}');
+    expect(localStorage.getItem(CLEARED_KEY)).toBe(ERASED);
+  });
+});
