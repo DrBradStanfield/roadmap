@@ -60,9 +60,9 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
       wipe: async () => __native.phoneRemove(),
       opened: () => {},
     },
-    // The app keeps no health data outside the record yet. Apple Health
-    // samples and notifications join here when they land (D5, D6, D7).
-    clearOffFileData: () => {},
+    // The app keeps no health data outside the record yet (Apple Health samples
+    // and notifications join here, D5-D7), so it keeps no erase cleared for.
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceRecord: () => phone.body(),
     deviceId: () => deviceId,
     clock: { now: () => Date.now() },

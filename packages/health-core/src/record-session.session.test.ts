@@ -85,6 +85,8 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
   const base = {
     store,
     clearOffFileData: (keep: ReadonlySet<string>) => { calls.push('clearOffFileData'); kept.push([...keep].sort()); },
+    clearedErase: () => null, // none kept: each open adopts its record's erase (US-11 AC6)
+    noteCleared: () => {},
     deviceId: () => 'phone',
     clock: { now: () => clock },
     timers: {

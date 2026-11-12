@@ -20,7 +20,7 @@ function host(cloud: MemoryCloud, heard: Array<RemoteChange | 'resolved'>): Reco
   return {
     tier: 'cloud',
     store: new MemoryAdapter(cloud),
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceId: () => 'phone',
     clock: { now: () => clock },
     timers: { set: () => null, clear: () => {} },

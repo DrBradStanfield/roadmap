@@ -111,7 +111,7 @@ function cloudHost(): RecordHost {
   let pending = false;
   return {
     tier: 'cloud', store: new DriveAdapter('synthetic-a'),
-    clearOffFileData: () => {}, deviceId: () => 'a', clock: { now: () => Date.parse(NOW) },
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {}, deviceId: () => 'a', clock: { now: () => Date.parse(NOW) },
     timers: { set: (run: () => void) => run, clear: () => {} },
     remoteChanged: () => {}, failureCause: () => 'other', report: () => {},
     mirror: {

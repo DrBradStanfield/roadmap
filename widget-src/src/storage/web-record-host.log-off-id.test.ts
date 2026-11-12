@@ -76,7 +76,7 @@ function phoneHost(cloud: MemoryCloud): RecordHost {
   if (host.tier !== 'cloud') throw new Error('cloud host expected');
   return {
     ...host,
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     ownsOffFileData: () => true, // a phone keeps no browser off-file data and is the owner on its own device
     deviceRecord: undefined,
     mirror: {

@@ -23,6 +23,7 @@ import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
+import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice } from '../src/lib/roadmap-data';
@@ -287,6 +288,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
+  safeRemoveItem(CLEARED_ERASE_KEY); // the next sign-in's record adopts its own erase (US-11 AC6)
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();

@@ -8,10 +8,10 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
-import { eraseIdentityOf, eraseOf } from './erase-identity';
+import { clearOwed, eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearOffFile, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
@@ -150,8 +150,7 @@ export class RecordSession {
   private shown: string | null = null;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
-  /** The erase this device's off-file data was last cleared for, set by
-   *  open(): a clear is owed while it is not this copy's (US-11 AC7). */
+  /** The erase this tab's off-file data is cleared up to: a later one owes a clear (US-11 AC6, AC7). */
   private clearedFor = '';
   private clearReportedFor = ''; // the erase whose failed clear was reported
 
@@ -216,7 +215,8 @@ export class RecordSession {
         }
       }
     }
-    session.clearedFor = session.eraseIdentity; // opened at this erase: no clear owed
+    session.clearedFor = clearedAtOpen(host, session.current);
+    session.settleClear();
     return session;
   }
 
@@ -362,12 +362,10 @@ export class RecordSession {
       // the erase on this device (US-11). On a failed flush we keep the mirror
       // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
       // merge and carries the erase to the cloud next session.
-      // Document blobs and the unsaved drafts sit outside the record file, so
-      // the erased file alone doesn't reach them. They go in every mode — a
-      // device-tier user gets no wipe below (it would delete the erased file
-      // just written), and used to keep them — except the originals of
-      // documents the erase did not remove (another tab's, saved meanwhile).
-      this.clearOffFileData();
+      // Document blobs and the unsaved drafts sit outside the record file. They go in every mode (a device-tier
+      // user gets no wipe below), except the originals of documents the erase did not remove (another tab's, saved
+      // meanwhile). A clear that fails is reported on its own: the cleanup below still runs, the next load clears.
+      this.tryClear();
       if (host.tier === 'device') {
         // The other record files (chat history): their contents are already
         // tombstoned (the caller's beforeErase erases chat history first).
@@ -526,19 +524,21 @@ export class RecordSession {
     }
   }
 
-  /** Clear this device's off-file health data for this copy's erase; the page
+  /** Clear this device's off-file health data for this copy's erase, and keep it once the clear worked; the page
    *  calls it after an erase whose write failed (record-host `clearOffFile`). */
   clearOffFileData(): void {
     clearOffFile(this.host, this.current, this.ctx());
+    keepCleared(this.host, this.eraseIdentity);
     this.clearedFor = this.eraseIdentity;
   }
 
-  /** The clear an erase taken in owes: retried in this session until it lands (US-11 AC7). */
+  /** The clear a later erase owes this tab: tried at each load, save and re-read until it lands (US-11 AC6, AC7). */
   private settleClear(): void {
-    if (this.clearedFor === this.eraseIdentity) return;
-    try {
-      this.clearOffFileData();
-    } catch (error) {
+    if (clearOwed(this.eraseIdentity, this.clearedFor)) this.tryClear();
+  }
+  /** Clear, reporting a failure once per erase per session; the kept erase then stays, so the next load clears again. */
+  private tryClear(): void {
+    try { this.clearOffFileData(); } catch (error) {
       this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
       this.clearReportedFor = this.eraseIdentity;
     }
