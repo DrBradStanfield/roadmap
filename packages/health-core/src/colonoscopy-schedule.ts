@@ -40,14 +40,9 @@ const monthOf = (d: string | undefined): string => (/^\d{4}-\d{2}/.test(d ?? '')
 const reopens = (result: string | undefined, lastDate: string | undefined, followupDate: string | undefined): boolean =>
   opensFollowup(ruleOf('colorectal'), result) && !!monthOf(followupDate) && monthOf(lastDate) > monthOf(followupDate);
 
-/** The colorectal answers the plan and reminders read: a follow-up a newer abnormal screening started again
- *  reads as not organised, its old status, date and time ignored (an older engine or a merge can leave them). */
-export const liveColorectal = (s: ScreeningInputs): ScreeningInputs =>
-  reopens(s.colorectalResult, s.colorectalLastDate, s.colorectalFollowupDate)
-    ? { ...s, colorectalFollowupStatus: undefined, colorectalFollowupDate: undefined, colorectalFollowupIntervalYears: undefined } : s;
-
 /** The follow-up answers a colorectal last date or result write clears when it starts the follow-up again:
- *  status, date and time. screeningWrites writes them always, so the stamped nulls win a merge. */
+ *  status, date and time. screeningWrites writes them always, so the stamped nulls win a merge. The rule
+ *  fires only at write: the plan and reminders read the stored answers as they are. */
 export function reopenClears(s: ScreeningInputs, key: string, value: string): string[] {
   const r = ruleOf('colorectal');
   if (key !== r.dateKey && key !== r.result!.key) return [];

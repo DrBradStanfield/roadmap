@@ -85,3 +85,26 @@ describe('US-07 AC1j: the colonoscopy follow-up time on the web form', () => {
     ]);
   });
 });
+
+// US-07 AC1j (Brad 2026-11-12): "The new abnormal result starts the follow-up again." The web's date picker saves
+// through screeningWrites, the iPhone's one write path (ios/engine/my-data-forms.ts), so a later last date over an
+// abnormal result clears the follow-up status, date and time here too.
+describe('US-07 AC1j: the web date picker saves through the shared write path', () => {
+  const pick = (key: string, part: 'month' | 'year', value: string) =>
+    fireEvent.change(document.querySelector<HTMLSelectElement>(`select#${key}-${part}`)!, { target: { value } });
+
+  it('a later last date with an abnormal result clears the follow-up status, date and time', () => {
+    const { onScreeningChange } = panel({ ...DONE, colorectal_followup_interval_years: '3' });
+    pick('colorectal_last_date', 'year', '2026');
+    expect(onScreeningChange.mock.calls).toEqual([
+      ['colorectal_last_date', '2026-01'], ['colorectal_followup_status', ''],
+      ['colorectal_followup_date', ''], ['colorectal_followup_interval_years', ''],
+    ]);
+  });
+
+  it('a last date in the follow-up\'s month or earlier writes only the date', () => {
+    const { onScreeningChange } = panel({ ...DONE, colorectal_followup_interval_years: '3' });
+    pick('colorectal_last_date', 'month', '06');
+    expect(onScreeningChange.mock.calls).toEqual([['colorectal_last_date', '2025-06']]);
+  });
+});

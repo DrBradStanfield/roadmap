@@ -377,60 +377,43 @@
   }
  },
  "writes": {
-  "colorectal | blank": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
-  "colorectal | colorectal:not_yet_started": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
   "colorectal | colorectal:not_yet_started,stale last+abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:no-method,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
-  "colorectal | colorectal:fit_annual,no-date": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date"
   },
   "colorectal | colorectal:fit_annual,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -439,8 +422,7 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
   "colorectal | colorectal:fit_annual,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -458,44 +440,35 @@
    "colorectal_followup_status=": "clear colorectal_followup_date",
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
-  "colorectal | colorectal:colonoscopy_10yr,no-date": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -504,8 +477,7 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
   "colorectal | colorectal:colonoscopy_10yr,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -523,44 +495,35 @@
    "colorectal_followup_status=": "clear colorectal_followup_date",
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
-  "colorectal | colorectal:other,no-date": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
   "colorectal | colorectal:other,last=2026-04": {
    "colorectal_method=": "clear colorectal_last_date",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date"
   },
   "colorectal | colorectal:other,last=2026-04,normal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:other,last=2026-04,awaiting": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=not_organized": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=scheduled": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_result=": "clear colorectal_followup_status",
    "colorectal_result=normal": "clear colorectal_followup_status",
-   "colorectal_result=awaiting": "clear colorectal_followup_status",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_result=awaiting": "clear colorectal_followup_status"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=scheduled@2026-12": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -569,8 +532,7 @@
    "colorectal_result=normal": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
   "colorectal | colorectal:other,last=2026-04,abnormal,fu=completed": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -590,8 +552,7 @@
   },
   "colorectal | all-answered": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   },
   "breast | breast:not_yet_started,stale last+abnormal": {
    "breast_frequency=": "clear breast_last_date breast_result",
@@ -1688,9 +1649,6 @@
    "dexa_screening=": "clear dexa_last_date dexa_result",
    "dexa_screening=not_yet_started": "clear dexa_last_date dexa_result"
   },
-  "colonoscopy | blank": {
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
-  },
   "colonoscopy | colonoscopy:fit_annual,last=2026-04,abnormal,fu=completed,undated": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status",
@@ -1844,7 +1802,7 @@
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_followup_status=scheduled": "clear colorectal_followup_interval_years"
   },
-  "colonoscopy | colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,reopened": {
+  "colonoscopy | colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,newer-last": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_method=fit_annual": "clear colorectal_followup_interval_years",
    "colorectal_method=other": "clear colorectal_followup_interval_years",
@@ -1858,7 +1816,7 @@
    "colorectal_followup_status=not_organized": "clear colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_followup_status=scheduled": "clear colorectal_followup_interval_years"
   },
-  "colonoscopy | colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,reopened": {
+  "colonoscopy | colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,newer-last": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
    "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
    "colorectal_last_date=2026-04": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
@@ -1867,8 +1825,7 @@
    "colorectal_result=abnormal": "clear colorectal_followup_status colorectal_followup_date colorectal_followup_interval_years",
    "colorectal_result=awaiting": "clear colorectal_followup_status colorectal_followup_date",
    "colorectal_followup_status=": "clear colorectal_followup_date",
-   "colorectal_followup_status=not_organized": "clear colorectal_followup_date",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_followup_status=not_organized": "clear colorectal_followup_date"
   },
   "colonoscopy | colonoscopy:other,last=2026-07,abnormal,fu=completed@2026-07,same-month": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result colorectal_followup_status colorectal_followup_date",
@@ -1881,8 +1838,7 @@
   },
   "colonoscopy | all-answered": {
    "colorectal_method=": "clear colorectal_last_date colorectal_result",
-   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result",
-   "colorectal_followup_status=completed": "clear colorectal_followup_interval_years"
+   "colorectal_method=not_yet_started": "clear colorectal_last_date colorectal_result"
   }
  },
  "cards": {
@@ -1945,48 +1901,49 @@
   "C057": "screening-colorectal-followup [info] Colorectal screening up to date :: Following your colonoscopy, your next colonoscopy is due Jul 2031, as your report advised.",
   "C058": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Jun 2026. Please book it with your doctor.",
   "C059": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Jun 2025. Please book it with your doctor.",
-  "C060": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Nov 2026.",
-  "C061": "screening-colorectal-overdue [attention] Colorectal screening overdue :: Your next colorectal screening was due Oct 2026. Please schedule your screening.",
-  "C062": "screening-breast-upcoming [info] Mammogram up to date :: Next mammogram due Nov 2026.",
-  "C063": "screening-breast-overdue [attention] Mammogram overdue :: Your next mammogram was due Oct 2026. Please schedule your screening.",
-  "C064": "screening-breast-overdue [attention] Mammogram overdue :: Your next mammogram was due Sep 2026. Please schedule your screening.",
-  "C065": "screening-cervical-upcoming [info] Cervical screening up to date :: Next screening due Nov 2026.",
-  "C066": "screening-cervical-overdue [attention] Cervical screening overdue :: Your next cervical screening was due Oct 2026. Please schedule your screening.",
-  "C067": "screening-cervical-overdue [attention] Cervical screening overdue :: Your next cervical screening was due Sep 2026. Please schedule your screening.",
-  "C068": "screening-lung-upcoming [info] Lung screening up to date :: Next low-dose CT due Nov 2026.",
-  "C069": "screening-lung-overdue [attention] Lung screening overdue :: Your next low-dose CT was due Oct 2026. Please schedule your screening.",
-  "C070": "screening-lung-overdue [attention] Lung screening overdue :: Your next low-dose CT was due Sep 2026. Please schedule your screening.",
-  "C071": "screening-prostate-upcoming [info] PSA test up to date :: Next PSA test due Nov 2026.",
-  "C072": "screening-prostate-overdue [attention] PSA test overdue :: Your next PSA test was due Oct 2026. Please schedule your test.",
-  "C073": "screening-prostate-overdue [attention] PSA test overdue :: Your next PSA test was due Sep 2026. Please schedule your test.",
-  "C074": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Nov 2026.",
-  "C075": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Oct 2026. Please schedule your scan.",
-  "C076": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Sep 2026. Please schedule your scan.",
-  "C077": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Nov 2029.",
-  "C078": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Oct 2029.",
-  "C079": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Sep 2029.",
-  "C080": "screening-colorectal-followup [info] Colorectal screening up to date :: Following your colonoscopy, your next colonoscopy is due Nov 2026. Dr Brad suggests repeating it every 3 years if your report didn't give a follow-up time.",
-  "C081": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Oct 2026. Please book it with your doctor.",
-  "C082": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Sep 2026. Please book it with your doctor.",
-  "C083": "screening-breast-followup [info] Breast screening up to date :: Following your abnormal mammogram, next screening due Nov 2026.",
-  "C084": "screening-breast-followup [attention] Breast screening overdue :: Following your abnormal mammogram, your next screening was due Oct 2026. Please schedule your screening.",
-  "C085": "screening-breast-followup [attention] Breast screening overdue :: Following your abnormal mammogram, your next screening was due Sep 2026. Please schedule your screening.",
-  "C086": "screening-cervical-followup [info] Cervical screening up to date :: Following your HPV positive result, next screening due Nov 2026.",
-  "C087": "screening-cervical-followup [attention] Cervical screening overdue :: Following your HPV positive result, your next screening was due Oct 2026. Please schedule your screening.",
-  "C088": "screening-cervical-followup [attention] Cervical screening overdue :: Following your HPV positive result, your next screening was due Sep 2026. Please schedule your screening.",
-  "C089": "screening-cervical-followup [info] Cervical screening up to date :: Following your abnormal Pap test, next screening due Nov 2026.",
-  "C090": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal Pap test, your next screening was due Oct 2026. Please schedule your screening.",
-  "C091": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal Pap test, your next screening was due Sep 2026. Please schedule your screening.",
-  "C092": "screening-cervical-followup [info] Cervical screening up to date :: Following your abnormal result, next screening due Nov 2026.",
-  "C093": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal result, your next screening was due Oct 2026. Please schedule your screening.",
-  "C094": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal result, your next screening was due Sep 2026. Please schedule your screening.",
-  "C095": "screening-lung-followup [info] Lung screening up to date :: Following your abnormal LDCT result, next screening due Nov 2026.",
-  "C096": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Oct 2026. Please schedule your screening.",
-  "C097": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Sep 2026. Please schedule your screening.",
-  "C098": "screening-dexa-followup [info] Dexa screening up to date :: Following your osteoporosis diagnosed — treatment and monitoring required, next screening due Nov 2026.",
-  "C099": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Oct 2026. Please schedule your screening.",
-  "C100": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Sep 2026. Please schedule your screening.",
-  "C101": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Oct 2027."
+  "C060": "screening-colorectal-followup [info] Colorectal screening up to date :: Following your colonoscopy, your next colonoscopy is due Jun 2028, as your report advised.",
+  "C061": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Nov 2026.",
+  "C062": "screening-colorectal-overdue [attention] Colorectal screening overdue :: Your next colorectal screening was due Oct 2026. Please schedule your screening.",
+  "C063": "screening-breast-upcoming [info] Mammogram up to date :: Next mammogram due Nov 2026.",
+  "C064": "screening-breast-overdue [attention] Mammogram overdue :: Your next mammogram was due Oct 2026. Please schedule your screening.",
+  "C065": "screening-breast-overdue [attention] Mammogram overdue :: Your next mammogram was due Sep 2026. Please schedule your screening.",
+  "C066": "screening-cervical-upcoming [info] Cervical screening up to date :: Next screening due Nov 2026.",
+  "C067": "screening-cervical-overdue [attention] Cervical screening overdue :: Your next cervical screening was due Oct 2026. Please schedule your screening.",
+  "C068": "screening-cervical-overdue [attention] Cervical screening overdue :: Your next cervical screening was due Sep 2026. Please schedule your screening.",
+  "C069": "screening-lung-upcoming [info] Lung screening up to date :: Next low-dose CT due Nov 2026.",
+  "C070": "screening-lung-overdue [attention] Lung screening overdue :: Your next low-dose CT was due Oct 2026. Please schedule your screening.",
+  "C071": "screening-lung-overdue [attention] Lung screening overdue :: Your next low-dose CT was due Sep 2026. Please schedule your screening.",
+  "C072": "screening-prostate-upcoming [info] PSA test up to date :: Next PSA test due Nov 2026.",
+  "C073": "screening-prostate-overdue [attention] PSA test overdue :: Your next PSA test was due Oct 2026. Please schedule your test.",
+  "C074": "screening-prostate-overdue [attention] PSA test overdue :: Your next PSA test was due Sep 2026. Please schedule your test.",
+  "C075": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Nov 2026.",
+  "C076": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Oct 2026. Please schedule your scan.",
+  "C077": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Sep 2026. Please schedule your scan.",
+  "C078": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Nov 2029.",
+  "C079": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Oct 2029.",
+  "C080": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Sep 2029.",
+  "C081": "screening-colorectal-followup [info] Colorectal screening up to date :: Following your colonoscopy, your next colonoscopy is due Nov 2026. Dr Brad suggests repeating it every 3 years if your report didn't give a follow-up time.",
+  "C082": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Oct 2026. Please book it with your doctor.",
+  "C083": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Sep 2026. Please book it with your doctor.",
+  "C084": "screening-breast-followup [info] Breast screening up to date :: Following your abnormal mammogram, next screening due Nov 2026.",
+  "C085": "screening-breast-followup [attention] Breast screening overdue :: Following your abnormal mammogram, your next screening was due Oct 2026. Please schedule your screening.",
+  "C086": "screening-breast-followup [attention] Breast screening overdue :: Following your abnormal mammogram, your next screening was due Sep 2026. Please schedule your screening.",
+  "C087": "screening-cervical-followup [info] Cervical screening up to date :: Following your HPV positive result, next screening due Nov 2026.",
+  "C088": "screening-cervical-followup [attention] Cervical screening overdue :: Following your HPV positive result, your next screening was due Oct 2026. Please schedule your screening.",
+  "C089": "screening-cervical-followup [attention] Cervical screening overdue :: Following your HPV positive result, your next screening was due Sep 2026. Please schedule your screening.",
+  "C090": "screening-cervical-followup [info] Cervical screening up to date :: Following your abnormal Pap test, next screening due Nov 2026.",
+  "C091": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal Pap test, your next screening was due Oct 2026. Please schedule your screening.",
+  "C092": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal Pap test, your next screening was due Sep 2026. Please schedule your screening.",
+  "C093": "screening-cervical-followup [info] Cervical screening up to date :: Following your abnormal result, next screening due Nov 2026.",
+  "C094": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal result, your next screening was due Oct 2026. Please schedule your screening.",
+  "C095": "screening-cervical-followup [attention] Cervical screening overdue :: Following your abnormal result, your next screening was due Sep 2026. Please schedule your screening.",
+  "C096": "screening-lung-followup [info] Lung screening up to date :: Following your abnormal LDCT result, next screening due Nov 2026.",
+  "C097": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Oct 2026. Please schedule your screening.",
+  "C098": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Sep 2026. Please schedule your screening.",
+  "C099": "screening-dexa-followup [info] Dexa screening up to date :: Following your osteoporosis diagnosed — treatment and monitoring required, next screening due Nov 2026.",
+  "C100": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Oct 2026. Please schedule your screening.",
+  "C101": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Sep 2026. Please schedule your screening.",
+  "C102": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Oct 2027."
  },
  "groups": {
   "G001": [
@@ -33616,31 +33573,29 @@
    ],
    "form": "F500"
   },
-  "B m60 colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,reopened": {
+  "B m60 colonoscopy:colonoscopy_10yr,last=2026-04,abnormal,fu=completed@2023-06,years=5,newer-last": {
    "age": 60,
    "cards": [
-    "C034",
+    "C060",
     "C013"
    ],
    "due": [
-    "screening_colorectal (screening) Colonoscopy 2026-04-01"
-   ],
-   "followups": [
-    "screening_colorectal organize repeat colonoscopy"
+    "screening_colorectal (screening) Colonoscopy 2028-06-01",
+    "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
    "form": "F501"
   },
-  "B m60 colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,reopened": {
+  "B m60 colonoscopy:fit_annual,last=2026-04,abnormal,fu=scheduled@2023-06,newer-last": {
    "age": 60,
    "cards": [
-    "C007",
+    "C030",
     "C013"
    ],
    "due": [
-    "screening_colorectal (screening) Colorectal screening 2026-04-01"
+    "screening_colorectal (screening) Colorectal screening 2026-07-01"
    ],
    "followups": [
-    "screening_colorectal organize colonoscopy"
+    "screening_colorectal checkin colonoscopy"
    ],
    "form": "F502"
   },
@@ -33659,7 +33614,7 @@
   "C interval fit_annual=12mo m50 last=2025-11 (11mo ago)": {
    "age": 50,
    "cards": [
-    "C060",
+    "C061",
     "C013"
    ],
    "due": [
@@ -33670,7 +33625,7 @@
   "C interval fit_annual=12mo m50 last=2025-10 (12mo ago)": {
    "age": 50,
    "cards": [
-    "C061",
+    "C062",
     "C013"
    ],
    "due": [
@@ -33692,7 +33647,7 @@
   "C interval colonoscopy_10yr=120mo m50 last=2016-11 (119mo ago)": {
    "age": 50,
    "cards": [
-    "C060",
+    "C061",
     "C013"
    ],
    "due": [
@@ -33703,7 +33658,7 @@
   "C interval colonoscopy_10yr=120mo m50 last=2016-10 (120mo ago)": {
    "age": 50,
    "cards": [
-    "C061",
+    "C062",
     "C013"
    ],
    "due": [
@@ -33725,7 +33680,7 @@
   "C interval other=12mo m50 last=2025-11 (11mo ago)": {
    "age": 50,
    "cards": [
-    "C060",
+    "C061",
     "C013"
    ],
    "due": [
@@ -33736,7 +33691,7 @@
   "C interval other=12mo m50 last=2025-10 (12mo ago)": {
    "age": 50,
    "cards": [
-    "C061",
+    "C062",
     "C013"
    ],
    "due": [
@@ -33759,7 +33714,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C062",
+    "C063",
     "C001",
     "C017",
     "C023"
@@ -33773,7 +33728,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C063",
+    "C064",
     "C001",
     "C017",
     "C023"
@@ -33787,7 +33742,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C064",
+    "C065",
     "C001",
     "C017",
     "C023"
@@ -33801,7 +33756,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C062",
+    "C063",
     "C001",
     "C017",
     "C023"
@@ -33815,7 +33770,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C063",
+    "C064",
     "C001",
     "C017",
     "C023"
@@ -33829,7 +33784,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C064",
+    "C065",
     "C001",
     "C017",
     "C023"
@@ -33842,7 +33797,7 @@
   "C interval hpv_every_5yr=60mo f30 last=2021-11 (59mo ago)": {
    "age": 30,
    "cards": [
-    "C065"
+    "C066"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -33852,7 +33807,7 @@
   "C interval hpv_every_5yr=60mo f30 last=2021-10 (60mo ago)": {
    "age": 30,
    "cards": [
-    "C066"
+    "C067"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -33862,7 +33817,7 @@
   "C interval hpv_every_5yr=60mo f30 last=2021-09 (61mo ago)": {
    "age": 30,
    "cards": [
-    "C067"
+    "C068"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -33872,7 +33827,7 @@
   "C interval pap_every_3yr=36mo f30 last=2023-11 (35mo ago)": {
    "age": 30,
    "cards": [
-    "C065"
+    "C066"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -33882,7 +33837,7 @@
   "C interval pap_every_3yr=36mo f30 last=2023-10 (36mo ago)": {
    "age": 30,
    "cards": [
-    "C066"
+    "C067"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -33892,7 +33847,7 @@
   "C interval pap_every_3yr=36mo f30 last=2023-09 (37mo ago)": {
    "age": 30,
    "cards": [
-    "C067"
+    "C068"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -33902,7 +33857,7 @@
   "C interval other=12mo f30 last=2025-11 (11mo ago)": {
    "age": 30,
    "cards": [
-    "C065"
+    "C066"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -33912,7 +33867,7 @@
   "C interval other=12mo f30 last=2025-10 (12mo ago)": {
    "age": 30,
    "cards": [
-    "C066"
+    "C067"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -33922,7 +33877,7 @@
   "C interval other=12mo f30 last=2025-09 (13mo ago)": {
    "age": 30,
    "cards": [
-    "C067"
+    "C068"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -33933,7 +33888,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C068",
+    "C069",
     "C013"
    ],
    "due": [
@@ -33945,7 +33900,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C069",
+    "C070",
     "C013"
    ],
    "due": [
@@ -33957,7 +33912,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C070",
+    "C071",
     "C013"
    ],
    "due": [
@@ -33969,7 +33924,7 @@
    "age": 55,
    "cards": [
     "C027",
-    "C071"
+    "C072"
    ],
    "due": [
     "screening_prostate (screening) PSA test 2026-11-01"
@@ -33980,7 +33935,7 @@
    "age": 55,
    "cards": [
     "C027",
-    "C072"
+    "C073"
    ],
    "due": [
     "screening_prostate (screening) PSA test 2026-10-01"
@@ -33991,7 +33946,7 @@
    "age": 55,
    "cards": [
     "C027",
-    "C073"
+    "C074"
    ],
    "due": [
     "screening_prostate (screening) PSA test 2026-09-01"
@@ -34005,7 +33960,7 @@
     "C016",
     "C001",
     "C017",
-    "C074"
+    "C075"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
@@ -34019,7 +33974,7 @@
     "C016",
     "C001",
     "C017",
-    "C075"
+    "C076"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
@@ -34033,7 +33988,7 @@
     "C016",
     "C001",
     "C017",
-    "C076"
+    "C077"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
@@ -34047,7 +34002,7 @@
     "C016",
     "C001",
     "C017",
-    "C074"
+    "C075"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
@@ -34061,7 +34016,7 @@
     "C016",
     "C001",
     "C017",
-    "C075"
+    "C076"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
@@ -34075,7 +34030,7 @@
     "C016",
     "C001",
     "C017",
-    "C076"
+    "C077"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
@@ -34140,7 +34095,7 @@
     "C016",
     "C001",
     "C017",
-    "C077"
+    "C078"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2029-11-01",
@@ -34155,7 +34110,7 @@
     "C016",
     "C001",
     "C017",
-    "C078"
+    "C079"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2029-10-01",
@@ -34170,7 +34125,7 @@
     "C016",
     "C001",
     "C017",
-    "C079"
+    "C080"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2029-09-01",
@@ -34181,7 +34136,7 @@
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
    "cards": [
-    "C080",
+    "C081",
     "C013"
    ],
    "due": [
@@ -34192,7 +34147,7 @@
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
    "cards": [
-    "C081",
+    "C082",
     "C013"
    ],
    "due": [
@@ -34203,7 +34158,7 @@
   "C post-followup colorectal_fit_annual=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
    "cards": [
-    "C082",
+    "C083",
     "C013"
    ],
    "due": [
@@ -34214,7 +34169,7 @@
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
    "cards": [
-    "C080",
+    "C081",
     "C013"
    ],
    "due": [
@@ -34225,7 +34180,7 @@
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
    "cards": [
-    "C081",
+    "C082",
     "C013"
    ],
    "due": [
@@ -34236,7 +34191,7 @@
   "C post-followup colorectal_colonoscopy_10yr=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
    "cards": [
-    "C082",
+    "C083",
     "C013"
    ],
    "due": [
@@ -34247,7 +34202,7 @@
   "C post-followup colorectal_other=36mo m50 fu=2023-11 (35mo ago)": {
    "age": 50,
    "cards": [
-    "C080",
+    "C081",
     "C013"
    ],
    "due": [
@@ -34258,7 +34213,7 @@
   "C post-followup colorectal_other=36mo m50 fu=2023-10 (36mo ago)": {
    "age": 50,
    "cards": [
-    "C081",
+    "C082",
     "C013"
    ],
    "due": [
@@ -34269,7 +34224,7 @@
   "C post-followup colorectal_other=36mo m50 fu=2023-09 (37mo ago)": {
    "age": 50,
    "cards": [
-    "C082",
+    "C083",
     "C013"
    ],
    "due": [
@@ -34281,7 +34236,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C083",
+    "C084",
     "C001",
     "C017",
     "C023"
@@ -34295,7 +34250,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C084",
+    "C085",
     "C001",
     "C017",
     "C023"
@@ -34309,7 +34264,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C085",
+    "C086",
     "C001",
     "C017",
     "C023"
@@ -34323,7 +34278,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C083",
+    "C084",
     "C001",
     "C017",
     "C023"
@@ -34337,7 +34292,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C084",
+    "C085",
     "C001",
     "C017",
     "C023"
@@ -34351,7 +34306,7 @@
    "age": 50,
    "cards": [
     "C012",
-    "C085",
+    "C086",
     "C001",
     "C017",
     "C023"
@@ -34364,7 +34319,7 @@
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
    "cards": [
-    "C086"
+    "C087"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -34374,7 +34329,7 @@
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
    "cards": [
-    "C087"
+    "C088"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -34384,7 +34339,7 @@
   "C post-followup cervical_hpv_every_5yr=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
    "cards": [
-    "C088"
+    "C089"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -34394,7 +34349,7 @@
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
    "cards": [
-    "C089"
+    "C090"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -34404,7 +34359,7 @@
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
    "cards": [
-    "C090"
+    "C091"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -34414,7 +34369,7 @@
   "C post-followup cervical_pap_every_3yr=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
    "cards": [
-    "C091"
+    "C092"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -34424,7 +34379,7 @@
   "C post-followup cervical_other=12mo f30 fu=2025-11 (11mo ago)": {
    "age": 30,
    "cards": [
-    "C092"
+    "C093"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-11-01"
@@ -34434,7 +34389,7 @@
   "C post-followup cervical_other=12mo f30 fu=2025-10 (12mo ago)": {
    "age": 30,
    "cards": [
-    "C093"
+    "C094"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-10-01"
@@ -34444,7 +34399,7 @@
   "C post-followup cervical_other=12mo f30 fu=2025-09 (13mo ago)": {
    "age": 30,
    "cards": [
-    "C094"
+    "C095"
    ],
    "due": [
     "screening_cervical (screening) Cervical screening 2026-09-01"
@@ -34455,7 +34410,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C095",
+    "C096",
     "C013"
    ],
    "due": [
@@ -34467,7 +34422,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C096",
+    "C097",
     "C013"
    ],
    "due": [
@@ -34479,7 +34434,7 @@
    "age": 60,
    "cards": [
     "C027",
-    "C097",
+    "C098",
     "C013"
    ],
    "due": [
@@ -34494,7 +34449,7 @@
     "C016",
     "C001",
     "C017",
-    "C098"
+    "C099"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-11-01"
@@ -34508,7 +34463,7 @@
     "C016",
     "C001",
     "C017",
-    "C099"
+    "C100"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-10-01"
@@ -34522,7 +34477,7 @@
     "C016",
     "C001",
     "C017",
-    "C100"
+    "C101"
    ],
    "due": [
     "screening_dexa (screening) DEXA bone density scan 2026-09-01"
@@ -36621,7 +36576,7 @@
   "D edge-clock m50 fit_annual last=2025-11 (11mo ago)": {
    "age": 50,
    "cards": [
-    "C060",
+    "C061",
     "C013"
    ],
    "due": [
@@ -36632,7 +36587,7 @@
   "D edge-clock m50 fit_annual last=2025-10 (12mo ago)": {
    "age": 50,
    "cards": [
-    "C061",
+    "C062",
     "C013"
    ],
    "due": [
@@ -36654,7 +36609,7 @@
   "D m50 fit_annual last=2026-10 (0mo ago)": {
    "age": 50,
    "cards": [
-    "C101",
+    "C102",
     "C013"
    ],
    "due": [

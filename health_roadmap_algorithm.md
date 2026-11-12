@@ -1162,7 +1162,7 @@ For abnormal results, the follow-up status progresses through:
 2. `scheduled` -> **info**: keep appointment
 3. `completed` + follow-up date -> check post-follow-up interval for overdue/upcoming
 4. Colorectal, completed with no follow-up date: the 'Add your colonoscopy date' card (attention); no reminder until the date is added (Brad 2026-11-12).
-5. Colorectal, abnormal with a last screening later (by month) than the follow-up date: back to step 1. "The old follow-up answers are cleared" when that answer is written, and the plan and reminders read a file an older engine or a merge left the same way (Brad 2026-11-12).
+5. Colorectal, abnormal with a last screening later (by month) than the follow-up date: back to step 1. "The old follow-up answers are cleared" when that answer is written (Brad 2026-11-12).
 
 ### Overdue Calculation
 

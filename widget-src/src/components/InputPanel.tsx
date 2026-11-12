@@ -486,9 +486,9 @@ export function InputPanel({
       }));
 
       if (newYear && adjustedMonth) {
-        onScreeningChange(key, `${newYear}-${adjustedMonth}`);
+        writeScreening(scr, key, `${newYear}-${adjustedMonth}`);
       } else if (!newYear && !adjustedMonth) {
-        onScreeningChange(key, '');
+        writeScreening(scr, key, '');
       }
     };
 

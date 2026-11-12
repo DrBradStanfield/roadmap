@@ -1,9 +1,9 @@
 // US-07 AC1j (Brad 2026-11-12): "The new abnormal result starts the follow-up again. The old follow-up
 // answers are cleared, the existing urgent 'Organize colonoscopy' card shows, and the person works through
 // the follow-up questions afresh. No new words." Colorectal only. A new last screening (its month later than
-// the follow-up's) with an abnormal result clears the follow-up status, date and time at write; the plan and
-// reminders read such a file the same way when an older engine or a merge left the old answers (read guard).
-// F1 (2b re-check): the follow-up time's clear is always written, so its stamped null wins the merge.
+// the follow-up's) with an abnormal result clears the follow-up status, date and time when the answer is
+// written (screeningWrites, web and iPhone), always, so the stamped nulls win a merge. The plan and reminders
+// read stored answers as they are: an older engine's or a merge's leftovers are not reopened on read.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -119,17 +119,13 @@ describe('US-07 AC1j: a new abnormal last screening starts the follow-up again (
   });
 });
 
-describe('US-07 AC1j: the read guard: a file an older engine or a merge left (no write)', () => {
-  it.each(METHODS)('%s: abnormal, last 2026-07, follow-up completed 2020-01 with 5 years: the Organize card and its reminder', (method) => {
+describe('US-07 AC1j: the rule fires only when the answer is written (stated limit: stored answers are read as they are)', () => {
+  it.each(METHODS)('%s: a file left with last 2026-07 over a follow-up completed 2020-01 keeps that schedule, never Organize', (method) => {
     const file = fileWith(old(method, { colorectalLastDate: '2026-07' }));
-    expect(cards(file)).toEqual(organize(method));
-    expect(reminder(file)).toBe('2026-07-01');
-    expect(followupKinds(file, NOW).screening_colorectal).toEqual({ kind: 'organize', name: NAME[method] });
-  });
-
-  it('scheduled with an older date reads as not organised too; a later date keeps the schedule', () => {
-    expect(cards(fileWith(old('fit_annual', { colorectalLastDate: '2026-07', colorectalFollowupStatus: 'scheduled' })))).toEqual(organize('fit_annual'));
-    expect(cards(fileWith(old('fit_annual', { colorectalLastDate: '2026-07', colorectalFollowupDate: '2026-08' })))[0].title).toBe('Colorectal screening up to date');
+    expect(followup(file)).toEqual(['completed', '2020-01', 5]);
+    expect(cards(file)[0].title).toBe('Colonoscopy overdue');
+    expect(reminder(file)).toBe('2025-01-01');
+    expect(followupKinds(file, NOW).screening_colorectal?.kind).not.toBe('organize');
   });
 });
 
@@ -156,21 +152,14 @@ describe('US-07 AC1j: colorectal only: breast and cervical keep their follow-up 
   });
 });
 
-describe('US-07 AC1j F1: the follow-up time\'s clear is always written, so it wins the merge', () => {
+describe('US-07 AC1j: the reopen\'s clears are always written, so they win the merge', () => {
   const base = fileWith(old('fit_annual', { colorectalLastDate: '2025-01', colorectalFollowupDate: '2025-06', colorectalFollowupIntervalYears: undefined }), 'dev_base', '2026-10-01T00:00:00Z');
 
-  it('A: scheduled, then completed with a date (unsynced); B: a 10-year time between; merged both ways, no time and card B', () => {
-    let a = answer(base, S, 'scheduled', '2026-11-01T09:00:00Z');
-    const b = setScreening(base, I, '10', '2026-11-02T09:00:00Z');
-    a = answer(a, S, 'completed', '2026-11-03T09:00:00Z');
-    a = answer(a, D, '2026-09', '2026-11-03T09:01:00Z');
-    for (const merged of [mergeFiles(a, b, { deviceId: 'm', now: '2026-11-04T00:00:00Z' }), mergeFiles(b, a, { deviceId: 'm', now: '2026-11-04T00:00:00Z' })]) {
-      expect(followup(merged)).toEqual(['completed', '2026-09', null]);
-      expect(cards(merged)).toEqual([{ id: 'screening-colorectal-followup', priority: 'info', title: 'Colorectal screening up to date', description: B_TEXT.replace('{due}', 'Sep 2029') }]);
-    }
+  it('written even when this device holds no follow-up time', () => {
+    expect(screeningWrites(derivePlanInputs(base, NOW).screenings, 'colorectal_last_date', '2026-07').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
   });
 
-  it('the reopen\'s clears win too: A writes a new last date, B (earlier, unsynced) gave a 10-year time', () => {
+  it('A writes a new last date, B (earlier, unsynced) gave a 10-year time: merged both ways, the follow-up starts again', () => {
     const b = setScreening(base, I, '10', '2026-11-01T09:00:00Z');
     const a = answer(base, 'colorectal_last_date', '2026-07', '2026-11-02T09:00:00Z');
     for (const merged of [mergeFiles(a, b, { deviceId: 'm', now: '2026-11-04T00:00:00Z' }), mergeFiles(b, a, { deviceId: 'm', now: '2026-11-04T00:00:00Z' })]) {
