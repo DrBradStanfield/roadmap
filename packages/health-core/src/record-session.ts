@@ -148,6 +148,7 @@ export class RecordSession {
   /** The erase this device's off-file data was last cleared for, set by
    *  open(): a clear is owed while it is not this copy's (US-11 AC7). */
   private clearedFor = '';
+  private clearReportedFor = ''; // the erase whose failed clear was reported
 
   private constructor(
     private readonly host: RecordHost,
@@ -528,22 +529,21 @@ export class RecordSession {
     }
   }
 
-  /** Clear this device's off-file health data for the erase this copy is at
-   *  (record-host `clearOffFile`). The page calls it too, after an erase
-   *  whose write failed. */
+  /** Clear this device's off-file health data for this copy's erase; the page
+   *  calls it after an erase whose write failed (record-host `clearOffFile`). */
   clearOffFileData(): void {
     clearOffFile(this.host, this.current, this.ctx());
     this.clearedFor = this.eraseIdentity;
   }
 
-  /** The clear owed since an erase was taken in, once per adopt(), and per
-   *  re-read that brings nothing; a throw is reported and leaves it owed. */
+  /** The clear an erase taken in owes: retried until it lands (US-11 AC7). */
   private settleClear(): void {
     if (this.clearedFor === this.eraseIdentity) return;
     try {
       this.clearOffFileData();
     } catch (error) {
-      this.host.report(error, { op: 'clear-off-file', repeat: false });
+      this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
+      this.clearReportedFor = this.eraseIdentity;
     }
   }
 
