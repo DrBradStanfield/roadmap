@@ -22,18 +22,23 @@ const CHAT_FILE = 'chat-history.json';
 const CHAT_KEY = `${FILE_KEY}:${CHAT_FILE}`;
 const USER_ONE_CHAT = 'SYNTHETIC_USER_ONE_QUESTION';
 
-/** A localStorage whose every change reaches the window, as a browser sends it to other tabs. */
+/** A localStorage whose every change reaches the window, as a browser sends it to other tabs. Its
+ *  stored keys enumerate, as a browser's do, so the log-off's prefix wipe sees them. */
 function sharedStorage(): Storage {
   const values = new Map<string, string>();
   const changed = (key: string) => window.dispatchEvent(Object.assign(new Event('storage'), { key }));
-  return {
+  const api = {
     get length() { return values.size; },
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => { if (values.get(key) !== String(value)) { values.set(key, String(value)); changed(key); } },
     removeItem: (key: string) => { if (values.delete(key)) changed(key); },
     clear: () => values.clear(),
     key: (index: number) => [...values.keys()][index] ?? null,
-  } as Storage;
+  };
+  return new Proxy(api, {
+    ownKeys: () => [...values.keys()],
+    getOwnPropertyDescriptor: (_, key) => (typeof key === 'string' && values.has(key) ? { value: values.get(key), enumerable: true, configurable: true } : undefined),
+  }) as unknown as Storage;
 }
 
 /** A fresh page: its own module graph. */
@@ -155,6 +160,31 @@ describe("US-09 AC2c: a fallback tab's chat history follows the same write rule"
     expect(JSON.stringify(cloudChat.listConversations())).not.toContain(USER_ONE_CHAT);
     expect(JSON.stringify((await cloud.read(CHAT_FILE)).body ?? null)).not.toContain(USER_ONE_CHAT);
     expect(localStorage.getItem(CHAT_KEY) ?? '').not.toContain(USER_ONE_CHAT);
+    // User 2's own fallback page, on the device tier, sees none of it either.
+    const userTwoFallback = await tab();
+    let deviceChat!: Awaited<ReturnType<typeof userTwoFallback.chat.ChatHistoryStore.create>>;
+    await userTwoFallback.connect.startOnBackend({ adapter: unreachable(userTwoFallback), backend: 'dropbox' }, async (adapter) => {
+      await userTwoFallback.storage.RoadmapStore.create(adapter);
+      deviceChat = await userTwoFallback.chat.ChatHistoryStore.create(adapter);
+    });
+    expect(JSON.stringify(deviceChat.listConversations())).not.toContain(USER_ONE_CHAT);
+  });
+
+  it("a guest who opens the page next on this device sees none of the chat user 1's fallback tab sent after the log-off", async () => {
+    const chat = await userOneFallbackChat();
+    await (await tab()).connect.logOff('github');
+    await chatOnce(chat);
+    const guest = await tab();
+    const guestChat = await guest.chat.ChatHistoryStore.create(new guest.local.LocalStorageAdapter());
+    expect(JSON.stringify(guestChat.listConversations())).not.toContain(USER_ONE_CHAT);
+  });
+
+  it("the log-off removes the chat user 1's tab saved before it", async () => {
+    const chat = await userOneFallbackChat();
+    await chatOnce(chat);
+    expect(localStorage.getItem(CHAT_KEY)).toContain(USER_ONE_CHAT);
+    await (await tab()).connect.logOff('github');
+    expect(localStorage.getItem(CHAT_KEY)).toBeNull();
   });
 
   it('a fallback tab that chats after a log-off in another tab leaves no chat file on the device', async () => {

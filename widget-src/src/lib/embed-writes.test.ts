@@ -3,7 +3,8 @@
  * stay 'loading' for life and only read the mirror. This pins that boundary:
  * a walk of each entry's import graph (static and dynamic) finds no file that
  * calls a device health writer, except the record host's own modules, and no
- * file that opens a record (initRoadmapStore, the only builder of a host). If
+ * file that opens a record or builds a host (initRoadmapStore, webRecordHost,
+ * RoadmapStore.create, ChatHistoryStore.create). If
  * either changes, this fails and its author decides which write state that
  * page takes.
  */
@@ -45,9 +46,14 @@ function reach(entry: string): Set<string> {
   return seen;
 }
 
-/** The record host's own modules: they write only inside a host, which only initRoadmapStore builds. */
+/** The record host's own modules: they write only inside a host, which only the calls OPENS_A_RECORD names build. */
 const HOST_ONLY = ['storage/web-record-host.ts', 'storage/roadmap-store.ts'].map((f) => resolve(SRC, f));
-const OPENS_A_RECORD = /(?<!function )\binitRoadmapStore\s*\(/;
+const OPENS_A_RECORD = /(?<!function )\b(initRoadmapStore|webRecordHost|RoadmapStore\.create|ChatHistoryStore\.create)\s*\(/g;
+/** The builders' own bodies: each call here runs only inside one of the builders above. A new call in
+ *  one of these files changes its count and fails the pin. */
+const BUILDER_CALLS = new Map([['lib/roadmap-data.ts', 2], ['storage/roadmap-store.ts', 1], ['storage/chat-history-store.ts', 1]]
+  .map(([f, n]) => [resolve(SRC, f as string), n as number]));
+const opensARecord = (file: string) => [...readFileSync(file, 'utf8').matchAll(OPENS_A_RECORD)].length !== (BUILDER_CALLS.get(file) ?? 0);
 
 describe('US-09 AC2c: the pages that open no record', () => {
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s reaches the mirror but calls no device health writer outside the record host', (entry) => {
@@ -58,7 +64,9 @@ describe('US-09 AC2c: the pages that open no record', () => {
   });
 
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s never opens a record, so the record host\'s writers never run there', (entry) => {
-    expect([...reach(entry)].filter((f) => OPENS_A_RECORD.test(readFileSync(f, 'utf8')))).toEqual([]);
+    const files = reach(entry);
+    expect([...BUILDER_CALLS.keys()].every((f) => files.has(f))).toBe(true); // the walk reaches the builders' files
+    expect([...files].filter(opensARecord)).toEqual([]);
   });
 
   it('control: the walk finds a writer where there is one (the vitals matrix)', () => {

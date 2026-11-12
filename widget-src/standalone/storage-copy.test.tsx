@@ -282,6 +282,48 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
     expect(later.container.textContent).not.toContain('kept in this browser');
     localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
   });
+
+  it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {
+    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(shown.container.textContent).toContain('kept in this browser');
+    act(() => {
+      // Changed while the page sat in the cache: no storage event reaches it.
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    expect(shown.container.textContent).toContain('Your record is safe in your');
+    expect(shown.container.textContent).not.toContain('kept in this browser');
+    shown.unmount();
+    localStorage.removeItem('health_roadmap_log_off_id');
+  });
+
+  it('an unmounted sync control hears no log-off id change and no back-forward restore', () => {
+    const heard = vi.fn();
+    const wrappers = new Map<EventListenerOrEventListenerObject, EventListener>();
+    const add = window.addEventListener.bind(window);
+    const remove = window.removeEventListener.bind(window);
+    vi.spyOn(window, 'addEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
+      if (type !== 'storage' && type !== 'pageshow') return add(type, fn, opts);
+      const wrapper: EventListener = (event) => { heard(type); (typeof fn === 'function' ? fn : fn.handleEvent.bind(fn))(event); };
+      wrappers.set(fn, wrapper);
+      add(type, wrapper, opts);
+    });
+    vi.spyOn(window, 'removeEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | EventListenerOptions) =>
+      remove(type, wrappers.get(fn) ?? fn, opts));
+    const fire = () => act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    fire();
+    expect(heard).toHaveBeenCalledWith('storage');
+    expect(heard).toHaveBeenCalledWith('pageshow');
+    shown.unmount();
+    heard.mockClear();
+    fire();
+    expect(heard).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
 });
 
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
