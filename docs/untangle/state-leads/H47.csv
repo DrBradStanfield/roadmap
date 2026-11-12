@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-H47,discord bot,"The outer catch still sends the raw error to Sentry",lead,not started,"app/lib/discord-bot.server.ts:382 (the outer catch) calls Sentry.captureException with the raw error: model and history errors, no request body. Consider fixed words plus a code, as reportSendError in discord-bot-send.server.ts does (C15 review)",,no
+H47,discord bot,The outer catch still sends the raw error to Sentry,lead,done,"app/lib/discord-bot.server.ts:382 (the outer catch) calls Sentry.captureException with the raw error: model and history errors, no request body. Consider fixed words plus a code, as reportSendError in discord-bot-send.server.ts does (C15 review)",1397,no
