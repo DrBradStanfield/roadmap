@@ -346,7 +346,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'ldl-very-high': {
-    reason: 'Very high LDL cholesterol may indicate familial hypercholesterolaemia, a genetic condition causing elevated LDL from birth. The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. A causal relationship between LDL particles and atherosclerosis is well-established through Mendelian randomisation studies and decades of clinical trials.\n\nNote: ApoB is a more accurate marker than LDL cholesterol for cardiovascular risk. If available, ask your doctor about testing ApoB.',
+    reason: 'Very high LDL cholesterol may indicate familial hypercholesterolaemia, a genetic condition causing elevated LDL from birth. The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. Discuss it with your doctor. A causal relationship between LDL particles and atherosclerosis is well-established through Mendelian randomisation studies and decades of clinical trials.\n\nNote: ApoB is a more accurate marker than LDL cholesterol for cardiovascular risk. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_LDL_SAFETY],
   },
@@ -364,7 +364,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'non-hdl-very-high': {
-    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Treatment with statins and lifestyle modification is typically recommended.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
+    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Treatment with statins and lifestyle modification is typically recommended. Discuss it with your doctor.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: REFS_LIPID_EVIDENCE,
   },
