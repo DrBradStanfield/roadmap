@@ -247,6 +247,9 @@ import { mainOf, PATTERN_SPAN, PATTERNS, realFolder } from "./secret-rules.mjs";
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
 const has = (name) => args.includes(name);
+const OUT = opt("--out"); let stopWhy = null; // US-40 AC18: --out is deleted first and every way out writes one (the verdict, "nothing" or "incomplete"), so an older run's never reads as this one's
+if (OUT) { rmSync(OUT, { force: true }); process.on("exit", (code) => { if (!existsSync(OUT)) try { writeFileSync(OUT, JSON.stringify({ status: "incomplete", summary: stopWhy ?? `E_STOPPED: exit ${code}`, findings: [] }, null, 2)); } catch { /* unwritable: the exit code still says it failed */ } }); }
+const usage = (why) => { console.error(`codex-review: ${why}`); stopWhy = `E_USAGE: ${why}`; process.exit(1); };
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
@@ -257,7 +260,7 @@ function findCodex() {
     return execFileSync("sh", ["-c", "ls -d ~/.vscode/extensions/openai.chatgpt-*/bin/macos-*/codex 2>/dev/null | sort | tail -1"], { encoding: "utf8" }).trim() || null;
   } catch { return null; }
 }
-if (!CODEX) { console.error("codex binary not found: pass --codex <path> or set CODEX_BIN"); process.exit(1); }
+if (!CODEX) usage("codex binary not found: pass --codex <path> or set CODEX_BIN");
 
 const MODEL = opt("--model", "gpt-6.1-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
@@ -276,10 +279,7 @@ const LIVE_EXPECTED_HOSTS = new Set(["github.com", "docs.github.com", "api.githu
   "pubmed.ncbi.nlm.nih.gov", "pmc.ncbi.nlm.nih.gov", "www.ncbi.nlm.nih.gov", "doi.org", "dx.doi.org",
   "www.npmjs.com", "nodejs.org", "developer.mozilla.org"]);
 // Refused first, before any other check can exit with a different status (Codex R1, 2026-10-14).
-if (WEB_ACCESS === "live" && (RECORD || has("--record-file") || LOOP)) {
-  console.error("codex-review: --live is refused with --record, --record-file and --loop: a URL the reviewer writes can carry out what it reads, so never with health data in reach or a loop's change");
-  process.exit(1);
-}
+if (WEB_ACCESS === "live" && (RECORD || has("--record-file") || LOOP)) usage("--live is refused with --record, --record-file and --loop: a URL the reviewer writes can carry out what it reads, so never with health data in reach or a loop's change");
 /**
  * The ONLY record the reviewer may read: the scratch account's, identified by
  * the record's own creation stamp (merge keeps the minimum, so it is stable
@@ -360,7 +360,6 @@ if (RECORD && real(SCRATCH_RECORD.path).startsWith(real(ROOT) + sep)) {
 }
 
 // --- 0. --subject (US-40 AC15): review EXACT files, never whatever else the working tree holds -----------------------
-const usage = (why) => { console.error(`codex-review: ${why}`); process.exit(1); };
 /** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
 const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
 const INCLUDE_LIMIT_MB = Number(opt("--include-limit-mb", "64"));
@@ -749,7 +748,7 @@ if (!patch.trim()) {
   // Credential files alone: nothing was reviewed, and saying "nothing to review" would read as a pass.
   if (secretFiles.length) finish(incomplete(`E_ONLY_SECRET_FILES: the change touches only credential files (${secretFiles.length}), which are never sent to the reviewer; review them by hand`), "0.0");
   if (privateFiles.length) finish(incomplete(`E_ONLY_PRIVATE_FILES: the change touches only private-data paths (${privateFiles.length}, on the "privateDeny" list in ${POLICY_REL}), which are never sent to the reviewer; review them by hand`), "0.0");
-  console.log(`Nothing to review (${label}).`); process.exit(0);
+  console.log(`Nothing to review (${label}).`); if (OUT) writeFileSync(OUT, JSON.stringify({ status: "nothing", target: null, summary: `Nothing to review (${label}).`, label, base, findings: [] }, null, 2)); process.exit(0);
 }
 function nul(s) { return s.split("\0").filter(Boolean); }
 /** Patch and file list without credential or private-data files; the credential and private paths touched are listed by name only. */
@@ -1216,7 +1215,7 @@ try {
   if (applyPatch !== "") execFileSync("git", ["apply", "--binary", "-"], { cwd: src, input: applyPatch ?? patch, stdio: ["pipe", "pipe", "pipe"] });
 } catch (e) {
   console.error("patch did not apply to the snapshot:", String(e.stderr || e).slice(0, 400));
-  purge = true; process.exit(1); // the exit handler deletes the work dir
+  purge = true; stopWhy = "E_PATCH: the patch did not apply to the snapshot"; process.exit(1); // the exit handler deletes the work dir
 }
 ({ removed: symlinks, materialised: linksMaterialised, refused: linksRefused } = guard("symlink materialisation", () => stripSymlinks(src)));
 /** Where a copied file came from, for the log and the prompt. */
@@ -1554,6 +1553,8 @@ function eventMetadata(jsonl) {
 let review;
 if (run.timedOut) review = incomplete(`E_TIMEOUT: reviewer killed after ${TIMEOUT_MS / 60000} min`);
 else if (run.spawnError) review = incomplete("E_SPAWN: could not start the codex binary");
+// US-40 AC18: E_EXIT_1 is ONLY the plan-limit tail, the one failure a review may go on without; any other exit 1 is not a pass.
+else if (run.code === 1) review = incomplete(run.stdout.split("\n").flatMap((l) => { try { return [JSON.parse(l).type]; } catch { return []; } }).slice(-2).join(" -> ") === "turn.started -> error" ? "E_EXIT_1: plan limit exhausted (events end turn.started -> error)" : "E_CODEX_FAILED: reviewer exited 1 without the plan-limit tail; not a pass");
 else if (run.code !== 0) review = incomplete(`E_EXIT_${run.code}: reviewer process failed`);
 else if (!existsSync(outPath)) review = incomplete("E_NO_OUTPUT: reviewer wrote no result");
 else {
@@ -1679,8 +1680,7 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0, unexpectedHosts = [], unresolvedOpens = 0 } = extra;
   const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
-  const out = opt("--out");
-  if (out) writeFileSync(out, JSON.stringify(report, null, 2)); // a failed write throws, and the exit handler still cleans up
+  if (OUT) writeFileSync(OUT, JSON.stringify(report, null, 2)); // a failed write throws, and the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
   console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}  \n**Web access:** ${WEB_ACCESS}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, ${WEB_ACCESS === "live" ? "live web" : "cached index"}${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}${unexpectedHosts.length ? `  \n**⚠ Unexpected sites opened:** ${unexpectedHosts.join(", ")}` : ""}${unresolvedOpens ? `  \n**⚠ Opens with no traceable site:** ${unresolvedOpens}` : ""}`);
@@ -1692,7 +1692,7 @@ function finish(review, elapsedMin, extra = {}) {
     console.log(`${f.summary}\n\n- **Failure:** ${f.failure_scenario}\n- **Evidence:** ${f.evidence}\n- **Remedy:** ${f.remedy}\n`);
   }
   if (!report.findings.length && report.status === "complete") console.log("No findings.");
-  if (out) console.log(`\nJSON: ${out}`);
+  if (OUT) console.log(`\nJSON: ${OUT}`);
   keep = keep || report.status !== "complete";
   if (work && keep && !purge && valueChecked) console.error(`work dir kept at ${work} (events.jsonl and stderr.log hold metadata only; --include copies${SUBJECT_MODE ? ", --context copies and subject-baselines/" : ""} are deleted at exit${SUBJECT_MODE ? `; the subject file(s) stay in src/ and REVIEW_PATCH.diff still shows each baseline's changed lines as "-" lines: they are the reviewed change, kept like any reviewed diff` : ""})`);
   process.exit(report.status !== "complete" ? 3 : blocking.length ? 2 : 0);

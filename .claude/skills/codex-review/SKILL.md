@@ -149,6 +149,15 @@ always, EXCEPT any stop before the credential check has passed (every
 apply): that work dir may hold a credential, so it is deleted even with
 `--keep`. The output names counts, file paths and key names, never a value.
 
+`--out` is deleted when the run starts and always written before it exits,
+so a file left by an earlier run is never read as this one's: the verdict;
+status `nothing` when there is nothing to review (exit 0, and not a review);
+or `incomplete` for any other stop (`E_USAGE`, `E_PATCH`, `E_STOPPED`).
+A Codex exit 1 is `E_EXIT_1` ONLY when its events end
+`turn.started → error`: the plan limit is exhausted, and the review goes on
+with fresh adversaries alone. Every other exit 1 is `E_CODEX_FAILED`, which
+is NOT a pass and NOT the plan-limit waiver (US-40 AC18).
+
 ## Then
 
 1. **Incomplete is not a pass.** Status `incomplete` (timeout, auth, bad
