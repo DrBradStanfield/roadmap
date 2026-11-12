@@ -422,6 +422,23 @@ input[type="number"] {
 .sex-height-row > .health-field {
   margin-bottom: 0;
 }
+/* US-62 AC38: a saved weight cleared from its box, across the whole row. */
+.weight-still-counts {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  /* Desktop's row is narrower than the line: two even lines, no "weight history." alone. */
+  text-wrap: balance;
+}
+/* A 42px tap height; the line box stays the text's. */
+.weight-still-counts a {
+  display: inline-block;
+  padding: 12px 0;
+  margin: -12px 0;
+  color: var(--color-brand-text);
+  text-decoration: underline;
+}
 
 @media (min-width: 768px) {
   .sex-height-row {
