@@ -16,10 +16,13 @@ import crypto from 'node:crypto';
 
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 /** A claim store for the two-phase confirms (US-36 AC9): every other table is inert. */
+const claims = vi.hoisted(() => ({ state: null as null | import('../lib/single-use-claims.test-helpers').ClaimsState }));
 vi.mock('../lib/supabase-client.server', async (actual) => {
   const helpers = await import('../lib/single-use-claims.test-helpers');
-  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+  claims.state ??= helpers.newClaimsState();
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(claims.state) };
 });
+import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -45,6 +48,7 @@ let cloud: MemoryCloud;
 let connections = 0;
 
 beforeEach(() => {
+  resetClaimsState(claims.state!);
   // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
   serveClientMetadata();
   process.env.MCP_ISSUER = ISSUER;

@@ -8,10 +8,13 @@
  * never a blob key. The flow over the wire is `mcp.hosted-guards.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const claims = vi.hoisted(() => ({ state: null as null | import('./single-use-claims.test-helpers').ClaimsState }));
 vi.mock('./supabase-client.server', async (actual) => {
   const helpers = await import('./single-use-claims.test-helpers');
-  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+  claims.state ??= helpers.newClaimsState();
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(claims.state) };
 });
+import { resetClaimsState } from './single-use-claims.test-helpers';
 import { claimProposal, resetMcpMemory } from './mcp-grants.server';
 import { typeKey } from './mcp-seal.server';
 import { issueProposal, openProposal, openStep, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
@@ -29,6 +32,7 @@ const LATER = NOW + (nbfSeconds + 1) * 1000;
 beforeEach(() => {
   process.env.MCP_SEAL_KEYS = KEY_A;
   resetMcpMemory();
+  resetClaimsState(claims.state!);
 });
 afterEach(() => {
   delete process.env.MCP_SEAL_KEYS;

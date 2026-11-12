@@ -15,10 +15,12 @@ export interface ClaimsState {
   down: false | 'throw' | 'error' | 'commit-then-throw' | 'hang';
   /** Inserts that reached the store, whatever they answered. */
   inserts: number;
+  /** The old-row delete: 'hang' never settles, 'reject' rejects, 'build-throws' throws as the query is built. */
+  cleanup: false | 'hang' | 'reject' | 'build-throws';
 }
 
 export function newClaimsState(): ClaimsState {
-  return { rows: new Map(), down: false, inserts: 0 };
+  return { rows: new Map(), down: false, inserts: 0, cleanup: false };
 }
 
 /** Back to an empty, reachable store. */
@@ -26,6 +28,7 @@ export function resetClaimsState(state: ClaimsState): void {
   state.rows.clear();
   state.down = false;
   state.inserts = 0;
+  state.cleanup = false;
 }
 
 const OK = { data: null, error: null };
@@ -62,15 +65,20 @@ export function claimsAdmin(state: ClaimsState) {
           abortSignal: (signal: AbortSignal) => insert(row, signal),
           then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => insert(row).then(resolve, reject),
         }),
-        delete: () => ({
+        delete: () => {
+          if (state.cleanup === 'build-throws') throw new Error('query build failed');
+          return {
           eq: (_column: 'kind', kind: string) => ({
             async lt(_column: 'created_at', iso: string) {
+              if (state.cleanup === 'hang') return new Promise<never>(() => undefined);
+              if (state.cleanup === 'reject') throw new Error('fetch failed');
               if (!reach()) return MISSING;
               for (const [key, row] of state.rows) if (row.kind === kind && row.createdAt < Date.parse(iso)) state.rows.delete(key);
               return OK;
             },
           }),
-        }),
+          };
+        },
       };
     },
   };

@@ -270,7 +270,7 @@ const QUOTE_APPROVAL = (name: string) =>
   `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
-/** The refusal while a confirm cannot be checked: worded, and the receipt is not spent. */
+/** The refusal while a confirm cannot be checked: worded, and nothing is written. */
 const CLAIM_UNCHECKED = 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.';
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
 
@@ -626,7 +626,7 @@ describe('US-36 AC9 — a confirm works once across restarts', () => {
     }
   });
 
-  it('while the claim store cannot be reached a confirm is refused in words, charges nothing, and the receipt works once it returns', async () => {
+  it('while the claim store cannot be reached a confirm is refused in words, writes nothing and charges nothing', async () => {
     const Sentry = await import('@sentry/react-router');
     vi.mocked(Sentry.captureMessage).mockClear();
     seedWithLdl();

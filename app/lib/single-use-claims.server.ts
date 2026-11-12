@@ -11,6 +11,8 @@ const KEEP_MS = 60 * 60_000;
 /** A claim not answered in this long is abandoned and reads as 'unavailable'. */
 const CLAIM_TIMEOUT_MS = 5_000;
 
+const noop = (): void => undefined;
+
 export type ClaimOutcome = 'claimed' | 'spent' | 'unavailable';
 
 /**
@@ -31,10 +33,11 @@ export async function claimSingleUse(key: string, kind: string): Promise<ClaimOu
     clearTimeout(timer);
   }
   if (error) return error.code === '23505' ? 'spent' : 'unavailable';
+  // Housekeeping, never waited for: the claim stands whatever it does, and old rows go with a later claim.
   try {
-    await supabaseAdmin.from('single_use_claims').delete().eq('kind', kind).lt('created_at', new Date(Date.now() - KEEP_MS).toISOString());
+    void supabaseAdmin.from('single_use_claims').delete().eq('kind', kind).lt('created_at', new Date(Date.now() - KEEP_MS).toISOString()).then(noop, noop);
   } catch {
-    // Housekeeping only: the claim stands, and the old rows go with the next one.
+    // A query that cannot even be built is the same: skipped.
   }
   return 'claimed';
 }
