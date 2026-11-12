@@ -18,6 +18,7 @@ import {
 } from './local-storage-adapter';
 import { getDeviceId } from './device-id';
 import { BACKEND_KEY, clearOffFileHealthData, dropDraftsOnScreen, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
+import { clearedEraseFor, noteClearedFor } from '../lib/cleared-erase';
 import { Sentry } from '../lib/sentry';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -115,8 +116,13 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     store,
     // Another tab takes an erase in without clearing, dropping only the drafts on its screen, and its own erase
     // is refused first (US-11 AC6).
-    clearOffFileData: (keepOriginals: ReadonlySet<string>) => (ownsOffFileData(store.id)
-      ? clearOffFileHealthData((ref) => keepOriginals.has(ref)) : dropDraftsOnScreen()),
+    // An owner's clear that does not read back throws, so the erase cleared for stays and the next load clears again.
+    clearOffFileData: (keepOriginals: ReadonlySet<string>) => {
+      if (!ownsOffFileData(store.id)) return dropDraftsOnScreen();
+      if (!clearOffFileHealthData((ref) => keepOriginals.has(ref))) throw new Error('Off-file data still stored');
+    },
+    clearedErase: () => clearedEraseFor(store.id),
+    noteCleared: (identity: string) => noteClearedFor(store.id, identity),
     ownsOffFileData: () => ownsOffFileData(store.id),
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).

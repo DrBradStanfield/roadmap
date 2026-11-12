@@ -233,9 +233,10 @@ async function keptAtE3WithLaggingE2() {
 
 describe('US-11 AC6: "cleared up to" is an order, at open and in session', () => {
   it('an owner opens a lagging copy at E2 over a key at E3: nothing cleared at open or after; E3 arriving clears nothing; E4 clears once', async () => {
-    const { cloud, other, fake, id, lagging, e3 } = await keptAtE3WithLaggingE2();
+    const { cloud, other, fake: kept, id, lagging, e3 } = await keptAtE3WithLaggingE2();
+    const fake = fakeHost(provider(lagging, id), kept.device); // the tab on the lagging copy
     offFileData(fake.device, 'typed-after-e3');
-    const stale = await RecordSession.open(fakeHost(provider(lagging, id), fake.device).host);
+    const stale = await RecordSession.open(fake.host);
     expect(epoch(stale.eraseIdentity)).toBe(2);
     expect(fake.clears.calls).toBe(0);
     later();
