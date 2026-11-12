@@ -3,7 +3,7 @@
  * One state for the process: 'loaded' carries the text, 'missing' carries none,
  * so no caller can build a prompt without narrowing first (US-15 AC65).
  * On 'missing' the web and iPhone chat answer 503, the Discord and YouTube bots
- * do not start, getChatCompletion throws and /healthz answers 503.
+ * do not start and getChatCompletion throws: no model call. /healthz ignores it.
  */
 import * as Sentry from '@sentry/react-router';
 import fs from 'fs';

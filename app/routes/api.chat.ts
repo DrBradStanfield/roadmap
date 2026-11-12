@@ -366,7 +366,7 @@ function refuseTurn(message: unknown, request: Request, app: boolean): Response 
 async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
   try {
-    if (process.env.CHAT_ENABLED === 'false' || CHAT_PROMPT.kind === 'missing') { // US-15 AC65: no model call without the prompt
+    if (process.env.CHAT_ENABLED === 'false') {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
@@ -426,7 +426,7 @@ async function chatAction(request: Request, app: boolean) {
 
     // ----- POST — send message -----
     const { message, conversationId } = body;
-
+    if (CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65; DELETE above still runs
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
