@@ -91,12 +91,30 @@ async function failedSave(error: Error) {
   return cloud;
 }
 
+/** The live refresh's window and document listeners each page adds. The data layer never
+ *  tears a page down, so afterEach removes them: no earlier page answers a later test's events. */
+const pageListeners: Array<[EventTarget, string, EventListenerOrEventListenerObject]> = [];
+function recordListeners(target: Window | Document) {
+  const add = target.addEventListener.bind(target);
+  vi.spyOn(target, 'addEventListener').mockImplementation((type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) => {
+    if (!listener) return;
+    pageListeners.push([target, type, listener]);
+    add(type, listener, options);
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it
   vi.mocked(trackProductEvent).mockClear();
+  recordListeners(window);
+  recordListeners(document);
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear(); });
+afterEach(() => {
+  cleanup();
+  for (const [target, type, listener] of pageListeners.splice(0)) target.removeEventListener(type, listener);
+  vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear();
+});
 
 describe('US-09 AC30: a failed cloud save is retried when the browser comes back online (lead A1 step e)', () => {
   it('the online event lands the save: the line says Synced again, and one save_retry says landed', async () => {
@@ -117,8 +135,6 @@ describe('US-09 AC30: a failed cloud save is retried when the browser comes back
   });
 
   // PR 1458 N1: a revoked GitHub token, as the real adapter throws it, is a refused sign-in.
-  // Kept before any test that leaves an offline failed save: an earlier page's online listener
-  // would answer this test's online event.
   it('a GitHub save refused 401: the online event tries nothing, and the waiting line never promises an upload', async () => {
     const realFetch = globalThis.fetch;
     globalThis.fetch = vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 }));

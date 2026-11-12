@@ -16,7 +16,6 @@ import { DropboxAdapter, TOKEN_KEY as DROPBOX_TOKENS } from './dropbox';
 import { CONFIG_KEY as DRIVE_CONFIG, GoogleDriveAdapter, TOKENS_KEY as DRIVE_TOKENS } from './drive';
 import { GitHubAdapter } from './github';
 import { WebDavAdapter } from './webdav';
-import { saveFailureCause } from '@roadmap/health-core/save-state';
 
 let local: Map<string, string>;
 function storage(s: Map<string, string>): Storage {
@@ -237,26 +236,36 @@ describe('a revoked grant after the write landed (US-09 AC30)', () => {
 });
 
 // PR 1458 N1: GitHub and WebDAV put the HTTP status on a refused sign-in, so a revoked
-// token or rejected credentials read 'auth': never retried, and Settings promises nothing.
+// token or rejected credentials are a refused sign-in: never retried, and Settings promises nothing.
 describe('GitHub and WebDAV: a refused sign-in carries its status (US-09 AC30)', () => {
   const GITHUB = { token: 'test-token-good', owner: 'synthetic', repo: 'health' };
   const DAV = { url: 'https://synthetic.invalid/dav', username: 'synthetic', password: 'test-password' };
   const SECONDARY = { message: 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.' };
   const answerAll = (status: number, body: unknown = {}) => vi.stubGlobal('fetch', vi.fn(async () => reply(status, body)));
   /** The repo check passes (a private repo); the record PUT answers `status`. */
-  const putAnswers = (status: number, body: unknown) => vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) =>
-    init?.method === 'PUT' ? reply(status, body) : reply(200, { private: true })));
+  /** The record GET answers 404 (a first save, so a save goes on to write), the record PUT
+   *  answers `put`, and anything else (GitHub's repo check) answers `other`. */
+  const writeFails = (put: number, putBody: unknown, other: number, otherBody: unknown) => () =>
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) =>
+      init?.method === 'PUT' ? reply(put, putBody)
+        : url.includes('/contents/') || url.startsWith(`${DAV.url}/`) ? reply(404, {}) : reply(other, otherBody)));
+  const github = () => new GitHubAdapter(GITHUB);
+  const dav = () => new WebDavAdapter(DAV);
 
+  // Each row: the adapter's own error carries the status, and a save that meets it is retried
+  // (and Settings promises an upload) only when the cause is not a refused sign-in.
   it.each([
-    ['a GitHub read refused 401', 401, 'auth', () => { answerAll(401, { message: 'Bad credentials' }); return readError(new GitHubAdapter(GITHUB)); }],
-    ['a GitHub write refused 401 (the repo check)', 401, 'auth', () => { answerAll(401, { message: 'Bad credentials' }); return writeError(new GitHubAdapter(GITHUB)); }],
-    ['a GitHub write met by a secondary limit (403)', 403, 'other', () => { putAnswers(403, SECONDARY); return writeError(new GitHubAdapter(GITHUB)); }],
-    ['a WebDAV read refused 401', 401, 'auth', () => { answerAll(401); return readError(new WebDavAdapter(DAV)); }],
-    ['a WebDAV write refused 401', 401, 'auth', () => { answerAll(401); return writeError(new WebDavAdapter(DAV)); }],
-  ] as const)('%s: status %i -> %s', async (_name, status, cause, make) => {
-    const error = await make();
-    expect(error.status).toBe(status);
-    expect(saveFailureCause(error)).toBe(cause);
+    ['a GitHub read refused 401', 401, false, () => answerAll(401, { message: 'Bad credentials' }), github, readError],
+    ['a GitHub write refused 401 (the repo check)', 401, false, writeFails(201, {}, 401, { message: 'Bad credentials' }), github, writeError],
+    ['a GitHub write met by a secondary limit (403)', 403, true, writeFails(403, SECONDARY, 200, { private: true }), github, writeError],
+    ['a WebDAV read refused 401', 401, false, () => answerAll(401), dav, readError],
+    ['a WebDAV write refused 401', 401, false, writeFails(401, {}, 500, {}), dav, writeError],
+  ] as const)('%s: status %i, retried %s', async (_name, status, retried, stub, adapter, adapterError) => {
+    stub();
+    expect((await adapterError(adapter())).status).toBe(status);
+    const { run, due } = await afterFailedSave(adapter());
+    expect(run !== null).toBe(retried);
+    expect(due).toBe(retried);
   });
 
   it('a GitHub save refused 401 is never retried, and Settings promises nothing', async () => {
