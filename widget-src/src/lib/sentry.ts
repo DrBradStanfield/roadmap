@@ -87,7 +87,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
-      ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
+      ...(['rate_limit', 'busy', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
       ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
       ...(ERROR_CLASS_TAGS.includes(String(errorClass)) ? { errorClass } : {}),
       ...(HTTP_STATUS_TAGS.includes(String(httpStatus)) ? { httpStatus } : {}),
