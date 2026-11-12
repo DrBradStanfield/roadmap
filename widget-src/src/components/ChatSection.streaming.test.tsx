@@ -45,9 +45,11 @@ const answer: ChatMessage = { id: 'a1', role: 'assistant', content: 'ApoB **coun
 function setState(patch: Record<string, unknown>) {
   hook.state = {
     conversations: [], activeConversationId: null, messages: [question], inputText: '',
-    isLoading: false, isLocalSender: false, error: null, isOffline: false,
+    isLoading: false, isLocalSender: false, error: null, isOffline: false, load: 'none',
     pending: { thinking: '', text: '', status: '', sources: [] }, approachById: {},
     ...patch,
+    // The pending reply draws where the hook says one is replying (slice 2); in these cases, wherever Send is locked.
+    replying: patch.replying ?? patch.isLoading ?? false,
   };
 }
 /** The pending reply so far: `setState({ ...streaming({ thinking }) })`. */

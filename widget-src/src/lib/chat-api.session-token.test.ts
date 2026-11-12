@@ -60,7 +60,7 @@ describe('US-15 AC6b: a guest session token that is not a string is not kept', (
 
   it.each(MALFORMED)('a guest 404: %s', async (_name, token) => {
     fetchMock.mockResolvedValueOnce(json(404, { success: false, error: 'Conversation not found', sessionToken: token, isGuest: true }));
-    expect(await loadConversation('c1')).toBeNull();
+    expect(await loadConversation('c1')).toBe('gone');
     expect(stored.get(KEY)).toBe('old-tok');
   });
 

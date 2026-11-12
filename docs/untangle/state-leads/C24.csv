@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C24,iPhone chat,"iPhone: a failed thread read looks empty and the next ask sends no history",gap,open,"Owner UI. iPhone: a failed thread read looks empty and the next ask sends no history (ChatHistoryStore.swift:58 try? ?? [], ChatView.swift:193-196, :201-215). The web's N2 (PR 1359) says ""Couldn't open this conversation."" with Try again and keeps Send locked; parity is one failed state on the iPhone's open.",,no
