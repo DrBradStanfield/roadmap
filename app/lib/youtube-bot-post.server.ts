@@ -6,10 +6,11 @@
  *   2. postReply's answer is classified (youtube-bot-post-result.ts):
  *      posted: the reply and its id are stored, as before.
  *      unknown: the row stays posted=true with no id, so it counts toward both
- *        caps, cleanup and unclaim keep it, and it is never posted again.
- *      refused: the mark is reverted to a plain claim by its token, or, for an
- *        account-wide refusal (401, 429, quotaExceeded), deleted so a later tick
- *        retries, and this tick posts nothing more.
+ *        caps, cleanup and unclaim keep it, and it is never posted again. The
+ *        turn is stored as a success's is, with no posted id.
+ *      refused: the mark is reverted to a plain claim by its row and token, or,
+ *        for an account-wide refusal (401, 429, a quota or rate-limit reason),
+ *        deleted so a later tick retries, and this tick posts nothing more.
  * Logs and Sentry carry the result class, Google's reason code and the comment
  * id only: never viewer text, the answer or Google's body.
  */
@@ -22,26 +23,28 @@ import type { PipelineOutcome } from './youtube-bot-pipeline.server';
 /** `halt`: an account-wide refusal; the tick posts nothing more. */
 export type Sent = 'posted' | 'unknown' | 'skipped' | 'halt';
 
-/** Posts `replyText` under `thread` for the comment claimed as `claimId` (the thread id, or a follow-up's reply id). */
+/** Posts `replyText` under `thread` for the claimed comment: `claim.id` is the thread id or a follow-up's
+ *  reply id, `claim.rowId` the claim row claimComment inserted. */
 export async function postClaimed(
   token: string,
   thread: YouTubeThread,
-  claimId: string,
+  claim: { id: string; rowId: number },
   replyText: string,
   outcome: PipelineOutcome,
 ): Promise<Sent> {
-  const mark = await markPosting(claimId, thread.videoId);
+  const claimId = claim.id;
+  const mark = await markPosting(claimId, claim.rowId, thread.videoId);
   if (mark.state === 'lost') return 'skipped';
   if (mark.state === 'failed') {
     // Our mark may have landed; take it back, then the plain claim, so a later tick retries.
-    await releasePostingMark(claimId, mark.token, 'delete');
+    await releasePostingMark(claimId, claim.rowId, mark.token, 'delete');
     await unclaimComment(claimId);
     return 'skipped';
   }
 
   const result = await postReply(token, thread.topLevelCommentId, replyText);
-  if (result.kind === 'posted') {
-    await markPosted({
+  if (result.kind !== 'refused') {
+    if (result.kind === 'posted') await markPosted({
       commentId: claimId,
       videoId: thread.videoId,
       userChannel: thread.authorDisplayName,
@@ -51,14 +54,14 @@ export async function postClaimed(
       classification: outcome.classification ?? 'ERROR',
       routerHandles: outcome.routerHandles ?? [],
     });
-    // Durable, queryable copy in the shared chat tables (training + audit).
+    // Durable, queryable copy in the shared chat tables (training + audit); an unknown post's has no id (C15 R2).
     await persistYouTubeTurn({
       thread,
       outcome,
-      postedYoutubeId: result.id,
+      postedYoutubeId: result.kind === 'posted' ? result.id : null,
       followUpCommentId: claimId === thread.topLevelCommentId ? null : claimId,
     });
-    return 'posted';
+    if (result.kind === 'posted') return 'posted';
   }
 
   console.log(JSON.stringify({ evt: 'youtube_bot_post', commentId: claimId, ...result }));
@@ -71,7 +74,7 @@ export async function postClaimed(
     return 'unknown';
   }
   const halt = isAccountWide(result);
-  await releasePostingMark(claimId, mark.token, halt ? 'delete' : 'revert');
+  await releasePostingMark(claimId, claim.rowId, mark.token, halt ? 'delete' : 'revert');
   if (result.reason !== 'notReplyable') {
     Sentry.captureMessage('YouTube bot: post refused', {
       level: halt ? 'error' : 'warning',

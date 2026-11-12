@@ -38,13 +38,15 @@ describe('US-27 AC5: classifyPost', () => {
   }
 });
 
-describe('US-27 AC5 (Q3): only 401, 429 and quotaExceeded are account-wide', () => {
+describe('US-27 AC5 (Q3, R1): 401, 429 and the quota and rate-limit reasons are account-wide', () => {
   const table: Array<[PostResult, boolean]> = [
     [{ kind: 'refused', status: 401, reason: 'authError' }, true],
     [{ kind: 'refused', status: 429, reason: 'rateLimitExceeded' }, true],
     [{ kind: 'refused', status: 403, reason: 'quotaExceeded' }, true],
     [{ kind: 'refused', status: 403, reason: 'forbidden' }, false],
-    [{ kind: 'refused', status: 403, reason: 'rateLimitExceeded' }, false],
+    [{ kind: 'refused', status: 403, reason: 'rateLimitExceeded' }, true],
+    [{ kind: 'refused', status: 403, reason: 'userRateLimitExceeded' }, true],
+    [{ kind: 'refused', status: 403, reason: 'dailyLimitExceeded' }, true],
     [{ kind: 'refused', status: 400, reason: 'notReplyable' }, false],
     [{ kind: 'unknown', why: '5xx' }, false],
     [{ kind: 'posted', id: 'x' }, false],

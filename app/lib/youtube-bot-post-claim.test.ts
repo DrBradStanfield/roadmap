@@ -61,6 +61,13 @@ vi.mock('./youtube-bot-pipeline.server', async (orig) => ({
   },
 }));
 
+// The stored turn (chat tables) is observed here, not run: those tables are out of this fake's scope.
+const persisted = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+vi.mock('./youtube-bot-store.server', async (orig) => ({
+  ...(await orig<typeof import('./youtube-bot-store.server')>()),
+  persistYouTubeTurn: async (p: Record<string, unknown>) => { persisted.push(p); },
+}));
+
 vi.mock('./supabase.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
   const json = (v: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -254,6 +261,7 @@ beforeEach(() => {
   Object.assign(db, { table: [], nextId: 1, keepNewest: 200, requests: [], fail: null });
   Object.assign(g, { threads: [], replies: new Map(), posts: [], plan: [], calls: [] });
   Object.assign(ctl, { pipelineCalls: [], hold: null });
+  persisted.length = 0;
   spy.captureException.mockReset();
   spy.captureMessage.mockReset();
   vi.stubGlobal('fetch', vi.fn(googleFetch));
@@ -312,6 +320,21 @@ describe('US-27 AC5: a post whose outcome is unknown is counted and never posted
     expect(g.posts.map((p) => p.parentId)).toEqual(['c1', 'c2']); // 48 + 2 = the cap of 50
     expect(tickLogs()[0]).toMatchObject({ posted: 1, unknown: 1, followUpsUnknown: 0, dailyTotal: 50 });
     expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null });
+  });
+
+  it('R2: an unknown post stores the turn as a success does, with no posted id', async () => {
+    g.threads = ['c1'];
+    g.plan = ['timeout'];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]).toMatchObject({
+      thread: expect.objectContaining({ topLevelCommentId: 'c1', videoId: 'v1' }),
+      outcome: expect.objectContaining({ posted: true, classification: 'QUESTION' }),
+      postedYoutubeId: null,
+      followUpCommentId: null,
+    });
   });
 
   it('a 400 processingFailure is unknown (Q4): counted and kept', async () => {
@@ -440,6 +463,7 @@ describe('US-27 AC5: a definite refusal releases the mark (Q3)', () => {
     ['401', { status: 401, reason: 'authError' }],
     ['429', { status: 429, reason: 'rateLimitExceeded' }],
     ['403 quotaExceeded', { status: 403, reason: 'quotaExceeded' }],
+    ['403 rateLimitExceeded (R1)', { status: 403, reason: 'rateLimitExceeded' }],
   ] as const) {
     it(`a ${name} deletes the row by its token and ends this tick's posting; a later tick retries`, async () => {
       seedPosted('T1', { posted_youtube_id: 'bot-1' });
@@ -468,6 +492,20 @@ describe('US-27 AC5: a definite refusal releases the mark (Q3)', () => {
 // ---------------------------------------------------------------------------
 // The owner's conditions
 // ---------------------------------------------------------------------------
+
+describe('R3: a 401 drops the cached Google token', () => {
+  it('the next tick asks Google for a fresh token', async () => {
+    g.threads = ['c1'];
+    g.plan = [{ status: 401, reason: 'authError' }];
+    const tokenCalls = () => g.calls.filter((c) => c === 'POST /token').length;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(tokenCalls()).toBe(1);
+
+    await tickTo(TICK_MS, 2);
+    expect(tokenCalls()).toBe(2);
+  });
+});
 
 describe('condition 1: two machines, one comment, one public reply', () => {
   it('both claim at the same moment: one claims and posts, the other skips', async () => {
@@ -504,6 +542,36 @@ describe('condition 1: two machines, one comment, one public reply', () => {
     // Two marks and the winner's success write; the loser neither unclaims nor alters the row.
     expect(raceWrites.map((r) => r.method)).toEqual(['PATCH', 'PATCH', 'PATCH']);
     expect(tickLogs().map((l) => l.posted).sort()).toEqual([0, 1]);
+  });
+});
+
+describe('token collision: the mark is matched by the claim row, not only its token', () => {
+  it('two machines draw the same token on different claim rows (a re-inserted claim): only the live row\'s owner posts', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5); // both tokens collide: same frozen millisecond, same draw
+    g.threads = ['c1'];
+    ctl.hold = [];
+    await bootMachine(); // machine A claims row 1
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    await vi.waitFor(() => expect(ctl.hold).toHaveLength(1), { timeout: 3000, interval: 1 });
+    db.table = db.table.filter((r) => r.youtube_comment_id !== 'c1'); // cleanup removed A's claim
+
+    await bootMachine(); // machine B claims the comment again: row 2
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    await vi.waitFor(() => expect(ctl.hold).toHaveLength(2), { timeout: 3000, interval: 1 });
+    vi.setSystemTime(NOW.getTime() + 2 * FIRST_TICK_MS); // both marks in one millisecond
+
+    const [releaseA, releaseB] = ctl.hold!.splice(0);
+    releaseA(); // A marks first, so a comment-wide WHERE would take B's row
+    releaseB();
+    await vi.waitFor(() => expect(tickLogs()).toHaveLength(2), { timeout: 3000, interval: 1 });
+
+    const tokens = markReqs().map(markToken);
+    expect(tokens).toHaveLength(2);
+    expect(tokens[0]).toBe(tokens[1]);
+    expect(g.posts).toHaveLength(1);
+    expect(db.table.filter((r) => r.youtube_comment_id === 'c1')).toEqual([
+      expect.objectContaining({ id: 2, posted: true, posted_youtube_id: 'posted-1' }),
+    ]);
   });
 });
 
@@ -574,7 +642,8 @@ describe('condition 6: the deploy window', () => {
     seedPosted('c1', { posted_youtube_id: null, user_channel: null, user_comment: null, reply_text: null, posted_at: '2026-11-12T09:00:00.000123Z' });
     const bot = await bootMachine();
     const store = await import('./youtube-bot-store.server');
-    expect(await store.claimComment('c1')).toBe(false);
+    // Today's claim returns the row id or null; the code before C15 returned false at the same 23505 line.
+    expect(await store.claimComment('c1')).toBeNull();
     expect(await bot.readPostingCaps()).toMatchObject({ dailyCount: 1, videoPostCounts: new Map([['v1', 1]]) });
   });
 });

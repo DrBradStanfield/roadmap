@@ -227,14 +227,14 @@ async function processFollowUps(
 
     if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
-    let claimed: boolean;
+    let claimRowId: number | null;
     try {
-      claimed = await claimComment(reply.id);
+      claimRowId = await claimComment(reply.id);
     } catch (err) {
       logTickError(err);
       continue;
     }
-    if (!claimed) continue;
+    if (claimRowId === null) continue;
 
     const video = loadVideoBody(meta.videoId);
     if (!video) {
@@ -279,7 +279,7 @@ async function processFollowUps(
     const askerHandle = reply.authorChannelId ? await resolveHandle(token, reply.authorChannelId) : null;
     const replyText = addressReply(outcome.replyText!, askerHandle);
 
-    const sent = await postClaimed(token, pseudoThread, reply.id, replyText, outcome);
+    const sent = await postClaimed(token, pseudoThread, { id: reply.id, rowId: claimRowId }, replyText, outcome);
     countSent(sent, tally, videoPostCounts, meta.videoId);
     if (sent === 'halt') break;
   }
@@ -328,14 +328,14 @@ async function tick(): Promise<void> {
       break;
     }
 
-    let claimed: boolean;
+    let claimRowId: number | null;
     try {
-      claimed = await claimComment(thread.topLevelCommentId);
+      claimRowId = await claimComment(thread.topLevelCommentId);
     } catch (err) {
       logTickError(err);
       continue;
     }
-    if (!claimed) continue;
+    if (claimRowId === null) continue;
 
     const filt = filterThread(thread);
     if (!filt.pass) {
@@ -383,7 +383,7 @@ async function tick(): Promise<void> {
       continue;
     }
 
-    const sent = await postClaimed(token, thread, thread.topLevelCommentId, outcome.replyText!, outcome);
+    const sent = await postClaimed(token, thread, { id: thread.topLevelCommentId, rowId: claimRowId }, outcome.replyText!, outcome);
     countSent(sent, tally, videoPostCounts, thread.videoId);
     if (sent === 'halt') {
       halted = true;

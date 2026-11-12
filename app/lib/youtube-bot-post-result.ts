@@ -43,7 +43,10 @@ export function classifyPost(answer: { status: number; body: string } | { error:
   return { kind: 'refused', status, reason };
 }
 
-/** 401, 429 and quotaExceeded refuse every post on the account, not this one comment (C15 Q3). */
+/** Google's quota and rate-limit reasons (403s): they refuse the account, not the comment. */
+const ACCOUNT_WIDE_REASONS = new Set(['quotaExceeded', 'rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded']);
+
+/** 401, 429 and the quota and rate-limit reasons refuse every post on the account, not this one comment (C15 Q3, R1). */
 export function isAccountWide(r: PostResult): boolean {
-  return r.kind === 'refused' && (r.status === 401 || r.status === 429 || r.reason === 'quotaExceeded');
+  return r.kind === 'refused' && (r.status === 401 || r.status === 429 || ACCOUNT_WIDE_REASONS.has(r.reason));
 }

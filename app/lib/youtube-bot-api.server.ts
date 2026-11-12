@@ -226,7 +226,10 @@ export async function postReply(token: string, parentCommentId: string, text: st
       }),
       signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
     });
-    return classifyPost({ status: res.status, body: await res.text() });
+    const result = classifyPost({ status: res.status, body: await res.text() });
+    // A 401 means the cached token is bad: the next tick must fetch a fresh one (C15 R3).
+    if (result.kind === 'refused' && result.status === 401) cachedAccessToken = null;
+    return result;
   } catch (error) {
     return classifyPost({ error });
   }
