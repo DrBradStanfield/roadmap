@@ -498,6 +498,13 @@ const brokenBody = (status: number) => async () => new Response(
   new ReadableStream({ start(c) { c.error(new TypeError(`terminated ${GOOGLE_BODY}`)); } }), { status });
 
 describe('Codex review: a status whose body cannot be read keeps its status', () => {
+  /** Every console and Sentry argument, as text: the stream error carries the Google-body sentinel. */
+  const reported = () => [
+    ...(['log', 'warn', 'error', 'info'] as const).flatMap((l) => vi.mocked(console[l]).mock.calls.flat()),
+    ...spy.captureException.mock.calls.flat(),
+    ...spy.captureMessage.mock.calls.flat(),
+  ].map((a) => (a instanceof Error ? `${a.message} ${a.stack}` : JSON.stringify(a) ?? String(a))).join('\n');
+
   for (const status of [401, 429]) {
     it(`a ${status} with a broken body still deletes the claim by its token and halts the tick`, async () => {
       g.threads = ['c1', 'c2'];
@@ -514,18 +521,23 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
       await tickTo(TICK_MS, 2);
       if (status === 401) expect(tokenCalls()).toBe(2); // the bad token was dropped
       expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+      expect(reported()).not.toContain(GOOGLE_BODY);
     });
   }
 
-  it('a 200 with a broken body is unknown: the mark is kept and counted', async () => {
-    g.threads = ['c1'];
-    g.plan = [brokenBody(200)];
-    await bootMachine();
-    await tickTo(FIRST_TICK_MS, 1);
+  // A 400 may be processingFailure, which Google may have taken (Q4): without its body it is unknown.
+  for (const status of [200, 400]) {
+    it(`a ${status} with a broken body is unknown: the mark is kept and counted`, async () => {
+      g.threads = ['c1'];
+      g.plan = [brokenBody(status)];
+      await bootMachine();
+      await tickTo(FIRST_TICK_MS, 1);
 
-    expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
-    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1 });
-  });
+      expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
+      expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
+      expect(reported()).not.toContain(GOOGLE_BODY);
+    });
+  }
 });
 
 describe('R3: a 401 drops the cached Google token', () => {
