@@ -9,7 +9,7 @@ import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
-import { activeBatches, armSweep, MAX_ACTIVE_BATCHES, type BatchPollResult } from '../lib/lab-batches.server';
+import { activeBatches, armSweep, batchFor, creatingBatches, fileSetKey, MAX_ACTIVE_BATCHES, MAX_POLL_TOKENS, type BatchPollResult } from '../lib/lab-batches.server';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 /**
@@ -52,6 +52,7 @@ const dailyLimit = () => Response.json(
   { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
   { status: 429 },
 );
+const serverBusy = () => Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
 
 /**
  * US-12 AC17b: with no file left today for this IP or the machine, only a poll
@@ -81,6 +82,15 @@ function matchesPollToken(expected: string, supplied: string | null): boolean {
   return sameBytes(Buffer.from(expected), Buffer.from(supplied));
 }
 
+/** Hand a re-send of a live batch its own poll token, up to the cap (US-12 AC25). */
+function joinBatch(batchId: string): Response {
+  const batch = activeBatches.get(batchId);
+  if (!batch || batch.servedAt || batch.pollTokens.length >= MAX_POLL_TOKENS) return serverBusy();
+  const pollToken = newPollToken();
+  batch.pollTokens.push(pollToken);
+  return Response.json({ success: true, batchId, pollToken, totalFiles: batch.totalFiles });
+}
+
 /** How long a processing count is reused before the next provider read. */
 const PROCESSING_POLL_MS = 2000;
 
@@ -93,7 +103,7 @@ const PROCESSING_POLL_MS = 2000;
  */
 async function answerPoll(batchId: string, pollToken: string | null): Promise<Response> {
   const batch = activeBatches.get(batchId);
-  if (!batch || !matchesPollToken(batch.pollToken, pollToken)) {
+  if (!batch || !batch.pollTokens.some(token => matchesPollToken(token, pollToken))) {
     return Response.json({ error: 'Batch not found' }, { status: 404 });
   }
   try {
@@ -160,20 +170,26 @@ export async function action({ request }: ActionFunctionArgs) {
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
       const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
+      // US-12 AC25: the same files again join their live batch with a new token, uncharged.
+      // Matched and reserved before any await, so a twin POST never makes a second batch.
+      const fileSet = fileSetKey(ip, { ownDates, undatedPrev, refusedRows }, files);
+      const joining = batchFor(fileSet);
+      if (joining !== undefined) return joinBatch(await joining);
       // Busy is checked first, so a refused batch is never charged.
-      if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
-        return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
-      }
+      if (activeBatches.size >= MAX_ACTIVE_BATCHES) return serverBusy();
       if (!consumeQuota(ip, files.length)) return dailyLimit();
+      const pollToken = newPollToken();
       // A timeout or network failure may still have made the batch: it stays charged.
-      const { batchId } = await createBatch(files).catch((err: unknown) => {
+      const creating = createBatch(files).then(({ batchId }) => {
+        activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollTokens: [pollToken], days: { ownDates, undatedPrev }, refusedRows, fileSet });
+        armSweep();
+        return batchId;
+      }, (err: unknown) => {
         if (err instanceof BatchRefusedError) refundQuota(ip, files.length);
         throw err;
-      });
-      const pollToken = newPollToken();
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
-      armSweep();
-      return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
+      }).finally(() => creatingBatches.delete(fileSet));
+      creatingBatches.set(fileSet, creating);
+      return Response.json({ success: true, batchId: await creating, pollToken, totalFiles: files.length });
     }
 
     // --- Single file mode ---

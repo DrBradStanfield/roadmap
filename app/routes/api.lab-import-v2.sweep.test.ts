@@ -55,8 +55,8 @@ async function upload(batchId: string, ip = '10.3.0.1'): Promise<Response> {
   }) } as never);
 }
 
-async function uploaded(batchId: string): Promise<string> {
-  const res = await upload(batchId);
+async function uploaded(batchId: string, ip?: string): Promise<string> {
+  const res = await upload(batchId, ip);
   expect(res.status).toBe(200);
   return (await res.json()).pollToken;
 }
@@ -72,7 +72,7 @@ describe('US-12 AC18: the sweep deletes each batch at Anthropic', () => {
     await uploaded('batch_idle_first');
     expect(sweepTimerCount()).toBe(1);
     await vi.advanceTimersByTimeAsync(3 * MIN);
-    await uploaded('batch_idle_second');
+    await uploaded('batch_idle_second', '10.3.0.2'); // another IP: the same files from one IP would join (US-12 AC25)
     expect(sweepTimerCount()).toBe(1);
     await vi.advanceTimersByTimeAsync(57 * MIN);
     expect(deleteBatch).not.toHaveBeenCalled(); // exactly one hour is not older than an hour
