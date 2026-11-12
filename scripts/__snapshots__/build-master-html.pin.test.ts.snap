@@ -1,0 +1,1329 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`build-master-html pins (US-64 AC23 split, US-50 AC9) > CLI: output, exit codes and the written file 1`] = `
+{
+  "commerce": {
+    "status": 0,
+    "stderr": "stripped section under "Current view (reviewed 1 January 2026)": Brad takes **zeta** daily [1].
+stripped phrase under "1. Overview (short)": Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg (see the Current view ab
+stripped sentences under "2. Evidence > Blood Flow": It suits [MicroVitamin](https://drstanfield.com/products/microvitamin-powder) us
+stripped paragraph under "2. Evidence > Blood Flow": - A list item names [Sleep](https://drstanfield.com/products/sleep) here.   It c
+stripped phrase under "2. Evidence > Blood Flow": Zeta pairs well with rest; Brad's view is in the Current view. MicroVitamin incl
+stripped section under "Product Context": Zeta in a product.
+stripped section under "Brad's videos on this topic": A video list.
+carried cta-pf after "Evidence > Sleep"
+carried callout after "2. Evidence > Blood Flow"
+carried callout after "Evidence > Sleep"
+dropped roadmap-embed: the commerce theme renders it as nothing
+dropped cta-roadmap: the commerce theme renders it as nothing
+dropped roadmap-embed: the commerce theme renders it as nothing
+dropped roadmap-embed: the commerce theme renders it as nothing
+dropped roadmap-embed: the commerce theme renders it as nothing
+",
+    "stdout": "<style>
+.master-table{overflow-x:auto;margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table table{min-width:560px;margin:0}
+.master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
+.master-table th:first-child,.master-table td:first-child{min-width:9em}
+.master-callout{background:#f1f9f7;border:1px solid #d5ebe5;border-left:4px solid #00a38b;border-radius:10px;padding:1.2em 1.4em .5em;margin:2em 0}
+.master-callout h2{margin:0 0 .4em;font-size:1.75em}
+.master-refs li,.master-refs p{font-size:15px;line-height:1.55;margin:0 0 .6em}
+.master-refs a[href^="http"]{overflow-wrap:anywhere}
+.master-cite{font-size:.68em;line-height:0;vertical-align:super;font-weight:400;white-space:nowrap;opacity:.85}
+.master-cite a{text-decoration:none}
+</style>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#Overview">Overview (short)</a></li>
+<li><a href="#Evidence">Evidence</a></li>
+<li><a href="#Key-safety-points">Key safety points</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+<h2 id="Overview">1. Overview (short)</h2>
+<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg.<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>
+<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>
+<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>
+<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>
+<hr>
+<h2 id="Evidence">2. Evidence</h2>
+<h3>Blood Flow</h3>
+<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>
+<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. Zeta was never tested in a randomised human trial.</p>
+<p>Zeta pairs well with rest. Disclosure: Brad sells MicroVitamin. Other zeta is third-party tested.</p>
+<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">From the MicroVitamin range</p>
+<p style="margin:0;">Zeta card text &amp; more. <a href="/products/microvitamin-plus" target="_blank" rel="noopener">Shop it</a></p>
+</div>
+<h3>Sleep</h3>
+<h4>Deep Detail</h4>
+<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>
+<div class="cta-pf"></div>
+<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">Also on microvitamin.com</p>
+<p style="margin:0;">Fibre card. <a href="/products/potassium-fiber-drink" target="_blank" rel="noopener">Drink</a></p>
+</div>
+<div class="master-callout">
+<h2 id="Key-safety-points">Key safety points</h2>
+<ul>
+<li>Zeta is invented.</li>
+</ul>
+</div>
+<div class="master-refs">
+<h2 id="References">References</h2>
+<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>
+<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>
+<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>
+</div>
+",
+  },
+  "edu": {
+    "status": 0,
+    "stderr": "carried roadmap-embed after "(before the first heading)"
+carried cta-roadmap after "Overview"
+carried roadmap-embed after "Evidence > Blood Flow"
+carried roadmap-embed after "Evidence > Old Renamed"
+carried cta-pf after "Evidence > Sleep"
+carried roadmap-embed after "Gone Section"
+FALLBACK zeta-pin roadmap-embed: live "(before the first heading)" -> after the table of contents, before "Current view (reviewed 1 January 2026)"
+FALLBACK zeta-pin roadmap-embed: live "Evidence > Old Renamed" -> end of "2. Evidence"
+FALLBACK zeta-pin roadmap-embed: live "Gone Section" -> before "References"
+wrote <tmp>/out/edu.html (4352 bytes) for edu: Zeta: Pin Fixture
+",
+    "stdout": "",
+  },
+  "error": {
+    "status": 1,
+    "stderr": "ERROR: the live body has 1 product callout(s), whose old text is not carried: pass --callouts <json> with the card text Brad approved
+",
+    "stdout": "",
+  },
+  "unplaced": {
+    "status": 1,
+    "stderr": "carried cta-pf after "Nowhere"
+UNPLACED cta-pf: the master has no heading "Nowhere"
+",
+    "stdout": "",
+  },
+  "usage": {
+    "status": 1,
+    "stderr": "Usage: build-master-html.mjs <master.md> --store edu|commerce --live current.html [--callouts approved.json] [--out file]
+",
+    "stdout": "",
+  },
+  "written": "<style>
+.master-table{overflow-x:auto;margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table table{min-width:560px;margin:0}
+.master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
+.master-table th:first-child,.master-table td:first-child{min-width:9em}
+.master-callout{background:#f1f9f7;border:1px solid #d5ebe5;border-left:4px solid #00a38b;border-radius:10px;padding:1.2em 1.4em .5em;margin:2em 0}
+.master-callout h2{margin:0 0 .4em;font-size:1.75em}
+.master-refs li,.master-refs p{font-size:15px;line-height:1.55;margin:0 0 .6em}
+.master-refs a[href^="http"]{overflow-wrap:anywhere}
+.master-cite{font-size:.68em;line-height:0;vertical-align:super;font-weight:400;white-space:nowrap;opacity:.85}
+.master-cite a{text-decoration:none}
+</style>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#Current-view">Current view (reviewed 1 January 2026)</a></li>
+<li><a href="#Overview">Overview (short)</a></li>
+<li><a href="#Evidence">Evidence</a></li>
+<li><a href="#Product-Context">Product Context</a></li>
+<li><a href="#Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</a></li>
+<li><a href="#Key-safety-points">Key safety points</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+<div class="roadmap-embed"></div>
+<h2 id="Current-view">Current view (reviewed 1 January 2026)</h2>
+<p>Brad takes <strong>zeta</strong> daily <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>
+<h2 id="Overview">1. Overview (short)</h2>
+<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg (see the Current view above).<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>
+<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>
+<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>
+<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>
+<hr>
+<div class="cta-roadmap"></div>
+<h2 id="Evidence">2. Evidence</h2>
+<h3>Blood Flow</h3>
+<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>
+<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. It suits <a href="https://drstanfield.com/products/microvitamin-powder">MicroVitamin</a> users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.</p>
+<ul>
+<li>A list item names <a href="https://drstanfield.com/products/sleep">Sleep</a> here. It continues on.</li>
+</ul>
+<p>Zeta pairs well with rest; Brad&#39;s view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.</p>
+<div class="roadmap-embed"></div>
+<h3>Sleep</h3>
+<h4>Deep Detail</h4>
+<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>
+<div class="roadmap-embed"></div>
+<div class="cta-pf"></div>
+<h2 id="Product-Context">Product Context</h2>
+<p>Zeta in a product.</p>
+<h2 id="Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</h2>
+<p>A video list.</p>
+<div class="master-callout">
+<h2 id="Key-safety-points">Key safety points</h2>
+<ul>
+<li>Zeta is invented.</li>
+</ul>
+</div>
+<div class="roadmap-embed"></div>
+<div class="master-refs">
+<h2 id="References">References</h2>
+<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>
+<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>
+<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>
+</div>
+",
+}
+`;
+
+exports[`build-master-html pins (US-64 AC23 split, US-50 AC9) > commerce build: full result 1`] = `
+{
+  "carried": [
+    {
+      "html": "<div class="cta-pf"></div>",
+      "kind": "cta-pf",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "sleep",
+          "level": 3,
+          "text": "Sleep",
+        },
+      ],
+    },
+    {
+      "html": "<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">From the MicroVitamin range</p>
+<p style="margin:0;">Zeta card text &amp; more. <a href="/products/microvitamin-plus" target="_blank" rel="noopener">Shop it</a></p>
+</div>",
+      "kind": "callout",
+      "path": [
+        {
+          "key": "evidence",
+          "text": "2. Evidence",
+        },
+        {
+          "key": "blood flow",
+          "text": "Blood Flow",
+        },
+      ],
+    },
+    {
+      "html": "<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">Also on microvitamin.com</p>
+<p style="margin:0;">Fibre card. <a href="/products/potassium-fiber-drink" target="_blank" rel="noopener">Drink</a></p>
+</div>",
+      "kind": "callout",
+      "path": [
+        {
+          "key": "evidence",
+          "text": "Evidence",
+        },
+        {
+          "key": "sleep",
+          "text": "Sleep",
+        },
+      ],
+    },
+  ],
+  "dropped": [
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": null,
+    },
+    {
+      "html": "<div class="cta-roadmap"></div>",
+      "kind": "cta-roadmap",
+      "path": [
+        {
+          "key": "overview",
+          "level": 2,
+          "text": "Overview",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "blood flow",
+          "level": 3,
+          "text": "Blood Flow",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "old renamed",
+          "level": 3,
+          "text": "Old Renamed",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "gone section",
+          "level": 2,
+          "text": "Gone Section",
+        },
+      ],
+    },
+  ],
+  "fallbacks": [],
+  "html": "<style>
+.master-table{overflow-x:auto;margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table table{min-width:560px;margin:0}
+.master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
+.master-table th:first-child,.master-table td:first-child{min-width:9em}
+.master-callout{background:#f1f9f7;border:1px solid #d5ebe5;border-left:4px solid #00a38b;border-radius:10px;padding:1.2em 1.4em .5em;margin:2em 0}
+.master-callout h2{margin:0 0 .4em;font-size:1.75em}
+.master-refs li,.master-refs p{font-size:15px;line-height:1.55;margin:0 0 .6em}
+.master-refs a[href^="http"]{overflow-wrap:anywhere}
+.master-cite{font-size:.68em;line-height:0;vertical-align:super;font-weight:400;white-space:nowrap;opacity:.85}
+.master-cite a{text-decoration:none}
+</style>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#Overview">Overview (short)</a></li>
+<li><a href="#Evidence">Evidence</a></li>
+<li><a href="#Key-safety-points">Key safety points</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+<h2 id="Overview">1. Overview (short)</h2>
+<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg.<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>
+<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>
+<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>
+<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>
+<hr>
+<h2 id="Evidence">2. Evidence</h2>
+<h3>Blood Flow</h3>
+<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>
+<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. Zeta was never tested in a randomised human trial.</p>
+<p>Zeta pairs well with rest. Disclosure: Brad sells MicroVitamin. Other zeta is third-party tested.</p>
+<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">From the MicroVitamin range</p>
+<p style="margin:0;">Zeta card text &amp; more. <a href="/products/microvitamin-plus" target="_blank" rel="noopener">Shop it</a></p>
+</div>
+<h3>Sleep</h3>
+<h4>Deep Detail</h4>
+<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>
+<div class="cta-pf"></div>
+<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">Also on microvitamin.com</p>
+<p style="margin:0;">Fibre card. <a href="/products/potassium-fiber-drink" target="_blank" rel="noopener">Drink</a></p>
+</div>
+<div class="master-callout">
+<h2 id="Key-safety-points">Key safety points</h2>
+<ul>
+<li>Zeta is invented.</li>
+</ul>
+</div>
+<div class="master-refs">
+<h2 id="References">References</h2>
+<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>
+<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>
+<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>
+</div>
+",
+  "meta": {
+    "commerceUrl": "https://microvitamin.com/blogs/articles/zeta-pin-shop/",
+    "reviewed": "2026-01-01",
+    "title": "Zeta: Pin Fixture",
+    "url": "https://drstanfield.com/blogs/articles/zeta-pin",
+  },
+  "stripped": [
+    {
+      "heading": [
+        "Current view (reviewed 1 January 2026)",
+      ],
+      "kind": "section",
+      "text": "Brad takes **zeta** daily [1].",
+    },
+    {
+      "heading": [
+        "1. Overview (short)",
+      ],
+      "kept": "Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg.
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].",
+      "kind": "phrase",
+      "text": "Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg (see the Current view above).
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].",
+    },
+    {
+      "caveats": [
+        "Zeta was never tested in a randomised human trial.",
+      ],
+      "heading": [
+        "2. Evidence",
+        "Blood Flow",
+      ],
+      "kind": "sentences",
+      "text": "It suits [MicroVitamin](https://drstanfield.com/products/microvitamin-powder) users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.",
+    },
+    {
+      "caveats": [],
+      "heading": [
+        "2. Evidence",
+        "Blood Flow",
+      ],
+      "kind": "paragraph",
+      "text": "- A list item names [Sleep](https://drstanfield.com/products/sleep) here.
+  It continues on.",
+    },
+    {
+      "heading": [
+        "2. Evidence",
+        "Blood Flow",
+      ],
+      "kept": "Zeta pairs well with rest. Disclosure: Brad sells MicroVitamin. Other zeta is third-party tested.",
+      "kind": "phrase",
+      "text": "Zeta pairs well with rest; Brad's view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.",
+    },
+    {
+      "heading": [
+        "Product Context",
+      ],
+      "kind": "section",
+      "text": "Zeta in a product.",
+    },
+    {
+      "heading": [
+        "Brad's videos on this topic",
+      ],
+      "kind": "section",
+      "text": "A video list.",
+    },
+  ],
+  "unplaced": [],
+}
+`;
+
+exports[`build-master-html pins (US-64 AC23 split, US-50 AC9) > each helper export on the fixture 1`] = `
+{
+  "blocks": [
+    {
+      "html": "<h2 id="Current-view">Current view (reviewed 1 January 2026)</h2>",
+      "key": "current view",
+      "level": 2,
+      "path": [
+        {
+          "key": "current view",
+          "level": 2,
+          "text": "Current view (reviewed 1 January 2026)",
+        },
+      ],
+      "text": "Current view (reviewed 1 January 2026)",
+    },
+    {
+      "html": "<p>Brad takes <strong>zeta</strong> daily <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>",
+    },
+    {
+      "html": "<h2 id="Overview">1. Overview (short)</h2>",
+      "key": "overview",
+      "level": 2,
+      "path": [
+        {
+          "key": "overview",
+          "level": 2,
+          "text": "1. Overview (short)",
+        },
+      ],
+      "text": "1. Overview (short)",
+    },
+    {
+      "html": "<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg (see the Current view above).<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>",
+    },
+    {
+      "html": "<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>",
+    },
+    {
+      "html": "<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>",
+    },
+    {
+      "html": "<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>",
+    },
+    {
+      "html": "<hr>",
+    },
+    {
+      "html": "<h2 id="Evidence">2. Evidence</h2>",
+      "key": "evidence",
+      "level": 2,
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "2. Evidence",
+        },
+      ],
+      "text": "2. Evidence",
+    },
+    {
+      "html": "<h3>Blood Flow</h3>",
+      "key": "blood flow",
+      "level": 3,
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "2. Evidence",
+        },
+        {
+          "key": "blood flow",
+          "level": 3,
+          "text": "Blood Flow",
+        },
+      ],
+      "text": "Blood Flow",
+    },
+    {
+      "html": "<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>",
+    },
+    {
+      "html": "<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. It suits <a href="/products/microvitamin-plus">MicroVitamin</a> users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.</p>",
+    },
+    {
+      "html": "<ul>
+<li>A list item names <a href="/products/sleep">Sleep</a> here. It continues on.</li>
+</ul>",
+    },
+    {
+      "html": "<p>Zeta pairs well with rest; Brad&#39;s view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.</p>",
+    },
+    {
+      "html": "<h3>Sleep</h3>",
+      "key": "sleep",
+      "level": 3,
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "2. Evidence",
+        },
+        {
+          "key": "sleep",
+          "level": 3,
+          "text": "Sleep",
+        },
+      ],
+      "text": "Sleep",
+    },
+    {
+      "html": "<h4>Deep Detail</h4>",
+      "key": "deep detail",
+      "level": 4,
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "2. Evidence",
+        },
+        {
+          "key": "sleep",
+          "level": 3,
+          "text": "Sleep",
+        },
+        {
+          "key": "deep detail",
+          "level": 4,
+          "text": "Deep Detail",
+        },
+      ],
+      "text": "Deep Detail",
+    },
+    {
+      "html": "<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>",
+    },
+    {
+      "html": "<h2 id="Product-Context">Product Context</h2>",
+      "key": "product context",
+      "level": 2,
+      "path": [
+        {
+          "key": "product context",
+          "level": 2,
+          "text": "Product Context",
+        },
+      ],
+      "text": "Product Context",
+    },
+    {
+      "html": "<p>Zeta in a product.</p>",
+    },
+    {
+      "html": "<h2 id="Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</h2>",
+      "key": "brad s videos on this topic",
+      "level": 2,
+      "path": [
+        {
+          "key": "brad s videos on this topic",
+          "level": 2,
+          "text": "Brad's videos on this topic",
+        },
+      ],
+      "text": "Brad's videos on this topic",
+    },
+    {
+      "html": "<p>A video list.</p>",
+    },
+    {
+      "html": "<h2 id="Key-safety-points">Key safety points</h2>",
+      "key": "key safety points",
+      "level": 2,
+      "path": [
+        {
+          "key": "key safety points",
+          "level": 2,
+          "text": "Key safety points",
+        },
+      ],
+      "text": "Key safety points",
+    },
+    {
+      "html": "<ul>
+<li>Zeta is invented.</li>
+</ul>",
+    },
+    {
+      "html": "<h2 id="References">References</h2>",
+      "key": "references",
+      "level": 2,
+      "path": [
+        {
+          "key": "references",
+          "level": 2,
+          "text": "References",
+        },
+      ],
+      "text": "References",
+    },
+    {
+      "html": "<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>",
+    },
+    {
+      "html": "<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>",
+    },
+    {
+      "html": "<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>",
+    },
+  ],
+  "body": "
+## Current view (reviewed 1 January 2026)
+
+Brad takes **zeta** daily [1].
+
+## 1. Overview (short)
+
+Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg (see the Current view above).
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].
+- first point
+  - nested point
+    with a continuation
+- second point
+1. step one
+2. step two
+
+> A quoted line [1].
+> A second quoted line.
+
+---
+
+## 2. Evidence
+
+### Blood Flow
+
+| Form | Uptake |
+|------|------|
+| Alpha | Low [1] |
+| Beta \\| Gamma | High |
+
+Zeta was tested in mice [2]. It suits [MicroVitamin](https://drstanfield.com/products/microvitamin-powder) users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.
+
+- A list item names [Sleep](https://drstanfield.com/products/sleep) here.
+  It continues on.
+
+Zeta pairs well with rest; Brad's view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.
+
+### Sleep
+
+#### Deep Detail
+
+Bare link https://example.org/zeta-study. Safe [link](/pages/zeta) and unsafe [link](javascript:alert(1)) and <b>raw</b>.
+
+## Product Context
+
+Zeta in a product.
+
+## Brad's videos on this topic
+
+A video list.
+
+## Key safety points
+
+- Zeta is invented.
+
+## References
+
+[1] Author A. "Zeta one." doi: [10.1/abc(17)x](https://doi.org/10.1/abc(17)x)
+
+[2] Author B. Zeta two. https://pubmed.ncbi.nlm.nih.gov/1/
+
+1. Author C. Zeta three.
+2. Author D. Zeta four.
+",
+  "callout": "<div style="border:1px solid #dde7e3;border-left:4px solid #0a6b57;background:#f0f7f4;border-radius:8px;padding:16px 18px;margin:22px 0;">
+<p style="margin:0 0 6px;font-weight:700;">From the MicroVitamin range</p>
+<p style="margin:0;">Zeta card text &amp; more. <a href="/products/microvitamin-plus" target="_blank" rel="noopener">Shop it</a></p>
+</div>",
+  "carriedCommerce": {
+    "carried": [
+      {
+        "html": "<div class="cta-pf"></div>",
+        "kind": "cta-pf",
+        "path": [
+          {
+            "key": "evidence",
+            "level": 2,
+            "text": "Evidence",
+          },
+          {
+            "key": "sleep",
+            "level": 3,
+            "text": "Sleep",
+          },
+        ],
+      },
+    ],
+    "dropped": [
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": null,
+      },
+      {
+        "html": "<div class="cta-roadmap"></div>",
+        "kind": "cta-roadmap",
+        "path": [
+          {
+            "key": "overview",
+            "level": 2,
+            "text": "Overview",
+          },
+        ],
+      },
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": [
+          {
+            "key": "evidence",
+            "level": 2,
+            "text": "Evidence",
+          },
+          {
+            "key": "blood flow",
+            "level": 3,
+            "text": "Blood Flow",
+          },
+        ],
+      },
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": [
+          {
+            "key": "evidence",
+            "level": 2,
+            "text": "Evidence",
+          },
+          {
+            "key": "old renamed",
+            "level": 3,
+            "text": "Old Renamed",
+          },
+        ],
+      },
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": [
+          {
+            "key": "gone section",
+            "level": 2,
+            "text": "Gone Section",
+          },
+        ],
+      },
+    ],
+  },
+  "key": "blood flow",
+  "meta": {
+    "commerceUrl": "https://microvitamin.com/blogs/articles/zeta-pin-shop/",
+    "reviewed": "2026-01-01",
+    "title": "Zeta: Pin Fixture",
+    "url": "https://drstanfield.com/blogs/articles/zeta-pin",
+  },
+  "placed": {
+    "fallbacks": [
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": null,
+        "placed": "after the table of contents, before "Current view (reviewed 1 January 2026)"",
+      },
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": [
+          {
+            "key": "evidence",
+            "level": 2,
+            "text": "Evidence",
+          },
+          {
+            "key": "old renamed",
+            "level": 3,
+            "text": "Old Renamed",
+          },
+        ],
+        "placed": "end of "2. Evidence"",
+      },
+      {
+        "html": "<div class="roadmap-embed"></div>",
+        "kind": "roadmap-embed",
+        "path": [
+          {
+            "key": "gone section",
+            "level": 2,
+            "text": "Gone Section",
+          },
+        ],
+        "placed": "before "References"",
+      },
+    ],
+    "html": "<div class="roadmap-embed"></div>
+<h2 id="Current-view">Current view (reviewed 1 January 2026)</h2>
+<p>Brad takes <strong>zeta</strong> daily <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>
+<h2 id="Overview">1. Overview (short)</h2>
+<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg (see the Current view above).<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>
+<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>
+<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>
+<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>
+<hr>
+<div class="cta-roadmap"></div>
+<h2 id="Evidence">2. Evidence</h2>
+<h3>Blood Flow</h3>
+<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>
+<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. It suits <a href="/products/microvitamin-plus">MicroVitamin</a> users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.</p>
+<ul>
+<li>A list item names <a href="/products/sleep">Sleep</a> here. It continues on.</li>
+</ul>
+<p>Zeta pairs well with rest; Brad&#39;s view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.</p>
+<div class="roadmap-embed"></div>
+<h3>Sleep</h3>
+<h4>Deep Detail</h4>
+<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>
+<div class="roadmap-embed"></div>
+<div class="cta-pf"></div>
+<h2 id="Product-Context">Product Context</h2>
+<p>Zeta in a product.</p>
+<h2 id="Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</h2>
+<p>A video list.</p>
+<h2 id="Key-safety-points">Key safety points</h2>
+<ul>
+<li>Zeta is invented.</li>
+</ul>
+<div class="roadmap-embed"></div>
+<h2 id="References">References</h2>
+<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>
+<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>
+<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>",
+    "unplaced": [],
+  },
+  "stripped": {
+    "body": "
+## 1. Overview (short)
+
+Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg.
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].
+- first point
+  - nested point
+    with a continuation
+- second point
+1. step one
+2. step two
+
+> A quoted line [1].
+> A second quoted line.
+
+---
+
+## 2. Evidence
+
+### Blood Flow
+
+| Form | Uptake |
+|------|------|
+| Alpha | Low [1] |
+| Beta \\| Gamma | High |
+
+Zeta was tested in mice [2]. Zeta was never tested in a randomised human trial.
+
+
+Zeta pairs well with rest. Disclosure: Brad sells MicroVitamin. Other zeta is third-party tested.
+
+### Sleep
+
+#### Deep Detail
+
+Bare link https://example.org/zeta-study. Safe [link](/pages/zeta) and unsafe [link](javascript:alert(1)) and <b>raw</b>.
+
+## Key safety points
+
+- Zeta is invented.
+
+## References
+
+[1] Author A. "Zeta one." doi: [10.1/abc(17)x](https://doi.org/10.1/abc(17)x)
+
+[2] Author B. Zeta two. https://pubmed.ncbi.nlm.nih.gov/1/
+
+1. Author C. Zeta three.
+2. Author D. Zeta four.
+",
+    "stripped": [
+      {
+        "heading": [
+          "Current view (reviewed 1 January 2026)",
+        ],
+        "kind": "section",
+        "text": "Brad takes **zeta** daily [1].",
+      },
+      {
+        "heading": [
+          "1. Overview (short)",
+        ],
+        "kept": "Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg.
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].",
+        "kind": "phrase",
+        "text": "Zeta is an invented nutrient [1][2]. Its dose is 2.5 mg (see the Current view above).
+Zeta comes as \`zeta-x\` and *zeta-y* [3,4] and [5-6].",
+      },
+      {
+        "caveats": [
+          "Zeta was never tested in a randomised human trial.",
+        ],
+        "heading": [
+          "2. Evidence",
+          "Blood Flow",
+        ],
+        "kind": "sentences",
+        "text": "It suits [MicroVitamin](https://drstanfield.com/products/microvitamin-powder) users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.",
+      },
+      {
+        "caveats": [],
+        "heading": [
+          "2. Evidence",
+          "Blood Flow",
+        ],
+        "kind": "paragraph",
+        "text": "- A list item names [Sleep](https://drstanfield.com/products/sleep) here.
+  It continues on.",
+      },
+      {
+        "heading": [
+          "2. Evidence",
+          "Blood Flow",
+        ],
+        "kept": "Zeta pairs well with rest. Disclosure: Brad sells MicroVitamin. Other zeta is third-party tested.",
+        "kind": "phrase",
+        "text": "Zeta pairs well with rest; Brad's view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.",
+      },
+      {
+        "heading": [
+          "Product Context",
+        ],
+        "kind": "section",
+        "text": "Zeta in a product.",
+      },
+      {
+        "heading": [
+          "Brad's videos on this topic",
+        ],
+        "kind": "section",
+        "text": "A video list.",
+      },
+    ],
+  },
+  "tags": [
+    {
+      "attrs": {
+        "class": "b",
+        "href": "x>y",
+      },
+      "close": false,
+      "end": 32,
+      "name": "a",
+      "start": 0,
+    },
+    {
+      "attrs": {},
+      "close": true,
+      "end": 48,
+      "name": "a",
+      "start": 44,
+    },
+    {
+      "attrs": {},
+      "close": false,
+      "end": 53,
+      "name": "br",
+      "start": 48,
+    },
+  ],
+}
+`;
+
+exports[`build-master-html pins (US-64 AC23 split, US-50 AC9) > edu build: full result 1`] = `
+{
+  "carried": [
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": null,
+    },
+    {
+      "html": "<div class="cta-roadmap"></div>",
+      "kind": "cta-roadmap",
+      "path": [
+        {
+          "key": "overview",
+          "level": 2,
+          "text": "Overview",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "blood flow",
+          "level": 3,
+          "text": "Blood Flow",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "old renamed",
+          "level": 3,
+          "text": "Old Renamed",
+        },
+      ],
+    },
+    {
+      "html": "<div class="cta-pf"></div>",
+      "kind": "cta-pf",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "sleep",
+          "level": 3,
+          "text": "Sleep",
+        },
+      ],
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "gone section",
+          "level": 2,
+          "text": "Gone Section",
+        },
+      ],
+    },
+  ],
+  "dropped": [],
+  "fallbacks": [
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": null,
+      "placed": "after the table of contents, before "Current view (reviewed 1 January 2026)"",
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "evidence",
+          "level": 2,
+          "text": "Evidence",
+        },
+        {
+          "key": "old renamed",
+          "level": 3,
+          "text": "Old Renamed",
+        },
+      ],
+      "placed": "end of "2. Evidence"",
+    },
+    {
+      "html": "<div class="roadmap-embed"></div>",
+      "kind": "roadmap-embed",
+      "path": [
+        {
+          "key": "gone section",
+          "level": 2,
+          "text": "Gone Section",
+        },
+      ],
+      "placed": "before "References"",
+    },
+  ],
+  "html": "<style>
+.master-table{overflow-x:auto;margin:1.5em 0;-webkit-overflow-scrolling:touch}
+.master-table table{min-width:560px;margin:0}
+.master-table th,.master-table td{word-break:normal;overflow-wrap:normal;hyphens:manual;vertical-align:top;line-height:1.5;padding-top:.5em!important;padding-bottom:.5em!important}
+.master-table th:first-child,.master-table td:first-child{min-width:9em}
+.master-callout{background:#f1f9f7;border:1px solid #d5ebe5;border-left:4px solid #00a38b;border-radius:10px;padding:1.2em 1.4em .5em;margin:2em 0}
+.master-callout h2{margin:0 0 .4em;font-size:1.75em}
+.master-refs li,.master-refs p{font-size:15px;line-height:1.55;margin:0 0 .6em}
+.master-refs a[href^="http"]{overflow-wrap:anywhere}
+.master-cite{font-size:.68em;line-height:0;vertical-align:super;font-weight:400;white-space:nowrap;opacity:.85}
+.master-cite a{text-decoration:none}
+</style>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#Current-view">Current view (reviewed 1 January 2026)</a></li>
+<li><a href="#Overview">Overview (short)</a></li>
+<li><a href="#Evidence">Evidence</a></li>
+<li><a href="#Product-Context">Product Context</a></li>
+<li><a href="#Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</a></li>
+<li><a href="#Key-safety-points">Key safety points</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+<div class="roadmap-embed"></div>
+<h2 id="Current-view">Current view (reviewed 1 January 2026)</h2>
+<p>Brad takes <strong>zeta</strong> daily <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.</p>
+<h2 id="Overview">1. Overview (short)</h2>
+<p>Zeta is an invented nutrient <sup class="master-cite">[<a href="#ref-1">1</a>, <a href="#ref-2">2</a>]</sup>. Its dose is 2.5 mg (see the Current view above).<br>Zeta comes as <code>zeta-x</code> and <em>zeta-y</em> <sup class="master-cite">[<a href="#ref-3">3</a>, <a href="#ref-4">4</a>]</sup> and <sup class="master-cite">[<a href="#ref-5">5-6</a>]</sup>.</p>
+<ul>
+<li>first point
+<ul>
+<li>nested point with a continuation</li>
+</ul>
+</li>
+<li>second point</li>
+</ul>
+<ol>
+<li value="1">step one</li>
+<li value="2">step two</li>
+</ol>
+<blockquote><p>A quoted line <sup class="master-cite">[<a href="#ref-1">1</a>]</sup>.<br>A second quoted line.</p></blockquote>
+<hr>
+<div class="cta-roadmap"></div>
+<h2 id="Evidence">2. Evidence</h2>
+<h3>Blood Flow</h3>
+<div class="rte-table-wrapper master-table"><table>
+<thead><tr><th>Form</th><th>Uptake</th></tr></thead>
+<tbody>
+<tr><td>Alpha</td><td>Low <sup class="master-cite">[<a href="#ref-1">1</a>]</sup></td></tr>
+<tr><td>Beta | Gamma</td><td>High</td></tr>
+</tbody>
+</table></div>
+<p>Zeta was tested in mice <sup class="master-cite">[<a href="#ref-2">2</a>]</sup>. It suits <a href="https://drstanfield.com/products/microvitamin-powder">MicroVitamin</a> users. Zeta was never tested in a randomised human trial. It may help. The capsule was not shown to work.</p>
+<ul>
+<li>A list item names <a href="https://drstanfield.com/products/sleep">Sleep</a> here. It continues on.</li>
+</ul>
+<p>Zeta pairs well with rest; Brad&#39;s view is in the Current view. MicroVitamin includes zeta. Disclosure: Brad sells MicroVitamin. Zeta is third-party tested in MicroVitamin. Other zeta is third-party tested.</p>
+<div class="roadmap-embed"></div>
+<h3>Sleep</h3>
+<h4>Deep Detail</h4>
+<p>Bare link <a href="https://example.org/zeta-study">https://example.org/zeta-study</a>. Safe <a href="/pages/zeta">link</a> and unsafe [link](javascript:alert(1)) and &lt;b&gt;raw&lt;/b&gt;.</p>
+<div class="roadmap-embed"></div>
+<div class="cta-pf"></div>
+<h2 id="Product-Context">Product Context</h2>
+<p>Zeta in a product.</p>
+<h2 id="Brad-s-videos-on-this-topic">Brad&#39;s videos on this topic</h2>
+<p>A video list.</p>
+<div class="master-callout">
+<h2 id="Key-safety-points">Key safety points</h2>
+<ul>
+<li>Zeta is invented.</li>
+</ul>
+</div>
+<div class="roadmap-embed"></div>
+<div class="master-refs">
+<h2 id="References">References</h2>
+<p id="ref-1"><a href="#ref-1">[1]</a> Author A. &quot;Zeta one.&quot; doi: <a href="https://doi.org/10.1/abc(17)x">10.1/abc(17)x</a></p>
+<p id="ref-2"><a href="#ref-2">[2]</a> Author B. Zeta two. <a href="https://pubmed.ncbi.nlm.nih.gov/1/">https://pubmed.ncbi.nlm.nih.gov/1/</a></p>
+<ol>
+<li value="1" id="ref-1">Author C. Zeta three.</li>
+<li value="2" id="ref-2">Author D. Zeta four.</li>
+</ol>
+</div>
+",
+  "meta": {
+    "commerceUrl": "https://microvitamin.com/blogs/articles/zeta-pin-shop/",
+    "reviewed": "2026-01-01",
+    "title": "Zeta: Pin Fixture",
+    "url": "https://drstanfield.com/blogs/articles/zeta-pin",
+  },
+  "stripped": [],
+  "unplaced": [],
+}
+`;
+
+exports[`build-master-html pins (US-64 AC23 split, US-50 AC9) > refusals keep their messages 1`] = `
+[
+  "--store edu|commerce is required",
+  "--live <current body> is required: every theme marker in it must be carried",
+  "no frontmatter: a topic master starts with a --- block",
+  "the live body has 1 product callout(s), whose old text is not carried: pass --callouts <json> with the card text Brad approved",
+  "the live body has 1 product callout(s) but --callouts approves 0 for zeta-pin / zeta-pin-shop",
+  "approved callout for zeta-pin needs a heading path: [parent heading..., heading]",
+  "--callouts is for commerce builds only",
+  "the live body has 1 theme markers but only 0 outside a heading, where they can be placed",
+  "approved callout names an unknown product "nope"",
+  "an approved callout needs text and linkText",
+]
+`;
