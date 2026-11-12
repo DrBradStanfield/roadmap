@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type RoadmapFile } from './roadmap-file';
 
 /** A cloud whose writes can fail with a chosen error, or be held. */
@@ -47,6 +47,31 @@ function cloudHost(store: TestCloud, stopped = { value: false }): RecordHost {
     failureCause: () => 'other',
     report: () => {},
   };
+}
+
+/** A device store with the synchronous face a device tier needs, as localStorage has. */
+class DeviceStore extends TestCloud {
+  readSync(fileName: string): ReadResult {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? { body: JSON.parse(entry.json), version: String(entry.version) } : { body: null, version: null };
+  }
+  writeSync(fileName: string, body: object, expected: string | null): WriteResult {
+    this.writes += 1;
+    const entry = this.cloud.files.get(fileName);
+    if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
+    const version = (entry?.version ?? 0) + 1;
+    this.cloud.files.set(fileName, { json: JSON.stringify(body), version });
+    return { version: String(version) };
+  }
+  revision(fileName: string): string | null {
+    const entry = this.cloud.files.get(fileName);
+    return entry ? String(entry.version) : null;
+  }
+}
+
+function deviceHost(store: DeviceStore, open: { value: boolean }): RecordHost {
+  const { mirror: _mirror, tier: _tier, ...base } = cloudHost(store) as Extract<RecordHost, { tier: 'cloud' }>;
+  return { ...base, tier: 'device', sync: store, clearNamedFiles: () => {}, eraseFence: () => null, deviceFilesOpen: () => open.value };
 }
 
 const add = (session: RecordSession, id: string) =>
@@ -156,5 +181,53 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
     stopped.value = true;
     expect(session.retry()).toBeNull();
     expect(store.writes).toBe(1);
+  });
+
+  // PR 1449: a device page closed to this device's files fails every pass
+  // before its read (deviceClosed). Its failed save is never retried either.
+  it('on a device page closed to this device\'s files, answers null and starts nothing', async () => {
+    const store = new DeviceStore(new MemoryCloud());
+    const open = { value: true };
+    const session = await RecordSession.open(deviceHost(store, open));
+    open.value = false;
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    expect(session.saveStatus).toBe('not-saved');
+    const writes = store.writes;
+    expect(session.retry()).toBeNull();
+    expect(store.writes).toBe(writes);
+  });
+});
+
+describe('the session tells the host when a retry becomes owed or stops being owed (US-09 AC30)', () => {
+  async function told(error: Error) {
+    const store = new TestCloud(new MemoryCloud());
+    const calls: unknown[][] = [];
+    const session = await RecordSession.open({ ...cloudHost(store), saveStatusChanged: (...args: unknown[]) => void calls.push(args) });
+    store.fail = error;
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    return { calls, session, store };
+  }
+
+  it('a failed save (offline) tells its status with a retry owed, and the session says so', async () => {
+    const { calls, session } = await told(OFFLINE());
+    expect(calls.at(-1)).toEqual(['not-saved-on-device', true]);
+    expect(session.retryDue).toBe(true);
+  });
+
+  it('a refused grant tells its status with no retry owed', async () => {
+    const { calls, session } = await told(REVOKED());
+    expect(calls.at(-1)).toEqual(['not-saved-on-device', false]);
+    expect(session.retryDue).toBe(false);
+  });
+
+  it('an erase over a failed save tells the same status with no retry owed while it runs', async () => {
+    const { calls, session, store } = await told(OFFLINE());
+    store.fail = null;
+    let during: unknown[] | undefined;
+    await session.erase(async () => { during = calls.at(-1); });
+    expect(during).toEqual(['not-saved-on-device', false]);
+    expect(calls.at(-1)).toEqual(['saved', false]);
   });
 });

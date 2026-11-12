@@ -6,7 +6,7 @@
 // `saveRetried({ trigger, outcome })` and nothing else.
 import { describe, expect, it, vi } from 'vitest';
 import { LiveRefresh } from './live-refresh';
-import type { RecordSession } from './record-session';
+import { REMOTE_POLL_MS, type RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
 import { MemoryAdapter } from './memory-adapter';
 
@@ -16,6 +16,7 @@ function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean 
   let now = 5_000_000;
   const order: string[] = [];
   const reported: unknown[][] = [];
+  const timers: Array<{ run: () => void; ms: number }> = [];
   const state = { owed: opts.owed ?? true, lands: opts.lands ?? true };
   const session = {
     lastRefreshAt: 0,
@@ -31,7 +32,8 @@ function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean 
   const base = {
     store: new MemoryAdapter(),
     clock: { now: () => now },
-    timers: { set: () => 0, clear: () => {} },
+    // Held, not run: a test runs the minute poll's tick itself.
+    timers: { set: (run: () => void, ms: number) => { timers.push({ run, ms }); return timers.length; }, clear: () => {} },
     saveRetried: (...args: unknown[]) => void reported.push(args),
   };
   const host = (opts.tier === 'device'
@@ -39,7 +41,7 @@ function rig(opts: { tier?: 'device' | 'cloud'; owed?: boolean; lands?: boolean 
     : { ...base, tier: 'cloud' }) as unknown as RecordHost;
   const live = new LiveRefresh(session as unknown as RecordSession, host, { reread, isVisible: () => true }) as LiveRefresh & { online(): void };
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-  return { live, session, reread, order, reported, state, settle, advance: (ms: number) => { now += ms; } };
+  return { live, session, reread, order, reported, state, settle, timers, advance: (ms: number) => { now += ms; } };
 }
 
 describe('LiveRefresh retries a failed save (US-09 AC30, lead A1 step e)', () => {
@@ -107,5 +109,30 @@ describe('LiveRefresh retries a failed save (US-09 AC30, lead A1 step e)', () =>
     await r.settle();
     expect(r.reported).toEqual([]);
     expect(r.reread).toHaveBeenCalled(); // the catch-up still reads
+  });
+
+  // Owner D3: only the client's visible() and online() retry; the minute poll never does.
+  it('the minute poll tick re-reads but never retries', () => {
+    const r = rig();
+    r.live.start(); // a store with no change signal: the poll runs
+    const tick = r.timers.find((t) => t.ms === REMOTE_POLL_MS);
+    expect(tick).toBeDefined();
+    r.advance(REMOTE_POLL_MS);
+    tick!.run();
+    expect(r.reread).toHaveBeenCalledTimes(1);
+    expect(r.session.retry).not.toHaveBeenCalled();
+    r.live.stop();
+  });
+
+  // Owner D4: only a retry that started a pass stamps the window.
+  it('a retry that started nothing (null) does not hold off the next one', async () => {
+    const r = rig({ owed: false });
+    r.live.visible(); // a clean page: nothing owed
+    r.state.owed = true; // a save fails 10 s later
+    r.advance(10_000);
+    r.live.online();
+    await r.settle();
+    expect(r.session.retry).toHaveBeenCalledTimes(2);
+    expect(r.reported).toEqual([[{ trigger: 'online', outcome: 'landed' }]]);
   });
 });

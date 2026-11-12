@@ -66,6 +66,15 @@ describe('passFailed carries its cause into failed (US-09 AC30)', () => {
     expect(retryOwed(s)).toBe(true);
   });
 
+  it("an erase's swap leaves a failed save with cause other, so its failed write is retried once the erase ends", () => {
+    for (const under of [clean(5), waiting(6, 5), failed(6, 4, 'auth'), failed(6, 4, 'other')]) {
+      const swapped = transition(reading(under), { type: 'eraseSwapped' }).state;
+      expect(swapped.mode === 'erasing' && swapped.under).toMatchObject({ mode: 'failed', cause: 'other' });
+      const ended = transition(swapped, { type: 'eraseEnded' }).state;
+      expect(retryOwed(ended)).toBe(true);
+    }
+  });
+
   it('mirrored keeps the cause', () => {
     expect(transition(failed(6, 4, 'other'), { type: 'mirrored', changes: 6 }).state).toEqual(failed(6, 4, 'other', true));
     expect(transition(failed(6, 4, 'auth'), { type: 'mirrored', changes: 6 }).state).toEqual(failed(6, 4, 'auth', true));
@@ -83,6 +92,17 @@ describe('saveFailureCause (US-09 AC30): auth only for a refused grant', () => {
     ['a thrown string', 'nope', 'other'],
   ])('%s -> %s', (_name, error, cause) => {
     expect(saveFailureCause(error)).toBe(cause);
+  });
+
+  it('a StorageError with reason reconnect and no status (a revoked refresh grant) -> auth', () => {
+    expect(saveFailureCause(new StorageError('needs to be reconnected', undefined, undefined, undefined, 'reconnect'))).toBe('auth');
+    expect(saveFailureCause(new StorageError('refresh failed (400)', undefined, undefined, 400, 'reconnect'))).toBe('auth');
+  });
+
+  it('the other reasons stay other, and the message is never read', () => {
+    expect(saveFailureCause(new StorageError('Dropbox is full', undefined, undefined, 409, 'storage-full'))).toBe('other');
+    expect(saveFailureCause(new StorageError('document not found.', undefined, undefined, undefined, 'not-found'))).toBe('other');
+    expect(saveFailureCause(new StorageError('Google Drive needs to be reconnected.'))).toBe('other');
   });
 
   it('a 401 the save rewrapped after a write may have landed keeps its status, so it is still auth', () => {

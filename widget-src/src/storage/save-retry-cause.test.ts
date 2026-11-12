@@ -86,11 +86,21 @@ describe('Dropbox (US-09 AC30)', () => {
   it('a revoked refresh token (the token endpoint answers 400 invalid_grant) is never retried', async () => {
     local.set(DROPBOX_TOKENS, JSON.stringify(expired));
     vi.stubGlobal('fetch', vi.fn(async () => reply(400, { error: 'invalid_grant', error_description: 'refresh token is invalid or revoked' })));
-    // What the adapter throws today: status 400, not 401 or 403 (dropbox.ts refresh()).
+    // Status 400, not 401 or 403 (dropbox.ts refresh()): the reason says reconnect (owner D1).
     const error = await readError(new DropboxAdapter(CONFIG));
     expect(error.status).toBe(400);
+    expect(error.reason).toBe('reconnect');
     expect(error.message).toBe('Dropbox token refresh failed (400) — please reconnect.');
     expect(await retryAfterFailedSave(new DropboxAdapter(CONFIG))).toBeNull();
+  });
+
+  it('a token endpoint that answers 400 for another reason, or 500, is retried', async () => {
+    local.set(DROPBOX_TOKENS, JSON.stringify(expired));
+    vi.stubGlobal('fetch', vi.fn(async () => reply(400, { error: 'invalid_request' })));
+    expect((await readError(new DropboxAdapter(CONFIG))).reason).toBeUndefined();
+    expect(await retryAfterFailedSave(new DropboxAdapter(CONFIG))).not.toBeNull();
+    vi.stubGlobal('fetch', vi.fn(async () => reply(500, { error: 'server_error' })));
+    expect((await readError(new DropboxAdapter(CONFIG))).reason).toBeUndefined();
   });
 
   it('an access token Dropbox refuses (401 on the record call) is never retried', async () => {
@@ -125,10 +135,10 @@ describe('Google Drive (US-09 AC30)', () => {
   it('a revoked refresh token (the exchange answers 401) is never retried', async () => {
     signedIn(expired);
     vi.stubGlobal('fetch', vi.fn(async () => reply(401, { error: 'invalid_grant' })));
-    // What the adapter throws today: no status at all (drive.ts getToken()),
-    // the same error as the dead network below.
+    // No status (drive.ts getToken()); the reason tells it from the dead network below (owner D1).
     const error = await readError(new GoogleDriveAdapter(CONFIG));
     expect(error.status).toBeUndefined();
+    expect(error.reason).toBe('reconnect');
     expect(error.message).toBe('Google Drive needs to be reconnected.');
     signedIn(expired); // the refusal cleared the tokens
     expect(await retryAfterFailedSave(new GoogleDriveAdapter(CONFIG))).toBeNull();
@@ -139,7 +149,8 @@ describe('Google Drive (US-09 AC30)', () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
     const error = await readError(new GoogleDriveAdapter(CONFIG));
     expect(error.status).toBeUndefined();
-    expect(error.message).toBe('Google Drive needs to be reconnected.'); // today: the revoked grant's words
+    expect(error.message).toBe('Google Drive needs to be reconnected.'); // the revoked grant's words, but no reason
+    expect(error.reason).toBeUndefined();
     expect(await retryAfterFailedSave(new GoogleDriveAdapter(CONFIG))).not.toBeNull();
   });
 

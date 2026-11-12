@@ -1405,7 +1405,9 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     expect(attempts).toBe(1);
   });
 
-  it('after a refused grant, neither the foreground nor the network coming back tries the save again', async () => {
+  // Owner D2: the foreground's own save attempt (cloudVisible's flushSync) stays as it
+  // was; "never after a refused grant" governs the new trigger, the network coming back.
+  it('after a refused grant, the network coming back does not try the save again', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
@@ -1416,9 +1418,6 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
     expect(JSON.parse(failed[1])).toMatchObject({ kind: 'sign-in' });
     state.signedOut = false; // any attempt from here would land, so none may start
-    engine.cloudVisible();
-    await settle();
-    expect(dropbox.uploads).toBe(0); // the foreground alone
     engine.cloudOnline();
     await settle();
     expect(dropbox.uploads).toBe(0);
