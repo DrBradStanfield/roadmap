@@ -55,7 +55,6 @@ import {
   updateScheduleByToken,
   purgeTombstones,
   TOMBSTONE_TTL_DAYS,
-  upsertVerifiedOptin,
 } from './reminder-v2.server';
 
 const VALID_ITEM = { category: 'blood_test_lipids', label: 'Lipid panel blood test', dueAt: '2027-05-12' };
@@ -128,54 +127,10 @@ describe('US-23 AC2 — the quiet period, every lane', () => {
   });
 });
 
-describe('Google-verified opt-in over an existing row', () => {
-  it('keeps the token and last_sent of a row that was itself Google-verified (already-sent links must keep working)', async () => {
-    primedResults = [
-      { data: { provider: 'google-drive', token: 'original-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null },
-      { data: null, error: null }, // upsert
-    ];
-
-    const result = await upsertVerifiedOptin('user@example.com', [VALID_ITEM]);
-
-    expect(result).toEqual({ token: 'original-token', isNew: false });
-    const payload = calls.find((c) => c.method === 'upsert')!.args[0] as Record<string, unknown>;
-    expect(payload.token).toBe('original-token');
-    expect(payload.provider).toBe('google-drive');
-    expect(payload.last_sent).toEqual({ blood_test_lipids: '2026-08-01' });
-  });
-
-  it('token squatting: ROTATES the token of a row that was not Google-verified, so the squatter can no longer cancel', async () => {
-    primedResults = [
-      { data: { provider: 'dropbox', token: 'squatter-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null },
-      { data: null, error: null }, // upsert
-    ];
-
-    const result = await upsertVerifiedOptin('victim@example.com', [VALID_ITEM]);
-
-    expect(result.isNew).toBe(false);
-    expect(result.token).not.toBe('squatter-token');
-    const payload = calls.find((c) => c.method === 'upsert')!.args[0] as Record<string, unknown>;
-    expect(payload.token).toBe(result.token);
-    expect(payload.last_sent).toEqual({ blood_test_lipids: '2026-08-01' }); // cooldowns still kept
-  });
-});
-
-describe('the verified lane still replaces its own row (upsert, not insert)', () => {
-  it('upserts on email — the owner proved the inbox, so their write may replace a squatter row', async () => {
-    primedResults = [
-      { data: null, error: null }, // lookup: no row
-      { data: null, error: null }, // upsert
-    ];
-
-    const result = await upsertVerifiedOptin('owner@example.com', [VALID_ITEM]);
-
-    expect(result.isNew).toBe(true);
-    const upsert = calls.find((c) => c.method === 'upsert')!;
-    expect(upsert.args[1]).toEqual({ onConflict: 'email' });
-    expect((upsert.args[0] as Record<string, unknown>).provider).toBe('google-drive');
-    expect(calls.map((c) => c.method)).not.toContain('insert');
-  });
-});
+// The Google-verified lane (a new row, its own row kept, another lane's row
+// rotated, and two calls at once) is pinned by behaviour against a stateful
+// table in reminder-v2-concurrency.test.ts: a primed sequence cannot tell a
+// write that keeps a token from one that replaces it.
 
 describe('the per-email rate-limit key (never the stored address)', () => {
   it('folds case, +tags and Gmail dots into one bucket', () => {

@@ -346,7 +346,7 @@ type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCod
 export async function pollBatch(
   batchId: string,
 ): Promise<{
-  status: 'processing' | 'ended' | 'failed';
+  status: 'processing' | 'ended';
   completed: number;
   total: number;
   results?: BatchFileResult[];

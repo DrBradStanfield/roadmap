@@ -64,6 +64,67 @@ describe('the batch poll carries the token the upload was given', () => {
   });
 });
 
+// US-12 AC24: a failed poll that can change answers `error`, and the caller
+// polls on to its deadline. One that cannot change ends the watch at once.
+describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
+  it.each([
+    ['a 500 from our route', () => jsonResponse({ success: false }, 500)],
+    ['a network throw', () => { throw new TypeError('synthetic network failure'); }],
+  ])('%s answers error, never "processing 0"', async (_, reply) => {
+    stubFetch(reply);
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 0, total: 0 });
+  });
+
+  it.each([
+    ['a 401', () => jsonResponse({ error: 'Unauthorized' }, 401), 'server_error'],
+    ['a 403', () => jsonResponse({ success: false, error: 'Forbidden' }, 403), 'server_error'],
+    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404), 'server_restart'],
+    ['a page that is not JSON', () => new Response('<html>synthetic</html>', { headers: { 'content-type': 'text/html' } }), 'server_error'],
+    ['JSON that does not parse', () => new Response('{"status":', { headers: { 'content-type': 'application/json' } }), 'server_error'],
+    ['an answer with no known status', () => jsonResponse({ ok: true }), 'server_error'],
+  ] as const)('%s ends the watch with an error', async (_, reply, errorCode) => {
+    stubFetch(reply);
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode });
+    expect(poll.error).toBeTruthy();
+  });
+
+  it('a connection drop while the body streams answers error and keeps the poll token', async () => {
+    let n = 0;
+    stubFetch((call) => {
+      if (call.body && 'batch' in call.body) return jsonResponse({ success: true, batchId: 'batch_drop', pollToken: 'tok-drop' });
+      return n++ === 0
+        ? new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"status":')); c.error(new TypeError('synthetic connection drop')); } }),
+          { headers: { 'content-type': 'application/json' } })
+        : jsonResponse({ status: 'processing', completed: 3, total: 20 });
+    });
+    await labImportBatch(FILES);
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'error', completed: 0, total: 0 });
+    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'processing', completed: 3, total: 20 });
+    expect(calls[2].body).toEqual({ batchId: 'batch_drop', pollToken: 'tok-drop' });
+  });
+
+  it.each([
+    ['no `completed`', { status: 'processing', total: 20 }],
+    ['a NaN count (JSON carries it as null)', { status: 'processing', completed: NaN, total: 20 }],
+    ['a negative count', { status: 'error', completed: -1, total: 20 }],
+    ['a fractional count', { status: 'processing', completed: 1.5, total: 20 }],
+    ['an `ended` with neither results nor an error', { status: 'ended', completed: 20, total: 20 }],
+    ['an `ended` with a code but no error text', { status: 'ended', completed: 20, total: 20, errorCode: 'server_error' }],
+    ['an `ended` with an empty error', { status: 'ended', completed: 20, total: 20, error: '' }],
+  ])('an answer with %s ends the watch with a server error', async (_, body) => {
+    stubFetch(() => jsonResponse(body));
+    const poll = await pollBatchStatus('batch_abc');
+    expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_error' });
+    expect(poll.error).toBeTruthy(); // what the pipeline ends on
+  });
+
+  it('passes the server\'s own `error` answer through, its count kept', async () => {
+    stubFetch(() => jsonResponse({ status: 'error', completed: 3, total: 20 }));
+    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 3, total: 20 });
+  });
+});
+
 // Privacy: a file name can hold a patient's name ("Jane Citizen bloods.pdf").
 // The server never needs it: a batch result comes back by its request index,
 // and the browser maps the index to the file. So no name leaves the browser.

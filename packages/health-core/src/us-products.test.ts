@@ -37,6 +37,7 @@ const other: HealthInputs = {
 const minor: HealthInputs = { sex: 'female', heightCm: 160, weightKg: 55, birthYear: 2012, birthMonth: 1 };
 const noAge: HealthInputs = { sex: 'male', heightCm: 178, weightKg: 80 };
 const PRODUCT_TEXT = /microvitamin|sleep by|drstanfield|dr brad/i;
+const PRODUCT_NAMES = /microvitamin|sleep by|drstanfield/i;
 
 describe('US-61 AC1: the two new supplement cards, in every market', () => {
   it('US-61 AC1: an adult gets lutein and zeaxanthin and TMG, beside the other supplement cards, with the final text', () => {
@@ -95,7 +96,8 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     file.profile = { sex: 'male', heightCm: 178, birthYear: 1970, unitSystem: 'conventional', updatedAt: '2026-10-01T00:00:00Z', lamport: 1 };
     const json = renderJson(computePlan(file, NOW));
     for (const id of Object.keys(US_PRODUCT_LINES)) expect(json).toContain(`"${id}"`);
-    expect(json).not.toMatch(PRODUCT_TEXT);
+    // Product names only: the colorectal cards name Dr Brad's own screening advice (US-07 AC1h, Brad 2026-11-12).
+    expect(json).not.toMatch(PRODUCT_NAMES);
     for (const text of Object.values(US_SUPPLEMENT_DESCRIPTIONS)) expect(json).not.toContain(text + '"');
   });
 

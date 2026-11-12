@@ -124,7 +124,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
     // MARK: 1 · Init
 
     func testWithNoCloudOnFileItIsOnThePhoneAndStartOpensNothing() async throws {
-        try write("brad@example.com", "sync-account-email") // left by an older build: not read without a provider
+        try write("person@example.com", "sync-account-email") // left by an older build: not read without a provider
         try write("dropbox", "sync-history")
         let (store, sync, engine) = try app(connected: false)
         XCTAssertEqual(sync.status, .onPhone)
@@ -144,12 +144,12 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
     }
 
     func testWithACloudOnFileItIsConnectingBeforeStartAndNothingIsOpen() throws {
-        try write("brad@example.com", "sync-account-email")
+        try write("person@example.com", "sync-account-email")
         let (store, sync, _) = try app()
         XCTAssertEqual(sync.status, .connecting)
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertFalse(sync.recordOpen, "connecting is not open (US-54 AC2)")
-        XCTAssertEqual(sync.accountEmail, "brad@example.com")
+        XCTAssertEqual(sync.accountEmail, "person@example.com")
         XCTAssertNil(sync.syncedBefore, "never synced")
         XCTAssertNil(store.cloudErase)
         XCTAssertEqual(downloads.value, 0, "init opens nothing")
@@ -362,7 +362,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
     func testADisconnectAfterTheOpenRemovesTheCloudsFilesAndKeepsSyncedBefore() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         try write("dbid:A", "sync-account")
-        try write("brad@example.com", "sync-account-email")
+        try write("person@example.com", "sync-account-email")
         let (store, sync, engine) = try app()
         await sync.start()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")))
@@ -503,12 +503,10 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertNotNil(text("sync-pending"), "the erase waits on the phone")
     }
 
-    /// Pins today's behaviour; S3 design question: the erase sets .saving, then reads
-    /// `status == .saving` to decide whether to say "unreachable". Engine news that lands
-    /// mid-erase ("synced" from a save or re-read) shows Synced while the erase still runs.
-    /// Today a failed upload ends unreachable anyway, because the upload's own failure
-    /// news reaches the status first; a refactor that keys the end on the erase's own
-    /// result keeps this outcome, one that drops the failure news must not end Synced.
+    /// Q2, decided by S3 (US-25 AC11m): engine news that lands mid-erase ("synced" from a
+    /// save or re-read) still shows Synced while the erase runs, but it never decides how
+    /// the erase ends: CloudConnection's `eraseEnded` takes the erase's own result, so an
+    /// erase that was not sent ends unreachable whatever news came first.
     func testEngineNewsMidEraseDecidesTheStatusAnEraseThatFailedEndsOn() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (_, sync, _) = try app()
@@ -684,12 +682,13 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
 
     // MARK: 11 · The Disconnect gap
 
-    /// Pins today's behaviour; S3 design question: Disconnect clears the shown session
-    /// and the provider before it awaits the engine's close, but the store's cloudErase
-    /// stays set until showPhone. An edit in that gap is sent to the engine's session,
-    /// which is already closed: it is refused ("The cloud record is not open."), and
-    /// reaches neither the phone's file nor the cloud. Meanwhile the status still reads
-    /// Synced with no provider.
+    /// Q1, decided by S3 (US-25 AC11m, owner's ruling): this pin froze the gap that state
+    /// lead S22 is. Disconnect used to clear the provider before it awaited the engine's
+    /// close, so the gap read Synced with no cloud named and Sync drew Connect rows. Now
+    /// the closing state keeps the cloud being closed named, and the status reads
+    /// Disconnecting. The store's cloudErase stays set until showPhone, so an edit in the
+    /// gap is still sent to the engine's session, which is already closed: it is refused
+    /// ("The cloud record is not open."), and reaches neither the phone's file nor the cloud.
     func testAnEditDuringDisconnectsCloseIsRefusedAndLandsNowhere() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (store, sync, _) = try app()
@@ -699,9 +698,9 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         let copyDown = nextDownload()
         let disconnecting = Task { await sync.disconnect() }
         await arrive(copyDown)
-        XCTAssertNil(sync.provider)
+        XCTAssertEqual(sync.provider, .dropbox, "the cloud being closed stays named")
         XCTAssertFalse(sync.recordOpen)
-        guard case .synced = sync.status else { return XCTFail("status in the gap is \(sync.status)") }
+        XCTAssertEqual(sync.status, .disconnecting)
         XCTAssertNotNil(store.cloudErase, "the screen still holds the cloud record")
         let edit = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-07"))
         guard case .refused(let message, _) = edit else { return XCTFail("today an edit in the gap is refused: \(edit)") }

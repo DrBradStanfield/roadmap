@@ -16,12 +16,16 @@ struct OAuthTokens: Codable, Equatable, Sendable {
 struct TokenStore: Sendable {
     /// The Keychain service; tests use their own.
     let service: String
+    /// Tests only: every save, or every delete, fails, as a refusing Keychain does (US-25 AC11m).
+    var failsSaves = false
+    var failsDeletes = false
 
     init(service: String = "com.drstanfield.healthroadmap.oauth") {
         self.service = service
     }
 
     func save(_ tokens: OAuthTokens, for provider: CloudProvider) throws {
+        guard !failsSaves else { throw KeychainError(status: errSecNotAvailable) }
         let data = try JSONEncoder().encode(tokens)
         let query = baseQuery(provider)
         let update: [String: Any] = [
@@ -55,8 +59,12 @@ struct TokenStore: Sendable {
         return attributes[kSecAttrAccessible as String] as? String
     }
 
-    func delete(_ provider: CloudProvider) {
-        SecItemDelete(baseQuery(provider) as CFDictionary)
+    /// True once no item is left for the provider.
+    @discardableResult
+    func delete(_ provider: CloudProvider) -> Bool {
+        guard !failsDeletes else { return false }
+        let status = SecItemDelete(baseQuery(provider) as CFDictionary)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
 
     private func baseQuery(_ provider: CloudProvider) -> [String: Any] {

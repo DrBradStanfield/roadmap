@@ -259,89 +259,87 @@ export async function enrolByEmail(
     if (updateError) throw new Error(`reminder_optin_v2 refresh failed: ${updateError.message}`);
     return { isNew: false };
   }
-  const token = await writeOptinRow(normalized, provider, schedule, null, false);
+  const token = await writeOptinRow(normalized, provider, schedule);
   // null = the owner's verified write won the race; leave their row alone.
   return token ? { isNew: true, token } : { isNew: false };
 }
 
 /**
  * Google-verified enrolment: the address came from a signed ID token, so this
- * caller IS the inbox owner and may replace their own row. The token is ALWAYS
- * returned, new row or not: the same person on a new device has nothing in
- * their file yet, and withholding it there means schedule pushes never start
- * and toggle-off is a no-op. Cooldowns are preserved either way; the token is
- * KEPT only when the row was itself Google-verified. Any other row may be a
- * squatter's (an address-only optin naming this inbox before its owner
+ * caller IS the inbox owner and may take over their own row. The token is
+ * ALWAYS returned, new row or not: the same person on a new device has nothing
+ * in their file yet, and withholding it there means schedule pushes never start
+ * and toggle-off is a no-op. Cooldowns (last_sent) are never written here. The
+ * token is KEPT only when the row was itself Google-verified. Any other row may
+ * be a squatter's (an address-only optin naming this inbox before its owner
  * arrived), and keeping its token would keep the squatter's cancel capability
- * alive across the victim's verification — so it rotates (review 2026-09-10),
- * and the rotated token goes back to the owner in the same reply.
+ * alive across the owner's verification, so it rotates (review 2026-09-10).
+ *
+ * Decided once, by the database (US-17 AC16): two calls at once leave one row
+ * and one token, both callers get that token, and only the call that created
+ * the row is isNew (the plan-ready email and reminder_optin hang off it). So:
+ * INSERT, and the unique index on email names the creator; a 23505 means a row
+ * exists. Then one compare-and-set rotation (only a row not yet verified
+ * matches, and Postgres re-checks that under the row lock, so a second
+ * rotation matches nothing), a schedule refresh of the verified row, and a
+ * separate read-back of the winner's token (no .select() on a self-mutating
+ * UPDATE: CLAUDE.md). A delete or another lane's re-insert in the gap gets one
+ * retry from the insert, then an error.
  */
 export async function upsertVerifiedOptin(
   email: string,
   schedule: StoredScheduleItem[],
 ): Promise<Enrolment> {
   const normalized = email.toLowerCase();
-  const { data, error } = await requireAdmin()
-    .from('reminder_optin_v2')
-    .select('provider, token, last_sent')
-    .eq('email', normalized)
-    .maybeSingle();
-  if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
-  const existing = data && { token: data.provider === 'google-drive' ? data.token : undefined, last_sent: data.last_sent };
-  // The verified lane may replace its own row, so it never loses the race.
-  const token = await writeOptinRow(normalized, 'google-drive', schedule, existing, true);
-  return data ? { isNew: false, token } : { isNew: true, token };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const inserted = await writeOptinRow(normalized, 'google-drive', schedule);
+    if (inserted) return { isNew: true, token: inserted };
+    const { error: rotateError } = await requireAdmin()
+      .from('reminder_optin_v2')
+      .update({ provider: 'google-drive', token: mintCapabilityToken(), updated_at: new Date().toISOString() })
+      .eq('email', normalized)
+      .neq('provider', 'google-drive');
+    if (rotateError) throw new Error(`reminder_optin_v2 rotate failed: ${rotateError.message}`);
+    const { error: refreshError } = await requireAdmin()
+      .from('reminder_optin_v2')
+      .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
+      .eq('email', normalized)
+      .eq('provider', 'google-drive');
+    if (refreshError) throw new Error(`reminder_optin_v2 refresh failed: ${refreshError.message}`);
+    const { data, error } = await requireAdmin()
+      .from('reminder_optin_v2')
+      .select('token, provider')
+      .eq('email', normalized)
+      .maybeSingle();
+    if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
+    if (data?.provider === 'google-drive') return { isNew: false, token: data.token as string };
+  }
+  throw new Error('reminder_optin_v2 verified opt-in did not settle');
 }
 
 /**
- * The one raw row write. `existing` (the pre-write row, null when absent)
- * lets a Google-verified re-enrolment PRESERVE the token (so the links in
- * every email already in their inbox keep working) and the cooldowns (so an
- * item sent yesterday isn't re-sent tomorrow — review 2026-08-14). The caller
- * decides whether the token is trustworthy enough to keep.
- * `mayReplace` says whether this caller owns the address: only the verified
- * lane passes true, and only it upserts (so it always returns a token). Every
- * other lane INSERTs and lets the unique index on email decide: a 23505 means
- * an owner's row appeared between enrolByEmail's lookup and here, and
- * returning null (rather than overwriting their provider, token and last_sent)
- * is what keeps that race from becoming the silent-unsubscribe attack. Private
- * on purpose.
+ * The one row INSERT, for both lanes: a fresh token, empty cooldowns. The
+ * unique index on email decides who created the row. A 23505 answers null (a
+ * row exists; the caller decides what that means), never an overwrite of its
+ * provider, token or last_sent: that is what keeps a race from becoming the
+ * silent-unsubscribe attack. Private on purpose.
  */
 async function writeOptinRow(
   email: string,
   provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
-  existing: { token?: string; last_sent?: Record<string, string> } | null,
-  mayReplace: true,
-): Promise<string>;
-async function writeOptinRow(
-  email: string,
-  provider: ReminderV2Provider,
-  schedule: StoredScheduleItem[],
-  existing: { token?: string; last_sent?: Record<string, string> } | null,
-  mayReplace: false,
-): Promise<string | null>;
-async function writeOptinRow(
-  email: string,
-  provider: ReminderV2Provider,
-  schedule: StoredScheduleItem[],
-  existing: { token?: string; last_sent?: Record<string, string> } | null,
-  mayReplace: boolean,
 ): Promise<string | null> {
-  const token = existing?.token ?? mintCapabilityToken();
-  const row = {
+  const token = mintCapabilityToken();
+  const { error } = await requireAdmin().from('reminder_optin_v2').insert({
     email: email.toLowerCase(),
     provider,
     token,
     schedule: ensureAnnualFloor(schedule),
-    last_sent: existing?.last_sent ?? {},
+    last_sent: {},
     updated_at: new Date().toISOString(),
-  };
-  const table = requireAdmin().from('reminder_optin_v2');
-  const { error } =
-    mayReplace ? await table.upsert(row, { onConflict: 'email' }) : await table.insert(row);
+  });
   if (error) {
-    if (error.code === '23505') return null; // unique_violation on email — the owner got there first
+    if (error.code === '23505') return null; // unique_violation on email: a row exists
     throw new Error(`reminder_optin_v2 write failed: ${error.message}`);
   }
   return token;
@@ -368,7 +366,8 @@ export async function updateScheduleByToken(
   const { error: updateError } = await requireAdmin()
     .from('reminder_optin_v2')
     .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
-    .eq('token', token);
+    .eq('token', token)
+    .neq('schedule', '[]'); // re-checked at write time: an unsubscribe landing first stays (US-23 AC5)
   if (updateError) throw new Error(`reminder_optin_v2 update failed: ${updateError.message}`);
   return true;
 }
@@ -411,7 +410,8 @@ export async function unsubscribeByToken(token: string): Promise<ReminderV2Provi
   const { error: updateError } = await requireAdmin()
     .from('reminder_optin_v2')
     .update({ schedule: [], updated_at: new Date().toISOString() })
-    .eq('token', token);
+    .eq('token', token)
+    .neq('schedule', '[]');
   if (updateError) throw new Error(`reminder_optin_v2 tombstone failed: ${updateError.message}`);
   return data.provider as ReminderV2Provider;
 }

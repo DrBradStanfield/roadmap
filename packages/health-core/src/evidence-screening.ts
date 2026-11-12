@@ -14,11 +14,12 @@ const REFS_SCREENING_ACS: SuggestionReference[] = [
 
 export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   'screening-colorectal': {
-    reason: 'The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.',
-    guidelines: ['ACS'],
+    reason: 'Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45.',
+    guidelines: ['ACS 2018'],
     references: [
       ...REFS_SCREENING_ACS,
       { label: 'Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)', url: 'https://doi.org/10.1136/gutjnl-2019-319511' },
+      { label: 'Wolf 2018 – Colorectal cancer screening for average-risk adults: 2018 guideline update from the American Cancer Society (CA Cancer J Clin)', url: 'https://doi.org/10.3322/caac.21457' },
     ],
   },
 
@@ -54,9 +55,13 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-prostate-elevated': {
-    reason: 'A PSA above 4.0 ng/mL is above the typical reference range, but elevated PSA can have multiple causes including benign prostatic hyperplasia (BPH), infection, or prostate cancer. Further evaluation by your doctor is needed to determine the cause.',
+    reason: 'Many doctors use a PSA of 4.0 ng/mL or higher as the level for further tests; some use a lower level. A raised PSA can have several causes, including an enlarged prostate (benign prostatic hyperplasia), infection or prostate cancer, and a level below 4.0 does not rule out cancer. Your doctor can help find the cause.',
     guidelines: [],
-    references: REFS_SCREENING_ACS,
+    references: [
+      ...REFS_SCREENING_ACS,
+      // The page the reason's claims were checked against (Brad 2026-11-12, PR 1358 R2).
+      { label: 'American Cancer Society – Screening Tests for Prostate Cancer', url: 'https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/tests.html' },
+    ],
   },
 
   'screening-endometrial-bleeding': {

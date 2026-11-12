@@ -41,15 +41,19 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(unit).toMatch(/fail-fast: false/);
   });
 
-  it('PRs run in UTC; main, manual and nightly runs add a zone behind UTC; every test starts in a non-US language (US-64 AC22)', () => {
+  it('PRs run in UTC; main and the 03:00 nightly add a zone behind UTC; manual runs and the 12:00 nightly add Auckland to both; every test starts in a non-US language (US-64 AC22)', () => {
     const unit = job('unit');
-    const tz = (event_name: string) => interpolate(String(ciYaml.jobs.unit.strategy!.matrix.tz), { github: { event_name } });
+    // A non-schedule event has no github.event.schedule: GitHub reads it as null, and null == '0 12 * * *' is false.
+    const tz = (event_name: string, schedule?: string) =>
+      interpolate(String(ciYaml.jobs.unit.strategy!.matrix.tz), { github: { event_name, event: schedule ? { schedule } : {} } });
     expect(tz('pull_request')).toEqual(['UTC']);
-    for (const event of ['push', 'workflow_dispatch', 'schedule']) {
-      expect(tz(event), event).toEqual(['UTC', 'America/Los_Angeles']);
-    }
-    expect(ciYaml.on).toHaveProperty('schedule');
-    expect((ciYaml.on.schedule as { cron: string }[]).length).toBe(1);
+    expect(tz('push')).toEqual(['UTC', 'America/Los_Angeles']);
+    expect(tz('schedule', '0 3 * * *')).toEqual(['UTC', 'America/Los_Angeles']);
+    // A superset of a push run's zones: Pages and Deploy accept any green `test` on main's sha.
+    // A manual run re-checks an Auckland-only failure without waiting for the 12:00 nightly.
+    expect(tz('workflow_dispatch')).toEqual(['UTC', 'America/Los_Angeles', 'Pacific/Auckland']);
+    expect(tz('schedule', '0 12 * * *')).toEqual(['UTC', 'America/Los_Angeles', 'Pacific/Auckland']);
+    expect((ciYaml.on.schedule as { cron: string }[]).map((s) => s.cron)).toEqual(['0 3 * * *', '0 12 * * *']);
     expect(unit).toMatch(/TZ: \$\{\{ matrix\.tz \}\}/);
     const config = readFileSync(join(ROOT, 'vitest.config.ts'), 'utf8');
     expect(config).toMatch(/setupFiles: \['\.\/tests\/setup-locale\.ts'\]/);

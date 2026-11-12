@@ -135,15 +135,8 @@ struct WelcomeView: View {
                     }
                 }
                 switch phase {
-                case .opening:
-                    Section {
-                        HStack {
-                            ProgressView()
-                            Text("Opening your record").foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Opening your record")
-                    }
+                case .opening: busy("Opening your record")
+                case .disconnecting: busy("Disconnecting…")
                 case .failed(let problem):
                     if let provider = sync.provider {
                         let failure = WelcomeConnect.failure(problem, provider: provider)
@@ -174,6 +167,18 @@ struct WelcomeView: View {
         .presentationDetents([.medium])
     }
 
+    /// A spinner row and what it waits on.
+    private func busy(_ words: LocalizedStringKey) -> some View {
+        Section {
+            HStack {
+                ProgressView()
+                Text(words).foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(words)
+        }
+    }
+
     /// "Get started" with a cloud connected waits on its record, so the questions never
     /// run on the empty phone record, whose answers would later win the merge (review
     /// R4). Every tap that can show the spinner starts an open (WelcomeConnect).
@@ -189,8 +194,8 @@ struct WelcomeView: View {
             openRecord()
         case .open: openRecord()
         case .disconnect:
-            guard let sync else { return }
-            Task { await sync.disconnect() }
+            guard let sync, let provider = sync.provider else { return }
+            Task { if await sync.disconnectOutcome() == .failed { connectMessage = SyncStatusText.disconnectFailed(provider) } }
         case .nothing: break
         }
     }
