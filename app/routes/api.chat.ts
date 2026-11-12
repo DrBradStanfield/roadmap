@@ -39,7 +39,7 @@ import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cro
 import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
-
+import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
 // conversation contents even when every identifier passed validation.
@@ -366,7 +366,7 @@ function refuseTurn(message: unknown, request: Request, app: boolean): Response 
 async function chatAction(request: Request, app: boolean) {
   const t0 = Date.now();
   try {
-    if (process.env.CHAT_ENABLED === 'false') {
+    if (process.env.CHAT_ENABLED === 'false' || CHAT_PROMPT.kind === 'missing') { // US-15 AC65: no model call without the prompt
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
