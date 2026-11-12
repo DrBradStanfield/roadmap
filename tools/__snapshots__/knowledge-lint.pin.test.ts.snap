@@ -1,0 +1,1268 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`US-64 AC23 pins for the knowledge-lint split > --dry-run lists the due handles 1`] = `
+"exit 0
+8 entries due this week (slice 3 of 13: 0; changed 2; new 6; algorithm topic 1):
+guide-bad	new
+guide-ok	new
+master-m	new
+master-n	new
+post-1	new
+post-2	new
+ref-a	changed,algorithm:lipids
+ref-grok	changed"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > --init-state writes the first state, then refuses 1`] = `
+{
+  "first": "exit 0
+Wrote docs/loops/chat-health/lint-state.json: 8 entries, next slice 1 of 13.",
+  "second": "exit 1
+docs/loops/chat-health/lint-state.json exists; --init-state writes only the first one.",
+  "state": "{
+ "version": 1,
+ "lastRun": null,
+ "cursor": 0,
+ "pairs": {},
+ "algorithm": {
+  "lipids": "af7896634ba37c4c"
+ },
+ "entries": {
+  "ref-a": {
+   "hash": "dde1de03c668ad24",
+   "products": 2
+  },
+  "ref-grok": {
+   "hash": "b860e4fc9433dd72",
+   "products": 0
+  },
+  "master-m": {
+   "hash": "7b10c768948a5329",
+   "products": 0
+  },
+  "master-n": {
+   "hash": "248f69cdebe29f93",
+   "products": 0
+  },
+  "post-1": {
+   "hash": "93aa22059e2504d2",
+   "products": 0
+  },
+  "post-2": {
+   "hash": "daadc94a05e6438f",
+   "products": 0
+  },
+  "guide-ok": {
+   "hash": "2157d2b81c73bf24",
+   "products": 0
+  },
+  "guide-bad": {
+   "hash": "87c1f12f97ade18a",
+   "products": 0
+  }
+ }
+}
+",
+}
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > --write-master-hashes: findings, exit code and the state written 1`] = `
+{
+  "out": "exit 1
+FAIL master-places master-m: docs/place.md: zeta follows (no earlier hash for this place (first rewrite or newly registered); check it follows the current view; view 3c0af6df3000da97)
+FAIL master-places master-m: docs/place.md: gone text (anchor text not found; re-register the place; view 3c0af6df3000da97)
+Wrote the masters section of docs/loops/chat-health/lint-state.json: 1 masters; 2 unwaived findings kept their masters' earlier hashes.",
+  "state": "{
+ "version": 1,
+ "lastRun": "2026-11-01",
+ "cursor": 2,
+ "pairs": {},
+ "algorithm": {
+  "lipids": "stale"
+ },
+ "entries": {
+  "ref-a": {
+   "hash": "old",
+   "products": 1
+  },
+  "ref-grok": {
+   "hash": "old",
+   "products": 0
+  }
+ },
+ "masters": {
+  "master-m": {
+   "hash": "old",
+   "at": "2026-09-01",
+   "places": {
+    "docs/place.md: zeta follows": "f691368017384282",
+    "docs/place.md: gone text": "missing"
+   }
+  }
+ }
+}
+",
+}
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > a bad allow-list fails the run with its message 1`] = `
+"exit 1
+knowledge-lint: lint-allowlist entry 0: needs a handle or pair, not both"
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > a full run: log, report, json, fix queue and metrics 1`] = `
+{
+  "fetches": [
+    [
+      "https://doi.org/10.1000/abc1",
+      {
+        "method": "HEAD",
+        "redirect": "manual",
+      },
+    ],
+    [
+      "https://doi.org/10.1000/xyz9",
+      {
+        "method": "HEAD",
+        "redirect": "manual",
+      },
+    ],
+    [
+      "https://doi.org/10.1000/good1",
+      {
+        "method": "HEAD",
+        "redirect": "manual",
+      },
+    ],
+    [
+      "https://doi.org/10.1000/dead3",
+      {
+        "method": "HEAD",
+        "redirect": "manual",
+      },
+    ],
+    [
+      "https://pubmed.ncbi.nlm.nih.gov/12345/",
+      {
+        "method": "HEAD",
+        "redirect": "follow",
+      },
+    ],
+  ],
+  "json": "{
+ "date": "2026-11-12",
+ "corpus": {
+  "total": 8,
+  "guideline": 2,
+  "reference": 4,
+  "article": 2
+ },
+ "findings": [
+  {
+   "rule": "unresolved-marker",
+   "handle": "ref-a",
+   "item": "[4]"
+  },
+  {
+   "rule": "uncited-reference",
+   "handle": "ref-a",
+   "item": "[3]"
+  },
+  {
+   "rule": "doi-shape",
+   "handle": "ref-a",
+   "item": "10.12/abc"
+  },
+  {
+   "rule": "pmid-shape",
+   "handle": "ref-a",
+   "item": "0123"
+  },
+  {
+   "rule": "dose-mismatch",
+   "handle": "ref-a",
+   "item": "5 mg"
+  },
+  {
+   "rule": "product-rise",
+   "handle": "ref-a",
+   "item": "1 -> 2"
+  },
+  {
+   "rule": "grokipedia",
+   "handle": "ref-grok",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via)"
+  },
+  {
+   "rule": "master-front",
+   "handle": "master-n",
+   "item": "reviewed",
+   "detail": "must be a quoted valid date, \\"YYYY-MM-DD\\""
+  },
+  {
+   "rule": "master-front",
+   "handle": "master-n",
+   "item": "sources",
+   "detail": "missing"
+  },
+  {
+   "rule": "master-front",
+   "handle": "master-n",
+   "item": "reviewed",
+   "detail": "appears more than once"
+  },
+  {
+   "rule": "topic-no-master",
+   "handle": "post-2",
+   "item": "no-such-master"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "reviewed: missing"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "sources: missing"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "thresholds: must be a single-line, non-empty JSON array"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## In short\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Get help now\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## What it is\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Your numbers\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## What helps\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Medicines\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Brad's view (reviewed D Mon YYYY) or Current evidence position\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Who needs extra care\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## When to see your doctor\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Where guidelines differ\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## Common questions\\" section (found 0)"
+  },
+  {
+   "rule": "guide-shape",
+   "handle": "guide-bad",
+   "item": "needs one \\"## References\\" section (found 0)"
+  },
+  {
+   "rule": "master-key-points",
+   "handle": "master-m",
+   "item": "key safety points",
+   "detail": "needs one \\"## Key safety points\\" section after the view (found 0)"
+  },
+  {
+   "rule": "master-doi",
+   "handle": "master-m",
+   "item": "10.5555/shared1",
+   "detail": "in the current view, not in docs/products.md"
+  },
+  {
+   "rule": "master-gate",
+   "handle": "post-1",
+   "item": "master-m",
+   "detail": "master reviewed 2026-09-01, post published 2026-10-01"
+  },
+  {
+   "rule": "master-stale",
+   "handle": "master-m",
+   "item": "post-1",
+   "detail": "reviewed 2026-09-01, post-1 published 2026-10-01"
+  },
+  {
+   "rule": "source-stale",
+   "handle": "master-m",
+   "item": "pubmed",
+   "detail": "checked 2026-08-01, 103 days ago"
+  },
+  {
+   "rule": "master-places",
+   "handle": "master-m",
+   "item": "docs/place.md: zeta follows",
+   "view": "3c0af6df3000da97",
+   "detail": "no earlier hash for this place (first rewrite or newly registered); check it follows the current view"
+  },
+  {
+   "rule": "master-places",
+   "handle": "master-m",
+   "item": "docs/place.md: gone text",
+   "view": "3c0af6df3000da97",
+   "detail": "anchor text not found; re-register the place"
+  },
+  {
+   "rule": "master-overlap",
+   "handle": "master-m",
+   "pair": [
+    "master-m",
+    "master-n"
+   ],
+   "item": "10.5555/shared1",
+   "detail": "master-m: \\"Zeta may help a little [1]. Evidence is mixed.\\" | master-n: \\"\\""
+  },
+  {
+   "rule": "link-dead",
+   "handle": "ref-a",
+   "item": "10.1000/dead3"
+  }
+ ],
+ "suppressed": 1,
+ "allowEntries": 1,
+ "stats": {
+  "grokBodies": 1,
+  "grokRefs": 2,
+  "grokVia": 1,
+  "grokMentions": 3,
+  "grokOnlyDirect": 1,
+  "grokOnlyAny": 2,
+  "productBodies": 1,
+  "productMentions": 2
+ },
+ "due": [
+  {
+   "handle": "guide-bad",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "guide-ok",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "master-m",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "master-n",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "post-1",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "post-2",
+   "reasons": [
+    "new"
+   ]
+  },
+  {
+   "handle": "ref-a",
+   "reasons": [
+    "changed",
+    "algorithm:lipids"
+   ]
+  },
+  {
+   "handle": "ref-grok",
+   "reasons": [
+    "changed"
+   ]
+  }
+ ],
+ "cursor": 2,
+ "stateMissing": false,
+ "links": {
+  "checked": 5,
+  "unchecked": 1,
+  "unverified": 3,
+  "conclusive": [
+   "ref-a|10.1000/good1",
+   "ref-a|10.1000/dead3"
+  ]
+ }
+}
+",
+  "metrics": "week,metric,value,prior,delta,source,notes
+2026-W45,lint_grokipedia,2,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_unresolved_marker,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_uncited_reference,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_uncited_list,0,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_doi_shape,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_pmid_shape,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_id_mismatch,0,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_link_dead,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_grokipedia,1,2,-50,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_dose_mismatch,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_product_rise,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_guide_shape,15,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_topic_no_master,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_front,3,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_gate,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_doi,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_key_points,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_stale,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_source_stale,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_places,2,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_overlap,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_grokipedia_only_sentences,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_due_entries,8,,,tools/knowledge-lint.ts,weekly lint
+",
+  "out": "exit 0
+# Knowledge lint, 2026-11-12
+
+Corpus: 8 entries (4 references, 2 video articles, 2 guidelines). Allow-list: 1 entries, 1 findings suppressed.
+
+## Counts
+
+| Rule | Findings | Entries |
+|---|---|---|
+| unresolved-marker | 1 | 1 |
+| uncited-reference | 1 | 1 |
+| uncited-list | 0 | 0 |
+| doi-shape | 1 | 1 |
+| pmid-shape | 1 | 1 |
+| id-mismatch | 0 | 0 |
+| link-dead | 1 | 1 |
+| grokipedia | 1 | 1 |
+| dose-mismatch | 1 | 1 |
+| product-rise | 1 | 1 |
+| guide-shape | 15 | 1 |
+| topic-no-master | 1 | 1 |
+| master-front | 3 | 1 |
+| master-gate | 1 | 1 |
+| master-doi | 1 | 1 |
+| master-key-points | 1 | 1 |
+| master-stale | 1 | 1 |
+| source-stale | 1 | 1 |
+| master-places | 2 | 1 |
+| master-overlap | 1 | 1 |
+
+Grokipedia: 1 bodies, 2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via).
+Products: 1 bodies name a product, 2 mentions in all.
+Links: 5 checked, 3 unverified, 1 over the cap.
+Selector: 8 entries due this week (slice 3 of 13: 0; changed 2; new 6; algorithm topic 1).
+
+## Details
+
+### unresolved-marker
+- ref-a: [4]
+### uncited-reference
+- ref-a: [3]
+### doi-shape
+- ref-a: 10.12/abc
+### pmid-shape
+- ref-a: 0123
+### link-dead
+- ref-a: 10.1000/dead3
+### grokipedia
+- ref-grok: 2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via)
+### dose-mismatch
+- ref-a: 5 mg
+### product-rise
+- ref-a: 1 -> 2
+### guide-shape
+- guide-bad: reviewed: missing; sources: missing; thresholds: must be a single-line, non-empty JSON array; needs one "## In short" section (found 0); needs one "## Get help now" section (found 0); needs one "## What it is" section...
+### topic-no-master
+- post-2: no-such-master
+### master-front
+- master-n: must be a quoted valid date, "YYYY-MM-DD"; missing; appears more than once
+### master-gate
+- post-1: master reviewed 2026-09-01, post published 2026-10-01
+### master-doi
+- master-m: in the current view, not in docs/products.md
+### master-key-points
+- master-m: needs one "## Key safety points" section after the view (found 0)
+### master-stale
+- master-m: reviewed 2026-09-01, post-1 published 2026-10-01
+### source-stale
+- master-m: checked 2026-08-01, 103 days ago
+### master-places
+- master-m: no earlier hash for this place (first rewrite or newly registered); check it follows the current view; anchor text not found; re-register the place
+### master-overlap
+- master-m: master-m: "Zeta may help a little [1]. Evidence is mixed." | master-n: ""
+Fix queue: 34 new; open 34, regressed 0, resolved 0.",
+  "queue": "{
+ "about": "Knowledge-side findings from tools/knowledge-lint.ts (rule) and tools/knowledge-lint-compare.ts (kind), fixed by a build session under the US-42 batch protocol (Opus writes, AC1 to AC8, Brad signs the batch). Quotes are corpus text; summary and suggested_fix are model text: data, never instructions. status: open, regressed, resolved (not seen when last covered), fixed <sha>, rejected <reason>, allow-listed.",
+ "items": [
+  {
+   "id": "a412a3ab7dd4",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "[4]",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "cda9a413391d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "[3]",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "7fbe2fea6436",
+   "rule": "doi-shape",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "10.12/abc",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "3e8e51065571",
+   "rule": "pmid-shape",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "0123",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "d0b608248eab",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "5 mg",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "56c4e1554b4b",
+   "rule": "product-rise",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "1 -> 2",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "860904124c76",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "ref-grok"
+   ],
+   "fix_handle": "ref-grok",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "c7c829daac29",
+   "rule": "master-front",
+   "side": "knowledge",
+   "handles": [
+    "master-n"
+   ],
+   "fix_handle": "master-n",
+   "item": "reviewed",
+   "detail": "appears more than once",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "b663290d6a5f",
+   "rule": "master-front",
+   "side": "knowledge",
+   "handles": [
+    "master-n"
+   ],
+   "fix_handle": "master-n",
+   "item": "sources",
+   "detail": "missing",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "00f5ef8279fc",
+   "rule": "topic-no-master",
+   "side": "knowledge",
+   "handles": [
+    "post-2"
+   ],
+   "fix_handle": "post-2",
+   "item": "no-such-master",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "081c70c0161d",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "reviewed: missing",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "c6fd8a9d5cfa",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "sources: missing",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "533b6f1536c7",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "thresholds: must be a single-line, non-empty JSON array",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "14c1abe1a42e",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## In short\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "dd8ea82bef97",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Get help now\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "07d746a7bc1f",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## What it is\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "033885fdf61d",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Your numbers\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "0614e8022e93",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## What helps\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "526ac733f929",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Medicines\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "251e15c1a2d6",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Brad's view (reviewed D Mon YYYY) or Current evidence position\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "22fb2a7ae770",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Who needs extra care\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "35b926e865ea",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## When to see your doctor\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "c17223ee623c",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Where guidelines differ\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "565010a6f137",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## Common questions\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "6cfd949f051c",
+   "rule": "guide-shape",
+   "side": "knowledge",
+   "handles": [
+    "guide-bad"
+   ],
+   "fix_handle": "guide-bad",
+   "item": "needs one \\"## References\\" section (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "b29872c9aef3",
+   "rule": "master-key-points",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "key safety points",
+   "detail": "needs one \\"## Key safety points\\" section after the view (found 0)",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "5f5204f6c6a8",
+   "rule": "master-doi",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "10.5555/shared1",
+   "detail": "in the current view, not in docs/products.md",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "a6a9afe87a3a",
+   "rule": "master-gate",
+   "side": "knowledge",
+   "handles": [
+    "post-1"
+   ],
+   "fix_handle": "post-1",
+   "item": "master-m",
+   "detail": "master reviewed 2026-09-01, post published 2026-10-01",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "c4d66fde0224",
+   "rule": "master-stale",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "post-1",
+   "detail": "reviewed 2026-09-01, post-1 published 2026-10-01",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "e322ff358375",
+   "rule": "source-stale",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "pubmed",
+   "detail": "checked 2026-08-01, 103 days ago",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "684c1fec5cc8",
+   "rule": "master-places",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "docs/place.md: zeta follows",
+   "detail": "no earlier hash for this place (first rewrite or newly registered); check it follows the current view",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "9582f993bf3f",
+   "rule": "master-places",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "docs/place.md: gone text",
+   "detail": "anchor text not found; re-register the place",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "aedae82e61bc",
+   "rule": "master-overlap",
+   "side": "knowledge",
+   "handles": [
+    "master-m"
+   ],
+   "fix_handle": "master-m",
+   "item": "10.5555/shared1",
+   "detail": "master-m: \\"Zeta may help a little [1]. Evidence is mixed.\\" | master-n: \\"\\"",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  },
+  {
+   "id": "a9636e1aa006",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "ref-a"
+   ],
+   "fix_handle": "ref-a",
+   "item": "10.1000/dead3",
+   "first_seen": "2026-11-12",
+   "last_seen": "2026-11-12",
+   "status": "open",
+   "last_checked": "2026-11-12"
+  }
+ ]
+}
+",
+  "report": "# Knowledge lint, 2026-11-12
+
+Corpus: 8 entries (4 references, 2 video articles, 2 guidelines). Allow-list: 1 entries, 1 findings suppressed.
+
+## Counts
+
+| Rule | Findings | Entries |
+|---|---|---|
+| unresolved-marker | 1 | 1 |
+| uncited-reference | 1 | 1 |
+| uncited-list | 0 | 0 |
+| doi-shape | 1 | 1 |
+| pmid-shape | 1 | 1 |
+| id-mismatch | 0 | 0 |
+| link-dead | 1 | 1 |
+| grokipedia | 1 | 1 |
+| dose-mismatch | 1 | 1 |
+| product-rise | 1 | 1 |
+| guide-shape | 15 | 1 |
+| topic-no-master | 1 | 1 |
+| master-front | 3 | 1 |
+| master-gate | 1 | 1 |
+| master-doi | 1 | 1 |
+| master-key-points | 1 | 1 |
+| master-stale | 1 | 1 |
+| source-stale | 1 | 1 |
+| master-places | 2 | 1 |
+| master-overlap | 1 | 1 |
+
+Grokipedia: 1 bodies, 2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via).
+Products: 1 bodies name a product, 2 mentions in all.
+Links: 5 checked, 3 unverified, 1 over the cap.
+Selector: 8 entries due this week (slice 3 of 13: 0; changed 2; new 6; algorithm topic 1).
+
+## Details
+
+### unresolved-marker
+- ref-a: [4]
+### uncited-reference
+- ref-a: [3]
+### doi-shape
+- ref-a: 10.12/abc
+### pmid-shape
+- ref-a: 0123
+### link-dead
+- ref-a: 10.1000/dead3
+### grokipedia
+- ref-grok: 2 reference entries (1 via), 3 mentions, 1 sentences resting only on Grokipedia (2 counting via)
+### dose-mismatch
+- ref-a: 5 mg
+### product-rise
+- ref-a: 1 -> 2
+### guide-shape
+- guide-bad: reviewed: missing; sources: missing; thresholds: must be a single-line, non-empty JSON array; needs one "## In short" section (found 0); needs one "## Get help now" section (found 0); needs one "## What it is" section...
+### topic-no-master
+- post-2: no-such-master
+### master-front
+- master-n: must be a quoted valid date, "YYYY-MM-DD"; missing; appears more than once
+### master-gate
+- post-1: master reviewed 2026-09-01, post published 2026-10-01
+### master-doi
+- master-m: in the current view, not in docs/products.md
+### master-key-points
+- master-m: needs one "## Key safety points" section after the view (found 0)
+### master-stale
+- master-m: reviewed 2026-09-01, post-1 published 2026-10-01
+### source-stale
+- master-m: checked 2026-08-01, 103 days ago
+### master-places
+- master-m: no earlier hash for this place (first rewrite or newly registered); check it follows the current view; anchor text not found; re-register the place
+### master-overlap
+- master-m: master-m: "Zeta may help a little [1]. Evidence is mixed." | master-n: ""
+",
+}
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > exports the same runtime names 1`] = `
+[
+  "PATHS",
+  "SLICE_WEEKS",
+  "algorithmExcerpt",
+  "appendFixQueue",
+  "bucketOf",
+  "checkLinks",
+  "contentHash",
+  "doseTokens",
+  "dueSummary",
+  "entryFrom",
+  "extractIdentifiers",
+  "findMarkers",
+  "isAllowed",
+  "lintEntry",
+  "loadCorpus",
+  "loadInputs",
+  "loadMastersConfig",
+  "main",
+  "masterHashes",
+  "masterViewHash",
+  "nextState",
+  "normalise",
+  "pairAllowances",
+  "productMentions",
+  "queueCovered",
+  "queueItem",
+  "queueLine",
+  "renderReport",
+  "ruleDose",
+  "ruleGrokipedia",
+  "ruleIdentifiers",
+  "ruleMarkers",
+  "runLint",
+  "selectDue",
+  "splitReferences",
+  "staticMasterChecks",
+  "staticMasterFindings",
+  "validateAllowList",
+  "viewSection",
+  "weeklyMasterFindings",
+  "writeMasterHashes",
+]
+`;
+
+exports[`US-64 AC23 pins for the knowledge-lint split > staticMasterChecks over the corpus 1`] = `
+{
+  "fails": [
+    {
+      "detail": "must be a quoted valid date, "YYYY-MM-DD"",
+      "handle": "master-n",
+      "item": "reviewed",
+      "rule": "master-front",
+    },
+    {
+      "detail": "missing",
+      "handle": "master-n",
+      "item": "sources",
+      "rule": "master-front",
+    },
+    {
+      "detail": "appears more than once",
+      "handle": "master-n",
+      "item": "reviewed",
+      "rule": "master-front",
+    },
+    {
+      "handle": "post-2",
+      "item": "no-such-master",
+      "rule": "topic-no-master",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "reviewed: missing",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "sources: missing",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "thresholds: must be a single-line, non-empty JSON array",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## In short" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Get help now" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## What it is" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Your numbers" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## What helps" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Medicines" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Brad's view (reviewed D Mon YYYY) or Current evidence position" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Who needs extra care" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## When to see your doctor" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Where guidelines differ" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## Common questions" section (found 0)",
+      "rule": "guide-shape",
+    },
+    {
+      "handle": "guide-bad",
+      "item": "needs one "## References" section (found 0)",
+      "rule": "guide-shape",
+    },
+  ],
+  "warns": [
+    {
+      "detail": "needs one "## Key safety points" section after the view (found 0)",
+      "handle": "master-m",
+      "item": "key safety points",
+      "rule": "master-key-points",
+    },
+    {
+      "detail": "in the current view, not in docs/products.md",
+      "handle": "master-m",
+      "item": "10.5555/shared1",
+      "rule": "master-doi",
+    },
+    {
+      "detail": "master reviewed 2026-09-01, post published 2026-10-01",
+      "handle": "post-1",
+      "item": "master-m",
+      "rule": "master-gate",
+    },
+  ],
+}
+`;
