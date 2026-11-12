@@ -1390,8 +1390,9 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   });
 
   // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
-  // number typed onto the front of a name is one word. These still file, and
-  // the Sentry scrub leaves them as written.
+  // number typed onto the front of a name is one word. These still file; the
+  // Sentry scrub leaves most of them as written, and the two below with another
+  // name near them are redacted.
   it('still files a number in non-ASCII digits, or a whole number glued in front of a name', () => {
     for (const detail of [
       'my ldl １４０ is wrong', // full-width digits
@@ -1401,6 +1402,8 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'my 31bmi is wrong',
       'my .5ldl is wrong', // starts with its point: read as "5ldl"
       'my 1.4.2ldl is wrong', // a second point: read as "1.4" and "2ldl"
+      'my ,5ldl is wrong', // starts with its comma: read as "5ldl"
+      'my 1,4,2ldl is wrong', // a second comma: read as "1,4" and "2ldl"
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
       expect(scrubText(detail), detail).toBe(detail);
