@@ -25,8 +25,9 @@ import { getChatArticle } from './assistant-config';
 export interface ChatConversation {
   id: string;
   title: string;
-  updatedAt: string;
-  createdAt: string;
+  /** Absent on a thread the chat listed itself as its first reply landed (chat-turn.ts `done`). */
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface ChatMessage {
@@ -265,34 +266,40 @@ function guestThreadGone(status: number, data: ChatReply | null): boolean {
   return true;
 }
 
-/** null: the server no longer recognizes this guest thread (US-15 AC6a). */
-export async function loadConversation(conversationId: string): Promise<ChatMessage[] | null> {
-  const store = await cloudHistory();
-  if (store) return store.getMessages(conversationId);
+/** Settles 'failed' when `signal` aborts; never, without one. */
+const untilAborted = (signal?: AbortSignal) => new Promise<'failed'>((resolve) => {
+  if (signal?.aborted) resolve('failed');
+  else signal?.addEventListener('abort', () => resolve('failed'), { once: true });
+});
+
+/**
+ * A thread's turns. 'gone': the server no longer recognizes this guest thread (US-15 AC6a).
+ * 'failed': they could not be read (an error answer, a throw, or `signal` aborting), so the
+ * thread never shows as empty and no send goes out with an empty history (N2).
+ */
+export async function loadConversation(conversationId: string, signal?: AbortSignal): Promise<ChatMessage[] | 'gone' | 'failed'> {
   try {
+    const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
+    if (store === 'failed') return 'failed';
+    if (store) return store.getMessages(conversationId);
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
-    const response = await fetchWithTransientRetry(
-      `${PROXY_PATH}/api/chat?${params}`,
-    );
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return 'gone';
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
         extra: { status: response.status, contentType: response.headers.get('content-type') },
       });
-      return [];
+      return 'failed';
     }
-    const result = await parseJsonResponse<{
-      success: boolean;
-      messages: ChatMessage[];
-    }>(response);
-    if (!result?.success) return [];
-    return result.messages;
+    const result = await parseJsonResponse<{ success: boolean; messages: ChatMessage[] }>(response);
+    return result?.success ? result.messages : 'failed';
   } catch (error) {
+    if (signal?.aborted) return 'failed'; // the caller's timeout, not an error to report
     console.warn('Error loading conversation:', error);
     Sentry.captureException(error);
-    return [];
+    return 'failed';
   }
 }
 

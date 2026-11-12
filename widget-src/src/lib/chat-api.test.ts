@@ -237,14 +237,34 @@ describe('chat-api: a thread the server no longer recognizes (US-15 AC6a)', () =
   it('US-15 AC6a: loading a guest thread that 404s keeps the handed-back session and reports the thread gone', async () => {
     fetchMock.mockResolvedValueOnce(guestNotFound('new-tok'));
 
-    expect(await loadConversation('c1')).toBeNull();
+    expect(await loadConversation('c1')).toBe('gone');
     expect(localStorage.getItem('health_roadmap_guest_session')).toBe('new-tok');
   });
 
-  it('US-15 AC6a: a customer\'s 404 on load stays an empty thread', async () => {
+  // N2 (Fable 2026-11-12): a load that failed is never an empty thread, or a send goes out without its history.
+  it('US-15 AC7a, N2: a customer\'s 404 on load is a failed read, not an empty thread', async () => {
     fetchMock.mockResolvedValueOnce(jsonError(404, 'Conversation not found'));
 
-    expect(await loadConversation('c1')).toEqual([]);
+    expect(await loadConversation('c1')).toBe('failed');
+  });
+
+  it('US-15 AC7a, N2: an answer with success false, or a throw, is a failed read', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ success: false }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    expect(await loadConversation('c1')).toBe('failed');
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await loadConversation('c1')).toBe('failed');
+  });
+
+  it('US-15 AC7a, N1: the read carries the caller\'s signal, and an aborted read is failed', async () => {
+    const abort = new AbortController();
+    fetchMock.mockImplementationOnce((_url: string, init?: RequestInit) => new Promise((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    }));
+    const read = loadConversation('c1', abort.signal);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled()); // the request is out, and hangs
+    abort.abort();
+    expect(await read).toBe('failed');
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: abort.signal });
   });
 
   it('US-15 AC6a: deleting a guest thread that 404s keeps the handed-back session and counts as gone', async () => {

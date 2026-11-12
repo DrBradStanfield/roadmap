@@ -15,7 +15,7 @@ const store = vi.hoisted(() => ({
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
-import { deleteConversation, sendMessage } from './chat-api';
+import { deleteConversation, loadConversation, sendMessage } from './chat-api';
 
 const ok = () =>
   new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: null, content: 'fresh answer' }), {
@@ -120,6 +120,13 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
   it('deletes in the user\'s own file only — the server holds nothing to delete', async () => {
     expect(await deleteConversation('c1')).toBe(true);
     expect(store.deleteConversation).toHaveBeenCalledWith('c1');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // N1, N2 (Fable 2026-11-12): a thread read from the user's own file that throws is failed, never an empty thread.
+  it('US-15 AC7a, N2: the cloud store\'s getMessages throwing synchronously is a failed read', async () => {
+    store.getMessages.mockImplementationOnce(() => { throw new Error('file unreadable'); });
+    expect(await loadConversation('c1')).toBe('failed');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

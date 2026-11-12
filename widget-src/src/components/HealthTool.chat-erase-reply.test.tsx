@@ -293,6 +293,24 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(shown).toEqual({ notice: true, undo: false, medLine: false });
   });
 
+  // Chat-turn R6 (slice 2): the chat keeps its own copy of the erase shown, moved by useErase's mark effect.
+  // Were it left at the old erase, every reply after an erase would read "Not saved".
+  it('R6: a question asked after an erase: the reply\'s edits apply and say so', async () => {
+    const cloud = new MemoryCloud();
+    const view = await userOnStatin(new HeldCloud(cloud));
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    await ask(view);
+    await replyLands();
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+    expect(bodyText()).toContain('Medication updated from chat.');
+    expect(await cloudMedications(cloud)).toContain('atorvastatin');
+  });
+
   it('control: with no erase, the reply\'s edits apply as before', async () => {
     const cloud = new MemoryCloud();
     const view = await userOnStatin(new HeldCloud(cloud));

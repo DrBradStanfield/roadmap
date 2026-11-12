@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * US-15 AC7a: a reply streams under the thread it was sent from. Send in A,
- * open B, and a delta for A's reply leaves B showing only the dots; back in A
+ * open B, and a delta for A's reply leaves B with no reply and no dots; back in A
  * the stream is there. Rendered through the real useChatState and ChatEmbed
  * (ChatSection draws the same state.pending/state.isLocalSender).
  */
@@ -60,7 +60,9 @@ describe('US-15 AC7a — the streaming reply stays under its own thread (ChatEmb
     expect(messages.textContent).not.toContain('A streaming');
     expect(messages.textContent).not.toContain('A thinking');
     expect(messages.querySelector('.chat-thinking-panel')).toBeNull();
-    expect(messages.querySelector('.chat-thinking-dots')).not.toBeNull();
+    // Flipped in slice 2 (AC7a amended 2026-11-12): in the tab that asked, no dots under another chat; Send stays locked.
+    expect(messages.querySelector('.chat-thinking-dots')).toBeNull();
+    expect((screen.getByLabelText('Send') as HTMLButtonElement).disabled).toBe(true);
     await openThread('Thread A');
     await screen.findByText('A streaming');
     expect(container.querySelector('.chat-embed-messages')!.textContent).toContain('A thinking');

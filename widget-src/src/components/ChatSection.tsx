@@ -18,6 +18,7 @@ import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
+import { ChatLoadLine } from './ChatLoadLine';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
 import { MUTED_CHAT } from './chat-muted';
@@ -171,7 +172,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
         {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
-            {state.messages.length === 0 && !state.isLoading && (
+            {state.messages.length === 0 && !state.replying && state.load === 'none' && (
               <div className="chat-empty">
                 <p>{muted ? MUTED_CHAT.empty : copy.empty}</p>
               </div>
@@ -188,7 +189,8 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
                 )}
               </React.Fragment>
             ))}
-            {state.isLoading && (
+            <ChatLoadLine load={state.load} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+            {state.replying && (
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}
             {state.error && <div className="chat-error">{state.error}</div>}

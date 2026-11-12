@@ -222,6 +222,7 @@ describe('§3 Turn table', () => {
     ['list-wanted', { type: 'list-wanted', guest: false }, [{ type: 'read-list', read: 4 }]],
     ['list-landed', { type: 'list-landed', read: 3, conversations: [convB] }, []],
     ['load-landed', { type: 'load-landed', opening: 2, id: 'A', turns: [m2] }, []],
+    ['load-failed', { type: 'load-failed', opening: 2, id: 'A' }, []],
     ['dismiss', { type: 'dismiss' }, []],
   ];
   describe.each(NEUTRAL)('%s', (_, e, fx) => {
@@ -259,9 +260,9 @@ describe('§3 Turn table', () => {
 
 // ---------------------------------------------------------------------------
 type ListCol = 'unread' | 'waiting' | 'reading' | 'read';
-type LoadCol = 'none' | 'loading';
+type LoadCol = 'none' | 'loading' | 'failed';
 const LISTS: Record<ListCol, List> = { unread: { phase: 'unread' }, waiting: { phase: 'waiting', autoOpen: false }, reading: { phase: 'reading', read: 3, autoOpen: false }, read: { phase: 'read' } };
-const LOADS: Record<LoadCol, Load> = { none: { phase: 'none' }, loading: { phase: 'loading', opening: 2, id: 'A' } };
+const LOADS: Record<LoadCol, Load> = { none: { phase: 'none' }, loading: { phase: 'loading', opening: 2, id: 'A' }, failed: { phase: 'failed', opening: 2, id: 'A' } };
 const LIST_COLS = Object.keys(LISTS) as ListCol[];
 const LOAD_COLS = Object.keys(LOADS) as LoadCol[];
 type Prep = (s: ChatState) => ChatState;
@@ -288,7 +289,7 @@ function loadCells(row: string, prep: Prep, e: ChatEvent, want: Record<LoadCol, 
   });
 }
 const all4 = (fx: Effect[]): Record<ListCol, [typeof SAME, Effect[]]> => ({ unread: [SAME, fx], waiting: [SAME, fx], reading: [SAME, fx], read: [SAME, fx] });
-const both = (fx: Effect[]): Record<LoadCol, [typeof SAME, Effect[]]> => ({ none: [SAME, fx], loading: [SAME, fx] });
+const both = (fx: Effect[]): Record<LoadCol, [typeof SAME, Effect[]]> => ({ none: [SAME, fx], loading: [SAME, fx], failed: [SAME, fx] });
 const NONE: Load = { phase: 'none' };
 const reading = (read: number, autoOpen = false): List => ({ phase: 'reading', read, autoOpen });
 
@@ -299,9 +300,9 @@ describe('§3 Shown chat, list and load', () => {
       expect(state).toMatchObject({ shown: S.shown, messages: [m1, q], conversations: S.conversations, notice: 'none', error: null });
     });
     listCells('send', id, SEND, all4(SEND_FX));
-    loadCells('send', id, SEND, { none: [SAME, SEND_FX], loading: [SAME, []] });
-    it('send × Load loading | refused: the same state, no effects (US-15 AC7a)', () => {
-      const s0 = { ...S, load: LOADS.loading };
+    loadCells('send', id, SEND, { none: [SAME, SEND_FX], loading: [SAME, []], failed: [SAME, []] });
+    it.each(['loading', 'failed'] as const)('send × Load %s | refused: the same state, no effects (US-15 AC7a, N2)', (col) => {
+      const s0 = { ...S, load: LOADS[col] };
       expect(transition(s0, SEND)).toEqual({ state: s0, effects: [] });
       expect(busy(s0, false)).toBe(true);
     });
@@ -360,7 +361,7 @@ describe('§3 Shown chat, list and load', () => {
     listCells('done landed', sending, DONE, all4(ENDED));
     listCells('done left', left, DONE, all4(ENDED));
     listCells('done refused', refused, DONE, all4(ENDED));
-    loadCells('done landed', sending, DONE, { none: [NONE, ENDED], loading: [NONE, ENDED] });
+    loadCells('done landed', sending, DONE, { none: [NONE, ENDED], loading: [NONE, ENDED], failed: [NONE, ENDED] });
     loadCells('done left', left, DONE, both(ENDED));
     loadCells('done refused', refused, DONE, both(ENDED));
   });
@@ -390,7 +391,7 @@ describe('§3 Shown chat, list and load', () => {
       expect(state).toMatchObject({ shown: { key: 'thread:B', id: 'B', opening: 3 }, messages: [], error: null, notice: 'none' });
     });
     listCells('open-thread', id, E, all4(FX));
-    loadCells('open-thread', id, E, { none: [{ phase: 'loading', opening: 3, id: 'B' }, FX], loading: [{ phase: 'loading', opening: 3, id: 'B' }, FX] });
+    loadCells('open-thread', id, E, { none: [{ phase: 'loading', opening: 3, id: 'B' }, FX], loading: [{ phase: 'loading', opening: 3, id: 'B' }, FX], failed: [{ phase: 'loading', opening: 3, id: 'B' }, FX] });
   });
 
   describe('new-chat', () => {
@@ -401,7 +402,7 @@ describe('§3 Shown chat, list and load', () => {
       expect(state).toMatchObject({ shown: { key: 'new:1', id: null, opening: 3 }, messages: [], conversations: [convA, convB], error: null, notice: 'none' });
     });
     listCells('new-chat', id, E, all4(FX));
-    loadCells('new-chat', id, E, { none: [NONE, FX], loading: [NONE, FX] });
+    loadCells('new-chat', id, E, { none: [NONE, FX], loading: [NONE, FX], failed: [NONE, FX] });
   });
 
   describe('mirror-state', () => {
@@ -428,8 +429,8 @@ describe('§3 Shown chat, list and load', () => {
     const FX: Effect[] = [{ type: 'remote-selected' }, { type: 'edits-leave' }];
     listCells('mirror-state same erase', id, NEW_ID, all4(FX));
     listCells('mirror-state other erase', id, OTHER, all4([]));
-    loadCells('mirror-state same erase', id, NEW_ID, { none: [NONE, FX], loading: [NONE, FX] });
-    loadCells('mirror-state same erase, same id', id, SAME_ID, { none: [NONE, []], loading: [NONE, []] });
+    loadCells('mirror-state same erase', id, NEW_ID, { none: [NONE, FX], loading: [NONE, FX], failed: [NONE, FX] });
+    loadCells('mirror-state same erase, same id', id, SAME_ID, { none: [NONE, []], loading: [NONE, []], failed: [NONE, []] });
     loadCells('mirror-state other erase', id, OTHER, both([]));
   });
 
@@ -441,7 +442,7 @@ describe('§3 Shown chat, list and load', () => {
       expect(effects).toEqual([{ type: 'edits-leave' }]);
     });
     listCells('mirror-new', id, E, all4([{ type: 'edits-leave' }]));
-    loadCells('mirror-new', id, E, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]] });
+    loadCells('mirror-new', id, E, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]], failed: [NONE, [{ type: 'edits-leave' }]] });
   });
 
   describe('thread-gone', () => {
@@ -459,7 +460,7 @@ describe('§3 Shown chat, list and load', () => {
       expect(effects).toEqual([]);
     });
     listCells('thread-gone shown', id, SHOWN, all4(FX));
-    loadCells('thread-gone shown', id, SHOWN, { none: [NONE, FX], loading: [NONE, FX] });
+    loadCells('thread-gone shown', id, SHOWN, { none: [NONE, FX], loading: [NONE, FX], failed: [NONE, FX] });
     loadCells('thread-gone other', id, OTHER, both([]));
   });
 
@@ -505,11 +506,11 @@ describe('§3 Shown chat, list and load', () => {
     });
     const RL: Effect[] = [{ type: 'clear-extras' }, { type: 'read-list', read: 4 }];
     listCells('erase-shown{own}', id, OWN, { unread: [SAME, [{ type: 'clear-extras' }]], waiting: [reading(4), RL], reading: [reading(4), RL], read: [reading(4), RL] });
-    loadCells('erase-shown{own}', id, OWN, { none: [NONE, [{ type: 'clear-extras' }]], loading: [NONE, [{ type: 'clear-extras' }]] });
+    loadCells('erase-shown{own}', id, OWN, { none: [NONE, [{ type: 'clear-extras' }]], loading: [NONE, [{ type: 'clear-extras' }]], failed: [NONE, [{ type: 'clear-extras' }]] });
     const RFX: Effect[] = [{ type: 'clear-extras' }, { type: 'edits-leave' }];
     const RRL: Effect[] = [...RFX, { type: 'read-list', read: 4 }];
     listCells('erase-shown{remote}', id, REMOTE, { unread: [SAME, RFX], waiting: [reading(4), RRL], reading: [reading(4), RRL], read: [reading(4), RRL] });
-    loadCells('erase-shown{remote}', id, REMOTE, { none: [NONE, RFX], loading: [NONE, RFX] });
+    loadCells('erase-shown{remote}', id, REMOTE, { none: [NONE, RFX], loading: [NONE, RFX], failed: [NONE, RFX] });
   });
 
   describe('list-wanted', () => {
@@ -551,7 +552,7 @@ describe('§3 Shown chat, list and load', () => {
     listCells('list-landed stale', id, { ...E, read: 2 }, all4([]));
     const guest: Prep = (s) => ({ ...s, list: reading(3, true) });
     const OPEN: Load = { phase: 'loading', opening: 3, id: 'B' };
-    loadCells('list-landed, a guest opening the latest', guest, E, { none: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]], loading: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]] });
+    loadCells('list-landed, a guest opening the latest', guest, E, { none: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]], loading: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]], failed: [OPEN, [{ type: 'read-turns', opening: 3, id: 'B' }]] });
     loadCells('list-landed, no auto-open', (s) => ({ ...s, list: reading(3) }), E, both([]));
 
     // Codex on PR 1349: a guest who moved before the first read was even wanted.
@@ -610,11 +611,39 @@ describe('§3 Shown chat, list and load', () => {
       });
       expect(effects).toEqual([{ type: 'edits-leave' }]);
     });
-    loadCells('load-landed null, shown, current', id, { ...E, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]] });
+    loadCells('load-landed null, shown, current', id, { ...E, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]], failed: [NONE, [{ type: 'edits-leave' }]] });
     listCells('load-landed current', loading, E, all4([{ type: 'post-state' }]));
-    loadCells('load-landed', id, E, { none: [SAME, []], loading: [NONE, [{ type: 'post-state' }]] });
+    loadCells('load-landed', id, E, { none: [SAME, []], loading: [NONE, [{ type: 'post-state' }]], failed: [SAME, []] });
     loadCells('load-landed stale', id, { ...E, opening: 1 }, both([]));
-    loadCells('load-landed null, shown', id, { ...E, opening: 1, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]] });
+    loadCells('load-landed null, shown', id, { ...E, opening: 1, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]], failed: [NONE, [{ type: 'edits-leave' }]] });
+  });
+
+  // N2 (Fable 2026-11-12): a load that failed is not an empty thread; Send stays locked until the person leaves or tries again.
+  describe('load-failed', () => {
+    const E: ChatEvent = { type: 'load-failed', opening: 2, id: 'A' };
+    const FAILED: Load = { phase: 'failed', opening: 2, id: 'A' };
+    const loading: Prep = (s) => ({ ...s, load: LOADS.loading, messages: [] });
+    it('load-failed current | failed; the shown chat, its turns and the list unchanged; no effects', () => {
+      const s0 = loading(S);
+      expect(transition(s0, E)).toEqual({ state: { ...s0, load: FAILED }, effects: [] });
+      expect(busy({ ...s0, load: FAILED }, false)).toBe(true);
+    });
+    it.each([['an older opening', { ...E, opening: 1 }], ['another thread', { ...E, id: 'B' }]] as const)('load-failed for %s | dropped', (_, e) => {
+      const s0 = loading(S);
+      expect(transition(s0, e)).toEqual({ state: s0, effects: [] });
+    });
+    listCells('load-failed current', loading, E, all4([]));
+    loadCells('load-failed', id, E, { none: [SAME, []], loading: [FAILED, []], failed: [SAME, []] });
+    loadCells('load-failed stale', id, { ...E, opening: 1 }, both([]));
+    it('Try again: open-thread of the same id | loading at a new opening, read-turns', () => {
+      const { state, effects } = transition({ ...S, load: FAILED }, { type: 'open-thread', id: 'A' });
+      expect(state.load).toEqual({ phase: 'loading', opening: 3, id: 'A' });
+      expect(effects).toEqual([{ type: 'edits-leave' }, { type: 'read-turns', opening: 3, id: 'A' }]);
+    });
+    it('a landing that comes after the load failed (a 20 s timeout, then the read) | dropped', () => {
+      const s0 = { ...S, load: FAILED };
+      expect(transition(s0, { type: 'load-landed', opening: 2, id: 'A', turns: [m2] })).toEqual({ state: s0, effects: [] });
+    });
   });
 
   describe('dismiss', () => {
@@ -635,6 +664,10 @@ describe('§1 initial state and the derived view', () => {
       turn: { phase: 'idle' }, list: { phase: 'unread' }, load: { phase: 'none' },
       erase: { shown: 'E5', moving: 'remote' }, notice: 'none', error: null, seq: { key: 0, opening: 0, turn: 0, read: 0 },
     });
+  });
+  it('initialChatState with a prefetched thread: that thread shown at opening 0, its turns, the list read', () => {
+    const s = initialChatState({ erase: 'E0', moving: 'none', conversations: [convA], opened: { id: 'A', messages: [m1] } });
+    expect(s).toMatchObject({ shown: { key: 'thread:A', id: 'A', opening: 0 }, messages: [m1], conversations: [convA], list: { phase: 'read' } });
   });
   it('isLocalSender, showsPending and busy', () => {
     expect([isLocalSender(S), showsPending(S), busy(S, false), busy(S, true)]).toEqual([false, null, false, true]);
