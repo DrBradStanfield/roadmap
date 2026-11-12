@@ -68,7 +68,9 @@ export async function postClaimed(
   if (result.kind === 'unknown') {
     Sentry.captureMessage('YouTube bot: post outcome unknown', {
       level: 'warning',
-      tags: { feature: 'youtube-bot', subsystem: 'post', why: result.why },
+      // The status tells an unreadable 2xx from an unreadable 400 (N2); a shape-checked number only.
+      tags: { feature: 'youtube-bot', subsystem: 'post', why: result.why,
+        ...(result.why === 'unreadable' && Number.isInteger(result.status) && { status: String(result.status) }) },
       extra: { commentId: claimId },
     });
     return 'unknown';

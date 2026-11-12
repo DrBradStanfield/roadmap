@@ -163,6 +163,8 @@ vi.mock('./supabase.server', async () => {
 const MARKER = 'zebra-marker-9931';
 /** In every Google error body; the bot must never log or report a body. */
 const GOOGLE_BODY = 'google-body-sentinel-4417';
+/** One serializer for every sentinel check: expands an Error, even one nested in an object, which JSON.stringify turns into {}. */
+const dump = (a: unknown) => (a instanceof Error ? `${a.name} ${a.message} ${a.stack}` : JSON.stringify(a, (_k, v) => (v instanceof Error ? `${v.message} ${v.stack}` : v)) ?? String(a));
 const NOW = new Date('2026-11-12T10:00:00.000Z');
 const FIRST_TICK_MS = 30_000;
 const TICK_MS = 30 * 60_000;
@@ -503,7 +505,7 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
     ...(['log', 'warn', 'error', 'info'] as const).flatMap((l) => vi.mocked(console[l]).mock.calls.flat()),
     ...spy.captureException.mock.calls.flat(),
     ...spy.captureMessage.mock.calls.flat(),
-  ].map((a) => (a instanceof Error ? `${a.message} ${a.stack}` : JSON.stringify(a) ?? String(a))).join('\n');
+  ].map(dump).join('\n');
 
   for (const status of [401, 429]) {
     it(`a ${status} with a broken body still deletes the claim by its token and halts the tick`, async () => {
@@ -536,8 +538,42 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
       expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
       expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
       expect(reported()).not.toContain(GOOGLE_BODY);
+      // N2: the status tells an unreadable 2xx from an unreadable 400 in triage.
+      expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+        tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: String(status) },
+      }));
     });
   }
+
+  // N3: a readable 400 with no reason code (a proxy's HTML page) may hide processingFailure: unknown, not refused.
+  it('a readable 400 whose body is not JSON is unknown: the mark is kept, counted, never posted again', async () => {
+    g.threads = ['c1'];
+    g.plan = [async () => new Response(`<html>Bad Request ${GOOGLE_BODY}</html>`, { status: 400 })];
+    const bot = await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
+    expect((await bot.readPostingCaps()).dailyCount).toBe(1);
+    expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+      tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: '400' },
+    }));
+    expect(reported()).not.toContain(GOOGLE_BODY);
+
+    await tickTo(TICK_MS, 2);
+    expect(g.posts).toHaveLength(1);
+  });
+
+  it('a readable JSON 400 with a real reason stays refused: the mark is reverted, not counted', async () => {
+    g.threads = ['c1'];
+    g.plan = [{ status: 400, reason: 'invalidCommentText' }];
+    const bot = await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: false, posted_at: null, video_id: null });
+    expect((await bot.readPostingCaps()).dailyCount).toBe(0);
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 0, skipped: 1 });
+  });
 });
 
 describe('R3: a 401 drops the cached Google token', () => {
@@ -668,7 +704,6 @@ describe('condition 5: no viewer or answer text, and no Google body, in the mark
     g.plan = [{ status: 429, reason: 'rateLimitExceeded' }];
     await tickTo(TICK_MS, 2);
 
-    const dump = (a: unknown) => (a instanceof Error ? `${a.name} ${a.message} ${a.stack}` : JSON.stringify(a, (_k, v) => (v instanceof Error ? `${v.message} ${v.stack}` : v)) ?? String(a));
     const out = [
       ...(['log', 'warn', 'error', 'info'] as const).flatMap((l) => vi.mocked(console[l]).mock.calls.flat()),
       ...spy.captureException.mock.calls.flat(),

@@ -2,14 +2,16 @@
  * What a YouTube comments.insert answer means (US-27 AC5). `refused` is a
  * definite no: nothing was posted. `unknown` may have landed: a timeout or a
  * network error (Google can commit after our side gives up, and the call has no
- * idempotency key), a 5xx, an unreadable 2xx, or the 400 processingFailure,
- * which Google calls often transient (C15 Q4). Pure; the reason is Google's
+ * idempotency key), a 5xx, an unreadable 2xx, the 400 processingFailure, which
+ * Google calls often transient (C15 Q4), or a 400 with no reason code, which may
+ * hide one: a missed reply is cheaper than a second public one (N3). Pure; the reason is Google's
  * code, shape-checked, so no body text leaves here.
  */
 export type PostResult =
   | { kind: 'posted'; id: string }
   | { kind: 'refused'; status: number; reason: string }
-  | { kind: 'unknown'; why: 'timeout' | 'network' | '5xx' | 'unreadable' | 'processingFailure' };
+  | { kind: 'unknown'; why: 'timeout' | 'network' | '5xx' | 'processingFailure' }
+  | { kind: 'unknown'; why: 'unreadable'; status: number };
 
 /** The 400 YouTube sends when the thread cannot take replies (canReply false). */
 const NOT_REPLYABLE = 'Not all comments can be replied to';
@@ -34,12 +36,13 @@ export function classifyPost(answer: { status: number; body: string } | { error:
       const id = (JSON.parse(body) as { id?: unknown }).id;
       if (typeof id === 'string' && id) return { kind: 'posted', id };
     } catch { /* unreadable */ }
-    return { kind: 'unknown', why: 'unreadable' };
+    return { kind: 'unknown', why: 'unreadable', status };
   }
   // fetch follows redirects, so a failure is 4xx or 5xx; anything else is not a definite no.
   if (status < 400 || status >= 500) return { kind: 'unknown', why: '5xx' };
   const reason = googleReason(body);
   if (reason === 'processingFailure') return { kind: 'unknown', why: 'processingFailure' };
+  if (reason === 'unparsed' && status === 400) return { kind: 'unknown', why: 'unreadable', status };
   return { kind: 'refused', status, reason };
 }
 

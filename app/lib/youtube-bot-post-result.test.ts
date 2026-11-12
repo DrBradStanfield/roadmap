@@ -1,7 +1,7 @@
 /**
  * US-27 AC5: what a YouTube comments.insert answer means for the posting mark.
  * `posted` and a definite `refused` are known; anything that may have landed is
- * `unknown` (timeout, network, 5xx, an unreadable 2xx, and the 400
+ * `unknown` (timeout, network, 5xx, an unreadable 2xx or 400, and the 400
  * processingFailure, which Google calls often transient: Q4). Reason codes are
  * Google's, shape-checked, so no body text ever leaves this function.
  */
@@ -15,12 +15,17 @@ const notReplyable = JSON.stringify({ error: { code: 400, message: "Not all comm
 describe('US-27 AC5: classifyPost', () => {
   const table: Array<[string, Parameters<typeof classifyPost>[0], PostResult]> = [
     ['200 with an id', { status: 200, body: '{"id":"Ugx.abc"}' }, { kind: 'posted', id: 'Ugx.abc' }],
-    ['200, body not JSON', { status: 200, body: '<html>' }, { kind: 'unknown', why: 'unreadable' }],
-    ['200, JSON with no id', { status: 200, body: '{"kind":"youtube#comment"}' }, { kind: 'unknown', why: 'unreadable' }],
+    ['200, body not JSON', { status: 200, body: '<html>' }, { kind: 'unknown', why: 'unreadable', status: 200 }],
+    ['200, JSON with no id', { status: 200, body: '{"kind":"youtube#comment"}' }, { kind: 'unknown', why: 'unreadable', status: 200 }],
     ['500', { status: 500, body: body('backendError') }, { kind: 'unknown', why: '5xx' }],
     ['503 with no body', { status: 503, body: '' }, { kind: 'unknown', why: '5xx' }],
     ['400 processingFailure', { status: 400, body: body('processingFailure') }, { kind: 'unknown', why: 'processingFailure' }],
     ['400 not replyable', { status: 400, body: notReplyable }, { kind: 'refused', status: 400, reason: 'notReplyable' }],
+    // A 400 with no reason may be processingFailure behind a proxy page: a missed reply beats a second one (N3).
+    ['400, body not JSON', { status: 400, body: '<html>Bad Request viewer words</html>' }, { kind: 'unknown', why: 'unreadable', status: 400 }],
+    ['400, empty body', { status: 400, body: '' }, { kind: 'unknown', why: 'unreadable', status: 400 }],
+    ['400, a reason that is not a plain code', { status: 400, body: body('has spaces') }, { kind: 'unknown', why: 'unreadable', status: 400 }],
+    ['400 invalidCommentText', { status: 400, body: body('invalidCommentText') }, { kind: 'refused', status: 400, reason: 'invalidCommentText' }],
     ['400 commentTextTooLong', { status: 400, body: body('commentTextTooLong') }, { kind: 'refused', status: 400, reason: 'commentTextTooLong' }],
     ['401', { status: 401, body: body('authError') }, { kind: 'refused', status: 401, reason: 'authError' }],
     ['403 forbidden', { status: 403, body: body('forbidden') }, { kind: 'refused', status: 403, reason: 'forbidden' }],
