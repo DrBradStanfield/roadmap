@@ -9,7 +9,7 @@ import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
-import { activeBatches, armSweep, batchFor, creatingBatches, fileSetKey, JOIN_CAP, MAX_ACTIVE_BATCHES, overQuotaBatch, type BatchPollResult } from '../lib/lab-batches.server';
+import { activeBatches, armSweep, batchFor, creatingBatches, fileSetKey, MAX_ACTIVE_BATCHES, MAX_POLL_TOKENS, type BatchPollResult } from '../lib/lab-batches.server';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 /**
@@ -57,17 +57,12 @@ const serverBusy = () => Response.json({ success: false, error: 'Server busy. Pl
 /**
  * US-12 AC17b: with no file left today for this IP or the machine, only a poll
  * can succeed, so no more than a poll's body is read, and a larger one gets the
- * daily-limit answer. US-12 AC25: unless the IP has a live batch to join, which
- * grants JOIN_CAP full reads, taken here and given back by a poll.
+ * daily-limit answer.
  */
-function bodyLimit(ip: string): { cap: number; tooLarge: () => Response; release?: () => void } {
-  const full = { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
-  const spent = ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
-  if (!spent) return full;
-  const live = overQuotaBatch(ip);
-  if (!live) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
-  live.overQuotaReads++;
-  return { ...full, release: () => { live.overQuotaReads--; } };
+const daySpent = (ip: string) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
+function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
+  if (daySpent(ip)) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
+  return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
 }
 
 /** Hand back files charged for a batch Anthropic certainly did not create. */
@@ -90,7 +85,7 @@ function matchesPollToken(expected: string, supplied: string | null): boolean {
 /** Hand a re-send of a live batch its own poll token, up to the cap (US-12 AC25). */
 function joinBatch(batchId: string): Response {
   const batch = activeBatches.get(batchId);
-  if (!batch || batch.servedAt || batch.pollTokens.length >= JOIN_CAP) return serverBusy();
+  if (!batch || batch.servedAt || batch.pollTokens.length >= MAX_POLL_TOKENS) return serverBusy();
   const pollToken = newPollToken();
   batch.pollTokens.push(pollToken);
   return Response.json({ success: true, batchId, pollToken, totalFiles: batch.totalFiles });
@@ -148,10 +143,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request, 'shopify');
-  const remaining = ipQuota.remaining(ip);
-  // US-12 AC25: a spent IP may still re-send a live batch, to join it.
-  return Response.json({ allowed: remaining > 0 || overQuotaBatch(ip) !== undefined, remaining });
+  const remaining = ipQuota.remaining(getClientIp(request, 'shopify'));
+  return Response.json({ allowed: remaining > 0, remaining });
 }
 
 /** POST: batch poll, single-file extraction, or batch creation. */
@@ -170,7 +163,6 @@ export async function action({ request }: ActionFunctionArgs) {
     // --- Batch poll --- (costs no quota; it reads a batch already paid for)
     const poll = body as { batchId?: unknown; pollToken?: unknown } | null;
     if (typeof poll?.batchId === 'string') {
-      limit.release?.();
       return answerPoll(poll.batchId, typeof poll.pollToken === 'string' ? poll.pollToken : null);
     }
 
@@ -180,6 +172,8 @@ export async function action({ request }: ActionFunctionArgs) {
       const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
       // US-12 AC25: the same files again join their live batch with a new token, uncharged.
       // Matched and reserved before any await, so a twin POST never makes a second batch.
+      // A spent day joins nothing: the re-pick gets the daily limit, as a new batch would.
+      if (daySpent(ip)) return dailyLimit();
       const fileSet = fileSetKey(ip, { ownDates, undatedPrev, refusedRows }, files);
       const joining = batchFor(fileSet);
       if (joining !== undefined) return joinBatch(await joining);
@@ -189,7 +183,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const pollToken = newPollToken();
       // A timeout or network failure may still have made the batch: it stays charged.
       const creating = createBatch(files).then(({ batchId }) => {
-        activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollTokens: [pollToken], days: { ownDates, undatedPrev }, refusedRows, fileSet, overQuotaReads: 0 });
+        activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollTokens: [pollToken], days: { ownDates, undatedPrev }, refusedRows, fileSet });
         armSweep();
         return batchId;
       }, (err: unknown) => {

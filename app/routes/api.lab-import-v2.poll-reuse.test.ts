@@ -436,67 +436,30 @@ describe('US-12 AC25: the same files sent again while their batch runs join it, 
     }
   });
 
-  // Round 1 (PR 1442): a join must still be reachable once the day's quota is spent.
-  const bigFiles = [{ pages: [page('A'.repeat(70 * 1024))] }, { pages: [page('B'.repeat(70 * 1024))] }];
-  /** Spend the IP's quota on a second batch, then serve it, so only the first stays joinable. */
-  const spendIpQuota = async () => {
-    const spent = await send(Array.from({ length: 198 }, (_, i) => ({ pages: [page(`F${i}`)] })));
-    ended = true;
-    await pollWith(spent.batchId, spent.pollToken);
+  it.each(['IP', 'machine'])('US-12 AC25: once the %s quota is spent, a re-pick is told the daily limit and cannot join', async which => {
     ended = false;
-  };
-  const allowed = async (ip = IP) => (await (await loader({ request: request({}, undefined, true, ip, 'GET') } as never)).json()).allowed;
-
-  it('US-12 AC25: a re-pick after the IP quota is spent joins, with the full body read; polls give back their read', async () => {
-    ended = false;
-    const first = await send(bigFiles);
-    await spendIpQuota();
-    expect(await remaining()).toBe(0);
-    expect(await allowed()).toBe(true);
-    for (let i = 0; i < 5; i++) expect((await pollWith(first.batchId, first.pollToken)).status).toBe(200);
-    const joined = await send(bigFiles);
-    expect(joined.batchId).toBe(first.batchId);
-    expect(creates()).toBe(2);
+    const first = await send();
+    if (which === 'IP') await send(Array.from({ length: 198 }, (_, i) => ({ pages: [page(`F${i}`)] })));
+    else {
+      const { machineFiles } = await import('../lib/rate-limiter');
+      machineFiles.take('machine', machineFiles.remaining('machine'));
+    }
+    if (which === 'IP') expect((await (await loader({ request: request({}, undefined, true, IP, 'GET') } as never)).json()).allowed).toBe(false);
+    const again = await post({ batch: true, files: twoFiles });
+    expect(again.status).toBe(429);
+    expect(await again.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    expect((await pollWith(first.batchId, first.pollToken)).status).toBe(200);
+    expect(creates()).toBe(which === 'IP' ? 2 : 1);
   });
 
-  it('US-12 AC25: a re-pick after the machine quota is spent joins', async () => {
+  it('US-12 AC25: a body over 64 KB, within quota, that matches no batch is charged its own files and never joins', async () => {
     ended = false;
-    const { machineFiles } = await import('../lib/rate-limiter');
-    const first = await send(bigFiles);
-    machineFiles.take('machine', machineFiles.remaining('machine'));
-    expect(await allowed()).toBe(true);
-    const joined = await send(bigFiles);
-    expect(joined.batchId).toBe(first.batchId);
-    expect(creates()).toBe(1);
-  });
-
-  it('US-12 AC25: over quota, three full-body reads per live batch; the fourth gets the small cap and the daily limit', async () => {
-    ended = false;
-    const first = await send(bigFiles);
-    await spendIpQuota();
-    expect((await send(bigFiles)).batchId).toBe(first.batchId);
-    expect((await send(bigFiles)).batchId).toBe(first.batchId);
-    const third = await post({ batch: true, files: bigFiles });
-    expect(await third.json()).toEqual({ success: false, error: 'Server busy. Please try again later.' });
-    expect(await allowed()).toBe(false);
-    const fourth = await post({ batch: true, files: bigFiles });
-    expect(fourth.status).toBe(429);
-    expect(await fourth.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    const first = await send();
+    const big = [{ pages: [page('C'.repeat(70 * 1024))] }];
+    const other = await send(big);
+    expect(other.batchId).not.toBe(first.batchId);
     expect(creates()).toBe(2);
-  });
-
-  it('US-12 AC25: over quota, a body that matches no batch is never charged and makes no batch', async () => {
-    ended = false;
-    const { machineFiles } = await import('../lib/rate-limiter');
-    await send(bigFiles);
-    await spendIpQuota();
-    const machineLeft = machineFiles.remaining('machine');
-    const other = await post({ batch: true, files: [{ pages: [page('C'.repeat(70 * 1024))] }] });
-    expect(other.status).toBe(429);
-    expect(await other.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
-    expect(creates()).toBe(2);
-    expect(await remaining()).toBe(0);
-    expect(machineFiles.remaining('machine')).toBe(machineLeft);
+    expect(await remaining()).toBe(200 - 2 - 1);
   });
 
   it('US-12 AC25: when the first create is refused while a twin waits, both get the 500, neither is charged, the reservation is gone', async () => {
@@ -516,14 +479,17 @@ describe('US-12 AC25: the same files sent again while their batch runs join it, 
   });
 
   it("US-12 AC25: joins only a batch with the browser's 10-minute deadline of life left", async () => {
-    const { BATCH_POLL_DEADLINE_MS } = await import('../../widget-src/src/lib/upload-api');
+    const { BATCH_POLL_DEADLINE_MS } = await import('../../widget-src/src/lib/batch-deadline');
     const { JOIN_LIFE_MS } = await import('../lib/lab-batches.server');
     expect(JOIN_LIFE_MS).toBe(BATCH_POLL_DEADLINE_MS);
     expect(JOIN_LIFE_MS).toBe(10 * MIN);
     ended = false;
     const first = await send();
-    await vi.advanceTimersByTimeAsync(50 * MIN + 1);
-    const late = await send();
+    await vi.advanceTimersByTimeAsync(50 * MIN);
+    expect((await send()).batchId).toBe(first.batchId); // exactly 10 minutes of life left: joins
+    expect(creates()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    const late = await send(); // 1 ms less: a new batch, charged
     expect(late.batchId).not.toBe(first.batchId);
     expect(creates()).toBe(2);
     expect(await remaining()).toBe(200 - 4);

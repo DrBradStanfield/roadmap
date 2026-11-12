@@ -8,7 +8,8 @@ import type { MeasurementSource } from '@roadmap/health-core/validation';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
-import { BATCH_POLL_DEADLINE_MS, labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { BATCH_POLL_DEADLINE_MS } from './batch-deadline';
 import { isDocx, isLegacyDoc } from './file-kinds';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';

@@ -74,8 +74,6 @@ export async function labImport(
  * when the batch ends; the map only ever holds this tab's own batches.
  */
 const pollTokens = new Map<string, string>();
-/** How long the browser polls a batch before it gives up (the server joins only batches with this much life left, US-12 AC25). */
-export const BATCH_POLL_DEADLINE_MS = 10 * 60_000;
 
 export async function labImportBatch(
   files: Array<{ pages: PageContent[] }>,

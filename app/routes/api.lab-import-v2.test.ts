@@ -571,16 +571,9 @@ describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload 
     body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
   });
   const limit = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' };
-  /** Spend the IP's 200 files on a batch, then read it: a served batch is not joinable (US-12 AC25). */
-  const spend = async (ip: string) => {
-    const created = await (await action({ request: many(200, ip) } as never)).json();
-    await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-      method: 'POST', body: JSON.stringify({ batchId: created.batchId, pollToken: created.pollToken }),
-    }) } as never);
-  };
 
   it('reads at most 64 KB of an upload from an IP that has used its 200 files', async () => {
-    await spend('10.5.0.1');
+    expect((await action({ request: many(200, '10.5.0.1') } as never)).status).toBe(200);
     createBatch.mockClear();
     const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 50 * MB, {
       headers: { 'fly-client-ip': '10.5.0.1' }, chunkBytes: 16 * KB,
@@ -593,7 +586,7 @@ describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload 
   });
 
   it('refuses a declared length over 64 KB from that IP unread', async () => {
-    await spend('10.5.0.2');
+    await action({ request: many(200, '10.5.0.2') } as never);
     const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
       headers: { 'fly-client-ip': '10.5.0.2', 'content-length': String(65 * KB) },
     });
