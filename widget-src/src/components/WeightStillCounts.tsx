@@ -31,9 +31,10 @@ export function WeightStillCounts({ previous, shown, onOpen }: {
   return (
     <p id={WEIGHT_STILL_COUNTS_ID} className="weight-still-counts">
       {savedToday(previous.recordedAt)
-        ? `Your plan still uses today's ${shown}. Type a new weight, or correct it in your `
-        : `Your plan still uses ${shown} from ${formatShortDate(previous.recordedAt)}. Type a new weight, or correct this one in your `}
-      <a href="#health-history" onClick={open}>weight history</a>.
+        ? `Your plan still uses today's ${shown}. Type a new weight, or correct it in `
+        : <>Your plan still uses {shown} from <span className="nowrap">{formatShortDate(previous.recordedAt)}</span>. Type a new weight, or correct this one in </>}
+      {/* Kept together, so the link never ends a line alone. */}
+      <span className="nowrap">your <a href="#health-history" onClick={open}>weight history</a>.</span>
     </p>
   );
 }

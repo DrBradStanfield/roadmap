@@ -424,18 +424,22 @@ input[type="number"] {
 }
 /* US-62 AC38: a saved weight cleared from its box, across the whole row. */
 .weight-still-counts {
-  margin: 8px 0 0;
+  /* Clear of the box above, so the link's tap area (13px over its line) never covers it. */
+  margin: 14px 0 0;
   font-size: 13px;
   line-height: 1.4;
   color: var(--color-text-secondary);
-  /* Desktop's row is narrower than the line: two even lines, no "weight history." alone. */
-  text-wrap: balance;
+  /* No "weight history." alone on the last line. */
+  text-wrap: pretty;
 }
-/* A 42px tap height; the line box stays the text's. */
+.weight-still-counts .nowrap {
+  white-space: nowrap;
+}
+/* A 44px tap height; the line box stays the text's. */
 .weight-still-counts a {
   display: inline-block;
-  padding: 12px 0;
-  margin: -12px 0;
+  padding: 13px 0;
+  margin: -13px 0;
   color: var(--color-brand-text);
   text-decoration: underline;
 }
