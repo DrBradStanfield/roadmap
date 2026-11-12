@@ -6,6 +6,7 @@
  * session opens owing a clear while the record is at another erase.
  */
 import { describe, expect, it } from 'vitest';
+import { ROADMAP_FILE_NAME } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
@@ -252,6 +253,142 @@ describe('US-11 AC1: an erase made on this device', () => {
 
     fake.clears.failing = false;
     await RecordSession.open(fake.host);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(session.eraseIdentity);
+  });
+});
+
+/** A cloud record erased `times` times by another device, and a device that opened it once, so it keeps that erase. */
+async function cloudAtEpoch(times: number) {
+  const cloud = new MemoryCloud();
+  const other = await RecordSession.open(fakeHost(new MemoryAdapter(cloud)).host);
+  other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')));
+  await other.flush();
+  for (let i = 0; i < times; i += 1) {
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+  }
+  clock += 60_000;
+  const fake = fakeHost(new MemoryAdapter(cloud));
+  const session = await RecordSession.open(fake.host);
+  expect(fake.device.clearedFor).toBe(session.eraseIdentity);
+  fake.clears.calls = 0;
+  return { cloud, other, fake, session };
+}
+
+/** The same device on another store: an on-device fallback, or a record it switched to. */
+const onStore = (fake: ReturnType<typeof fakeHost>, store: MemoryAdapter): RecordHost => ({ ...fake.host, store });
+
+describe('US-11 AC6: a clear is owed only for a later erase', () => {
+  it('the on-device fallback round trip keeps the drafts typed in it, and the kept erase', async () => {
+    const { fake, session } = await cloudAtEpoch(3);
+    const kept = fake.device.clearedFor;
+    expect(JSON.parse(kept!)[0]).toBe(3);
+
+    // The cloud cannot be read: the page runs on the device record, never erased.
+    const fallback = await RecordSession.open(onStore(fake, new MemoryAdapter(new MemoryCloud())));
+    expect(fallback.eraseIdentity).toBe('[0,null]');
+    fake.device.drafts.set('vitals', 'typed-in-fallback');
+    fallback.edit((file) => void file.measurements.push(weight('b', '2026-10-02')), fallback.eraseIdentity);
+    await fallback.flush();
+    expect(fake.clears.calls).toBe(0);
+    expect(fake.device.clearedFor).toBe(kept);
+
+    // Reconnected: the cloud is at the erase the device kept.
+    const back = await RecordSession.open(fake.host);
+    expect(back.eraseIdentity).toBe(session.eraseIdentity);
+    clock += 60_000;
+    await back.refreshFromRemote();
+    expect(fake.clears.calls).toBe(0);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed-in-fallback']]);
+    expect(fake.device.clearedFor).toBe(kept);
+  });
+
+  it('an erase made in the fallback clears, and the kept erase does not move back', async () => {
+    const { fake } = await cloudAtEpoch(3);
+    const kept = fake.device.clearedFor;
+    const fallback = await RecordSession.open(onStore(fake, new MemoryAdapter(new MemoryCloud())));
+    fake.device.drafts.set('vitals', 'typed-in-fallback');
+    clock += 60_000;
+    expect((await fallback.erase()).success).toBe(true);
+    expect(JSON.parse(fallback.eraseIdentity)[0]).toBe(1);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(kept);
+  });
+
+  it('a later erase by another device, after a fallback in between, still clears', async () => {
+    const { other, fake } = await cloudAtEpoch(3);
+    await RecordSession.open(onStore(fake, new MemoryAdapter(new MemoryCloud())));
+    const back = await RecordSession.open(fake.host);
+    fake.device.drafts.set('vitals', 'typed');
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    expect(await back.refreshFromRemote()).toBe(true);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(back.eraseIdentity);
+    expect(JSON.parse(back.eraseIdentity)[0]).toBe(4);
+  });
+
+  it('a switch to a record at a lower epoch, then an erase there, clears', async () => {
+    const { fake } = await cloudAtEpoch(3);
+    const lower = await cloudAtEpoch(1);
+    // The switch: the connect removes the kept erase (connect.ts), so the
+    // record switched to keeps its own at its first load. Its erase came
+    // before the switch: the drafts are the old record's, and go once.
+    fake.device.clearedFor = null;
+    fake.device.drafts.set('vitals', 'typed-on-the-old-record');
+    const switched = await RecordSession.open(onStore(fake, new MemoryAdapter(lower.cloud)));
+    expect(fake.clears.calls).toBe(1);
+    expect(fake.device.clearedFor).toBe(switched.eraseIdentity);
+
+    fake.device.drafts.set('vitals', 'typed-after-the-switch');
+    clock += 60_000;
+    expect((await lower.other.erase()).success).toBe(true);
+    clock += 60_000;
+    expect(await switched.refreshFromRemote()).toBe(true);
+    expect(JSON.parse(switched.eraseIdentity)[0]).toBe(2);
+    expect(fake.clears.calls).toBe(2);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(switched.eraseIdentity);
+  });
+
+  it('the same epoch with a later erasedAt clears', async () => {
+    const { cloud, fake, session } = await cloudAtEpoch(1);
+    const [epoch, erasedAt] = JSON.parse(session.eraseIdentity) as [number, string];
+    // Another device's erase from the same epoch, a minute later, merged in.
+    const entry = cloud.files.get(ROADMAP_FILE_NAME)!;
+    const body = JSON.parse(entry.json);
+    body.meta.erasedAt = new Date(Date.parse(erasedAt) + 60_000).toISOString();
+    cloud.files.set(ROADMAP_FILE_NAME, { ...entry, json: JSON.stringify(body), version: entry.version + 1 });
+    fake.device.drafts.set('vitals', 'typed');
+    clock += 60_000;
+    await session.refreshFromRemote();
+    expect(JSON.parse(session.eraseIdentity)).toEqual([epoch, body.meta.erasedAt]);
+    expect(fake.clears.calls).toBe(1);
+    cleared(fake.device);
+    expect(fake.device.clearedFor).toBe(session.eraseIdentity);
+  });
+
+  it.each(['garbage', '', '{"epoch":3}'])('a kept erase that cannot be read (%j) is no key: a never-erased record keeps its drafts', async (bad) => {
+    const fake = fakeHost(new MemoryAdapter(new MemoryCloud()));
+    fake.device.clearedFor = bad;
+    fake.device.drafts.set('vitals', 'typed');
+    const session = await RecordSession.open(fake.host);
+    expect(fake.clears.calls).toBe(0);
+    expect([...fake.device.drafts]).toEqual([['vitals', 'typed']]);
+    expect(fake.device.clearedFor).toBe(session.eraseIdentity);
+  });
+
+  it('a kept erase that cannot be read is no key: an erased record clears once', async () => {
+    const { cloud } = await cloudAtEpoch(1);
+    const fake = fakeHost(new MemoryAdapter(cloud));
+    fake.device.clearedFor = 'garbage';
+    fake.device.drafts.set('vitals', 'typed');
+    const session = await RecordSession.open(fake.host);
+    expect(fake.clears.calls).toBe(1);
     cleared(fake.device);
     expect(fake.device.clearedFor).toBe(session.eraseIdentity);
   });

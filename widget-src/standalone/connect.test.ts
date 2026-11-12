@@ -222,4 +222,17 @@ describe('prepareSwitch (US-09 AC13)', () => {
     await expect(prepareSwitch('local')).resolves.toBeUndefined();
     expect(cloudReadSpy).not.toHaveBeenCalled();
   });
+
+  it('US-11 AC6: a switch that leaves its cloud removes the kept erase, so the next record keeps its own', async () => {
+    localStorage.setItem(CLEARED_ERASE, '[3,"2026-10-21T10:05:00.000Z"]');
+    await prepareSwitch('dropbox');
+    expect(localStorage.getItem(CLEARED_ERASE)).toBeNull();
+  });
+
+  it('US-11 AC6: a switch refused at the copy-down keeps the kept erase', async () => {
+    localStorage.setItem(CLEARED_ERASE, '[3,"2026-10-21T10:05:00.000Z"]');
+    cloudReadSpy.mockRejectedValueOnce(new Error('cloud down'));
+    await expect(prepareSwitch('dropbox')).rejects.toThrow();
+    expect(localStorage.getItem(CLEARED_ERASE)).toBe('[3,"2026-10-21T10:05:00.000Z"]');
+  });
 });

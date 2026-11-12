@@ -33,6 +33,7 @@ vi.mock('./connect', () => ({
   connectRefusal: () => null,
   rememberBackend: vi.fn(),
   forgetBackend: vi.fn(),
+  forgetClearedErase: vi.fn(),
   // Runs the action at once, inside the click, as the real one does up to its first await.
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
@@ -40,7 +41,7 @@ vi.mock('./connect', () => ({
 import { StorageBar, SyncControl } from './sync-control';
 import { PICKER_GUEST_LEAD } from './backend-picker';
 import { openBackendPicker } from '../src/lib/storage-notice';
-import type { Backend } from './connect';
+import { forgetClearedErase, type Backend } from './connect';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
@@ -140,6 +141,28 @@ describe('US-62 AC34 — the bar on a phone', () => {
     sync.pending = false;
     only('local', 'dropbox');
     expect(bar().textContent).toBe('Retry');
+  });
+});
+
+// Before the reconnect tests below: one of them leaves a Drive popup open, which holds the page's one reconnect.
+describe('US-11 AC6 — the erase kept as cleared for is per record', () => {
+  afterEach(() => vi.mocked(forgetClearedErase).mockClear());
+
+  it('a Drive reconnect re-auths the same record and keeps it', async () => {
+    vi.stubGlobal('location', { reload: vi.fn() });
+    mount('local', 'google-drive');
+    fireEvent.click(bar());
+    await vi.waitFor(() => expect(location.reload).toHaveBeenCalledTimes(1));
+    expect(forgetClearedErase).not.toHaveBeenCalled();
+  });
+
+  it('"Use this browser only" leaves the unread provider for this browser\'s record, and removes it', async () => {
+    vi.stubGlobal('location', { reload: vi.fn() });
+    mount('local', 'dropbox');
+    const link = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Use this browser only')!;
+    fireEvent.click(link);
+    await vi.waitFor(() => expect(location.reload).toHaveBeenCalledTimes(1));
+    expect(forgetClearedErase).toHaveBeenCalledTimes(1);
   });
 });
 
