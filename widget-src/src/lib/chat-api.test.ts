@@ -318,4 +318,18 @@ describe.each([
     const all = [...printed, ...captured, ...vi.mocked(Sentry.captureMessage).mock.calls];
     expect(all.flat().map(text).join(' ')).not.toContain(MARKER);
   });
+
+  it('a dropped connection reads as a network request that did not answer', async () => {
+    vi.mocked(Sentry.captureException).mockClear();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await call();
+
+    const captured = vi.mocked(Sentry.captureException).mock.calls;
+    expect(captured).toHaveLength(1);
+    const [reported, context] = captured[0] as unknown as [Error, { tags: Record<string, string> }];
+    expect(reported.message).toBe('Network request did not answer');
+    expect(context.tags).toEqual({ feature: 'chat', kind });
+  });
 });
