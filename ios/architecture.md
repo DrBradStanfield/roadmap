@@ -1569,7 +1569,8 @@ updates, and the published agent contract (`schemaVersion` 2, docs/agent-access.
   scroll edge effect left rows legible behind the clock (checked in the simulator), so a
   zero-height top inset carries the list's background into the status bar (`solidStatusBar`).
   On an iPad running the iPhone app (iPadOS 26) the window controls sit at the top left, over
-  the title: the inset grows to clear their corner (`containerCornerInsets`, zero on an iPhone).
+  the title: the inset grows to clear their corner (`containerCornerInsets` less the status bar's
+  height; zero on an iPhone, because the app is portrait-only and its status bar covers the corner).
   My plan lost its bar too (Brad 2026-11-03, US-25 AC26): "Your health snapshots" heads the
   tiles in the sections' own `PlanHeading` and scrolls with them; same inset, plus `firmTopEdge`.
 - **Blood pressure is one engine edit.** `bloodPressure` (`engine/blood-pressure.ts`)
