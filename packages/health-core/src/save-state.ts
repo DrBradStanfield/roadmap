@@ -12,8 +12,9 @@
  *
  * Counting: every change to the working copy counts one (`changes`); `saved`
  * is the count the last landed write carried. A pass starts from `changes`
- * (`from`) and, when it lands, moves `saved` to `from`, never further: an
- * edit made during the pass makes another pass.
+ * (`from`) and, when it lands, keeps the later of `saved` and `from`, since a
+ * synchronous page-hide write may already have landed more. An edit made
+ * during the pass and not yet landed makes another pass.
  *
  * Modes:
  * - clean: nothing unsaved, no debounce, no pass.
