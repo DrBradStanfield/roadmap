@@ -717,7 +717,7 @@ For a known minor, every surface also withholds:
 
 Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
 
-**Reasons stay for every age.** A card's "Why this suggestion?" reason is keyed by its id and explains the guideline, so it does not change with age: `apob-very-high` still says statin therapy "is typically recommended" and `ldl-very-high` that guidelines "recommend statin therapy at this level". A reason does not suggest a medicine to this person; the card text does, and that is what changes for an unknown age.
+**Reasons stay for every age.** A card's "Why this suggestion?" reason is keyed by its id and explains the guideline, so it does not change with age: `apob-very-high` still says statin therapy "is typically recommended" and `ldl-very-high` that guidelines "recommend statin therapy at this level". A reason does not suggest a medicine to this person; the card text does, and that is what changes for an unknown age. Since 2026-11-13 (US-25 AC28) the `apob-very-high`, `ldl-very-high`, `non-hdl-very-high` and `bp-stage2` reasons end their treatment sentence with "Discuss it with your doctor."; that line hands the decision to the doctor, it does not suggest the medicine, so it stays for every age too.
 
 Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the UTC−12 date, the lipid cards kept for an unknown age and their medicine-free text, the BP cards' GLP-1 sentence withheld for an unknown age, the form's and review's withheld readings):
 - `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
