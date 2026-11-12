@@ -290,10 +290,10 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     expect(due(file)).toEqual(['2026-09-01']);
   });
 
-  it('will screen: the 3-month date, then the overdue card; never "Elevated PSA"', () => {
+  it('will screen: the 3-month date, no "up to date" before it (F3, pending Brad\'s yes), then the overdue card; never "Elevated PSA"', () => {
     const file = fileWith([RAISED, VAGUE_ROW], 'will_screen');
     expect(due(file)).toEqual(['2026-09-01']);
-    expect(fileIds(file, AUG)).toEqual(['screening-prostate-upcoming']);
+    expect(fileIds(file, AUG)).toEqual([]);
     expect(fileIds(file)).toEqual(['screening-prostate-overdue']);
   });
 

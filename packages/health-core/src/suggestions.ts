@@ -965,7 +965,8 @@ export function generateSuggestions(
       } else if (screenings.prostateDiscussion === 'will_screen' && due) {
         const status = now > due ? 'overdue' : 'upcoming';
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
-        if (!(raised && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, monthLabel(due));
+        // So too while the rule holds through a vague newer PSA (AC21 item 6, review F3).
+        if (!(holds && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, monthLabel(due));
       }
       if (holds) suggestions.push(...raisedPsaCards(screenings, now));
     }
