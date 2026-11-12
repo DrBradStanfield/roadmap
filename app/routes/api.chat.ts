@@ -369,6 +369,7 @@ async function chatAction(request: Request, app: boolean) {
     if (process.env.CHAT_ENABLED === 'false') {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
+    if (request.method !== 'DELETE' && CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65: before auth, guest session, claim and model; DELETE still runs
 
     // 2 MB: 20 prior turns at their longest plus the plan context come to
     // well under half of it (US-09 AC25).
@@ -426,7 +427,6 @@ async function chatAction(request: Request, app: boolean) {
 
     // ----- POST — send message -----
     const { message, conversationId } = body;
-    if (CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65; DELETE above still runs
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
