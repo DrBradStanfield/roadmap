@@ -28,7 +28,7 @@ import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import { cappedBody } from './capped-body.server';
 import { hostedImporter } from './mcp-import.server';
 import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled, NOTICE } from './mcp-knowledge.server';
-import { recordServerEvent } from './product-events.server';
+import { type McpConfirmReason, recordServerEvent } from './product-events.server';
 import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
@@ -227,7 +227,7 @@ async function callHostedTool(
   name: string,
   args: unknown,
   now: string,
-): Promise<ToolAnswer> {
+): Promise<ToolAnswer & { confirmReason?: McpConfirmReason }> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
   let opened: RoadmapFile | undefined;
@@ -238,7 +238,7 @@ async function callHostedTool(
     args = twoPhase.args;
     if (twoPhase.confirm !== undefined) {
       const refusal = await checkConfirm(token, name, twoPhase.args, twoPhase.confirm, twoPhase.approval, now);
-      if (refusal) return refuse(refusal, 'confirm');
+      if (refusal) return { ...refuse(refusal.text, 'confirm'), confirmReason: refusal.confirmReason };
       confirmed = true;
     }
   }
@@ -389,13 +389,13 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
  * then the receipt unused. Every failure is worded; an early call is told when
  * to come back and not to spin.
  */
-async function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): Promise<string | null> {
+async function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): Promise<{ text: string; confirmReason: McpConfirmReason } | null> {
   const nowMs = Date.parse(now);
   const conn = hash(connectionKey(token));
   const { ttlSeconds } = STEP_WINDOWS.proposal;
   // One answer for a receipt that is not ours, for other arguments, another tool or another connection:
   // the MAC covers all of them, and telling them apart would tell a forger which input to change.
-  const invalid = `That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call ${name} again without confirm, with exactly what the user approved, to propose afresh.`;
+  const invalid = { confirmReason: 'confirm-invalid', text: `That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call ${name} again without confirm, with exactly what the user approved, to propose afresh.` } as const;
   // The receipt's shape first: arguments are only canonicalised for a receipt that could be ours,
   // and arguments too deep to canonicalise are refused in words, never thrown.
   if (!UUID.test(confirm)) return invalid;
@@ -408,23 +408,23 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   const opened = openProposal(confirm, subject, conn, audienceFor(token.clientId), nowMs);
   if (opened.status === 'invalid') return invalid;
   if (opened.status === 'expired') {
-    return `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
+    return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
   }
   if (opened.status === 'early') {
-    return `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+    return { confirmReason: 'confirm-early', text: `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.` };
   }
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
   // missing quote spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
+    return { confirmReason: 'confirm-approval', text: `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.` };
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
-    return `approval is at most ${MAX_APPROVAL_LENGTH} characters: quote only the user’s own words approving this change. Nothing was written.`;
+    return { confirmReason: 'confirm-approval', text: `approval is at most ${MAX_APPROVAL_LENGTH} characters: quote only the user’s own words approving this change. Nothing was written.` };
   }
   const claim = await claimProposal(confirm, conn, ttlSeconds * 1000, nowMs);
-  if (claim === 'spent') return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
-  return claim === 'unavailable' ? 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.' : null;
+  if (claim === 'spent') return { confirmReason: 'confirm-spent', text: `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.` };
+  return claim === 'unavailable' ? { confirmReason: 'confirm-unavailable', text: 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.' } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +461,7 @@ function countToolCall(
   clientId: string,
   tool: string,
   outcome: 'ok' | 'refused' | 'error',
-  reason?: unknown,
+  refusal: { reason?: unknown; confirmReason?: McpConfirmReason } = {},
   step?: 'propose' | 'confirm',
 ): void {
   // A name that is not a published tool was never a tool call, and free text
@@ -470,8 +470,8 @@ function countToolCall(
   const published: readonly string[] = knowledgeToolsEnabled() ? [...MCP_TOOL_NAMES, ...MCP_KNOWLEDGE_TOOL_NAMES] : MCP_TOOL_NAMES;
   if (!published.includes(tool)) return;
   // Only a refusal has a reason, and only a word the closed vocabulary names:
-  // anything else counts as `other` rather than reaching the row (US-32 AC29).
-  const why = outcome === 'refused' ? { reason: isRefusalReason(reason) ? reason : 'other' } : null;
+  // anything else counts as `other` rather than reaching the row (US-32 AC29); a refused confirm adds its kind (H59).
+  const why = outcome === 'refused' ? { reason: isRefusalReason(refusal.reason) ? refusal.reason : 'other', ...(refusal.confirmReason ? { confirmReason: refusal.confirmReason } : null) } : null;
   void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome, ...why, ...(step ? { step } : null) });
 }
 
@@ -522,10 +522,10 @@ function hostedSurface(token: AccessPayload, now: string) {
       try {
         // The knowledge tools open no record and mint no provider token: bundled files only.
         const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
-        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason, stepOf(name, args));
+        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer, stepOf(name, args));
         return { answer };
       } catch {
-        countToolCall(token.clientId, name, 'error', undefined, stepOf(name, args));
+        countToolCall(token.clientId, name, 'error', {}, stepOf(name, args));
         return { errorMessage: 'That tool failed inside this server. Nothing was written.' };
       }
     },

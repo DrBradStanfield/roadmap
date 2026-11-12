@@ -2103,7 +2103,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     expect((await callTool(access, 'correct_value', { ...args, confirm }, LATER)).isError).toBe(true);
     expect((await callTool(access, 'correct_value', { ...args, confirm, approval: words }, LATER)).isError).toBe(false);
     expect(toolCallEvents()).toEqual([
-      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'confirm', step: 'confirm' },
+      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'confirm', confirmReason: 'confirm-approval', step: 'confirm' },
       { tool: 'correct_value', client: expect.any(String), outcome: 'ok', step: 'confirm' },
     ]);
     expect(JSON.stringify(vi.mocked(recordServerEvent).mock.calls)).not.toMatch(/Tuesday|Yes please/);

@@ -26,6 +26,12 @@ vi.mock('../lib/supabase-client.server', async (actual) => {
   return { ...(await actual<object>()), get supabaseAdmin() { return claims.noClient ? null : client; } };
 });
 vi.mock('@sentry/react-router', async (actual) => ({ ...(await actual<object>()), captureMessage: vi.fn() }));
+// The real counter, watched: H59 reads which kind of confirm refusal each row names.
+vi.mock('../lib/product-events.server', async (actual) => {
+  const original = await actual<typeof import('../lib/product-events.server')>();
+  return { ...original, recordServerEvent: vi.fn(original.recordServerEvent) };
+});
+import { recordServerEvent } from '../lib/product-events.server';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createCoreRow } from '../../packages/health-core/src/blood-tests';
@@ -705,6 +711,57 @@ describe('US-36 AC9 — a confirm works once across restarts', () => {
     expect(refused.text).toBe(CLAIM_UNCHECKED);
     expect(storedRecord().labValues).toHaveLength(1);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+});
+
+describe('US-36 AC9 (H59) — a refused confirm names its kind on the counter row, and its words do not change', () => {
+  const FIX = { id: LDL_ID, newValue: 2.8, expectedValue: STORED_LDL };
+  const refusedConfirms = () => vi.mocked(recordServerEvent).mock.calls
+    .filter(([name, meta]) => name === 'mcp_tool_call' && (meta as { outcome?: string }).outcome === 'refused')
+    .map(([, meta]) => meta);
+
+  it('each of the six refusals records its own confirmReason beside reason confirm, and nothing else', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    vi.mocked(recordServerEvent).mockClear();
+    const confirm = (args: Record<string, unknown>, now: string) => callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, ...args }, now);
+
+    const early = await confirm({ approval: APPROVED }, at(2));
+    expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    const invalid = await confirm({ newValue: 0.8, approval: APPROVED }, at(11));
+    expect(invalid.text).toBe('That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call correct_value again without confirm, with exactly what the user approved, to propose afresh.');
+    expect((await confirm({}, at(11))).text).toBe(QUOTE_APPROVAL('correct_value'));
+    expect((await confirm({ approval: 'Yes '.repeat(51) }, at(11))).text).toBe('approval is at most 200 characters: quote only the user’s own words approving this change. Nothing was written.');
+    claims.state!.down = 'error';
+    expect((await confirm({ approval: APPROVED }, at(11))).text).toBe(CLAIM_UNCHECKED);
+    claims.state!.down = false;
+    expect((await confirm({ approval: APPROVED }, at(12))).isError).toBe(false);
+    const spent = await confirm({ approval: APPROVED }, at(13));
+    expect(spent.text).toBe('That confirm receipt has already been used. Nothing was written. If the user wants another change, call correct_value again without confirm.');
+    // A fresh proposal on the corrected row, let lapse.
+    const newRow = storedRecord().labValues.find((m) => m.correctsId === LDL_ID)!;
+    const next = { id: newRow.id, newValue: 2.7, expectedValue: 2.8 };
+    const lapsing = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', next, at(14))).structured).confirm!;
+    const expired = await callToolAt(access, 'correct_value', { ...next, confirm: lapsing, approval: APPROVED }, at(14 + PROPOSAL_LIFETIME_SECONDS + 1));
+    expect(expired.text).toBe('That confirm receipt has expired (15 minutes). Nothing was written. Call correct_value again without confirm to propose afresh.');
+
+    const row = (confirmReason: string) => ({ tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'confirm', confirmReason, step: 'confirm' });
+    expect(refusedConfirms()).toEqual([
+      row('confirm-early'), row('confirm-invalid'), row('confirm-approval'), row('confirm-approval'),
+      row('confirm-unavailable'), row('confirm-spent'), row('confirm-expired'),
+    ]);
+    // Content-free: no receipt, argument or quoted word reaches a row.
+    const rows = JSON.stringify(vi.mocked(recordServerEvent).mock.calls);
+    for (const leak of [receipt, lapsing, newRow.id, LDL_ID, APPROVED, '2.8', '0.8']) expect(rows).not.toContain(leak);
+  });
+
+  it('a refusal other than a confirm carries no confirmReason', async () => {
+    seedWithLdl();
+    const access = await connect();
+    vi.mocked(recordServerEvent).mockClear();
+    expect((await callToolAt(access, 'correct_value', { ...FIX, expectedValue: 9.9 }, NOW)).isError).toBe(true);
+    expect(refusedConfirms()).toEqual([{ tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'value-changed', step: 'propose' }]);
   });
 });
 
