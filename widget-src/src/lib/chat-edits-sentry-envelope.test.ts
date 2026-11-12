@@ -40,6 +40,44 @@ const done = {
   ],
 };
 
+// The SDK's own clock and random ids supply digits by chance: "timestamp":1794449754.193
+// carried '4.1' and turned main's CI red (9eae2713). Blank them before the search, each by its
+// exact place in the envelope and only if it has the shape the SDK gives it; any other value at
+// one of these places fails the test, so no real field can hide here. Freezing the clock would
+// not do: the SDK reads performance.timeOrigin + performance.now(), not Date, and draws ids
+// from crypto.
+const EPOCH = (v: unknown) => typeof v === 'number' && v > 1e9 && v < 1e10;
+const ISO = (v: unknown) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v);
+const HEX32 = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{32}$/.test(v);
+const HEX16 = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{16}$/.test(v);
+const HEADER_NOISE: Record<string, (v: unknown) => boolean> = { event_id: HEX32, sent_at: ISO, 'trace.trace_id': HEX32 };
+const EVENT_NOISE: Record<string, (v: unknown) => boolean> = {
+  event_id: HEX32, timestamp: EPOCH, 'contexts.trace.trace_id': HEX32, 'contexts.trace.span_id': HEX16, 'breadcrumbs[].timestamp': EPOCH,
+};
+function blank(target: Record<string, unknown>, paths: Record<string, (v: unknown) => boolean>) {
+  for (const [path, shape] of Object.entries(paths)) {
+    const [head, tail] = path.split('[].');
+    const keys = head.split('.');
+    const parents = (tail ? (keys.reduce<any>((o, k) => o?.[k], target) ?? []) as Record<string, unknown>[] : [target]);
+    const leafPath = tail ? tail.split('.') : keys;
+    for (const parent of parents) {
+      const owner = leafPath.slice(0, -1).reduce<any>((o, k) => o?.[k], parent);
+      const leaf = leafPath.at(-1)!;
+      if (owner === undefined || !(leaf in owner)) continue;
+      if (!shape(owner[leaf])) throw new Error(`${path} does not have the SDK's shape: a real field may sit there`);
+      owner[leaf] = '<sdk>';
+    }
+  }
+}
+function withoutSdkClockAndIds(sent: typeof envelopes) {
+  const copy = JSON.parse(JSON.stringify(sent)) as typeof envelopes;
+  for (const [header, items] of copy) {
+    blank(header, HEADER_NOISE);
+    for (const [itemHeader, body] of items) if (itemHeader.type === 'event') blank(body, EVENT_NOISE);
+  }
+  return copy;
+}
+
 beforeAll(() => {
   vi.stubGlobal('crypto', webcrypto);
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(done) + '\n', { status: 200, headers: { 'Content-Type': 'application/x-ndjson' } })));
@@ -65,6 +103,7 @@ it('US-67 AC2: one message, tagged with the invalid kinds, carrying no value or 
     'breadcrumbs', 'contexts', 'environment', 'event_id', 'level', 'message', 'platform', 'request', 'sdk', 'tags', 'timestamp',
   ]);
   expect(event.environment).toBe('production');
-  const sent = JSON.stringify(envelopes);
+  const sent = JSON.stringify(withoutSdkClockAndIds(envelopes));
+  expect(sent).toContain('Chat edits unreadable');
   for (const text of [REPLY_TEXT, 'atorvastatin', '4.1', 'statin_escalation', 'ldlC', 'my ldl']) expect(sent).not.toContain(text);
 });
