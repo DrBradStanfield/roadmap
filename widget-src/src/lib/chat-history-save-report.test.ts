@@ -11,6 +11,7 @@ vi.mock('@sentry/react', () => sentry);
 vi.mock('./sentry', () => ({ Sentry: sentry }));
 const store = vi.hoisted(() => ({
   recordExchange: vi.fn(async () => {}),
+  eraseMarks: vi.fn(() => []),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));

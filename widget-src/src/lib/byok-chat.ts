@@ -153,6 +153,9 @@ export async function sendMessage(
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
   const storePromise = getChatHistory();
+  // Saved only under the erase marks this open read (US-11 AC2h).
+  const opened = storePromise.then((store) => ({ store, askedMarks: store?.eraseMarks() }));
+  opened.catch(() => {}); // a failure is reported by the save below, or never needed
   const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? shownHistory : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
@@ -206,9 +209,10 @@ export async function sendMessage(
   // (US-11 AC2h) — fire-and-forget, history is best-effort.
   const convId = conversationId ?? `conv-${Date.now()}`;
   const assistantId = `a-${Date.now()}`;
-  void storePromise
-    .then((store) =>
+  void opened
+    .then(({ store, askedMarks }) =>
       chatAskedUnder() !== asked ? undefined : store?.recordExchange({
+        askedMarks,
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

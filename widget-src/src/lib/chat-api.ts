@@ -235,6 +235,10 @@ export async function sendMessage(
   sessionToken = getGuestSessionToken(),
   asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
+  // A first question opens the history now, without the send waiting, and is
+  // saved only under the erase marks that open read (US-11 AC2h).
+  const opened = conversationId ? null : cloudHistory().then((store) => ({ store, askedMarks: store?.eraseMarks() }));
+  opened?.catch(() => {}); // a failure is reported by the save below, or never needed
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -313,9 +317,10 @@ export async function sendMessage(
     // keyed by the server's canonical conversation id, unless an erase began
     // since the question (US-11 AC2h). Fire-and-forget — history must never
     // block or fail the chat itself.
-    void cloudHistory()
-      .then((store) =>
+    void (opened ?? cloudHistory().then((store) => ({ store, askedMarks: undefined })))
+      .then(({ store, askedMarks }) =>
         chatAskedUnder() !== asked ? undefined : store?.recordExchange({
+          askedMarks,
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,
