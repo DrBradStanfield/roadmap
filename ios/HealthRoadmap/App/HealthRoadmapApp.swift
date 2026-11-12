@@ -187,7 +187,7 @@ struct AppParts {
         chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: store.deviceId)
         eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health, live: live)
         // "An erase is running" has one source, the eraser's phase (US-25 AC16e).
-        sync.eraseRunning = { [weak eraser] in eraser?.erasing ?? false }
+        sync.waitsFor(eraser)
     }
 }
 

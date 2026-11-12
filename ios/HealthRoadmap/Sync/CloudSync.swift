@@ -47,10 +47,16 @@ final class CloudSync: CloudPort {
     /// there stays, so the app never says the record never left the phone (review A3).
     private(set) var syncedBefore: CloudProvider?
     /// True while "Delete all my data" runs, from the tap until its words show: a reader of
-    /// `DataEraser.phase`, wired once by AppParts, read at each decision and never kept.
+    /// `DataEraser.phase`, wired once by `waitsFor`, read at each decision and never kept.
     /// Connect and Disconnect wait (US-25 AC16e): either would swap the session the erase
     /// writes under (review R2), and a first connect would lift a half-erased record.
     var eraseRunning: @MainActor () -> Bool = { false }
+
+    /// The one wiring of `eraseRunning`, which AppParts and the tests share: DataEraser
+    /// takes this CloudSync in its init, so it is wired once both exist.
+    func waitsFor(_ eraser: DataEraser) {
+        eraseRunning = { [weak eraser] in eraser?.erasing ?? false }
+    }
 
     private let engine: HealthEngine
     private let store: RecordStore

@@ -75,7 +75,7 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
             return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: nil, live: nil)
-        sync.eraseRunning = { [weak eraser] in eraser?.erasing ?? false } // AppParts' wiring, as written there
+        sync.waitsFor(eraser) // AppParts' own call
         return App(store: store, sync: sync, chat: chat, eraser: eraser)
     }
 
@@ -162,6 +162,28 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         gate.open()
         await start.value
         XCTAssertTrue(app.sync.recordOpen, "the open goes on")
+        assertNothingErased(app)
+    }
+
+    /// A first connect's open, which lifts the phone's record into the cloud's, is in flight.
+    func testAnEraseWhileAFirstConnectOpensIsRefusedAndErasesNothing() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let cloud = dropbox.file?.text
+        let app = try app(connected: false)
+        let gate = StubHTTP.Gate()
+        dropbox.downloadGate = gate
+        let read = nextDownload()
+        let authenticate = signIn()
+        let connect = Task { try await app.sync.connect(.dropbox, authenticate: authenticate) }
+        await arrive(read) // the first connect's open
+        XCTAssertEqual(app.sync.status, .connecting, "opening, first connect")
+        let outcome = await app.eraser.eraseAll()
+        XCTAssertEqual(outcome, .refused(EraseText.refusal(nil, provider: .dropbox)))
+        XCTAssertEqual(dropbox.file?.text, cloud, "the cloud copy is untouched")
+        XCTAssertEqual(dropbox.uploads, 0)
+        gate.open()
+        try await connect.value
+        XCTAssertTrue(app.sync.recordOpen, "the connect goes on")
         assertNothingErased(app)
     }
 
