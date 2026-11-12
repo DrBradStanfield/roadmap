@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T25,tooling,"youtube-comment-dryrun: processOne carries willPost and a stringly-typed skipReason that renderHTML parses back; callAnthropic returns an untagged {ok, text, raw}; runAll uses a shared queue and an O(n^2) re-sort; VIDEO_ID, the key and the prompts are read at import",implicit state,not started,Found splitting tools/youtube-comment-dryrun.ts (PR 1450); a discriminated outcome union would remove the skipReason link; the import-time reads are why renderHTML could not move,1450,no

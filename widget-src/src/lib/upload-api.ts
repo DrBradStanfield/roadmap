@@ -22,6 +22,16 @@ import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, Uploa
 
 const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 
+const tooManyAnswer = z.object({ code: z.enum(['daily_limit', 'busy']) });
+/** A 429, read once by its code (US-12 AC9): busy is not the daily limit. A missing or
+ *  unknown code, or no readable body, is the daily limit, as an older server meant. */
+async function tooMany(response: Response): Promise<{ error: string; errorCode: UploadErrorCode }> {
+  const body = await parseJsonResponse<unknown>(response).catch(() => null);
+  return tooManyAnswer.safeParse(body).data?.code === 'busy'
+    ? { error: 'Server busy. Please try again later.', errorCode: 'busy' }
+    : { error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
+}
+
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL);
@@ -48,9 +58,7 @@ export async function labImport(
       // `refusedRows`: it lists refused values under "Not saved" (AC15).
       body: JSON.stringify({ pages, unitSystem, ownDates: true, undatedPrev: true, refusedRows: true }),
     });
-    if (response.status === 429) {
-      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
+    if (response.status === 429) return { result: null, ...(await tooMany(response)) };
     if (response.status === 422) {
       // A file Claude declined or stopped short on: the code says which (US-15 AC34).
       const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
@@ -91,9 +99,7 @@ export async function labImportBatch(
       // server. Drop it once every live server strips it.
       body: JSON.stringify({ batch: true, ownDates: true, undatedPrev: true, refusedRows: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
     });
-    if (response.status === 429) {
-      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
+    if (response.status === 429) return { batchId: null, ...(await tooMany(response)) };
     if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
     const data = await parseJsonResponse<{ success: boolean; batchId?: string; pollToken?: string; error?: string }>(response);
     if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };

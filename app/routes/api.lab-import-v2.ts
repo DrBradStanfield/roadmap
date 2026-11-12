@@ -48,8 +48,9 @@ function consumeQuota(ip: string, count: number): boolean {
   return false;
 }
 
+// A 429's `code` tells the browser the daily limit from a busy server (US-12 AC9).
 const dailyLimit = () => Response.json(
-  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+  { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' },
   { status: 429 },
 );
 
@@ -162,7 +163,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
       // Busy is checked first, so a refused batch is never charged.
       if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
-        return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
+        return Response.json({ success: false, error: 'Server busy. Please try again later.', code: 'busy' }, { status: 429 });
       }
       if (!consumeQuota(ip, files.length)) return dailyLimit();
       // A timeout or network failure may still have made the batch: it stays charged.

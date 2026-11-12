@@ -1711,6 +1711,12 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   it. Demos use their own device: a demo hold on the shared one was built and dropped the same day, because a
   second lock with its own lifetime on top of the first kept handing the device to two callers. Tested by
   `scripts/sim-run.test.ts` with a fake xcrun (macOS only; CI skips it).
+- `scripts/sim-guard.sh`: sim-run's one-booted-simulator guard, sourced by it (US-71 AC7, 2026-11-12): the
+  refusal (75) while another device is booted and the watchdog that stops a run (76) when one boots. Every
+  `simctl list` call is bounded, and its whole process group is killed when it ends, however it ends; the
+  watchdog runs in its own process group, which gets TERM then, 2 s later, KILL. So neither a hung list nor
+  a child it leaves holding the output keeps the lock or sim-run's stderr (review of PR 1435, R1, R5, R6).
+  A list that times out fails open and says so on one line. Split out to keep sim-run.sh under 500 lines.
 - `scripts/fresh-sim.sh`: builds and starts the app on the demo device, "HR Demo iPhone" (made once by name, never the shared one; only with the hatch in ios/CLAUDE.md), as a new install (app, keychain, settings and privacy answers removed; settings written with `simctl spawn defaults`, as app-store-shots.sh does, live outside the app and survive an uninstall), so onboarding runs from its first screen. Brad's feedback runs start here (2026-10-23).
 - `scripts/test.sh`: builds the engine and runs the unit tests (not the UI tests) once in UTC and once in
   Pacific/Auckland. Gotcha (2026-10-21): JavaScriptCore reads the time zone once per

@@ -24,6 +24,7 @@
 # skips it. Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease
 # calls skip it; an unreadable load fails open; a non-numeric HR_SIM_MAX_LOAD skips the load check only
 # (US-71 AC8).
+# One booted simulator (US-71 AC7): ios/scripts/sim-guard.sh, sourced below.
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -38,13 +39,14 @@ IDLE_SECONDS="${HR_SIM_IDLE_SECONDS:-$(( ${HR_SIM_IDLE_MIN:-20} * 60 ))}"
 RUN_LIMIT="${HR_SIM_RUN_LIMIT_SECONDS:-1800}"
 KILL_SECONDS="${HR_SIM_KILL_SECONDS:-20}"
 MAX_LOAD="${HR_SIM_MAX_LOAD:-}" LOAD_PER_CPU=1.5 FALLBACK_LOAD=8
-POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}"
+POLL="${HR_SIM_GUARD_POLL_SECONDS:-30}" WATCH_EVERY="${HR_SIM_GUARD_SECONDS:-15}"
 NUM='^[0-9]+(\.[0-9]+)?$'
 # A bad poll setting must not busy-loop: anything non-numeric or under 1 second polls every second.
-[[ "$POLL" =~ $NUM ]] && awk -v p="$POLL" 'BEGIN { exit !(p + 0 >= 1) }' || POLL=1
+for v in POLL WATCH_EVERY; do [[ "${!v}" =~ $NUM ]] && awk -v p="${!v}" 'BEGIN { exit !(p + 0 >= 1) }' || printf -v "$v" 1; done
 START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
-OWN=0 SHIM="" UDID="" MARK="" TOKEN="$$-$(date +%s)"
+OWN=0 SHIM="" WATCH="" UDID="" MARK="" TOKEN="$$-$(date +%s)"
+. "$(dirname "$SELF")/sim-guard.sh"
 
 die() { echo "sim-run: $*" >&2; exit "${2:-1}"; }
 now() { date +%s; }
@@ -400,7 +402,7 @@ if [ -n "${HR_SIM_LEASE:-}" ] && [ "$HR_SIM_LEASE" = "$(field token)" ] && held;
   exec "$SELF" _inner "$RESET" "$@"
 fi
 
-on_exit() { [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
+on_exit() { [ -n "$WATCH" ] && kill -- -"$WATCH" 2>/dev/null; rm -f "$FOUND"; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
 # A signal goes to the shim, which stops the command's group; this script waits for it, then exits.
 on_signal() { [ -n "$SHIM" ] && { kill -TERM "$SHIM" 2>/dev/null; wait "$SHIM"; }; exit "$1"; }
 trap on_exit EXIT
@@ -416,12 +418,19 @@ while :; do
   OWN=0
 done
 write_info "$@"
+GUARD=1
+[ "${HR_SIM_ALLOW_SECOND:-}" = 1 ] && GUARD=0
+[ "$GUARD" = 1 ] && refuse_second
 # In the background so a signal reaches the trap at once (bash defers traps while a foreground child
 # runs), with stdin kept (a background job would otherwise lose it).
 HR_SIM_LEASE="$TOKEN" perl -e "$SHIM" "$RUN_LIMIT" "$KILL_SECONDS" "$SELF" "$HOME_DIR" "$IDLE_SECONDS" \
   "$SELF" _inner "$RESET" "$@" <&0 &
 SHIM=$!
+# The watchdog gets its own process group (set -m), so end_watch can stop its list calls with it. A
+# found-file left under a reused pid is cleared first.
+[ "$GUARD" = 1 ] && { rm -f "$FOUND"; set -m; watch_devices </dev/null >/dev/null 7>&- 9>&- & WATCH=$!; set +m; }
 wait "$SHIM"
 RC=$?
 SHIM=""
+[ -n "$WATCH" ] && end_watch
 exit "$RC"

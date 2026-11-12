@@ -40,7 +40,7 @@ function cloudHost(cloud: MemoryCloud, heard: RemoteChange[]): RecordHost {
   return {
     tier: 'cloud',
     store: new MemoryAdapter(cloud),
-    clearOffFileData: () => {},
+    clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
     deviceId: () => 'laptop',
     clock: { now: () => clock },
     timers: { set: () => null, clear: () => {} },

@@ -19,6 +19,8 @@ while [ "\${1#-}" != "$1" ]; do case "$1" in --sdk|-sdk) shift 2;; *) shift;; es
 [ "$1" = xcodebuild ] && { shift; exec xcodebuild "$@"; }
 [ "$1" = simctl ] || exit 0
 shift
+devset=""
+[ "$1" = --set ] && { devset=$2; shift 2; }
 case "$1" in
   list)
     if [ "$2" = runtimes ]; then
@@ -28,10 +30,19 @@ case "$1" in
       exit 0
     fi
     echo "== Devices =="
+    # $FAKE/hang-list: a booted-device list that hangs (a child keeps the pipe open, as a hung simctl would).
+    [ "\${3:-}" = booted ] && [ -f "$FAKE/hang-list" ] && sleep 20
+    # $FAKE/hang-default: the same, in the default set only. $FAKE/linger-list: the list exits at once but
+    # leaves a child holding its output open (a stuck helper of a finished simctl).
+    [ "\${3:-}" = booted ] && [ -z "$devset" ] && [ -f "$FAKE/hang-default" ] && sleep 20
+    [ "\${3:-}" = booted ] && [ -f "$FAKE/linger-list" ] && { sleep 60 & echo $! >> "$FAKE/linger.pids"; exit 0; }
+    # Other booted devices: $FAKE/booted (the default set) and $FAKE/booted-testing (--set testing).
+    [ "$devset" = testing ] && { cat "$FAKE/booted-testing" 2>/dev/null; exit 0; }
     if [ -f "$FAKE/udid" ]; then
       st=$(cat "$FAKE/state")
       [ "\${3:-}" = booted ] && [ "$st" != Booted ] || echo "    HR Shared iPhone ($(cat "$FAKE/udid")) ($st) "
-    fi;;
+    fi
+    cat "$FAKE/booted" 2>/dev/null || true;;
   create) echo ${UDID} > "$FAKE/udid"; echo Shutdown > "$FAKE/state"; echo ${UDID};;
   bootstatus) [ -f "$FAKE/hang-boot" ] && { echo $$ > "$FAKE/boot.pid"; exec sleep 60; }; echo Booted > "$FAKE/state";;
   shutdown) echo Shutdown > "$FAKE/state";;
@@ -92,7 +103,7 @@ afterEach(async () => {
 
 const env = (extra: Record<string, string> = {}) => ({
   ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
-  HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', ...extra,
+  HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', HR_SIM_ALLOW_SECOND: '', ALLOW_EXTRA_SIMULATOR: '', ...extra,
 });
 const run = (args: string[], extra: Record<string, string> = {}) =>
   spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8', env: env(extra), timeout: 30_000, cwd: work });
@@ -391,7 +402,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       run(['--', 'true']);
       const old = info('token');
       const a = start(['--', ...hold()]);
-      await until(busy);
+      // The holder file names the new run a moment after the lock is taken.
+      await until(() => busy() && info('token') !== old);
       expect(run(['--', 'true'], { HR_SIM_LEASE: old, HR_SIM_WAIT_SECONDS: '1' }).status).toBe(75);
       release();
       expect((await a.done).code).toBe(0);
@@ -726,6 +738,236 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(r.stdout).toContain('ran');
       expect(r.stderr.match(/sim-run: load guard could not read the load; not waiting/g)).toHaveLength(1);
     });
+  });
+
+  describe('one booted simulator (US-71 AC7)', () => {
+    const IPAD = `    iPad Air 13-inch (M3) (${OTHER}) (Booted) `;
+    const DEMO_LINE = `    HR Demo iPhone (${OTHER}) (Booted) `;
+    const setBooted = (line: string, file = 'booted') => writeFileSync(join(fake, file), `${line}\n`);
+    /** Live processes whose command line names this test's folder: the command, sim-run, its watchdog. */
+    const leftovers = () => spawnSync('/bin/ps', ['-axo', 'pid=,command='], { encoding: 'utf8' }).stdout
+      .split('\n').filter((l) => l.includes(dir) && !l.includes('/bin/ps'));
+    const ran = ['sh', '-c', 'echo ran >> "$FAKE/ran"'];
+
+    it('refuses at once with 75 when another device is booted, naming it and its shutdown command; the command never runs', () => {
+      run(['--', 'true']);
+      setBooted(IPAD);
+      const r = run(['--', ...ran], { HR_SIM_WAIT_SECONDS: '30' });
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain(`iPad Air 13-inch (M3) (${OTHER})`);
+      expect(r.stderr).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(r.stderr.trim().split('\n')).toHaveLength(1);
+      expect(log('ran')).toBe('');
+      expect(busy()).toBe(false);
+      expect(log('xcrun.log')).not.toContain(`shutdown ${OTHER}`);
+    });
+
+    it('refuses a booted parallel-test clone in the testing set, with the --set testing shutdown command', () => {
+      setBooted(`    Clone 1 of HR Shared iPhone (${OTHER}) (Booted) `, 'booted-testing');
+      const r = run(['--', ...ran]);
+      expect(r.status).toBe(75);
+      expect(r.stderr).toContain(`Clone 1 of HR Shared iPhone (${OTHER})`);
+      expect(r.stderr).toContain(`xcrun simctl --set testing shutdown ${OTHER}`);
+      expect(log('ran')).toBe('');
+    });
+
+    it('a booted demo device blocks a run, even with ALLOW_EXTRA_SIMULATOR; HR_SIM_ALLOW_SECOND=1 runs beside it', () => {
+      setBooted(DEMO_LINE);
+      expect(run(['--', ...ran]).status).toBe(75);
+      expect(run(['--', ...ran], { ALLOW_EXTRA_SIMULATOR: 'other-device' }).status).toBe(75);
+      expect(log('ran')).toBe('');
+      const r = run(['--', ...ran], { HR_SIM_ALLOW_SECOND: '1' });
+      expect(r.status).toBe(0);
+      expect(log('ran')).toBe('ran\n');
+    });
+
+    it('the shared device booted alone does not block, and status still lists another booted device', () => {
+      expect(run(['--', ...ran]).status).toBe(0);
+      expect(run(['--', ...ran]).status).toBe(0);
+      setBooted(IPAD);
+      const s = run(['status']);
+      expect(s.status).toBe(0);
+      expect(s.stdout).toContain(OTHER);
+    });
+
+    it('a device booted mid-run ends the command with 76 and one line naming it, shuts nothing down, leaves no watchdog', async () => {
+      const pidFile = join(dir, 'cmd.pid');
+      // The command boots the second device itself (the fake reports it once the file exists), then waits.
+      const a = start(['--', 'sh', '-c', `echo $$ > ${pidFile}; printf '%s\\n' "$1" > "$FAKE/booted"; until [ -f "$0" ]; do sleep 0.1; done`,
+        join(dir, 'release'), IPAD], { HR_SIM_GUARD_SECONDS: '1' });
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      const line = r.err.split('\n').filter((l) => l.includes(OTHER));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toContain('iPad Air 13-inch (M3)');
+      expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(alive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+      expect(log('xcrun.log')).not.toContain(`shutdown ${OTHER}`);
+      expect(busy()).toBe(false);
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    it('the watchdog ends a command that boots a clone in the testing set', async () => {
+      const a = start(['--', 'sh', '-c', 'printf "%s\\n" "$1" > "$FAKE/booted-testing"; until [ -f "$0" ]; do sleep 0.1; done',
+        join(dir, 'release'), `    Clone 2 of HR Shared iPhone (${OTHER}) (Booted) `], { HR_SIM_GUARD_SECONDS: '1' });
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      expect(r.err).toContain(`xcrun simctl --set testing shutdown ${OTHER}`);
+    });
+
+    it('the watchdog spares the demo device under ALLOW_EXTRA_SIMULATOR=other-device, and stops when the command ends', async () => {
+      const r = run(['--', 'sh', '-c', 'printf "%s\\n" "$1" > "$FAKE/booted"; sleep 3; echo "$0" > /dev/null', join(dir, 'x'), DEMO_LINE],
+        { HR_SIM_GUARD_SECONDS: '1', ALLOW_EXTRA_SIMULATOR: 'other-device' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain(OTHER);
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    it('HR_SIM_ALLOW_SECOND=1 turns the watchdog off too', () => {
+      const r = run(['--', 'sh', '-c', 'printf "%s\\n" "$0" > "$FAKE/booted"; sleep 3', IPAD],
+        { HR_SIM_GUARD_SECONDS: '1', HR_SIM_ALLOW_SECOND: '1' });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain(OTHER);
+    });
+
+    it('a run that fails, or is stopped by TERM or INT, leaves no watchdog behind', async () => {
+      expect(run(['--', 'sh', '-c', 'sleep 2; exit 3', join(dir, 'x')], { HR_SIM_GUARD_SECONDS: '1' }).status).toBe(3);
+      for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+        const a = start(['--', ...hold()], { HR_SIM_GUARD_SECONDS: '1' });
+        await until(busy);
+        await sleep(1500);
+        a.p.kill(sig);
+        expect((await a.done).code).toBe(sig === 'SIGTERM' ? 143 : 130);
+      }
+      await sleep(1500);
+      expect(leftovers()).toEqual([]);
+    });
+
+    // Review of PR 1435 (R1): a hung `simctl list devices booted` held the lock with no bound, 41 s at a 3 s limit.
+    it('a hung booted-device list before the run ends within about the run limit, and the lock is free', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-list'), '');
+      const t0 = Date.now();
+      const r = await start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' }).done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(0);
+      expect(secs).toBeLessThan(11);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    it('a hung booted-device list mid-run ends within about the run limit, and the lock is free', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' });
+      // The lock is taken before the booted-device check, so wait for the command itself.
+      await until(() => existsSync(join(dir, 'started')));
+      const t0 = Date.now();
+      writeFileSync(join(fake, 'hang-list'), '');
+      const r = await a.done;
+      const secs = (Date.now() - t0) / 1000;
+      expect(r.code).toBe(124);
+      expect(secs).toBeLessThan(7);
+      expect(busy()).toBe(false);
+    }, 60_000);
+
+    // R5: a list whose own process exited while a child kept its output open held the lock with no bound.
+    it('a list that exits leaving a child holding its output ends within about the run limit, lock free, child gone', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'linger-list'), '');
+      const t0 = Date.now();
+      const a = start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '3', HR_SIM_GUARD_SECONDS: '1' });
+      const pids = () => log('linger.pids').trim().split('\n').filter(Boolean).map(Number);
+      try {
+        const r = await Promise.race([a.done, sleep(12_000).then(() => null)]);
+        const secs = (Date.now() - t0) / 1000;
+        expect(r?.code).toBe(0);
+        expect(secs).toBeLessThan(8);
+        expect(busy()).toBe(false);
+        expect(pids().length).toBeGreaterThan(0);
+        expect(pids().filter(alive)).toEqual([]);
+      } finally {
+        for (const pid of pids()) if (alive(pid)) process.kill(pid, 'SIGKILL');
+      }
+    }, 30_000);
+
+    // R6: the watchdog's list subshell outlived it, holding sim-run's stderr open well after the lock was free.
+    it('with a hung list mid-run, a reader of sim-run\'s stderr gets EOF within a few seconds of the command ending', async () => {
+      const p = spawn('bash', ['-c', 'bash "$0" "$@" 2>&1 | cat', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done',
+        join(dir, 'release'), join(dir, 'started')], { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work });
+      const done = new Promise((res) => p.on('exit', res));
+      live.push({ p, done });
+      await until(() => existsSync(join(dir, 'started')));
+      writeFileSync(join(fake, 'hang-list'), '');
+      await sleep(2500);
+      const t0 = Date.now();
+      release();
+      await done;
+      expect((Date.now() - t0) / 1000).toBeLessThan(5);
+    }, 60_000);
+
+    // R8a: a list that timed out failed open without a word.
+    const SKIPPED = 'sim-run: the booted-device list timed out; the one-simulator check is skipped this time';
+    it('a pre-check whose lists both time out says so once, and runs', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-list'), '');
+      const r = await start(['--', 'true'], { HR_SIM_RUN_LIMIT_SECONDS: '2', HR_SIM_GUARD_SECONDS: '30' }).done;
+      expect(r.code).toBe(0);
+      expect(r.err.split('\n').filter((l) => l === SKIPPED)).toHaveLength(1);
+    }, 30_000);
+
+    it('a list that keeps timing out says so once for the pre-check and once for the watchdog, not every tick', async () => {
+      run(['--', 'true']);
+      writeFileSync(join(fake, 'hang-default'), '');
+      // The command ignores TERM, so the run lasts the limit plus the grace: about three watchdog ticks.
+      const r = await start(['--', 'sh', '-c', 'trap "" TERM; while :; do sleep 0.1; done'],
+        { HR_SIM_RUN_LIMIT_SECONDS: '2', HR_SIM_KILL_SECONDS: '8', HR_SIM_GUARD_SECONDS: '1' }).done;
+      expect(r.code).toBe(124);
+      expect(log('xcrun.log').split('\n').filter((l) => /^simctl list devices booted$/.test(l)).length).toBeGreaterThanOrEqual(3);
+      expect(r.err.split('\n').filter((l) => l === SKIPPED)).toHaveLength(2);
+    }, 60_000);
+
+    // R8b: a found-file left by an old run whose pid is reused reported a device that was never there.
+    it('a stale found-file under sim-run\'s pid is cleared at the start, so it cannot report 76', () => {
+      mkdirSync(home, { recursive: true });
+      const r = spawnSync('bash', ['-c', 'echo "iPad (X)|xcrun simctl shutdown X" > "$HR_SIM_HOME/booted.$$"; exec bash "$0" -- true', SCRIPT],
+        { encoding: 'utf8', env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, timeout: 30_000 });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('another simulator');
+    });
+
+    // R2: kill -0 on sim-run's pid succeeds on an unreaped zombie, so the watchdog outlived it.
+    it('a SIGKILLed sim-run under a parent that never reaps it leaves no watchdog after a tick', async () => {
+      const p = spawn('perl', ['-e', '$| = 1; my $p = fork // die; if (!$p) { exec @ARGV } print "$p\\n"; sleep 60',
+        'bash', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work });
+      live.push({ p, done: new Promise((res) => p.on('exit', res)) });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; });
+      // sim-run forks its watchdog before the command starts (the device setup runs first).
+      await until(() => out.includes('\n') && existsSync(join(dir, 'started')));
+      process.kill(Number(out.trim()), 'SIGKILL');
+      await sleep(3000);
+      expect(leftovers().filter((l) => !l.trim().startsWith(`${p.pid} `) && !l.includes('defunct'))).toEqual([]);
+    }, 30_000);
+
+    // R4: a command that had already ended was reported "stopped".
+    it('a device found after the command ended exits 76 without claiming it stopped the command', async () => {
+      const a = start(['--', 'sh', '-c', 'touch "$2"; until [ -f "$0" ]; do sleep 0.1; done; printf "%s\\n" "$1" > "$FAKE/booted"',
+        join(dir, 'release'), IPAD, join(dir, 'started')], { HR_SIM_GUARD_SECONDS: '1' });
+      await until(() => existsSync(join(dir, 'started')));
+      // sim-run stopped: it cannot reap the shim or stop the watchdog, which finds the device after the command is gone.
+      process.kill(a.p.pid!, 'SIGSTOP');
+      release();
+      await sleep(2500);
+      process.kill(a.p.pid!, 'SIGCONT');
+      const r = await a.done;
+      expect(r.code).toBe(76);
+      const line = r.err.split('\n').filter((l) => l.includes(OTHER));
+      expect(line).toHaveLength(1);
+      expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
+      expect(line[0]).not.toContain('stopped the command');
+    }, 30_000);
   });
 
   describe('status', () => {

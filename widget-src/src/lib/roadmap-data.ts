@@ -97,7 +97,11 @@ export function stillShown(asked: string): boolean {
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
 export function clearOffFileAfterErase(): void {
-  store?.clearOffFileData();
+  try {
+    store?.clearOffFileData();
+  } catch {
+    /* owed: the erase kept is not moved, and the next load clears again (US-11 AC6) */
+  }
 }
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);

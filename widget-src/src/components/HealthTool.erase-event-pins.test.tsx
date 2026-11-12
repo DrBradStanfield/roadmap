@@ -201,6 +201,25 @@ describe('US-16 AC2a, US-11 AC6: another tab\'s erase, heard through the storage
   });
 });
 
+describe('US-11 AC6: another tab of this browser erased and already cleared storage up to its erase', () => {
+  it('the page drops its screen copy, and its matrix removes the draft it stored', async () => {
+    await seedGuest(PROFILE, [['weight', 82]]);
+    const view = await openPage();
+    await matrixHoldsDraft(view);
+    await act(async () => {
+      await anotherWriterErases(new LocalStorageAdapter());
+      // What the erasing tab's clear left: the erase it cleared storage for (cleared-erase.ts).
+      const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+      const meta = (body as RoadmapFile).meta;
+      localStorage.setItem('health_roadmap_cleared_erase', JSON.stringify({ lineage: 'local', erase: JSON.stringify([meta.eraseEpoch, meta.erasedAt]) }));
+      window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
+      await drain();
+    });
+    await settle();
+    draftGone(view);
+  });
+});
+
 describe('US-34 AC4 (loading-held), US-16 AC2a: an erase heard before the page has shown its first read', () => {
   it('waits for that read, then shows, once', async () => {
     await seedGuest(PROFILE, [['weight', 82]]);
@@ -373,6 +392,33 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     expect(cleared).toHaveBeenCalledTimes(2);
     expect(getShownErase()).toBe(getEraseIdentity());
     draftGone(view);
+  });
+
+  it('US-11 AC3b, AC6: the write lands but the draft\'s removal is refused: the screen still resets, and the next load clears', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    chatMakesBanners();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const remove = Storage.prototype.removeItem;
+    const refusing = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === BT_TIMELINE_DRAFT_KEY) return; // refused, silently
+      remove.call(this, key);
+    });
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+      expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).not.toBeNull(); // still stored: the clear stays owed
+      expect(getShownErase()).toBe(getEraseIdentity());
+      expect(banners()).toHaveLength(0);
+      expect(numberPaths(chat.context!(), 3.2)).toEqual([]);
+      expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(false);
+    } finally {
+      refusing.mockRestore();
+    }
+    await initRoadmapStore(new MemoryAdapter(cloud)); // the next load
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
   });
 });
 

@@ -164,7 +164,7 @@ describe('engine portability (ios/architecture.md D4)', () => {
     const host = {
       tier: 'cloud' as const, store, deviceId: () => 'phone', clock: { now: () => Date.parse('2026-10-21T10:00:00.000Z') },
       timers: { set: () => 1, clear: () => {} },
-      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {},
+      remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {}, clearedErase: () => null, noteCleared: () => {},
       mirror: {
         adapter: new MemoryAdapter(new MemoryCloud()), writesStopped: () => false, wipe: async () => {}, opened: () => {},
         pending: { get: () => false, set: () => {}, clear: () => {} },
