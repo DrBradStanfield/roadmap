@@ -13,14 +13,22 @@
 import * as Sentry from "@sentry/react-router";
 import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
 
-// A throw in a scrub must not reach the SDK's internal-error path: the hook
+// A throw in a scrub must never reach the SDK's own error report: the hook
 // returns null, so nothing is sent, and one fixed line names the error type,
-// never its message or stack (US-09 AC7i).
+// never its message or stack (US-09 AC7i). Naming and logging are guarded too,
+// so the null always comes back.
 const failClosed = (hook) => (...args) => {
   try {
     return hook(...args);
   } catch (err) {
-    console.error(`Sentry scrub failed (${err instanceof Error ? err.name : typeof err}); event dropped`);
+    let name = "unknown";
+    try {
+      const n = err instanceof Error ? err.name : typeof err;
+      if (typeof n === "string" && /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(n)) name = n;
+    } catch { /* keep "unknown" */ }
+    try {
+      console.error("Sentry scrub failed (" + name + "); event dropped");
+    } catch { /* the null still comes back */ }
     return null;
   }
 };

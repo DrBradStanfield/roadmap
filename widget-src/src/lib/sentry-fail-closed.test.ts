@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { webcrypto } from 'node:crypto';
 import * as Sentry from '@sentry/react';
 import * as realScrub from '@roadmap/health-core/sentry-scrub';
-import { initSentry } from './sentry';
+import { failClosed, initSentry, scrubBreadcrumb } from './sentry';
 
 // US-09 AC7i: a scrub hook that throws sends nothing. The real initSentry
 // options go through the real SDK with a capturing transport; the shared
@@ -43,6 +43,13 @@ const SENTINEL = 'MSG_SENTINEL_4e1b';
 const FIXED = (name: string) => `Sentry scrub failed (${name}); event dropped`;
 type Item = [{ type: string }, Record<string, any>];
 const items = () => (envelopes as Array<[unknown, Item[]]>).flatMap(([, list]) => list);
+/** A TypeError whose `name` getter throws, or whose name is a Symbol. */
+function oddError(kind: 'getter' | 'symbol') {
+  const error = new TypeError(`odd error ${SENTINEL}`);
+  if (kind === 'getter') Object.defineProperty(error, 'name', { get() { throw new Error(`name getter ${SENTINEL}`); } });
+  else Object.defineProperty(error, 'name', { value: Symbol(SENTINEL) });
+  return error;
+}
 let errorLog: ReturnType<typeof vi.spyOn>;
 let internalCaptures: unknown[];
 
@@ -94,6 +101,56 @@ describe('US-09 AC7i: a browser scrub hook that throws sends nothing', () => {
     expect(items()).toEqual([]);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('string')]]);
+  });
+
+  it.each([
+    ['a name getter that throws', () => oddError('getter'), [[FIXED('unknown')]]],
+    ['a Symbol name', () => oddError('symbol'), [[FIXED('unknown')]]],
+  ])('beforeSend: an error with %s still returns null and sends nothing', async (_label, make, lines) => {
+    boom.text = make();
+    const hook = Sentry.getClient()!.getOptions().beforeSend!;
+    expect(hook({ message: 'direct' } as Sentry.ErrorEvent, {})).toBeNull();
+    // A message of its own per case: Dedupe drops a repeat before beforeSend runs.
+    Sentry.captureMessage(`probe odd error: ${_label}`);
+    await Sentry.flush(1000);
+    expect(items()).toEqual([]);
+    expect(internalCaptures).toEqual([]);
+    expect(errorLog.mock.calls).toEqual([...lines, ...lines]);
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(SENTINEL);
+  });
+
+  it('beforeSend: a console.error that throws still returns null and sends nothing', async () => {
+    boom.text = new TypeError('scrub broke');
+    errorLog.mockImplementation(() => { throw new Error('console broke'); });
+    const hook = Sentry.getClient()!.getOptions().beforeSend!;
+    expect(hook({ message: 'direct' } as Sentry.ErrorEvent, {})).toBeNull();
+    Sentry.captureMessage('probe console throw');
+    await Sentry.flush(1000);
+    expect(items()).toEqual([]);
+    expect(internalCaptures).toEqual([]);
+  });
+
+  it('end to end: a breadcrumb hook that throws on the sentry.event crumb sends the event once and nothing else', async () => {
+    // scrubBreadcrumb reads nothing on a `sentry.event` crumb that could throw, so the
+    // throw is planted in a hook wrapped by the production failClosed and set live on the client.
+    const options = Sentry.getClient()!.getOptions();
+    const saved = options.beforeBreadcrumb;
+    options.beforeBreadcrumb = failClosed((crumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint) => {
+      if (crumb.category === 'sentry.event') throw new TypeError(`crumb broke on ${SENTINEL}`);
+      return scrubBreadcrumb(crumb, hint);
+    });
+    try {
+      Sentry.captureMessage('probe sentry.event crumb');
+      await Sentry.flush(1000);
+    } finally {
+      options.beforeBreadcrumb = saved;
+    }
+    expect(envelopes).toHaveLength(1);
+    expect(items().map(([h, p]) => [h.type, p.message])).toEqual([['event', 'probe sentry.event crumb']]);
+    expect(internalCaptures).toEqual([]);
+    // The SDK calls beforeBreadcrumb with the original console restored, so the spy
+    // cannot see that line; the direct-call test below checks it.
+    expect(JSON.stringify(items())).not.toContain(SENTINEL);
   });
 
   it('beforeBreadcrumb: a throw drops the breadcrumb and logs the error name only', () => {

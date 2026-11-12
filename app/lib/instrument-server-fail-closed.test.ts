@@ -43,6 +43,14 @@ async function settle(until: () => void) {
 const internalCaptures: unknown[] = [];
 let errorLog: ReturnType<typeof vi.spyOn>;
 
+/** A TypeError whose `name` getter throws, or whose name is a Symbol. */
+function oddError(kind: 'getter' | 'symbol') {
+  const error = new TypeError(`odd error ${SENTINEL}`);
+  if (kind === 'getter') Object.defineProperty(error, 'name', { get() { throw new Error(`name getter ${SENTINEL}`); } });
+  else Object.defineProperty(error, 'name', { value: Symbol(SENTINEL) });
+  return error;
+}
+
 function failing() {
   const error = new TypeError(`scrub broke on ${SENTINEL}`);
   error.stack = `TypeError: scrub broke on ${SENTINEL}\n    at stack-${SENTINEL}`;
@@ -107,6 +115,32 @@ describe('US-09 AC7i: a server scrub hook that throws sends nothing', () => {
     expect(JSON.stringify(items())).not.toContain(SENTINEL);
     expect(internalCaptures).toEqual([]);
     expect(errorLog.mock.calls).toEqual([[FIXED('string')]]);
+  });
+
+  it.each([
+    ['a name getter that throws', () => oddError('getter'), [[FIXED('unknown')]]],
+    ['a Symbol name', () => oddError('symbol'), [[FIXED('unknown')]]],
+  ])('beforeSend: an error with %s still returns null and sends nothing', async (_label, make, lines) => {
+    mode.throw = make();
+    const hook = Sentry.getClient()!.getOptions().beforeSend!;
+    expect(hook({ message: 'direct' } as Sentry.ErrorEvent, {})).toBeNull();
+    Sentry.captureException(new Error(`probe odd error: ${_label}`));
+    await Sentry.flush(500);
+    expect(content()).toEqual([]);
+    expect(internalCaptures).toEqual([]);
+    expect(errorLog.mock.calls).toEqual([...lines, ...lines]);
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(SENTINEL);
+  });
+
+  it('beforeSend: a console.error that throws still returns null and sends nothing', async () => {
+    mode.throw = failing();
+    errorLog.mockImplementation(() => { throw new Error('console broke'); });
+    const hook = Sentry.getClient()!.getOptions().beforeSend!;
+    expect(hook({ message: 'direct' } as Sentry.ErrorEvent, {})).toBeNull();
+    Sentry.captureException(new Error('probe console throw'));
+    await Sentry.flush(500);
+    expect(content()).toEqual([]);
+    expect(internalCaptures).toEqual([]);
   });
 
   it('beforeSendTransaction: a throw sends no envelope and no internal event', async () => {
