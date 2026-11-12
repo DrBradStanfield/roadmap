@@ -294,8 +294,9 @@ describe('any order is safe where two events race', () => {
   it('a synchronous write during a pass vs the pass landing', () => {
     const a = run(saving(7, 4, 6, true), [EVENTS.synced, EVENTS.landed]);
     const b = run(saving(7, 4, 6, true), [EVENTS.landed, EVENTS.synced]);
-    // saved moves back to where the pass started, and one more pass carries change 7 (as today)
-    expect(a.state).toEqual(saving(7, 6, 7));
+    // lead A10: the sync write landed change 7, so the pass lands clean with no extra pass
+    expect(a.state).toEqual(clean(7));
+    expect(a.effects).toEqual([CANCEL]);
     expect(b.state).toEqual(saving(7, 7, 7));
     expect(settle(a.state)).toEqual(clean(7));
     expect(settle(b.state)).toEqual(clean(7));
