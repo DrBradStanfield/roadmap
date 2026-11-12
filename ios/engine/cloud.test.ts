@@ -96,6 +96,8 @@ interface Engine {
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
   chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
   cloudVisible(): string;
+  /** US-09 AC30 (lead A1 step e): Swift calls it when NWPathMonitor says the path is satisfied. */
+  cloudOnline(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
@@ -1350,5 +1352,75 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     const record = engine.newRecordJson(NOW, 'ios-1', 'en-NZ', 'Pacific/Auckland');
     expect(JSON.parse(await engine.documentSave(record, labs, choice(), null, '', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-found' });
     expect(JSON.parse(await engine.documentSave('', letter, choice(), null, '{}', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-open' });
+  });
+});
+
+// US-09 AC30 (lead A1 step e): the engine retries a failed save when the app
+// comes back to the foreground or the network comes back, through
+// health-core's LiveRefresh, and never after a refused grant.
+describe('a failed save is retried on return and on online (US-09 AC30, lead A1 step e)', () => {
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
+
+  async function failedOffline() {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    dropbox.online = false;
+    engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    dropbox.online = true;
+    return { dropbox, engine, state };
+  }
+
+  it('the foreground after an unreachable save retries it, and it lands', async () => {
+    const { dropbox, engine } = await failedOffline();
+    expect(dropbox.uploads).toBe(0);
+    engine.cloudVisible();
+    await settle();
+    expect(dropbox.uploads).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
+  it('the network coming back retries it, and it lands', async () => {
+    const { dropbox, engine } = await failedOffline();
+    engine.cloudOnline();
+    await settle();
+    expect(dropbox.uploads).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
+  it('a foreground and the network coming back together retry once', async () => {
+    const { dropbox, engine } = await failedOffline();
+    dropbox.uploadsWork = false; // the retry fails again, so a second attempt would show
+    let attempts = 0;
+    const answer = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => {
+      if (url.endsWith('/files/upload')) attempts += 1;
+      return answer(url, headers, body);
+    };
+    engine.cloudOnline();
+    engine.cloudVisible();
+    await settle();
+    expect(attempts).toBe(1);
+  });
+
+  it('after a refused grant, neither the foreground nor the network coming back tries the save again', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    state.signedOut = true;
+    engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind: 'sign-in' });
+    state.signedOut = false; // any attempt from here would land, so none may start
+    engine.cloudVisible();
+    await settle();
+    expect(dropbox.uploads).toBe(0); // the foreground alone
+    engine.cloudOnline();
+    await settle();
+    expect(dropbox.uploads).toBe(0);
   });
 });
