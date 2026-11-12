@@ -1384,6 +1384,9 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
+    // "Beside" reaches three words: one word off the name is still refused, four words off files.
+    expect(reportFeedback({ ...GOOD, detail: 'the line-height is 1.5' }, NOW).status).toBe('rejected');
+    expect(reportFeedback({ ...GOOD, detail: 'the line-height is set to 1.5' }, NOW).status).toBe('ok');
   });
 
   // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
@@ -1396,12 +1399,17 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'my bmi ٣١ is wrong', // Arabic-Indic digits
       'my 140ldl is wrong',
       'my 31bmi is wrong',
+      'my .5ldl is wrong', // starts with its point: read as "5ldl"
+      'my 1.4.2ldl is wrong', // a second point: read as "1.4" and "2ldl"
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
       expect(scrubText(detail), detail).toBe(detail);
     }
-    // A decimal or a dot ends the word first, so these are refused.
-    for (const detail of ['my 3.2ldl is wrong', 'my 140.ldl is wrong']) {
+    // With a name shortly before it, the scrub redacts the glued number; the guard still files it.
+    expect(reportFeedback({ ...GOOD, detail: 'my ldl is 140ldl' }, NOW).status).toBe('ok');
+    expect(scrubText('my ldl is 140ldl')).toBe('my ldl is [value]ldl');
+    // One point or comma between digits, or a dot or comma right after a whole number, ends the word first.
+    for (const detail of ['my 3.2ldl is wrong', 'my 3,2ldl is wrong', 'my 140.ldl is wrong', 'my 140,ldl is wrong']) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
   });
