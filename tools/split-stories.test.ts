@@ -251,6 +251,7 @@ describe('--normalize fixes the shape of a split tree, never its content (US-64 
     mkdirSync(join(dir, 'docs'));
     writeFileSync(join(dir, 'docs/user-stories.md'), monolith(US01, '', US02, '', '### US-03 · Three\n- AC1 three'));
     expect(cli(dir).status).toBe(0);
+    git(dir, 'init', '-q');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -289,6 +290,54 @@ describe('--normalize fixes the shape of a split tree, never its content (US-64 
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/^split-stories: refused, nothing written: normalizing would change the text of docs\/stories\/US-02\.md, not only its shape, from its line 3: "---"/);
     expect(files(dir)).toEqual(before);
+  });
+
+  it('refuses, naming the line the part would gain, when re-splitting would lengthen a part (US-64 AC33)', () => {
+    const index = readFileSync(join(dir, 'docs/user-stories.md'), 'utf8');
+    writeFileSync(join(dir, 'docs/user-stories.md'), index.replace('(stories/US-02.md)\n', '(stories/US-02.md)\nstray text\n'));
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('normalizing would change the text of docs/stories/US-02.md, not only its shape: it would gain its line 5, "stray text"');
+    expect(r.stderr).not.toContain('undefined');
+    expect(files(dir)).toEqual(before);
+  });
+
+  it('refuses outside a git repo (US-64 AC33)', () => {
+    rmSync(join(dir, '.git'), { recursive: true, force: true });
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: --normalize runs only in a git repo/);
+    expect(files(dir)).toEqual(before);
+  });
+
+  // A conflicted part: none of these lines ends a part, so the loader and the round trip accept it.
+  const conflicted = '### US-02 · Two\n<<<<<<< HEAD\n- AC1 two\n=======\n- AC1 deux\n>>>>>>> main\n';
+
+  it('refuses during a merge (MERGE_HEAD exists), writing nothing (US-64 AC33)', () => {
+    git(dir, 'add', '-A');
+    git(dir, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'split');
+    writeFileSync(join(dir, '.git/MERGE_HEAD'), git(dir, 'rev-parse', 'HEAD'));
+    writeFileSync(part('US-02.md'), conflicted);
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: a merge is in progress/);
+    expect(files(dir)).toEqual(before);
+  });
+
+  it('refuses, and the standing check fails, on a conflict marker in a part or the index, naming file and line (US-64 AC33)', () => {
+    writeFileSync(part('US-02.md'), conflicted);
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('docs/stories/US-02.md line 2 is a conflict marker: "<<<<<<< HEAD"');
+    expect(files(dir)).toEqual(before);
+    expect(shapeReport(dir)).toContain('docs/stories/US-02.md line 2 is a conflict marker: "<<<<<<< HEAD"');
+    writeFileSync(part('US-02.md'), `${US02}\n`);
+    writeFileSync(join(dir, 'docs/user-stories.md'), `${before.index}\n=======\n`);
+    expect(shapeReport(dir)).toMatch(/^docs\/user-stories\.md line \d+ is a conflict marker: "======="/);
   });
 });
 
@@ -454,6 +503,64 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     } finally {
       rmSync(bin, { recursive: true, force: true });
     }
+  });
+
+  it('from a worktree, an --out at another checkout is guarded as that repo: refused when its parts differ, --replace passes (US-64 AC33)', () => {
+    const wt = join(repo, '.claude/wt');
+    run('worktree', 'add', '-q', '--detach', wt, 'split');
+    const before = tree();
+    const r = cli(wt, '--from', 'pre-split', '--out', repo);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split: docs\/stories\/US-01\.md differs/);
+    expect(tree()).toEqual(before);
+    const ok = cli(wt, '--from', 'pre-split', '--out', repo, '--replace');
+    expect(ok.stderr).toBe('');
+    expect(ok.status).toBe(0);
+    expect(loadStories(repo)).toBe(text);
+  });
+
+  it('from a worktree, an --out at another checkout mid-merge refuses even with --replace (US-64 AC33)', () => {
+    const wt = join(repo, '.claude/wt');
+    run('worktree', 'add', '-q', '--detach', wt, 'split');
+    mergeIntoFeat('main');
+    const before = tree();
+    const r = cli(wt, '--from', 'pre-split', '--out', repo, '--replace');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: a merge is in progress/);
+    expect(tree()).toEqual(before);
+  });
+
+  it('when git cannot run, it refuses and writes nothing, with and without --replace (US-64 AC33)', () => {
+    mergeIntoFeat('main');
+    writeFileSync(join(repo, 'docs/user-stories.md'), featText); // the branch's monolith, as a hand resolution leaves it
+    const noGit = mkdtempSync(join(tmpdir(), 'split-stories-nogit-'));
+    try {
+      for (const args of [[], ['--replace']]) {
+        const before = tree();
+        const r = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: repo, encoding: 'utf8', env: { ...process.env, PATH: noGit } });
+        expect(r.status, args.join(' ')).toBe(1);
+        expect(r.stderr).toMatch(/^split-stories: refused, nothing written: cannot find the repo's toplevel: .*ENOENT/);
+        expect(tree()).toEqual(before);
+      }
+    } finally {
+      rmSync(noGit, { recursive: true, force: true });
+    }
+  });
+
+  it('when the split commit is not a pure split of its parent, the merge refusal names the file and says to port the edit by hand (US-64 AC33)', () => {
+    run('checkout', '-q', '-b', 'main3', 'pre-split');
+    expect(cli(repo).status).toBe(0);
+    writeFileSync(join(repo, 'docs/stories/US-01.md'), '### US-01 · One\n- AC1 one\n- AC2 slipped into the split commit\n');
+    commit('impure split');
+    const impure = run('rev-parse', 'HEAD').trim();
+    mergeIntoFeat(impure);
+    const before = tree();
+    const r = cli(repo, '--from', 'HEAD');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(`the split commit ${impure.slice(0, 12)} itself differs from a pure split of its parent: docs/stories/US-01.md differs`);
+    expect(r.stderr).toContain('port its own story edits into the parts by hand');
+    expect(r.stderr).not.toContain('merge exactly the split commit');
+    expect(tree()).toEqual(before);
   });
 
   it('outside a merge, a rerun whose output equals docs/stories/ needs no flag', () => {
