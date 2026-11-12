@@ -1,18 +1,21 @@
 // @vitest-environment jsdom
 /**
- * What the storage line says as a cloud save waits, runs and fails, through
- * the real record store and pending marker. Pinned before the
- * save mode becomes one union (lead A1, step a); storage-bar.test.tsx pins the
- * label against a mocked marker.
+ * US-09 AC30 (lead A1 step d): what the storage line says as a cloud save
+ * waits, runs, fails and lands, through the real data layer, record session,
+ * web host event and pending marker. storage-bar.test.tsx pins the label
+ * table against a mocked status and marker.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { PERSIST_DEBOUNCE_MS } from '@roadmap/health-core/record-session';
-import { StorageError } from '@roadmap/health-core/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
-vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../src/lib/server-api', async (original) => ({
+  ...(await original<typeof import('../src/lib/server-api')>()),
+  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+}));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
@@ -30,7 +33,9 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar } from './sync-control';
-import { RoadmapStore } from '../src/storage/roadmap-store';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
+import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
+import { markSyncPending } from '../src/storage/web-record-host';
 
 /** A cloud whose writes can fail or be held, counting each one tried. */
 class TestCloud extends MemoryAdapter {
@@ -47,6 +52,7 @@ class TestCloud extends MemoryAdapter {
 
 const line = () => document.querySelector('.hr-storage-state')?.textContent;
 const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+const add = (value: number, day: string) => act(async () => { await addMeasurement('weight', value, day); });
 
 beforeEach(() => {
   localStorage.clear();
@@ -54,49 +60,73 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); });
 
-describe('the storage line through a real cloud save (lead A1)', () => {
-  it('a cloud save that rejects says Saving… (US-09 AC4), and tries no second save until an edit', async () => {
+describe('US-09 AC30: the storage line says what the session knows (lead A1 step d)', () => {
+  it('a cloud save that rejects says "Not synced yet." with the device line, tries no second save until an edit, and says Synced once one lands', async () => {
     const cloud = new TestCloud(new MemoryCloud());
-    const store = await RoadmapStore.create(cloud);
+    await initRoadmapStore(cloud);
     vi.useFakeTimers();
     render(<StorageBar backend="dropbox" />);
     expect(line()).toBe('Synced to Dropbox');
 
     cloud.failing = true;
-    store.addMeasurement('weight', 80, '2026-06-01');
+    await add(80, '2026-06-01');
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
-    expect(line()).toBe('Saving…');
+    expect(line()).toBe('Not synced yet. Your changes are on this device.'); // the failure mirror set the marker (US-09 AC4)
 
     await advance(PERSIST_DEBOUNCE_MS * 50);
-    expect(cloud.writes).toBe(1); // no retry of its own
-    expect(line()).toBe('Saving…');
+    expect(cloud.writes).toBe(1); // no retry of its own (step e adds one)
+    expect(line()).toBe('Not synced yet. Your changes are on this device.');
 
     cloud.failing = false;
-    store.addMeasurement('weight', 81, '2026-06-02');
+    await add(81, '2026-06-02');
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(2);
     expect(line()).toBe('Synced to Dropbox');
   });
 
-  it('today (step d of lead A1 changes this, US-09 AC30): says Synced to the provider while an edit waits on the debounce and while its save is in flight', async () => {
+  it('says "Saving to Dropbox…" while an edit waits on the debounce and while its save is in flight, never Synced', async () => {
     const cloud = new TestCloud(new MemoryCloud());
-    const store = await RoadmapStore.create(cloud);
+    await initRoadmapStore(cloud);
     vi.useFakeTimers();
     render(<StorageBar backend="dropbox" />);
 
     let release!: () => void;
     cloud.held = new Promise<void>((resolve) => { release = resolve; });
-    store.addMeasurement('weight', 80, '2026-06-01');
+    await add(80, '2026-06-01');
     await advance(PERSIST_DEBOUNCE_MS - 1);
     expect(cloud.writes).toBe(0);
-    expect(line()).toBe('Synced to Dropbox'); // on the debounce
+    expect(line()).toBe('Saving to Dropbox…'); // on the debounce
     await advance(1);
     expect(cloud.writes).toBe(1);
-    expect(line()).toBe('Synced to Dropbox'); // in flight
+    expect(line()).toBe('Saving to Dropbox…'); // in flight
     release();
-    await act(async () => { await store.flush(); });
+    await act(async () => { await flushRoadmapStore(); });
     expect(cloud.writes).toBe(1);
     expect(line()).toBe('Synced to Dropbox');
+  });
+
+  it('a failed save whose device copy was not written (another tab moved this browser off the cloud) says "Not synced yet." alone', async () => {
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    vi.useFakeTimers();
+    render(<StorageBar backend="dropbox" problemsOnly />);
+    expect(line()).toBeUndefined(); // all is well: nothing atop My health
+
+    localStorage.setItem('health_roadmap_backend', 'local'); // US-09 AC13: another tab chose this browser
+    cloud.failing = true;
+    await add(80, '2026-06-01');
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(cloud.writes).toBe(1);
+    expect(line()).toBe('Not synced yet.');
+  });
+
+  it('a marker an earlier session left, which this session cannot lift yet (a newer app wrote the device copy), shows the not-synced words while the session is saved', async () => {
+    new LocalStorageAdapter().writeSync(ROADMAP_FILE_NAME, { schemaVersion: 9999 }, null);
+    markSyncPending();
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    render(<StorageBar backend="dropbox" />);
+    expect(line()).toBe('Not synced yet. Your changes are on this device.');
   });
 });

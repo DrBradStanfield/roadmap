@@ -8,13 +8,15 @@
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
-const sync = vi.hoisted(() => ({ pending: false, popup: vi.fn(async () => {}) }));
+const sync = vi.hoisted(() => ({ pending: false, status: 'saved' as 'saved' | 'saving' | 'not-saved', popup: vi.fn(async () => {}) }));
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status }));
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class { connectViaPopup = sync.popup; },
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  SAVE_STATUS_EVENT: 'hr:save-status',
   gisReady: () => true,
   preloadGis: () => undefined,
 }));
@@ -46,7 +48,7 @@ beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
   HTMLDialogElement.prototype.close = vi.fn();
 });
-afterEach(() => { cleanup(); sync.pending = false; sync.popup.mockClear(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); sync.pending = false; sync.status = 'saved'; sync.popup.mockClear(); vi.unstubAllGlobals(); });
 
 type Cloud = Exclude<Backend, 'local'>;
 /** The bar as app.tsx mounts it, beside the plan's SyncControl, which hosts the picker. */
@@ -85,10 +87,41 @@ describe('US-09 AC30 — the label says the real storage state', () => {
     },
   );
 
-  it('connected with changes still waiting, it says Saving… and goes back once they land', () => {
+  // Lead A1 step d (owner, 2026-11-12): the session's save status and the device marker, five rows.
+  it.each([
+    ['saving', false, 'Saving to Dropbox…'],
+    ['saving', true, 'Saving to Dropbox…'],
+    ['not-saved', true, 'Not synced yet. Your changes are on this device.'],
+    ['not-saved', false, 'Not synced yet.'],
+    ['saved', true, 'Not synced yet. Your changes are on this device.'], // an earlier session's, lifted by the next load
+    ['saved', false, 'Synced to Dropbox'],
+  ] as const)('session %s, device marker %s: "%s"', (status, pending, words) => {
+    sync.status = status;
+    sync.pending = pending;
+    mount('dropbox');
+    expect(state()?.textContent).toBe(words);
+  });
+
+  it('Settings says what waits on this device, and promises no upload nothing yet retries (lead A1 step d)', () => {
     sync.pending = true;
     mount('dropbox');
-    expect(state()?.textContent).toBe('Saving…');
+    expect(document.querySelector('.hr-sync-detail')?.textContent).toBe(
+      'Some data in this browser is still waiting to sync to your Dropbox. Your data is safe in this browser meanwhile.',
+    );
+  });
+
+  it('follows the save status event and the marker event, with no polling', () => {
+    mount('dropbox');
+    sync.status = 'saving';
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    sync.status = 'not-saved';
+    act(() => { window.dispatchEvent(new Event('hr:save-status')); });
+    expect(state()?.textContent).toBe('Not synced yet.');
+    sync.pending = true;
+    act(() => { window.dispatchEvent(new Event('hr:sync-pending')); });
+    expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
+    sync.status = 'saved';
     sync.pending = false;
     act(() => { window.dispatchEvent(new Event('hr:sync-pending')); });
     expect(state()?.textContent).toBe('Synced to Dropbox');
@@ -126,7 +159,7 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(bar().textContent).toBe('Sign in to Google again');
   });
 
-  it('problemsOnly (atop My health) draws nothing while all is well, Saving… while a save waits, and the reconnect', () => {
+  it('problemsOnly (atop My health) draws nothing while all is well, the save words while it is not Synced, and the reconnect', () => {
     asPhone();
     const only = (backend: Backend, reconnect?: Cloud) => render(<StorageBar backend={backend} reconnect={reconnect} problemsOnly />);
     expect(only('dropbox').container.innerHTML).toBe('');
@@ -135,9 +168,18 @@ describe('US-62 AC34 — the bar on a phone', () => {
     cleanup();
     sync.pending = true;
     only('dropbox');
-    expect(state()?.textContent).toBe('Saving…');
+    expect(state()?.textContent).toBe('Not synced yet. Your changes are on this device.');
     cleanup();
     sync.pending = false;
+    sync.status = 'saving';
+    only('dropbox');
+    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    cleanup();
+    sync.status = 'not-saved';
+    only('dropbox');
+    expect(state()?.textContent).toBe('Not synced yet.');
+    cleanup();
+    sync.status = 'saved';
     only('local', 'dropbox');
     expect(bar().textContent).toBe('Retry');
   });
