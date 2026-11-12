@@ -60,12 +60,17 @@ export type Sent = 'posted' | 'unknown' | 'unknown400' | 'skipped' | 'halt';
 
 /** One tick's posting (C15 c): open, or halted by an account-wide refusal or by the second unreadable 400,
  *  which may mean Google is rejecting every post behind a page we cannot read. Each tick starts open. */
-export type Posting = { kind: 'open'; unreadable400s: number } | { kind: 'halted' };
+export type Posting =
+  | { readonly kind: 'open'; readonly unreadable400s: number }
+  | { readonly kind: 'halted'; readonly reason: 'accountWide' | 'unreadable400' };
 
-export const OPEN_POSTING: Posting = { kind: 'open', unreadable400s: 0 };
+/** Frozen: every tick starts from this one object, so an edit in place would leak into the next. */
+export const OPEN_POSTING: Posting = Object.freeze({ kind: 'open', unreadable400s: 0 });
 
+/** A halted tick stays halted with the reason that halted it. */
 export function nextPosting(p: Posting, sent: Sent): Posting {
-  if (p.kind === 'halted' || sent === 'halt') return { kind: 'halted' };
+  if (p.kind === 'halted') return p;
+  if (sent === 'halt') return { kind: 'halted', reason: 'accountWide' };
   if (sent !== 'unknown400') return p;
-  return p.unreadable400s >= 1 ? { kind: 'halted' } : { kind: 'open', unreadable400s: p.unreadable400s + 1 };
+  return p.unreadable400s >= 1 ? { kind: 'halted', reason: 'unreadable400' } : { kind: 'open', unreadable400s: p.unreadable400s + 1 };
 }
