@@ -495,6 +495,9 @@ describe('US-27 AC5: a definite refusal releases the mark (Q3)', () => {
 // The owner's conditions
 // ---------------------------------------------------------------------------
 
+const UNKNOWN = 'YouTube bot: post outcome unknown';
+const UNKNOWN_400 = 'YouTube bot: post outcome unknown (unreadable 400)';
+
 /** Google answered with a status, then the body stream broke (a reset socket, or the deadline mid-body). */
 const brokenBody = (status: number) => async () => new Response(
   new ReadableStream({ start(c) { c.error(new TypeError(`terminated ${GOOGLE_BODY}`)); } }), { status });
@@ -517,6 +520,7 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
 
       expect(ctl.pipelineCalls).toEqual(['c1']); // no model call for c2
       expect(row('c1')).toBeUndefined();
+      expect(tickLogs()[0]).toMatchObject({ halted: 'accountWide' }); // N2
       const del = tableReqs('DELETE').find((r) => r.params.get('youtube_comment_id') === 'eq.c1');
       expect(del?.params.get('posted_at')).toBe(`eq.${markToken(markReqs()[0])}`);
 
@@ -539,7 +543,8 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
       expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
       expect(reported()).not.toContain(GOOGLE_BODY);
       // N2: the status tells an unreadable 2xx from an unreadable 400 in triage.
-      expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+      // N1: an unreadable 400 has its own fixed message, so Sentry gives it its own issue.
+      expect(spy.captureMessage).toHaveBeenCalledWith(status === 400 ? UNKNOWN_400 : UNKNOWN, expect.objectContaining({
         tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: String(status) },
       }));
     });
@@ -555,7 +560,7 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
     expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
     expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
     expect((await bot.readPostingCaps()).dailyCount).toBe(1);
-    expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+    expect(spy.captureMessage).toHaveBeenCalledWith(UNKNOWN_400, expect.objectContaining({
       level: 'error', // (b): an unreadable 400 alerts
       tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: '400' },
     }));
@@ -571,9 +576,10 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
     await bootMachine();
     await tickTo(FIRST_TICK_MS, 1);
 
-    expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+    expect(spy.captureMessage).toHaveBeenCalledWith(UNKNOWN, expect.objectContaining({
       level: 'warning', tags: { feature: 'youtube-bot', subsystem: 'post', why: '5xx' },
     }));
+    expect(spy.captureMessage).not.toHaveBeenCalledWith(UNKNOWN_400, expect.anything());
   });
 
   it('a readable JSON 400 with a real reason stays refused: the mark is reverted, not counted', async () => {
@@ -610,7 +616,7 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     expect(ctl.pipelineCalls).toEqual(['c1', 'c2']); // no model call for c3 or the follow-up
     expect(g.calls.filter((c) => c === 'GET /youtube/v3/comments')).toHaveLength(0); // no follow-up scan
     for (const id of ['c1', 'c2']) expect(row(id)).toMatchObject({ posted: true, posted_youtube_id: null });
-    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 2, followUpsUnknown: 0 });
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 2, followUpsUnknown: 0, halted: 'unreadable400' });
 
     // The next tick starts fresh: c3 and the follow-up are answered.
     await tickTo(TICK_MS, 2);
@@ -629,6 +635,7 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     expect(row('c2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
     expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
     expect(tickLogs()[0]).toMatchObject({ posted: 1, unknown: 1, followUpsPosted: 1 });
+    expect(tickLogs()[0]).not.toHaveProperty('halted'); // N2: absent when the tick ran to its end
   });
 
   it('one top-level, then one follow-up: the second halts the follow-up pass', async () => {
@@ -640,7 +647,7 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     await tickTo(FIRST_TICK_MS, 1);
 
     expect(ctl.pipelineCalls).toHaveLength(2); // c1 and one follow-up; none for the other
-    expect(tickLogs()[0]).toMatchObject({ unknown: 1, followUpsUnknown: 1, followUpsPosted: 0 });
+    expect(tickLogs()[0]).toMatchObject({ unknown: 1, followUpsUnknown: 1, followUpsPosted: 0, halted: 'unreadable400' });
   });
 
   it('the count resets each tick: one per tick never halts', async () => {
