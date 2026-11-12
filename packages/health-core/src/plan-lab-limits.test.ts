@@ -39,7 +39,8 @@ describe('US-12 AC20: eGFR printed as a limit', () => {
     expect(tile.value).toBe('> 90');
     expect(tile.status).toEqual({ label: 'Normal', tone: 'normal' });
     expect(payload.labValues.find((l) => l.key === 'egfr')).toMatchObject({ value: 90, comparator: '>' });
-    expect(JSON.stringify(payload)).not.toContain(String(plan.inputs.labEgfr));
+    // As a whole number: a DOI may hold its digits (Wolf 2018, caac.21457; US-07 AC1h).
+    expect(JSON.stringify(payload)).not.toMatch(new RegExp(`(?<![\\d.])${plan.inputs.labEgfr}(?![\\d.])`));
   });
 
   // The orchestrator, 2026-11-02 (option B): the plan grades against its own lines (45 here);

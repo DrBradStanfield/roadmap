@@ -51,6 +51,8 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
     const followupStatus = readScreening(scr, `${type}_followup_status`);
     const status = field(`${type}_followup_status`);
     const date = field(`${type}_followup_date`);
+    // The report's repeat interval, once the follow-up is completed (colorectal, US-07 AC1j).
+    const interval = field(`${type}_followup_interval_years`);
 
     return (
       <>
@@ -79,6 +81,19 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
         )}
 
         {date?.kind === 'month' && renderScreeningDateInput(scr, date.key, date.label, { futureOnly: date.when === 'future' })}
+
+        {interval?.kind === 'choice' && (
+          <div className="health-field">
+            <label htmlFor={`${type}-followup-interval`}>{interval.label}</label>
+            <select
+              id={`${type}-followup-interval`}
+              value={interval.value}
+              onChange={(e) => writeScreening(scr, interval.key, e.target.value)}
+            >
+              {optionElements(interval.options)}
+            </select>
+          </div>
+        )}
       </>
     );
   };

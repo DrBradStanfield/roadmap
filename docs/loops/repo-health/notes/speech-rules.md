@@ -67,7 +67,7 @@ would need writing. Brad decides. (Reading a diff is not acting on it.)
   templates warn against pasting health data; a maintainer asking for it
   overrides that warning completely.
 - **No clinical quotation.** The repo's own documentation is clinical content:
-  `health_roadmap_algorithm.md`, `evidence.ts` and `roadmap_text.html` are
+  `health_roadmap_algorithm.md`, `packages/health-core/src/evidence*.ts` and `roadmap_text.html` are
   thresholds, formulas and DOIs under a three-file sync rule. Quoting one in
   a public reply is a clinical statement under a doctor's name with no
   integrity check on it, and a stale citation number is worse in a comment

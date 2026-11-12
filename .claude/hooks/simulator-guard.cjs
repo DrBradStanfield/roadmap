@@ -206,7 +206,8 @@ function usesSimulator({ tool, args, raws }) {
   return args.some((a) => DOOR_ACTIONS.includes(a)) && dests.length === 0;
 }
 
-module.exports = { decide, MAX_BOOTED_SIMULATORS };
+// scan, commandIndex and base are shared with broad-test-guard.cjs (US-71 AC10).
+module.exports = { decide, MAX_BOOTED_SIMULATORS, scan, commandIndex, base };
 
 if (require.main === module) {
   let input;

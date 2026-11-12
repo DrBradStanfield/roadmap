@@ -20,10 +20,15 @@ cloud sessions and CI never run, request or wait on it (US-40 AC8; Brad,
 to run himself, under the contract's Tier 3 restrictions.
 
 **How many, and when to start it.** Several Codex runs may go at once (Brad,
-2026-11-10: "You can run multiple codex agents"). Before starting one, check
-`uptime` and `memory_pressure | tail -1`: hold a new run while the load average
-is over about 8 or free memory is under about 20% (macOS swap stays high long
-after use, so swap alone misleads). Start it in the same message as its
+2026-11-10: "You can run multiple codex agents"), at most two on this Mac.
+Start every run through the machine-wide queue:
+`tools/mac-slot.sh codex -- node tools/codex-review.mjs …` (heavy local test
+runs: `tools/mac-slot.sh tests -- npx vitest …`). It waits for a free slot,
+then while the 1-minute load is 8 or more, so you never check `uptime`
+yourself; `tools/mac-slot.sh status` shows the holders (US-71 AC9). It does not
+read memory: hold a run while `memory_pressure | tail -1` shows free memory
+under about 20% (macOS swap stays high long after use, so swap alone
+misleads). Start it in the same message as its
 `adversary`, both in the background, never one after the other: the two are
 independent, and waiting for one doubles the wall-clock.
 
@@ -95,6 +100,8 @@ Boundary tests: `tools/codex-review.test.ts` (fake codex; they prove the
 wrapper, not the model).
 
 ## Run
+
+On this Mac, prefix each line with `tools/mac-slot.sh codex --` (above).
 
 ```bash
 node tools/codex-review.mjs --out "$SCRATCH/codex-review.json"          # uncommitted work

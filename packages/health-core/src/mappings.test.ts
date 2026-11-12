@@ -390,6 +390,22 @@ describe('screeningsToInputs', () => {
     expect(inputs.colorectalFollowupDate).toBe('2024-01');
   });
 
+  it('US-07 AC1j: the colonoscopy follow-up time round-trips through the file as a whole number, 1 to 10', async () => {
+    const { createEmptyFile } = await import('./roadmap-file');
+    const { setScreening } = await import('./state-edits');
+    const { fileScreeningRows } = await import('./file-inputs');
+    const write = (value: string) => setScreening(createEmptyFile({ deviceId: 'rt', now: '2026-11-12T00:00:00Z' }),
+      'colorectal_followup_interval_years', value, '2026-11-12T01:00:00Z');
+    for (const n of [1, 3, 10]) {
+      const file = write(String(n));
+      expect(file.screenings.colorectalFollowupIntervalYears).toBe(n);
+      expect(screeningsToInputs(fileScreeningRows(file.screenings)).colorectalFollowupIntervalYears).toBe(n);
+    }
+    for (const bad of ['0', '11', '2.5']) {
+      expect(screeningsToInputs(fileScreeningRows(write(bad).screenings)).colorectalFollowupIntervalYears, bad).toBeUndefined();
+    }
+  });
+
   it('converts breast screening fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'breast_frequency', value: 'annual', updatedAt: '' },

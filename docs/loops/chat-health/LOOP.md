@@ -177,7 +177,7 @@ LEARNINGS line counts). The lint adds a section: compact the others to stay ≤1
   (`chat-system-prompt.md`, `chat-router-prompt.md`,
   `chat-classifier-prompt.md`, `chat-posture-*.md` — compliance and
   clinical-safety carriers) and never edit clinical body content
-  (`health_roadmap_algorithm.md`, `evidence.ts`, `roadmap_text.html`, or any
+  (`health_roadmap_algorithm.md`, `packages/health-core/src/evidence*.ts`, `roadmap_text.html`, or any
   pathway/blog body) — constitution Guardrails apply above all of this.
 
 ## Delivery

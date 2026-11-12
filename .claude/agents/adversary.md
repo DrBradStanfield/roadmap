@@ -12,7 +12,7 @@ Your mandate, universal checks and finding shape are in docs/review-format.md. R
 - Local-first: no health value reaches Brad's server, a log, telemetry or event metadata. No new health-data endpoint. Deletion stays a client-side eraseEpoch bump.
 - FHIR rows are never mutated. A correction appends a row with correctsId and flips the old one to entered-in-error, sticky. One active row per (metric, day). Dedup on stable keys only, never on LLM text.
 - Merge semantics (packages/health-core/src/merge.ts): arrays append-only, scalars last-writer-wins, eraseEpoch monotonic, non-browser writes through sync-manager.ts. Build the two-device sequence that loses or resurrects data.
-- Clinical content: health_roadmap_algorithm.md, evidence.ts and roadmap_text.html change together. Citation numbers and cross-references resolve. Hedged wording stays hedged. The cited source supports the rule.
+- Clinical content: health_roadmap_algorithm.md, packages/health-core/src/evidence*.ts and roadmap_text.html change together. Citation numbers and cross-references resolve. Hedged wording stays hedged. The cited source supports the rule.
 - Security: identity comes only from Shopify's HMAC-verified logged_in_customer_id. Every endpoint sits behind app-proxy HMAC. No wildcard CORS origin, and localhost is never on the allow-list.
 - Modes: hunt for a new boolean, ref or timer that encodes a mode beside an existing state, and for a state union whose data lives outside it (CLAUDE.md "A mode is one named state"; .claude/skills/untangle).
 - Deletions: grep for every identifier, rule or cross-reference that disappeared, and name what still depends on it.

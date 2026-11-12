@@ -63,11 +63,11 @@ const coreRows = (path: string) => read(path).labValues.filter((l) => l.core ===
 const backups = (dir: string) => readdirSync(dir).filter((n) => n.includes('.bak-'));
 
 describe('US-31 AC1/AC5 — add', () => {
-  it('US-06 AC18: a raised PSA of 4.04 echoes 4.04, as the app prints it, not 4.0', async () => {
+  it('US-06 AC18: a PSA of 3.96, below the line, echoes 3.96, as the app prints it, not 4.0', async () => {
     const { dir, path } = writeFixture();
-    const result = await captureRun(['add', path, '--metric', 'psa', '--value', '4.04', '--date', '2026-08-14']);
+    const result = await captureRun(['add', path, '--metric', 'psa', '--value', '3.96', '--date', '2026-08-14']);
     expect(result.code).toBe(0);
-    expect(result.stdout).toMatch(/^Added psa 4\.04 ng\/mL on 2026-08-14/);
+    expect(result.stdout).toMatch(/^Added psa 3\.96 ng\/mL on 2026-08-14/);
     rmSync(dir, { recursive: true, force: true });
   });
 

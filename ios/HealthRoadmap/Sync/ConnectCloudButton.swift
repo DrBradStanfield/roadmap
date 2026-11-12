@@ -26,7 +26,7 @@ struct ConnectCloudButton<Label: View>: View {
                 if signingIn { ProgressView().accessibilityLabel("Signing in") }
             }
         }
-        .disabled(signingIn || !provider.isConfigured || sync.erasing)
+        .disabled(signingIn || !provider.isConfigured || sync.eraseRunning())
     }
 
     private func signIn() async {

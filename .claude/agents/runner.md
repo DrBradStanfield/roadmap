@@ -1,6 +1,6 @@
 ---
 name: runner
-description: Haiku executor for plain test, typecheck and build runs in this repo (Brad 2026-11-10) - npm test, npx vitest related, tsc, build scripts. It runs the command it is given and pastes the result verbatim; it never edits files, diagnoses or summarizes failures. Simulator and xcodebuild runs go to `worker` (Sonnet); coding goes to `worker-opus`. Spawn it by name with the exact command(s) to run.
+description: Haiku executor for plain test, typecheck and build runs in this repo (Brad 2026-11-10) - `npx vitest run <test files>`, tsc, build scripts (broad runs are CI's, US-71 AC10). It runs the command it is given and pastes the result verbatim; it never edits files, diagnoses or summarizes failures. Simulator and xcodebuild runs go to `worker` (Sonnet); coding goes to `worker-opus`. Spawn it by name with the exact command(s) to run.
 model: haiku
 tools: Bash, Read
 ---

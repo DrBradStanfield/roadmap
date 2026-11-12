@@ -6,9 +6,25 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Nightly on main in both zones (US-64 AC22). 03:00 UTC is Los Angeles'
+  # evening, when its date differs from the UTC date: the case that zone exists
+  # to catch, and hours before its midnight (08:00 UTC). A second nightly run at
+  # 12:00 UTC adds Auckland: just past its midnight, when a zone ahead of UTC is
+  # on the next date (Brad 2026-11-12).
+  schedule:
+    - cron: '0 3 * * *'
+    - cron: '0 12 * * *'
 
 permissions:
   contents: read
+
+# One run per PR: a newer push to the same PR cancels the older run, which
+# nobody reads any more. Pushes to main, manual and nightly runs each get their
+# own group (the run id), so they are never cancelled or replaced: pages.yml and
+# auto-ship wait for 'test' on those exact commits.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 # Three jobs (US-64 AC12, Brad 2026-11-04): the suite took 7.6 of CI's 9
 # minutes on one runner, and every PR waited on it. `checks` runs everything
@@ -16,14 +32,18 @@ permissions:
 # only when both did. Its name is the check auto-ship.yml waits for, so keep it.
 # The suite runs twice, in UTC and in Los Angeles (US-64 AC22, Brad 2026-11-06):
 # a test that assumes UTC passed CI and failed on Brad's Mac in Auckland (PR 911),
-# and 153 failed in a US zone. Los Angeles catches US-zone behaviour on every
-# run, but "today" read as the UTC date only when CI runs 00:00-08:00 UTC (its
-# evening); Brad's own runs cover a zone ahead of UTC. Zones that differ from
-# UTC every hour (UTC-12 and UTC+14) wait on 28 fixed-clock fixtures (2026-11-06).
+# and 153 failed in a US zone. Since 2026-11-12 (Brad) a PR runs UTC only, 6
+# runners; pushes to main and the 03:00 nightly run both zones. Los Angeles
+# catches US-zone behaviour, but "today" read as the UTC date only when CI runs
+# 00:00-08:00 UTC (its evening). A zone ahead of UTC is the 12:00 UTC nightly
+# run, which adds Auckland: full-suite runs are no longer made on Brad's Mac.
+# Zones that differ from UTC every hour (UTC-12 and UTC+14) wait on 28
+# fixed-clock fixtures (2026-11-06).
 # Public repo: the extra 6 runners cost no minutes and run in parallel.
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -106,11 +126,18 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
-        tz: [UTC, America/Los_Angeles]
+        # PRs run in UTC only; pushes to main and the 03:00 nightly run add Los Angeles;
+        # the 12:00 nightly run and manual runs add Auckland to both (a manual run is
+        # how an Auckland-only failure is re-checked without waiting a day). They keep
+        # the other two zones so their green `test` never says less than a push run's
+        # on the same commit: Pages and Deploy accept any green `test` on main's sha
+        # (US-64 AC22).
+        tz: ${{ fromJSON(github.event_name == 'pull_request' && '["UTC"]' || (github.event_name == 'workflow_dispatch' || github.event.schedule == '0 12 * * *') && '["UTC", "America/Los_Angeles", "Pacific/Auckland"]' || '["UTC", "America/Los_Angeles"]') }}
     env:
       TZ: ${{ matrix.tz }}
     steps:
@@ -130,6 +157,7 @@ jobs:
     if: always()
     needs: [checks, unit]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Every check and every test shard passed
         env:

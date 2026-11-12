@@ -152,7 +152,7 @@ function coreMetricOf(row: Row): MetricType | undefined {
  */
 function shownValue(row: Row): string {
   const metric = coreMetricOf(row);
-  // A raised PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
+  // A PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
   if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
   return metric && UNIT_DEFS[metric] ? formatDisplayValue(metric, row.value, 'si') : String(row.value);
 }

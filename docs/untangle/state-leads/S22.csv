@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S22,iPhone state,a connect begun while a disconnect is still closing: refused by S3's closing state,lead,done,"Closed by construction (S3 PR 1, US-25 AC11m): CloudConnection.closing keeps the cloud named, so Sync draws no Connect rows, and its signInStarted and signInReturned cells drop a connect silently; the status reads Disconnecting. CloudConnectionTests testEveryCellOfTheTable_US25_AC11m (closing rows); CloudConnectionPinsTests testAnEditDuringDisconnectsCloseIsRefusedAndLandsNowhere (its Q1 assertions)",1350,no

@@ -14,6 +14,7 @@ import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
+import { ChatLoadLine } from './ChatLoadLine';
 import { ChatThreadList } from './ChatThreadList';
 import { MUTED_CHAT } from './chat-muted';
 import { ColumnHeader } from './ColumnHeader';
@@ -125,7 +126,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
           ref={messagesContainerRef}
           onScroll={handleMessagesScroll}
         >
-          {state.messages.length === 0 && !state.isLoading && (
+          {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
             <div className="chat-empty">
               <p>{muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
             </div>
@@ -142,7 +143,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
               )}
             </React.Fragment>
           ))}
-          {state.isLoading && (
+          <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+          {state.replying && (
             <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}
           {state.error && <div className="chat-error">{state.error}</div>}

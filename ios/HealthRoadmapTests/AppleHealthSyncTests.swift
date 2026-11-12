@@ -518,11 +518,12 @@ final class FakeHealthStore: HealthStoreClient {
     private(set) var ownDeletes = 0
     var deleteFails = false
 
-    func deleteOwnSamples() async throws {
+    func deleteOwnSamples() async throws -> Set<HealthKind> {
         if deleteFails { throw HealthStoreError.locked }
         ownDeletes += 1
         // As HealthKitClient: a kind whose write access is off is not asked (US-72 AC10 edge 2).
         saved.removeAll { $0.kind.map(writable.contains) ?? true }
+        return HealthDeletion.kinds.intersection(writable)
     }
 
     /// k2: the sync ids a remote erase asked Health to delete, one list per call,
