@@ -234,10 +234,10 @@ export async function sendMessage(
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
   asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
+  // The reply is saved only under the erase marks taken as the question is
+  // asked, without the send waiting (US-11 AC2h).
+  opened: ReturnType<typeof askChatHistory> = LOCAL_FIRST ? askChatHistory() : Promise.resolve({ store: null }),
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
-  // The reply is saved only under the erase marks taken now, without the
-  // send waiting (US-11 AC2h).
-  const opened = LOCAL_FIRST ? askChatHistory() : Promise.resolve({ store: null, askedMarks: undefined });
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -285,7 +285,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked, opened);
     }
 
     if (response.status === 429) {

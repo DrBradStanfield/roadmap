@@ -154,3 +154,27 @@ describe.each([
     expect(liveInCloud()).toHaveLength(1);
   });
 });
+
+describe('US-11 AC2h: website chat, a guest whose thread is gone', () => {
+  it('the retry in a new thread is saved only under the marks taken at the first ask', async () => {
+    const store = (await getChatHistory())!;
+    store.listConversations();
+    let calls = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      if (calls++ === 0) {
+        // Another device erases, and this page reads its mark, before the retry.
+        expect((await (await deviceA()).deleteUserData()).success).toBe(true);
+        await store.reload();
+        return new Response(JSON.stringify({ success: false, error: 'Conversation not found', isGuest: true, sessionToken: 'test-token-guest' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, conversationId: 'server-c2', messageId: null, content: 'synthetic answer' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }));
+    expect((await sendWebsite(QUESTION, 'server-c1', null)).result?.content).toBe('synthetic answer');
+    expect(calls).toBe(2);
+    await settle();
+    expect(liveInCloud()).toEqual([]);
+    expect(cloud.files.get(CHAT_FILE)!.json).not.toContain(QUESTION);
+  });
+});
