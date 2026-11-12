@@ -57,7 +57,7 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
   // this browser has chosen, read live here (US-11 AC6); and a second erase while one runs (US-16 AC2f).
   const host = s.host;
   const refusal = s.cloudUnreachable ? ERASE_UNREACHABLE : host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
-    : s.mode.mode === 'erasing' ? ERASE_BUSY : null;
+    : s.saveMode === 'erasing' ? ERASE_BUSY : null;
   if (refusal) return { success: false, error: refusal };
   // On this device, the revision of the bytes read: an unreadable record is
   // replaced only at it, so another tab's repair is never written over (AC9).

@@ -93,7 +93,7 @@ export class RecordSession {
   /** @internal */ current!: RoadmapFile; // set by open()
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
-  /** @internal */ mode: SaveState = SAVE_START;
+  private mode: SaveState = SAVE_START;
   private told: SaveStatus = saveStatus(SAVE_START); // saveStatus(mode), as last told to the host
   private persistTimer: unknown = null;
   private running: Promise<boolean> | null = null;
@@ -202,6 +202,7 @@ export class RecordSession {
 
   /** What a status line shows of the save (lead A1). */
   get saveStatus(): SaveStatus { return saveStatus(this.mode); }
+  /** @internal The mode's name, for the erase; `mode` stays private. */ get saveMode(): SaveState['mode'] { return this.mode.mode; }
 
   /** Device tier: the stored revision this session last took in (US-34 AC6). */
   get seenRevision(): string | null {
@@ -245,9 +246,8 @@ export class RecordSession {
 
   /** Erase the record: `eraseSession` (record-session-erase.ts, US-09 AC23). */
   erase(beforeErase?: () => Promise<void>): Promise<EraseResult> { return eraseSession(this, beforeErase); }
-
   /** "Delete all my data": `deleteAllDataSession` (record-session-erase.ts, US-11 AC2). */
-  deleteAllData(steps?: EraseSteps): Promise<EraseResult & { chatErased: boolean }> { return deleteAllDataSession(this, steps); }
+  deleteAllData(steps: EraseSteps = {}): Promise<EraseResult & { chatErased: boolean }> { return deleteAllDataSession(this, steps); }
 
   /** Force-persist any pending changes (call before navigation). */
   async flush(): Promise<void> {
