@@ -17,7 +17,7 @@
  * cap later if needed. See the implementation build log.
  */
 import { ConflictError, StorageError, fetchOrFail, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
@@ -44,8 +44,9 @@ export class GitHubAdapter implements StorageAdapter {
   private config: GitHubConfig | null;
   private privacyCheck?: Promise<void>;
 
-  /** First connect: pass the pasted config. Reconnect: omit, loads from storage. */
-  constructor(config?: GitHubConfig) {
+  /** First connect: pass the pasted config. Reconnect: omit, loads from storage.
+   *  `signedInAt`: the sign-in stamp its saves carry (setSignIn, US-09 AC45). */
+  constructor(config?: GitHubConfig, private readonly signedInAt = signInStamp()) {
     this.config = config ?? loadConfig();
   }
 
@@ -87,7 +88,7 @@ export class GitHubAdapter implements StorageAdapter {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    setSignIn(CONFIG_KEY, JSON.stringify(this.config));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.config), this.signedInAt);
   }
 
   async disconnect(): Promise<void> {

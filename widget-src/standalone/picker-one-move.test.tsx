@@ -188,25 +188,47 @@ describe('US-09 AC45: once log-off has begun, no connect writes a sign-in or rem
     expect(await afterTheConnectEnds()).toEqual({ remembered: null, githubConfig: null, freshLoadPicks: 'local' });
   });
 
-  it('GitHub and self-host connects and the remembered provider write nothing', async () => {
+  it('GitHub and self-host connects begun before it, and the remembered provider, write nothing', async () => {
     const { GitHubAdapter, WebDavAdapter } = await import('../src/storage');
+    const { signInStamp } = await import('../src/lib/storage');
     const { beginRoadmapLogOff } = await import('../src/storage/roadmap-store');
+    const startedAt = signInStamp();
+    const github = new GitHubAdapter({ token: GOOD_TOKEN, owner: 'someone', repo: 'health' });
+    const dav = new WebDavAdapter({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD });
     beginRoadmapLogOff();
     localStorage.removeItem(BACKEND_KEY);
-    await new GitHubAdapter({ token: GOOD_TOKEN, owner: 'someone', repo: 'health' }).connect();
-    await new WebDavAdapter({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }).connect();
-    connect.rememberBackend('github');
+    await github.connect();
+    await dav.connect();
+    connect.rememberBackend('github', startedAt);
     expect([localStorage.getItem(GITHUB_CONFIG), localStorage.getItem(SELFHOST_CONFIG), localStorage.getItem(BACKEND_KEY)])
       .toEqual([null, null, null]);
   });
 
   it('control: before log-off, the same writes land', async () => {
     const { GitHubAdapter, WebDavAdapter } = await import('../src/storage');
+    const { signInStamp } = await import('../src/lib/storage');
     await new GitHubAdapter({ token: GOOD_TOKEN, owner: 'someone', repo: 'health' }).connect();
     await new WebDavAdapter({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }).connect();
-    connect.rememberBackend('github');
+    connect.rememberBackend('github', signInStamp());
     expect(localStorage.getItem(GITHUB_CONFIG)).toContain(GOOD_TOKEN);
     expect(localStorage.getItem(SELFHOST_CONFIG)).toContain(GOOD_PASSWORD);
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
+  });
+});
+
+describe('US-09 AC45: a sign-in begun after another tab logged off', () => {
+  it('a GitHub connect started after it is saved and remembered', async () => {
+    // This page runs on Dropbox and listens for other tabs' log-offs, as a cloud page does.
+    const { latchOnOtherTabsLogOff } = await import('../src/storage/local-storage-adapter');
+    latchOnOtherTabsLogOff();
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' })); });
+    localStorage.removeItem(BACKEND_KEY); // that tab ran on the device, and forgot the provider
+
+    const view = render(<Host />);
+    open(view);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect([reload.mock.calls.length, errorText()]).toEqual([1, '']));
+    expect(JSON.parse(localStorage.getItem(GITHUB_CONFIG) ?? 'null')).toMatchObject({ token: GOOD_TOKEN, owner: 'someone', repo: 'health' });
     expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
   });
 });
@@ -371,6 +393,27 @@ describe('US-09 AC45: a page the browser shows again from its back-forward cache
     expect(optionButtons().every((b) => !b.disabled)).toBe(true);
     expect(logOffLink()?.disabled).toBe(false);
     expect(errorText()).toBe('');
+  });
+
+  it('while a GitHub connect still waits on its repository check, the picker stays claimed and that connect ends alone', async () => {
+    const gh = deferred();
+    holdGitHub = gh.promise;
+    const view = render(<Host />);
+    open(view);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect(fetchCalls.some((u) => u.startsWith('https://api.github.com/'))).toBe(true));
+    close(view);
+    pageshow(true);
+
+    open(view);
+    expect((view.getByRole('button', { name: 'Connecting…' }) as HTMLButtonElement).disabled).toBe(true);
+    await tryAnotherMove(view);
+    gh.resolve();
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    await settle();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(downloads()).toBe(1);
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
   });
 
   it('control: a first page show leaves the move running', async () => {

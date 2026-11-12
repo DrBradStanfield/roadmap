@@ -276,7 +276,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
       vi.stubGlobal('localStorage', makeStorage('health_roadmap_local_erase_generation'));
       localStorage.setItem(UNRELATED_KEY, 'keep');
       for (const [key, value] of Object.entries(seeded)) localStorage.setItem(key, value);
-      connect.rememberBackend(backend);
+      connect.rememberBackend(backend, (await import('../src/lib/storage')).signInStamp());
       const { Sentry } = await import('../src/lib/sentry');
       await connect.logOff(backend);
       for (const key of Object.keys(seeded)) expect(localStorage.getItem(key)).toBeNull();

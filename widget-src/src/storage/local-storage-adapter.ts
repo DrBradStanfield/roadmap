@@ -9,7 +9,7 @@
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
 import {
-  DOC_KEY_PREFIX, localHealthWritesStopped, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
+  DOC_KEY_PREFIX, localHealthWritesStopped, noteLogOffSeen, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 
@@ -31,6 +31,7 @@ export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
 // The flag itself is in lib/storage, shared with the mirror and the drafts.
 export function stopRoadmapLocalWrites(): void {
+  noteLogOffSeen();
   stopLocalHealthWrites();
   signalLogOff();
 }
@@ -41,11 +42,15 @@ export function signalLogOff(): void {
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
 }
 function latchOnLogOffSignal(event: Event): void {
-  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) stopLocalHealthWrites();
+  if ((event as StorageEvent).key !== LOG_OFF_SIGNAL_KEY) return;
+  noteLogOffSeen();
+  stopLocalHealthWrites();
 }
 let logOffHeardWhileLoading = false;
 function noteLogOffSignal(event: Event): void {
-  if ((event as StorageEvent).key === LOG_OFF_SIGNAL_KEY) logOffHeardWhileLoading = true;
+  if ((event as StorageEvent).key !== LOG_OFF_SIGNAL_KEY) return;
+  noteLogOffSeen();
+  logOffHeardWhileLoading = true;
 }
 /** The page is starting (standalone main(), before its first await) or a
  *  cloud host was just built, and its first read may still be running. The

@@ -17,7 +17,7 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, type Backend } from './connect';
-import { dispatch, runMove, useSwitchFlow } from './switch-flow';
+import { dispatch, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
@@ -130,9 +130,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   const flow = useSwitchFlow();
   const busy = flow.kind !== 'idle';
   const error = flow.kind === 'idle' ? flow.error : null;
-  const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>(
-    flow.kind === 'switching' ? flow.step : flow.kind === 'loggingOff' ? 'log-off' : 'list',
-  );
+  const [step, setStep] = useState<MoveStep>(stepOf(flow) ?? 'list');
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
   const dialogRef = useModalDialog();
@@ -149,7 +147,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
       setStep(id);
       return;
     }
-    void runMove({ type: 'start', to: id, step: 'list' }, async () => {
+    void runMove({ type: 'start', to: id, step: 'list' }, async ({ navigating }) => {
       await prepareSwitch(current);
       if (id === 'local') {
         forgetBackend();
@@ -157,20 +155,21 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
         return;
       }
       trackProductEvent('cloud_connect_started', { provider: id });
-      // Full-page OAuth redirect — never resolves; completes in app.tsx on return.
+      // Full-page OAuth redirect — never resolves; completes in resolve-backend.ts on return.
+      navigating();
       await adapterFor(id)!.connect();
     });
   };
 
   const submitForm = (id: 'github' | 'self-host'): void => {
-    void runMove({ type: 'start', to: id, step: id }, async () => {
+    void runMove({ type: 'start', to: id, step: id }, async ({ startedAt }) => {
       await prepareSwitch(current);
       trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
         id === 'github'
-          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() })
-          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password });
-      await finishFormConnect(adapter, id); // validates → migrates → reloads
+          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() }, startedAt)
+          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password }, startedAt);
+      await finishFormConnect(adapter, id, startedAt); // validates → migrates → reloads
     });
   };
 

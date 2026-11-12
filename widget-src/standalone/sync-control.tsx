@@ -19,7 +19,7 @@ import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
-import { safeGetItem, safeSetItem } from '../src/lib/storage';
+import { safeGetItem, safeSetItem, signInStamp } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
@@ -104,10 +104,11 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
     reconnectInFlight = true;
     void run(async () => {
       try {
-        const gd = new GoogleDriveAdapter(googleDriveConfig());
+        const startedAt = signInStamp(); // this reconnect's sign-in stamp (US-09 AC45)
+        const gd = new GoogleDriveAdapter(googleDriveConfig(), startedAt);
         await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
         await liftLocalInto(gd, 'google-drive');
-        rememberBackend('google-drive');
+        rememberBackend('google-drive', startedAt);
         location.reload();
       } finally {
         reconnectInFlight = false;

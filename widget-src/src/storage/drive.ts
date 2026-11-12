@@ -28,7 +28,7 @@ import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catch
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply } from './drive-token-reply';
-import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 export interface GoogleDriveConfig {
@@ -244,7 +244,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /** The record's copies as last found or made, winner first (US-10 AC4a). */
   private readonly recordIds = new Set<string>();
 
-  constructor(private readonly config: GoogleDriveConfig) {
+  constructor(private readonly config: GoogleDriveConfig, private readonly signedInAt = signInStamp()) {
     this.stored = getJson<Stored>(CONFIG_KEY);
     this.tokens = getJson<DriveTokens>(TOKENS_KEY);
     // One-time normalization: fold the legacy single-file `fileId` slot into
@@ -254,7 +254,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         ...this.stored,
         fileIds: { ...(this.stored.fileIds ?? {}), [ROADMAP_FILE_NAME]: this.stored.fileId },
       };
-      setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+      setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     }
     // The record id this browser saved last: a reload inside Drive's search
     // lag still finds the record, and never creates a second one (US-10 AC4a).
@@ -311,7 +311,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * (matched via this adapter's own PKCE session entry), exchanges it on the
    * stateless endpoint and returns a connected adapter; otherwise null.
    */
-  static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
+  static async completeRedirect(config: GoogleDriveConfig, startedAt = signInStamp()): Promise<GoogleDriveAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
     if (!grantsDrive(claimed.scope)) {
@@ -338,12 +338,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
       expiresAt: expiry(json.expiresIn),
-    } satisfies DriveTokens));
+    } satisfies DriveTokens), startedAt);
     const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
-    setSignIn(CONFIG_KEY, JSON.stringify({ ...(accountEmail ? { accountEmail } : {}) } satisfies Stored));
+    setSignIn(CONFIG_KEY, JSON.stringify({ ...(accountEmail ? { accountEmail } : {}) } satisfies Stored), startedAt);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return new GoogleDriveAdapter(config);
+    return new GoogleDriveAdapter(config, startedAt);
   }
 
   /**
@@ -354,7 +354,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const token = await this.acquireViaGis();
     this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt });
     this.stored = this.stored ?? {};
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
   }
 
   /**
@@ -390,7 +390,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
       this.stored = { ...this.stored, accountEmail };
-      setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+      setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     }
     this.saveTokens({
       accessToken: json.accessToken,
@@ -568,7 +568,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private saveTokens(tokens: DriveTokens): void {
     this.tokens = tokens;
-    setSignIn(TOKENS_KEY, JSON.stringify(tokens));
+    setSignIn(TOKENS_KEY, JSON.stringify(tokens), this.signedInAt);
   }
 
   private clearTokens(): void {
@@ -596,7 +596,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private forgetFileId(fileName: string): void {
     const { [fileName]: _gone, ...rest } = this.stored?.fileIds ?? {};
     this.stored = { ...(this.stored ?? {}), fileIds: rest };
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
   }
 
   /** Cache the record's winner for the next page load. */
@@ -611,7 +611,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       ...(this.stored ?? {}),
       fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId },
     };
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
   }
 
   /** The app folder for a new secondary file, checked live first. A file made
@@ -624,7 +624,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (await driveFileIsLive(await this.getToken(), id)) return id;
     const { folderId: _gone, subfolders: _under, folderName: _named, ...rest } = this.stored ?? {};
     this.stored = rest;
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     return this.ensureFolderId();
   }
 
@@ -642,7 +642,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME }; // fresh create = current name
     }
     this.stored = { ...(this.stored ?? {}), folderId: id };
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     return id;
   }
 
@@ -664,7 +664,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         if (this.stored?.folderId !== folderId || (!res.ok && res.status !== 404)) return; // replaced, or refused: retried; a gone folder is done (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
-      setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+      setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     } catch {
       /* cosmetic — retried next session */
     }
@@ -685,7 +685,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       ...(this.stored ?? {}),
       subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
     };
-    setSignIn(CONFIG_KEY, JSON.stringify(this.stored));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.stored), this.signedInAt);
     return id;
   }
 

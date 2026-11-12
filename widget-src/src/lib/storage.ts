@@ -257,10 +257,35 @@ export function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch {}
 }
 
-/** A cloud sign-in, its config or the remembered provider. Refused once this
- *  page's log-off has begun, so nothing signs the device back in (US-09 AC45). */
-export function setSignIn(key: string, value: string): void {
-  if (!healthWritesStopped) safeSetItem(key, value);
+/** How many log-offs this page has heard: its own, or another tab's, while
+ *  loading or after. Bumped at once, before any await (US-09 AC45). */
+let logOffSeen = 0;
+export function noteLogOffSeen(): void {
+  logOffSeen += 1;
+}
+/** Taken when a sign-in starts: a connect, an OAuth return, a reconnect, or
+ *  an adapter built on this page. */
+export function signInStamp(): number {
+  return logOffSeen;
+}
+/** What each stamp has saved on this page, so a stale one can take it back. */
+const savedBy = new Map<number, Map<string, string>>();
+
+/** A cloud sign-in, its config or the remembered provider, saved only for a
+ *  sign-in that started after the latest log-off this page has heard
+ *  (US-09 AC45). A refused write also takes back what the same stamp saved
+ *  before, where nothing has replaced it since, so a sign-in lands whole or
+ *  not at all. True when it was saved. */
+export function setSignIn(key: string, value: string, startedAt: number): boolean {
+  const saved = savedBy.get(startedAt) ?? new Map<string, string>();
+  if (startedAt !== logOffSeen) {
+    for (const [k, v] of saved) if (safeGetItem(k) === v) safeRemoveItem(k);
+    savedBy.delete(startedAt);
+    return false;
+  }
+  safeSetItem(key, value);
+  savedBy.set(startedAt, saved.set(key, value));
+  return true;
 }
 
 export function safeRemoveItem(key: string): void {

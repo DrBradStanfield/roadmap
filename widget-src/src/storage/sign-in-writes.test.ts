@@ -61,15 +61,29 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
+/** A fetch whose replies wait until `release`. */
+function held(reply: () => Response): { calls: () => number; release: () => void } {
+  let release!: () => void;
+  const gate = new Promise<void>((done) => { release = done; });
+  const fetchMock = vi.fn(async () => { await gate; return reply(); });
+  vi.stubGlobal('fetch', fetchMock);
+  return { calls: () => fetchMock.mock.calls.length, release: () => release() };
+}
+const flush = () => new Promise((done) => setTimeout(done, 0));
+
 const CASES: [string, boolean][] = [['once log-off has begun', true], ['control: before log-off', false]];
 
-describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no sign-in', () => {
+describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no sign-in begun before it', () => {
   it.each(CASES)('Dropbox code exchange, %s', async (_name, logOffBegun) => {
     returningFrom(DROPBOX_PKCE);
-    vi.stubGlobal('fetch', vi.fn(async () => json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 })));
-    await page(logOffBegun);
+    const exchange = held(() => json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 }));
     const { DropboxAdapter } = await import('./dropbox');
-    await DropboxAdapter.completeRedirect(DROPBOX);
+    const returning = DropboxAdapter.completeRedirect(DROPBOX);
+    await flush();
+    expect(exchange.calls()).toBe(1);
+    await page(logOffBegun);
+    exchange.release();
+    await returning;
     if (logOffBegun) expect(local.has(DROPBOX_TOKENS)).toBe(false);
     else expect(read(DROPBOX_TOKENS)).toMatchObject({ accessToken: 'at-new', refreshToken: 'rt-new' });
   });
@@ -79,18 +93,23 @@ describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no s
     vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.includes('oauth2/token')
       ? json({ access_token: 'at-new', expires_in: 14400 })
       : json({ email: 'a@example.com', email_verified: true }))));
-    await page(logOffBegun);
     const { DropboxAdapter } = await import('./dropbox');
-    await new DropboxAdapter(DROPBOX).accountEmail();
+    const live = new DropboxAdapter(DROPBOX);
+    await page(logOffBegun);
+    await live.accountEmail();
     expect(read(DROPBOX_TOKENS).accessToken).toBe(logOffBegun ? 'at-old' : 'at-new');
   });
 
   it.each(CASES)('Google Drive code exchange, %s', async (_name, logOffBegun) => {
     returningFrom(DRIVE_PKCE);
-    vi.stubGlobal('fetch', vi.fn(async () => json({ accessToken: 'at-new', refreshToken: 'rt-new', expiresIn: 3600, idToken })));
-    await page(logOffBegun);
+    const exchange = held(() => json({ accessToken: 'at-new', refreshToken: 'rt-new', expiresIn: 3600, idToken }));
     const { GoogleDriveAdapter } = await import('./drive');
-    await GoogleDriveAdapter.completeRedirect(DRIVE);
+    const returning = GoogleDriveAdapter.completeRedirect(DRIVE);
+    await flush();
+    expect(exchange.calls()).toBe(1);
+    await page(logOffBegun);
+    exchange.release();
+    await returning;
     if (logOffBegun) {
       expect([local.has(DRIVE_TOKENS), local.has(DRIVE_CONFIG)]).toEqual([false, false]);
     } else {
@@ -103,21 +122,31 @@ describe('US-09 AC45: once log-off has begun, Dropbox and Google Drive save no s
     local.set(DRIVE_TOKENS, JSON.stringify(EXPIRED));
     local.set(DRIVE_CONFIG, JSON.stringify({ accountEmail: 'a@example.com' }));
     vi.stubGlobal('fetch', vi.fn(async () => json({ accessToken: 'at-new', expiresIn: 3600, idToken })));
-    await page(logOffBegun);
     const { GoogleDriveAdapter } = await import('./drive');
-    expect(await new GoogleDriveAdapter(DRIVE).tryServerRefresh()).toBe(true);
+    const live = new GoogleDriveAdapter(DRIVE);
+    await page(logOffBegun);
+    expect(await live.tryServerRefresh()).toBe(true);
     expect(read(DRIVE_TOKENS).accessToken).toBe(logOffBegun ? 'at-old' : 'at-new');
     expect(read(DRIVE_CONFIG)).toEqual({ accountEmail: logOffBegun ? 'a@example.com' : 'b@example.com' });
   });
 
-  it.each(CASES)('Google Drive file-id cache, %s', async (_name, logOffBegun) => {
-    // A legacy single-file slot is folded into the per-name map on construction: a config write.
-    local.set(DRIVE_CONFIG, JSON.stringify({ fileId: 'file-1' }));
-    const before = local.get(DRIVE_CONFIG);
-    await page(logOffBegun);
+  it.each(CASES)('Google Drive file-id cache, which marks Drive connected on the next load, %s', async (_name, logOffBegun) => {
+    local.set(DRIVE_CONFIG, JSON.stringify({ fileIds: { 'health-roadmap.json': 'file-1' } }));
     const { GoogleDriveAdapter } = await import('./drive');
-    new GoogleDriveAdapter(DRIVE);
-    if (logOffBegun) expect(local.get(DRIVE_CONFIG)).toBe(before);
-    else expect(read(DRIVE_CONFIG)).toMatchObject({ fileIds: { 'health-roadmap.json': 'file-1' } });
+    const live = new GoogleDriveAdapter(DRIVE) as unknown as { forgetFileId: (name: string) => void };
+    await page(logOffBegun);
+    local.delete(DRIVE_CONFIG); // the log-off's wipe of the Drive sign-in
+    live.forgetFileId('health-roadmap.json');
+    if (logOffBegun) expect(local.has(DRIVE_CONFIG)).toBe(false);
+    else expect(read(DRIVE_CONFIG)).toEqual({ fileIds: {} });
+  });
+
+  it('a sign-in begun after the log-off is saved', async () => {
+    returningFrom(DROPBOX_PKCE);
+    vi.stubGlobal('fetch', vi.fn(async () => json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 })));
+    await page(true);
+    const { DropboxAdapter } = await import('./dropbox');
+    await DropboxAdapter.completeRedirect(DROPBOX);
+    expect(read(DROPBOX_TOKENS)).toMatchObject({ accessToken: 'at-new', refreshToken: 'rt-new' });
   });
 });

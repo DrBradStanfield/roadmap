@@ -19,7 +19,7 @@
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
@@ -58,8 +58,8 @@ function loadTokens(): DropboxTokens | null {
   return getJson<DropboxTokens>(TOKEN_KEY);
 }
 
-function saveTokens(tokens: DropboxTokens): void {
-  setSignIn(TOKEN_KEY, JSON.stringify(tokens));
+function saveTokens(tokens: DropboxTokens, startedAt: number): void {
+  setSignIn(TOKEN_KEY, JSON.stringify(tokens), startedAt);
 }
 
 /** A token reply holds a non-empty access token and a finite expiry, and at
@@ -79,7 +79,8 @@ export class DropboxAdapter implements StorageAdapter {
   readonly label = 'Dropbox';
   private tokens: DropboxTokens | null;
 
-  constructor(private readonly config: DropboxConfig) {
+  /** `signedInAt`: the sign-in stamp its saves carry (setSignIn, US-09 AC45). */
+  constructor(private readonly config: DropboxConfig, private readonly signedInAt = signInStamp()) {
     this.tokens = loadTokens();
   }
 
@@ -125,7 +126,7 @@ export class DropboxAdapter implements StorageAdapter {
    * `code`, exchanges it for tokens and returns a connected adapter; otherwise
    * returns null (not a return from Dropbox).
    */
-  static async completeRedirect(config: DropboxConfig): Promise<DropboxAdapter | null> {
+  static async completeRedirect(config: DropboxConfig, startedAt = signInStamp()): Promise<DropboxAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
 
@@ -153,10 +154,10 @@ export class DropboxAdapter implements StorageAdapter {
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
       expiresAt: Date.now() + json.expires_in * 1000,
-    });
+    }, startedAt);
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return new DropboxAdapter(config);
+    return new DropboxAdapter(config, startedAt);
   }
 
   async disconnect(): Promise<void> {
@@ -329,7 +330,7 @@ export class DropboxAdapter implements StorageAdapter {
       accessToken: json.access_token,
       expiresAt: Date.now() + json.expires_in * 1000,
     };
-    saveTokens(this.tokens);
+    saveTokens(this.tokens, this.signedInAt);
   }
 
   /**

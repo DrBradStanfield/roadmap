@@ -50,7 +50,7 @@ describe('resolveRemembered on a browser that blocks storage (US-09 AC16)', () =
     expect(resolved.reconnect).toBeUndefined();
     // The remembered-choice helpers are what the connect paths call next.
     expect(rememberedBackend()).toBeNull();
-    expect(() => rememberBackend('dropbox')).not.toThrow();
+    expect(() => rememberBackend('dropbox', 0)).not.toThrow(); // 0: a fresh page's sign-in stamp
     expect(() => forgetBackend()).not.toThrow();
   });
 });

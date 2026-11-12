@@ -18,7 +18,7 @@
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setSignIn, safeRemoveItem } from '../lib/storage';
+import { getJson, setSignIn, signInStamp, safeRemoveItem } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
@@ -48,8 +48,9 @@ export class WebDavAdapter implements StorageAdapter {
   readonly label = 'Self-host (WebDAV)';
   private config: WebDavConfig | null;
 
-  /** First connect: pass the config. Reconnect: omit, loads from storage. */
-  constructor(config?: WebDavConfig) {
+  /** First connect: pass the config. Reconnect: omit, loads from storage.
+   *  `signedInAt`: the sign-in stamp its saves carry (setSignIn, US-09 AC45). */
+  constructor(config?: WebDavConfig, private readonly signedInAt = signInStamp()) {
     this.config = config ?? loadConfig();
   }
 
@@ -71,7 +72,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`);
     }
-    setSignIn(CONFIG_KEY, JSON.stringify(this.config));
+    setSignIn(CONFIG_KEY, JSON.stringify(this.config), this.signedInAt);
   }
 
   async disconnect(): Promise<void> {

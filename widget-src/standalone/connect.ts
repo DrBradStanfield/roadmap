@@ -153,13 +153,13 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * adapter.connect() (throws on failure — the caller surfaces the message), lift
  * on-device data up, remember the choice, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
- * app.tsx on return), so they don't go through here.
+ * resolve-backend.ts on return), so they don't go through here. `startedAt` is
+ * the move's sign-in stamp; the adapter was built with it too (US-09 AC45).
  */
-export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend): Promise<void> {
+export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend, startedAt: number): Promise<void> {
   await adapter.connect();
   await liftLocalInto(adapter, backend);
-  rememberBackend(backend);
-  trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
+  if (rememberBackend(backend, startedAt)) trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
   location.reload();
 }
 
@@ -193,8 +193,10 @@ export function adapterFor(backend: Backend): StorageAdapter | null {
 export function rememberedBackend(): Backend | null {
   return safeGetItem(BACKEND_KEY) as Backend | null;
 }
-export function rememberBackend(backend: Backend): void {
-  setSignIn(BACKEND_KEY, backend);
+/** Saved only for a sign-in that started after the latest log-off this page
+ *  heard (US-09 AC45); true when saved. */
+export function rememberBackend(backend: Backend, startedAt: number): boolean {
+  return setSignIn(BACKEND_KEY, backend, startedAt);
 }
 export function forgetBackend(): void {
   safeRemoveItem(BACKEND_KEY);
