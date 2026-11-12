@@ -210,8 +210,19 @@ final class DataEraserTests: XCTestCase {
         let cloudChat = try XCTUnwrap(dropbox.chat).text
         XCTAssertFalse(cloudChat.contains(websiteQuestion), "the website's chat in Dropbox is tombstoned")
         let conversations = try XCTUnwrap(object(cloudChat)["conversations"] as? [[String: Any]])
-        XCTAssertEqual(conversations.count, 1)
-        XCTAssertEqual(conversations.first?["deleted"] as? Bool, true)
+        func isContentFreeTombstone(_ c: [String: Any]) -> Bool {
+            c["deleted"] as? Bool == true && c["title"] as? String == "" && (c["messages"] as? [Any])?.isEmpty == true
+        }
+        // Every conversation that was there before the erase is tombstoned, by id.
+        let before = conversations.filter { ($0["id"] as? String) == "w1" }
+        XCTAssertEqual(before.count, 1, "the website's conversation is kept as a tombstone")
+        XCTAssertTrue(before.allSatisfy(isContentFreeTombstone), "w1: deleted, no title, no messages")
+        // The erase adds exactly one marker (67b0b7837, PR 1368; US-11 AC2h): a
+        // born-deleted conversation whose id starts "erase:", empty title, no messages.
+        let markers = conversations.filter { ($0["id"] as? String)?.hasPrefix("erase:") == true }
+        XCTAssertEqual(markers.count, 1, "one erase marker")
+        XCTAssertTrue(markers.allSatisfy(isContentFreeTombstone), "the marker: deleted, empty title, no messages")
+        XCTAssertEqual(conversations.count, before.count + markers.count, "no other conversation")
         XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the phone's own chat is erased as before")
         XCTAssertEqual(epoch(dropbox.record), 1)
     }

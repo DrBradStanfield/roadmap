@@ -63,11 +63,13 @@ interface ChatEditsDeps {
   showForm: () => void;
   /** ...and shows the field the chat filled. */
   reveal: (cell: { field: string; grid: boolean }) => void;
+  /** The chat's weight, to the box or the grid: the onboarding's answer while the record's weight step is open (US-62 AC31a). */
+  chatWeight: () => void;
 }
 
 export function useChatEdits({
   medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing, handleInputChange, handleMedicationChange,
-  medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal,
+  medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal, chatWeight,
 }: ChatEditsDeps) {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change; only this banner offers Undo): every row the
@@ -90,6 +92,8 @@ export function useChatEdits({
   const medicationsRef = useRef(medications);
   medicationsRef.current = medications;
 
+  const chatWeightRef = useRef(chatWeight); // the page's newest, without a new edit handler each render
+  chatWeightRef.current = chatWeight;
   /** Returns whether the edit filled a grid cell (the table then opens, US-62 AC11). */
   const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
@@ -101,6 +105,7 @@ export function useChatEdits({
     // Fresh users (legacy plain fields, ref null) fall back to setting the form
     // input directly — no flash, unchanged behaviour.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
+      if (edit.field === 'weightKg') chatWeightRef.current();
       // The matrix refuses a weight it does not show (the weight beside the
       // height, US-62 AC13): that edit goes to the visible field.
       const filled = routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix'

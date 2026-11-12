@@ -76,6 +76,7 @@ import {
 } from './youtube-bot-pipeline.server';
 import { safeErrorFields } from './safe-error-fields.server';
 import { postClaimed, countSent } from './youtube-bot-post.server';
+import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
 
 // Every name this file exported before the split (issue #429).
 export { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
@@ -188,6 +189,7 @@ async function processFollowUps(
   token: string,
   budget: number,
   videoPostCounts: Map<string, number>,
+  posting: Posting,
 ): Promise<FollowUpTally> {
   const tally = { posted: 0, unknown: 0, skipped: 0 };
   // Which gate stopped each thread — the only way to see the gates working in prod.
@@ -281,7 +283,8 @@ async function processFollowUps(
 
     const sent = await postClaimed(token, pseudoThread, { id: reply.id, rowId: claimRowId }, replyText, outcome);
     countSent(sent, tally, videoPostCounts, meta.videoId);
-    if (sent === 'halt') break;
+    posting = nextPosting(posting, sent);
+    if (posting.kind === 'halted') break;
   }
 
   return { ...tally, gates };
@@ -310,7 +313,7 @@ async function tick(): Promise<void> {
   }
 
   const tally = { posted: 0, unknown: 0, skipped: 0 };
-  let halted = false; // an account-wide refusal (401, 429, quotaExceeded) ends this tick's posting
+  let posting = OPEN_POSTING; // an account-wide refusal or a second unreadable 400 ends this tick's posting
   let startingDailyCount: number;
   let videoPostCounts: Map<string, number>;
   try {
@@ -385,18 +388,16 @@ async function tick(): Promise<void> {
 
     const sent = await postClaimed(token, thread, { id: thread.topLevelCommentId, rowId: claimRowId }, outcome.replyText!, outcome);
     countSent(sent, tally, videoPostCounts, thread.videoId);
-    if (sent === 'halt') {
-      halted = true;
-      break;
-    }
+    posting = nextPosting(posting, sent);
+    if (posting.kind === 'halted') break;
   }
 
   // Follow-up pass: replies directed at the bot in threads it already
   // answered, within whatever daily budget the top-level loop left.
   let followUps: FollowUpTally = { posted: 0, unknown: 0, skipped: 0, gates: {} };
   try {
-    if (!halted) {
-      followUps = await processFollowUps(token, DAILY_REPLY_CAP - startingDailyCount - tally.posted - tally.unknown, videoPostCounts);
+    if (posting.kind === 'open') {
+      followUps = await processFollowUps(token, DAILY_REPLY_CAP - startingDailyCount - tally.posted - tally.unknown, videoPostCounts, posting);
     }
   } catch (err) {
     logTickError(err);

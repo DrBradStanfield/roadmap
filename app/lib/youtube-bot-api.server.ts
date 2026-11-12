@@ -226,12 +226,10 @@ export async function postReply(token: string, parentCommentId: string, text: st
       }),
       signal: AbortSignal.timeout(YOUTUBE_TIMEOUT_MS),
     });
-    // The status is known once res is here: a body that cannot be read keeps it. A 4xx stays refused, a
-    // 2xx or 5xx unknown; a 400 is unknown, since it may be processingFailure, which may have landed (Q4).
-    const body = await res.text().catch(() => null);
-    const result: PostResult = body === null && res.status === 400
-      ? { kind: 'unknown', why: 'unreadable' }
-      : classifyPost({ status: res.status, body: body ?? '' });
+    // The status is known once res is here: a body that cannot be read keeps it, classified as empty. Other
+    // 4xx stay refused, a 2xx or 5xx unknown; a 400 is unknown, since it may be processingFailure (Q4, N3).
+    const body = await res.text().catch(() => '');
+    const result = classifyPost({ status: res.status, body });
     // A 401 means the cached token is bad: the next tick must fetch a fresh one (C15 R3).
     if (result.kind === 'refused' && result.status === 401) cachedAccessToken = null;
     return result;

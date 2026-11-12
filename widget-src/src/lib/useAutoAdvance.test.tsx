@@ -112,6 +112,16 @@ describe('US-02 AC6b: the wait ends with its field', () => {
     expect(focused()).toBe(outside);
     outside.remove(); target.remove();
   });
+  it('the frame path: an immediate advance\'s frame is cancelled when the field unmounts before it fires', () => {
+    const advance = vi.fn();
+    let schedule!: ReturnType<typeof useAutoAdvance>;
+    function Field() { schedule = useAutoAdvance(true); return null; }
+    const { unmount } = render(<Field/>);
+    act(() => { schedule({ ambiguous: false, advance }); });
+    unmount();
+    wait(50); // well past the next frame
+    expect(advance).not.toHaveBeenCalled();
+  });
 });
 
 describe('US-02 AC6, AC6b: what does not wait, or never jumps, is unchanged', () => {
