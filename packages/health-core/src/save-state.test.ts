@@ -9,7 +9,7 @@ import {
 const clean = (changes: number): SaveBase => ({ mode: 'clean', changes });
 const waiting = (changes: number, saved: number): SaveBase => ({ mode: 'waiting', changes, saved });
 const saving = (changes: number, saved: number, from: number, armed = false): SaveBase => ({ mode: 'saving', changes, saved, from, armed });
-const failed = (changes: number, saved: number): SaveBase => ({ mode: 'failed', changes, saved });
+const failed = (changes: number, saved: number, mirrored = false): SaveBase => ({ mode: 'failed', changes, saved, mirrored });
 const held = (changes: number, saved: number): SaveBase => ({ mode: 'held', changes, saved });
 const erasing = (under: SaveBase): SaveState => ({ mode: 'erasing', under });
 
@@ -27,6 +27,7 @@ const EVENTS: Record<string, SaveEvent> = {
   eraseStarted: { type: 'eraseStarted' },
   eraseEnded: { type: 'eraseEnded' },
   holdEnded: { type: 'holdEnded' },
+  mirrored: { type: 'mirrored', changes: 6 }, // the failed pass's device write landed, holding change 6
 };
 type Row = [SaveState, SaveEffect[]];
 const same = (s: SaveState): Row => [s, []];
@@ -37,6 +38,7 @@ const STATES: Record<string, SaveState> = {
   saving: saving(6, 4, 6),
   savingArmed: saving(7, 4, 6, true),
   failed: failed(6, 4),
+  failedMirrored: failed(6, 4, true), // US-09 AC30: the device copy holds its changes
   held: held(6, 4),
   erasingWaiting: erasing(waiting(7, 6)), // unreachable by any event; held to the table all the same
   erasingSaving: erasing(saving(7, 4, 6)),
@@ -51,6 +53,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     edited: [waiting(6, 5), [ARM]], save: same(clean(5)), landed: same(clean(5)), failed: same(clean(5)),
     synced: same(clean(5)), hold: same(clean(5)), eraseStarted: [erasing(held(6, 5)), []], eraseEnded: same(clean(5)),
     holdEnded: same(clean(5)),
+    mirrored: same(clean(5)),
   },
   waiting: {
     edited: [waiting(7, 5), [ARM]], save: [saving(6, 5, 6), [CANCEL, pass(6)]],
@@ -58,6 +61,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [clean(6), [CANCEL]], hold: [held(6, 5), [CANCEL]],
     eraseStarted: [erasing(held(7, 5)), [CANCEL]], eraseEnded: same(waiting(6, 5)),
     holdEnded: same(waiting(6, 5)),
+    mirrored: same(waiting(6, 5)),
   },
   saving: {
     edited: [saving(7, 4, 6, true), [ARM]], save: same(saving(6, 4, 6)), // joins, never a second pass
@@ -65,6 +69,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [saving(6, 6, 6), []], hold: same(saving(6, 4, 6)),
     eraseStarted: [erasing(saving(7, 4, 6)), []], eraseEnded: same(saving(6, 4, 6)),
     holdEnded: same(saving(6, 4, 6)),
+    mirrored: same(saving(6, 4, 6)),
   },
   savingArmed: {
     edited: [saving(8, 4, 6, true), [ARM]], save: [saving(7, 4, 6), [CANCEL]],
@@ -75,6 +80,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [saving(7, 7, 6), [CANCEL]], hold: [saving(7, 4, 6), [CANCEL]],
     eraseStarted: [erasing(saving(8, 4, 6)), [CANCEL]], eraseEnded: same(saving(7, 4, 6, true)),
     holdEnded: same(saving(7, 4, 6, true)),
+    mirrored: same(saving(7, 4, 6, true)),
   },
   failed: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
@@ -82,6 +88,14 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [clean(6), []], hold: same(failed(6, 4)),
     eraseStarted: [erasing(held(7, 4)), []], eraseEnded: same(failed(6, 4)),
     holdEnded: same(failed(6, 4)),
+    mirrored: [failed(6, 4, true), []],
+  },
+  failedMirrored: {
+    edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
+    landed: same(failed(6, 4, true)), failed: same(failed(6, 4, true)),
+    synced: [clean(6), []], hold: same(failed(6, 4, true)),
+    eraseStarted: [erasing(held(7, 4)), []], eraseEnded: same(failed(6, 4, true)),
+    holdEnded: same(failed(6, 4, true)), mirrored: same(failed(6, 4, true)),
   },
   held: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
@@ -90,6 +104,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     // an erase that ended before eraseStarted (beforeErase threw): held settles
     eraseStarted: [erasing(held(7, 4)), []], eraseEnded: [failed(6, 4), []],
     holdEnded: [failed(6, 4), []], // an erase that ended before eraseStarted settles its held
+    mirrored: same(held(6, 4)),
   },
   erasingWaiting: {
     edited: same(erasing(waiting(7, 6))), save: [erasing(saving(7, 6, 7)), [CANCEL, pass(7)]],
@@ -97,6 +112,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [erasing(clean(7)), [CANCEL]], hold: [erasing(held(7, 6)), [CANCEL]],
     eraseStarted: [erasing(held(8, 6)), [CANCEL]], eraseEnded: [waiting(7, 6), []],
     holdEnded: same(erasing(waiting(7, 6))),
+    mirrored: same(erasing(waiting(7, 6))),
   },
   erasingSaving: {
     edited: same(erasing(saving(7, 4, 6))), // refused: refuses() answers the caller
@@ -107,6 +123,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     eraseStarted: [erasing(saving(8, 4, 6)), []],
     eraseEnded: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
     holdEnded: same(erasing(saving(7, 4, 6))), // another erase ending never unwraps this one (US-16 AC2a)
+    mirrored: same(erasing(saving(7, 4, 6))),
   },
   erasingHeld: {
     edited: same(erasing(held(7, 6))), save: [erasing(saving(7, 6, 7)), [pass(7)]],
@@ -115,6 +132,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     // the erase's write threw (say a non-Conflict error): held settles, nothing left running
     eraseStarted: [erasing(held(8, 6)), []], eraseEnded: [failed(7, 6), []],
     holdEnded: same(erasing(held(7, 6))),
+    mirrored: same(erasing(held(7, 6))),
   },
   erasingClean: {
     edited: same(erasing(clean(7))), save: same(erasing(clean(7))),
@@ -122,6 +140,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: same(erasing(clean(7))), hold: same(erasing(clean(7))),
     eraseStarted: [erasing(held(8, 7)), []], eraseEnded: [clean(7), []],
     holdEnded: same(erasing(clean(7))),
+    mirrored: same(erasing(clean(7))),
   },
   erasingFailed: {
     edited: same(erasing(failed(7, 4))), save: [erasing(saving(7, 4, 7)), [pass(7)]],
@@ -130,6 +149,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     eraseStarted: [erasing(held(8, 4)), []],
     eraseEnded: [failed(7, 4), []], // an erase whose write rejected never stays erasing
     holdEnded: same(erasing(failed(7, 4))),
+    mirrored: same(erasing(failed(7, 4))), // a write that held change 6 does not hold change 7
   },
 };
 
@@ -170,6 +190,17 @@ describe('save-state transition table (A1)', () => {
     expect(transition(erasing(held(5, 5)), EVENTS.eraseEnded)).toEqual({ state: clean(5), effects: [] });
   });
 
+  it('mirrored (US-09 AC30): only a write that holds every change marks a failed pass, so an older write never vouches for a newer failure', () => {
+    // pass A failed at change 6; an edit and pass B failed at 7 before A's device write landed
+    const b = run(failed(6, 4), [EVENTS.edited, EVENTS.save, EVENTS.failed]).state;
+    expect(b).toEqual(failed(7, 4));
+    expect(transition(b, { type: 'mirrored', changes: 6 })).toEqual({ state: failed(7, 4), effects: [] });
+    expect(transition(b, { type: 'mirrored', changes: 7 })).toEqual({ state: failed(7, 4, true), effects: [] });
+    expect(transition(erasing(failed(7, 4)), { type: 'mirrored', changes: 7 })).toEqual({ state: erasing(failed(7, 4, true)), effects: [] });
+    // a new failure starts unmirrored, whatever the last one was
+    expect(run(failed(6, 4, true), [EVENTS.save, EVENTS.failed]).state).toEqual(failed(6, 4));
+  });
+
   it('held never outlives an erase, aborted or failed', () => {
     // beforeErase threw after hold: no eraseStarted ever comes
     expect(run(waiting(6, 5), [EVENTS.hold, EVENTS.holdEnded]).state).toEqual(failed(6, 5));
@@ -205,6 +236,9 @@ describe('derived answers', () => {
     ['erasing over saving', erasing(saving(7, 4, 6)), true, true, false, 'saving'],
     ['erasing over clean', erasing(clean(7)), false, false, false, 'saved'],
     ['erasing over failed', erasing(failed(7, 4)), true, false, false, 'not-saved'],
+    // US-09 AC30: a failed save whose device write landed; until it lands, not-saved
+    ['failed, its device write landed', failed(6, 4, true), true, false, false, 'not-saved-on-device'],
+    ['erasing over a mirrored failed', erasing(failed(7, 4, true)), true, false, false, 'not-saved-on-device'],
     // an erase whose sync write failed: eraseStarted, then eraseEnded with no synced
     ['after a failed erase write', run(clean(5), [EVENTS.eraseStarted, EVENTS.eraseEnded]).state, true, false, false, 'not-saved'],
   ];

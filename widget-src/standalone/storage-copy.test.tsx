@@ -19,6 +19,7 @@ vi.mock('../src/storage', () => ({
   WebDavAdapter: class {},
   isSyncPending: () => false,
   SYNC_PENDING_EVENT: 'hr:sync-pending',
+  SAVE_STATUS_EVENT: 'hr:save-status',
   gisReady: () => true,
   preloadGis: () => undefined,
 }));

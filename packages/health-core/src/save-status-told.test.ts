@@ -66,13 +66,14 @@ describe('RecordSession tells the host its save status (US-09 AC30)', () => {
     store.failWrites = true;
     add(session, 'c');
     await expect(session.flush()).rejects.toThrow();
-    expect(told).toEqual(['saving', 'saved', 'saving', 'not-saved']);
-    expect(session.saveStatus).toBe('not-saved');
+    // not-saved, then the device write lands (the review round's split, below)
+    expect(told).toEqual(['saving', 'saved', 'saving', 'not-saved', 'not-saved-on-device']);
+    expect(session.saveStatus).toBe('not-saved-on-device');
 
     store.failWrites = false;
     add(session, 'd');
     await session.flush();
-    expect(told).toEqual(['saving', 'saved', 'saving', 'not-saved', 'saving', 'saved']);
+    expect(told).toEqual(['saving', 'saved', 'saving', 'not-saved', 'not-saved-on-device', 'saving', 'saved']);
     expect(session.saveStatus).toBe('saved');
   });
 
@@ -101,6 +102,26 @@ describe('RecordSession tells the host its save status (US-09 AC30)', () => {
     await session.flush();
     expect(tried).toEqual(['saving', 'saving', 'saved']);
     expect(store.cloud.files.size).toBe(1); // the save itself went on
+  });
+
+  it('a failed save is not-saved, and not-saved-on-device only once its device write lands (US-09 AC30)', async () => {
+    const store = new FailingStore();
+    const told: SaveStatus[] = [];
+    const { host } = cloudHost(store, told);
+    const device = new FailingStore();
+    const cloud = host as Extract<RecordHost, { tier: 'cloud' }>;
+    const session = await RecordSession.open({ ...cloud, mirror: { ...cloud.mirror, adapter: device } });
+    store.failWrites = true;
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    expect(told).toEqual(['saving', 'not-saved', 'not-saved-on-device']);
+    expect(device.cloud.files.size).toBe(1); // the device copy holds it
+
+    device.failWrites = true; // the device refuses too (a full disk)
+    add(session, 'b');
+    await expect(session.flush()).rejects.toThrow();
+    expect(told.slice(3)).toEqual(['saving', 'not-saved']); // the device refused: never the device line
+    expect(session.saveStatus).toBe('not-saved');
   });
 
   it('a host without the callback saves as before', async () => {

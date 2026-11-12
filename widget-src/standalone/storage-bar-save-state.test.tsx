@@ -35,7 +35,7 @@ vi.mock('./connect', () => ({
 import { StorageBar } from './sync-control';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
-import { markSyncPending } from '../src/storage/web-record-host';
+import { isSyncPending, markSyncPending } from '../src/storage/web-record-host';
 
 /** A cloud whose writes can fail or be held, counting each one tried. */
 class TestCloud extends MemoryAdapter {
@@ -58,7 +58,7 @@ beforeEach(() => {
   localStorage.clear();
   localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear(); });
 
 describe('US-09 AC30: the storage line says what the session knows (lead A1 step d)', () => {
   it('a cloud save that rejects says "Not synced yet." with the device line, tries no second save until an edit, and says Synced once one lands', async () => {
@@ -119,6 +119,40 @@ describe('US-09 AC30: the storage line says what the session knows (lead A1 step
     expect(line()).toBeUndefined(); // saving: the phone bar never flashes for it (owner, 2026-11-12)
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
+    expect(line()).toBe('Not synced yet.');
+  });
+
+  // Review of lead A1 step d (both reviewers): the marker is set before the device
+  // write (US-09 AC4), so the marker alone never proves the device holds the change.
+  it('a failed save whose marker lands but whose device write the browser refuses (quota) says "Not synced yet." alone', async () => {
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    vi.useFakeTimers();
+    render(<StorageBar backend="dropbox" />);
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'health_roadmap_file_v2') throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    cloud.failing = true;
+    await add(80, '2026-06-01');
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(cloud.writes).toBe(1);
+    expect(isSyncPending()).toBe(true); // the marker landed
+    expect(line()).toBe('Not synced yet.');
+  });
+
+  it('a failed save whose device copy is from a newer app (SchemaTooNewError) says "Not synced yet." alone', async () => {
+    new LocalStorageAdapter().writeSync(ROADMAP_FILE_NAME, { schemaVersion: 9999 }, null);
+    const cloud = new TestCloud(new MemoryCloud());
+    await initRoadmapStore(cloud);
+    vi.useFakeTimers();
+    render(<StorageBar backend="dropbox" />);
+    cloud.failing = true;
+    await add(80, '2026-06-01');
+    await advance(PERSIST_DEBOUNCE_MS);
+    expect(cloud.writes).toBe(1);
+    expect(isSyncPending()).toBe(true);
     expect(line()).toBe('Not synced yet.');
   });
 

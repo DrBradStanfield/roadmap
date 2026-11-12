@@ -13,7 +13,7 @@ import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
 import { announce, clearOffFile, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { debounceArmed, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, debounceArmed, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
@@ -722,17 +722,14 @@ export class RecordSession {
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);
-      // The background cloud save failed — this MUST be observable (unreported,
-      // it's silent data-at-risk), and the changes must NOT stay memory-only:
-      // mirror the working copy on-device so a page close can't lose it, and
-      // leave the marker so the next cloud session merges it back up (US-09
-      // AC4; Sentry JAVASCRIPT-REMIX-3X — a mid-session token-refresh failure
-      // made every save throw while the UI still showed the connected state).
-      // Most persist() call sites are fire-and-forget (`void this.persist()`),
-      // so returning false (not rethrowing) keeps them from re-creating an
-      // unhandled rejection; awaited callers (flush) check the result.
-      // Not once another tab moved this browser off this cloud: the device
-      // file is then that tab's record (US-06 AC13, Brad R1).
+      // The background cloud save failed — this MUST be observable (unreported, it's silent data-at-risk),
+      // and the changes must NOT stay memory-only: mirror the working copy on-device so a page close can't
+      // lose it, and leave the marker so the next cloud session merges it back up (US-09 AC4; Sentry
+      // JAVASCRIPT-REMIX-3X — a mid-session token-refresh failure made every save throw while the UI still
+      // showed the connected state). Most persist() call sites are fire-and-forget (`void this.persist()`),
+      // so returning false (not rethrowing) keeps them from re-creating an unhandled rejection; awaited
+      // callers (flush) check the result. Not once another tab moved this browser off this cloud: the
+      // device file is then that tab's record (US-06 AC13, Brad R1).
       const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
       if (mirror && !mirror.writesStopped() && mirror.stillChosen?.() !== false) {
         mirror.pending.set();
@@ -745,8 +742,10 @@ export class RecordSession {
         // sync. Immutable measurement/lab createdAt is kept as written.
         try {
           const ctx = this.ctx();
+          const held = changesOf(this.mode); // what this write holds: the device line needs it to land (US-09 AC30)
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           await saveRecordInto(mirror.adapter, this.current, ctx);
+          this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
           /* device storage unavailable — memory-only is the best we have */

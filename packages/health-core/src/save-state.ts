@@ -21,6 +21,9 @@
  *   edit a pass already took).
  * - saving: a pass runs; `armed` when an edit during it re-armed the debounce.
  * - failed: a pass failed; its changes wait for the next edit or save.
+ *   `mirrored`: the session's device write of them landed (US-09 AC30). The
+ *   marker is set before that write (US-09 AC4), so only this says the
+ *   device holds them. False until the write lands.
  * - held: an erase put the debounce aside while it reads, or swapped the
  *   erased copy in before its write starts. Moves as failed does, and never
  *   outlives the erase: eraseEnded, or holdEnded for an erase that never
@@ -34,7 +37,8 @@
  *
  * Where RecordSession dispatches:
  * - saveLoop: `passFailed` in its catch, clearing `running` in the same turn,
- *   before the awaited mirror write.
+ *   before the awaited mirror write; `mirrored` once that write lands, with
+ *   the changes it held (read before it started).
  * - saveLoop: `passLanded` once a pass's write lands, before `adopt()`; when
  *   it asks for no next pass, `running` clears in the same turn, so a save
  *   asked for from `adopt()` starts its own pass. A next pass runs after
@@ -53,7 +57,7 @@ export type SaveBase =
   | { mode: 'clean'; changes: number }
   | { mode: 'waiting'; changes: number; saved: number }
   | { mode: 'saving'; changes: number; saved: number; from: number; armed: boolean }
-  | { mode: 'failed'; changes: number; saved: number }
+  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean }
   | { mode: 'held'; changes: number; saved: number };
 export type SaveState = SaveBase | { mode: 'erasing'; under: SaveBase };
 
@@ -66,7 +70,8 @@ export type SaveEvent =
   | { type: 'hold' } // an erase puts the debounce aside while it reads
   | { type: 'eraseStarted' } // the erased copy swapped in: one more change
   | { type: 'eraseEnded' } // the erase's write ended, landed or not
-  | { type: 'holdEnded' }; // an erase ended; settles only a bare held
+  | { type: 'holdEnded' } // an erase ended; settles only a bare held
+  | { type: 'mirrored'; changes: number }; // a failed pass's device write landed, holding changes up to `changes`
 
 /** arm: (re)start the debounce, clearing any armed one. cancel: clear it.
  *  pass: run one save pass of the working copy, from change `from`. */
@@ -77,6 +82,11 @@ export interface SaveStep { state: SaveState; effects: SaveEffect[] }
 export const SAVE_START: SaveState = { mode: 'clean', changes: 0 };
 
 const savedOf = (s: SaveBase): number => (s.mode === 'clean' ? s.changes : s.saved);
+
+/** How many changes the working copy holds: what a write of it now holds. */
+export function changesOf(s: SaveState): number {
+  return s.mode === 'erasing' ? s.under.changes : s.changes;
+}
 
 /** True while the debounce is armed. */
 export function debounceArmed(s: SaveState): boolean {
@@ -96,20 +106,22 @@ export function writePending(s: SaveState): boolean {
   return s.mode === 'saving' || s.mode === 'waiting';
 }
 
-export type SaveStatus = 'saved' | 'saving' | 'not-saved';
+/** not-saved-on-device: not saved, and the device copy holds the changes. */
+export type SaveStatus = 'saved' | 'saving' | 'not-saved' | 'not-saved-on-device';
 
 /** What a status line shows. Step (d) words it. */
 export function saveStatus(s: SaveState): SaveStatus {
   if (s.mode === 'erasing') return saveStatus(s.under);
   if (s.mode === 'saving' || s.mode === 'held') return 'saving'; // held: an erase is in progress
   if (!unsaved(s)) return 'saved';
-  return s.mode === 'waiting' ? 'saving' : 'not-saved';
+  if (s.mode === 'waiting') return 'saving';
+  return s.mode === 'failed' && s.mirrored ? 'not-saved-on-device' : 'not-saved';
 }
 
 /** Where a pass, or the debounce over it, ends. */
 function settle(changes: number, saved: number, armed: boolean): SaveBase {
   if (armed) return { mode: 'waiting', changes, saved };
-  return changes === saved ? { mode: 'clean', changes } : { mode: 'failed', changes, saved };
+  return changes === saved ? { mode: 'clean', changes } : { mode: 'failed', changes, saved, mirrored: false };
 }
 
 function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnded' }>): { state: SaveBase; effects: SaveEffect[] } {
@@ -135,6 +147,8 @@ function base(s: SaveBase, e: Exclude<SaveEvent, { type: 'eraseEnded' | 'holdEnd
       if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel };
       if (s.mode !== 'waiting') return same;
       return { state: s.changes === saved ? { mode: 'clean', changes: s.changes } : { mode: 'held', changes: s.changes, saved }, effects: cancel };
+    case 'mirrored': // a write that holds fewer changes never vouches for a later failure
+      return s.mode === 'failed' && e.changes >= s.changes ? { state: { ...s, mirrored: true }, effects: [] } : same;
     case 'eraseStarted':
       return { state: s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: false } : { mode: 'held', changes: s.changes + 1, saved }, effects: cancel };
   }
