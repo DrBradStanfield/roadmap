@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
+import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
@@ -73,6 +73,24 @@ class HeldCloud extends MemoryAdapter {
     this.gate = new Promise<void>((r) => { release = r; });
     const reached = new Promise<void>((r) => { this.entered = r; });
     return { reached, release };
+  }
+  private readGate: Promise<void> | null = null;
+  private readEntered: () => void = () => {};
+  /** Stops the next read of the record (the erase's stored read) until released. */
+  holdRead() {
+    let release!: () => void;
+    this.readGate = new Promise<void>((r) => { release = r; });
+    const reached = new Promise<void>((r) => { this.readEntered = r; });
+    return { reached, release };
+  }
+  override async read(name: string, signal?: AbortSignal) {
+    const gate = name === ROADMAP_FILE_NAME ? this.readGate : null;
+    if (gate) {
+      this.readGate = null;
+      this.readEntered();
+      await gate;
+    }
+    return super.read(name, signal);
   }
   override async write(name: string, body: object, version: string | null, signal?: AbortSignal) {
     if (this.gate && name === ROADMAP_FILE_NAME && ((body as RoadmapFile).meta?.eraseEpoch ?? 0) > 0) {
@@ -188,6 +206,31 @@ describe('US-16 AC2a: a chat reply asked before an erase applies none of its edi
     expect(bodyText()).not.toContain('Medication updated from chat.');
     // The words outlast the erase they report.
     expect(bodyText()).toContain(RECORD_CHANGED_SINCE_ASKED);
+  });
+
+  it('erase still reading when the reply lands: nothing is applied, and the words say the data is being deleted (lead A6)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter);
+    await ask(view);
+    const read = adapter.holdRead();
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.click(await waitFor(() => deleteButton()));
+    await read.reached;
+    await replyLands();
+    expect(bodyText()).not.toContain('Medication updated from chat.');
+    expect(profileBanner()).toBeNull();
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
+    expect(bodyText()).toContain(ERASE_IN_PROGRESS);
+    expect(bodyText()).not.toContain(RECORD_CHANGED_SINCE_ASKED);
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    await wait(1500);
+    expect(await cloudMedications(cloud)).not.toContain('atorvastatin');
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').not.toContain('3.2');
+    expect(bodyText()).not.toContain('Medication updated from chat.');
   });
 
   it('the notice goes at the next question', async () => {
