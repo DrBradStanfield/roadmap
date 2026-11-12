@@ -137,13 +137,14 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  (AC13). A connected record's state is text: the storage card's provider link opens the
  *  picker. On a phone (US-62 AC34) Account draws no Sign in here, since the storage card's
  *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
- *  reconnect needs saying, or the record is not "Synced to" its provider. */
+ *  reconnect or a change not synced needs saying: never for a save that runs, which would
+ *  flash on every edit burst (owner, 2026-11-12). */
 export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
   const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
   const { busy, error, reconnectNow } = useReconnect(reconnect);
   const label = storageBarLabel(backend, reconnect, facts);
-  if (problemsOnly && !reconnect && (backend === 'local' || label === SYNCED_TO(PROVIDERS[backend].label))) return null;
+  if (problemsOnly && !reconnect && label !== NOT_SYNCED_ON_DEVICE && label !== NOT_SYNCED) return null;
   return (
     <>
       {reconnect || (backend === 'local' && !isMobile) ? (

@@ -30,10 +30,16 @@ export function announce(host: RecordHost, change: RemoteChange | null): void {
 }
 
 /** Tell the host a save status it was not told last (US-09 AC30); answer the
- *  status now told. */
+ *  status now told. A callback that throws never stops the save: the status
+ *  stays untold, and the next change tells it again. */
 export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStatus): SaveStatus {
-  if (now !== told) host.saveStatusChanged?.(now);
-  return now;
+  if (now === told) return told;
+  try {
+    host.saveStatusChanged?.(now);
+    return now;
+  } catch {
+    return told;
+  }
 }
 
 /**

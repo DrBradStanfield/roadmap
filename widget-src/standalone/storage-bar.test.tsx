@@ -159,7 +159,7 @@ describe('US-62 AC34 — the bar on a phone', () => {
     expect(bar().textContent).toBe('Sign in to Google again');
   });
 
-  it('problemsOnly (atop My health) draws nothing while all is well, the save words while it is not Synced, and the reconnect', () => {
+  it('problemsOnly (atop My health) draws nothing while all is well or a save runs, the not-synced words, and the reconnect', () => {
     asPhone();
     const only = (backend: Backend, reconnect?: Cloud) => render(<StorageBar backend={backend} reconnect={reconnect} problemsOnly />);
     expect(only('dropbox').container.innerHTML).toBe('');
@@ -172,9 +172,12 @@ describe('US-62 AC34 — the bar on a phone', () => {
     cleanup();
     sync.pending = false;
     sync.status = 'saving';
-    only('dropbox');
-    expect(state()?.textContent).toBe('Saving to Dropbox…');
+    expect(only('dropbox').container.innerHTML).toBe(''); // no flash on every edit burst (owner, 2026-11-12)
     cleanup();
+    sync.pending = true; // saving over a marker: the save may lift it, so still nothing
+    expect(only('dropbox').container.innerHTML).toBe('');
+    cleanup();
+    sync.pending = false;
     sync.status = 'not-saved';
     only('dropbox');
     expect(state()?.textContent).toBe('Not synced yet.');

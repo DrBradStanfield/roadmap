@@ -87,6 +87,22 @@ describe('RecordSession tells the host its save status (US-09 AC30)', () => {
     expect(readBack).toEqual(['saving', 'saved']);
   });
 
+  it('a callback that throws never throws out of the session, and the status stays untold, so the next change tries again', async () => {
+    const store = new FailingStore();
+    const tried: SaveStatus[] = [];
+    const { host } = cloudHost(store, []);
+    const session = await RecordSession.open({
+      ...host,
+      saveStatusChanged: (status) => { tried.push(status); if (tried.length === 1) throw new Error('listener failed'); },
+    });
+    expect(() => add(session, 'a')).not.toThrow();
+    expect(session.saveStatus).toBe('saving');
+    add(session, 'b'); // still saving, but never told: told again
+    await session.flush();
+    expect(tried).toEqual(['saving', 'saving', 'saved']);
+    expect(store.cloud.files.size).toBe(1); // the save itself went on
+  });
+
   it('a host without the callback saves as before', async () => {
     const store = new FailingStore();
     const { host } = cloudHost(store, []);

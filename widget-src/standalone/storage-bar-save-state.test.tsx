@@ -116,6 +116,7 @@ describe('US-09 AC30: the storage line says what the session knows (lead A1 step
     localStorage.setItem('health_roadmap_backend', 'local'); // US-09 AC13: another tab chose this browser
     cloud.failing = true;
     await add(80, '2026-06-01');
+    expect(line()).toBeUndefined(); // saving: the phone bar never flashes for it (owner, 2026-11-12)
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
     expect(line()).toBe('Not synced yet.');
