@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C26,web chat,"A failed chat-list read is not retried until reload",gap,open,"When listConversations returns null, listLanded still moves the list to read and keeps the old list (packages/health-core/src/chat-turn.ts:244), so the next list-wanted is a no-op and the chat list stays as it was until the page reloads. Main's hasLoadedRef behaved the same way. The owner ruled it out of chat-turn slice 3 (2026-11-12).",,no
