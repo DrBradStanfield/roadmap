@@ -45,7 +45,7 @@ export interface PhoneReminders {
   /** The soonest notifications, at most `limit` (iOS's 64 by default). */
   notifications: PhoneNotification[];
   /** Only when the app sent first-seen days: the day each current follow-up item
-   *  (`<category>:<organize|checkin>`) was first seen, for the app to keep and send
+   *  (`<category>:<organize|checkin|repeat>`) was first seen, for the app to keep and send
    *  back. An item that is no longer a follow-up is left out, so its entry clears. */
   firstSeen?: Record<string, string>;
 }

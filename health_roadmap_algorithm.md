@@ -1306,7 +1306,7 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 
 ### Screening Reminders
 
-Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`), except prostate: a PSA of 4.0 or above gives the `screening_prostate` reminder whatever the answer (Brad 2026-11-12).
 
 **Follow-up reminders (US-17 AC15, Brad 2026-11-05).** After an abnormal result (osteoporosis for bone density) with a last screening date, the reminder follows the follow-up card and is never later than the routine date:
 - Follow-up to organize (no status, or `not_organized`): due at the last screening's month, which has passed, so the next daily email carries it.
@@ -1315,7 +1315,7 @@ Same eligibility criteria as the suggestion algorithm (section 8). Checks both i
 
 Neither date depends on today's date, so it never moves. Organize and check-in reminders repeat every 90 days (the screening cooldown) until the status changes. The cooldown is per category and spans follow-up states, so the first organize email can wait up to 90 days after a routine send for the same screening, and a check-in can arrive up to 90 days after the organize email. This covers colorectal, breast, cervical, lung (with the AC1f and AC1g follow-up exception) and bone density. Prostate and endometrial have no follow-up states.
 
-Only the label and date reach the server, and the labels stay plain, but the date reflects the follow-up state over time, as a completed follow-up's post-follow-up date already did. Every reminder email carries one line for all items: "If you have a follow-up to arrange or a result to record, open the Health Roadmap." The iPhone works its reminders out on the phone and never calls the reminder server: its in-app list names the card's follow-up ("Follow-up to organize: repeat colonoscopy", "Follow-up check-in: colposcopy"), and a follow-up notifies on the first morning the phone sees it, or on its due day if later, then every 90 days from that day.
+Only the label and date reach the server, and the labels stay plain, but the date reflects the follow-up state over time, as a completed follow-up's post-follow-up date already did, and the PSA reminder's interval (24, 12 or 3 months) reflects the PSA band. Every reminder email carries one line for all items: "If you have a follow-up to arrange or a result to record, open the Health Roadmap." The iPhone works its reminders out on the phone and never calls the reminder server: its in-app list names the card's follow-up ("Follow-up to organize: repeat colonoscopy", "Follow-up check-in: colposcopy"), and a follow-up notifies on the first morning the phone sees it, or on its due day if later, then every 90 days from that day.
 
 ### Missing Profile Fields
 
