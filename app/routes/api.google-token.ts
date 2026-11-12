@@ -110,6 +110,11 @@ export async function action({ request }: ActionFunctionArgs) {
   const payload = (await googleRes.json().catch(() => null)) as Record<string, unknown> | null;
 
   if (!googleRes.ok) {
+    // A 401 invalid_client is this server's own secret or client id gone bad,
+    // not the user's grant: 502, so browsers keep their sign-in (US-09 AC47).
+    if (googleRes.status === 401 && payload?.error === 'invalid_client') {
+      return Response.json({ error: 'exchange_failed', errorDescription: 'server_misconfigured' }, { status: 502, headers });
+    }
     // Pass Google's machine-readable error through (e.g. invalid_grant so the
     // client knows to re-auth) — never log it (it can reference the token).
     return Response.json(
