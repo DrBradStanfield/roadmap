@@ -22,7 +22,6 @@
     "packages/health-core/src/lab-catalog.ts": 811,
     "tools/knowledge-lint.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 786,
-    "ios/HealthRoadmap/MyData/RecordStore.swift": 785,
     "packages/health-core/src/record-session.ts": 773,
     "widget-src/src/storage/drive.ts": 757,
     "packages/health-core/src/mcp-tools.ts": 747,
