@@ -324,6 +324,72 @@ describe('US-07 AC1j, US-10 AC6: two devices merge the new field field by field 
   });
 });
 
+describe('US-07 AC1j: a stale follow-up time never survives the gate reopening (review R1)', () => {
+  const I = 'colorectal_followup_interval_years';
+  /** One answer as the form writes it: screeningWrites on the record's inputs, each write through setScreening. */
+  const answer = (file: RoadmapFile, key: string, value: string, now: string): RoadmapFile =>
+    screeningWrites(derivePlanInputs(file).screenings, key, value).reduce((f, [k, v]) => setScreening(f, k, v, now), file);
+  const answers = (file: RoadmapFile, writes: Array<[string, string]>, now: string) =>
+    writes.reduce((f, [k, v]) => answer(f, k, v, now), file);
+  const followupCards = (file: RoadmapFile) =>
+    computePlan(file, NOW).results.suggestions.filter((s) => s.id === 'screening-colorectal-followup').map((c) => c.description);
+  const reminder = (file: RoadmapFile) =>
+    computeNextDueDates({ sex: 'male', age: 60 }, derivePlanInputs(file).screenings, {}, []).find((i) => i.category === 'screening_colorectal')?.dueAt;
+  const reopen: Array<[string, string]> = [['colorectal_result', 'abnormal'], ['colorectal_followup_status', 'completed'], ['colorectal_followup_date', '2028-09']];
+
+  it('writing completed from another status clears a leftover time; completed again keeps it', () => {
+    const on = done('fit_annual', '2025-06', 10);
+    for (const status of ['scheduled', 'not_organized', undefined] as const) {
+      const writes = screeningWrites({ ...on, colorectalFollowupStatus: status }, 'colorectal_followup_status', 'completed');
+      expect(writes.slice(1).map(([k]) => k), String(status)).toEqual([I]);
+    }
+    expect(screeningWrites(on, 'colorectal_followup_status', 'completed').slice(1)).toEqual([]);
+    const again = answer(fileWith(on), 'colorectal_followup_status', 'completed', '2026-11-12T00:00:00Z');
+    expect(again.screenings.colorectalFollowupIntervalYears).toBe(10);
+  });
+
+  it('path 1: an older engine left the time behind; reopening the gate gives card B, not D', () => {
+    let file = fileWith(done('fit_annual', '2025-06', 10));
+    // An older engine sets the result to normal and clears only the status and the date.
+    file = setScreening(file, 'colorectal_result', 'normal', '2026-11-02T00:00:00Z');
+    file = setScreening(file, 'colorectal_followup_status', '', '2026-11-02T00:00:00Z');
+    file = setScreening(file, 'colorectal_followup_date', '', '2026-11-02T00:00:00Z');
+    expect(file.screenings.colorectalFollowupIntervalYears).toBe(10);
+    file = answers(file, reopen, '2026-11-12T00:00:00Z');
+    expect(file.screenings.colorectalFollowupIntervalYears ?? null).toBeNull();
+    expect(followupCards(file)).toEqual([B_TEXT.replace('{due}', 'Sep 2031')]);
+    expect(reminder(file)).toBe('2031-09-01');
+  });
+
+  it('path 2: scheduled on one device, a time on another, merged both ways; completing again clears the time', () => {
+    const base = fileWith(done('fit_annual', '2025-06', 5), 'dev_base', '2026-10-01T00:00:00Z');
+    const a = answer(base, 'colorectal_followup_status', 'scheduled', '2026-11-01T09:00:00Z');
+    expect(a.screenings.colorectalFollowupIntervalYears ?? null).toBeNull();
+    const b = setScreening(base, I, '10', '2026-11-02T09:00:00Z');
+    for (const merged of [mergeFiles(a, b, { deviceId: 'm', now: '2026-11-03T00:00:00Z' }), mergeFiles(b, a, { deviceId: 'm', now: '2026-11-03T00:00:00Z' })]) {
+      expect(merged.screenings.colorectalFollowupStatus).toBe('scheduled');
+      expect(merged.screenings.colorectalFollowupIntervalYears).toBe(10);
+      const done2 = answers(merged, reopen.slice(1), '2026-11-12T00:00:00Z');
+      expect(done2.screenings.colorectalFollowupIntervalYears ?? null).toBeNull();
+      expect(followupCards(done2)).toEqual([B_TEXT.replace('{due}', 'Sep 2031')]);
+    }
+  });
+
+  it('the same sitting: completed, a date, then the report\'s 5 years keeps the 5 (card D)', () => {
+    const file = answers(fileWith({ ...done('fit_annual'), colorectalFollowupStatus: 'scheduled' }),
+      [...reopen.slice(1), [I, '5']], '2026-11-12T00:00:00Z');
+    expect(file.screenings.colorectalFollowupIntervalYears).toBe(5);
+    expect(followupCards(file)).toEqual([D_TEXT.replace('{due}', 'Sep 2033')]);
+  });
+
+  it('leaving completed clears the time: status scheduled, result normal or awaiting', () => {
+    for (const [k, v] of [['colorectal_followup_status', 'scheduled'], ['colorectal_result', 'normal'], ['colorectal_result', 'awaiting']]) {
+      const file = answer(fileWith(done('fit_annual', '2025-06', 5)), k, v, '2026-11-12T00:00:00Z');
+      expect(file.screenings.colorectalFollowupIntervalYears ?? null, `${k}=${v}`).toBeNull();
+    }
+  });
+});
+
 describe('US-07 AC1j: the evidence, the algorithm doc and the page carry the approved words', () => {
   it('the screening-colorectal reason ends with the approved sentence; no new reference', () => {
     const sentence = ITEM('3. **evidence-screening.ts')[0];

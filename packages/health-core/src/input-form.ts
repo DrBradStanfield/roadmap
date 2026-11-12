@@ -515,7 +515,7 @@ export function screeningWrites(scr: ScreeningInputs, key: string, value: string
   } else if (byResult) {
     if (!opensFollowup(byResult, value)) clear(...chainKeys(byResult).slice(1));
   } else if (key.endsWith('_followup_status')) {
-    clear(...(value === 'not_organized' || value === '' ? [`${key.split('_')[0]}_followup_date`] : []), ...intervalClosedBy(key, value));
+    clear(...(value === 'not_organized' || value === '' ? [`${key.split('_')[0]}_followup_date`] : []), ...intervalClosedBy(key, value, readScreening(scr, key)));
   }
   return writes;
 }

@@ -392,12 +392,13 @@ export function intervalQuestion(r: ScreeningRule, status: string): Array<{ key:
   return [{ key: q.key, label: q.label, options: [{ value: '', label: q.notGiven }, ...years] }];
 }
 
-/** The repeat interval an answer closes (US-07 AC1j): a follow-up status other than completed, or a new method
- *  (`before` is the method's stored answer). The result and "Not yet started" close it with the chain. */
+/** The repeat interval an answer closes (US-07 AC1j): a follow-up status other than completed, completed written
+ *  over another status (a time an older engine left), or a new method. `before` is the key's stored answer.
+ *  The result and "Not yet started" close it with the chain. */
 export function intervalClosedBy(key: string, value: string, before = ''): string[] {
   const r = SCREENING_RULES.find((x) => x.choice.key === key || `${x.id}_followup_status` === key);
   if (!r?.followupInterval) return [];
-  return (key === r.choice.key ? value !== before : value !== 'completed') ? [r.followupInterval.key] : [];
+  return (key === r.choice.key ? value !== before : value !== 'completed' || before !== 'completed') ? [r.followupInterval.key] : [];
 }
 
 // ---------------------------------------------------------------------------

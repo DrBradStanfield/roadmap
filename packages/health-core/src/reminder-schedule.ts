@@ -156,7 +156,6 @@ function screeningSchedule(
   if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
     push(COLORECTAL, s.colorectalMethod, onColonoscopySchedule(s) ? nextColonoscopyDue(s) : earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
-      getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
       followupDueDate(COLORECTAL, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
     ));
   }
