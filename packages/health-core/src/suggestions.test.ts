@@ -2339,7 +2339,8 @@ describe('generateSuggestions', () => {
     it.each(cases)('step 1 card, $name', ({ bmi, whr, inputs: values, text }) => {
       const { inputs, results } = createTestData(values, { bmi, waistToHeightRatio: whr });
       const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'weight-med-glp1');
-      expect(card?.title).toBe('Consider a GLP-1 medication');
+      // US-25 AC28 (App Review 1.4.1, Brad 2026-11-13): the step 1 title names the doctor.
+      expect(card?.title).toBe('Consider discussing a GLP-1 medication with your doctor');
       expect(card?.description).toBe(text);
     });
 

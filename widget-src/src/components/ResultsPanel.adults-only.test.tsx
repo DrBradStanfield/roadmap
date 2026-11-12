@@ -83,7 +83,7 @@ describe('US-07 AC6: with no birth year, one card in place of the medicines', ()
     const titles = Array.from(container.querySelectorAll('.suggestion-title')).map((t) => t.textContent);
     expect(titles.filter((t) => t === 'Add your birth year')).toHaveLength(1);
     expect(titles).not.toContain('Consider starting a statin');
-    expect(titles).not.toContain('Consider a GLP-1 medication');
+    expect(titles).not.toContain('Consider discussing a GLP-1 medication with your doctor');
     const card = Array.from(container.querySelectorAll('.suggestion-title')).find((t) => t.textContent === 'Add your birth year')!;
     expect(card.parentElement?.querySelector('.suggestion-desc')?.textContent).toBe('Medicine suggestions need your age. Add your birth year to see them.');
     // An info card says no status on My health (US-62 AC18): no badge, no status word.
