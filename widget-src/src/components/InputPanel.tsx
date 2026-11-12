@@ -431,10 +431,10 @@ export function InputPanel({
     });
   }, [fieldsSaved]);
 
-  /** A screening date: one select of whole months, each choice one write (US-06 AC16). Cancer screening and bone density. */
-  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => {
+  /** A screening date: one select of whole months, each choice one write (US-06 AC16); none before `min` (US-07 AC1j). */
+  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean; min?: string }) => {
     const value = readScreening(scr, key);
-    const { extra, groups } = monthOptions({ when: options?.futureOnly ? 'future' : 'past', today: localDay(new Date()), stored: value });
+    const { extra, groups } = monthOptions({ when: options?.futureOnly ? 'future' : 'past', today: localDay(new Date()), stored: value, min: options?.min });
     return (
       <div className="health-field">
         <label htmlFor={key}>{label}</label>

@@ -54,3 +54,35 @@ describe('US-06 AC16: monthOptions', () => {
     expect(values(r)).not.toContain(extra ? stored : '__none__');
   });
 });
+
+// US-07 AC1j: `min` (the form field's, YYYY-MM) removes every month before it. A stored month before it still
+// shows as the extra option, exactly as stored; nothing rewrites it.
+describe('US-07 AC1j: monthOptions with min', () => {
+  it.each([
+    // when, min, first, last, count
+    ['past', '2025-11', '2026-11', '2025-11', 13],
+    ['past', '2026-11', '2026-11', '2026-11', 1],
+    ['past', '2010-01', '2026-11', '2016-01', 131],
+    ['future', '2027-03', '2027-03', '2031-12', 58],
+  ] as const)('%s with min %s: %s to %s, %i months', (when, min, first, last, count) => {
+    const vs = values(monthOptions({ when, today: TODAY, min }));
+    expect([vs[0], vs.at(-1), vs.length]).toEqual([first, last, count]);
+    expect(vs.every(v => v >= min)).toBe(true);
+  });
+
+  it.each([
+    // stored, min, extra
+    ['2025-06', '2025-11', { value: '2025-06', label: 'June 2025' }],
+    ['2025-11', '2025-11', undefined],
+    ['2026-02', '2025-11', undefined],
+    ['', '2025-11', undefined],
+  ] as const)('stored %s with min %s: a month before min is the extra option, exactly as stored', (stored, min, extra) => {
+    const r = monthOptions({ when: 'past', today: TODAY, stored, min });
+    expect(r.extra).toEqual(extra);
+    expect(values(r).every(v => v >= min)).toBe(true);
+  });
+
+  it("'' or no min leaves the list whole", () => {
+    expect(values(monthOptions({ when: 'past', today: TODAY, min: '' }))).toEqual(values(monthOptions({ when: 'past', today: TODAY })));
+  });
+});

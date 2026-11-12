@@ -15,12 +15,13 @@ function monthLabel(value: string): string {
 /**
  * A screening date's whole-month choices, grouped by year (US-06 AC16): the months health-core
  * allows (the iPhone's list too). A past date lists the newest first, a
- * future one the earliest. `extra`: a stored value outside them, exactly as stored.
+ * future one the earliest. `min` (YYYY-MM, the form field's) drops every month before it (US-07 AC1j).
+ * `extra`: a stored value outside them, exactly as stored.
  */
-export function monthOptions({ when, today, stored }: {
-  when: 'past' | 'future'; today: string; stored?: string;
+export function monthOptions({ when, today, stored, min }: {
+  when: 'past' | 'future'; today: string; stored?: string; min?: string;
 }): { extra?: MonthOption; groups: MonthGroup[] } {
-  const months = screeningMonths(when, today);
+  const months = screeningMonths(when, today).filter(m => !min || m >= min);
   const groups: MonthGroup[] = [];
   for (const value of when === 'past' ? [...months].reverse() : months) {
     const year = value.slice(0, 4);
