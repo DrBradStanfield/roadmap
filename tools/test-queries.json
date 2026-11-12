@@ -9284,6 +9284,20 @@
   },
   {
     "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-13",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I have kidney disease and take an ACE inhibitor. Can I take a potassium supplement?",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "doctor"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-13 (masters-rebuild-2, Fable ruling): the Current view's opening sentence is the supplement caution (potassium is doctor-guided, never self-prescribed; ACE inhibitors, ARBs or kidney problems can push it dangerously high), and no test pinned it. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
     "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
