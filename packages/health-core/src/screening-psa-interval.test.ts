@@ -249,3 +249,94 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     expect(log.indexOf(line)).toBeGreaterThan(log.indexOf('Colorectal follow-up: after a positive test'));
   });
 });
+
+describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide keeps the 3-month rule', () => {
+  const VAGUE = '**A newer PSA that does not show the level';
+  const replaced = quotes(specLine(VAGUE, '- A man who declined, or recorded no answer:'));
+  const OLD_SENTENCE = replaced[replaced.length - 1];
+  const NEW_SENTENCE = quotes(specLine(VAGUE, '- Sentence'))[0];
+  const CARRIED = REPEAT_TEXT.replace(OLD_SENTENCE, NEW_SENTENCE);
+  const RAISED = { value: 4.5, day: '2026-04-10' };
+  const VAGUE_ROW = { value: 5, day: '2026-06-01', comparator: '<' as const };
+  const AUG = new Date('2026-08-15T12:00:00Z');
+
+  it('the spec quotes the old sentence from the approved card, and the new one replaces it', () => {
+    expect(REPEAT_TEXT).toContain(OLD_SENTENCE);
+    expect(CARRIED).not.toBe(REPEAT_TEXT);
+    expect(CARRIED).toContain(NEW_SENTENCE);
+  });
+
+  it('declined, 4.5 then a newer "< 5": reminder 3 months after the newer test; then "Repeat PSA test" with the new sentence', () => {
+    const file = fileWith([RAISED, VAGUE_ROW], 'elected_not_to');
+    expect(prostateItems(file)).toEqual([{ category: 'screening_prostate', group: 'screening', label: EMAIL_LABEL, dueAt: '2026-09-01' }]);
+    expect(fileIds(file, AUG)).toEqual([]);
+    expect(fileCards(file)).toEqual([
+      expect.objectContaining({ id: 'screening-prostate-repeat', priority: 'attention', title: REPEAT_TITLE, description: CARRIED }),
+    ]);
+    expect(CARRIED.startsWith(FIRST_SENTENCE)).toBe(true);
+    expect(fileCards(file)[0].description).not.toContain('Your last PSA');
+    expect(followupKinds(file, NOW).screening_prostate).toEqual({ kind: 'repeat', name: PHONE_NAME });
+  });
+
+  it('no answer recorded: the same card without "You chose not to"; no discussion card while the rule holds', () => {
+    const file = fileWith([RAISED, VAGUE_ROW]);
+    expect(fileCards(file)).toEqual([expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED.replace(FIRST_SENTENCE, '') })]);
+    expect(fileIds(file, AUG)).toEqual([]);
+    expect(due(file)).toEqual(['2026-09-01']);
+  });
+
+  it('will screen: the 3-month date, then the overdue card; never "Elevated PSA"', () => {
+    const file = fileWith([RAISED, VAGUE_ROW], 'will_screen');
+    expect(due(file)).toEqual(['2026-09-01']);
+    expect(fileIds(file, AUG)).toEqual(['screening-prostate-upcoming']);
+    expect(fileIds(file)).toEqual(['screening-prostate-overdue']);
+  });
+
+  it('"<= 4.0" holds the rule: it allows exactly 4.0', () => {
+    const file = fileWith([RAISED, { value: 4.0, day: '2026-06-01', comparator: '<=' }], 'elected_not_to');
+    expect(due(file)).toEqual(['2026-09-01']);
+    expect(fileCards(file)).toEqual([expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED })]);
+  });
+
+  it('"< 4.0", "< 3" and "< 1.0" end it; "< 1.0" gives 24 months for a man who will screen', () => {
+    for (const bound of [4.0, 3, 1.0]) {
+      const declined = fileWith([RAISED, { value: bound, day: '2026-06-01', comparator: '<' }], 'elected_not_to');
+      expect(prostateItems(declined), String(bound)).toEqual([]);
+      expect(fileIds(declined), String(bound)).toEqual([]);
+    }
+    const will = (bound: number) => due(fileWith([RAISED, { value: bound, day: '2026-06-01', comparator: '<' }], 'will_screen'));
+    expect([4.0, 3, 1.0].map(will)).toEqual([['2027-06-01'], ['2027-06-01'], ['2028-06-01']]);
+  });
+
+  it('a newer "< 5" with no earlier raised PSA behaves as before', () => {
+    for (const rows of [[VAGUE_ROW], [{ value: 3.0, day: '2026-04-10' }, VAGUE_ROW]]) {
+      expect(due(fileWith(rows, 'will_screen'))).toEqual(['2027-06-01']);
+      expect(prostateItems(fileWith(rows, 'elected_not_to'))).toEqual([]);
+      expect(fileIds(fileWith(rows, 'elected_not_to'))).toEqual([]);
+    }
+  });
+
+  it('a value below 4.0 after the vague result ends it', () => {
+    const rows = [RAISED, VAGUE_ROW, { value: 3.0, day: '2026-07-01' }];
+    expect(prostateItems(fileWith(rows, 'elected_not_to'))).toEqual([]);
+    expect(fileIds(fileWith(rows, 'elected_not_to'))).toEqual([]);
+  });
+
+  it('two vague results in a row still hold it, due 3 months after the newest', () => {
+    const file = fileWith([RAISED, VAGUE_ROW, { value: 4.0, day: '2026-07-15', comparator: '<=' }], 'elected_not_to');
+    expect(due(file)).toEqual(['2026-10-01']);
+    expect(fileCards(file)).toEqual([expect.objectContaining({ id: 'screening-prostate-repeat', description: CARRIED })]);
+  });
+
+  it('a newest PSA of 4.0 or above behaves as built', () => {
+    const file = fileWith([{ value: 3.0, day: '2026-04-10' }, VAGUE_ROW, { value: 4.2, day: '2026-07-15' }], 'elected_not_to');
+    expect(fileCards(file)).toEqual([
+      expect.objectContaining({ id: 'screening-prostate-repeat', description: REPEAT_TEXT }),
+      expect.objectContaining({ id: 'screening-prostate-elevated' }),
+    ]);
+  });
+
+  it('the algorithm doc states the rule', () => {
+    expect(ALGO).toContain(`\n- ${outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific'))}\n`);
+  });
+});

@@ -17,9 +17,9 @@
  */
 import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs } from './types';
-import { comparatorOf, type Comparator } from './lab-limits';
+import { comparatorOf, limitRepresentative, type Comparator } from './lab-limits';
 import { cmpStr, stampInstant } from './merge';
-import { UNIT_DEFS } from './units';
+import { PSA_THRESHOLDS, UNIT_DEFS } from './units';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -106,6 +106,27 @@ export function newestUsablePsa<
 >(rows: readonly T[], now: Date): T | undefined {
   const latestDay = latestDayOnEarth(now);
   return latestActivePerMetric(rows.filter((r) => r.metricType === 'psa' && usablePsa(r, latestDay)))[0];
+}
+
+/** A PSA's grade against 4.0: its value, a limit's representative when it decides, else null. */
+const psaGrade = (r: { value: number; comparator?: unknown }): number | null => {
+  const { comparator } = comparatorOf(r);
+  return comparator ? limitRepresentative('psa', comparator, r.value) : r.value;
+};
+
+/**
+ * The PSA the plan reads (US-06 AC21 item 6, Brad 2026-11-13): `newestUsablePsa`, marked
+ * `raisedBefore` when it is a limit that does not decide against 4.0 ("< 5", "<= 4.0") and
+ * the newest usable PSA that does decide is 4.0 or above. A vague result never ends the
+ * 3-month rule. Derived on every read, never stored.
+ */
+export function planPsa<
+  T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string; comparator?: unknown },
+>(rows: readonly T[], now: Date): (T & { raisedBefore?: true }) | undefined {
+  const newest = newestUsablePsa(rows, now);
+  if (!newest || psaGrade(newest) !== null) return newest;
+  const anchor = newestUsablePsa(rows.filter((r) => psaGrade(r) !== null), now);
+  return anchor && psaGrade(anchor)! >= PSA_THRESHOLDS.normal ? { ...newest, raisedBefore: true } : newest;
 }
 
 /**

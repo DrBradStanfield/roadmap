@@ -74,7 +74,7 @@ import {
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
-  buildMeasurementHistory, isDraftPoint, latestFromHistory, newestExactPoint, newestUsablePsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
+  buildMeasurementHistory, isDraftPoint, latestFromHistory, newestExactPoint, planPsa, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type DatedMeasurement, type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
@@ -241,7 +241,7 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
   // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
   const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
     ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
-  const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
+  const planScreenings = withPsaMeasurement(screenings, planPsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own
   // (runRoadmap passes today for an undated one), else the saved point's.

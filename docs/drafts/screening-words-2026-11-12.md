@@ -136,7 +136,13 @@ A PSA printed as a limit counts only when it decides the band ("< 1.0" is below 
 - Title: "Repeat PSA test". Priority attention.
 - Text: "You chose not to have routine prostate screening, and that choice stands. Your last PSA was 4.0 or higher, so checking it again is about that result, not screening. Dr Brad suggests repeating it every 3 months while it stays at 4.0 or higher. Discuss with your doctor."
 - With no discussion answer recorded, the first sentence is left out.
+- Decided (Brad 2026-11-13, as built): "Not yet" with a PSA of 4.0 or above counts as no answer: the same card, without the first sentence.
 - Before the 3 months are up: "Elevated PSA" alone.
+
+**A newer PSA that does not show the level (PR 1387 item 6, Brad 2026-11-13).** A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") does not end the 3-month rule. Ending follow-up on a vague result errs the unsafe way. The rule holds while the newest PSA that decides is 4.0 or above; a newer value below 4.0, or a limit that proves it ("< 4.0", "< 3", "< 1.0"), ends it. The next PSA is due 3 months after the newest test, the vague one included. "Elevated PSA" does not show: "Your PSA of < 5 ng/mL is 4.0 or higher" would be false.
+- A man who will screen: the 3-month date, and "PSA test overdue" once it passes.
+- A man who declined, or recorded no answer: "Repeat PSA test" once 3 months have passed, the rest of the card as above, but this sentence replaces "Your last PSA was 4.0 or higher, so checking it again is about that result, not screening.":
+- Sentence (Brad 2026-11-13, word for word): "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening."
 
 **Reminders.** Category `screening_prostate`. The emailed label stays "PSA test" for every man; labels never carry results or reasons. The iPhone's Reminders list, which may name a follow-up as it does today, shows "Repeat PSA (your last result)" for the 4.0-or-above case. A man who declined screening gets this reminder only while his newest PSA is 4.0 or above.
 
@@ -146,6 +152,10 @@ A PSA printed as a limit counts only when it decides the band ("< 1.0" is below 
 - "| any answer, PSA >= 4.0 | 3 |"
 
 And under Prostate-Specific: "The next PSA follows the newest usable PSA (Brad 2026-11-12): 24 months below 2.5 ng/mL and 12 months from 2.5 for men who will screen (ACS); 3 months at 4.0 or above for every man, whatever his answer, until a newer PSA below 4.0 is saved (Dr Brad's suggestion). A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card."
+
+Item 6, under Prostate-Specific, after that line: "A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test. Neither `screening-prostate-elevated` nor `screening-prostate` shows; `screening-prostate-repeat` reads "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening." in place of its "Your last PSA" sentence."
+
+Item 6, evidence.ts and the page: unchanged. Both say "while it stays at 4.0 or higher" and name no end; that stays true.
 
 **evidence.ts**
 - `screening-prostate`, add: "If you choose to be tested, the American Cancer Society suggests retesting every 2 years if your PSA is below 2.5 ng/mL, and every year if it is 2.5 or higher." Reference: the ACS prostate recommendations page, https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/acs-recommendations.html.
@@ -163,7 +173,7 @@ And under Prostate-Specific: "The next PSA follows the newest usable PSA (Brad 2
 |---|---|---|
 | Will screen, PSA 1.2 on 2026-04-10 | next due Apr 2027 | Apr 2028 |
 | Will screen, PSA 3.1 | Apr 2027 | Apr 2027 |
-| Will screen, PSA 4.1 | Apr 2027 | Jul 2026; overdue card from August |
+| Will screen, PSA 4.1 | Apr 2027 | Jul 2026; overdue card from July (Brad 2026-11-13: overdue counts from the due month; August was a slip) |
 | Declined screening, PSA 4.5 on 2026-04-10 | Elevated card; no reminder | Elevated card; "Repeat PSA test" from July; reminder July |
 
 **Golden.** 77 cases (PSA 4.1 with a date, including the all-answered cases) move their due date; with Change 3, the PSA-4 cases too. No case covers the 2.5 band: every PSA fixture is 3.9, 4.0 or 4.1, so new fixtures are needed at 2.4, 2.5 and 3.9, and at 23, 24 and 25 months.

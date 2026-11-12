@@ -196,9 +196,11 @@ describe('a PSA printed as a limit is graded only when the limit decides against
     expect(p.pushed).toEqual([due]);
   });
 
-  it('a newer "< 5" stands in for an older 6.5: the newest test is uncertain, so no "Elevated PSA"', () => {
+  // US-06 AC21 item 6 (Brad 2026-11-13): it keeps the 3-month rule, due 3 months after the "< 5" (was 12 months).
+  it('a newer "< 5" stands in for an older 6.5: the newest test is uncertain, so no "Elevated PSA", but 3 months', () => {
     const p = prostate(record([[6.5, '2025-03-01'], [5, '2025-09-03', 'active', '<']]));
-    expect(p.cards).toEqual([DUE]);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025]);
+    expect(p.due).toEqual(['2025-12-01']);
   });
 });
 

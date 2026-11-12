@@ -3,7 +3,7 @@ import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
-import { psaNextDue, psaRaised, raisedPsaCards } from './psa-schedule';
+import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -959,16 +959,15 @@ export function generateSuggestions(
     // Prostate — shared decision. While the PSA is raised (4.0 or above), "Elevated PSA" shows alone (Change 3, D19).
     // The next PSA by level, and "Repeat PSA test" for a man who does not screen (Change 4, US-06 AC21): psa-schedule.ts.
     if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
-      const raised = psaRaised(screenings);
-      const due = psaNextDue(screenings);
+      const [raised, holds, due] = [psaRaised(screenings), psaRuleHolds(screenings), psaNextDue(screenings)];
       if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
-        if (!raised) pushStart(PROSTATE, 'info');
+        if (!holds) pushStart(PROSTATE, 'info');
       } else if (screenings.prostateDiscussion === 'will_screen' && due) {
         const status = now > due ? 'overdue' : 'upcoming';
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
         if (!(raised && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, monthLabel(due));
       }
-      if (raised) suggestions.push(...raisedPsaCards(screenings, now));
+      if (holds) suggestions.push(...raisedPsaCards(screenings, now));
     }
 
     if (ruleTakes(ENDOMETRIAL, ENDOMETRIAL.cardAges, age, sex)) {

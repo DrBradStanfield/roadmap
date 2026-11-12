@@ -33,13 +33,13 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay, newestUsablePsa } from './measurement-history';
+import { ISO_DATE, isCalendarDay, planPsa } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
-import { PSA_REPEAT_NAME, psaNextDue, psaRaised } from './psa-schedule';
+import { PSA_REPEAT_NAME, psaNextDue, psaRuleHolds } from './psa-schedule';
 
 // ===== Types =====
 
@@ -349,7 +349,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
   return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings), now),
-    newestUsablePsa(currentValueRows(file), now));
+    planPsa(currentValueRows(file), now));
 }
 
 /**
@@ -375,7 +375,7 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
     const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
   }
-  if (psaRaised(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: PSA_REPEAT_NAME };
+  if (psaRuleHolds(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: PSA_REPEAT_NAME };
   return kinds;
 }
 
