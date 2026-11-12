@@ -45,11 +45,15 @@ export const isStoriesPath = (p) => p === INDEX || /^docs\/stories\/[^/]+\.md$/.
 
 /** Pure core: the index with every story and constitution line expanded through `readPart(relPath)`. */
 export function expandIndex(index, readPart) {
+  const seen = new Set();
   return index
     .split('\n')
     .map((line) => {
       const target = (STORY_LINE.exec(line) || CONSTITUTION_LINE.exec(line))?.groups?.target;
       if (!target) return line;
+      // A story listed twice would be read twice; every reader stops here instead (US-64 AC13).
+      if (seen.has(target)) throw new Error(`stories: the index lists ${basename(target, '.md')} twice`);
+      seen.add(target);
       const text = readPart(target);
       return fromPart(text.endsWith('\n') ? text.slice(0, -1) : text);
     })
