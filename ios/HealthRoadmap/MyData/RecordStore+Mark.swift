@@ -21,17 +21,26 @@ extension RecordStore {
     var mark: Mark { Mark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
 
     /// `applyNow` for an Apple Health batch (US-72 AC10), on `mark`, the record it was read
-    /// from. Nil when an erase since moved the mark, in its turn: nothing was saved and there
-    /// is nothing to say; the import's next pass meets the erase.
+    /// from. Nil when an erase since moved the mark, or the mark was taken on the other side
+    /// (cloud or phone: lead H28), in its turn: nothing was saved and there is nothing to say;
+    /// the import's next pass meets the erase or reads the record now shown. `Mark.holds` alone
+    /// stays lenient across a connect or disconnect, for the chat (US-67).
     func applyNow(_ edit: RecordEdit, on mark: Mark) async -> ApplyResult? {
         await chain { () -> ApplyResult? in
-            guard mark.holds(at: self.mark) else { return nil }
+            let now = self.mark
+            guard mark.holds(at: now), (mark.erase == nil) == (now.erase == nil) else { return nil }
             return await self.applyInTurn(edit, as: self.screen)
         }.value
     }
 
     /// Which record is shown, for Apple Health's erase gate (US-72 AC10): "phone", the cloud's
     /// provider and account once its record is open, nil while a connected cloud's record is
-    /// not open yet.
-    var recordSource: String? { cloudErase != nil ? cloudName : marksPending == nil ? "phone" : nil }
+    /// not open yet and while showPhone reads the phone's file.
+    var recordSource: String? {
+        switch source {
+        case .phone(let link): link == nil ? "phone" : nil
+        case .leaving: nil
+        case .cloud(let cloud): cloud.link?.account
+        }
+    }
 }

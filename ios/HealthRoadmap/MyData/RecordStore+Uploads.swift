@@ -83,7 +83,7 @@ extension RecordStore {
                 // The engine's session took it; the screen follows unless it has moved on to another record.
                 guard cloudErase == erase, let nextErase = answer.erase else { return result }
                 if next != recordJSON {
-                    await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: answer.order))
+                    await draw(next, order: answer.order, as: .cloudEdited(erase: nextErase))
                     onEdit?()
                 }
                 return result
@@ -95,19 +95,5 @@ extension RecordStore {
         } catch {
             return .refused(error.localizedDescription)
         }
-    }
-
-    /// A document save's record, onto the phone's file: written only over the record the
-    /// save began from (`before`), never over an edit made while it ran. False when refused.
-    /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
-    func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
-        guard cloudErase == nil, recordJSON == before else { return false }
-        if next != recordJSON {
-            let shown = try await engine.drawAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
-            recordJSON = next
-            display(shown)
-            onEdit?()
-        }
-        return true
     }
 }

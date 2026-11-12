@@ -263,9 +263,9 @@ final class CloudSync: CloudPort {
     /// source for Apple Health's erase gate (US-72 AC10) is the provider and the account,
     /// so another account on the same provider is a new source.
     private func linkStore() {
-        store.marksPending = provider == nil ? nil : phone
-        let source = provider.map { provider in provider.rawValue + (files.read(files.account).map { ":" + $0 } ?? "") }
-        if store.cloudAccount != source { store.cloudAccount = source }
+        store.link(provider.map { provider in
+            RecordStore.Source.Link(account: provider.rawValue + (files.read(files.account).map { ":" + $0 } ?? ""), pending: phone)
+        })
     }
 
     /// Throws for a refused or dropped sign-in.
