@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null), askChatHistory: () => Promise.resolve({ store: null }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: false }));
 
 import { listConversations, loadConversation, sendMessage } from './chat-api';
@@ -60,7 +60,7 @@ describe('US-15 AC6b: a guest session token that is not a string is not kept', (
 
   it.each(MALFORMED)('a guest 404: %s', async (_name, token) => {
     fetchMock.mockResolvedValueOnce(json(404, { success: false, error: 'Conversation not found', sessionToken: token, isGuest: true }));
-    expect(await loadConversation('c1')).toBeNull();
+    expect(await loadConversation('c1')).toBe('gone');
     expect(stored.get(KEY)).toBe('old-tok');
   });
 

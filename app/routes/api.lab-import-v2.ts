@@ -121,8 +121,10 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       { status: result.status, results: result.results?.map(r => withRefusalsItReads(withDaysItReads(r, batch.days), batch.refusedRows)), completed: result.completed, total: result.total },
     );
   } catch (error) {
+    // A failed read can change: answer `error` with the last count served, and the
+    // client polls on to its deadline (US-12 AC24). The next poll reads the provider again.
     console.error('Batch poll error (v2):', safeErrorFields(error));
-    return Response.json({ status: 'processing', completed: 0, total: batch.totalFiles });
+    return Response.json({ status: 'error', completed: batch.pollResult?.completed ?? 0, total: batch.pollResult?.total ?? batch.totalFiles });
   }
 }
 

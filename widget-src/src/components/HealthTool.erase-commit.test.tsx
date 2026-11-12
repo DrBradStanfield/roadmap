@@ -10,7 +10,7 @@
  * The gap, faithfully: React 18 holds every render queued inside an act()
  * scope until the outermost scope exits. So inside one act, another device
  * erases, this page's store re-reads, the page's apply runs to its end
- * (showErase included), and a writer on the old tree fires; React commits
+ * (its `read` dispatched to the erase machine), and a writer on the old tree fires; React commits
  * only as the act exits. Each row checks the old tree was still on screen.
  *
  * Each writer the page reaches from a form control has a row; a new one needs

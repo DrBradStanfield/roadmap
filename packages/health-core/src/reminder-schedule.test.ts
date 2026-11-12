@@ -45,8 +45,8 @@ describe('computeNextDueDates — screenings', () => {
     } as unknown as ScreeningInputs;
     const items = computeNextDueDates(MALE_60, screenings, {}, []);
     const item = items.find((i) => i.category === 'screening_colorectal')!;
-    // earliest of: 2025-01 + 12mo = 2026-01 (annual FIT) vs 2025-06 + 36mo = 2028-06
-    expect(item.dueAt).toBe('2026-01-01');
+    // On the colonoscopy schedule (US-07 AC1j): 2025-06 + 36mo = 2028-06; the yearly FIT date (2026-01) no longer counts.
+    expect(item.dueAt).toBe('2028-06-01');
   });
 
   it('respects sex/age eligibility (no mammogram item for a male)', () => {

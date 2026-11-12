@@ -49,8 +49,11 @@ function openForm() {
   return { ...utils, onAdded };
 }
 
-const today = new Date();
-const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const todayIso = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
 
 describe('US-21 phase 2 — AddLabTest', () => {
   it('starts as a single "+ Add a blood test" button (no form)', () => {
@@ -78,7 +81,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso() }, 'erase-1');
     expect(trackProductEvent).toHaveBeenCalledWith('lab_row_added');
   });
 
@@ -90,11 +93,11 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '55' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso() }, 'erase-1');
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
-    holding({ id: 's1', metricName: 'sodium', value: 138, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: `${todayIso}T00:00:00.000Z`, createdAt: `${todayIso}T08:00:00.000Z`, source: 'manual' });
+    holding({ id: 's1', metricName: 'sodium', value: 138, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: `${todayIso()}T00:00:00.000Z`, createdAt: `${todayIso()}T08:00:00.000Z`, source: 'manual' });
     const { getByLabelText, getByRole, onAdded, findByText } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'sodium' } });
     fireEvent.change(getByLabelText('Value'), { target: { value: '140' } });
@@ -110,7 +113,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   describe('a same-day duplicate', () => {
     const held = {
       id: 'held1', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
-      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+      recordedAt: `${todayIso()}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z`,
     };
     function duplicate(value: string) {
       holding(held);
@@ -162,7 +165,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   describe('a same-day duplicate of an "Other" test', () => {
     const held = {
       id: 'held2', metricName: 'Feritin', value: 45, unit: 'ug/L', referenceLow: null, referenceHigh: null,
-      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+      recordedAt: `${todayIso()}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z`,
     };
     async function replaceOffered() {
       holding(held);
@@ -202,7 +205,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   it('an "Other" test the catalogue knows, in a unit it treats as its own, replaces the held value', async () => {
     const there = {
       id: 'held3', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
-      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+      recordedAt: `${todayIso()}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z`,
     };
     holding(there);
     const onCorrect = vi.fn().mockResolvedValue('ok');
@@ -317,7 +320,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso }, 'erase-1');
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'Amylase', unit: 'U/L', value: 55, day: todayIso() }, 'erase-1');
   });
 
   it('US-21 AC2: a catalogue test picked after an Other test saves the catalogue test, not the typed name', async () => {
@@ -329,7 +332,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
     fireEvent.change(getByLabelText('Value'), { target: { value: '30' } });
     fireEvent.click(getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso }, 'erase-1');
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso() }, 'erase-1');
   });
 
   // US-02 AC7: a catalogued test has no input range, so "1,050" (1050 or
@@ -378,7 +381,7 @@ describe('US-21 phase 2 — section shows the add button', () => {
 // core rows it reads are never listed as extra rows.
 describe('US-66 AC6 — a core test typed under "Other"', () => {
   const si = reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI;
-  const core = { id: 'core1', metricType: 'ldl', value: si, recordedAt: `${todayIso}T00:00:00.000Z`, status: 'active', source: 'manual', createdAt: `${todayIso}T08:00:00.000Z` } as ApiMeasurement;
+  const core = { id: 'core1', metricType: 'ldl', value: si, recordedAt: `${todayIso()}T00:00:00.000Z`, status: 'active', source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z` } as ApiMeasurement;
   // The record's core row (US-66 AC1), which the real lab add finds on a held day.
   const coreRow = { id: 'core1', metricName: 'ldl', core: true, value: si, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: core.recordedAt, source: 'manual', createdAt: core.createdAt };
 
@@ -446,7 +449,7 @@ describe('US-25 AC25: a value page adds to its own series', () => {
     fireEvent.change(getByLabelText(/value/i), { target: { value: '1.2' } });
     fireEvent.click(getByText(/^save$/i));
     await waitFor(() => expect(onAdded).toHaveBeenCalled());
-    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso, existingSeries: true }, 'erase-1');
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'INR', unit: '', value: 1.2, day: todayIso(), existingSeries: true }, 'erase-1');
   });
 
   it('adds to a kept-apart lab series named like a vital (Weight)', async () => {

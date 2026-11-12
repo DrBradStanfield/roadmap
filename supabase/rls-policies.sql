@@ -223,6 +223,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 --    (truncated to 500 chars in the app before insert). Both NULL on success.
 --    'refusal' (2026-09-29, US-15 AC14): the model declined; is_fallback stays
 --    FALSE and the row holds the fixed refusal line. Free text, no migration.
+--    'partial' (2026-11-12, US-15 AC62): a Discord answer cut off part way; the
+--    row holds the text that went out, and the dedup never re-serves it.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;
@@ -660,9 +662,10 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
 ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
 -- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
 
--- Only the Google-verified lane upserts on email (an owner may replace their
--- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as
--- "the owner already has a row": schedule refresh at most, never a new token.
+-- Both lanes INSERT, and a 23505 on this UNIQUE means a row already exists.
+-- Address-only opt-ins then refresh the schedule at most, never a new token.
+-- The Google-verified lane then rotates the token with one compare-and-set
+-- (only a row not yet verified matches) and reads the token back (US-17 AC16).
 
 -- Service-role only (no policies = zero rows via the anon/authenticated API).
 ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;

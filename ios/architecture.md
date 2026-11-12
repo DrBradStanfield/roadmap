@@ -145,7 +145,7 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
 - **Unit switches hold entry.** While a per-test or master switch, or an Lp(a) unit choice, is still landing (`unitSwitches`), the units menu, Add Data, corrections, height and My data's value rows wait.
 - **A lab report's summary and its import are one step.** On the phone, both run against the record of that turn. In the cloud, one engine door (`cloudLabImport`) takes the summary against the session's working copy and runs the import on it in the same synchronous JavaScript step, so a value another device brought in is never counted as saved. Swift keeps no copy of the session's record.
 - **The cloud stamp.** The engine queue stamps every cloud record it hands to Swift (open, edit, erase and document save as their Promise resolves, each notify as it is sent). An edit's answer can arrive after news of a re-read made before it, so the screen keeps the record with the higher stamp.
-- Sheets set `saving` in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. PlanView asks the engine nothing: it draws the plan the store keeps (below).
+- Sheets claim their save in the button action (`SheetSave`), hold Save and Cancel, refuse swipe-down while saving and dismiss only on a save; pickers that save at once wait while their edit lands, so a quick change back is never lost. **One named save state (2026-11-11, US-25 AC21e, iPhone survey S5).** `SheetSave.State` is editing (with the engine's words), saving, finding the day's rows, asking to replace, declined (the question dismissed), or done, changed only by the pure `SheetSave.transition`; `SheetSaveTests` holds the table of every state and event. `tapped` is the synchronous claim (US-25 AC21d): it moves editing to saving in the tap's own turn, so no flag sits beside it. `busy` (saving or finding rows) holds Save, Cancel and swipe-down. Blood pressure reads the day's rows after a refusal names one, still held, and asks only when it finds them: rows it cannot read show the engine's words, so a replace never names no rows. A value sheet holds the named row at once; its Lp(a) unit choice is a saving step too, so a Save then does nothing. `done` is terminal; a save whose screen stays open (`landed` with `closes: false`, "Taking again") goes back to editing. A replace dialog is bound with `presenting:` the held rows, so "Replace it" sends `confirmed(held)` carrying them; it is taken only from asking, or from `declined(held)` when the dismissal landed first, and only for those same rows; a `declined` after it meets saving and is ignored, so no order drops the tap. `declined(held)` looks like editing to the person (Save live, no words, no dialog: the dialog presents only for asking); an edit or a Day change (`wordsStale`), a unit choice or a Save leaves it as from editing, so a late "Replace it" after the person changed the value, unit or day is ignored (owner's ruling N1, 2026-11-12). Each view's landing choice (`closes`, `asks`) is a static the table test reads. Every sheet holds the state: BloodPressureSheet, ValueEntrySheet, SupplementsSection's "Taking again", and (second S5 PR, 2026-11-12) the month wheel (`MonthPickerSheet`), FeetInchesSheet, SupplementSheet and AddSupplementSheet, which never ask (`NoHeld`) and save through `SheetSave.submit`. `SheetSave.run`, the `Bool` binding they used, and its `close` are gone. PlanView asks the engine nothing: it draws the plan the store keeps (below).
 - **One engine call draws both screens (2026-10-25, US-25 AC2; Brad: "one engine call that answers both My data and the plan").** Measured in the simulator with a temporary counter (removed): one edit on My data ran `applyEditJson` (a medication or screening answer plans inside it, in `applyFormEdit`; a value plans nothing), then `myDataJson`, whose medication and screening questions plan the record (`basisOf`, 1 computePlan), then `remindersJson` (none); opening My plan then ran `planViewJson`, a second computePlan of the same record and units, and every return to the tab ran it again, with no edit between. The door `screenJson` now reads the record once, plans it once and answers `{myData, plan}`: the plan half is `{sections, tiles, ms}`, or `{error, planError}` when the record cannot be planned, so a plan that throws never blanks My data and a tile that cannot be drawn never blanks the plan. My data that cannot be drawn still throws the whole call, on purpose: the store then shows the record's problem on both tabs (adversary R3), never a plan of a record My data cannot show. `ms` is the engine's own time from computePlan through the tiles and the layout (`planSections`), in whole milliseconds (JavaScriptCore has no finer clock), so the plan screen's "Worked out on this iPhone in N ms" is D2's plan budget, not My data's. `RecordStore` keeps one `drawn` from that call, set together with the record (`display`); `myData` and `plan` read it, so the two always show the same record revision. PlanView draws `store.plan` and never calls the engine. **Every return redraws (Codex R1):** the plan reads the time (ages, screening due dates, minor status), so `redraw` draws the same record again, in line (`chain`), each time the app becomes active, and at `.NSCalendarDayChanged` while active; between returns the tabs share the plan drawn. Not on a new calendar day only: health-core's minor-to-adult switch falls at midday UTC on the 1st of the birth month (`isKnownMinor` judges the date at UTC-12), so a calendar-day check missed it (RecordStoreTests `testAReturnWithinOneLocalDayCrossesTheMiddayUTCSwitchToAdult`). A draw takes about a millisecond. The trial confirms in `display`, from the same stored plan, so it needs no engine call either. After: one edit is `applyEditJson` then `screenJson` (one computePlan; a form answer's `applyFormEdit` plans once more inside `applyEditJson`), and the Plan tab adds none (RecordStoreTests `testOneEditDrawsMyDataAndThePlanInOneEngineCall`, engine `screen.test.ts`). `myDataJson`, `planViewJson`, `HealthEngine.planSections` and `EngineTrial.planned` went with it; the bridge id moved (D3), so a downloaded engine built before it is refused at its manifest check and the bundled engine runs. What still plans on its own: `historyJson` (a metric page and a value sheet, for the plan's `excluded` rows) and the self-test's `planJson`.
 - `blocking` is a test-target extension (`EngineTestDoors.swift`), so app code cannot call it at all: the compiler is the rule. It runs its body on the engine's queue through a cast of the isolated closure (not `assumeIsolated`, whose dispatch-queue check needs iOS 18's `checkIsolated`; the app supports iOS 17) with `queue.async`, the waiting thread held on a semaphore, so the body never runs on the main thread. `enqueue` is the app's one copy of the cast.
 - **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
@@ -574,7 +574,20 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   sign-in. The account a sign-in belongs to is kept (`sync-account`); signing in again as
   another account is refused, because merging would put one person's record into
   another's: the user disconnects first, then connects the other account (a fresh connect
-  then lifts the phone's record, as any first connect does). After a Disconnect,
+  then lifts the phone's record, as any first connect does). Connecting a different cloud
+  while an open is in flight is refused once the sign-in returns, before any token or file
+  is kept (US-25 AC11j, review of PR 1281, 2026-11-11): the open is single-flight, so the
+  connect would join the other cloud's open and leave the cloud on file naming one cloud
+  while the open session is the other's, with the new cloud's first-connect merge never run.
+  The cloud on file must match the open session. Signing in again to the same cloud joins its
+  open. The survey's S3 `CloudConnection` union will make the mismatch unrepresentable.
+  Since 2026-11-12 (US-25 AC11l, review of PR 1328) the rule is wider and that check is gone:
+  a different cloud is refused whenever one is connected, in any state ("Disconnect from Google
+  Drive first, then connect Dropbox."); S3's union will make it true by construction and delete it.
+  It runs before the sign-in shows (the post-sign-in check is a backstop for races), and the welcome sheet at failed offers only "Sign in to <cloud> again" and, since S3 PR 3, a "Switch to <cloud>" row for each other cloud (US-54 AC2d; it was "Use a different cloud", a Disconnect).
+  A sign-in carries the connection generation it began under: one returning after a Disconnect moved it is dropped before anything is kept (US-25 AC11l).
+  Connect errors show in the screen's alert, not the row's, since the welcome sheet hides its
+  rows while a record opens. After a Disconnect,
   `sync-history` remembers the cloud, and the words say a copy stays there. The background
   save has an expiration handler. Drive runs through the shim in Node against a fake
   Drive (`cloud.test.ts`), so its path is tested before the iOS client id exists.
@@ -592,10 +605,71 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   retries.
   Second re-check (Codex, same day): an open takes its number before any await, so the
   order of the calls decides which open wins, never the order their awaits finish in.
-  "Synced" has one rule (`CloudSync.settled`): the pending marker is clear. The marker is
+  "Synced" has one rule (`CloudConnection.status`; `CloudSync.settled` before S3): the pending marker is clear. The marker is
   set before every edit is taken and cleared by the session only when a save has landed
   and verified, and the engine says 'synced' at that moment; until then the app says
   "Saving…", on open, after a write and after Sync now.
+- **The connection is one state (survey S3 PR 1, 2026-11-12, US-25 AC11m).** CloudSync kept its
+  mode in side-by-side pieces: a stored status, the shown session, a generation, `openingFor`,
+  `editsWhileOpening` and held news. They are now one union, `CloudConnection`
+  (`Sync/CloudConnection.swift`): phone, closed, opening, open, closing. Each case but phone names
+  its cloud, and each carries the attempt it is under. A pure `transition(state, event)`, a switch
+  on the event then the state with no default arm, is the only change, and returns the effects
+  CloudSync runs (keep, open, close the session, show the phone). The provider, the status
+  (`CloudConnection.status`, the one place it is worked out), the open session, and the store's
+  pending marker and account are read from the state. Why: every race the reviews found was a
+  pair of these pieces disagreeing; each now maps to a cell that drops or refuses it. Every async
+  result names its attempt and is dropped once it ended; a sign-in names its connection
+  (`connectedAt`), so a reopen keeps it and a Disconnect voids it. The AC11l guard, the
+  generation checks and the held-news dictionaries are gone: the cells refuse a different cloud
+  in closed, opening and open, and closing refuses any connect while it keeps the cloud named
+  ("Disconnecting…"), which closes S22. A same-cloud sign-in during its open restarts the open
+  under the new tokens, since the old one may already have asked with the revoked grant. The
+  state equals what a relaunch reads: a connect keeps the tokens first and writes the provider
+  file last, and a failed keep removes what it kept; Disconnect copies down, then removes the
+  provider file first, the decision, then the rest as cleanup, which a launch with no provider
+  file finishes. A provider file that will not go leaves the connection exactly as it was and
+  says "Couldn't disconnect from <cloud>. Try again." A late `opened` is only dropped, not
+  closed: the engine has already closed its session, since any newer open or close supersedes
+  it (cloud.ts); the one case with no newer engine call, a failed keep, closes the session
+  itself. An effect runs after the step that decided it (after the store's handover, say), so
+  each open or close names its attempt and is skipped once the connection moved on (review R1).
+  A second Disconnect while one closes is a table cell that closes nothing; each Disconnect
+  step after an await checks its attempt (Codex C1). The account file stays until the Keychain
+  has deleted every cloud's tokens, so launch cleanup retries from it (C2). Disconnect and a
+  failed first connect delete every cloud's tokens, and a connect deletes every other cloud's,
+  never its own: one cloud at a time, so a token a refused delete left never outlives the next
+  cloud (round 2). A sign-in voided by a
+  Disconnect is dropped before any refusal is worded (C3). A failed copy-down never stops
+  Disconnect (owner): nothing is lost and the existing words show.
+  PR 2 (2026-11-12, US-25 AC16e): "an erase is running" has one source, `DataEraser.phase`.
+  CloudSync's own `erasing` flag is gone; it was set only during the cloud erase's engine call,
+  so a phone-only erase left Connect live (a first connect could lift a half-erased record) and a
+  cloud erase left Connect and Disconnect live through its last steps. CloudSync now reads
+  `eraseRunning()`, a closure set only by `CloudSync.waitsFor(eraser)`, which DataEraser's init
+  calls (it takes `sync`, so no app or test can build an eraser and forget the wiring; owner's
+  ruling, option d); it is read at each decision, never kept, and an
+  @Observable read through it redraws Sync's rows. An erase begun with no shown session (opening,
+  closed, closing) is refused and erases nothing (pinned).
+  PR 3 (2026-11-12, US-25 AC11n, lead S24): switching clouds is one step, as on the web. Sync's
+  connected branch and the welcome sheet at failed show a "Switch to <cloud>" row per other
+  configured cloud (`SwitchCloudRow`), with a confirmation that names the cloud the record is in,
+  read when the dialog shows; with no session open it promises no copy, read from `recordOpen`, the
+  fact that makes the engine answer 'none' (review R2). The sign-in session is read by the screen,
+  which stays while the Disconnect drops the row (R1). `CloudSync.switchTo` is Disconnect, then connect, with no await
+  between the Disconnect's end and connect's `signInStarted`, so no erase or connect slips in; it
+  adds no state and the table is unchanged (the design page's `switchRequested`/`closing(then:)`
+  was dropped as unnecessary). Why the composition: every existing cell (the erase gate, a second
+  Disconnect while closing, a sign-in voided by the Disconnect) already covers each half. Owner
+  D1 (a): a switch stops when the copy-down could not reach the cloud with a session open, or the
+  engine threw; the old cloud stays connected (the existing `closeFailed` and reopen) and no
+  sign-in starts. A plain Disconnect still never stops. For this `HealthEngine.cloudClose` returns
+  the engine's answer (`CloudClose`), not a Bool. A sign-in cancelled or failed after the
+  Disconnect ends on the phone with the record whole and no tokens (web parity); the row says
+  "<old> is disconnected and <new> did not connect. Your record is on this iPhone only." Owner D2:
+  "Disconnect from <cloud> first, then connect <other>." stays as the race backstop's cell.
+  Web twin: the picker already switches in one step (connect.ts prepareSwitch); its wording that
+  the old copy stays is lead A12.
 - **Not yet:** a push change signal. The web's Dropbox long-poll and Drive changes feed
   live in `widget-src/`, not health-core; moving them in would give the app push for free
   (US-34). Until then the app polls each minute while on screen.
@@ -633,7 +707,8 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   - **Chat history** (a phone-only file) is tombstoned by the engine's `ChatSession.eraseAll`
     and written only when that step ran. With a cloud open, the `chat-history.json` the
     website saved there is tombstoned first, by `ChatSession` on the cloud host, as the web's
-    erase does (2026-10-22). It is best effort and reported on its own (`cloudChatErased`):
+    erase does (2026-10-22). The cloud chat erase also writes an erase mark (US-11 AC2h); the
+    phone's own chat file gets none. It is best effort and reported on its own (`cloudChatErased`):
     a corrupt file or a newer website's schema never blocks the phone's chat erase
     (adversary R1). The confirmation names the website's chat in the cloud, and the result
     says whether it is gone or still there (R2): a provider that did not answer gets "Try
@@ -1657,7 +1732,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   - `App/`: the entry point (`AppParts` makes the engine and the record once),
     `RootView` (the tabs: My data, My plan, Chat; and the first-run cover),
     `WelcomeView` and `WelcomeConnect` (its cloud connect derives its phase from CloudSync
-    each time and keeps no copy, so a relaunch waits on the launch open; US-54 AC2b), `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
+    each time and keeps no copy, so a relaunch waits on the launch open; US-54 AC2b; a failed open shows
+    the Sync screen's words for its problem and offers Try again only where it can help, `failure`, AC2c), `LogoMark` (the logo and, through `scripts/make-icon.swift`, the app icon:
     the original road-to-heart icon, our own drawing, redrawn as Shapes on 2026-10-25; never an
     SF Symbol, traced or not, US-25 AC10), `Analytics` (Clarity, masked, D9), `Colors` (the app-wide colour helpers)
     and `MessageAlert` (the one-button alert every tab uses).

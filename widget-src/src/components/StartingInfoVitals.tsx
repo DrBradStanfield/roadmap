@@ -79,8 +79,8 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** The weight cell's answer (`past`: a past day's, which never lands), its ref, and its rest: the landing (US-62 AC25b). */
-  onWeightAnswered?: (past?: boolean) => void;
+  /** The weight cell's answer (`neverLands`: a past day's, or the chat's), its ref, and its rest: the landing (US-62 AC25b). */
+  onWeightAnswered?: (neverLands?: boolean) => void;
   weightRef?: (el: HTMLInputElement | null) => void;
   rested?: () => void;
   /** The weight is asked beside the height (US-62 AC13): its row is left out, so it shows once. */
@@ -338,8 +338,8 @@ export function StartingInfoVitals({
     }
 
     if (metric !== 'weight' && metric !== 'waist') return null;
-    // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
-    if (metric === 'weight' && withoutWeight) return null;
+    if (metric === 'weight' && withoutWeight) return null; // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
+    if (metric === 'weight') onWeightAnswered?.(true); // Shown here, the chat's weight is an answer given in this tab, as in the box, and never lands (US-62 AC31a).
     if (date && column && column[metric] == null) {
       type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);
@@ -652,10 +652,8 @@ function BpInputCell({
   active?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
-  const sysRef = useRef<HTMLInputElement>(null);
   const diaRef = useRef<HTMLInputElement>(null);
-  const advanceTimer = useRef<number | null>(null);
-  useEffect(() => () => { if (advanceTimer.current) window.clearTimeout(advanceTimer.current); }, []);
+  const advanceToDia = useAutoAdvance();
   // BP is integer-only (US-02 AC4) — block non-digit keystrokes; paste is
   // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -676,20 +674,14 @@ function BpInputCell({
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
-  // Never steal focus if the user already left systolic or dia has content.
+  // A pause moves only if systolic has the focus when it ends (AC6b, the hook's rule: leaving
+  // and coming back first still moves); never if dia had content when systolic last changed.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
     typedHalf('sys', v);
     onSysChange(v);
-    if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
-    if (dia !== '') return;
     const adv = bpSysAdvance(v);
-    if (adv === 'advance') diaRef.current?.focus();
-    else if (adv === 'defer') {
-      advanceTimer.current = window.setTimeout(() => {
-        if (document.activeElement === sysRef.current) diaRef.current?.focus();
-      }, 800);
-    }
+    advanceToDia(dia === '' && adv !== 'stay' ? { ambiguous: adv === 'defer', advance: () => diaRef.current?.focus() } : null);
   };
   const handleDiaChange = (raw: string) => { const v = raw.replace(/[^0-9]/g, ''); typedHalf('dia', v); onDiaChange(v); };
   // Visible range validation (US-02 AC5) — same inline-error pattern as
@@ -724,7 +716,7 @@ function BpInputCell({
   return (
     <div ref={cellRef} className={wrapperClass} onClick={focusSysFromShell}>
       <div className="bt-vitals-bp-inputs">
-        <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
+        <input className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>

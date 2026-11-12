@@ -13,8 +13,8 @@ import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
 import {
-  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, followupTrigger, inAges, ruleNotes, ruleOf, ruleTakes,
-  screeningFollowupInfo, type ScreeningId, type ScreeningRule,
+  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, inAges, opensFollowup, ruleNotes, ruleOf, ruleTakes,
+  intervalClosedBy, intervalQuestion, screeningFollowupInfo, type ScreeningId, type ScreeningRule,
 } from './screening-rules';
 import { LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
 import {
@@ -415,12 +415,12 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
   /** The follow-up's status, then its date once booked or done: shown while the result opens it. */
   const followup = (r: ScreeningRule, method: string): FormField[] => {
     const [resultKey, statusKey, dateKey] = chainKeys(r);
-    if (str(resultKey) !== followupTrigger(r)) return [];
+    if (!opensFollowup(r, str(resultKey))) return [];
     const name = followupName(r.id, method);
     const status = str(statusKey);
     const fields = [choice(statusKey, `${name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up'} status`, O.followup_status)];
     if (status === 'scheduled' || status === 'completed') fields.push(month(dateKey, followupDateLabel(name, status), status === 'scheduled' ? 'future' : 'past'));
-    return fields;
+    return [...fields, ...intervalQuestion(r, status).map((q) => choice(q.key, q.label, q.options))]; // US-07 AC1j
   };
   /** The result, then its follow-up: shown once the last screening has a date. */
   const resultChain = (r: ScreeningRule, method: string): FormField[] =>
@@ -509,13 +509,13 @@ export function screeningWrites(scr: ScreeningInputs, key: string, value: string
   if (byChoice?.result && byChoice.dateKey) {
     // DEXA closes on any answer but its scan; the cancer rows on "Not yet started" or a clear.
     const closes = byChoice.id === 'dexa' ? value !== onlyMethod(byChoice) : value === byChoice.notStarted || value === '';
-    if (closes) clear(byChoice.dateKey, ...chainKeys(byChoice));
+    clear(...(closes ? [byChoice.dateKey, ...chainKeys(byChoice)] : intervalClosedBy(key, value, readScreening(scr, key))));
   } else if (key === 'lung_smoking_history') {
     if (value === 'never_smoked' || value === '') clear('lung_pack_years', LUNG.choice.key, LUNG.dateKey!, ...chainKeys(LUNG));
   } else if (byResult) {
-    if (value !== followupTrigger(byResult)) clear(...chainKeys(byResult).slice(1));
+    if (!opensFollowup(byResult, value)) clear(...chainKeys(byResult).slice(1));
   } else if (key.endsWith('_followup_status')) {
-    if (value === 'not_organized' || value === '') clear(`${key.split('_')[0]}_followup_date`);
+    clear(...(value === 'not_organized' || value === '' ? [`${key.split('_')[0]}_followup_date`] : []), ...intervalClosedBy(key, value, readScreening(scr, key)));
   }
   return writes;
 }

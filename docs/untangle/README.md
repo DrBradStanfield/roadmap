@@ -89,7 +89,10 @@ leads are `D` (onboarding), `R` (record read), `P` (plan view), `U`
 web's; `M4`-`M16` are the iPhone survey's copied-logic leads L1-L13), `S`
 (implicit state in the iPhone app, from the same survey on 2026-11-11) and `C`
 (the server: chat prompt `C1`, chat purge `C2`-`C4`, crons and reminders from
-`C5`; `C9` is web chat after an erase).
+`C5`; `C9` is web chat after an erase; `C14`-`C20` are the server rows of the
+2026-11-12 survey), `A` (the web app and the shared sync layer, from that
+survey) and `T` (agent tooling: the CLI and stdio writes, review and wait
+scripts, from the same survey).
 This ledger has no `durability_check` column: a done row names its check in
 `evidence`.
 

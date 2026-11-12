@@ -11,10 +11,11 @@ vi.mock('@sentry/react', () => sentry);
 vi.mock('./sentry', () => ({ Sentry: sentry }));
 const store = vi.hoisted(() => ({
   recordExchange: vi.fn(async () => {}),
+  eraseMarks: vi.fn(() => []),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {},

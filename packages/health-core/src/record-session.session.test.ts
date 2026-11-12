@@ -9,10 +9,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
-import type { RecordHost } from './record-host';
+import type { RecordHost, RemoteChange } from './record-host';
+import type { SaveEvent, SaveState } from './save-state';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { createMeasurement, type FileDocument, type RoadmapFile } from './roadmap-file';
 import { stampProfile } from './state-edits';
+import { buildErasedFile } from './erase';
+
+// The real build, which one test makes throw once (US-16 AC2a).
+vi.mock('./erase', async (original) => {
+  const real = await original<typeof import('./erase')>();
+  return { ...real, buildErasedFile: vi.fn(real.buildErasedFile) };
+});
 
 /** A store whose writes can be made to fail, and whose reads can be held. */
 class TestStore extends MemoryAdapter {
@@ -974,5 +982,698 @@ describe('RecordSession.deleteAllData: the erase order (US-09 AC23, US-11 AC2; O
     expect(await session.deleteAllData({ teardown, chat })).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
     expect(teardown).not.toHaveBeenCalled();
     expect(chat).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Today's save mode, pinned as a caller sees it, before it becomes one union
+ * (lead A1, step a). The mode is spread over the debounce timer, the save in
+ * flight, the dirty-during-save flag, the change counts and `erasing`.
+ */
+describe('RecordSession: the save mode as a caller sees it today (lead A1)', () => {
+  /** Holds the store's next `method` call until released; `reached` resolves
+   *  once the call has started. Later calls run as normal. */
+  function holdNext(store: TestStore, method: 'read' | 'write') {
+    const own = store as unknown as Record<string, unknown>;
+    const original = (store[method] as (...args: unknown[]) => Promise<unknown>).bind(store);
+    let release!: () => void;
+    let started!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const reached = new Promise<void>((resolve) => { started = resolve; });
+    own[method] = async (...args: unknown[]) => {
+      delete own[method];
+      started();
+      await gate;
+      return original(...args);
+    };
+    return { reached, release };
+  }
+  /** The fake host on the real timer functions, so vi's fake timers drive the debounce. */
+  const onTimers = (host: RecordHost): RecordHost => ({
+    ...host,
+    timers: {
+      set: (run: () => void, ms: number) => setTimeout(run, ms),
+      clear: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+    },
+  });
+  /** An edit whose background save rejects: one write, the marker set. */
+  async function failedBackgroundSave() {
+    vi.useFakeTimers();
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(onTimers(fake.host));
+    store.failWrites = true;
+    add(session, 'a');
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS);
+    expect(store.writes).toBe(1);
+    expect(fake.pending.value).toBe(true);
+    store.failWrites = false;
+    return { store, fake, session };
+  }
+
+  it('a background cloud save that rejects sets the pending marker (US-09 AC4), and no save is tried again until an edit', async () => {
+    try {
+      const { store, fake, session } = await failedBackgroundSave();
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS * 50);
+      expect(store.writes).toBe(1); // no retry of its own
+      expect(vi.getTimerCount()).toBe(0);
+      expect(fake.pending.value).toBe(true);
+
+      add(session, 'b', 81, '2026-10-02');
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS - 1);
+      expect(store.writes).toBe(1); // the edit waits on the debounce
+      expect(fake.pending.value).toBe(true);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(store.writes).toBe(2);
+      expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+      expect(fake.pending.value).toBe(false); // the cloud save that lands clears it
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['flush', 'flushSync'] as const)('after that failure, a %s tries the save again (US-10 AC5a)', async (trigger) => {
+    try {
+      const { store, session } = await failedBackgroundSave();
+      if (trigger === 'flush') await session.flush();
+      else session.flushSync();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(store.writes).toBe(2);
+      expect(ids(stored(store.cloud))).toEqual(['a']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('after that failure, refreshFromRemote still reads and merges: an unsaved change does not hold it back', async () => {
+    try {
+      const { store, session } = await failedBackgroundSave();
+      const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+      add(other, 'theirs', 81, '2026-10-02');
+      await other.flush();
+      clock += 60_000;
+      const reads = vi.spyOn(store, 'read');
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(reads).toHaveBeenCalledTimes(1);
+      expect(ids(session.file)).toEqual(['a', 'theirs']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('today (step d of lead A1 changes this, US-09 AC30): no pending marker while an edit waits on the debounce, nor while its save is in flight', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    expect(fake.timers).toHaveLength(1);
+    expect(fake.pending.value).toBe(false);
+    const held = holdNext(store, 'write');
+    fake.timers[0].run();
+    await held.reached;
+    expect(fake.pending.value).toBe(false);
+    held.release();
+    await session.flush();
+    expect(store.writes).toBe(1);
+    expect(fake.pending.value).toBe(false);
+  });
+
+  it('an edit made during a save pass runs a second pass; with none, one pass and one write (US-10 AC5a)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    expect(store.writes).toBe(1); // no edit during the pass: one write
+
+    store.onWrite = () => { store.onWrite = undefined; add(session, 'b', 81, '2026-10-02'); };
+    add(session, 'c', 82, '2026-10-03');
+    await session.flush();
+    expect(store.writes).toBe(3); // the edit in the pass ran a second one
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
+    // Whatever timers remain find nothing left to save.
+    for (const t of [...fake.timers]) t.run();
+    await session.flush();
+    expect(store.writes).toBe(3);
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
+  });
+
+  it('a page-hide flushSync during a pass that took an edit makes one more pass', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    const held = holdNext(store, 'write');
+    fake.timers[0].run(); // the pass starts from 'a'
+    await held.reached;
+    add(session, 'b', 81, '2026-10-02'); // an edit the pass did not take
+    session.flushSync(); // the synchronous write lands both
+    expect(store.writes).toBe(1);
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+    held.release();
+    await session.flush();
+    // The held pass meets the sync write's revision and retries (2 writes),
+    // then one more pass for 'b', though the sync write already landed it.
+    expect(store.writes).toBe(4);
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+    await session.flush();
+    expect(store.writes).toBe(4);
+  });
+
+  it('a flush during a save joins it and resolves when it lands, with no write of its own (US-10 AC5a, US-11 AC7)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    const held = holdNext(store, 'write');
+    fake.timers[0].run(); // the background save starts
+    await held.reached;
+    let landed = false;
+    const flushing = session.flush();
+    void flushing.then(() => { landed = true; });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(landed).toBe(false); // still waiting on the held write
+    held.release();
+    await expect(flushing).resolves.toBeUndefined();
+    expect(store.writes).toBe(1);
+    expect(ids(stored(store.cloud))).toEqual(['a']);
+  });
+
+  it('a flush that joins a save whose later pass fails rejects with the save-failed text (US-11 AC7)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    // The first pass lands with an edit made during it; the second pass fails.
+    store.onWrite = () => {
+      store.onWrite = () => { store.failWrites = true; };
+      add(session, 'b', 81, '2026-10-02');
+    };
+    fake.timers[0].run();
+    await expect(session.flush()).rejects.toThrow('Cloud sync failed — your latest changes are still on this device.');
+    expect(store.writes).toBe(2);
+    expect(ids(stored(store.cloud))).toEqual(['a']);
+  });
+
+  it('refreshFromRemote answers false and reads nothing while an edit waits or its save is in flight (US-34 AC2)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    const reads = vi.spyOn(store, 'read');
+    add(session, 'a');
+    expect(await session.refreshFromRemote()).toBe(false); // on the debounce
+    expect(reads).not.toHaveBeenCalled();
+
+    const held = holdNext(store, 'write');
+    const atStart = reads.mock.calls.length;
+    fake.timers[0].run();
+    await held.reached;
+    expect(reads).toHaveBeenCalledTimes(atStart + 1); // the save's own read
+    expect(await session.refreshFromRemote()).toBe(false); // in flight
+    expect(reads).toHaveBeenCalledTimes(atStart + 1);
+    held.release();
+    await session.flush();
+
+    // Nothing pending: it reads, once (the save's verify read came before).
+    const saved = reads.mock.calls.length;
+    expect(await session.refreshFromRemote()).toBe(false);
+    expect(reads).toHaveBeenCalledTimes(saved + 1);
+  });
+
+  it('refuses() is true from the erase swap to the end of its write, and false once the erase is done (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    expect(session.refuses()).toBe(false);
+    const held = holdNext(store, 'write');
+    const erasing = session.erase();
+    await held.reached;
+    expect(session.refuses()).toBe(true);
+    expect(add(session, 'late')).toBe(false);
+    held.release();
+    expect((await erasing).success).toBe(true);
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
+  it('after an erase whose write rejects, refuses() is false and an edit is accepted (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    store.failWrites = true;
+    expect((await session.erase()).success).toBe(false);
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
+  it('after an erase whose build throws, refuses() is false and an edit is accepted (US-16 AC2a)', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    vi.mocked(buildErasedFile).mockImplementationOnce(() => { throw new Error('build failed'); });
+    expect(await session.erase()).toEqual({ success: false, error: 'build failed' });
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'after')).toBe(true);
+  });
+
+  it("today, refuses() is still false before the erase's stored read answers (lead A6; a later PR may change it)", async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, 'a');
+    await session.flush();
+    const held = holdNext(store, 'read');
+    const erasing = session.erase();
+    await held.reached;
+    // Lead A6 may flip this in a later PR.
+    expect(session.refuses()).toBe(false);
+    expect(add(session, 'during-read')).toBe(true); // an edit is let in
+    held.release();
+    expect((await erasing).success).toBe(true);
+    expect(session.refuses()).toBe(false);
+  });
+});
+
+describe("RecordSession: two erases on one session (US-16 AC2a)", () => {
+  function hold(store: TestStore, method: "read" | "write") {
+    const own = store as unknown as Record<string, unknown>;
+    const original = (store[method] as (...args: unknown[]) => Promise<unknown>).bind(store);
+    let release!: () => void; let started!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const reached = new Promise<void>((r) => { started = r; });
+    own[method] = async (...args: unknown[]) => { delete own[method]; started(); await gate; return original(...args); };
+    return { reached, release };
+  }
+  it("a second erase refused at its read leaves the first erase refusing edits", async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    add(session, "a");
+    await session.flush();
+    const held = hold(store, "write");
+    const first = session.erase();
+    await held.reached;
+    expect(session.refuses()).toBe(true);
+    store.failReads = true;
+    const second = await session.erase();
+    expect(second.success).toBe(false);
+    store.failReads = false;
+    expect(session.refuses()).toBe(true);
+    held.release();
+    await first;
+  });
+});
+
+describe('RecordSession: a save asked for while a landed save still adopts (US-11 AC7)', () => {
+  it('starts no pass beside that save, so a later flush joins the one pass that carries the change', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    // Another device erases: this session's next save merges the erase in, and
+    // its adopt() clears the off-file data after the pass and its claim ended.
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    let inner: Promise<void> | null = null;
+    let storedWhenInner: string[] | null = null;
+    fake.host.clearOffFileData = () => {
+      fake.host.clearOffFileData = () => {};
+      add(session, 'c', 82, '2026-10-03'); // one more change, inside that save's adopt()
+      const write = store.write.bind(store);
+      store.write = async (...args: Parameters<TestStore['write']>) => { store.write = write; await gate; return write(...args); };
+      inner = session.flush().then(() => { storedWhenInner = ids(stored(store.cloud)); });
+    };
+    add(session, 'b', 81, '2026-10-02');
+    await session.flush();
+    expect(inner).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storedWhenInner).toBeNull(); // the flush made with 'c' waits for the write that carries it
+    // The flush made inside adopt() started the pass that carries 'c', after
+    // the landed pass's claim ended. The old save never clears that newer
+    // claim, so this flush joins it: it answers only once that write lands,
+    // and adds no write of its own (adversary R2).
+    let answered = false;
+    const late = session.flush().then(() => { answered = true; });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(answered).toBe(false);
+    const writes = store.writes;
+    release();
+    await Promise.all([inner, late]);
+    expect(answered).toBe(true);
+    expect(store.writes - writes).toBe(1);
+    expect(storedWhenInner).toContain('c');
+    expect(ids(stored(store.cloud))).toContain('c');
+  });
+});
+
+describe("RecordSession: an edit made while another device's erase is taken in (US-11 AC7)", () => {
+  /** A saved row 'a', then another device erases it: the next save or re-read takes the erase in. */
+  async function erasedElsewhere(tier: 'device' | 'cloud' = 'cloud') {
+    const store = new TestStore();
+    const fake = fakeHost(store, tier);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const before = stored(store.cloud).meta.eraseEpoch ?? 0;
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud), tier).host);
+    clock += 60_000;
+    expect((await other.erase()).success).toBe(true);
+    clock += 60_000;
+    return { store, fake, session, before, erased: other.eraseIdentity };
+  }
+
+  /** The save that takes the erase in makes an edit and a flush from its off-file clear. */
+  async function editInsideTheClear() {
+    const run = await erasedElsewhere();
+    let inner: Promise<void> | null = null;
+    let storedWhenAnswered: string[] = [];
+    run.fake.host.clearOffFileData = () => {
+      run.fake.host.clearOffFileData = () => {};
+      expect(add(run.session, 'c', 82, '2026-10-03')).toBe(true);
+      inner = run.session.flush().then(() => { storedWhenAnswered = ids(stored(run.store.cloud)); });
+    };
+    add(run.session, 'b', 81, '2026-10-02');
+    await run.session.flush();
+    expect(inner).not.toBeNull();
+    await inner;
+    return { ...run, storedWhenAnswered };
+  }
+
+  it('keeps the edit, and the flush made with it answers only once a write carries it', async () => {
+    const { store, session, storedWhenAnswered } = await editInsideTheClear();
+    expect(ids(session.file)).toContain('c');
+    expect(storedWhenAnswered).toContain('c');
+    expect(ids(stored(store.cloud))).toContain('c');
+  });
+
+  it('lands the edit on the erased copy: no pre-erase row comes back, and the epoch only moves on', async () => {
+    const { store, session, before, erased } = await editInsideTheClear();
+    await session.flush();
+    const record = stored(store.cloud);
+    expect(session.eraseIdentity).toBe(erased);
+    expect(record.meta.eraseEpoch ?? 0).toBeGreaterThan(before);
+    expect(JSON.stringify([record.meta.eraseEpoch ?? 0, record.meta.erasedAt ?? null])).toBe(erased);
+    expect(ids(record)).not.toContain('a');
+    expect(ids(session.file)).not.toContain('a');
+    expect(ids(record)).toContain('c');
+  });
+
+  describe('a clear that throws keeps the erased copy, announces the erase, and stays owed', () => {
+    /** The host's off-file clear, failing its first `fails` calls; counts every call. */
+    function clearThatThrows(fake: Fake, fails = Infinity) {
+      const clears = { calls: 0 };
+      const real = fake.host.clearOffFileData;
+      fake.host.clearOffFileData = (keep) => {
+        clears.calls += 1;
+        if (clears.calls <= fails) throw new Error('clear refused');
+        real(keep);
+      };
+      return clears;
+    }
+    /** What the page hears: each change the session announces. */
+    function heard(fake: Fake) {
+      const changes: RemoteChange[] = [];
+      fake.host.remoteChanged = (change) => void changes.push(change);
+      return changes;
+    }
+
+    it('through a save: the flush lands, the page hears the erase, and the throw is reported', async () => {
+      const { store, fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual([{ op: 'clear-off-file', repeat: false }]);
+      expect(clears.calls).toBe(1);
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).toEqual(['b']);
+      expect(ids(stored(store.cloud))).toEqual(['b']);
+    });
+
+    it('through a re-read: it answers true, the page hears the erase, and the throw is reported', async () => {
+      const { fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual([{ op: 'clear-off-file', repeat: false }]);
+      expect(clears.calls).toBe(1);
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).toEqual([]);
+    });
+
+    it('through a page hide: nothing throws to the page, and no save is left to run', async () => {
+      const { fake, session, erased } = await erasedElsewhere('device');
+      clearThatThrows(fake, 1);
+      add(session, 'b', 81, '2026-10-02');
+      expect(() => session.flushSync()).not.toThrow();
+      expect(session.saveStatus).toBe('saved');
+      expect(session.eraseIdentity).toBe(erased);
+      expect(ids(session.file)).not.toContain('a');
+    });
+
+    it('the next save retries the clear, which then runs once, and nothing pre-erase is left', async () => {
+      const { store, fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(2);
+      expect(fake.kept).toEqual([[]]); // the clear that ran kept no pre-erase original
+      add(session, 'e', 84, '2026-10-05');
+      await session.flush();
+      expect(clears.calls).toBe(2); // none is owed now
+      expect(ids(session.file)).not.toContain('a');
+      expect(ids(stored(store.cloud))).not.toContain('a');
+    });
+
+    it('the next re-read retries the clear though nothing new came in', async () => {
+      const { fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 1);
+      const changes = heard(fake);
+      expect(await session.refreshFromRemote()).toBe(true);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(2);
+      expect(fake.kept).toEqual([[]]);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(2);
+      expect(changes).toHaveLength(1);
+    });
+
+    it('a clear that keeps throwing is tried once at each save and re-read, and the erase is announced once', async () => {
+      const { fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake);
+      const changes = heard(fake);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      expect(clears.calls).toBe(1);
+      await session.flush(); // nothing to save: no pass, so no retry
+      expect(clears.calls).toBe(1);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(2);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      expect(clears.calls).toBe(3);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(clears.calls).toBe(3); // no loop left running
+      expect(changes).toEqual([{ erase: erased }]);
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+        { op: 'clear-off-file', repeat: true },
+      ]);
+      expect(session.saveStatus).toBe('saved');
+    });
+
+    it('a clear that keeps throwing is reported once per erase, then as a repeat; a later erase reports afresh', async () => {
+      const { store, fake, session, erased } = await erasedElsewhere();
+      const clears = clearThatThrows(fake);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush();
+      expect(clears.calls).toBe(3);
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+        { op: 'clear-off-file', repeat: true },
+      ]);
+      // A second erase from elsewhere, whose clear throws too.
+      const third = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+      clock += 60_000;
+      expect((await third.erase()).success).toBe(true);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(true);
+      expect(session.eraseIdentity).not.toBe(erased);
+      expect(clears.calls).toBe(4);
+      expect(fake.reports.slice(3)).toEqual([{ op: 'clear-off-file', repeat: false }]);
+    });
+
+    it('once the clear lands, it is neither tried nor reported again', async () => {
+      const { fake, session } = await erasedElsewhere();
+      const clears = clearThatThrows(fake, 2);
+      add(session, 'b', 81, '2026-10-02');
+      await session.flush();
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'd', 83, '2026-10-04');
+      await session.flush(); // the third try lands
+      expect(clears.calls).toBe(3);
+      clock += 60_000;
+      expect(await session.refreshFromRemote()).toBe(false);
+      add(session, 'e', 84, '2026-10-05');
+      await session.flush();
+      expect(clears.calls).toBe(3);
+      expect(fake.reports).toEqual([
+        { op: 'clear-off-file', repeat: false },
+        { op: 'clear-off-file', repeat: true },
+      ]);
+    });
+  });
+});
+
+describe('RecordSession: a throw after a save landed and a newer save took the claim (US-11 AC7)', () => {
+  it('fails neither save: no in-place stamp, no save-failed report, and the older flush answers its landed write', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store);
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    await session.flush();
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    add(other, 'theirs', 70, '2026-09-01');
+    await other.flush();
+    // The page, hearing the change this save folded in, makes an edit, starts
+    // its save, and then throws.
+    let inner: Promise<void> | null = null;
+    let target: RoadmapFile | null = null;
+    let stampAt = '';
+    let heard = 0;
+    fake.host.remoteChanged = () => {
+      heard += 1;
+      if (inner) return;
+      add(session, 'x', 82, '2026-10-03');
+      inner = session.flush();
+      target = session.file;
+      stampAt = target.meta.updatedAt;
+      clock += 60_000;
+      throw new Error('listener broke');
+    };
+    add(session, 'b', 81, '2026-10-02');
+    await expect(session.flush()).resolves.toBeUndefined();
+    expect(target!.meta.updatedAt).toBe(stampAt);
+    expect(fake.reports.filter((r) => !('op' in r) || r.op === 'persist')).toEqual([]);
+    expect(fake.pending.value).toBe(false);
+    expect(heard).toBe(1);
+    await inner;
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'theirs', 'x']);
+    expect(session.saveStatus).toBe('saved');
+  });
+});
+
+describe('RecordSession: a pass and its claim end together (lead A1)', () => {
+  type Inside = { mode: SaveState; running: Promise<boolean> | null; dispatch(event: SaveEvent): number | null };
+  const passRuns = (s: SaveState) => s.mode === 'saving' || (s.mode === 'erasing' && s.under.mode === 'saving');
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+
+  /** Holds the store's next write until released. */
+  function holdWrite(store: TestStore) {
+    let release!: () => void; let reached!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const started = new Promise<void>((r) => { reached = r; });
+    const write = store.write.bind(store);
+    store.write = async (...args: Parameters<TestStore['write']>) => { store.write = write; reached(); await gate; return write(...args); };
+    return { started, release };
+  }
+
+  it('a pass runs exactly while the mode is saving (or erasing over saving), at every event', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    const inside = session as unknown as Inside;
+    const broken: string[] = [];
+    const seen = new Set<string>();
+    const check = (at: string) => {
+      if (passRuns(inside.mode) !== (inside.running !== null)) broken.push(`${at}: ${JSON.stringify(inside.mode)}, running ${inside.running !== null}`);
+    };
+    // Checked as each event arrives, and once the turn that dispatched it ends
+    // (a pass's claim is set just after the save that starts it, in that turn).
+    const dispatch = inside.dispatch.bind(session);
+    inside.dispatch = (event) => {
+      check(`before ${event.type}`);
+      seen.add(`${event.type}${passRuns(inside.mode) ? ' mid-pass' : ''}`);
+      const pass = dispatch(event);
+      queueMicrotask(() => check(`after ${event.type}`));
+      return pass;
+    };
+    const fireDebounce = () => fake.timers.splice(0).forEach((t) => t.run());
+    const midPass = async (during: () => void | Promise<void>) => {
+      const held = holdWrite(store);
+      add(session, `m${store.writes}`);
+      const save = session.flush();
+      await held.started;
+      await during();
+      held.release();
+      await save;
+    };
+
+    const steps: Array<[string, () => Promise<void>]> = [
+      ['a pass lands', async () => { add(session, 'a'); await session.flush(); }],
+      ['an edit, then the debounce firing, mid-pass', () => midPass(() => { add(session, 'b'); fireDebounce(); })],
+      ['a pass fails', async () => {
+        store.failWrites = true;
+        add(session, 'c');
+        await expect(session.flush()).rejects.toThrow();
+        store.failWrites = false;
+      }],
+      ['flushSync mid-pass', () => midPass(() => { add(session, 'd'); session.flushSync(); })],
+      ['an erase mid-pass', async () => {
+        let erase: Promise<unknown> | null = null;
+        await midPass(async () => {
+          erase = session.erase();
+          for (let i = 0; i < 50 && inside.mode.mode !== 'erasing'; i += 1) await tick();
+          expect(inside.mode.mode).toBe('erasing');
+        });
+        expect(await erase).toEqual({ success: true });
+      }],
+      ["a save asked for from adopt(), after another device's erase", async () => {
+        const other = await RecordSession.open(fakeHost(new TestStore(store.cloud), 'device').host);
+        clock += 60_000;
+        expect((await other.erase()).success).toBe(true);
+        clock += 60_000;
+        let inner: Promise<void> | null = null;
+        fake.host.clearOffFileData = () => {
+          fake.host.clearOffFileData = () => {};
+          add(session, 'e');
+          inner = session.flush();
+        };
+        add(session, 'f');
+        await session.flush();
+        await inner;
+      }],
+    ];
+    for (const [name, step] of steps) {
+      await step();
+      await tick();
+      check(`after step: ${name}`);
+    }
+
+    expect(broken).toEqual([]);
+    expect([...seen]).toEqual(expect.arrayContaining([
+      'passLanded mid-pass', 'passFailed mid-pass', 'edited mid-pass', 'save mid-pass', 'synced mid-pass', 'eraseStarted mid-pass',
+    ]));
+    expect(inside.running).toBeNull();
+    expect(session.saveStatus).toBe('saved');
   });
 });

@@ -16,7 +16,7 @@ Every Sunday job now runs steps 1 to 6 under the $2 cap.
 ## Limits (the orchestrator's, binding)
 
 - The algorithm side is Brad's. A divergence from `health_roadmap_algorithm.md`,
-  `evidence.ts` or `roadmap_text.html` is reported, never edited: the
+  `packages/health-core/src/evidence*.ts` or `roadmap_text.html` is reported, never edited: the
   three-file clinical sync is his.
 - Deliberate divergences sit on `lint-allowlist.json` so they are not "fixed"
   every week. Brad writes it; the loop proposes entries in its report.

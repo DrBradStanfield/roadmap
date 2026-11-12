@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C25,chat history,"Chat-history erase markers accumulate one per erase; no pruning yet",gap,not started,"Owner: UI. packages/health-core/src/chat-session.ts eraseAll adds one content-free tombstone with an erase: id to chat-history.json per erase (US-11 AC2h); a few bytes each. mergeWithinCap counts only live conversations, so markers never count toward the 50 cap, and nothing removes them. A pruning rule must keep every marker a page could still be asking under.",,no

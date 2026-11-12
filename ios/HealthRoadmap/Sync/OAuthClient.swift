@@ -38,7 +38,8 @@ final class OAuthClient {
         let email: String?
     }
 
-    private let tokens: TokenStore
+    /// Not private only so a test can switch the store's failure seams mid-run.
+    var tokens: TokenStore
     private let session: URLSession
     private let now: () -> Date
     /// The provider's client id; tests pass one for Google before the real one exists.
@@ -149,7 +150,9 @@ final class OAuthClient {
     }
 
     /// Forget the tokens. The cloud file is untouched.
-    func signOut(_ provider: CloudProvider) {
+    /// True once the Keychain holds no tokens for the provider.
+    @discardableResult
+    func signOut(_ provider: CloudProvider) -> Bool {
         tokens.delete(provider)
     }
 

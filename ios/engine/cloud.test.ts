@@ -369,7 +369,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
     const broken = [{ kind: 'medication', medicationKey: 'statin', doseValue: 20, doseUnit: 'mg' }];
     const { medications } = JSON.parse(engine.chatEditsJson(record, JSON.stringify(broken), NOW, 'ios-1', '2026-10-21')) as { medications: { lines: unknown[]; undo: unknown; refusal: string } };
-    expect(medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so nothing was saved.' });
+    expect(medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so it was not saved.' });
     const edit = JSON.stringify({ kind: 'chatEdits', part: 'medications', today: '2026-10-21', edits: broken });
     expect(JSON.parse(engine.cloudEdit(edit, erase, 'si', NOW))).toMatchObject({ ok: false, message: medications.refusal });
   });
@@ -974,9 +974,9 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(state.events.filter(([event]) => event === 'saved')).toHaveLength(recordWrites);
     // The cloud file: every conversation a tombstone, the user's words gone.
     expect(dropbox.chat!.text).not.toContain('Website question');
-    const cloudChat = JSON.parse(dropbox.chat!.text) as { conversations: Array<{ deleted?: boolean }> };
-    expect(cloudChat.conversations.length).toBe(1);
-    expect(cloudChat.conversations.every((c) => c.deleted === true)).toBe(true);
+    const cloudChat = JSON.parse(dropbox.chat!.text) as { conversations: Array<{ id: string; deleted?: boolean; title: string; messages: unknown[] }> };
+    expect(cloudChat.conversations.map((c) => c.id.startsWith('erase:')).sort()).toEqual([false, true]); // c1 and the erase marker (US-11 AC2h)
+    expect(cloudChat.conversations.every((c) => c.deleted === true && c.title === '' && c.messages.length === 0)).toBe(true);
     // The phone's own chat history is still tombstoned, as before.
     expect(kept).toHaveLength(1);
     expect(kept[0]).not.toContain('Is my LDL high?');

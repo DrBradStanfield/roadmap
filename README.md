@@ -119,6 +119,10 @@ cp .env.example .env   # fill in what you need
 npm run test:all
 ```
 
+In a Claude Code session on macOS a hook refuses `npm test` and `npm run test:all`: run
+`npx vitest run <test files>`, or prefix `ALLOW_BROAD_TESTS=<reason>`. Outside Claude Code
+they work as before.
+
 Node 22 or newer. Never run `shopify app dev`: the dev preview overrides
 production.
 
@@ -129,6 +133,8 @@ npm test          # symlink guard + health-core + server
 npm run test:all  # everything, and what CI runs
 npx vitest run <path>
 ```
+
+In a Claude Code session on macOS a hook refuses the first two (see above).
 
 ## Deploy
 

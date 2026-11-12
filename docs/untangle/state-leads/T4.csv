@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T4,agent channel,agent-channel: refused-nothing-sent and maybe-sent share exit 1; one global read cursor for every session,implicit state,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now. tools/agent-channel.mjs,,no

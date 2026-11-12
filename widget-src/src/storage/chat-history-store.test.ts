@@ -57,7 +57,7 @@ describe('ChatHistoryStore.eraseAll (US-11)', () => {
 
     expect(store.listConversations()).toEqual([]);
     const file = readCloud(cloud);
-    expect(file.conversations).toHaveLength(2); // tombstones, not a blank file
+    expect(file.conversations).toHaveLength(3); // tombstones and the erase marker, not a blank file
     for (const conv of file.conversations) {
       expect(conv.deleted).toBe(true);
       expect(conv.messages).toEqual([]);
@@ -98,10 +98,11 @@ describe('ChatHistoryStore.eraseAll (US-11)', () => {
     expect(cloud.files.get(CHAT_FILE)!.json).not.toMatch(/still there/);
   });
 
-  it('writes nothing when there is no history to erase', async () => {
+  it('writes only the erase marker when there is no history to erase (US-11 AC2h)', async () => {
     const cloud = new MemoryCloud();
     const store = await ChatHistoryStore.create(new MemoryAdapter(cloud));
     await store.eraseAll();
-    expect(cloud.files.has(CHAT_FILE)).toBe(false);
+    expect(readCloud(cloud).conversations).toEqual([expect.objectContaining({ id: expect.stringMatching(/^erase:/), deleted: true, title: '', messages: [] })]);
+    expect(store.listConversations()).toEqual([]);
   });
 });

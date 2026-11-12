@@ -38,7 +38,7 @@ import {
   loadLatestMeasurements,
   hasSavedRecord,
   getInitialInputsSync,
-  getEraseIdentity, getShownErase,
+  getEraseIdentity,
   clearOffFileAfterErase,
   flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
@@ -64,7 +64,6 @@ import { useTabs } from '../hooks/useTabs';
 import { useUnits } from '../hooks/useUnits';
 import { useLongitudinalSave, countedCorrection } from '../hooks/useLongitudinalSave';
 import { useChatEdits } from './ChatEdits';
-import { WRITE_REFUSED } from '../lib/erase-copy';
 
 /** The onboarding's answers (US-62 AC13): only an edit to one of them counts as a step. */
 const ONBOARDING_FIELDS: ReadonlyArray<keyof HealthInputs> = ['heightCm', 'weightKg', 'sex', 'birthMonth', 'birthYear'];
@@ -146,21 +145,16 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The erase the screen shows, and this tab's own erase (hooks/useErase.ts).
   // The chat's banners (a profile proposal, a medication Undo) go when the
   // screen moves to another erase, this tab's or another device's, even with
-  // post-erase rows. A re-read that brings no erase keeps them.
-  const { shownErase, erasing: isDeleting, showErase, eraseUnshown, refusalIsNews, eraseAll } = useErase(() => clearChatEdits());
+  // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
+  const { store: eraseStore, shownErase, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
+    clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
+    shows: () => showErase(), spend: () => clearAnswered(true),
+  });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, saved: profileClean, firstReadFailed } = useRecordApply({
-    setInputs, reloadValues, applyLists, units, showErase, loaded: hasApiResponse,
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadFailed } = useRecordApply({
+    setInputs, reloadValues, applyLists, units, erase: eraseStore, loaded: hasApiResponse,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
-  // A save the store refused, asked under `erase`. Outside this tab's own erase, say so and show the record the
-  // store holds, which also takes in a change the relay held (US-34 AC4). A save asked of a record the screen has
-  // left spends no landing of the one it shows (US-16 AC2d, US-62 AC25b).
-  const writeRefused = useCallback((erase?: string) => {
-    if (!refusalIsNews()) return;
-    window.alert(WRITE_REFUSED);
-    void rereadRecord(erase === undefined || erase === getShownErase() ? 'refused' : 'left');
-  }, [refusalIsNews, rereadRecord]);
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
     handleMedicationChange, handleScreeningChange, handleSupplementChange, handleSupplementDelete,
@@ -170,11 +164,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
     async function loadData() {
-      // The mount's read, or a fresh one: the erase is read with the record, in one turn.
+      // The mount's read, or a fresh one: the erase is read with the record. Shown even if the store moved since, not as that erase: its arrival is read at loaded.
       const first = mountRead.current;
       mountRead.current = null;
       const { erase, result } = first ?? { erase: getEraseIdentity(), result: await loadLatestMeasurements() };
-      showErase(erase);
+      if (getEraseIdentity() === erase) eraseStore.dispatch({ type: 'read', identity: erase });
       if (hasSavedRecord(result)) {
         showRecord(result);
         setPreviousMeasurements(result.previousMeasurements);
@@ -192,7 +186,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     }
 
     void loadData().catch(firstReadFailed);
-  }, [showErase, firstReadFailed]);
+  }, [eraseStore, firstReadFailed]);
 
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
@@ -477,7 +471,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // record, on the device and on screen. The matrices' drafts and the Lp(a)
   // check's answers too: a failed write's store holds the erased copy. Stored
   // originals go by the session's rule, never by the page (US-11 AC6).
-  const handleDeleteData = useCallback(() => eraseAll(() => {
+  const forgetRecord = useCallback(() => {
     clearLocalStorage();
     clearOffFileAfterErase(); // the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
     setInputs({});
@@ -487,7 +481,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // A save the form scheduled before the erase is pre-erase (US-16 AC2a).
     dropListSaves();
     markSaved({}); units.erased(); // the units shown stay (US-34 AC7a, Q3); held or unsaved ones go
-  }), [eraseAll, cancelPendingSave, profileTimer, markSaved, dropListSaves, units]);
+  }, [cancelPendingSave, profileTimer, markSaved, dropListSaves, units]);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -630,7 +624,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
-    onDelete: async () => { if (await handleDeleteData()) closeSettings(); },
+    onDelete: async () => { if (await eraseAll()) closeSettings(); },
     isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,

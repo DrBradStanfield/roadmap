@@ -1,14 +1,16 @@
 /**
  * Shared chat state hook used by ChatSection (bubble) and ChatEmbed (inline panel).
- * Handles all data fetching, API calls, optimistic updates, and BroadcastChannel sync.
- * UI-only state (isExpanded, showThreads, etc.) stays in the consuming component.
+ * The turn, the shown chat, the list and the load live in one chat-turn store
+ * (hooks/chatStore.ts, packages/health-core/src/chat-turn.ts): every action and
+ * every landing is an event, and the effects the store returns run here, each
+ * through today's door (chat-api, chat-sync, ChatEdits). UI-only state
+ * (isExpanded, showThreads, etc.) stays in the consuming component.
  */
 
 import { Sentry } from '../lib/sentry';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import {
   listConversations,
-  loadConversation,
   sendMessage,
   deleteConversation,
   type ChatApproach,
@@ -17,12 +19,20 @@ import {
   type ChatMessage,
   type ChatPending,
 } from '../lib/chat-api';
-import { postSync, postInputSync, subscribeSync, generateInstanceId, type SyncState } from '../lib/chat-sync';
+import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
+import { getShownErase } from '../lib/roadmap-data';
 import { useChatBusy } from './useChatBusy';
+import { useOffline } from './useOffline';
+import { createChatStore, joinChats } from './chatStore';
+import { readThread } from './chatReads';
 import { cutText } from '@roadmap/health-core/chat-history';
+import { busy, initialChatState, isLocalSender, MAX_CHARS, showsPending, type ChatEvent, type Effect } from '@roadmap/health-core/chat-turn';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
+import type { ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
+
+export { MAX_CHARS };
 
 /** A subscription change card under an answer (US-59): idle, sending, or closed with its outcome. */
 export interface SubscriptionCardState {
@@ -51,23 +61,21 @@ interface UseChatStateOptions {
   onProposeEdit?: ChatEditTarget;
 }
 
-/** A reply's form edits (US-16): `ask` reads the erase the question is asked
- *  under as it is sent; `take` gets the reply's edits with it, so they never
- *  land on a record erased since (US-16 AC2a). `leave`: the conversation
+/** A reply's form edits (US-16): `ask` is told a question is sent; `take`
+ *  gets the reply's edits with the erase the question was asked under, so they
+ *  never land on a record erased since (US-16 AC2a). `leave`: the conversation
  *  switched (New chat, or a saved chat opened). */
 export interface ChatEditTarget {
   ask: () => string;
-  /** `stayed`: the thread the question was sent from is still on screen. */
-  take: (edits: ProposedEdit[], asked: string, stayed: boolean) => void;
+  /** `stayed`: the chat the question was sent from (its local identity) is still shown. `refusals`: the parts
+   *  refused as unreadable (US-67 AC2), their edits already left out. */
+  take: (edits: ProposedEdit[], asked: string, stayed: boolean, refusals?: ChatEditRefusal[]) => void;
   leave: () => void;
 }
 
-/** This instance's chat state, to every other instance (US-15 AC17c names its fields). */
-const postState = (instanceId: string, payload: SyncState) => postSync({ instanceId, type: 'state', payload, ts: Date.now() });
-
-export const MAX_CHARS = 8000;
 const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
+const SEND_FAILED = 'Something went wrong. Please try again.';
 
 /** Enter sends, Shift+Enter is a new line, and an Enter that commits an input method's composition only commits it
  *  (US-15 AC26a): Chrome and Firefox mark it `isComposing`, Safari sends it just after with keyCode 229. */
@@ -77,20 +85,9 @@ export function sendsOnEnter(e: React.KeyboardEvent): boolean {
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
-
-  const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
-  const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
-  // isLocalSender: true only on the instance that triggered the send — controls animation
-  const [isLocalSender, setIsLocalSender] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const hasLoadedRef = useRef(!!prefetchedData);
-  // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending
-  // instance only; other tabs show the dots.
-  const [pending, setPending] = useState(NO_PENDING);
-  // The thread the reply in flight was sent from: the stream shows only there (US-15 AC7a).
-  const [sendingConversationId, setSendingConversationId] = useState<string | null>(null);
+  // A paste cut at MAX_CHARS (US-15 AC26): said in the error line until the box is next edited.
+  const [cut, setCut] = useState(false);
   // A landed answer's thinking summary and articles read, by message id, for
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
@@ -98,339 +95,167 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // US-59: subscription change cards, by assistant message id, this tab only
   // (like approachById: never persisted, synced or sent anywhere but the confirm).
   const [cardsById, setCardsById] = useState<Record<string, SubscriptionCardState>>({});
-  const streamRef = useRef({ ...NO_PENDING, frame: 0 });
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useOffline();
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
-  // Keep the latest onProposeEdit in a ref so handleSend's closure always fires
-  // the current callback without re-creating the (memoised) handler.
-  const onProposeEditRef = useRef(onProposeEdit);
-  useEffect(() => { onProposeEditRef.current = onProposeEdit; }, [onProposeEdit]);
-
-  // Refs for current values needed inside async callbacks and subscriptions
-  const conversationsRef = useRef(conversations);
-  const activeConversationIdRef = useRef(activeConversationId);
-  const messagesRef = useRef(messages);
+  // The box as typed, before the re-render (US-15 AC57): a failed send puts its question back only into an empty box.
   const inputTextRef = useRef(inputText);
-  const isLoadingConvsRef = useRef(false);
-  // Busy while any tab's send is in flight, each tracked on its own (US-15 AC17c).
-  const { isLoading, busyNow, ownSending, startOwnSend, endOwnSend, onRemote } = useChatBusy();
-  // Bumped by each thread load and by a reply landing on screen: a load that
-  // started before either is stale (US-15 AC7a).
-  const loadGenRef = useRef(0);
-  useEffect(() => {
-    conversationsRef.current = conversations;
-    activeConversationIdRef.current = activeConversationId;
-    messagesRef.current = messages;
-    inputTextRef.current = inputText;
-  }, [conversations, activeConversationId, messages, inputText]);
+  useEffect(() => { inputTextRef.current = inputText; }, [inputText]);
 
-  // Offline detection
-  useEffect(() => {
-    const off = () => setIsOffline(true);
-    const on = () => setIsOffline(false);
-    window.addEventListener('offline', off);
-    window.addEventListener('online', on);
-    return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
-  }, []);
+  // Other tabs' sends in flight (US-15 AC17c); this tab's own is the store's turn.
+  const { othersBusy, othersBusyNow, ownEnded, onRemote } = useChatBusy();
+  // The latest props and callbacks, read as each effect runs, never a render's that did not finish.
+  const latest = useRef({ guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded });
+  useLayoutEffect(() => { latest.current = { guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded }; });
 
-  // Deltas collect in a ref and render at most once per animation frame.
-  // A status line starts a new phase: text streamed before it was not the
-  // answer (a run_roadmap round's preamble, US-15 AC38), so it is cleared.
-  const handleDelta = useCallback((delta: ChatDelta) => {
-    const stream = streamRef.current;
-    if (delta.type === 'sources') stream.sources = delta.titles;
-    else if (delta.type === 'status') { stream.status = delta.text; stream.text = ''; }
-    else stream[delta.type] += delta.text;
-    if (stream.frame) return;
-    stream.frame = requestAnimationFrame(() => {
-      stream.frame = 0;
-      setPending({ thinking: stream.thinking, text: stream.text, status: stream.status, sources: stream.sources });
-    });
-  }, []);
+  // Deltas collect here and reach the store at most once per animation frame (a render throttle only).
+  const streamRef = useRef({ deltas: [] as ChatEvent[], frame: 0 });
+  const [reads] = useState(() => new Set<() => void>());
 
-  /** Ends the stream; returns the thinking summary and the articles read it collected. */
-  const endStream = useCallback((): ChatApproach => {
+  const [store] = useState(() => createChatStore(
+    initialChatState({
+      erase: getShownErase(), moving: 'none', // erase-state is wired in slice 4
+      ...(prefetchedData ? { conversations: prefetchedData.conversations } : {}),
+      ...(prefetchedData?.activeConversationId ? { opened: { id: prefetchedData.activeConversationId, messages: prefetchedData.messages } } : {}),
+    }),
+    // The first render's runner: it reads only refs, setters, the store and `latest`, so it never goes stale.
+    (effect) => run(effect),
+  ));
+  const chat = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  useLayoutEffect(() => joinChats(store), [store]);
+  useEffect(() => () => { reads.forEach((stop) => stop()); cancelAnimationFrame(streamRef.current.frame); }, [reads]);
+
+  /** This instance's chat state, to every other instance (US-15 AC17c names its fields). Only requests
+   *  in flight are said to be busy, never a thread load here (N4); `isLoading`, for an older bundle, adds
+   *  other tabs' so a post never ends their waits elsewhere (R4). `loaded`: whether `messages` are a history (R1). */
+  const postState = () => {
+    const s = store.getSnapshot();
+    const sending = s.turn.phase !== 'idle';
+    postSync({ instanceId, type: 'state', ts: Date.now(), payload: {
+      conversations: s.conversations, activeConversationId: s.shown.id, messages: s.messages,
+      isLoading: sending || othersBusyNow(), sending, loaded: s.load.phase === 'none', error: s.error,
+    } });
+  };
+
+  const flushDeltas = () => {
     const stream = streamRef.current;
     cancelAnimationFrame(stream.frame);
-    const { thinking, sources } = stream;
-    streamRef.current = { ...NO_PENDING, frame: 0 };
-    setPending(NO_PENDING);
-    return { thinking, sources };
-  }, []);
+    stream.frame = 0;
+    const deltas = stream.deltas.splice(0);
+    deltas.forEach((delta) => void store.dispatch(delta));
+  };
+
+  // Always send the plan as chat context: local-first (v2) means the server
+  // has no health data for logged-in customers either (the v1 tables were
+  // purged June 2026), so this is the only context the answer gets. Every
+  // surface builds it with chatContextOf: the widget from its own state, the
+  // blog bubble and the chatbot embed from the widget's saved copy. The
+  // reader runs here, so each message carries what is saved now, even a save
+  // made after the page loaded (US-15 AC10). None degrades to the empty context.
+  // A throw before the request (reading the plan for context) is a failed
+  // send like any other: the chat frees and the question goes back (US-15 AC17b).
+  const request = async ({ turn, question, convId, history }: Extract<Effect, { type: 'request' }>) => {
+    const onDelta = (delta: ChatDelta) => {
+      const stream = streamRef.current;
+      stream.deltas.push({ type: 'delta', turn, delta });
+      if (!stream.frame) stream.frame = requestAnimationFrame(flushDeltas);
+    };
+    const p = latest.current;
+    const { result, error } = await (async () => sendMessage(question, convId, p.guestInputs?.() ?? null, history, onDelta, Boolean(p.onProposeEdit)))()
+      .catch(() => {
+        // A fixed message: the thrown error can quote the saved plan, which holds health values.
+        Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
+        return { result: null, error: { error: SEND_FAILED } };
+      });
+    flushDeltas(); // the approach the reply keeps is everything streamed
+    if (result && !error) await store.dispatch({ type: 'done', turn, result, now: new Date().toISOString() });
+    else await store.dispatch({ type: 'failed', turn, message: error?.error ?? SEND_FAILED, boxEmpty: !inputTextRef.current });
+  };
+
+  const readList = async (read: number) => {
+    const result = await listConversations();
+    await store.dispatch({ type: 'list-landed', read, conversations: result?.conversations ?? null });
+  };
+
+  // N1/N2: every read ends in a landing for the load it began under; the store drops one that load has outlived.
+  const readTurns = async (opening: number, id: string) => {
+    const turns = await readThread(store, opening, id, reads);
+    if (turns === 'gone') await store.dispatch({ type: 'load-landed', opening, id, turns: null });
+    else if (turns === 'failed') await store.dispatch({ type: 'load-failed', opening, id });
+    else await store.dispatch({ type: 'load-landed', opening, id, turns });
+  };
+
+  const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
+
+  /** Each effect through its door, in the order the store lists them. */
+  function run(effect: Effect): Promise<void> | void {
+    const p = latest.current;
+    switch (effect.type) {
+      case 'request': return request(effect);
+      case 'read-list': return readList(effect.read);
+      case 'read-turns': return readTurns(effect.opening, effect.id);
+      case 'take-edits': return p.onProposeEdit?.take(effect.edits, effect.erase, effect.stayed, effect.refusals);
+      case 'edits-ask': p.onProposeEdit?.ask(); return;
+      case 'edits-leave': return p.onProposeEdit?.leave();
+      case 'set-input': // the box is set now, before the re-render (US-15 AC57); other tabs mirror it
+        inputTextRef.current = effect.text;
+        setInputText(effect.text);
+        setCut(false);
+        return postInputSync(instanceId, effect.text);
+      case 'focus-input': return inputRef.current?.focus();
+      case 'keep-approach': return setApproachById((prev) => ({ ...prev, [effect.id]: effect.approach }));
+      case 'add-card': return setCards({ ...cardsRef.current, [effect.id]: { card: effect.card as SubscriptionCard, phase: 'idle' } });
+      case 'clear-extras': setApproachById({}); return setCards({});
+      case 'remote-selected': return p.onRemoteConversationSelected?.();
+      case 'post-state': return postState();
+      case 'post-new': return postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
+      case 'post-deleted': return postSync({ instanceId, type: 'thread-deleted', payload: { id: effect.id }, ts: Date.now() });
+      case 'own-ended': return p.ownEnded();
+    }
+  }
 
   // BroadcastChannel subscription — sync state from other instances
-  useEffect(() => {
-    const unsubscribe = subscribeSync((msg) => {
-      if (msg.instanceId === instanceId) return;
-
-      if (msg.type === 'input') {
-        // Only mirror if this instance's input isn't focused (focus = authoritative)
-        if (document.activeElement !== inputRef.current) {
-          setInputText(msg.payload.text);
-        }
-        return;
-      }
-
-      if (msg.type === 'state') {
-        const { payload } = msg;
-        if (payload.activeConversationId !== activeConversationIdRef.current) {
-          onRemoteConversationSelected?.();
-          onProposeEditRef.current?.leave();
-        }
-        setConversations(payload.conversations);
-        setActiveConversationId(payload.activeConversationId);
-        setMessages(payload.messages);
-        // That tab's own send, tracked apart from this tab's (US-15 AC17c).
-        onRemote(msg.instanceId, payload.sending, payload.isLoading);
-        if (!ownSending()) setIsLocalSender(false);
-        setError(payload.error);
-        return;
-      }
-
-      if (msg.type === 'thread-new') {
-        setActiveConversationId(null);
-        setMessages([]);
-        setError(null);
-        onProposeEditRef.current?.leave();
-        return;
-      }
-
-      if (msg.type === 'thread-deleted') {
-        const { id } = msg.payload;
-        setConversations(prev => prev.filter(c => c.id !== id));
-        if (activeConversationIdRef.current === id) {
-          setActiveConversationId(null);
-          setMessages([]);
-          onProposeEditRef.current?.leave();
-        }
-        return;
-      }
-    });
-    return unsubscribe;
-  }, [instanceId, onRemoteConversationSelected, onRemote]);
-
-  const dropThread = useCallback((id: string) => {
-    setConversations(prev => prev.filter(c => c.id !== id));
-    if (activeConversationIdRef.current === id) {
-      setActiveConversationId(null);
-      setMessages([]);
-      onProposeEditRef.current?.leave();
-    }
-  }, []);
-
-  const loadConversationsIfNeeded = useCallback(async () => {
-    if (hasLoadedRef.current || isLoadingConvsRef.current) return;
-    hasLoadedRef.current = true;
-    isLoadingConvsRef.current = true;
-    const result = await listConversations();
-    isLoadingConvsRef.current = false;
-    if (result) {
-      setConversations(result.conversations);
-      if (!isLoggedIn && result.conversations.length > 0) {
-        const latest = result.conversations[0];
-        activeConversationIdRef.current = latest.id; // dropThread reads it after the await
-        setActiveConversationId(latest.id);
-        const gen = ++loadGenRef.current;
-        const msgs = await loadConversation(latest.id);
-        if (!msgs) { dropThread(latest.id); return; }
-        // The guest opened another thread, or a reply landed, meanwhile (US-15 AC7a).
-        if (activeConversationIdRef.current !== latest.id || gen !== loadGenRef.current) return;
-        setMessages(msgs);
-      }
-    }
-  }, [isLoggedIn, dropThread]);
-
-  const selectConversation = useCallback(async (id: string) => {
-    // Set now, not after render: dropThread below reads it after the await.
-    activeConversationIdRef.current = id;
-    setActiveConversationId(id);
-    setError(null);
-    onProposeEditRef.current?.leave();
-    const gen = ++loadGenRef.current;
-    const msgs = await loadConversation(id);
-    // The server no longer recognizes this guest thread (US-15 AC6a), even if another is open now.
-    if (!msgs) { dropThread(id); return; }
-    // Another thread was opened, or a reply landed, meanwhile (US-15 AC7a).
-    if (activeConversationIdRef.current !== id || gen !== loadGenRef.current) return;
-    setMessages(msgs);
-    postState(instanceId, {
-      conversations: conversationsRef.current,
-      activeConversationId: id,
-      messages: msgs,
-      isLoading: busyNow(), // for older bundles: a reply still in flight is not over (US-15 AC7a)
-      sending: ownSending(),
-      error: null,
-    });
-  }, [instanceId, dropThread]);
-
-  const startNewChat = useCallback(() => {
-    setActiveConversationId(null);
-    setMessages([]);
-    setError(null);
-    onProposeEditRef.current?.leave();
-    inputRef.current?.focus();
-    postSync({ instanceId, type: 'thread-new', payload: {}, ts: Date.now() });
-  }, [instanceId]);
-
-  const handleSend = useCallback(async () => {
-    const trimmed = inputText.trim();
-    if (!trimmed || busyNow()) return; // read now: a second press before the re-render sends nothing
-    if (trimmed.length > MAX_CHARS) return;
-    if (isOffline) { setError("You're offline. Check your connection and try again."); return; }
-
-    setError(null);
-    const currentConvId = activeConversationIdRef.current;
-    const currentConvs = conversationsRef.current;
-
-    const optimisticMsg: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      role: 'user',
-      content: trimmed,
-      createdAt: new Date().toISOString(),
-    };
-    const optimisticMessages = [...messagesRef.current, optimisticMsg];
-
-    setMessages(optimisticMessages);
-    setInputText('');
-    inputTextRef.current = ''; // the box is empty now, before the re-render (US-15 AC57)
-    postInputSync(instanceId, '');
-    startOwnSend();
-    setIsLocalSender(true);
-    setSendingConversationId(currentConvId);
-
-    postState(instanceId, {
-      conversations: currentConvs,
-      activeConversationId: currentConvId,
-      messages: optimisticMessages,
-      isLoading: true,
-      sending: true,
-      error: null,
-    });
-
-    // Always send the plan as chat context: local-first (v2) means the server
-    // has no health data for logged-in customers either (the v1 tables were
-    // purged June 2026), so this is the only context the answer gets. Every
-    // surface builds it with chatContextOf: the widget from its own state, the
-    // blog bubble and the chatbot embed from the widget's saved copy. The
-    // reader runs here, so each message carries what is saved now, even a save
-    // made after the page loaded (US-15 AC10). None degrades to the empty context.
-    // A throw before the request (reading the plan for context) is a failed
-    // send like any other: the chat frees and the question goes back (US-15 AC17b).
-    const asked = onProposeEditRef.current?.ask() ?? ''; // the turn carries it to the reply (US-16 AC2a)
-    const { result, error: sendError } = await (async () => sendMessage(
-      trimmed,
-      currentConvId,
-      guestInputs?.() ?? null,
-      messagesRef.current,
-      handleDelta,
-      Boolean(onProposeEditRef.current),
-    ))().catch(() => {
-      // A fixed message: the thrown error can quote the saved plan, which holds health values.
-      Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
-      return { result: null, error: { error: 'Something went wrong. Please try again.' } };
-    });
-    endOwnSend(); // another tab's send may still be in flight (US-15 AC17c)
-    const approach = endStream();
-    // Another thread was opened while the reply was in flight (US-15 AC7a): it stays
-    // on screen, and the reply stays with the thread it was sent from.
-    const shownId = activeConversationIdRef.current;
-    const stayed = shownId === currentConvId;
-    // The list as it is now: a thread dropped during the send stays dropped (US-15 AC7a).
-    const convsNow = conversationsRef.current;
-
-    if (sendError) {
-      const withoutOptimistic = stayed ? optimisticMessages.filter(m => m.id !== optimisticMsg.id) : messagesRef.current;
-      setMessages(withoutOptimistic);
-      // The question leaves the thread, so it goes back in the box, unless
-      // something new was typed meanwhile, as Stop does on the iPhone (US-15 AC57).
-      if (stayed && !inputTextRef.current) {
-        setInputText(trimmed);
-        postInputSync(instanceId, trimmed);
-      }
-      setError(sendError.error);
-      setIsLocalSender(false);
-      postState(instanceId, {
-        conversations: convsNow,
-        activeConversationId: shownId,
-        messages: withoutOptimistic,
-        isLoading: false,
-        sending: false,
-        error: sendError.error,
-      });
+  useEffect(() => subscribeSync((msg) => {
+    if (msg.instanceId === instanceId) return;
+    if (msg.type === 'input') {
+      // Only mirror if this instance's input isn't focused (focus = authoritative)
+      if (document.activeElement !== inputRef.current) setInputText(msg.payload.text);
       return;
     }
-
-    if (result) {
-      const assistantMsg: ChatMessage = {
-        id: result.messageId ?? `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: result.content,
-        createdAt: new Date().toISOString(),
-        ...(result.isFallback ? { isFallback: true } : {}),
-      };
-      // chat-api moved the message to a new thread when the server no longer
-      // recognized this one (US-15 AC6a): show that thread, not the old turns,
-      // and drop the old thread from the list, since opening it would 404.
-      const restarted = currentConvId !== null && result.conversationId !== currentConvId;
-      const finalMessages = stayed ? [...(restarted ? [optimisticMsg] : optimisticMessages), assistantMsg] : messagesRef.current;
-      if (stayed) loadGenRef.current++; // a load started before the reply would replace it
-      if (stayed && restarted) onProposeEditRef.current?.leave(); // a new thread (US-15 AC6a)
-      setMessages(finalMessages);
-      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
-        setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
-      }
-
-      // Apply any form edits the model proposed. Only the local sender reaches
-      // here (handleSend runs on the instance that sent), so the pre-fill /
-      // med-update fires once, not once per open tab.
-      if (result.proposedEdits && result.proposedEdits.length > 0) {
-        onProposeEditRef.current?.take(result.proposedEdits, asked, stayed);
-      }
-      if (result.subscriptionCard) {
-        const card = result.subscriptionCard;
-        setCardsById(prev => ({ ...prev, [assistantMsg.id]: { card, phase: 'idle' } }));
-      }
-
-      let finalConversations = convsNow;
-      let finalConvId = shownId;
-      if (!currentConvId || restarted) {
-        if (stayed) { finalConvId = result.conversationId; setActiveConversationId(finalConvId); }
-        finalConversations = [{
-          id: result.conversationId,
-          title: cutText(trimmed, 80), // never half an emoji (US-15 AC26b)
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-        }, ...convsNow.filter(c => c.id !== currentConvId)];
-        setConversations(finalConversations);
-      }
-
-      setIsLocalSender(false);
-      postState(instanceId, {
-        conversations: finalConversations,
-        activeConversationId: finalConvId,
-        messages: finalMessages,
-        isLoading: false,
-        sending: false,
-        error: null,
-      });
+    if (msg.type === 'state') {
+      void store.dispatch({ type: 'mirror-state', payload: msg.payload });
+      // That tab's own send, tracked apart from this tab's (US-15 AC17c).
+      onRemote(msg.instanceId, msg.payload.sending, msg.payload.isLoading);
+      return;
     }
-  }, [inputText, busyNow, isOffline, instanceId, guestInputs, handleDelta, endStream, startOwnSend, endOwnSend]);
+    if (msg.type === 'thread-new') void store.dispatch({ type: 'mirror-new' });
+    else if (msg.type === 'thread-deleted') void store.dispatch({ type: 'thread-gone', id: msg.payload.id, tell: false });
+  }), [instanceId, store, onRemote]);
+
+  const loadConversationsIfNeeded = useCallback(() => store.dispatch({ type: 'list-wanted', guest: !isLoggedIn }), [isLoggedIn, store]);
+
+  const selectConversation = useCallback((id: string) => store.dispatch({ type: 'open-thread', id }), [store]);
+  /** Try again: open the thread whose read failed once more (N2). */
+  const retryLoad = useCallback(() => {
+    const { load } = store.getSnapshot();
+    if (load.phase === 'failed') void store.dispatch({ type: 'open-thread', id: load.id });
+  }, [store]);
+  const startNewChat = useCallback(() => { void store.dispatch({ type: 'new-chat' }); }, [store]);
+
+  // The box and the other tabs are read now: a second press before the re-render sends nothing.
+  const handleSend = useCallback(() => store.dispatch({
+    type: 'send', text: inputTextRef.current, online: !isOffline, othersBusy: othersBusyNow(),
+    now: new Date().toISOString(), nonce: crypto.randomUUID(),
+  }), [store, isOffline, othersBusyNow]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const ok = await deleteConversation(id);
-    if (ok) {
-      dropThread(id);
-      postSync({ instanceId, type: 'thread-deleted', payload: { id }, ts: Date.now() });
-    }
-  }, [instanceId, dropThread]);
+    if (await deleteConversation(id)) await store.dispatch({ type: 'thread-gone', id, tell: true });
+  }, [store]);
 
   /** The customer pressed Confirm (US-59): the one request that makes the change. */
   const cardsRef = useRef(cardsById);
-  const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
   useEffect(() => { cardsRef.current = cardsById; }, [cardsById]);
   const confirmSubscription = useCallback(async (messageId: string) => {
     const entry = cardsRef.current[messageId];
@@ -451,23 +276,28 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const handleInputChange = useCallback((text: string) => {
     const sliced = cutText(text, MAX_CHARS);
     // Say so when a paste is cut (US-15 AC26); the next edit within the cap clears it.
-    setError(prev => text.length > MAX_CHARS ? CUT_NOTICE : prev === CUT_NOTICE ? null : prev);
+    setCut(text.length > MAX_CHARS);
+    inputTextRef.current = sliced;
     setInputText(sliced);
     postInputSync(instanceId, sliced);
   }, [instanceId]);
 
-  // Another thread open while the reply streams (US-15 AC7a): it shows the dots, not the reply.
-  const onSendingThread = activeConversationId === sendingConversationId;
   return {
     state: {
-      conversations,
-      activeConversationId,
-      messages,
+      conversations: chat.conversations,
+      activeConversationId: chat.shown.id,
+      messages: chat.messages,
       inputText,
-      isLoading,
-      isLocalSender: isLocalSender && onSendingThread,
-      error,
-      pending: onSendingThread ? pending : NO_PENDING,
+      // Send and the box are locked while any request is open or the shown thread is not read (busy).
+      isLoading: busy(chat, othersBusy),
+      // The dots or the streamed reply: this tab's reply only under the chat that asked; another tab's as before (US-15 AC7a, R7 b).
+      replying: isLocalSender(chat) || othersBusy,
+      isLocalSender: isLocalSender(chat),
+      load: chat.load.phase,
+      // Words beside a Send this tab's own request locks (R3): one an erase emptied, or one for a chat not on screen.
+      wait: chat.turn.phase === 'orphaned' ? 'orphaned' as const : chat.turn.phase !== 'idle' && chat.turn.asked.key !== chat.shown.key ? 'other-chat' as const : null,
+      error: cut ? CUT_NOTICE : chat.error,
+      pending: showsPending(chat) ?? NO_PENDING,
       approachById,
       cardsById,
       isOffline,
@@ -477,6 +307,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       dismissSubscription,
       handleInputChange,
       selectConversation,
+      retryLoad,
       startNewChat,
       handleSend,
       handleDelete,

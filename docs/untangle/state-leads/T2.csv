@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T2,codex review,codex-review: nothing to review exits 0 and leaves an older --out file in place; every codex exit 1 reads as the plan-limit waiver,bug,decided: change,"Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: keep E_EXIT_1 for the plan-limit tail only; every other codex exit 1 becomes E_CODEX_FAILED; delete --out at start and always write it, status nothing. The audit builder takes it. tools/codex-review.mjs",,no

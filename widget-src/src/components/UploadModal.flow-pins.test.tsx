@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
-import { checkLabImportQuota, labImport } from '../lib/upload-api';
+import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
@@ -257,5 +257,21 @@ describe('US-12 AC6: Save', () => {
     fireEvent.click(indicator()!);
     expect(screen.getByDisplayValue('3.9')).toBeTruthy();
     expect(screen.getByText('Failed to save. Please try again.')).toBeTruthy();
+  });
+});
+
+describe('US-12 AC24: a batch whose polls keep failing', () => {
+  // Pins existing behaviour: base code also polled on and timed out here, so this never failed first.
+  it('US-12 AC24: polls on through `error` to the deadline, then shows the existing timeout sentence (pins existing behaviour)', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: 'batch_abc' });
+    vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'error', completed: 0, total: 0 });
+    vi.useFakeTimers();
+    try {
+      render(<Harness />); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+      await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(11 * 60_000);
+    } finally { vi.useRealTimers(); }
+    expect(await screen.findByText('Processing took too long. Try uploading fewer files at once.')).toBeTruthy();
+    expect(vi.mocked(pollBatchStatus).mock.calls.length).toBeGreaterThan(100);
   });
 });

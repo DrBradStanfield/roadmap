@@ -76,7 +76,8 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
-const TODAY = localDay(new Date());
+// Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
+const localToday = () => localDay(new Date());
 
 let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 /** The POSTs analytics received, by name. */
@@ -149,7 +150,7 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#heightCm'));
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), TODAY]]), { timeout: 2000 });
+  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), localToday()]]), { timeout: 2000 });
 }
 function birth(view: RenderResult, month = '5', year = '1975') {
   fireEvent.change(q(view, '#birthMonth')!, { target: { value: month } });
@@ -185,7 +186,7 @@ describe('US-62 AC13: a step answered in this tab by an upload or the chat count
     await waitFor(() => expect(upload.complete).toBeTruthy());
     // The upload's save writes a weight, then the modal hands back to the page.
     await act(async () => {
-      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${localToday()}T00:00:00.000Z`, source: 'lab_import' }]);
       await upload.complete!();
     });
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
@@ -275,7 +276,7 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
     expect(sexQuestion(view)).toBeNull(); // stage 1: only the weight is missing
     type(q(view, '#weightKg'), '105');
     await waitFor(() => expect(landed()).toBe(true)); // the first record's landing
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
     await eraseHere(view);
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
     // The new record: another writer gives height, sex and birth; the weight is missing again.
@@ -392,7 +393,7 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await open();
     type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
     await waitFor(() => expect(landed()).toBe(true));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, TODAY]]), { timeout: 2000 });
+    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
     const before = matrixWeight(view);
     cross(); // a phone: the panels are built again
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
@@ -617,7 +618,7 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     const view = await weightLast();
     await waitFor(() => expect(upload.complete).toBeTruthy());
     await act(async () => {
-      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${TODAY}T00:00:00.000Z`, source: 'lab_import' }]);
+      await bulkSaveMeasurements([{ metricType: 'weight', value: 80, recordedAt: `${localToday()}T00:00:00.000Z`, source: 'lab_import' }]);
       await upload.complete!();
     });
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
@@ -692,5 +693,98 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     type(cell(), '72'); // its rest fires before the stage is 4 again
     await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
     expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  describe('US-62 AC31a: the chat\'s weight is an answer given here, in the box or the grid (AC13 Events, AC31)', () => {
+    const chatWeight = (date: string | null = null) =>
+      act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date }]));
+    const ready = (view: RenderResult) => q(view, '.mh-ready-title')?.textContent ?? null;
+    /** Height, sex and birth saved, less `missing`; `waist` opens the whole form, so the weight row is in the grid. */
+    async function chatReady({ waist = true, missing = null as 'sex' | 'birth' | null, weight = false } = {}): Promise<RenderResult> {
+      await saveChangedMeasurements({ heightCm: 170, ...(missing === 'sex' ? {} : { sex: 'female' as const }), ...(missing === 'birth' ? {} : { birthYear: 1980, birthMonth: 3 }) }, {});
+      if (waist) await addMeasurement('waist', 90, '2026-09-01');
+      if (weight) await addMeasurement('weight', 80, '2026-09-01');
+      await flushRoadmapStore();
+      const view = await open();
+      if (waist) await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
+      await settle(200);
+      await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+      return view;
+    }
+
+    it.each([['the box beside the height', false], ['the grid\'s New cell', true]])('%s: the last answer sends onboarding_step and onboarding_done once, shows the card, and lands nothing', async (_where, waist) => {
+      const view = await chatReady({ waist });
+      chatWeight();
+      if (waist) expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105');
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      await settle(300);
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
+      expect(landed()).toBe(false); // AC25b: an answer from the chat never jumps
+    });
+
+    it('the grid\'s empty 2026-09-01 cell: the chat\'s dated weight, saved, is the last answer', async () => {
+      const view = await chatReady();
+      chatWeight('2026-09-01');
+      const cell = weightRow(view)!.querySelector('.bt-cell-backfill input') as HTMLInputElement;
+      expect(cell.value).toBe('105');
+      fireEvent.keyDown(cell, { key: 'Enter' });
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
+      await settle(300);
+      expect(landed()).toBe(false);
+    });
+
+    it('a weight typed into the New cell after the chat\'s ended it neither lands nor counts again', async () => {
+      const view = await chatReady();
+      chatWeight();
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
+      await settle(1000);
+      expect(landed()).toBe(false);
+      expect(calls('onboarding_step')).toHaveLength(1);
+      expect(calls('onboarding_done')).toHaveLength(1);
+    });
+
+    it.each(['sex', 'birth'] as const)('%s still missing: the chat\'s grid weight counts the measurements step only, with no card', async (missing) => {
+      const view = await chatReady({ missing });
+      chatWeight();
+      await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+      await settle(300);
+      expect(calls('onboarding_done')).toHaveLength(0);
+      expect(q(view, '.mh-ready')).toBeNull();
+    });
+
+    const typedWeight = (view: RenderResult, grid: boolean) =>
+      type(grid ? weightRow(view)!.querySelector('.bt-cell-draft input') : q(view, '#weightKg'), '25'); // may become 250: an 800 ms wait
+
+    it.each([['the box', false], ['the grid', true]])('a waist from the chat is no answer (%s): the last weight typed still lands after its wait', async (_where, grid) => {
+      const view = await chatReady({ waist: grid });
+      typedWeight(view, grid);
+      act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
+      await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    });
+
+    it.each([['the box', false], ['the grid', true]])('the chat\'s weight during a typed weight\'s wait (%s) is the answer: counted once, no landing (AC25b)', async (_where, grid) => {
+      const view = await chatReady({ waist: grid });
+      typedWeight(view, grid);
+      chatWeight();
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      await settle(1500);
+      expect(landed()).toBe(false);
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
+    });
+
+    it('a record already holding a weight: the chat\'s grid weight sends nothing and shows no card', async () => {
+      const view = await chatReady({ weight: true });
+      chatWeight();
+      await waitFor(() => expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105'));
+      await settle(300);
+      expect(calls('onboarding_step')).toEqual([]);
+      expect(calls('onboarding_done')).toEqual([]);
+      expect(q(view, '.mh-ready')).toBeNull();
+    });
   });
 });

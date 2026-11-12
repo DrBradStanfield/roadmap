@@ -24,7 +24,6 @@ describe('US-06, US-07: A2-1 step 2, the screening-rules views equal today\'s co
     expect(Object.keys(view)).toEqual(Object.keys(today));
   };
   it('SCREENING_INTERVALS, in key order', () => same(screeningIntervals(), SCREENING_INTERVALS));
-  it('POST_FOLLOWUP_INTERVALS, in key order', () => same(postFollowupIntervals(), POST_FOLLOWUP_INTERVALS));
   it('SCREENING_FOLLOWUP_INFO, in key order', () => same(screeningFollowupInfo(), SCREENING_FOLLOWUP_INFO));
   it('SCREENING_KEYS, in order', () => expect(screeningKeys()).toEqual([...SCREENING_KEYS]));
   it('REMINDER_CATEGORIES, the screening part, in order', () => {
@@ -47,6 +46,19 @@ describe('US-06, US-23: the table\'s upload gate and reminder labels keep today\
     };
     expect(SCREENING_MIN_AGE).toEqual(today);
     expect(Object.keys(SCREENING_MIN_AGE)).toEqual(Object.keys(today));
+  });
+  // Change 2b made POST_FOLLOWUP_INTERVALS (types.ts) a view of the table too. Colorectal's 36 is now the
+  // months used when the colonoscopy report gave no follow-up time (US-07 AC1j).
+  it('POST_FOLLOWUP_INTERVALS, in key order', () => {
+    const today = {
+      colorectal_fit_annual: 36, colorectal_colonoscopy_10yr: 36, colorectal_other: 36,
+      breast_annual: 12, breast_biennial: 24,
+      cervical_hpv_every_5yr: 12, cervical_pap_every_3yr: 12, cervical_other: 12,
+      lung_annual_ldct: 12, dexa_dexa_scan: 12,
+    };
+    expect(postFollowupIntervals()).toEqual(today);
+    expect(Object.keys(POST_FOLLOWUP_INTERVALS)).toEqual(Object.keys(today));
+    expect(POST_FOLLOWUP_INTERVALS).toEqual(today);
   });
   it('SCHEDULE_LABELS, in key order', () => {
     const today = {
@@ -222,15 +234,18 @@ describe('US-06: A2-1 step 2, the screening-rules table', () => {
     expect(Object.values(SCREENING_TEXT).filter((t) => typeof t === 'string').length).toBeGreaterThan(0);
   });
 
+  /** A routine card, and colorectal's with the FIT line from 55 (US-07 AC1h). */
+  const withFitLine = (r: ScreeningRule, c: CardText) => (r.id === 'colorectal' ? [c, SCREENING_REFS.colorectalStatus(c, 55, 'fit_annual')] : [c]);
+
   it('each row\'s whole card template matches that row\'s golden cards, title and description', () => {
     const golden = Object.values(JSON.parse(readFileSync(`${__dirname}/screening-rules.golden.json`, 'utf8')).cards as Record<string, string>);
     const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = (c: CardText) => esc(`${c.title} :: ${c.description}`).replace(/\\\{due\\\}/g, '[A-Z][a-z]{2} \\d{4}').replace(/\\\{packYears\\\}/g, '\\d+');
     for (const r of SCREENING_RULES) {
       const kinds: Array<[string, readonly CardText[]]> = [
-        ['', 'ref' in r.cards.start ? [SCREENING_REFS.breastStart(40), SCREENING_REFS.breastStart(45)] : [r.cards.start]],
-        ['-overdue', r.cards.overdue ? [r.cards.overdue] : []],
-        ['-upcoming', r.cards.upToDate ? [r.cards.upToDate] : []],
+        ['', 'ref' in r.cards.start ? [35, 45, 55].map(SCREENING_REFS[r.cards.start.ref]) : [r.cards.start]],
+        ['-overdue', r.cards.overdue ? withFitLine(r, r.cards.overdue) : []],
+        ['-upcoming', r.cards.upToDate ? withFitLine(r, r.cards.upToDate) : []],
       ];
       for (const [suffix, texts] of kinds) {
         const id = `screening-${r.id}${suffix}`;

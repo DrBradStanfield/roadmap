@@ -8,7 +8,8 @@ import { MAX_NAME_LENGTH } from './lab-extraction';
 import { oneLine, printable, REPO_PUBLIC } from './plan';
 import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
-import { EMAIL_SOURCE, EXTRA_METRIC_NAMES } from './sentry-scrub';
+import { EXTRA_METRIC_NAMES } from './scrub-vocabulary';
+import { EMAIL_SOURCE } from './sentry-scrub';
 import * as z from './zod';
 import {
   FEEDBACK_REPO,

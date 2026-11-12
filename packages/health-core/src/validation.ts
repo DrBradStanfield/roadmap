@@ -489,7 +489,7 @@ export const supplementSchema = z.object({
  */
 export const SCREENING_KEYS = [
   'colorectal_method', 'colorectal_last_date',
-  'colorectal_result', 'colorectal_followup_status', 'colorectal_followup_date',
+  'colorectal_result', 'colorectal_followup_status', 'colorectal_followup_date', 'colorectal_followup_interval_years',
   'breast_frequency', 'breast_last_date',
   'breast_result', 'breast_followup_status', 'breast_followup_date',
   'cervical_method', 'cervical_last_date',

@@ -34,8 +34,9 @@ protocol HealthStoreClient: AnyObject {
     /// An erase disconnected Apple Health (US-72 AC10): stops every observer query and background delivery.
     func stopObserving()
     /// "Delete all my data" (US-25 AC16): deletes every sample this app wrote to Health.
-    /// Readings other apps and devices wrote stay: they are not ours to delete.
-    func deleteOwnSamples() async throws
+    /// Readings other apps and devices wrote stay: they are not ours to delete. Returns the kinds
+    /// asked: a kind whose write access is off is skipped and keeps its samples (US-72 AC16).
+    func deleteOwnSamples() async throws -> Set<HealthKind>
     /// An erase (US-72 AC10): deletes the samples with these sync ids, the delete this phone
     /// still owes (`HealthSyncMemory.owed`), and only where this app is their source: never a
     /// query by source alone. A kind whose write access is off is not asked (edge 2).

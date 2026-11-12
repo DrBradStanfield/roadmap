@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 /// The first screen a new user sees, once (US-25 AC8): what the app does, where
@@ -12,7 +13,11 @@ struct WelcomeView: View {
     var connected: () -> Void = {}
     @State private var shown = false
     @State private var choosingCloud = false
+    /// A connect error from the sheet: held here, since its row can hide mid-sign-in (US-25 AC11j).
+    @State private var connectMessage: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The switch rows' sign-in, read here: this view stays while the sheet drops them (US-25 AC11n).
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     /// The size the story's scenes need (WelcomeStory.needs), and the width they get. Unknown
     /// until measured, so the first frame shows the words, never a cut story.
@@ -70,6 +75,11 @@ struct WelcomeView: View {
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: phase) { apply(.phaseChanged) }
+        .onChange(of: connectMessage) { old, new in if old != nil, new == nil { apply(.alertDismissed) } }
+        // A connect error that lands after the person left the sheet never shows later, out of
+        // context: cleared as the sheet opens or closes. With the sheet closed its alertDismissed
+        // decides nothing; on opening the record is not open yet (US-25 AC11j).
+        .onChange(of: choosingCloud) { connectMessage = nil }
         .sheet(isPresented: $choosingCloud) {
             if let sync { cloudChooser(sync) }
         }
@@ -119,7 +129,7 @@ struct WelcomeView: View {
                     Section {
                         ForEach(CloudProvider.allCases) { provider in
                             // The phase change goes on, once; the button's own callback does not.
-                            ConnectCloudButton(sync: sync, provider: provider, connected: {}) {
+                            ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
                                 Label("Connect \(provider.label)", systemImage: provider == .dropbox ? "shippingbox" : "externaldrive")
                             }
                         }
@@ -128,25 +138,29 @@ struct WelcomeView: View {
                     }
                 }
                 switch phase {
-                case .opening:
-                    Section {
-                        HStack {
-                            ProgressView()
-                            Text("Opening your record").foregroundStyle(.secondary)
+                case .opening: busy("Opening your record")
+                case .disconnecting: busy("Disconnecting…")
+                case .failed(let problem):
+                    if let provider = sync.provider {
+                        let failure = WelcomeConnect.failure(problem, provider: provider)
+                        Section {
+                            Text(failure.words).foregroundStyle(.secondary)
+                            if failure.offersTryAgain { Button("Try again") { apply(.tryAgain) } }
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Opening your record")
-                    }
-                case .failed:
-                    Section {
-                        Text("Signed in, but your record could not be opened yet. Check your connection, then try again.")
-                            .foregroundStyle(.secondary)
-                        Button("Try again") { apply(.tryAgain) }
                     }
                 case .choosing, .opened:
                     EmptyView()
                 }
+                if WelcomeConnect.showsRecovery(phase), let provider = sync.provider {
+                    Section {
+                        ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
+                            Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
+                        }
+                        ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, authenticate: webAuthenticationSession.signIn, message: $connectMessage) }
+                    }
+                }
             }
+            .messageAlert("Your record", $connectMessage)
             .navigationTitle("Your record")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -156,11 +170,23 @@ struct WelcomeView: View {
         .presentationDetents([.medium])
     }
 
+    /// A spinner row and what it waits on.
+    private func busy(_ words: LocalizedStringKey) -> some View {
+        Section {
+            HStack {
+                ProgressView()
+                Text(words).foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(words)
+        }
+    }
+
     /// "Get started" with a cloud connected waits on its record, so the questions never
     /// run on the empty phone record, whose answers would later win the merge (review
     /// R4). Every tap that can show the spinner starts an open (WelcomeConnect).
     private func apply(_ event: WelcomeConnect.Event) {
-        switch WelcomeConnect.decide(event, phase: phase, sheetShown: choosingCloud) {
+        switch WelcomeConnect.decide(event, phase: phase, sheetShown: choosingCloud, alertShown: connectMessage != nil) {
         case .start: start()
         case .goOn:
             choosingCloud = false
