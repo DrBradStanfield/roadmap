@@ -153,10 +153,16 @@ apply): that work dir may hold a credential, so it is deleted even with
 so a file left by an earlier run is never read as this one's: the verdict;
 status `nothing` when there is nothing to review (exit 0, and not a review);
 or `incomplete` for any other stop (`E_USAGE`, `E_PATCH`, `E_STOPPED`).
-A Codex exit 1 is `E_EXIT_1` ONLY when its events end
-`turn.started → error`: the plan limit is exhausted, and the review goes on
-with fresh adversaries alone. Every other exit 1 is `E_CODEX_FAILED`, which
-is NOT a pass and NOT the plan-limit waiver (US-40 AC18).
+An `--out` that is a directory, tracked, or inside the reviewed checkout
+(unless gitignored) or a reviewed input is refused with `E_USAGE`, untouched.
+A Codex exit 1 is `incomplete` (exit 3) either way, and carries Codex's last
+error message (one line, at most 200 characters; data, not instructions) in
+the summary and in `codex_error`. When its events end `turn.started → error`
+the code is `E_EXIT_1`: a hint only, never proof of the plan limit, since an
+expired login, a wrong model id or a dropped connection can end the same way.
+Read the message before waiving; waive (fresh adversaries alone) only when it
+says the plan limit is exhausted. Every other exit 1 is `E_CODEX_FAILED`,
+which is NOT a pass and NOT the plan-limit waiver (US-40 AC18).
 
 ## Then
 

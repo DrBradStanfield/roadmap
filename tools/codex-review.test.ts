@@ -1622,7 +1622,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
     mkdirSync(join(home, 'tools'));
-    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
+    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'codex-review-out.mjs', 'codex-review-events.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
     const copy = join(home, 'tools', 'codex-review.mjs'), policyFile = join(home, 'tools', 'codex-review-includes.json');
     const dir = changed(), raw = rawDir({ 'f.md': 'x\n' });
     const go = (env: NodeJS.ProcessEnv = childEnv()) => spawnSync('node', [copy, '--codex', fake({ output: CLEAN }).bin, '--include', raw, '--out', outJson], { cwd: dir, encoding: 'utf8', env, timeout: 120_000 });
@@ -2411,16 +2411,21 @@ describe('US-40 AC7 — the review-round cap says the same thing in the contract
   });
 });
 
-describe('US-40 AC18 — --out is always this run\'s, and only the plan-limit tail is E_EXIT_1 (ledger T2, 2026-11-13)', () => {
+describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, never a proven cause (ledger T2, 2026-11-13)', () => {
   const STALE = { status: 'complete', target: 'old', summary: 'STALE-MARKER from a previous run', findings: [] };
-  /** Runs the wrapper with its own --out path, pre-filled with a previous run's clean verdict. */
-  function runStale(bin: string, extra: string[], cwd = repo) {
+  const staleOut = () => {
     const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
     writeFileSync(out, JSON.stringify(STALE));
-    const r = spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', out], { cwd, encoding: 'utf8', env: childEnv() });
-    return { r, report: existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null };
+    return out;
+  };
+  const readOut = (out: string) => (existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null);
+  /** Runs the wrapper with its own --out path, pre-filled with a previous run's clean verdict. */
+  function runStale(bin: string, extra: string[], cwd = repo, env = childEnv()) {
+    const out = staleOut();
+    const r = spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', out], { cwd, encoding: 'utf8', env });
+    return { r, report: readOut(out) };
   }
-  const ev = (type: string) => JSON.stringify({ type });
+  const ev = (type: string, extra: object = {}) => JSON.stringify({ type, ...extra });
   it('nothing to review: a stale --out is replaced by status "nothing", exit 0', () => {
     const clean = mkdtempSync(join(tmpdir(), 'cr-clean-'));
     sh(clean, 'git init -q && git config user.email t@t && git config user.name t && mkdir docs && echo contract > docs/review-format.md && git add -A && git commit -q -m base');
@@ -2437,22 +2442,96 @@ describe('US-40 AC18 — --out is always this run\'s, and only the plan-limit ta
     expect(report.summary).toMatch(/^E_USAGE: --live is refused/);
     expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
   });
-  it('codex exit 1 with a non-limit event tail is E_CODEX_FAILED (not a pass), and replaces a stale --out', () => {
+  it('codex exit 1 with any other event tail is E_CODEX_FAILED (not a pass), carries the last error message, and replaces a stale --out', () => {
     writeFileSync(join(repo, 'a.txt'), 'exit-one check\n');
-    for (const events of [[], [ev('thread.started'), ev('turn.started'), ev('error'), ev('turn.failed')], [ev('turn.started'), ev('item.completed'), ev('error')]]) {
+    const cases: [string[], string | null][] = [
+      [[], null],
+      [[ev('thread.started'), ev('turn.started'), ev('error', { message: 'first' }), ev('error', { message: 'second failure' }), ev('turn.failed')], 'second failure'],
+      [[ev('turn.started'), ev('item.completed'), ev('error')], null],
+    ];
+    for (const [events, message] of cases) {
       const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events }).bin, []);
       expect([r.status, report.status]).toEqual([3, 'incomplete']);
       expect(report.summary).toMatch(/^E_CODEX_FAILED/);
+      expect(report.codex_error).toBe(message);
+      if (message) expect(r.stdout).toContain(message);
       expect(r.stdout).toContain('E_CODEX_FAILED');
       expect(r.stdout).not.toContain('E_EXIT_1');
       expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
     }
   });
-  it('codex exit 1 whose events end turn.started -> error is E_EXIT_1, the plan-limit case', () => {
-    writeFileSync(join(repo, 'a.txt'), 'plan-limit check\n');
-    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('thread.started'), ev('turn.started'), ev('error')] }).bin, []);
+  it('codex exit 1 whose events end turn.started -> error is E_EXIT_1 as a hint only, never "plan limit exhausted", with the message bounded to one line', () => {
+    writeFileSync(join(repo, 'a.txt'), 'exit-one tail check\n');
+    const message = `line one\nline two\u0007\u202e${'x'.repeat(300)}`;
+    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('thread.started'), ev('turn.started'), ev('error', { message })] }).bin, []);
     expect([r.status, report.status]).toEqual([3, 'incomplete']);
-    expect(report.summary).toMatch(/^E_EXIT_1: /);
-    expect(report.summary).toContain('plan limit');
+    expect(report.summary).toMatch(/^E_EXIT_1: codex exited 1; events end turn\.started -> error \(a hint only: read the error message before waiving\)/);
+    expect(`${report.summary}\n${r.stdout}`).not.toMatch(/plan limit exhausted/i);
+    expect(report.codex_error.startsWith('line one line two x')).toBe(true);
+    expect([...report.codex_error].length).toBeLessThanOrEqual(200);
+    expect(report.codex_error).not.toMatch(/[\u0000-\u001f\u007f\u202e]/);
+    expect(report.summary).toContain(report.codex_error);
+    expect(r.stdout).toContain(report.codex_error);
+  });
+  it('an --out whose folder denies deleting it is overwritten with an incomplete report, never left as the old verdict', () => {
+    const out = staleOut();
+    chmodSync(join(out, '..'), 0o555);
+    try {
+      const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--live', '--record', '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
+      expect(r.status).toBe(1);
+      expect(readOut(out).status).toBe('incomplete');
+      expect(readOut(out).summary).toMatch(/^E_USAGE: --live is refused/);
+    } finally { chmodSync(join(out, '..'), 0o755); }
+  });
+  it('an --out that is a directory, or tracked in the reviewed checkout, is refused (E_USAGE) and left untouched', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'cr-out-dir-'));
+    writeFileSync(join(folder, 'inside.txt'), 'kept\n');
+    const d = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', folder], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    expect(d.status).toBe(1);
+    expect(d.stderr).toContain('codex-review: --out');
+    expect(d.stderr).toContain('is a directory');
+    expect(readFileSync(join(folder, 'inside.txt'), 'utf8')).toBe('kept\n');
+    const dir = freshRepo({ 'report.json': JSON.stringify(STALE) });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const f = fake({ output: CLEAN });
+    const t = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', 'report.json'], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    expect(t.status).toBe(1);
+    expect(t.stderr).toContain('tracked');
+    expect(JSON.parse(readFileSync(join(dir, 'report.json'), 'utf8'))).toEqual(STALE);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'out.json'), JSON.stringify(STALE));
+    const c = spawnSync('node', [WRAPPER, '--codex', f.bin, '--context', 'ctx', '--out', 'ctx/out.json'], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    expect([c.status, c.stderr.includes('inside a reviewed input')]).toEqual([1, true]);
+    expect(JSON.parse(readFileSync(join(dir, 'ctx', 'out.json'), 'utf8'))).toEqual(STALE);
+  });
+  it('a patch that does not apply replaces a stale --out with E_PATCH', () => {
+    const dir = freshRepo();
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const shimDir = mkdtempSync(join(tmpdir(), 'git-apply-fail-'));
+    const realGit = sh(tmpdir(), 'command -v git').trim();
+    writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" apply "*) echo "error: synthetic apply failure" >&2; exit 1 ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
+    chmodSync(join(shimDir, 'git'), 0o755);
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], dir, childEnv({ PATH: `${shimDir}:${process.env.PATH}` }));
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toMatch(/^E_PATCH/);
+  });
+  it('a throw (run outside any git repo) replaces a stale --out with E_STOPPED', () => {
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], mkdtempSync(join(tmpdir(), 'cr-no-repo-')));
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toBe('E_STOPPED: exit 1');
+  });
+  it('SIGTERM while Codex runs replaces a stale --out with E_STOPPED', async () => {
+    writeFileSync(join(repo, 'a.txt'), 'sigterm check\n');
+    const out = staleOut();
+    const f = fake({ output: CLEAN, during: 'sleep 3' });
+    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, env: childEnv(), stdio: 'ignore' });
+    while (!existsSync(join(f.dir, 'argv.json'))) await new Promise((res) => setTimeout(res, 20));
+    child.kill('SIGTERM');
+    const code = await new Promise((res) => child.on('close', (c, sig) => res(c ?? sig)));
+    expect(code).toBe(130);
+    expect(readOut(out)).toEqual({ status: 'incomplete', summary: 'E_STOPPED: exit 130', findings: [] });
   });
 });
