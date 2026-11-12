@@ -132,7 +132,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
     func testASwitchFromAnOpenCloudCopiesDownThenConnectsTheNewOne_US25_AC11n() async throws {
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
         let (store, sync) = try await driveOpen()
-        guard case .moved(nil) = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
+        guard case .moved = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertTrue(sync.recordOpen)
         XCTAssertEqual(activeDays(dropbox.record), ["2026-09-01", "2026-10-01"], "Drive's record was copied down, then lifted into Dropbox")
@@ -150,7 +150,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         let (_, sync) = try await driveOpen()
         drive.online = false
         let outcome = try await sync.switchTo(.dropbox, authenticate: noSignIn)
-        guard case .stayed(.unreachable) = outcome else { return XCTFail("the switch stops: \(outcome)") }
+        guard case .stopped(.unreachable) = outcome else { return XCTFail("the switch stops: \(outcome)") }
         XCTAssertEqual(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider), stopped)
         try assertStillOnDrive(sync)
     }
@@ -159,7 +159,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
     func testASwitchStopsWhenTheEngineThrowsOnTheCopyDown_US25_AC11n() async throws {
         let (_, sync) = try await driveOpen(engine: try throwingEngine())
         let outcome = try await sync.switchTo(.dropbox, authenticate: noSignIn)
-        guard case .stayed(.unreachable) = outcome else { return XCTFail("the switch stops: \(outcome)") }
+        guard case .stopped(.unreachable) = outcome else { return XCTFail("the switch stops: \(outcome)") }
         XCTAssertEqual(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider), stopped)
         XCTAssertTrue(sync.recordOpen, "the record opens again")
         try assertStillOnDrive(sync)
@@ -188,7 +188,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         let (store, sync) = try app()
         await sync.start()
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)))
-        guard case .moved(nil) = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
+        guard case .moved = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertNil(tokens.load(.googleDrive))
         XCTAssertEqual(activeDays(store.recordJSON), [], "the phone's record, which never held Drive's, went up")
@@ -199,7 +199,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
     func testACancelledSignInAfterTheDisconnectLeavesTheRecordOnThePhone_US25_AC11n() async throws {
         let (store, sync) = try await driveOpen()
         let outcome = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn)
-        guard case .moved(let error?) = outcome else { return XCTFail("disconnected, then the connect threw: \(outcome)") }
+        guard case .failed(let error) = outcome else { return XCTFail("disconnected, then the connect threw: \(outcome)") }
         XCTAssertEqual(error as? OAuthClient.Failure, .cancelled)
         XCTAssertEqual(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider), notConnected)
         try assertOnThePhone(sync, store)
@@ -209,7 +209,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         let (store, sync) = try await driveOpen()
         answer(dropboxToken: .init(status: 500))
         let outcome = try await sync.switchTo(.dropbox, authenticate: signIn())
-        guard case .moved(let error?) = outcome else { return XCTFail("disconnected, then the connect threw: \(outcome)") }
+        guard case .failed(let error) = outcome else { return XCTFail("disconnected, then the connect threw: \(outcome)") }
         XCTAssertEqual(error.localizedDescription, "Dropbox sign-in failed (500). Try again.")
         XCTAssertEqual(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider),
                        "Dropbox sign-in failed (500). Try again. " + notConnected)
@@ -229,7 +229,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         for await _ in reading { break } // the copy-down
         XCTAssertEqual(sync.status, .disconnecting)
         let second = try await sync.switchTo(.dropbox, authenticate: noSignIn)
-        guard case .stayed(.refused) = second else { return XCTFail("refused by the closing cell: \(second)") }
+        guard case .stopped(.refused) = second else { return XCTFail("refused by the closing cell: \(second)") }
         XCTAssertNil(SyncStatusText.switchEnded(second, from: .googleDrive, to: .dropbox, connected: sync.provider), "said silently")
         do {
             try await sync.connect(.dropbox, authenticate: noSignIn)
@@ -238,7 +238,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
             XCTAssertEqual(error as? OAuthClient.Failure, .cancelled)
         }
         gate.open()
-        guard case .moved(nil) = try await first.value else { return XCTFail("the first switch goes on") }
+        guard case .moved = try await first.value else { return XCTFail("the first switch goes on") }
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertTrue(sync.recordOpen)
     }
@@ -253,7 +253,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         for await _ in switching.shown { break }
         XCTAssertNil(sync.provider)
         let second = try await sync.switchTo(.dropbox, authenticate: noSignIn)
-        guard case .stayed(.refused) = second else { return XCTFail("no cloud to switch from: \(second)") }
+        guard case .stopped(.refused) = second else { return XCTFail("no cloud to switch from: \(second)") }
         let connecting = heldSignIn()
         let connect = Task { try await sync.connect(.dropbox, authenticate: connecting.authenticate) }
         for await _ in connecting.shown { break }
@@ -262,7 +262,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(sync.provider, .dropbox)
         switching.release()
         let outcome = try await first.value
-        guard case .moved(let error?) = outcome else { return XCTFail("the switch's late sign-in is dropped: \(outcome)") }
+        guard case .failed(let error) = outcome else { return XCTFail("the switch's late sign-in is dropped: \(outcome)") }
         XCTAssertEqual(error as? OAuthClient.Failure, .cancelled)
         XCTAssertNil(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider),
                      "Dropbox is connected, so the on-the-phone sentence would be false")
@@ -282,7 +282,7 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         let again = heldSignIn()
         let signingIn = Task { try await sync.connect(.googleDrive, authenticate: again.authenticate) }
         for await _ in again.shown { break }
-        guard case .moved(nil) = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
+        guard case .moved = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
         again.release()
         do {
             try await signingIn.value
@@ -296,31 +296,80 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(text("sync-account"), "dbid:A")
     }
 
+    // MARK: R2: the dialog promises a copy only when a session is open to copy from
+
+    private let copies = "Your record in Google Drive stays there as it is. This iPhone copies it, connects Dropbox, and saves there from now on."
+    private let copiesNothing = "Your record in Google Drive stays there as it is. This iPhone connects Dropbox and saves there from now on."
+
+    /// The record open: the dialog says it copies, and the switch does copy. A day added to
+    /// Drive's file after the open reaches the phone through the copy-down.
+    func testWithTheRecordOpenTheDialogPromisesACopyAndTheSwitchCopies_US25_AC11n() async throws {
+        let (store, sync) = try await driveOpen()
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .googleDrive, to: .dropbox, recordOpen: sync.recordOpen), copies)
+        drive.text = String(decoding: try JSONSerialization.data(withJSONObject: try record(days: ["2026-09-01", "2026-09-15"], device: "web")), as: UTF8.self)
+        guard case .failed = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
+        XCTAssertEqual(activeDays(try String(contentsOf: store.file, encoding: .utf8)), ["2026-09-01", "2026-09-15"], "copied down")
+    }
+
+    /// No session open (the welcome sheet's failed): the dialog promises no copy, and the switch
+    /// copies nothing, though Drive answers by then: its close answers 'none'.
+    func testWithNoSessionOpenTheDialogPromisesNoCopyAndTheSwitchCopiesNothing_US25_AC11n() async throws {
+        drive.online = false
+        let (store, sync) = try app()
+        await sync.start()
+        XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .unreachable)), "the welcome sheet at failed")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .googleDrive, to: .dropbox, recordOpen: sync.recordOpen), copiesNothing)
+        drive.online = true
+        let before = try Data(contentsOf: store.file)
+        guard case .failed = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
+        XCTAssertEqual(try Data(contentsOf: store.file), before, "nothing was copied")
+        XCTAssertEqual(activeDays(try String(contentsOf: store.file, encoding: .utf8)), ["2026-10-02"], "the phone's own record, without Drive's day")
+    }
+
+    // MARK: R1: the sign-in belongs to the screen, which stays through the switch
+
+    /// Structural only: the row keeps no web sign-in session of its own, and the two screens
+    /// that draw it each hold one. It cannot show that SwiftUI keeps a session alive while
+    /// the row goes; only a real switch on a device shows that.
+    func testTheSwitchRowsSignInIsTheScreens_US25_AC11n() throws {
+        let (_, sync) = try app()
+        let ownsSession = { (view: Any) in
+            Mirror(reflecting: view).children.contains { String(describing: type(of: $0.value)).contains("WebAuthenticationSession") }
+        }
+        let row = SwitchCloudRow(sync: sync, provider: .dropbox, authenticate: cancelledSignIn, message: .constant(nil))
+        XCTAssertFalse(ownsSession(row), "the row reads no session it would take with it")
+        XCTAssertTrue(ownsSession(SyncView(sync: sync)), "Sync, which stays, holds it")
+        XCTAssertTrue(ownsSession(WelcomeView(sync: sync, start: {})), "the welcome screen, which stays, holds it")
+    }
+
     // MARK: The words (owner-approved, exact)
 
     func testTheSwitchWords_US25_AC11n() {
         XCTAssertEqual(SyncStatusText.switchRow(.dropbox), "Switch to Dropbox")
         XCTAssertEqual(SyncStatusText.switchRow(.googleDrive), "Switch to Google Drive")
-        XCTAssertEqual(SyncStatusText.switchMessage(from: .googleDrive, to: .dropbox),
-                       "Your record in Google Drive stays there as it is. This iPhone copies it, connects Dropbox, and saves there from now on.")
-        XCTAssertEqual(SyncStatusText.switchMessage(from: .dropbox, to: .googleDrive),
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .googleDrive, to: .dropbox, recordOpen: true), copies)
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .dropbox, to: .googleDrive, recordOpen: true),
                        "Your record in Dropbox stays there as it is. This iPhone copies it, connects Google Drive, and saves there from now on.")
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .googleDrive, to: .dropbox, recordOpen: false), copiesNothing)
+        XCTAssertEqual(SyncStatusText.switchMessage(from: .dropbox, to: .googleDrive, recordOpen: false),
+                       "Your record in Dropbox stays there as it is. This iPhone connects Google Drive and saves there from now on.")
         typealias Outcome = CloudSync.SwitchOutcome
         let words = { (outcome: Outcome, connected: CloudProvider?) in
             SyncStatusText.switchEnded(outcome, from: .dropbox, to: .googleDrive, connected: connected)
         }
-        XCTAssertEqual(words(.stayed(.unreachable), .dropbox),
+        XCTAssertEqual(words(.stopped(.unreachable), .dropbox),
                        "Dropbox could not be reached, so your record there could not be copied to this iPhone. Try again once it answers.")
-        XCTAssertEqual(words(.stayed(.failed), .dropbox), "Couldn't disconnect from Dropbox. Try again.")
-        XCTAssertNil(words(.stayed(.refused), .dropbox))
-        XCTAssertNil(words(.moved(nil), .googleDrive))
+        XCTAssertEqual(words(.stopped(.failed), .dropbox), "Couldn't disconnect from Dropbox. Try again.")
+        XCTAssertNil(words(.stopped(.refused), .dropbox))
+        XCTAssertNil(words(.moved, .googleDrive))
         let sentence = "Dropbox is disconnected and Google Drive did not connect. Your record is on this iPhone only."
-        XCTAssertEqual(words(.moved(OAuthClient.Failure.cancelled), nil), sentence)
-        XCTAssertEqual(words(.moved(OAuthClient.Failure.unreachable("Google Drive did not answer. Check the connection and try again.")), nil),
+        XCTAssertEqual(words(.failed(OAuthClient.Failure.cancelled), nil), sentence)
+        XCTAssertEqual(words(.failed(OAuthClient.Failure.unreachable("Google Drive did not answer. Check the connection and try again.")), nil),
                        "Google Drive did not answer. Check the connection and try again. " + sentence)
         // Another cloud connected meanwhile: only the error's own words, never the false sentence.
-        XCTAssertNil(words(.moved(OAuthClient.Failure.cancelled), .dropbox))
-        XCTAssertEqual(words(.moved(OAuthClient.Failure.refused("Disconnect from Dropbox first, then connect Google Drive.")), .dropbox),
+        XCTAssertNil(words(.failed(OAuthClient.Failure.cancelled), .dropbox))
+        XCTAssertEqual(words(.failed(OAuthClient.Failure.refused("Disconnect from Dropbox first, then connect Google Drive.")), .dropbox),
                        "Disconnect from Dropbox first, then connect Google Drive.")
     }
 }

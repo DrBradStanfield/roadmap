@@ -38,9 +38,11 @@ final class CloudSync: CloudPort {
     /// What a switch did (US-25 AC11n).
     enum SwitchOutcome {
         /// No sign-in started: the Disconnect was refused, failed or stopped (`unreachable`).
-        case stayed(DisconnectOutcome)
-        /// Disconnected, then connected (nil), or the connect threw this.
-        case moved(Error?)
+        case stopped(DisconnectOutcome)
+        /// Disconnected, then connected.
+        case moved
+        /// Disconnected, then the connect threw this.
+        case failed(Error)
     }
 
     /// The one source for the provider, the status and the open session.
@@ -235,14 +237,14 @@ final class CloudSync: CloudPort {
     func switchTo(_ provider: CloudProvider, authenticate: OAuthClient.Authenticate) async throws -> SwitchOutcome {
         guard !eraseRunning() else { throw Self.waitForErase }
         // No cloud to switch from: one tapped during a switch's own sign-in.
-        guard self.provider != nil else { return .stayed(.refused) }
+        guard self.provider != nil else { return .stopped(.refused) }
         let closed = await disconnectOutcome(forSwitch: true)
-        guard case .done = closed else { return .stayed(closed) }
+        guard case .done = closed else { return .stopped(closed) }
         do {
             try await connect(provider, authenticate: authenticate)
-            return .moved(nil)
+            return .moved
         } catch {
-            return .moved(error)
+            return .failed(error)
         }
     }
 

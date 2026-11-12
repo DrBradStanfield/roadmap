@@ -654,7 +654,9 @@ JSX: rendering the web from the descriptions too is a possible follow-up, not ne
   PR 3 (2026-11-12, US-25 AC11n, lead S24): switching clouds is one step, as on the web. Sync's
   connected branch and the welcome sheet at failed show a "Switch to <cloud>" row per other
   configured cloud (`SwitchCloudRow`), with a confirmation that names the cloud the record is in,
-  read when the dialog shows. `CloudSync.switchTo` is Disconnect, then connect, with no await
+  read when the dialog shows; with no session open it promises no copy, read from `recordOpen`, the
+  fact that makes the engine answer 'none' (review R2). The sign-in session is read by the screen,
+  which stays while the Disconnect drops the row (R1). `CloudSync.switchTo` is Disconnect, then connect, with no await
   between the Disconnect's end and connect's `signInStarted`, so no erase or connect slips in; it
   adds no state and the table is unchanged (the design page's `switchRequested`/`closing(then:)`
   was dropped as unnecessary). Why the composition: every existing cell (the erase gate, a second

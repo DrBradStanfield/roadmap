@@ -816,7 +816,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let (store, sync, drive) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         let before = try Data(contentsOf: store.file)
-        guard case .moved(_?) = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
+        guard case .failed = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
         XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
         XCTAssertNil(sync.provider)
         XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
@@ -841,7 +841,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let opening = Task { await sync.foreground() } // Try again
         for await _ in reading { break }
         let before = try Data(contentsOf: store.file)
-        guard case .moved(_?) = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
+        guard case .failed = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
         gate.open()
         await opening.value
         XCTAssertNil(sync.provider)
@@ -860,7 +860,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let (store, sync, _) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
-        guard case .moved(nil) = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
+        guard case .moved = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertTrue(sync.recordOpen)
         XCTAssertNil(tokens.load(.googleDrive))
@@ -892,7 +892,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
     /// token and account endpoints.
     /// Shared with CloudSwitchTests (US-25 AC11n).
     final class DriveOnFile {
-        let text: String
+        var text: String
         let dropbox: FakeDropbox
         /// False: Drive fails as a dead network does.
         var online = false

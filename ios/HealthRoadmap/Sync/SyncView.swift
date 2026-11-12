@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 /// The Sync screen (US-25 AC11e), opened from My data's About you line: what sync does,
@@ -7,6 +8,8 @@ import SwiftUI
 struct SyncView: View {
     let sync: CloudSync
     @Environment(\.dismiss) private var dismiss
+    /// The switch rows' sign-in, read here: this view stays while they go (US-25 AC11n).
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @State private var message: String?
     @State private var confirmDisconnect = false
 
@@ -85,7 +88,7 @@ struct SyncView: View {
 
         Section {
             // One step to another cloud (US-25 AC11n).
-            ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, message: $message) }
+            ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, authenticate: webAuthenticationSession.signIn, message: $message) }
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
                 .disabled(sync.eraseRunning() || sync.status == .disconnecting)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
