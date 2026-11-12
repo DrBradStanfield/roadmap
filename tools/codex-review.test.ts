@@ -2410,3 +2410,49 @@ describe('US-40 AC7 — the review-round cap says the same thing in the contract
     }
   });
 });
+
+describe('US-40 AC18 — --out is always this run\'s, and only the plan-limit tail is E_EXIT_1 (ledger T2, 2026-11-13)', () => {
+  const STALE = { status: 'complete', target: 'old', summary: 'STALE-MARKER from a previous run', findings: [] };
+  /** Runs the wrapper with its own --out path, pre-filled with a previous run's clean verdict. */
+  function runStale(bin: string, extra: string[], cwd = repo) {
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    writeFileSync(out, JSON.stringify(STALE));
+    const r = spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', out], { cwd, encoding: 'utf8', env: childEnv() });
+    return { r, report: existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null };
+  }
+  const ev = (type: string) => JSON.stringify({ type });
+  it('nothing to review: a stale --out is replaced by status "nothing", exit 0', () => {
+    const clean = mkdtempSync(join(tmpdir(), 'cr-clean-'));
+    sh(clean, 'git init -q && git config user.email t@t && git config user.name t && mkdir docs && echo contract > docs/review-format.md && git add -A && git commit -q -m base');
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], clean);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('Nothing to review');
+    expect(report.status).toBe('nothing');
+    expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+  });
+  it('an early refusal: a stale --out is replaced by an incomplete one naming the usage error, exit 1', () => {
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, ['--live', '--record']);
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toMatch(/^E_USAGE: --live is refused/);
+    expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+  });
+  it('codex exit 1 with a non-limit event tail is E_CODEX_FAILED (not a pass), and replaces a stale --out', () => {
+    writeFileSync(join(repo, 'a.txt'), 'exit-one check\n');
+    for (const events of [[], [ev('thread.started'), ev('turn.started'), ev('error'), ev('turn.failed')], [ev('turn.started'), ev('item.completed'), ev('error')]]) {
+      const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events }).bin, []);
+      expect([r.status, report.status]).toEqual([3, 'incomplete']);
+      expect(report.summary).toMatch(/^E_CODEX_FAILED/);
+      expect(r.stdout).toContain('E_CODEX_FAILED');
+      expect(r.stdout).not.toContain('E_EXIT_1');
+      expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+    }
+  });
+  it('codex exit 1 whose events end turn.started -> error is E_EXIT_1, the plan-limit case', () => {
+    writeFileSync(join(repo, 'a.txt'), 'plan-limit check\n');
+    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('thread.started'), ev('turn.started'), ev('error')] }).bin, []);
+    expect([r.status, report.status]).toEqual([3, 'incomplete']);
+    expect(report.summary).toMatch(/^E_EXIT_1: /);
+    expect(report.summary).toContain('plan limit');
+  });
+});
