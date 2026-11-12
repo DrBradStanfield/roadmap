@@ -192,11 +192,11 @@ async function loadPage() {
   const { webRecordHost: pageHost } = await import('./web-record-host');
   const { LocalStorageAdapter: PageDevice, stopRoadmapLocalWrites } = await import('./local-storage-adapter');
   const { MemoryAdapter: PageCloud } = await import('@roadmap/health-core/memory-adapter');
-  const { healthWritesAllowed, healthWritesStopped } = await import('../lib/storage');
+  const { healthWritesAllowed } = await import('../lib/storage');
   return {
     openCloud: (cloud: MemoryCloud) => PageSession.open(pageHost(new PageCloud(cloud))),
     openDevice: () => PageSession.open(pageHost(new PageDevice())),
-    stopRoadmapLocalWrites, healthWritesAllowed, healthWritesStopped,
+    stopRoadmapLocalWrites, healthWritesAllowed,
   };
 }
 const ORIGINAL = `${DOC_KEY_PREFIX}synthetic-guest.pdf`;
@@ -238,7 +238,6 @@ describe('US-11 AC6 — a page stopped by another tab\'s log-off takes an erase 
     clearLocalStorage();
     clearOffFileHealthData();
     localStorage.removeItem(BACKEND_KEY);
-    expect(page.healthWritesStopped()).toBe(true);
     expect(page.healthWritesAllowed()).toBe(false);
 
     // That tab, now a guest or signed in again to the same provider (another account), saves a record, types

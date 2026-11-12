@@ -41,7 +41,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { SyncControl } from './sync-control';
-import { stopLocalHealthWrites } from '../src/lib/storage';
+import { noteDevicePage, stopLocalHealthWrites } from '../src/lib/storage';
 import { BackendPickerModal } from './backend-picker';
 
 beforeAll(() => {
@@ -263,8 +263,37 @@ describe('US-09 AC13: the fallback notice on a live page', () => {
   });
 });
 
+describe('US-09 AC13: the fallback notice on a page that missed another tab\'s log-off', () => {
+  // The fallback state lasts for the module's life, so the stop tests below follow.
+  it('shows no promise once the log-off id has changed, and drops it when the change arrives as a storage event', () => {
+    localStorage.setItem('health_roadmap_backend', 'dropbox');
+    noteDevicePage(); // a fallback page for Dropbox
+    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(shown.container.textContent).toContain('kept in this browser');
+    act(() => {
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+    });
+    expect(shown.container.textContent).toContain('Your record is safe in your');
+    expect(shown.container.textContent).not.toContain('kept in this browser');
+    shown.unmount();
+
+    const later = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
+    expect(later.container.textContent).not.toContain('kept in this browser');
+    localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+  });
+});
+
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
   // Last in this file: the stop lasts for the module's life.
+  it('a notice already on screen drops the promise when the writes stop, with no other change', () => {
+    const { container } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(container.textContent).toContain('kept in this browser');
+    act(() => stopLocalHealthWrites());
+    expect(container.textContent).toContain('Your record is safe in your');
+    expect(container.textContent).not.toContain('kept in this browser');
+  });
+
   it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {
     stopLocalHealthWrites();
     const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);

@@ -11,7 +11,7 @@ import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
-import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOwnsOffFileData, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
+import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOnChosenRecord, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
 type Typed<K extends string> = Partial<Record<K, string>>;
@@ -114,7 +114,8 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, legacyUnit } = record;
   const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const [state, setState] = useState<MatrixDraft<K>>(() => {
-    const kept = loadDraft<K>(storageKey);
+    // Only a page on the chosen record restores its draft (US-11 AC6): any other may be showing another record.
+    const kept = pageOnChosenRecord() ? loadDraft<K>(storageKey) : null;
     if (!kept) return EMPTY;
     const meta = { ...kept.meta };
     for (const [column, cells] of [[null, kept.draft.values] as const, ...Object.entries(kept.backfills)]) {
@@ -145,7 +146,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     // or a page still loading) keeps typed values on screen only and leaves the
     // key alone: it may hold the chosen record's draft (US-11 AC6, AC2c).
     if (ownLogOffHasBegun()) { safeRemoveItem(storageKey); return; }
-    if (!pageOwnsOffFileData()) return;
+    if (!pageOnChosenRecord()) return;
     if (holdsText(state)) safeSetItem(storageKey, JSON.stringify(state));
     else safeRemoveItem(storageKey);
   }, [storageKey, state]);
