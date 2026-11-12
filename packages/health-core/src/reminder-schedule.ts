@@ -38,6 +38,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
+import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
 
 // ===== Types =====
 
@@ -151,10 +152,10 @@ function screeningSchedule(
   };
   const takes = (r: ScreeningRule) => ruleTakes(r, r.cardAges, age, sex);
 
+  // On the colonoscopy schedule (US-07 AC1j) only its date counts, and an undated colonoscopy has none.
   if (takes(COLORECTAL) && s.colorectalMethod && s.colorectalMethod !== 'not_yet_started') {
-    push(COLORECTAL, s.colorectalMethod, earliest(
+    push(COLORECTAL, s.colorectalMethod, onColonoscopySchedule(s) ? nextColonoscopyDue(s) : earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
-      getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
       followupDueDate(COLORECTAL, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalLastDate),
     ));
   }

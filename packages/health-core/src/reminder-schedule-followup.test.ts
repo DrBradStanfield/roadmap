@@ -82,9 +82,11 @@ describe('US-17 AC15: follow-up reminders follow the follow-up card', () => {
     }
   });
 
-  it('a completed follow-up with no date is unchanged: the routine date', () => {
+  it('a completed follow-up with no date: the routine date, except colorectal, which has none until dated (US-07 AC1j)', () => {
     const s: ScreeningInputs = { colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: '2026-09', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed' };
-    expect(dueOf('male', 60, s, 'screening_colorectal')).toBe('2036-09-01');
+    expect(dueOf('male', 60, s, 'screening_colorectal')).toBeUndefined();
+    const breast: ScreeningInputs = { breastFrequency: 'annual', breastLastDate: '2026-09', breastResult: 'abnormal', breastFollowupStatus: 'completed' };
+    expect(dueOf('female', 60, breast, 'screening_breast')).toBe('2027-09-01');
   });
 
   it('lung below 20 pack-years (AC1f) and past 80 (AC1g): organize at the last CT, scheduled at 3 months, completed gives no reminder', () => {

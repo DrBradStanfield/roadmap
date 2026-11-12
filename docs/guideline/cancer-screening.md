@@ -61,7 +61,7 @@ A pack-year is one pack a day for one year [13].
 
 **When the next test is due** (the health tool): a yearly stool test (FIT) after 12 months, colonoscopy after 10 years, a mammogram after 12 or 24 months as you choose, an HPV test after 5 years, a smear (Pap) test alone after 3 years, low-dose CT after 12 months, and PSA, if you choose to screen, after 12 months.
 
-**After an abnormal result** (the health tool): an urgent card shows until the follow-up is organised, then a reminder to keep the appointment. Once it is done, the next test is due 3 years after a positive stool test and colonoscopy, or after polyps on colonoscopy; 1 year after an abnormal HPV or smear test; and at the usual interval for breast and lung.
+**After an abnormal result** (the health tool): an urgent card shows until the follow-up is organised, then a reminder to keep the appointment. Once it is done, the next colonoscopy is due when your colonoscopy report advises, or 3 years after it if the report gave no follow-up time (Dr Brad's recommendation); the next test is due 1 year after an abnormal HPV or smear test, and at the usual interval for breast and lung.
 
 **PSA.** The plan treats 4.0 ng/mL as the upper limit of normal and flags a PSA of 4.0 ng/mL or above for attention, even if you chose not to screen (the health tool). NZ and Australian labs print PSA in µg/L, the same number. A PSA result may not be accurate, and a high PSA does not mean cancer; an enlarged prostate also raises it [22]. Finasteride and dutasteride, taken for an enlarged prostate, cut PSA by about half, so a result under 4.0 can hide a high one: tell your doctor if you take one [23][24]. For 48 hours before the test, do not ejaculate, exercise hard or cycle, and wait 4 to 6 weeks after a urine infection [22].
 
@@ -211,7 +211,7 @@ Blank: no national source verified.
 
 [27] Castells A et al. Effect of invitation to colonoscopy versus faecal immunochemical test screening on colorectal cancer mortality (COLONPREV). Lancet. 2025;405(10486):1231-1239. PMID: 40158525.
 
-[28] Corley DA et al. Association Between Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer and Cancer Stage at Diagnosis. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
+[28] Corley DA et al. Time to Colonoscopy After a Positive Fecal Test Result and Risk of Colorectal Cancer. JAMA. 2017;317(16):1631-1641. PMID: 28444278.
 
 [29] US Preventive Services Task Force. Screening for Breast Cancer. JAMA. 2024;331(22):1918-1930. PMID: 38687503.
 
@@ -237,7 +237,7 @@ Blank: no national source verified.
 
 [40] US Preventive Services Task Force. Vitamin, Mineral, and Multivitamin Supplementation to Prevent Cardiovascular Disease and Cancer. JAMA. 2022;327(23):2326-2333. PMID: 35727271.
 
-[41] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. The effect of vitamin E and beta carotene on the incidence of lung cancer and other cancers in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
+[41] Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. Vitamin E and beta carotene and lung cancer in male smokers. N Engl J Med. 1994;330(15):1029-35. PMID: 8127329.
 
 [42] Klein EA et al. Vitamin E and the risk of prostate cancer: SELECT. JAMA. 2011;306(14):1549-56. PMID: 21990298.
 

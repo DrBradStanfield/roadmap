@@ -129,16 +129,18 @@ describe('US-07 AC1h: the FIT line from 55 (spec lines 60-63)', () => {
     for (const s of states) {
       const cards = plan(60, { ...fit(OLD), colorectalLastDate: s.colorectalFollowupDate ?? OLD, colorectalResult: 'abnormal', ...s });
       expect(cards.map((c) => c.id), JSON.stringify(s)).toEqual(['screening-colorectal-followup']);
-      expect(cards[0].description, JSON.stringify(s)).not.toContain('Dr Brad');
+      // The 3-year card names Dr Brad since Change 2b (US-07 AC1j); the FIT line never shows.
+      expect(cards[0].description, JSON.stringify(s)).not.toContain(FIT_LINE);
     }
   });
 
-  it('never on the routine card an abnormal result falls through to: follow-up completed with no usable date (Brad 2026-11-12)', () => {
-    // getPostFollowupDueDate returns null for these, so the routine up-to-date or overdue card shows.
+  it('never after an abnormal result whose follow-up is completed with no usable date (Brad 2026-11-12)', () => {
+    // Since Change 2b (US-07 AC1j) these get the "Add your colonoscopy date" card, not the routine card.
     for (const date of [undefined, '', '2026']) {
-      for (const [last, card, due] of [[RECENT, UP, 'Mar 2027'], [OLD, OVER, 'Jan 2026']] as const) {
+      for (const last of [RECENT, OLD]) {
         const cards = plan(60, { ...fit(last), colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: date });
-        expect(cards, `${date} ${last}`).toEqual([expect.objectContaining({ title: card[0], description: card[1].replace('{due}', due) })]);
+        expect(cards.map((c) => c.title), `${date} ${last}`).toEqual(['Add your colonoscopy date']);
+        expect(cards[0].description, `${date} ${last}`).not.toContain(FIT_LINE);
       }
     }
     // A normal result, or none, still gets the line.
@@ -157,7 +159,8 @@ describe('US-07 AC1h: the FIT line from 55 (spec lines 60-63)', () => {
 describe('US-07 AC1h: the evidence and the algorithm doc (spec lines 66-72)', () => {
   it('the screening-colorectal reason is the approved one, with Wolf 2018 beside the ACS page and Siegel 2019', () => {
     const e = SUGGESTION_EVIDENCE['screening-colorectal'];
-    expect(e.reason).toBe(REASON);
+    // Change 2b appends its follow-up sentence (US-07 AC1j, screening-colonoscopy.test.ts).
+    expect(e.reason.startsWith(`${REASON} After a positive test and a colonoscopy`)).toBe(true);
     expect(e.guidelines).toEqual(['ACS 2018']);
     expect(e.references).toContainEqual({ label: WOLF_LABEL, url: WOLF_URL });
     expect(e.references.map((r) => r.url)).toEqual(expect.arrayContaining([
@@ -165,7 +168,7 @@ describe('US-07 AC1h: the evidence and the algorithm doc (spec lines 66-72)', ()
       'https://doi.org/10.1136/gutjnl-2019-319511',
     ]));
     // The card carries it.
-    expect(plan(40)[0].reason).toBe(REASON);
+    expect(plan(40)[0].reason).toBe(e.reason);
   });
 
   it('the algorithm doc has the new eligibility row and the section-8 paragraph', () => {

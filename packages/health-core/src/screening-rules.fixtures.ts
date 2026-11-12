@@ -153,6 +153,23 @@ function dexaFixtures(): Fixture[] {
   ];
 }
 
+/** Change 2b (US-07 AC1j): the colonoscopy schedule after an abnormal result whose follow-up is completed,
+ *  on every method: undated; dated, not yet due, without and with the report's years; overdue, without and with. */
+function colonoscopyFixtures(): Fixture[] {
+  const OVERDUE = monthsAgo(40);
+  return (['fit_annual', 'colonoscopy_10yr', 'other'] as const).flatMap((m) => {
+    const done = (last: string): ScreeningInputs => ({ colorectalMethod: m, colorectalLastDate: last, colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed' });
+    const tag = (last: string) => `colonoscopy:${m},last=${last},abnormal,fu=completed`;
+    return [
+      fx(`${tag(RECENT)},undated`, done(RECENT)),
+      fx(`${tag(RECENT)}@${FU_DONE}`, { ...done(RECENT), colorectalFollowupDate: FU_DONE }),
+      fx(`${tag(RECENT)}@${FU_DONE},years=5`, { ...done(RECENT), colorectalFollowupDate: FU_DONE, colorectalFollowupIntervalYears: 5 }),
+      fx(`${tag(monthsAgo(41))}@${OVERDUE}`, { ...done(monthsAgo(41)), colorectalFollowupDate: OVERDUE }),
+      fx(`${tag(monthsAgo(41))}@${OVERDUE},years=2`, { ...done(monthsAgo(41)), colorectalFollowupDate: OVERDUE, colorectalFollowupIntervalYears: 2 }),
+    ];
+  });
+}
+
 /** Every answer fixture, by screening type. */
 export const FIXTURES: Record<string, Fixture[]> = {
   colorectal: chainFixtures('colorectal', 'colorectalMethod', ['fit_annual', 'colonoscopy_10yr', 'other']),
@@ -162,12 +179,13 @@ export const FIXTURES: Record<string, Fixture[]> = {
   prostate: prostateFixtures(),
   endometrial: endometrialFixtures(),
   dexa: dexaFixtures(),
+  colonoscopy: colonoscopyFixtures(),
 };
 
 /** Where each type's fixtures run in section B: ages where it applies, and past its edge where that matters. */
 const B_PROFILES: Record<string, string[]> = {
   colorectal: ['m50'], breast: ['f50'], cervical: ['f30'], lung: ['m60', 'm81'],
-  prostate: ['m55'], endometrial: ['f50'], dexa: ['f60', 'm70'],
+  prostate: ['m55'], endometrial: ['f50'], dexa: ['f60', 'm70'], colonoscopy: ['m60'],
 };
 
 const byName = (name: string): Fixture => {
@@ -407,6 +425,7 @@ const WRITE_KEYS: Record<string, Array<[string, string[]]>> = (() => {
     prostate: [['prostate_discussion', vals(O.prostate_discussion)], ['prostate_last_date', ['', RECENT]]],
     endometrial: [['endometrial_discussion', vals(O.endometrial_discussion)], ['endometrial_abnormal_bleeding', vals(O.endometrial_abnormal_bleeding)]],
     dexa: chain('dexa', 'dexa_screening', vals(O.dexa_screening), vals(O.dexa_result)),
+    colonoscopy: [...chain('colorectal', 'colorectal_method', vals(O.colorectal_method)), ['colorectal_followup_interval_years', ['', '3']]],
   };
 })();
 

@@ -263,6 +263,7 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > color
     "select#colorectal-followup-status=completed",
     "select#colorectal_followup_date-month=",
     "select#colorectal_followup_date-year=",
+    "select#colorectal-followup-interval=",
     "select#lung-smoking-history=",
     "select#prostate-discussion=",
   ],
@@ -278,13 +279,14 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > color
     "colorectal-result: Result",
     "colorectal-followup-status: Follow-up investigation status",
     "null: When was the follow-up investigation completed?",
+    "colorectal-followup-interval: Did the colonoscopy report give a follow-up time?",
     "lung-smoking-history: Smoking history",
     "prostate-discussion: Discussed prostate screening with your doctor?",
   ],
   "notes": [
     "screening-age-message: PSA testing is an option after an informed discussion with your doctor.",
   ],
-  "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsFollow-up investigation statusSelect...Not yet organizedScheduledCompletedWhen was the follow-up investigation completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016LungSmoking historySelect...Never smokedFormer smokerCurrent smokerProstatePSA testing is an option after an informed discussion with your doctor.Discussed prostate screening with your doctor?Select...Not yetYes, and I've elected not to screenYes, and I will screen",
+  "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening methodSelect...FIT test (annual)Colonoscopy (every 10 years)Other methodNot yet startedDate of last screeningMonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016ResultSelect...NormalAbnormalAwaiting resultsFollow-up investigation statusSelect...Not yet organizedScheduledCompletedWhen was the follow-up investigation completed?MonthJanuaryFebruaryMarchAprilMayJuneJulyAugustSeptemberOctoberNovemberDecemberYear20262025202420232022202120202019201820172016Did the colonoscopy report give a follow-up time?Not given1 year2 years3 years4 years5 years6 years7 years8 years9 years10 yearsLungSmoking historySelect...Never smokedFormer smokerCurrent smokerProstatePSA testing is an option after an informed discussion with your doctor.Discussed prostate screening with your doctor?Select...Not yetYes, and I've elected not to screenYes, and I will screen",
 }
 `;
 
