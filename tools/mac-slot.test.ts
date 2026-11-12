@@ -17,32 +17,37 @@ echo "$l"
 `;
 
 let dir: string, fake: string, home: string;
-const kids: ChildProcess[] = [];
+// Every child is spawned detached, so it leads its own process group; afterEach ends the groups.
+const kids: { p: ChildProcess; done: Promise<number> }[] = [];
 const track = (p: ChildProcess) => {
-  kids.push(p);
-  return new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
+  const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
+  kids.push({ p, done });
+  return done;
 };
 const setLoads = (...l: string[]) => writeFileSync(join(fake, 'loads'), `${l.join('\n')}\n`);
-const env = (extra: Record<string, string> = {}) => {
-  const e: Record<string, string> = { ...(process.env as Record<string, string>) };
-  delete e.CI;
-  return { ...e, FAKE: fake, MAC_SLOT_HOME: home, MAC_SLOT_LOAD_CMD: join(fake, 'load'), MAC_SLOT_POLL_SECONDS: '1',
-    MAC_SLOT_CODEX_MAX: '2', MAC_SLOT_TESTS_MAX: '3', ...extra };
-};
-// A holder that runs until its release file appears, then exits with `code`.
+// A minimal environment: nothing of the caller's (no MAC_SLOT_*, no CI, no node_modules/.bin on PATH) reaches
+// the script, which needs only the system tools (lockf, perl, awk, sed, pgrep, ps, sysctl, /usr/bin/time).
+const SYSTEM_PATH = '/usr/bin:/bin:/usr/sbin:/sbin';
+const env = (extra: Record<string, string> = {}): Record<string, string> => ({
+  PATH: SYSTEM_PATH, HOME: process.env.HOME ?? '', TMPDIR: tmpdir(),
+  FAKE: fake, MAC_SLOT_HOME: home, MAC_SLOT_LOAD_CMD: join(fake, 'load'), MAC_SLOT_POLL_SECONDS: '1',
+  MAC_SLOT_CODEX_MAX: '2', MAC_SLOT_TESTS_MAX: '3', ...extra,
+});
+// A holder that runs until its release file appears, then exits with `code`. It also gives up (exit 99) when its
+// folder goes or after 120 s, so one orphaned by a hard vitest kill cannot loop forever.
 const hold = (name: string, code = 0) =>
-  ['sh', '-c', `echo started >> "${fake}/${name}.log"; while [ ! -f "${fake}/${name}.go" ]; do sleep 0.1; done; exit ${code}`];
+  ['sh', '-c', `echo started >> "${fake}/${name}.log"; while [ ! -f "${fake}/${name}.go" ]; do
+    [ -d "${fake}" ] && [ $((n += 1)) -le 1200 ] || exit 99; sleep 0.1; done; exit ${code}`];
 const release = (name: string) => writeFileSync(join(fake, `${name}.go`), '');
 const started = (name: string) => existsSync(join(fake, `${name}.log`));
 // A waiter's queue marker: waiting.<kind>.<stamp>.<pid> (or the older waiting.<kind>.<pid>).
 const marker = (pid?: number) => readdirSync(home).filter((f) => new RegExp(`^waiting\\.codex\\.(.*\\.)?${pid}$`).test(f));
 
 function bg(kind: string, cmd: string[], extra: Record<string, string> = {}) {
-  const p = spawn('sh', [SCRIPT, kind, '--', ...cmd], { env: env(extra) });
+  const p = spawn('sh', [SCRIPT, kind, '--', ...cmd], { env: env(extra), detached: true });
   let err = '';
   p.stderr.on('data', (d) => { err += d; });
-  const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
-  kids.push(p);
+  const done = track(p);
   return { p, done, err: () => err };
 }
 async function until(f: () => boolean, ms = 15000) {
@@ -61,9 +66,23 @@ beforeEach(() => {
   writeFileSync(join(fake, 'load'), LOAD, { mode: 0o755 });
   setLoads('1.00');
 });
-afterEach(() => {
+const signal = (pid: number, sig: NodeJS.Signals) => { try { process.kill(pid, sig); } catch { /* gone */ } };
+const pidAlive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const exited = (p: ChildProcess) => p.exitCode !== null || p.signalCode !== null;
+const groupAlive = (g: number) => spawnSync('pgrep', ['-g', String(g)], { encoding: 'utf8' }).stdout.trim() !== '';
+// Ends every tracked child's group (grandchildren too: a chain's runs, /usr/bin/time's shell, a load-wait sleep):
+// TERM, then KILL to what is left after 1.5 s; it waits for them, and only then removes the folder. A group whose leader exited is signalled only
+// while no process has the leader's pid, so a reused pid is never hit.
+afterEach(async () => {
   for (const f of ['a', 'b', 'c', 'd', 'x']) writeFileSync(join(fake, `${f}.go`), '');
-  for (const k of kids.splice(0)) k.kill('SIGKILL');
+  const found = kids.splice(0);
+  const live = () => found.flatMap(({ p }) =>
+    (p.pid && (!exited(p) || !pidAlive(p.pid)) && groupAlive(p.pid) ? [p.pid] : []));
+  for (const sig of ['SIGTERM', 'SIGKILL'] as const) {
+    for (const g of live()) signal(-g, sig);
+    for (const end = Date.now() + 1500; live().length && Date.now() < end;) await new Promise((r) => setTimeout(r, 50));
+  }
+  await Promise.all(found.map(({ done }) => done));
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -256,11 +275,10 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
     bg('codex', hold('a'), extra);
     await until(() => started('a'));
-    const p = spawn('/usr/bin/time', ['-p', 'sh', SCRIPT, 'codex', '--', 'true'], { env: env(extra) });
-    kids.push(p);
+    const p = spawn('/usr/bin/time', ['-p', 'sh', SCRIPT, 'codex', '--', 'true'], { env: env(extra), detached: true });
+    const done = track(p);
     let err = '';
     p.stderr.on('data', (d) => { err += d; });
-    const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
     await until(() => /waiting for a codex slot/.test(err));
     await new Promise((r) => setTimeout(r, 3000));
     const sh = spawnSync('pgrep', ['-P', String(p.pid)], { encoding: 'utf8' }).stdout.trim();
@@ -299,9 +317,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
   const order = () => (existsSync(join(fake, 'order')) ? readFileSync(join(fake, 'order'), 'utf8').trim().split('\n') : []);
   it('a waiter runs before a chain of back-to-back runs ends (no starvation)', async () => {
     const extra = { MAC_SLOT_CODEX_MAX: '1' };
-    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
-    kids.push(ch);
-    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    const chDone = track(spawn(chain(6)[0], chain(6).slice(1), { env: env(extra), detached: true }));
     await until(() => order().includes('C1'));
     const w = bg('codex', queued('W'), extra);
     expect(await chDone).toBe(0);
@@ -313,9 +329,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
 
   it('two waiters run in arrival order, before a chain of back-to-back runs ends', async () => {
     const extra = { MAC_SLOT_CODEX_MAX: '1' };
-    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
-    kids.push(ch);
-    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    const chDone = track(spawn(chain(6)[0], chain(6).slice(1), { env: env(extra), detached: true }));
     await until(() => order().includes('C1'));
     const w1 = bg('codex', queued('W1'), extra);
     await until(() => /waiting for a codex slot/.test(w1.err()));
@@ -363,7 +377,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
   // R4 (PR 1427 review): a marker is live only while its waiter holds the kernel lock on it (fd 7). A pid can be
   // reused, and a marker left by a SIGKILL or a reboot names one; on 220c9803c ahead() judged by `kill -0`, so a
   // stale marker naming any live pid queued every caller of that kind behind it, with no limit.
-  const sleeper = () => { const s = spawn('sleep', ['300']); kids.push(s); return s.pid ?? 0; };
+  const sleeper = () => { const s = spawn('sleep', ['300'], { detached: true }); track(s); return s.pid ?? 0; };
   const waiting = (kind: string) => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith(`waiting.${kind}.`)) : []);
   it('a stale marker naming a live unrelated pid does not hold up a caller (R4)', () => {
     mkdirSync(home, { recursive: true });
@@ -476,6 +490,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     }
   });
 
+  // Under a real `tests` slot only the process mac-slot execs (npx, or vitest when run directly) holds fd 9 on
+  // the slot file; Node's spawn on macOS passes a child only its stdio (checked 2026-11-13 with lsof up the tree).
   it('a child a test spawns holds no fd 9 and no descriptor into the real slot folder', async () => {
     const r = bg('tests', ['true']);
     expect(await r.done).toBe(0);
@@ -533,7 +549,7 @@ describe('US-71 AC9 mac-slot.sh off a shared Mac (CI, Linux)', () => {
   it('on Linux runs the command directly', () => {
     writeFileSync(join(fake, 'uname'), '#!/bin/sh\necho Linux\n', { mode: 0o755 });
     const s = spawnSync('sh', [SCRIPT, 'tests', '--', 'sh', '-c', 'echo ran'],
-      { env: env({ PATH: `${fake}:${process.env.PATH}`, MAC_SLOT_TESTS_MAX: '0' }), encoding: 'utf8' });
+      { env: env({ PATH: `${fake}:${SYSTEM_PATH}`, MAC_SLOT_TESTS_MAX: '0' }), encoding: 'utf8' });
     expect(s.status).toBe(0);
     expect(s.stdout).toBe('ran\n');
     expect(existsSync(home)).toBe(false);
