@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { format } from 'node:util';
+import { format, inspect } from 'node:util';
 import { DiscordAPIError } from '@discordjs/rest';
 
 // US-15 AC62: a Discord answer cut off part way. When a later chunk fails,
@@ -85,8 +85,12 @@ async function deliver(message: ReturnType<typeof makeMessage>) {
 
 const replyTexts = (m: ReturnType<typeof makeMessage>) => m.reply.mock.calls.map((c) => (c[0] as { content: string }).content);
 const rows = (role: string) => edge.inserts.filter((i) => i.table === 'chat_messages' && i.row.role === role).map((i) => i.row);
-const allText = () => [logged.join('\n'), JSON.stringify(edge.capture.mock.calls.map((c) => c[1])),
-  JSON.stringify(edge.captureMessage.mock.calls)].join('\n');
+// Every argument of every Sentry call, serialized deep, plus every console line.
+const allText = () => [logged.join('\n'),
+  inspect([edge.capture.mock.calls, edge.captureMessage.mock.calls], { depth: null, showHidden: true })].join('\n');
+
+const completion = (content: string) => ({ content, usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 },
+  isFallback: false, routerResult: null, classifier: { classification: 'ANSWER', routerSkipped: true } });
 
 let stop: () => void;
 let logged: string[];
@@ -100,8 +104,7 @@ beforeEach(async () => {
     DISCORD_SERVER_ID: 'guild', DISCORD_BOT_PROFILE_ID: 'synthetic',
     DISCORD_DEDICATED_AI_CHANNEL_ID: 'ai', DISCORD_EXCLUDED_CHANNEL_IDS: 'blocked' })) vi.stubEnv(key, value);
   edge.sleep.mockResolvedValue(undefined);
-  edge.complete.mockResolvedValue({ content: ANSWER, usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 },
-    isFallback: false, routerResult: null, classifier: { classification: 'ANSWER', routerSkipped: true } });
+  edge.complete.mockResolvedValue(completion(ANSWER));
   stop = (await import('./discord-bot.server')).stopDiscordBot;
 });
 afterEach(() => { stop(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
@@ -191,13 +194,39 @@ describe('US-15 AC62: a Discord answer cut off part way', () => {
     expect(replyTexts(m).filter((t) => t === NOTICE)).toHaveLength(1);
   });
 
-  it('logs and Sentry tags never carry chunk text or the asker mention', async () => {
+  it('logs and every Sentry argument never carry chunk text or the asker mention', async () => {
     await deliver(makeMessage('u10', { replies: ['ok', forbidden(NOTICE)], sends: [forbidden(P2)] }));
     await deliver(makeMessage('u11', { noSend: true }));
     const text = allText();
     for (const word of ['alphaword', 'bravoword', 'charlieword', '<@u10>', '<@u11>', 'Missing Permissions']) {
       expect(text).not.toContain(word);
     }
+  });
+
+  it('a dedup re-send whose chunk 1 fails posts the error line once and stores nothing', async () => {
+    edge.conversation = { id: 'conv-1' };
+    edge.duplicate.mockReturnValue({ content: ANSWER, ageMs: 1000 });
+    const m = makeMessage('u12', { replies: [forbidden(P1)] });
+    await deliver(m);
+    expect(edge.complete).not.toHaveBeenCalled();
+    expect(replyTexts(m).filter((t) => t.includes('went wrong'))).toHaveLength(1);
+    expect(m.send).not.toHaveBeenCalled();
+    expect(edge.inserts).toHaveLength(0);
+  });
+
+  it('a partial stores the answer exactly as far as it went out, separators included', async () => {
+    edge.complete.mockResolvedValueOnce(completion(`${P1}\n\n\n${P2}\n\n${P3}`));
+    await deliver(makeMessage('u13', { sends: ['ok', aborted()] }));
+    expect(rows('assistant')[0].content).toBe(`${P1}\n\n\n${P2}`);
+  });
+
+  it('a failed chunk and a failed notice reach Sentry as fixed words, tags and a code only', async () => {
+    await deliver(makeMessage('u14', { replies: ['ok', forbidden(NOTICE)], sends: [forbidden(P2)] }));
+    expect(edge.capture).not.toHaveBeenCalled();
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: chunk send failed', expect.objectContaining({
+      tags: { platform: 'discord', subsystem: 'send', chunk: 'later', code: '50013' } }));
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: cut-off notice failed', expect.objectContaining({
+      tags: { platform: 'discord', subsystem: 'send', chunk: 'notice', code: '50013' } }));
   });
 });
 

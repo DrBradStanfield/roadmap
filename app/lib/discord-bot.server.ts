@@ -59,7 +59,7 @@ import {
   loadThreadHistory,
 } from './discord-bot-history.server';
 import { persistConversation } from './discord-bot-persist.server';
-import { sendAnswer } from './discord-bot-send.server';
+import { sendAnswer, sentText } from './discord-bot-send.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 export { splitForDiscord } from './discord-bot-messages.server';
@@ -296,7 +296,9 @@ async function handleMessage(message: GuildMessage): Promise<void> {
           clearInterval(typingInterval);
           typingInterval = null;
         }
-        await sendAnswer(message, splitForDiscord(dup.content, DISCORD_SPLIT_CHARS));
+        // US-15 AC62: a partial re-send stores nothing; the 60 s window bounds a repeat.
+        const resent = await sendAnswer(message, splitForDiscord(dup.content, DISCORD_SPLIT_CHARS));
+        if (resent.kind === 'none-sent') await safeReply(message, ERROR_REPLY);
         return;
       }
     }
@@ -352,7 +354,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       authorId,
       userMessage: truncatedInput,
       userDiscordMessageId: message.id,
-      assistantContent: sent.kind === 'partial' ? sent.sent.map(c => c.text).join('\n\n') : result.content,
+      assistantContent: sent.kind === 'partial' ? sentText(result.content, sent.sent) : result.content,
       silent: result.silent === true,
       assistantDiscordMessageIds: sent.sent.map(c => c.id),
       usage: result.usage,

@@ -2,8 +2,9 @@
  * Discord bot: sending an answer split into chunks (US-15 AC62). One path for
  * the answer and the dedup re-send. The loop stops at the first chunk that
  * fails and never retries: discord.js already retries 429, 5xx and network
- * faults, and a chunk once posted is public. Logs and Sentry tags carry fixed
- * words and the error kind only, never chunk text (US-09 AC6d).
+ * faults, and a chunk once posted is public. Logs and Sentry carry fixed words
+ * and the error code only, never chunk text (US-09 AC6d): a DiscordAPIError
+ * keeps the body it sent, so the error object itself never goes to Sentry.
  */
 import * as Sentry from '@sentry/react-router';
 import { PLATFORM_DISCORD } from './discord-bot-config.server';
@@ -22,6 +23,14 @@ export type PostChunk = (text: string, index: number) => Promise<string | null>;
 
 export const CUT_OFF_NOTICE = 'This answer was cut off. Please ask again.';
 
+/** Reports a failed post as fixed words, tags and the Discord code (or the error kind). */
+function reportSendFailure(what: string, chunk: 'first' | 'later' | 'notice', err: unknown): void {
+  const { code } = (err ?? {}) as { code?: unknown };
+  const tag = typeof code === 'number' || typeof code === 'string' ? String(code) : errorKind(err);
+  console.error(`${what}:`, errorKind(err));
+  Sentry.captureMessage(what, { level: 'error', tags: { platform: PLATFORM_DISCORD, subsystem: 'send', chunk, code: tag } });
+}
+
 export async function sendChunks(post: PostChunk, chunks: string[]): Promise<SendResult> {
   const sent: SentChunk[] = [];
   for (const [i, text] of chunks.entries()) {
@@ -29,8 +38,7 @@ export async function sendChunks(post: PostChunk, chunks: string[]): Promise<Sen
     try {
       id = await post(text, i);
     } catch (err) {
-      console.error('Discord: chunk send failed:', errorKind(err));
-      Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD, subsystem: 'send', chunk: i === 0 ? 'first' : 'later' } });
+      reportSendFailure('Discord: chunk send failed', i === 0 ? 'first' : 'later', err);
       id = null;
     }
     if (id === null) return i === 0 ? { kind: 'none-sent' } : { kind: 'partial', sent, stoppedAt: i };
@@ -48,7 +56,7 @@ export function discordPoster(message: GuildMessage): PostChunk {
     }
     if (!(message.channel.isTextBased() && 'send' in message.channel)) {
       console.error('Discord: chunk send failed: channel has no send');
-      Sentry.captureMessage('Discord: channel has no send', { level: 'warning', tags: { platform: PLATFORM_DISCORD, subsystem: 'send' } });
+      Sentry.captureMessage('Discord: channel has no send', { level: 'warning', tags: { platform: PLATFORM_DISCORD, subsystem: 'send', chunk: 'later' } });
       return null;
     }
     return (await message.channel.send({ content: text, allowedMentions: { parse: [] } })).id;
@@ -56,15 +64,28 @@ export function discordPoster(message: GuildMessage): PostChunk {
 }
 
 /** Sends the chunks; after a partial, tries once to say the answer was cut off.
- *  A failed notice is logged in fixed words and never retried. */
+ *  A failed notice is reported in fixed words and never retried. */
 export async function sendAnswer(message: GuildMessage, chunks: string[]): Promise<SendResult> {
   const result = await sendChunks(discordPoster(message), chunks);
   if (result.kind === 'partial') {
     try {
       await message.reply({ content: CUT_OFF_NOTICE, allowedMentions: { repliedUser: false } });
     } catch (err) {
-      console.error('Discord: cut-off notice failed:', errorKind(err));
+      reportSendFailure('Discord: cut-off notice failed', 'notice', err);
     }
   }
   return result;
+}
+
+/** The answer exactly as far as its sent chunks reach, the original separators
+ *  included: splitForDiscord trims the whitespace at each cut, so joining the
+ *  chunks would not give back what went out. */
+export function sentText(content: string, sent: SentChunk[]): string {
+  let end = 0;
+  for (const { text } of sent) {
+    const at = content.indexOf(text, end);
+    if (at < 0) return sent.map((c) => c.text).join('\n\n');
+    end = at + text.length;
+  }
+  return content.slice(0, end);
 }
