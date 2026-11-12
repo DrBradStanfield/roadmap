@@ -169,14 +169,16 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
     func testADisconnectGoesOnWhenTheCloudCannotBeReachedOrTheEngineThrows_US25_AC11n() async throws {
         let (store, sync) = try await driveOpen()
         drive.online = false
-        XCTAssertEqual(await sync.disconnectOutcome(), .done(copied: false))
+        let unreachable = await sync.disconnectOutcome()
+        XCTAssertEqual(unreachable, .done(copied: false))
         try assertOnThePhone(sync, store)
 
         try Data("google-drive".utf8).write(to: folder.appending(path: "sync-provider"))
         try tokens.save(OAuthTokens(accessToken: "token-g", refreshToken: "r-g", expiresAt: .distantFuture), for: .googleDrive)
         drive.online = true
         let (thrown, throwing) = try await driveOpen(engine: try throwingEngine())
-        XCTAssertEqual(await throwing.disconnectOutcome(), .done(copied: false))
+        let thrownOutcome = await throwing.disconnectOutcome()
+        XCTAssertEqual(thrownOutcome, .done(copied: false))
         try assertOnThePhone(throwing, thrown)
     }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The Sync screen (US-25 AC11e), opened from My data's About you line: what sync does,
 /// where the record is, its state in plain words, Connect Dropbox or Google
-/// Drive, Sync now, and Disconnect. Every action is CloudSync's; this view only
+/// Drive, Sync now, Switch to another cloud, and Disconnect. Every action is CloudSync's; this view only
 /// draws and asks.
 struct SyncView: View {
     let sync: CloudSync
@@ -84,6 +84,8 @@ struct SyncView: View {
         }
 
         Section {
+            // One step to another cloud (US-25 AC11n).
+            ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, message: $message) }
             Button("Disconnect from \(provider.label)", role: .destructive) { confirmDisconnect = true }
                 .disabled(sync.eraseRunning() || sync.status == .disconnecting)
                 .confirmationDialog("Disconnect from \(provider.label)?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
@@ -98,7 +100,8 @@ struct SyncView: View {
 
     private func disconnect(_ provider: CloudProvider) async {
         switch await sync.disconnectOutcome() {
-        case .done(copied: true), .refused: break // refused, not unreachable (re-check N3)
+        // Refused, not unreachable (re-check N3). `unreachable` is a switch's stop only (AC11n).
+        case .done(copied: true), .refused, .unreachable: break
         case .done(copied: false):
             message = "\(provider.label) could not be reached, so changes made on other devices since the last sync are not on this iPhone. Everything saved on this iPhone is kept."
         case .failed: message = SyncStatusText.disconnectFailed(provider)

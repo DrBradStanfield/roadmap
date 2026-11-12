@@ -153,7 +153,7 @@ struct WelcomeView: View {
                         ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
                             Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
                         }
-                        Button("Use a different cloud") { apply(.useDifferentCloud) }
+                        ForEach(SwitchCloudRow.targets(from: provider)) { SwitchCloudRow(sync: sync, provider: $0, message: $connectMessage) }
                     }
                 }
             }
@@ -193,9 +193,6 @@ struct WelcomeView: View {
             choosingCloud = true
             openRecord()
         case .open: openRecord()
-        case .disconnect:
-            guard let sync, let provider = sync.provider else { return }
-            Task { if await sync.disconnectOutcome() == .failed { connectMessage = SyncStatusText.disconnectFailed(provider) } }
         case .nothing: break
         }
     }
