@@ -229,3 +229,37 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
     expect(JSON.stringify(phoneReminders(abnormal(), new Date(NOW), undefined, {}).notifications)).not.toContain('ollow-up');
   });
 });
+
+describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)', () => {
+  /** A 60-year-old man whose newest PSA is `value`, from 10 Apr 2026. */
+  function psa(value: number, discussion?: string): RoadmapFile {
+    const file = record();
+    return {
+      ...file,
+      profile: { ...file.profile, sex: 'male' },
+      screenings: { ...file.screenings, ...(discussion ? { prostateDiscussion: discussion } : {}) } as RoadmapFile['screenings'],
+      measurements: [...file.measurements, {
+        id: 'psa1', metricType: 'psa', value, recordedAt: '2026-04-10T00:00:00.000Z',
+        createdAt: '2026-04-10T00:00:00.000Z', status: 'active',
+      } as RoadmapFile['measurements'][number]],
+    };
+  }
+  const prostate = (file: RoadmapFile) =>
+    phoneReminders(file, new Date(NOW)).upcoming.find((i) => i.category === 'screening_prostate');
+
+  it('names the 4.0-or-above case "Repeat PSA (your last result)" in the app\'s list, whatever the answer', () => {
+    for (const d of [undefined, 'elected_not_to', 'will_screen']) {
+      expect(prostate(psa(4.5, d)), String(d)).toMatchObject({ label: 'Repeat PSA (your last result)', dueAt: '2026-07-01' });
+    }
+  });
+
+  it('below 4.0 the list keeps the plain label; one who declined has no item', () => {
+    expect(prostate(psa(3.0, 'will_screen'))).toMatchObject({ label: 'PSA test', dueAt: '2027-04-01' });
+    expect(prostate(psa(3.0, 'elected_not_to'))).toBeUndefined();
+  });
+
+  it('pushes the plain label to the web\'s schedule', () => {
+    expect(computeReminderSchedule(psa(4.5, 'elected_not_to'), new Date(NOW)).find((i) => i.category === 'screening_prostate'))
+      .toEqual({ category: 'screening_prostate', group: 'screening', label: 'PSA test', dueAt: '2026-07-01' });
+  });
+});

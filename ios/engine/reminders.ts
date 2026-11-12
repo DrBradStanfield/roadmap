@@ -16,6 +16,7 @@ export const PHONE_REMINDER_LIMIT = 64;
 const FOLLOWUP_LABEL: Record<FollowupKind, (name: string) => string> = {
   organize: (name) => `Follow-up to organize: ${name}`,
   checkin: (name) => `Follow-up check-in: ${name}`,
+  repeat: (name) => name, // "Repeat PSA (your last result)" (US-06 AC21, Brad 2026-11-12)
 };
 
 /** The hour a notification shows on its day: ReminderScheduler.hour in Swift (a test pins the two). */

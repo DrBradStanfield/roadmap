@@ -105,7 +105,7 @@ function prostateFixtures(): Fixture[] {
   const out: Fixture[] = [];
   for (const d of [undefined, 'not_yet', 'elected_not_to', 'will_screen'] as const) {
     for (const last of [undefined, RECENT]) {
-      for (const psa of [undefined, 3.9, 4.0, 4.1]) {
+      for (const psa of [undefined, 2.4, 2.5, 3.9, 4.0, 4.1]) {
         const s: ScreeningInputs = {};
         if (d) s.prostateDiscussion = d;
         if (last) s.prostateLastDate = last;
@@ -115,7 +115,7 @@ function prostateFixtures(): Fixture[] {
     }
   }
   // The newest saved PSA measurement overrides the answers (US-06 AC14).
-  for (const psa of [3.9, 4.0, 4.1]) {
+  for (const psa of [2.4, 2.5, 3.9, 4.0, 4.1]) {
     out.push(fx(`prostate:will_screen,psa-row=${psa}@2026-04-10`, { prostateDiscussion: 'will_screen' }, psa));
     out.push(fx(`prostate:no-discussion,psa-row=${psa}@2026-04-10`, {}, psa));
   }
@@ -259,6 +259,15 @@ function boundaryCases(): Array<[string, string, Fixture]> {
   for (const [key, interval] of Object.entries(POST_FOLLOWUP_INTERVALS)) {
     const [profile, make] = post[key];
     for (const n of around(interval)) out.push([`C post-followup ${key}=${interval}mo ${profile} fu=${monthsAgo(n)} (${n}mo ago)`, profile, fx(key, make(monthsAgo(n)))]);
+  }
+  // The next PSA by level (US-06 AC21): 24 months below 2.5, 12 from 2.5, 3 at 4.0 or above whatever the answer.
+  for (const [psa, interval] of [[2.4, 24], [2.5, 12], [3.9, 12]] as const) {
+    for (const n of around(interval)) out.push([`C interval will_screen psa=${psa} ${interval}mo m55 last=${monthsAgo(n)} (${n}mo ago)`, 'm55',
+      fx('psa band', { prostateDiscussion: 'will_screen', prostateLastDate: monthsAgo(n), prostatePsaValue: psa })]);
+  }
+  for (const d of [undefined, 'elected_not_to', 'will_screen'] as const) {
+    for (const n of around(3)) out.push([`C interval ${d ?? 'no-discussion'} psa=4.1 3mo m55 last=${monthsAgo(n)} (${n}mo ago)`, 'm55',
+      fx('psa raised', { ...(d ? { prostateDiscussion: d } : {}), prostateLastDate: monthsAgo(n), prostatePsaValue: 4.1 })]);
   }
   // The follow-up reminders (US-17 AC15): organize is due at the last screening's month, a scheduled one 3 months on.
   for (const n of [-1, 0, 1, 2, 3, 4]) {

@@ -69,8 +69,9 @@ describe('the web plan reads the saved PSA measurement (US-06 AC14)', () => {
     view.unmount();
   });
 
-  it('a saved PSA of 2.1 shows the PSA-due card and no "Elevated PSA"', async () => {
-    const view = await plan([], [2.1, TODAY]);
+  // 3.1, so 12 months on: below 2.5 it would be 24 (US-06 AC21).
+  it('a saved PSA of 3.1 shows the PSA-due card and no "Elevated PSA"', async () => {
+    const view = await plan([], [3.1, TODAY]);
     await waitFor(() => expect(titles(view.container)).toContain('PSA test up to date'));
     expect(titles(view.container)).not.toContain('Elevated PSA');
     expect(view.container.textContent).toContain(NEXT_DUE);

@@ -3,6 +3,7 @@ import { SUGGESTION_EVIDENCE } from './evidence';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
+import { psaNextDue, psaRaised, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
@@ -955,28 +956,19 @@ export function generateSuggestions(
         screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
     }
 
-    // Prostate — shared decision. While the PSA is raised (4.0 or above), "Elevated PSA" shows alone (Change 3, D19, Brad 2026-11-12).
+    // Prostate — shared decision. While the PSA is raised (4.0 or above), "Elevated PSA" shows alone (Change 3, D19).
+    // The next PSA by level, and "Repeat PSA test" for a man who does not screen (Change 4, US-06 AC21): psa-schedule.ts.
     if (ruleTakes(PROSTATE, PROSTATE.cardAges, age, sex)) {
-      const psaRaised = screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue >= 4.0;
+      const raised = psaRaised(screenings);
+      const due = psaNextDue(screenings);
       if (notStarted(PROSTATE, screenings.prostateDiscussion)) {
-        if (!psaRaised) pushStart(PROSTATE, 'info');
-      } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
-        const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
+        if (!raised) pushStart(PROSTATE, 'info');
+      } else if (screenings.prostateDiscussion === 'will_screen' && due) {
+        const status = now > due ? 'overdue' : 'upcoming';
         // US-06 AC17 (Brad 2026-11-03): beside "Elevated PSA", "up to date" reads as all clear. Overdue still shows.
-        if (!(psaRaised && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, nextDueStr(screenings.prostateLastDate, 'will_screen'));
+        if (!(raised && status === 'upcoming')) pushScreeningStatus(PROSTATE, status, monthLabel(due));
       }
-
-      // Elevated PSA warning
-      if (psaRaised) {
-        suggestions.push({
-          id: 'screening-prostate-elevated',
-          category: 'screening',
-          priority: 'attention',
-          title: 'Elevated PSA',
-          // A limit prints as printed (US-12 AC20): "> 100.0 ng/mL". Change 4 adds the 3-month sentence.
-          description: `Your PSA of ${screenings.prostatePsaLimit ? fmtMetric('psa', screenings.prostatePsaLimit.bound, 'si', screenings.prostatePsaLimit.comparator) : `${formatGradedReading('psa', screenings.prostatePsaValue!, 'si')} ng/mL`} is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.`,
-        });
-      }
+      if (raised) suggestions.push(...raisedPsaCards(screenings, now));
     }
 
     if (ruleTakes(ENDOMETRIAL, ENDOMETRIAL.cardAges, age, sex)) {
@@ -1140,9 +1132,9 @@ export function generateSuggestions(
 /** Attach clinical evidence (reason, guidelines, references) from evidence.ts. */
 function withEvidence(suggestions: Suggestion[]): Suggestion[] {
   for (const s of suggestions) {
-    // Direct match first, then prefix match for screening variants (-overdue, -upcoming, -followup)
+    // Direct match first, then prefix match for screening variants (-overdue, -upcoming, -followup); -repeat reads -elevated's (US-06 AC21)
     const evidence = SUGGESTION_EVIDENCE[s.id]
-      || SUGGESTION_EVIDENCE[s.id.replace(/-(?:overdue|upcoming|followup)$/, '')];
+      || SUGGESTION_EVIDENCE[s.id.replace(/-(?:overdue|upcoming|followup)$/, '').replace(/-repeat$/, '-elevated')];
     if (evidence) {
       // Supplement cards already surface the trial summary in their visible
       // `description`, so the "Why this suggestion?" expansion shows only the

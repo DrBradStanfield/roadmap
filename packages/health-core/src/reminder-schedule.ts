@@ -39,6 +39,7 @@ import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
+import { PSA_REPEAT_NAME, psaNextDue, psaRaised } from './psa-schedule';
 
 // ===== Types =====
 
@@ -104,8 +105,8 @@ function earliest(...dates: Array<Date | null>): Date | null {
 /** US-17 AC15: a scheduled follow-up's check-in, months after the last screening. */
 const FOLLOWUP_CHECKIN_MONTHS = 3;
 
-/** Which follow-up card a result that opens one shows: to organize, or scheduled (a check-in). */
-export type FollowupKind = 'organize' | 'checkin';
+/** Which follow-up card a result that opens one shows: to organize, or scheduled (a check-in); or a raised PSA's repeat (US-06 AC21). */
+export type FollowupKind = 'organize' | 'checkin' | 'repeat';
 
 function followupKindOf(r: ScreeningRule, result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
   if (!opensFollowup(r, result) || !lastDate) return null;
@@ -192,10 +193,8 @@ function screeningSchedule(
     ));
   }
 
-  // Prostate (elected to screen)
-  if (takes(PROSTATE) && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
-    push(PROSTATE, s.prostateDiscussion, getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
-  }
+  // Prostate: the next PSA by level (US-06 AC21); a man who does not screen only while his newest PSA is 4.0 or above.
+  if (takes(PROSTATE)) push(PROSTATE, s.prostateDiscussion, psaNextDue(s));
 
   // DEXA bone density; result-based interval
   if (
@@ -354,8 +353,8 @@ function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
 }
 
 /**
- * Which screening reminders are a follow-up (US-17 AC15), and the card's name for
- * it (SCREENING_FOLLOWUP_INFO, keyed as the card keys it), for the iPhone's own
+ * Which screening reminders are a follow-up (US-17 AC15) or a raised PSA's repeat (US-06 AC21), and
+ * the name for it (SCREENING_FOLLOWUP_INFO, keyed as the card keys it), for the iPhone's own
  * list and notification days only (US-25 AC12): the phone holds the record, so
  * it may say so. Never part of the pushed schedule, whose label + date is all
  * the server learns.
@@ -376,6 +375,7 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
     const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
   }
+  if (psaRaised(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: PSA_REPEAT_NAME };
   return kinds;
 }
 

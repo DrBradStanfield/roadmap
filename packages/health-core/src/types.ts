@@ -460,13 +460,13 @@ export function isScreeningEligible(
 }
 
 /**
- * Calculate the next-due date for a screening based on last date and method interval.
+ * Calculate the next-due date for a screening based on last date and method interval (or months: PSA's, psa-schedule.ts).
  * Shared by suggestions.ts (screeningStatus) and reminders.ts (isScreeningOverdue).
  * Returns null if inputs are invalid or missing.
  */
-export function getScreeningNextDueDate(lastDate: string | undefined, method: string | undefined): Date | null {
+export function getScreeningNextDueDate(lastDate: string | undefined, method: string | number | undefined): Date | null {
   if (!lastDate || !method) return null;
-  const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
+  const intervalMonths = typeof method === 'number' ? method : SCREENING_INTERVALS[method] ?? 12;
   const [year, month] = lastDate.split('-').map(Number);
   if (!year || !month) return null;
   return new Date(year, month - 1 + intervalMonths);
