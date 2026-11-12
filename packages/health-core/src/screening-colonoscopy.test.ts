@@ -126,6 +126,26 @@ describe('US-07 AC1j: the trigger table, row by row, on every colorectal method 
     expect(plan({ ...done('fit_annual', '2025-06', 3), colorectalLastDate: undefined })).toEqual([]);
   });
 
+  it.each(METHODS)('%s: A takes every completed case with no usable date at 35, 60 and 75, alone among the colorectal cards', (method) => {
+    for (const age of [35, 60, 75]) {
+      for (const date of [undefined, '', '2026', 'soon']) {
+        const cards = plan(done(method, date), age);
+        expect(cards.map((c) => `${c.id} ${c.title}`), `${age} ${String(date)}`).toEqual([`screening-colorectal-followup ${A_TITLE}`]);
+        expect(cards, `${age} ${String(date)}`).toEqual(card(A_TITLE, 'attention', A_TEXT));
+      }
+    }
+  });
+
+  it('abnormal, completed, no colonoscopy date and no last screening date: never the routine card', () => {
+    const scr = { ...done('fit_annual'), colorectalLastDate: undefined };
+    const viaRecord = computePlan(fileWith(scr), NOW).results.suggestions.filter((s) => s.id.startsWith('screening-colorectal'));
+    for (const cards of [plan(scr), viaRecord]) {
+      expect(cards.map((c) => c.id)).not.toContain('screening-colorectal-upcoming');
+      expect(cards.map((c) => c.id)).not.toContain('screening-colorectal-overdue');
+      for (const c of cards) expect(c.description).not.toMatch(/Next screening due/);
+    }
+  });
+
   it.todo('age 80: the schedule past 75 (Q5) — waits on the orchestrator: the colorectal card, reminder and questions stop at 75 today');
 });
 
@@ -260,6 +280,20 @@ describe('US-07 AC1j: the stored value is a whole number of years, 1 to 10', () 
       const cards = computePlan(file, NOW).results.suggestions.filter((s) => s.id === 'screening-colorectal-followup');
       expect(cards.map((c) => c.description), String(bad)).toEqual([B_TEXT.replace('{due}', 'Jun 2028')]);
     }
+  });
+
+  const recordCards = (stored: unknown) => {
+    const file = fileWith(done('fit_annual', '2025-06'));
+    file.screenings.colorectalFollowupIntervalYears = stored as any;
+    return computePlan(file, NOW).results.suggestions.filter((s) => s.id.startsWith('screening-colorectal')).map((c) => c.description);
+  };
+
+  it('a stored string "3" is read through the record: card D, due 3 years on', () => {
+    expect(recordCards('3')).toEqual([D_TEXT.replace('{due}', 'Jun 2028')]);
+  });
+
+  it.each([0, 11, 2.5, '3 years'])('a stored %j is dropped through the record: card B, the 3-year default', (bad) => {
+    expect(recordCards(bad), String(bad)).toEqual([B_TEXT.replace('{due}', 'Jun 2028')]);
   });
 
   it('the record path reads a stored 5 into the plan and the reminder', () => {
