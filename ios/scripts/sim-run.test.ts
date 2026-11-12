@@ -4,10 +4,10 @@
 // macOS only (lockf, BSD stat and date): CI runs Linux, so these run locally:
 //   npx vitest run ios/scripts/sim-run.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 // SIM_RUN_SCRIPT runs these tests against another copy (how an older version was shown to fail them).
 const SCRIPT = process.env.SIM_RUN_SCRIPT ?? join(__dirname, 'sim-run.sh');
@@ -63,6 +63,27 @@ echo "{ $l 1.00 1.00 }"
 const PS = '#!/bin/bash\ncat "$FAKE/ps.txt"\n';
 
 let dir: string, fake: string, home: string, work: string;
+// T22 (2026-11-13): a sim-run that outlived its test lost its fake xcrun with the temp folder, fell
+// through PATH to the real one and listed booted devices every second for 30 minutes. So a test's PATH
+// is the fake, then tools/bin, then /bin, and no real xcrun is on it. tools/bin (one per file) holds
+// links to the few /usr/bin tools the scripts use, never /usr/bin itself, which holds the xcrun shim,
+// plus a guard xcrun (xcodebuild, simctl) that fails loudly and leaves REACHED, which afterEach checks.
+// With the test's folder gone the guard answers; with tools gone too, /bin has no xcrun at all.
+// sim-run.sh calls xcrun by name only, never by path, so nothing goes round the fake.
+let tools: string;
+const USR_BIN = ['awk', 'basename', 'cut', 'dirname', 'env', 'false', 'grep', 'head', 'lockf', 'nice', 'nohup', 'perl',
+  'sed', 'sort', 'stat', 'tail', 'tee', 'time', 'touch', 'tr', 'true', 'wc'];
+const reached = () => join(tools, 'real-xcrun-reached');
+beforeAll(() => {
+  tools = realpathSync(mkdtempSync(join(tmpdir(), 'sim-run-tools-')));
+  mkdirSync(join(tools, 'bin'));
+  for (const t of USR_BIN) symlinkSync(`/usr/bin/${t}`, join(tools, 'bin', t));
+  const guard = `#!/bin/sh\necho "$(basename "$0") $*" >> "${reached()}"\n`
+    + 'echo "sim-run.test: a real $(basename "$0") was reached ($*): its fake is gone or was bypassed (T22)" >&2\nexit 97\n';
+  for (const t of ['xcrun', 'xcodebuild', 'simctl']) writeFileSync(join(tools, 'bin', t), guard, { mode: 0o755 });
+});
+afterAll(() => rmSync(tools, { recursive: true, force: true }));
+const testPath = () => `${fake}:${join(tools, 'bin')}:/bin`;
 const setLoads = (...loads: string[]) => writeFileSync(join(fake, 'loads'), `${loads.join('\n')}\n`);
 const setPs = (lines: string[]) => writeFileSync(join(fake, 'ps.txt'), ['    1 /sbin/launchd', ...lines].join('\n') + '\n');
 const CODEX = '  101 /opt/homebrew/bin/node /Users/x/repo/tools/codex-review.mjs --base main';
@@ -88,27 +109,94 @@ beforeEach(() => {
   setPs([]);
 });
 // Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
-// Whatever a test leaves running (a failed assertion included) is released and stopped here.
-// A waiter stops at once on SIGTERM (its 0.2 s sleep runs in the background), so cleanup never
-// waits on one.
+// Whatever a test leaves running (a failed assertion or a timeout included) is released and stopped
+// here, process groups and all (sweep), before the folder goes. A waiter stops at once on SIGTERM
+// (its 0.2 s sleep runs in the background), so cleanup never waits on one.
 const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');
-  for (const { p, done } of live.splice(0)) {
+  const tracked = live.splice(0);
+  await sweep(tracked.map(({ p }) => p.pid!).filter(Boolean));
+  for (const { p, done } of tracked) {
     if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
     await done;
   }
   rmSync(dir, { recursive: true, force: true });
-});
+  if (existsSync(reached())) throw new Error(`a real xcrun was reached (T22): ${readFileSync(reached(), 'utf8')}`);
+}, 30_000); // the sweep is bounded (three passes of a 1.5 s grace), but a loaded Mac slows each ps
+
+type Proc = { pid: number; ppid: number; pgid: number; cmd: string };
+const procs = (): Proc[] => spawnSync('/bin/ps', ['-axo', 'pid=,ppid=,pgid=,command='], { encoding: 'utf8' }).stdout
+  .split('\n').flatMap((l) => {
+    const m = l.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);
+    return m ? [{ pid: +m[1], ppid: +m[2], pgid: +m[3], cmd: m[4] }] : [];
+  });
+/** Each pid's working directory (lsof), for the pids given. */
+const cwds = (pids: number[]) => {
+  const out = new Map<number, string>();
+  if (!pids.length) return out;
+  let pid = 0;
+  for (const l of spawnSync('/usr/sbin/lsof', ['-a', '-d', 'cwd', '-Fn', '-p', pids.join(',')], { encoding: 'utf8' }).stdout.split('\n')) {
+    if (l[0] === 'p') pid = Number(l.slice(1));
+    if (l[0] === 'n') out.set(pid, l.slice(1));
+  }
+  return out;
+};
+/** Every live process this test started, whatever its group or session. Seeds: a command line naming the
+ * test's folder; a sim-run.sh process (its shim, its watchdog subshell, an idle sleeper that left the
+ * session with setsid) whose working directory is the test's `work`, which every sim-run here starts in;
+ * and the tracked children (those that start a sim-run are spawned detached, so the pid stays its group's
+ * id after it dies).
+ * Then, until nothing is added: children of a found process (the watchdog's and the shim's own groups
+ * are sim-run's children) and members of a group led by one (an orphaned sim-run in a dead wrapper's
+ * group; a list call whose parent died). This process and its ancestors are never included. */
+const ours = (roots: number[]) => {
+  const rows = procs();
+  const self = new Set<number>();
+  for (let p = process.pid; p > 1 && !self.has(p); p = rows.find((r) => r.pid === p)?.ppid ?? 0) self.add(p);
+  const workDir = realpathSync(work);
+  const cwd = cwds(rows.filter((r) => !r.cmd.includes(dir) && r.cmd.includes('sim-run.sh')).map((r) => r.pid));
+  const found = new Set(rows.filter((r) => r.cmd.includes(dir) || cwd.get(r.pid) === workDir).map((r) => r.pid));
+  const leaders = new Set([...roots, ...found]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const r of rows) {
+      if (found.has(r.pid) || self.has(r.pid) || !(found.has(r.ppid) || leaders.has(r.pgid))) continue;
+      found.add(r.pid);
+      leaders.add(r.pid);
+      grew = true;
+    }
+  }
+  return rows.filter((r) => found.has(r.pid) && !self.has(r.pid));
+};
+const signal = (target: number, sig: NodeJS.Signals) => {
+  try { process.kill(target, sig); } catch (e) { if (!['ESRCH', 'EPERM'].includes((e as NodeJS.ErrnoException).code!)) throw e; }
+};
+const running = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+/** TERM every group led by one of ours (or by a tracked child) and every process of ours, then KILL
+ * what is left after 1.5 s; again, in case one forked on its way out (the shim's idle sleeper). */
+async function sweep(roots: number[]) {
+  for (let pass = 0; pass < 3; pass++) {
+    const found = ours(roots);
+    if (!found.length) return;
+    const pids = new Set(found.map((r) => r.pid));
+    const groups = new Set(found.map((r) => r.pgid).filter((g) => pids.has(g) || roots.includes(g)));
+    for (const sig of ['SIGTERM', 'SIGKILL'] as const) {
+      for (const g of groups) signal(-g, sig);
+      for (const p of pids) signal(p, sig);
+      for (const end = Date.now() + 1500; sig === 'SIGTERM' && [...pids].some(running) && Date.now() < end;) await sleep(50);
+    }
+  }
+}
 
 const env = (extra: Record<string, string> = {}) => ({
-  ...process.env, PATH: `${fake}:${process.env.PATH}`, FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
+  ...process.env, PATH: testPath(), FAKE: fake, HR_SIM_HOME: home, HR_SIM_LEASE: '',
   HR_SIM_IDLE_SECONDS: '0', HR_SIM_MAX_LOAD: '8', HR_SIM_ALLOW_SECOND: '', ALLOW_EXTRA_SIMULATOR: '', ...extra,
 });
 const run = (args: string[], extra: Record<string, string> = {}) =>
   spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8', env: env(extra), timeout: 30_000, cwd: work });
 const start = (args: string[], extra: Record<string, string> = {}) => {
-  const p = spawn('bash', [SCRIPT, ...args], { env: env(extra), cwd: work });
+  const p = spawn('bash', [SCRIPT, ...args], { env: env(extra), cwd: work, detached: true });
   let err = '';
   p.stderr.on('data', (d) => { err += d; });
   const done = new Promise<{ code: number | null; err: string }>((res) => p.on('exit', (code) => res({ code, err })));
@@ -230,7 +318,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('a caller that reruns straight after its own run does not starve a waiter queued behind it', async () => {
       // Six back-to-back runs; the waiter queues during the first and must run before the sixth.
       const chain = spawn('bash', ['-c', 'for i in 1 2 3 4 5 6; do bash "$0" -- sh -c \'echo c >> "$FAKE/order"; sleep 0.5\'; done', SCRIPT],
-        { env: env(), cwd: work });
+        { env: env(), cwd: work, detached: true });
       const chainDone = new Promise((res) => chain.on('exit', res));
       live.push({ p: chain, done: chainDone });
       await until(() => busy() && log('order') === 'c\n');
@@ -251,7 +339,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
         { mode: 0o755 });
       const h = holdLock();
       await until(busy);
-      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30', PATH: `${shim}:${fake}:${process.env.PATH}` });
+      const b = start(['--', 'true'], { HR_SIM_WAIT_SECONDS: '30', PATH: `${shim}:${testPath()}` });
       await until(() => b.err().includes('waiting up to'));
       expect(log('tries').split('\n')[0]).toMatch(new RegExp(`^waiting\\.\\d+\\.${b.p.pid}$`));
       release();
@@ -389,7 +477,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('a script that re-runs itself through sim-run (ui-test.sh\'s first line) runs once, under the lock', async () => {
       const script = join(dir, 'self.sh');
       writeFileSync(script, `#!/bin/sh\n[ "\${HR_SIM_INNER:-}" = "$$" ] || exec bash ${SCRIPT} -- "$0"\necho ran >> ${dir}/count\nuntil [ -f ${dir}/release ]; do sleep 0.1; done\n`, { mode: 0o755 });
-      const a = spawn(script, [], { env: env({ HR_SIM_INNER: '1' }), cwd: work });
+      const a = spawn(script, [], { env: env({ HR_SIM_INNER: '1' }), cwd: work, detached: true });
       const done = new Promise((res) => a.on('exit', res));
       live.push({ p: a, done });
       await until(busy);
@@ -894,7 +982,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     // R6: the watchdog's list subshell outlived it, holding sim-run's stderr open well after the lock was free.
     it('with a hung list mid-run, a reader of sim-run\'s stderr gets EOF within a few seconds of the command ending', async () => {
       const p = spawn('bash', ['-c', 'bash "$0" "$@" 2>&1 | cat', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done',
-        join(dir, 'release'), join(dir, 'started')], { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work });
+        join(dir, 'release'), join(dir, 'started')], { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
       const done = new Promise((res) => p.on('exit', res));
       live.push({ p, done });
       await until(() => existsSync(join(dir, 'started')));
@@ -940,7 +1028,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
     it('a SIGKILLed sim-run under a parent that never reaps it leaves no watchdog after a tick', async () => {
       const p = spawn('perl', ['-e', '$| = 1; my $p = fork // die; if (!$p) { exec @ARGV } print "$p\\n"; sleep 60',
         'bash', SCRIPT, '--', 'sh', '-c', 'touch "$1"; until [ -f "$0" ]; do sleep 0.1; done', join(dir, 'release'), join(dir, 'started')],
-        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work });
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
       live.push({ p, done: new Promise((res) => p.on('exit', res)) });
       let out = '';
       p.stdout.on('data', (d) => { out += d; });
@@ -968,6 +1056,40 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect(line[0]).toContain(`xcrun simctl shutdown ${OTHER}`);
       expect(line[0]).not.toContain('stopped the command');
     }, 30_000);
+  });
+
+  // T22 (2026-11-13): a sim-run outlived its test (parent pid 1), its folder and fake xcrun went, and
+  // its watchdog ran the real `simctl list devices booted` once a second until the 30-minute limit.
+  // The first test is that test: its sim-run is orphaned (the shell that started it SIGKILLed) with the
+  // watchdog ticking and a command that ignores the release file, and then the test fails. The command
+  // names the test's folder, so sim-run, its shim and its watchdog all carry it on their command lines.
+  // The second checks, after afterEach, that nothing of it is left and no real xcrun was reached.
+  describe('a test that fails mid-run leaves nothing behind (T22)', () => {
+    const killed = { dir: '', log: '', ready: false };
+    it.fails('(fails on purpose) a test fails while its orphaned sim-run and watchdog run', async () => {
+      killed.dir = dir;
+      const p = spawn('bash', ['-c', 'bash "$0" "$@"; :', SCRIPT, '--', 'sh', '-c', 'while :; do sleep 0.2; done', join(dir, 'T22')],
+        { env: env({ HR_SIM_GUARD_SECONDS: '1' }), cwd: work, detached: true });
+      live.push({ p, done: new Promise((res) => p.on('exit', res)) });
+      const ticks = () => log('xcrun.log').split('\n').filter((l) => l === 'simctl list devices booted').length;
+      await until(() => ticks() >= 3, 15_000);
+      p.kill('SIGKILL');
+      await sleep(500);
+      killed.log = log('xcrun.log');
+      killed.ready = procs().some((r) => r.ppid === 1 && r.cmd.includes(`sim-run.sh -- sh -c while :; do sleep 0.2; done ${dir}`));
+      throw new Error('a test failing mid-run');
+    }, 30_000);
+
+    it('afterEach left no process of it and no real xcrun was reached, two watchdog ticks later too', async () => {
+      expect(killed.ready).toBe(true);
+      // The watchdog's calls reached the fake, which logs each one (a real xcrun would not).
+      expect(killed.log).toContain('simctl --set testing list devices booted');
+      const named = () => procs().filter((r) => r.cmd.includes(killed.dir));
+      expect(named()).toEqual([]);
+      await sleep(2500);
+      expect(named()).toEqual([]);
+      expect(existsSync(reached())).toBe(false);
+    });
   });
 
   describe('status', () => {
