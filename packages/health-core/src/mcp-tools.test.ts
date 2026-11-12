@@ -1405,9 +1405,11 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
       expect(scrubText(detail), detail).toBe(detail);
     }
-    // With a name shortly before it, the scrub redacts the glued number; the guard still files it.
+    // The scrub redacts some glued numbers (these two); the guard still files them.
     expect(reportFeedback({ ...GOOD, detail: 'my ldl is 140ldl' }, NOW).status).toBe('ok');
     expect(scrubText('my ldl is 140ldl')).toBe('my ldl is [value]ldl');
+    expect(reportFeedback({ ...GOOD, detail: 'my 140ldl reads like my bmi' }, NOW).status).toBe('ok');
+    expect(scrubText('my 140ldl reads like my bmi')).toBe('my [value]ldl reads like my bmi');
     // One point or comma between digits, or a dot or comma right after a whole number, ends the word first.
     for (const detail of ['my 3.2ldl is wrong', 'my 3,2ldl is wrong', 'my 140.ldl is wrong', 'my 140,ldl is wrong']) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
