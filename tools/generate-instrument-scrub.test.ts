@@ -1,11 +1,12 @@
 // US-09 AC7j: instrument-scrub.mjs is generated from health-core's scrub, loads
 // with nothing installed, carries none of the catalogue's graph, and fails CI
 // when the source moves without a regeneration.
-import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import ts from 'typescript';
+import vm from 'node:vm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as vocabulary from '../packages/health-core/src/scrub-vocabulary';
 import * as browser from '../packages/health-core/src/sentry-scrub';
@@ -58,79 +59,72 @@ describe('US-09 AC7j: the generated server scrub', () => {
     expect(committed).not.toMatch(/\brequire\s*\(|\bimport\s*\(|process\.binding/);
   });
 
-  it('does nothing at load but define its lists, regexes and functions', () => {
-    expect(loadTimeWork(committed).join('\n')).toBe('');
+  it('loads in a context where every global but the allowed few is a trap, and scrubs there', () => {
+    const run = loadInVm(committed);
+    expect(run.error).toBeUndefined();
+    expect(run.reached).toEqual([]);
+    expect(run.mod.scrubText('LDL 3.2 mmol/L for a@b.co')).toBe('LDL [value] for [email]');
+    expect(run.reached).toEqual([]);
     // (The words "console" and "fetch" appear only as breadcrumb category strings.)
     expect(committed).not.toMatch(/\b(process|globalThis|console|setTimeout|setInterval|setImmediate|queueMicrotask|fetch)\s*[.([]|import\.meta/);
   });
 
+  // Each line is added to the committed text, just before its export list, and must stop the load.
   it.each([
-    ['a global call', 'var t = Date.now();'],
-    ['a new Worker', 'var w = new Worker("x");'],
-    ['a global inside a template', 'var s = `a${Date.now()}`;'],
-    ['a method on a global', 'var k = Object.keys(globalThis);'],
-    ['a bare top-level call', 'fetch("https://example.invalid");'],
-    ['a call through a local arrow that runs a global', 'var f = (() => Date.now())();'],
-  ])('the load check refuses %s', (_label, line) => {
-    expect(loadTimeWork(`${committed}\n${line}\n`)).not.toEqual([]);
+    ['a local arrow that calls Date', 'var g = () => Date.now(); var t = g();', /Date is not an allowed global/],
+    ['an array callback that calls Date', 'var t = UNITS.map(() => Date.now());', /Date is not an allowed global/],
+    ['a constructor chain to Function', 'var p = ({}).constructor.constructor("return process")();', /Code generation from strings disallowed/],
+    ['Function by name', 'var p = Function("return this")();', /Function is not an allowed global/],
+    ['a global call', 'var t = Date.now();', /Date is not an allowed global/],
+    ['a new Worker', 'var w = new Worker("x");', /Worker is not defined/],
+    ['a global inside a template', 'var s = `a${Date.now()}`;', /Date is not an allowed global/],
+    ['a method on a global', 'var k = Object.keys(globalThis);', /globalThis is not an allowed global/],
+    ['a bare top-level call', 'fetch("https://example.invalid");', /fetch is not defined/],
+    ['a call through an inline arrow', 'var f = (() => Date.now())();', /Date is not an allowed global/],
+  ])('the load check refuses %s', (_label, line, message) => {
+    expect(loadInVm(committed, line).error).toMatch(message);
   });
 });
 
+// The globals the file reaches at load, found by running it with none allowed:
+// Set, Map and RegExp build its lists and regexes; String.raw writes the email
+// pattern; Symbol, Proxy and Object build the stand-in catalogue.
+const ALLOWED_GLOBALS = ['Map', 'Object', 'Proxy', 'RegExp', 'Set', 'String', 'Symbol'];
+
+/** Replaces every configurable global outside `allow` with a getter that records and throws. */
+const TRAP = `(function trapGlobals(allow, record) {
+  const g = globalThis, O = Object;
+  for (const name of O.getOwnPropertyNames(g)) {
+    if (allow.includes(name) || !O.getOwnPropertyDescriptor(g, name).configurable) continue;
+    O.defineProperty(g, name, { get() { return record(name); }, configurable: false });
+  }
+})`;
+
 /**
- * What a module runs at load beyond defining things: every top-level statement
- * must be a function, the export list or a `var` whose initialiser is a
- * literal, an array or object literal of those, a template of those, an arrow
- * or function (not called), new Set/Map/RegExp, String.raw, Symbol.iterator, a
- * call to a function declared in the file, or a method call on a value made
- * in the file (a chain of them too). Returns the offending source text.
+ * Runs the file's own text in a fresh vm context: its module body, then its
+ * export list as a return value, with `inject` just before it. Every global
+ * but ALLOWED_GLOBALS is a trap (only undefined, NaN and Infinity, which cannot
+ * be redefined, stay), a name the context lacks is a ReferenceError, and code
+ * generation from strings is off, so Function reached through a constructor
+ * chain cannot compile either.
  */
-function loadTimeWork(source: string): string[] {
-  const file = ts.createSourceFile('m.mjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  const declared = new Set<string>();
-  const functions = new Set<string>();
-  for (const s of file.statements) {
-    if (ts.isFunctionDeclaration(s) && s.name) { declared.add(s.name.text); functions.add(s.name.text); }
-    if (ts.isVariableStatement(s)) {
-      for (const d of s.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name)) continue;
-        declared.add(d.name.text);
-        if (d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) functions.add(d.name.text);
-      }
-    }
-  }
-  const ok = (n: ts.Node): boolean => {
-    if (ts.isStringLiteral(n) || ts.isNumericLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isRegularExpressionLiteral(n)) return true;
-    if ([ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)) return true;
-    if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return true;
-    if (ts.isIdentifier(n)) return declared.has(n.text) || n.text === 'undefined';
-    if (ts.isParenthesizedExpression(n) || ts.isSpreadElement(n)) return ok(n.expression);
-    if (ts.isPrefixUnaryExpression(n)) return ok(n.operand);
-    if (ts.isBinaryExpression(n)) return ok(n.left) && ok(n.right);
-    if (ts.isConditionalExpression(n)) return ok(n.condition) && ok(n.whenTrue) && ok(n.whenFalse);
-    if (ts.isTemplateExpression(n)) return n.templateSpans.every((s) => ok(s.expression));
-    if (ts.isArrayLiteralExpression(n)) return n.elements.every(ok);
-    if (ts.isObjectLiteralExpression(n)) {
-      return n.properties.every((p) => (ts.isShorthandPropertyAssignment(p) ? declared.has(p.name.text)
-        : ts.isPropertyAssignment(p) && (!ts.isComputedPropertyName(p.name) || ok(p.name.expression)) && ok(p.initializer)));
-    }
-    if (ts.isPropertyAccessExpression(n)) return n.getText() === 'Symbol.iterator';
-    if (ts.isNewExpression(n)) return ts.isIdentifier(n.expression) && ['Set', 'Map', 'RegExp'].includes(n.expression.text) && (n.arguments ?? []).every(ok);
-    if (ts.isTaggedTemplateExpression(n)) return n.tag.getText() === 'String.raw' && ok(n.template);
-    if (ts.isCallExpression(n)) {
-      const callee = n.expression;
-      const own = ts.isIdentifier(callee) ? functions.has(callee.text)
-        : ts.isPropertyAccessExpression(callee) && ok(callee.expression); // a method on a value the file made
-      return own && n.arguments.every(ok);
-    }
-    return false;
+function loadInVm(source: string, inject = '') {
+  const reached: string[] = [];
+  const record = (name: string) => {
+    reached.push(name);
+    throw new Error(`${name} is not an allowed global`);
   };
-  const bad: string[] = [];
-  for (const s of file.statements) {
-    if (ts.isFunctionDeclaration(s) || (ts.isExportDeclaration(s) && !s.moduleSpecifier)) continue;
-    if (ts.isVariableStatement(s) && s.declarationList.declarations.every((d) => !d.initializer || ok(d.initializer))) continue;
-    bad.push(s.getText().slice(0, 120));
+  const ctx = vm.createContext({}, { codeGeneration: { strings: false, wasm: false } });
+  vm.runInContext(TRAP, ctx)(ALLOWED_GLOBALS, record);
+  const at = source.lastIndexOf('\nexport {');
+  const exportList = source.slice(at + '\nexport '.length).replace(/;\s*$/, '');
+  expect(exportList, 'the export list is plain names').toMatch(/^\{[\s\w,]*\}$/);
+  try {
+    const mod = vm.runInContext(`(function () {\n${source.slice(0, at)}\n${inject}\nreturn ${exportList};\n})()`, ctx);
+    return { mod, reached, error: undefined };
+  } catch (error) {
+    return { mod: undefined, reached, error: String((error as Error)?.message ?? error) };
   }
-  return bad;
 }
 
 describe('US-09 AC7j: it loads with nothing installed', () => {
@@ -188,8 +182,20 @@ describe('US-09 AC7j: the stand-in catalogue fails closed', () => {
     ['LAB_CATALOG read once more', edit(LABEL_READ, `...LAB_CATALOG.flatMap((entry) => entry.aliases), ${LABEL_READ}`), /LAB_CATALOG\[flatMap\] \(once more\)/],
     ['LAB_CATALOG read another way', edit(LABEL_READ, `...LAB_CATALOG.map((entry) => entry.key), ${LABEL_READ}`), /LAB_CATALOG\[map\]/],
     ['CATALOG_UNITS spread twice', edit('  ...CATALOG_UNITS,', '  ...CATALOG_UNITS,\n  ...CATALOG_UNITS,'), /CATALOG_UNITS\[Symbol\(Symbol\.iterator\)\] \(once more\)/],
+    ['Object.values(LAB_CATALOG)', edit(LABEL_READ, `...Object.values(LAB_CATALOG), ${LABEL_READ}`), /LAB_CATALOG \(ownKeys\)/],
+    ['"in" on LAB_CATALOG', edit(LABEL_READ, `...('flatMap' in LAB_CATALOG ? [] : []), ${LABEL_READ}`), /LAB_CATALOG \(has\)/],
   ])('%s makes generation fail', async (_label, vocabularySource, message) => {
     await expect(generate({ vocabularySource })).rejects.toThrow(message);
+  });
+});
+
+describe('US-09 AC7j: TEST_ONLY_VOCABULARY stays test-only', () => {
+  it('no tracked non-test source names it but the generated file and its generator', () => {
+    const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, maxBuffer: 1 << 26 }).toString().split('\0');
+    const users = tracked
+      .filter((f) => /\.(ts|tsx|js|mjs|cjs|jsx|swift)$/.test(f) && !/\.test\.|(^|\/)tests?\//.test(f) && existsSync(join(ROOT, f)))
+      .filter((f) => readFileSync(join(ROOT, f), 'utf8').includes('TEST_ONLY_VOCABULARY'));
+    expect(users.sort()).toEqual(['instrument-scrub.mjs', 'tools/generate-instrument-scrub.mjs']);
   });
 });
 

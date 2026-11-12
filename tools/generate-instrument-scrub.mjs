@@ -80,8 +80,14 @@ const METRIC_WORDS = ${list(metricWords)};
 const refuse = (read) => {
   throw new Error(\`instrument-scrub stand-in catalogue: \${read} is a read scrub-vocabulary.ts did not make when the stand-in was written; update tools/generate-instrument-scrub.mjs\`);
 };
+// Every trap but get refuses: listing keys, testing "in", reading a descriptor
+// or the prototype would otherwise see an empty object and say nothing.
+const OTHER_TRAPS = ["ownKeys", "has", "getOwnPropertyDescriptor", "getPrototypeOf", "setPrototypeOf", "isExtensible",
+  "preventExtensions", "defineProperty", "deleteProperty", "set"];
 function standIn(name, reads) {
+  const handler = Object.fromEntries(OTHER_TRAPS.map((trap) => [trap, () => refuse(\`\${name} (\${trap})\`)]));
   return new Proxy({}, {
+    ...handler,
     get(_, prop) {
       const read = reads.get(prop);
       if (!read || read.left === 0) refuse(\`\${name}[\${String(prop)}]\${read ? " (once more)" : ""}\`);
