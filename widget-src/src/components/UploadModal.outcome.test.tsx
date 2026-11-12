@@ -152,6 +152,17 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
   });
 
+  // US-12 AC9 H65: the server sends busy only on a batch today; a single file read as busy says the same words.
+  it('US-12 AC9 H65: a single file the server calls busy gets the busy notice, counted as a server error', async () => {
+    vi.mocked(labImport).mockImplementation(async pages => (
+      pages[0].content === 'busy.pdf' ? { result: null, error: 'Server busy. Please try again later.', errorCode: 'busy' } : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('busy.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('busy.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
+  });
+
   // US-15 AC34: Haiku 5.5 can decline a file or stop at its token cap, and the
   // same request stops the same way again: neither says "try again".
   it.each([true, false])('says a declined file and a too-long one will not read on a retry (Shopify build: %s)', async shopify => {

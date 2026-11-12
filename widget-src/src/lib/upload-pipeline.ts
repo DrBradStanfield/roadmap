@@ -186,13 +186,17 @@ function readResult(fileName: string, result: LabImportResult, notices: FileNoti
   return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
 }
 
+/** A file the server refused as busy (US-12 AC9): a server error, never the daily limit. */
+export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
+
 /** The notice for a file's own error code; anything else is a server error. */
 const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
 
 /** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
 function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
-  const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
-  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text: keyError });
+  const text = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}`
+    : errorCode === 'busy' ? BUSY_NOTICE_TEXT : undefined;
+  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text });
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
 }
 
