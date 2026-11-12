@@ -49,7 +49,10 @@ function runHook(cwd: string, command: string) {
 describe('git push guard, as .claude/settings.json runs it', () => {
   let scratch: string;
   beforeAll(() => {
-    scratch = mkdtempSync(join(tmpdir(), 'push-guard-'));
+    // The hook input holds the cwd. A folder named after a gate word would send every payload to the guard and hide
+    // a word missing from the settings gate, so the folder name holds none of them.
+    scratch = mkdtempSync(join(tmpdir(), 'hook-wiring-'));
+    expect(scratch).not.toMatch(/push|merge|refs\/heads\/main|updateRef/);
   });
   afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
@@ -71,6 +74,68 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     expect(r.stderr).toBe('');
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe('deny');
     expect(runHook(scratch, 'gh pr merge 415 --merge --match-head-commit abc1234').stdout).toBe('');
+  });
+
+  // US-64 AC5: a plain write to main's ref through `gh api` is refused. These commands hold neither "push" nor
+  // "merge", so the settings wiring must still send them to the guard (the shell test pipes straight into the guard).
+  it('reaches the guard for a plain gh api write to main, which holds no "push" or "merge" (US-64 AC5)', () => {
+    for (const cmd of [
+      'gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -XPATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api --method PATCH -f sha=abc1234 repos/o/r/git/refs/heads/main',
+      'gh api repos/o/r/git/refs/heads/main --method=PATCH -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --field sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --raw-field sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --field=sha=abc1234',
+      'gh api -X GET -X PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X PATCH repos/o/r/git/refs/heads/main',
+      'gh api -X POST repos/o/r/git/refs/heads/main',
+      'gh api -X PUT repos/o/r/git/refs/heads/main',
+      'gh api -X DELETE repos/o/r/git/refs/heads/main',
+      'gh api -XDELETE repos/o/r/git/refs/heads/main',
+      'gh api repos/o/r/git/refs/heads/main --method=DELETE',
+      'gh api -X delete repos/o/r/git/refs/heads/main',
+      // Any field is a write, whatever method is given (as on main). gh flags that take a value swallow the next
+      // word even when it starts with "-", so a GET spelling there is that flag's value, not the method, and gh sends
+      // its default POST because fields are present.
+      'gh api -f --method=GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -p --method=GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -t -XGET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main -f sha=abc1234 -H -XHEAD',
+      'gh api --jq --method GET repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api repos/o/r/git/refs/heads/main --input -XGET',
+      // A GET or HEAD with fields is refused too: the simplest rule, and nothing needs it against main's ref.
+      'gh api -X GET repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api repos/o/r/git/refs/heads/main --method=GET -F per_page=1',
+      'gh api -XHEAD repos/o/r/git/refs/heads/main -f per_page=1',
+      'gh api --method HEAD repos/o/r/git/refs/heads/main -F per_page=1',
+      'gh api -X GET -X OPTIONS repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X get repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X=PATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X GET -iXPATCH repos/o/r/git/refs/heads/main -f sha=abc1234',
+      'gh api -X XPATCH repos/o/r/git/refs/heads/main',
+      'gh api -XGETX repos/o/r/git/refs/heads/main -f sha=abc1234',
+      "gh api graphql -f query='mutation { updateRef(input: {}) { clientMutationId } }'",
+      "gh api graphql -f query='mutation M { updateRef(input: {}) { clientMutationId } }'",
+      "gh api graphql -f query='mutation { updateRefs(input: {}) { clientMutationId } }'",
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).not.toBe('');
+      expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, cmd).toBe('deny');
+    }
+    // A read of main's ref with no field stays allowed, and so does a DELETE of another branch.
+    for (const cmd of [
+      'gh api repos/o/r/git/refs/heads/main',
+      'gh api -X GET repos/o/r/git/refs/heads/main',
+      'gh api repos/o/r/git/refs/heads/main --method=GET --jq .object.sha',
+      'gh api -X DELETE repos/o/r/git/refs/heads/feature',
+    ]) {
+      const r = runHook(scratch, cmd);
+      expect(r.stderr, cmd).toBe('');
+      expect(r.stdout, cmd).toBe('');
+    }
   });
 
   it('settings.json allows exactly the reviewed merge form and denies the four flags (US-64 AC5)', () => {
