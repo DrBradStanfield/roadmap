@@ -183,7 +183,7 @@ describe('US-12 AC17: one IP may send as many files a day as one upload takes', 
     expect(full.status).toBe(200);
     const over = await action({ request: many(1, '10.2.0.2') } as never);
     expect(over.status).toBe(429);
-    expect(await over.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' });
+    expect(await over.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' });
   });
 });
 
@@ -570,7 +570,7 @@ describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload 
     method: 'POST', headers: { 'fly-client-ip': ip },
     body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
   });
-  const limit = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+  const limit = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' };
 
   it('reads at most 64 KB of an upload from an IP that has used its 200 files', async () => {
     expect((await action({ request: many(200, '10.5.0.1') } as never)).status).toBe(200);
@@ -645,5 +645,43 @@ describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload 
       expect(res.status).toBe(200);
       expect(createBatch).toHaveBeenCalledTimes(1);
     } finally { machineFiles.reset(); }
+  });
+});
+
+// US-12 AC9 (H65): every daily-limit 429 says so with a code, so the browser
+// never mistakes a busy server for the limit. The words stay byte-identical.
+describe('US-12 AC9 H65: the daily limit carries code daily_limit', () => {
+  const KB = 1024;
+  const DAILY = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' };
+  const spend = (ip: string) => action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': ip },
+    body: JSON.stringify({ batch: true, files: Array.from({ length: 200 }, () => FILES[0]) }),
+  }) } as never);
+
+  it('an over-quota batch', async () => {
+    expect((await spend('10.6.0.1')).status).toBe(200);
+    const res = await action({ request: post('10.6.0.1') } as never);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual(DAILY);
+  });
+
+  it('an over-quota single file', async () => {
+    expect((await spend('10.6.0.2')).status).toBe(200);
+    const res = await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+      method: 'POST', headers: { 'fly-client-ip': '10.6.0.2' }, body: JSON.stringify({ pages: FILES[0].pages, unitSystem: 'si' }),
+    }) } as never);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual(DAILY);
+    expect(extractOrClassify).not.toHaveBeenCalled();
+  });
+
+  it('an AC17b body over 64 KB on a spent day', async () => {
+    expect((await spend('10.6.0.3')).status).toBe(200);
+    const { request } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
+      headers: { 'fly-client-ip': '10.6.0.3', 'content-length': String(65 * KB) },
+    });
+    const res = await action({ request } as never);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual(DAILY);
   });
 });

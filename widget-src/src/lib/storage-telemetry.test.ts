@@ -267,6 +267,11 @@ describe('cloud-storage telemetry boundary', () => {
     expect(JSON.stringify(scrubbed)).not.toContain(marker);
   });
 
+  // US-12 AC9 H65: a busy batch counts as a server error, so only this tag tells it apart.
+  it.each(['busy', 'rate_limit'])('keeps the upload error code %s', uploadErrorCode => {
+    expect(scrubEvent({ type: undefined, tags: { feature: 'upload', uploadErrorCode } })!.tags).toEqual({ feature: 'upload', uploadErrorCode });
+  });
+
   it('prevents storage request paths reaching an unrelated later event', async () => {
     Sentry.addBreadcrumb({ category: 'console', message: marker, data: { arguments: [marker] } });
     for (const url of [

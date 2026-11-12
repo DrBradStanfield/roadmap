@@ -404,6 +404,18 @@ describe('US-12 AC9: the batch path (20+ files) names each file by its own resul
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 20, limitError: 20, serverError: 0 })]);
   });
 
+  // US-12 AC9/AC10 (H65): a busy server is not the daily limit, in words or in the count.
+  it('US-12 AC9 H65: a busy batch is not the daily limit', async () => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'Server busy. Please try again later.', errorCode: 'busy' });
+    render_(); pick(...twenty());
+    await screen.findByText('Server busy. Please try again later.');
+    expect(reasonFor('r0.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    expect(reasonFor('r19.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    expect(screen.queryByText(/daily upload limit/i)).toBeNull();
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()).toEqual([expect.objectContaining({ picked: 20, serverError: 20, limitError: 0 })]);
+  });
+
   it('names every unread file with a server error when the poll fails, and a file that would not open only once', async () => {
     extractFromPdf.mockImplementation(async (f: File) => {
       if (f.name === 'r1.pdf') throw new Error('PasswordException');
@@ -607,6 +619,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
 describe('US-12 AC9: the Shopify build keeps its server wording', () => {
   it.each([
     ['rate_limit', 'Daily upload limit reached. You can upload more tomorrow.'],
+    ['busy', 'Server busy. Please try again later.'],
     ['server_error', 'Something went wrong on the server. Please try again.'],
     ['network', 'Network error. Please check your connection and try again.'],
   ] as const)('a whole run that fails with %s says so on the error screen', async (errorCode, text) => {
