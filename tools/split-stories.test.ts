@@ -339,6 +339,16 @@ describe('--normalize fixes the shape of a split tree, never its content (US-64 
     writeFileSync(join(dir, 'docs/user-stories.md'), `${before.index}\n=======\n`);
     expect(shapeReport(dir)).toMatch(/^docs\/user-stories\.md line \d+ is a conflict marker: "======="/);
   });
+
+  it('catches a diff3 base marker (`|||||||`) in a part, in --normalize and the standing check (US-64 AC33)', () => {
+    writeFileSync(part('US-02.md'), '### US-02 · Two\n- AC1 two\n||||||| merged common ancestors\n- AC1 zwei\n');
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('docs/stories/US-02.md line 3 is a conflict marker: "||||||| merged common ancestors"');
+    expect(files(dir)).toEqual(before);
+    expect(shapeReport(dir)).toContain('docs/stories/US-02.md line 3 is a conflict marker: "||||||| merged common ancestors"');
+  });
 });
 
 describe('writing into a repo that already holds parts (the PR 3 rebase path)', () => {
