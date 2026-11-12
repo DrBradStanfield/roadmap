@@ -40,10 +40,13 @@ function panel(screenings: Record<string, string>) {
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
     hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 60 }, grading: {},
   };
-  const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
+  const view = (s: Record<string, string>) => <InputPanel {...({ ...props, screenings: rows(s) } as unknown as Parameters<typeof InputPanel>[0])} />;
+  const { container, rerender } = render(view(screenings));
   const select = container.querySelector<HTMLSelectElement>('select#colorectal-followup-interval');
   const label = container.querySelector('label[for="colorectal-followup-interval"]')?.textContent;
-  return { select, label, onScreeningChange };
+  /** New stored answers into the SAME mounted panel: any state a field kept of its own survives this. */
+  const update = (s: Record<string, string>) => rerender(view(s));
+  return { select, label, onScreeningChange, update };
 }
 
 const DONE = {
@@ -158,19 +161,25 @@ describe('US-07 AC1j: the colonoscopy date picker stays on or after the last scr
   });
 
   it('stale draft: a later last date leaves no partial follow-up; the follow-up then offers only months from it', () => {
-    const run = live({ ...STORED, colorectal_last_date: '2024-05', colorectal_followup_date: '' });
+    // The person uses the follow-up picker first (a pick the store has not kept), then changes the last date. The
+    // panel stays mounted, so a picker holding a draft of its own would still show 2024-07, before the new min.
+    const start = { ...STORED, colorectal_last_date: '2024-05', colorectal_followup_date: '' };
+    const { onScreeningChange, update } = panel(start);
+    const followup = () => select('colorectal_followup_date')!;
     expect(offered('colorectal_followup_date').at(-1)).toBe('2024-05');
+    followup().focus();
+    fireEvent.change(followup(), { target: { value: '2024-07' } });
     fireEvent.change(select('colorectal_last_date')!, { target: { value: '2025-08' } });
-    expect(run.writes).toEqual([['colorectal_last_date', '2025-08']]);
-    run.sync();
-    expect(select('colorectal_followup_date')!.value).toBe('');
+    expect(onScreeningChange.mock.calls).toEqual([['colorectal_followup_date', '2024-07'], ['colorectal_last_date', '2025-08']]);
+    update({ ...start, colorectal_last_date: '2025-08' });
+    expect(followup().value).toBe('');
     const months = offered('colorectal_followup_date');
     expect(months.at(-1)).toBe('2025-08');
-    expect(months.every(m => m >= '2025-08')).toBe(true);
-    fireEvent.change(select('colorectal_followup_date')!, { target: { value: '2025-09' } });
-    expect(run.writes).toEqual([['colorectal_last_date', '2025-08'], ['colorectal_followup_date', '2025-09']]);
-    run.sync();
+    expect(months.every(m => /^\d{4}-\d{2}$/.test(m) && m >= '2025-08')).toBe(true);
+    expect(months).not.toContain('2024-07');
     expect(select('colorectal-result')!.value).toBe('abnormal');
+    fireEvent.change(followup(), { target: { value: '2025-09' } });
+    expect(onScreeningChange.mock.calls.slice(2)).toEqual([['colorectal_followup_date', '2025-09']]);
   });
 
   it('F1: correcting the last date from 2025-11 to 2026-01 is one write of 2026-01; the result never blanks', () => {
