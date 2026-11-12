@@ -52,8 +52,9 @@ function fakeHost(store: MemoryAdapter, device: Device) {
   const host = {
     tier: 'cloud',
     store,
-    clearOffFileData: (keep: ReadonlySet<string>) => {
-      if (!owns()) { device.screenDrops += 1; return; }
+    // `storage`: whether the stored data is owed a clear (the live key); a tab owed only a screen drop drops it.
+    clearOffFileData: (keep: ReadonlySet<string>, storage = true) => {
+      if (!owns() || !storage) { device.screenDrops += 1; return; }
       clears.calls += 1;
       if (clears.failing) throw new Error('clear refused');
       device.kept.clear();
@@ -79,7 +80,8 @@ function fakeHost(store: MemoryAdapter, device: Device) {
       opened: () => {},
     },
   } as unknown as RecordHost;
-  return { host, device, clears, reports };
+  const mirror = { cloud: mirrorCloud, pending: () => pending, mark: () => { pending = true; } };
+  return { host, device, clears, reports, mirror };
 }
 
 const weight = (id: string, day: string) =>
@@ -476,6 +478,56 @@ describe('US-11 AC6: two tabs of one device on one record', () => {
     expect(fake.device.key).toEqual({ lineage: id, erase: e2 });
     await RecordSession.open(fake.host);
     expect(fake.device.key).toEqual({ lineage: id, erase: e2 });
+  });
+});
+
+describe('US-11 AC6: stored data is cleared up to the kept erase; each tab drops its screen on a later erase than it has seen', () => {
+  it('two owner tabs at E2: X takes E3 in and clears; a draft typed in X is stored; Y taking E3 in late drops its screen only', async () => {
+    const { other, fake: x, cloud, id } = await cloudAtEpoch(2);
+    const tabX = await RecordSession.open(x.host);
+    const y = fakeHost(provider(cloud, id), x.device);
+    const tabY = await RecordSession.open(y.host);
+    later();
+    expect((await other.erase()).success).toBe(true);
+    later();
+    expect(await tabX.refreshFromRemote()).toBe(true);
+    expect(x.clears.calls).toBe(1);
+    const e3 = tabX.eraseIdentity;
+    expect(epoch(e3)).toBe(3);
+    expect(x.device.key).toEqual({ lineage: id, erase: e3 });
+
+    x.device.drafts.set('vitals', 'typed-in-x-after-e3'); // stored by X, for the record at E3
+    const dropsBefore = x.device.screenDrops;
+    expect(await tabY.refreshFromRemote()).toBe(true);
+    expect(tabY.eraseIdentity).toBe(e3);
+    expect(y.clears.calls).toBe(0);
+    expect(x.device.screenDrops).toBe(dropsBefore + 1);
+    expect([...x.device.drafts]).toEqual([['vitals', 'typed-in-x-after-e3']]);
+    expect(x.device.key).toEqual({ lineage: id, erase: e3 });
+  });
+});
+
+describe('US-11 AC6: an erase made in this tab whose clear does not read back', () => {
+  it('still wipes the device copy and its marker, keeps the key at the old erase, reports it once, and says nothing raw', async () => {
+    const { fake, session, id } = await cloudAtEpoch(1);
+    const before = fake.device.key;
+    offFileData(fake.device);
+    fake.mirror.cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(session.file), version: 1 });
+    fake.mirror.mark();
+    fake.clears.leavesDraft = true;
+    later();
+    const result = await session.erase();
+    expect(result.success).toBe(true);
+    expect(result.success && result.warning).toBeFalsy();
+    expect(fake.mirror.cloud.files.size).toBe(0);
+    expect(fake.mirror.pending()).toBe(false);
+    expect(fake.device.key).toEqual(before);
+    expect(fake.reports).toEqual([{ op: 'clear-off-file', repeat: false }]);
+
+    fake.clears.leavesDraft = false;
+    await RecordSession.open(fake.host);
+    cleared(fake.device);
+    expect(fake.device.key).toEqual({ lineage: id, erase: session.eraseIdentity });
   });
 });
 

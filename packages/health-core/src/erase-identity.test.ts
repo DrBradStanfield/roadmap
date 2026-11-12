@@ -22,7 +22,9 @@ describe('eraseLater (US-11 AC6)', () => {
     ['the same epoch, the record has none', at(0, null), at(0, null), false],
     ['the same epoch, an erasedAt over none', at(1, T1), at(1, null), true],
     ['the same epoch, none over an erasedAt', at(1, null), at(1, T1), false],
-    ['the same instant spelled with an offset', at(1, '2026-10-21T11:00:00.000+01:00'), at(1, T1), false],
+    // As the merge orders a tie (merge.ts laterErase): the larger string of one instant is the later.
+    ['the same instant spelled with an offset, the larger string', at(1, '2026-10-21T11:00:00.000+01:00'), at(1, T1), true],
+    ['the same instant spelled with an offset, the smaller string', at(1, T1), at(1, '2026-10-21T11:00:00.000+01:00'), false],
     ['a kept identity that is not JSON', at(0, null), 'garbage', true],
     ['a kept identity of the wrong shape', at(0, null), '{"epoch":3}', true],
     ['a kept identity with a non-number epoch', at(0, null), '["3",null]', true],
@@ -53,6 +55,12 @@ describe('clearOwed (US-11 AC6)', () => {
     ['an empty cleared-for identity', at(5, T2), '', false],
     ['a cleared-for identity of the wrong shape', at(5, T2), '{"epoch":3}', false],
     ['neither can be read', 'garbage', 'garbage', false],
+    // A same-epoch tie, ordered as the merge orders it (merge.ts laterErase).
+    ['the same instant, Z over +00:00 (the larger string)', at(2, '2026-10-21T10:00:00.000Z'), at(2, '2026-10-21T10:00:00.000+00:00'), true],
+    ['the same instant, +00:00 over Z (the smaller string)', at(2, '2026-10-21T10:00:00.000+00:00'), at(2, '2026-10-21T10:00:00.000Z'), false],
+    ['two times that are no instant, the larger string', at(2, 'b-not-a-time'), at(2, 'a-not-a-time'), true],
+    ['two times that are no instant, the smaller string', at(2, 'a-not-a-time'), at(2, 'b-not-a-time'), false],
+    ['the same time that is no instant', at(2, 'not-a-time'), at(2, 'not-a-time'), false],
   ])('%s', (_case, record, clearedFor, owed) => {
     expect(clearOwed(record, clearedFor)).toBe(owed);
   });
