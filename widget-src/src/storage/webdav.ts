@@ -18,11 +18,11 @@
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
-const CONFIG_KEY = 'health_roadmap_selfhost';
+export const CONFIG_KEY = 'health_roadmap_selfhost';
 /** A document read or upload gets Drive's upload cap: a large original on a
  *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
 const DOCUMENT_TIMEOUT_MS = 300_000;
@@ -35,7 +35,7 @@ export interface WebDavConfig {
 }
 
 function loadConfig(): WebDavConfig | null {
-  return getJson<WebDavConfig>(CONFIG_KEY);
+  return getSignIn<WebDavConfig>(CONFIG_KEY);
 }
 
 /** UTF-8-safe Basic credential (handles non-ASCII passwords). */
@@ -48,8 +48,9 @@ export class WebDavAdapter implements StorageAdapter {
   readonly label = 'Self-host (WebDAV)';
   private config: WebDavConfig | null;
 
-  /** First connect: pass the config. Reconnect: omit, loads from storage. */
-  constructor(config?: WebDavConfig) {
+  /** First connect: pass the config. Reconnect: omit, loads from storage.
+   *  `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
+  constructor(config?: WebDavConfig, readonly gen: LogOffId = logOffId()) {
     this.config = config ?? loadConfig();
   }
 
@@ -71,7 +72,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`);
     }
-    setJson(CONFIG_KEY, this.config);
+    setSignIn(CONFIG_KEY, this.config, this.gen);
   }
 
   async disconnect(): Promise<void> {

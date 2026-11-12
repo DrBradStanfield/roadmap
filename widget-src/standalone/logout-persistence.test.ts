@@ -276,7 +276,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
       vi.stubGlobal('localStorage', makeStorage('health_roadmap_local_erase_generation'));
       localStorage.setItem(UNRELATED_KEY, 'keep');
       for (const [key, value] of Object.entries(seeded)) localStorage.setItem(key, value);
-      connect.rememberBackend(backend);
+      localStorage.setItem(connect.BACKEND_KEY, backend);
       const { Sentry } = await import('../src/lib/sentry');
       await connect.logOff(backend);
       for (const key of Object.keys(seeded)) expect(localStorage.getItem(key)).toBeNull();
@@ -367,7 +367,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
 
     await connect.logOff('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
-    expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual([]);
+    expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual(['health_roadmap_log_off_id']); // the id stays; no signal does
     // Its failed cloud save does not mirror the record back on-device.
     store.addMeasurement('weight', 81, '2026-01-01');
     cloud.fail = true;

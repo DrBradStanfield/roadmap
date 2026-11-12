@@ -31,7 +31,7 @@ vi.mock('./connect', () => ({
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
   connectRefusal: () => null,
-  rememberBackend: vi.fn(),
+  rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
   // Runs the action at once, inside the click, as the real one does up to its first await.
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),

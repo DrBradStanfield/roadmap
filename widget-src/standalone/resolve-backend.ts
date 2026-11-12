@@ -9,7 +9,7 @@ import { googleDriveConfig } from './google-config';
 import {
   connectRefusal,
   liftLocalInto,
-  rememberBackend,
+  rememberSignIn,
   reportConnectFailure,
   resolveRemembered,
   type ResolvedBackend,
@@ -32,9 +32,10 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   } catch (error) {
     refused = reportConnectFailure(error, 'dropbox');
   }
-  if (resumed) {
+  // Lifted only once its sign-in is saved under the log-off id it began
+  // under (US-09 AC45); otherwise the page opens as if nothing was tried.
+  if (resumed && rememberSignIn('dropbox', resumed.gen)) {
     await liftLocalInto(resumed, 'dropbox');
-    rememberBackend('dropbox');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
     return { resolved: { adapter: resumed, backend: 'dropbox' } };
   }
@@ -47,9 +48,8 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   } catch (error) {
     refused = connectRefusal(error) ?? reportConnectFailure(error, 'google-drive');
   }
-  if (gdResumed) {
+  if (gdResumed && rememberSignIn('google-drive', gdResumed.gen)) {
     await liftLocalInto(gdResumed, 'google-drive');
-    rememberBackend('google-drive');
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
     return { resolved: { adapter: gdResumed, backend: 'google-drive' } };
   }

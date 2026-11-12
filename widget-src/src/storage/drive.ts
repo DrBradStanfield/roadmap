@@ -28,8 +28,8 @@ import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catch
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply } from './drive-token-reply';
-import { getJson, setJson, safeRemoveItem } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
@@ -40,8 +40,8 @@ export interface GoogleDriveConfig {
   exchangeUrl: string;
 }
 
-const CONFIG_KEY = 'health_roadmap_gdrive';
-const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
+export const CONFIG_KEY = 'health_roadmap_gdrive';
+export const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 /** Drive has no long-poll for a browser (its push channels need a public
@@ -244,9 +244,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /** The record's copies as last found or made, winner first (US-10 AC4a). */
   private readonly recordIds = new Set<string>();
 
-  constructor(private readonly config: GoogleDriveConfig) {
-    this.stored = getJson<Stored>(CONFIG_KEY);
-    this.tokens = getJson<DriveTokens>(TOKENS_KEY);
+  constructor(private readonly config: GoogleDriveConfig, readonly gen: LogOffId = logOffId()) {
+    this.stored = getSignIn<Stored>(CONFIG_KEY);
+    this.tokens = getSignIn<DriveTokens>(TOKENS_KEY);
     // One-time normalization: fold the legacy single-file `fileId` slot into
     // the per-name map so every cache access is a uniform map read.
     if (this.stored?.fileId && !this.stored.fileIds?.[ROADMAP_FILE_NAME]) {
@@ -254,7 +254,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         ...this.stored,
         fileIds: { ...(this.stored.fileIds ?? {}), [ROADMAP_FILE_NAME]: this.stored.fileId },
       };
-      setJson(CONFIG_KEY, this.stored);
+      setSignIn(CONFIG_KEY, this.stored, this.gen);
     }
     // The record id this browser saved last: a reload inside Drive's search
     // lag still finds the record, and never creates a second one (US-10 AC4a).
@@ -281,7 +281,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const challenge = await deriveCodeChallenge(verifier);
     const state = generateState();
     try {
-      sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+      sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state, this.gen));
     } catch {
       throw new StorageError('Cannot start Google sign-in: session storage is blocked.');
     }
@@ -334,16 +334,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
       timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
     const json = await codeGrantReply(res);
-    setJson(TOKENS_KEY, {
+    const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
+    const saved = setSignIn(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
       expiresAt: expiry(json.expiresIn),
-    } satisfies DriveTokens);
-    const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
-    setJson(CONFIG_KEY, { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored);
+    } satisfies DriveTokens, claimed.gen) && setSignIn(CONFIG_KEY, { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored, claimed.gen);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return new GoogleDriveAdapter(config);
+    return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
   }
 
   /**
@@ -354,7 +353,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const token = await this.acquireViaGis();
     this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt });
     this.stored = this.stored ?? {};
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
   }
 
   /**
@@ -390,7 +389,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
     if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
       this.stored = { ...this.stored, accountEmail };
-      setJson(CONFIG_KEY, this.stored);
+      setSignIn(CONFIG_KEY, this.stored, this.gen);
     }
     this.saveTokens({
       accessToken: json.accessToken,
@@ -408,7 +407,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * is never adopted (US-09 AC2f).
    */
   private grantMoved(startedFrom: string): boolean {
-    if (getJson<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
+    if (getSignIn<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
     this.tokens = null;
     return true;
   }
@@ -568,7 +567,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private saveTokens(tokens: DriveTokens): void {
     this.tokens = tokens;
-    setJson(TOKENS_KEY, tokens);
+    setSignIn(TOKENS_KEY, tokens, this.gen);
   }
 
   private clearTokens(): void {
@@ -596,7 +595,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private forgetFileId(fileName: string): void {
     const { [fileName]: _gone, ...rest } = this.stored?.fileIds ?? {};
     this.stored = { ...(this.stored ?? {}), fileIds: rest };
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
   }
 
   /** Cache the record's winner for the next page load. */
@@ -611,7 +610,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       ...(this.stored ?? {}),
       fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId },
     };
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
   }
 
   /** The app folder for a new secondary file, checked live first. A file made
@@ -624,7 +623,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (await driveFileIsLive(await this.getToken(), id)) return id;
     const { folderId: _gone, subfolders: _under, folderName: _named, ...rest } = this.stored ?? {};
     this.stored = rest;
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
     return this.ensureFolderId();
   }
 
@@ -642,7 +641,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME }; // fresh create = current name
     }
     this.stored = { ...(this.stored ?? {}), folderId: id };
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
     return id;
   }
 
@@ -664,7 +663,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         if (this.stored?.folderId !== folderId || (!res.ok && res.status !== 404)) return; // replaced, or refused: retried; a gone folder is done (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
-      setJson(CONFIG_KEY, this.stored);
+      setSignIn(CONFIG_KEY, this.stored, this.gen);
     } catch {
       /* cosmetic — retried next session */
     }
@@ -685,7 +684,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       ...(this.stored ?? {}),
       subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
     };
-    setJson(CONFIG_KEY, this.stored);
+    setSignIn(CONFIG_KEY, this.stored, this.gen);
     return id;
   }
 

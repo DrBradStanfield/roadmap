@@ -277,6 +277,58 @@ export function setJson(key: string, value: unknown): void {
   safeSetItem(key, JSON.stringify(value));
 }
 
+// health_roadmap_log_off_id: a random id, new at every log-off on this device,
+// never an account or email. A cloud sign-in carries the id it began under and
+// counts only while that id is current (US-09 AC45). It sits outside every
+// prefix a log-off or an erase wipes, so neither can set it back to an old id.
+const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
+/** The id a sign-in began under: null before this device's first log-off. */
+export type LogOffId = string | null;
+export function logOffId(): LogOffId {
+  return safeGetItem(LOG_OFF_ID_KEY);
+}
+/** Set when this page's own log-off begins and never cleared (the page
+ *  reloads), so a full localStorage that drops the new id still stops this
+ *  page saving a sign-in. A one-way latch, not a mode. */
+let ownLogOffBegun = false;
+/** At log-off, before any await. */
+export function newLogOffId(): void {
+  ownLogOffBegun = true;
+  safeSetItem(LOG_OFF_ID_KEY, crypto.randomUUID());
+}
+
+/** Save a cloud sign-in entry with `gen` inside it, in one write, or the
+ *  chosen provider as plain text, only while `gen` is this device's current
+ *  log-off id (US-09 AC45). True when it was written. */
+export function setSignIn(key: string, value: object | string, gen: LogOffId): boolean {
+  if (ownLogOffBegun || gen !== logOffId()) return false;
+  try {
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify({ ...value, gen }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The id an entry was saved under; one with none was saved before the first log-off. */
+const genOf = (entry: object): LogOffId => (entry as { gen?: LogOffId }).gen ?? null;
+
+/** A sign-in entry saved under the current log-off id, without that id; null otherwise. */
+export function getSignIn<T>(key: string): T | null {
+  const entry = getJson<object>(key);
+  if (!entry || typeof entry !== 'object' || genOf(entry) !== logOffId()) return null;
+  const { gen: _gen, ...rest } = entry as { gen?: LogOffId };
+  return rest as T;
+}
+
+/** At page load: remove the entries under `keys` saved under another log-off id. */
+export function sweepStaleSignIns(keys: readonly string[]): void {
+  for (const key of keys) {
+    const entry = getJson<object>(key);
+    if (entry && typeof entry === 'object' && genOf(entry) !== logOffId()) safeRemoveItem(key);
+  }
+}
+
 
 /**
  * The chat context for the bundles outside the widget (blog bubble, chatbot

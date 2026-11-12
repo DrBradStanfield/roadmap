@@ -4,6 +4,7 @@
  * code exchange transits Brad's stateless endpoint (decision record §14), but
  * tokens live only in the user's browser (implementation plan §4.2).
  */
+import { logOffId, type LogOffId } from '../lib/storage';
 
 /** Base64url-encode raw bytes (no padding) per RFC 7636. */
 function base64UrlEncode(bytes: ArrayBuffer): string {
@@ -35,9 +36,17 @@ export function generateState(): string {
   return base64UrlEncode(randomBytes(16));
 }
 
+/** This flow's sessionStorage PKCE entry, with the log-off id its sign-in
+ *  began under (US-09 AC45). */
+export function pkceEntry(verifier: string, state: string, gen: LogOffId): string {
+  return JSON.stringify({ verifier, state, gen });
+}
+
+interface Pkce { verifier: string; state: string; gen?: LogOffId }
+
 /** Read and clear this flow's sessionStorage PKCE entry (null when none). */
-function takePkce(pkceKey: string): { verifier: string; state: string } | null {
-  let stored: { verifier: string; state: string } | null = null;
+function takePkce(pkceKey: string): Pkce | null {
+  let stored: Pkce | null = null;
   try {
     stored = JSON.parse(sessionStorage.getItem(pkceKey) || 'null');
   } catch {
@@ -58,22 +67,26 @@ function takePkce(pkceKey: string): { verifier: string; state: string } | null {
  * backends share one redirect page, so each adapter calls this with its own
  * key and gets null when the return isn't from its flow.
  *
- * Returns null when: no ?code in the URL, no PKCE entry under `pkceKey`, or
- * the state doesn't match (stale/forged — declining to exchange IS the CSRF
- * defense; the entry is cleared so it can't go stale-positive later). The
+ * Returns null when: no ?code in the URL, no PKCE entry under `pkceKey`, the
+ * state doesn't match (stale/forged — declining to exchange IS the CSRF
+ * defense; the entry is cleared so it can't go stale-positive later), or the
+ * device has logged off since the sign-in began (US-09 AC45). The
  * entry is consumed either way; on success the caller exchanges the code and
  * then strips ?code/&state from the URL itself. `scope` is the space-delimited
  * list of scopes the user actually approved, when the provider appends it
- * (Google does; Dropbox does not).
+ * (Google does; Dropbox does not). `gen` is the log-off id the sign-in began
+ * under, which its saves carry.
  */
-export function claimRedirectCode(pkceKey: string): { code: string; verifier: string; scope?: string } | null {
+export function claimRedirectCode(pkceKey: string): { code: string; verifier: string; scope?: string; gen: LogOffId } | null {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   if (!code) return null;
   const stored = takePkce(pkceKey); // one-shot — consumed on any outcome
   if (!stored) return null; // not our flow (another adapter's return)
   if (stored.state !== params.get('state')) return null; // stale entry or CSRF — don't exchange
-  return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined };
+  const gen = stored.gen ?? null;
+  if (gen !== logOffId()) return null; // a log-off since it began
+  return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined, gen };
 }
 
 /**

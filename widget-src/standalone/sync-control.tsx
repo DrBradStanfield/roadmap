@@ -13,7 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
@@ -106,8 +106,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
       try {
         const gd = new GoogleDriveAdapter(googleDriveConfig());
         await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
-        await liftLocalInto(gd, 'google-drive');
-        rememberBackend('google-drive');
+        if (rememberSignIn('google-drive', gd.gen)) await liftLocalInto(gd, 'google-drive');
         location.reload();
       } finally {
         reconnectInFlight = false;

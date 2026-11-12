@@ -127,7 +127,11 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
 }) {
   // One move at a time, for the page's life (US-09 AC45): a picker reopened
   // while one runs opens at its step, with that step's busy label. Opening it
-  // first ends a move whose page did not leave.
+  // first ends a move whose page did not leave. It runs here, not in a layout
+  // effect, so the first frame is never the locked picker: the store reaches
+  // this hook only through its passive-effect subscription, and a forcing
+  // setStep bails out when the step stays 'list'. A second 'reopened' changes
+  // nothing, and this picker is the store's only subscriber.
   const [step, setStep] = useState<MoveStep>(() => {
     dispatch({ type: 'reopened' });
     return stepOf(getSwitchFlow()) ?? 'list';
@@ -166,14 +170,14 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   };
 
   const submitForm = (id: 'github' | 'self-host'): void => {
-    void runMove({ type: 'start', to: id, step: id }, async () => {
+    void runMove({ type: 'start', to: id, step: id }, async ({ gen }) => {
       await prepareSwitch(current);
       trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
         id === 'github'
-          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() })
-          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password });
-      await finishFormConnect(adapter, id); // validates → migrates → reloads
+          ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() }, gen)
+          : new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password }, gen);
+      await finishFormConnect(adapter, id, gen); // validates → migrates → reloads
     });
   };
 
