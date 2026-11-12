@@ -112,24 +112,24 @@ describe('US-11 AC6 — only the tab on the chosen record clears off-file data',
     expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);
   });
 
-  it('a guest tab\'s own erase, after another tab signed in, clears nothing of this browser\'s', async () => {
+  it('a guest tab\'s own erase, after another tab signed in, is refused, and the page\'s clear clears nothing of this browser\'s', async () => {
     const guest = await RoadmapStore.create(new LocalStorageAdapter());
     localStorage.setItem(BACKEND_KEY, 'memory'); // another tab signs in
     typeDrafts();
 
-    expect((await guest.deleteAllData()).success).toBe(true);
-    guest.clearOffFileData(); // the page's clear after its erase
+    expect((await guest.deleteAllData()).success).toBe(false); // roadmap-store.erase-owner.test.ts
+    guest.clearOffFileData(); // the page's clear, kept as defence
 
     expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);
   });
 
-  it('a cloud tab\'s own erase, after another tab chose another backend, clears nothing of this browser\'s', async () => {
+  it('a cloud tab\'s own erase, after another tab chose another backend, is refused, and the page\'s clear clears nothing of this browser\'s', async () => {
     localStorage.setItem(BACKEND_KEY, 'memory');
     const stale = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     typeDrafts();
 
-    expect((await stale.deleteAllData()).success).toBe(true);
+    expect((await stale.deleteAllData()).success).toBe(false);
     stale.clearOffFileData();
 
     expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);

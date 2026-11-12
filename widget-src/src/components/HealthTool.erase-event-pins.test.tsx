@@ -39,7 +39,9 @@ import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, flushRoadmapStore, getEraseIdentity, getShownErase, initRoadmapStore, saveChangedMeasurements, saveMedication,
 } from '../lib/roadmap-data';
-import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, MIRROR_CHANGED_EVENT } from '../lib/storage';
+import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
 import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -370,6 +372,33 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     expect(cleared).toHaveBeenCalledTimes(2);
     expect(getShownErase()).toBe(getEraseIdentity());
     draftGone(view);
+  });
+});
+
+describe('US-11 AC6: an out-of-date tab cannot delete data; it is told to reload', () => {
+  it('refused at the decision: the page says so, returns to rest, and never forgets the record (clearLocalStorage, forgetRecord)', async () => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    localStorage.removeItem(BACKEND_KEY); // another tab chooses "This device"
+    const before = getEraseIdentity();
+    const device = Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)]));
+    const forgot = vi.fn(); // clearLocalStorage's event, the forget door's first step
+    window.addEventListener(MIRROR_CHANGED_EVENT, forgot);
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+    } finally {
+      window.removeEventListener(MIRROR_CHANGED_EVENT, forgot);
+    }
+    expect(alerts).toEqual([ERASE_STALE_TAB]);
+    expect(forgot).not.toHaveBeenCalled();
+    expect(getEraseIdentity()).toBe(before);
+    expect(Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)]))).toEqual(device);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2'); // the draft stays
+    expect(deleteButton().hasAttribute('disabled')).toBe(false); // back at rest
   });
 });
 
