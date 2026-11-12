@@ -9,11 +9,13 @@
 # that file, which the command inherits through exec, so the slot is held for the command's lifetime (and its
 # children's) and freed however it ends. <kind>.<i>.holder (pid and command) is information, never the lock.
 # With a slot, it waits while the 1-minute load is MAC_SLOT_MAX_LOAD (8) or more, re-checking every
-# MAC_SLOT_POLL_SECONDS (30); after MAC_SLOT_LOAD_WAIT_MIN (60) it starts anyway with a one-line warning (the
-# slots still bound what runs at once). An unreadable load does not wait. TERM or INT while it waits, for a slot
-# or for the load, exits 143 or 130 at once. Then it execs the command unchanged, so the exit code is the
-# command's. Waiting for a slot has no limit: holders end and the kernel frees their slot. Exit 64: usage.
-# MAC_SLOT_CODEX_MAX, MAC_SLOT_TESTS_MAX and MAC_SLOT_LOAD_CMD (prints the load) are for the test suite.
+# MAC_SLOT_POLL_SECONDS (30). A run never starts over the cap: if the load is still that high after
+# MAC_SLOT_LOAD_WAIT_MIN (10; MAC_SLOT_LOAD_WAIT_SECONDS for the tests) it refuses with one line and exit 75
+# (EX_TEMPFAIL, as sim-run.sh gives up), never runs the command, and frees the slot by exiting. An unreadable
+# load does not wait. TERM or INT while it waits, for a slot or for the load, exits 143 or 130 at once. Then it
+# execs the command unchanged, so the exit code is the command's. Waiting for a slot has no limit: holders end
+# and the kernel frees their slot. Exit 64: usage. MAC_SLOT_CODEX_MAX, MAC_SLOT_TESTS_MAX and MAC_SLOT_LOAD_CMD
+# (prints the load) are for the test suite.
 # Off a shared Mac (not macOS, no lockf, or CI set and not false/0) it runs the command directly: no queue.
 # Tests: tools/mac-slot.test.ts (macOS only: lockf).
 set -u
@@ -44,7 +46,7 @@ mkdir -p "$DIR" || die "cannot make $DIR"
 POLL=${MAC_SLOT_POLL_SECONDS:-30}
 case "$POLL" in ''|*[!0-9]*|0) POLL=30 ;; esac
 MAX_LOAD=${MAC_SLOT_MAX_LOAD:-8}
-LOAD_WAIT=${MAC_SLOT_LOAD_WAIT_SECONDS:-$(( ${MAC_SLOT_LOAD_WAIT_MIN:-60} * 60 ))}
+LOAD_WAIT=${MAC_SLOT_LOAD_WAIT_SECONDS:-$(( ${MAC_SLOT_LOAD_WAIT_MIN:-10} * 60 ))}
 
 slots() {
   case "$1" in codex) n=${MAC_SLOT_CODEX_MAX:-2} ;; *) n=${MAC_SLOT_TESTS_MAX:-3} ;; esac
@@ -132,17 +134,20 @@ echo "$$ $CMDLINE" > "$DIR/$kind.$SLOT.holder"
 nap_pid=""
 trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 143' TERM
 trap '[ -n "$nap_pid" ] && kill "$nap_pid" 2>/dev/null; exit 130' INT
-start=$(date +%s) said=0
+start=$(date +%s) said=0 l=""
 while :; do
-  l=$(load 9>&-)
-  case "$l" in ''|*[!0-9.]*) echo "mac-slot: could not read the load; not waiting" >&2; break ;; esac
-  awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break
+  # Only the first read may fail open; after a high reading, an unreadable one keeps the last and waits on.
+  r=$(load 9>&-)
+  case "$r" in
+    ''|*[!0-9.]*) [ "$said" = 1 ] || { echo "mac-slot: could not read the load; not waiting" >&2; break; } ;;
+    *) l=$r; awk -v l="$l" -v m="$MAX_LOAD" 'BEGIN { exit !(l + 0 >= m + 0) }' 9>&- || break ;;
+  esac
   [ "$said" = 1 ] || echo "mac-slot: waiting: 1-minute load $l is $MAX_LOAD or more; holding $kind slot $SLOT/$MAX, re-checking every ${POLL}s" >&2
   said=1
   left=$(( LOAD_WAIT - ($(date +%s) - start) ))
   if [ "$left" -le 0 ]; then
-    echo "mac-slot: waited $(( LOAD_WAIT / 60 ))m and the 1-minute load $l is still $MAX_LOAD or more; starting anyway (the slots bound what runs at once)" >&2
-    break
+    w=${LOAD_WAIT}s; [ $(( LOAD_WAIT % 60 )) -ne 0 ] || w=$(( LOAD_WAIT / 60 ))m
+    die "refused: the 1-minute load $l is still $MAX_LOAD or more after $w; not starting ${CMDLINE% }. Try again when the Mac is quieter" 75
   fi
   [ "$left" -lt "$POLL" ] || left=$POLL
   sleep "$left" 9>&- & nap_pid=$!
