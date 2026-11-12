@@ -18,6 +18,10 @@ echo "$l"
 
 let dir: string, fake: string, home: string;
 const kids: ChildProcess[] = [];
+const track = (p: ChildProcess) => {
+  kids.push(p);
+  return new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
+};
 const setLoads = (...l: string[]) => writeFileSync(join(fake, 'loads'), `${l.join('\n')}\n`);
 const env = (extra: Record<string, string> = {}) => {
   const e: Record<string, string> = { ...(process.env as Record<string, string>) };
@@ -449,6 +453,66 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const r = bg('tests', ['true'], { MAC_SLOT_MAX_LOAD: '10' });
     expect(await r.done).toBe(0);
     expect(r.err()).not.toMatch(/waiting/);
+  });
+
+  // Isolation from real slot runs on this Mac (US-71 AC11). Agents run these tests under a real `tests` slot,
+  // with their own MAC_SLOT_* and PATH exported.
+  it("a caller's MAC_SLOT_* and PATH change nothing, and a decoy MAC_SLOT_HOME stays empty", () => {
+    const decoy = join(dir, 'decoy');
+    mkdirSync(decoy);
+    const saved = { ...process.env };
+    Object.assign(process.env, { MAC_SLOT_MAX_LOAD: '1', MAC_SLOT_LOAD_WAIT_SECONDS: '0', MAC_SLOT_LOAD_WAIT_MIN: '0',
+      MAC_SLOT_HOME: decoy, PATH: `${join(dir, 'node_modules', '.bin')}:${process.env.PATH}` });
+    try {
+      const s = spawnSync('sh', [SCRIPT, 'tests', '--', 'sh', '-c', 'echo "$PATH"'], { env: env(), encoding: 'utf8', timeout: 5000 });
+      expect(s.status).toBe(0);
+      expect(s.stderr).toMatch(/starting tests slot 1\/3 \(load 1\.00\)/);
+      expect(s.stdout).not.toMatch(/node_modules/);
+      expect(readdirSync(decoy)).toEqual([]);
+      expect(readdirSync(home)).toContain('tests.1');
+    } finally {
+      for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+      Object.assign(process.env, saved);
+    }
+  });
+
+  it('a child a test spawns holds no fd 9 and no descriptor into the real slot folder', async () => {
+    const r = bg('tests', ['true']);
+    expect(await r.done).toBe(0);
+    const p = spawn('sh', ['-c', 'ls /dev/fd; lsof -a -p $$ -Fn'], { env: env(), detached: true });
+    const done = track(p);
+    let out = '';
+    p.stdout.on('data', (d) => { out += d; });
+    await done;
+    expect(out.split('\n')).not.toContain('9');
+    expect(out).toMatch(/^n/m);
+    expect(out).not.toContain('health-roadmap-slots');
+  });
+
+  // Modelled on T22 in ios/scripts/sim-run.test.ts: the first test leaves a grandchild that names its folder
+  // (a shell the command forked, outside afterEach's direct children), then fails; the second checks, after
+  // afterEach, that nothing names that folder. vitest flips the first result after afterEach, so the check
+  // lives in the next test.
+  describe('a test that fails mid-run leaves nothing behind', () => {
+    const left = { dir: '', ready: false };
+    const named = () => spawnSync('ps', ['-axo', 'command='], { encoding: 'utf8' }).stdout
+      .split('\n').filter((l) => left.dir && l.includes(left.dir));
+    it.fails('(fails on purpose) a test fails while a holder and its grandchild run', async () => {
+      left.dir = dir;
+      bg('tests', ['sh', '-c', `sh -c 'while :; do sleep 0.2; done; : ${dir}' & echo started > "${fake}/g.log"; wait`]);
+      await until(() => started('g'));
+      await until(() => named().length >= 2);
+      left.ready = true;
+      throw new Error('a test failing mid-run');
+    });
+
+    it('afterEach left no process naming its folder, a second later too', async () => {
+      expect(left.ready).toBe(true);
+      expect(named()).toEqual([]);
+      await new Promise((r) => setTimeout(r, 1000));
+      expect(named()).toEqual([]);
+      expect(existsSync(left.dir)).toBe(false);
+    });
   });
 
   it('refuses an unknown kind and a missing command with exit 64', () => {
