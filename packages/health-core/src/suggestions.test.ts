@@ -3824,7 +3824,7 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).not.toMatch(MEDICINE_WORDS);
       expect(unknown).toMatch(/is very high, indicating significantly elevated cardiovascular risk\. Discuss treatment, including lifestyle changes, with your doctor\.$/);
       expect(desc({ ...adultBase, apoB: apoB(110) }, undefined, 'apob-very-high'))
-        .toMatch(/elevated cardiovascular risk\. Guidelines typically recommend statin therapy and lifestyle changes at this level\. Discuss it with your doctor\.$/);
+        .toMatch(/elevated cardiovascular risk\. Statin therapy and lifestyle changes are typically recommended at this level\. Discuss it with your doctor\.$/);
     });
 
     it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC28, App Review 1.4.1)', () => {
