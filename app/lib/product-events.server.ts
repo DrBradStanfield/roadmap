@@ -236,6 +236,10 @@ function checkEventKeys(
   if (metadata.detail !== undefined && !details.includes(metadata.detail)) {
     ctx.addIssue({ code: 'custom', path: ['metadata', 'detail'], message: 'detail is not one this reason may carry' });
   }
+  // A confirm's kind rides only on a refused confirm (H59).
+  if (metadata.confirmReason !== undefined && reason !== 'confirm') {
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'confirmReason'], message: 'confirmReason is not one this reason may carry' });
+  }
   if (reason === undefined) return;
   const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
   if (!allowed.includes(reason as string)) {
@@ -316,8 +320,8 @@ function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clea
   const dropped: string[] = [];
   for (const [key, value] of Object.entries(metadata)) {
     // The EVENT, one key at a time: `reason` is judged against its own event.
-    // A detail is judged beside its reason, so a valid pair survives an unrelated bad key.
-    const probe = key === 'detail' ? { reason: metadata.reason, detail: value } : { [key]: value };
+    // A detail or a confirm's kind is judged beside its reason, so a valid pair survives an unrelated bad key.
+    const probe = key === 'detail' || key === 'confirmReason' ? { reason: metadata.reason, [key]: value } : { [key]: value };
     if (serverEventSchema.safeParse({ ...event, metadata: probe }).success) clean[key] = value;
     else dropped.push(key);
   }

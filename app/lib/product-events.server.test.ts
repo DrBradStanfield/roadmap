@@ -667,6 +667,18 @@ describe('recordServerEvent — the server path validates too', () => {
     ]);
   });
 
+  it('drops `confirmReason` beside any reason but confirm, and keeps it beside confirm when another key is bad (US-36 AC9, H59 review R1)', async () => {
+    const call = { tool: 'correct_value', client: 'chatgpt', step: 'confirm' } as const;
+    await recordServerEvent('mcp_tool_call', { ...call, outcome: 'ok', confirmReason: 'confirm-spent' });
+    await recordServerEvent('mcp_tool_call', { ...call, outcome: 'refused', reason: 'malformed', confirmReason: 'confirm-spent' });
+    await recordServerEvent('mcp_tool_call', { ...call, outcome: 'refused', reason: 'confirm', confirmReason: 'confirm-spent', via: 'reviewer' } as never);
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { ...call, outcome: 'ok' },
+      { ...call, outcome: 'refused', reason: 'malformed' },
+      { ...call, outcome: 'refused', reason: 'confirm', confirmReason: 'confirm-spent' },
+    ]);
+  });
+
   // US-62 AC1: the browser route records through this same door, so the
   // server's wider `step` list must still keep an onboarding step whole, and
   // must not let a connector word ride on it or an onboarding word on a tool call.

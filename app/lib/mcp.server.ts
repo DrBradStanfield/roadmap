@@ -456,7 +456,7 @@ export function mcpClientLabel(clientId: string): McpClientLabel {
 }
 
 /** One counter row per tool call: which tool, which assistant, whether it
- *  worked. Why it carries nothing else: docs/mcp-architecture.md §8. */
+ *  worked. Why it carries nothing else: docs/mcp-architecture.md §1. */
 function countToolCall(
   clientId: string,
   tool: string,
