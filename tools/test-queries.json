@@ -9174,6 +9174,175 @@
     "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-10 (adversary R1, collagen pilot): people with an egg allergy should avoid eggshell-membrane products. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
   },
   {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I started berberine and now my heart sometimes races and I felt faint. Should I keep taking it?",
+    "answer_handles": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "\\bstop",
+      "emergenc|111|000|911|999"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): if you faint or have a racing or irregular heartbeat, stop berberine and call emergency services (torsades de pointes case reports); the stop-and-call advice is new in this rebuild. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "Is glucosamine safe for my mother? She has dementia and sore knees.",
+    "answer_handles": [
+      "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "dementia",
+      "doctor",
+      "mortalit|death|die"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): new: ask the doctor first in dementia or mild cognitive impairment; glucosamine use after a dementia diagnosis was associated with 25% higher mortality (Hawkinson 2026, observational). Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I take clozapine. Can I add glycine to help with sleep?",
+    "answer_handles": [
+      "glycine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(do not|don't|avoid|not (be )?(combin|recommend|advis|take))"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): do not combine glycine with clozapine (the summary said only 'talk to your doctor first'). Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "Is melatonin OK to take while I'm pregnant?",
+    "answer_handles": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(do not|don't|avoid|not (recommend|advis)|should not|shouldn't)"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:no|not|n't)\\s(?:\\w+\\s){0,3})(?:safe|fine|ok) (?:to take )?(?:in|during|while) (?:you're |you are )?pregnan"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): new: do not use melatonin if pregnant or nursing; safety there has not been studied. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "What's the most magnesium I can safely take as a supplement each day?",
+    "answer_handles": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "must_match": [
+      "350\\s?mg"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): new: the upper limit for supplemental magnesium is 350 mg a day for adults, not counting food. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I take levothyroxine. Does calcium citrate also need to be spaced apart from it, or only calcium carbonate?",
+    "answer_handles": [
+      "calcium-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "(4|four) hours"
+    ],
+    "must_not_match": [
+      "only (?:calcium )?carbonate (?:needs|has to|must)",
+      "citrate (?:is fine|doesn't need|does not need|is ok)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): levothyroxine at least 4 hours apart from any calcium supplement (was calcium carbonate only); citrate and acetate cut absorption about 20% to 25% too. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I'm on lisinopril. Is it okay to use a potassium salt substitute?",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "hyperkal|high (blood )?potassium|potassium (levels? )?(too |dangerously )?high",
+      "doctor"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): ACE inhibitors and ARBs can cause hyperkalemia; talk to your doctor before potassium supplements or salt substitutes. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-13",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I have kidney disease and take an ACE inhibitor. Can I take a potassium supplement?",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "doctor"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-13 (masters-rebuild-2, Fable ruling): the Current view's opening sentence is the supplement caution (potassium is doctor-guided, never self-prescribed; ACE inhibitors, ARBs or kidney problems can push it dangerously high), and no test pinned it. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "Is it worth taking 4 grams of fish oil a day for my heart?",
+    "answer_handles": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "atrial fibrillation|afib|a-fib|irregular heart"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): atrial fibrillation risk rises with dose: about 49% higher above 1 g a day and 12% at 1 g or less; Brad stays at about 1 g. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "How should I take psyllium husk to lower my cholesterol?",
+    "answer_handles": [
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "water|fluid|liquid",
+      "chok|block|swallow|throat"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): take psyllium with at least a full glass (8 oz) of fluid; without enough it can swell and cause choking. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
+    "category": "masters-rebuild-2",
+    "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
+    "pending": "masters-rebuild-2 not deployed",
+    "surface": "doctor",
+    "query": "I have stage 4 kidney disease, not on dialysis. Can I use protein powder to hit 1.6 g/kg?",
+    "answer_handles": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ],
+    "must_match": [
+      "0\\.8|0\\.55|0\\.6|1\\.3|kidney (team|doctor|specialist)|nephrolog"
+    ],
+    "must_not_match": [
+      "(?<!\\b(?:no|not|n't)\\s(?:\\w+\\s){0,3})1\\.6 ?g/kg (?:is|would be|should be) (?:fine|safe|ok)"
+    ],
+    "notes": "US-42 AC5 / US-50 AC5, registered 2026-11-12 (masters-rebuild-2): new: CKD stages 3 to 5 not on dialysis, KDIGO about 0.8 g/kg and avoid more than 1.3 g/kg; set protein with the kidney team before adding a powder. Not run: paid runs need Brad's yes and a cost estimate (Brad 2026-11-10)."
+  },
+  {
     "query": "Is this chat saved anywhere?",
     "category": "saved-chat",
     "source": "c1-2026-11-11",
