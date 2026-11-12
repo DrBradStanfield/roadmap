@@ -1,7 +1,7 @@
 /**
  * An in-memory stand-in for the admin client, enough for `single_use_claims`:
  * a primary-key insert that answers 23505 on a repeat, and the delete of old
- * rows of one kind. Every other table is inert, so a suite that mocks the admin
+ * rows of one kind or of one key. Every other table is inert, so a suite that mocks the admin
  * client with this keeps its product events quiet. The state is the caller's,
  * made in `vi.hoisted`, so module resets in a suite still share one store.
  */
@@ -17,10 +17,12 @@ export interface ClaimsState {
   inserts: number;
   /** The old-row delete: 'hang' never settles, 'reject' rejects, 'build-throws' throws as the query is built. */
   cleanup: false | 'hang' | 'reject' | 'build-throws';
+  /** The abort signal each delete was sent with (undefined: none). */
+  deleteSignals: Array<AbortSignal | undefined>;
 }
 
 export function newClaimsState(): ClaimsState {
-  return { rows: new Map(), down: false, inserts: 0, cleanup: false };
+  return { rows: new Map(), down: false, inserts: 0, cleanup: false, deleteSignals: [] };
 }
 
 /** Back to an empty, reachable store. */
@@ -29,6 +31,7 @@ export function resetClaimsState(state: ClaimsState): void {
   state.down = false;
   state.inserts = 0;
   state.cleanup = false;
+  state.deleteSignals = [];
 }
 
 const OK = { data: null, error: null };
@@ -67,16 +70,35 @@ export function claimsAdmin(state: ClaimsState) {
         }),
         delete: () => {
           if (state.cleanup === 'build-throws') throw new Error('query build failed');
-          return {
-          eq: (_column: 'kind', kind: string) => ({
-            async lt(_column: 'created_at', iso: string) {
-              if (state.cleanup === 'hang') return new Promise<never>(() => undefined);
+          // Each delete is a thenable with `abortSignal`, as supabase-js builds it.
+          const run = (apply: () => void) => {
+            const exec = async (signal?: AbortSignal) => {
+              state.deleteSignals.push(signal);
+              if (state.cleanup === 'hang') {
+                // As supabase-js answers an aborted fetch: an error, not a throw. Unaborted, it never settles.
+                return new Promise<typeof MISSING>((resolve) => signal?.addEventListener('abort', () => resolve({ data: null, error: { code: '', message: 'AbortError' } })));
+              }
               if (state.cleanup === 'reject') throw new Error('fetch failed');
               if (!reach()) return MISSING;
-              for (const [key, row] of state.rows) if (row.kind === kind && row.createdAt < Date.parse(iso)) state.rows.delete(key);
+              apply();
               return OK;
-            },
-          }),
+            };
+            return {
+              abortSignal: (signal: AbortSignal) => exec(signal),
+              then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => exec().then(resolve, reject),
+            };
+          };
+          return {
+            eq: (_column: 'kind', kind: string) => ({
+              /** Old rows of one kind. */
+              lt: (_column: 'created_at', iso: string) => run(() => {
+                for (const [key, row] of state.rows) if (row.kind === kind && row.createdAt < Date.parse(iso)) state.rows.delete(key);
+              }),
+              /** One claim, by its key. */
+              eq: (_column: 'key', key: string) => run(() => {
+                if (state.rows.get(key)?.kind === kind) state.rows.delete(key);
+              }),
+            }),
           };
         },
       };
