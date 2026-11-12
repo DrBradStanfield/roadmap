@@ -76,6 +76,17 @@ describe('RecordSession tells the host its save status (US-09 AC30)', () => {
     expect(session.saveStatus).toBe('saved');
   });
 
+  it('the session already answers the status it tells, so a listener that reads it back sees the new one', async () => {
+    const store = new FailingStore();
+    const readBack: SaveStatus[] = [];
+    const { host } = cloudHost(store, []);
+    let session!: RecordSession;
+    session = await RecordSession.open({ ...host, saveStatusChanged: () => readBack.push(session.saveStatus) });
+    add(session, 'a');
+    await session.flush();
+    expect(readBack).toEqual(['saving', 'saved']);
+  });
+
   it('a host without the callback saves as before', async () => {
     const store = new FailingStore();
     const { host } = cloudHost(store, []);

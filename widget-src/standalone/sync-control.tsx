@@ -11,7 +11,9 @@
  * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
-import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
+import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SAVE_STATUS_EVENT, SYNC_PENDING_EVENT } from '../src/storage';
+import { currentSaveStatus } from '../src/lib/roadmap-data';
+import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
@@ -28,20 +30,22 @@ const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 /** The same, for this page's life, in case storage throws. */
 let storageCtaSeen = false;
 
-/** "Still waiting to sync": driven by the store's pending-sync marker, set by a
- *  failed cloud save or a failed connect-time lift and cleared by the next
- *  successful cloud save. The store fires SYNC_PENDING_EVENT on every flip, so
- *  this is true only while data is genuinely unsynced; no polling. */
-function usePendingSync(backend: Backend): boolean {
-  const [pendingSync, setPendingSync] = useState(false);
+/** What a connected record's save is doing: the session's save status (US-09
+ *  AC30), and the store's pending-sync marker ("still waiting to sync"), set by
+ *  a failed cloud save or a failed connect-time lift and cleared by the next
+ *  successful cloud save. Each fires its event on every change; no polling. */
+interface SaveFacts { status: SaveStatus; pendingSync: boolean }
+function useSaveFacts(backend: Backend): SaveFacts {
+  const [facts, setFacts] = useState<SaveFacts>({ status: 'saved', pendingSync: false });
   useEffect(() => {
     if (backend === 'local') return;
-    const check = () => setPendingSync(isSyncPending());
+    const check = () => setFacts({ status: currentSaveStatus(), pendingSync: isSyncPending() });
     check();
-    window.addEventListener(SYNC_PENDING_EVENT, check);
-    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+    const events = [SYNC_PENDING_EVENT, SAVE_STATUS_EVENT];
+    for (const name of events) window.addEventListener(name, check);
+    return () => { for (const name of events) window.removeEventListener(name, check); };
   }, [backend]);
-  return pendingSync;
+  return facts;
 }
 
 /** US-01 AC5: said while this browser's storage refused the record's last
@@ -69,15 +73,26 @@ export function LocalSaveAlert({ backend }: { backend: Backend }) {
   return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
 }
 
+/** US-09 AC30: a connected record's save words (lead A1 step d, owner 2026-11-12),
+ *  as the iPhone says them (SyncStatusText.swift). */
+const SAVING_TO = (provider: string) => `Saving to ${provider}…`;
+const NOT_SYNCED_ON_DEVICE = 'Not synced yet. Your changes are on this device.';
+const NOT_SYNCED = 'Not synced yet.';
+const SYNCED_TO = (provider: string) => `Synced to ${provider}`;
+
 /** US-09 AC30: the title line's words, from the real storage state (storageState's
- *  three, plus pending sync), so they never claim what is not true. A reconnect
- *  session runs on 'local', so it is asked first. */
-function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, pendingSync: boolean): string {
+ *  three, the session's save status and the device marker), so they never claim
+ *  what is not true. A reconnect session runs on 'local', so it is asked first. */
+function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, { status, pendingSync }: SaveFacts): string {
   // Only Drive can re-auth in place; the others only try the read again, as the panel says.
   if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
   if (backend === 'local') return 'Sign in';
-  // Status, not a call to action (Brad 2026-11-09).
-  return pendingSync ? 'Saving…' : `Synced to ${PROVIDERS[backend].label}`;
+  // Status, not a call to action (Brad 2026-11-09). A marker set while the
+  // session is saved is an earlier session's: the next load lifts it.
+  const provider = PROVIDERS[backend].label;
+  if (status === 'saving') return SAVING_TO(provider);
+  if (pendingSync) return NOT_SYNCED_ON_DEVICE;
+  return status === 'not-saved' ? NOT_SYNCED : SYNCED_TO(provider);
 }
 
 /** One reconnect at a time across the bar and the panel (both mount the hook). */
@@ -122,13 +137,13 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  (AC13). A connected record's state is text: the storage card's provider link opens the
  *  picker. On a phone (US-62 AC34) Account draws no Sign in here, since the storage card's
  *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
- *  reconnect or a waiting save needs saying. */
+ *  reconnect needs saying, or the record is not "Synced to" its provider. */
 export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
-  const pendingSync = usePendingSync(backend);
+  const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
   const { busy, error, reconnectNow } = useReconnect(reconnect);
-  if (problemsOnly && !reconnect && !pendingSync) return null;
-  const label = storageBarLabel(backend, reconnect, pendingSync);
+  const label = storageBarLabel(backend, reconnect, facts);
+  if (problemsOnly && !reconnect && (backend === 'local' || label === SYNCED_TO(PROVIDERS[backend].label))) return null;
   return (
     <>
       {reconnect || (backend === 'local' && !isMobile) ? (
@@ -176,7 +191,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
 
-  const pendingSync = usePendingSync(backend);
+  const { pendingSync } = useSaveFacts(backend);
 
   // Forget the unreachable connection (no copy-down needed — this session
   // already runs on the device copy; the cloud file stays put).
@@ -239,7 +254,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
         {pendingSync && (
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            It will upload automatically. Your data is safe in this browser meanwhile.
+            Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>

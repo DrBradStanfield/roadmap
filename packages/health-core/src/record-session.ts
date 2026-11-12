@@ -11,7 +11,7 @@ import { buildErasedFile } from './erase';
 import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearOffFile, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearOffFile, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { debounceArmed, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
@@ -120,6 +120,7 @@ export class RecordSession {
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
+  private told: SaveStatus = saveStatus(SAVE_START); // saveStatus(mode), as last told to the host
   private persistTimer: unknown = null;
   private running: Promise<boolean> | null = null;
   /** True when a pending mirror existed but could not be read/merged at
@@ -230,9 +231,7 @@ export class RecordSession {
   }
 
   /** What a status line shows of the save (lead A1). */
-  get saveStatus(): SaveStatus {
-    return saveStatus(this.mode);
-  }
+  get saveStatus(): SaveStatus { return saveStatus(this.mode); }
 
   /** Device tier: the stored revision this session last took in (US-34 AC6). */
   get seenRevision(): string | null {
@@ -651,6 +650,7 @@ export class RecordSession {
       const fire = () => { this.persistTimer = null; void this.persist(); };
       this.persistTimer = effect.type === 'arm' ? this.host.timers.set(fire, PERSIST_DEBOUNCE_MS) : null;
     }
+    this.told = tellSaveStatus(this.host, this.told, saveStatus(this.mode)); // once the effects run
     return pass;
   }
 
