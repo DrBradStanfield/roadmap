@@ -114,10 +114,6 @@ function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): bo
  *  else a cloud with localStorage as its mirror. Every global is read at each
  *  call, never captured, so tests' fake timers and clocks apply. */
 export function webRecordHost(store: StorageAdapter): RecordHost {
-  // Stand-in, replaced by PR C's healthWritesAllowed() from lib/storage (the one rule; delete this then):
-  // a device page, or a cloud page with no log-off on this device since it loaded.
-  const loadedLogOff = logOffId();
-  const healthWritesAllowed = () => !roadmapLocalWritesStopped() && (store instanceof LocalStorageAdapter || logOffId() === loadedLogOff);
   const base = {
     store,
     clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
