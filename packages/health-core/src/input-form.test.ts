@@ -169,6 +169,42 @@ describe('screeningForm', () => {
     expect(field(form, 'colorectal_followup_date')).toMatchObject({ kind: 'month', label: 'When is the colonoscopy scheduled?', when: 'future' });
   });
 
+  it('US-07 AC1j: the colorectal result shows blank, its follow-up hidden, only for abnormal with a last month later than the follow-up month', () => {
+    const old = { colorectalMethod: 'fit_annual', colorectalLastDate: '2019-06', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2020-01' } as ScreeningInputs;
+    const shown = (scr: ScreeningInputs) => keys(screeningForm(60, 'male', scr)).filter((k) => k.startsWith('colorectal_')).map((k) => [k, (field(screeningForm(60, 'male', scr), k) as { value?: string }).value]);
+    expect(shown({ ...old, colorectalLastDate: '2020-02' })).toEqual([['colorectal_method', 'fit_annual'], ['colorectal_last_date', '2020-02'], ['colorectal_result', '']]);
+    for (const scr of [old, { ...old, colorectalLastDate: '2020-01' }, { ...old, colorectalLastDate: '2026-07', colorectalFollowupDate: undefined }]) {
+      expect(field(screeningForm(60, 'male', scr), 'colorectal_result'), JSON.stringify(scr)).toMatchObject({ value: 'abnormal' });
+      expect(keys(screeningForm(60, 'male', scr)), JSON.stringify(scr)).toContain('colorectal_followup_status');
+    }
+    expect(field(screeningForm(60, 'male', { ...old, colorectalLastDate: '2026-07', colorectalResult: 'normal' }), 'colorectal_result')).toMatchObject({ value: 'normal' });
+    // Breast and cervical: a newer last date shows the stored result and its follow-up.
+    const female = { breastFrequency: 'annual', breastLastDate: '2026-03', breastResult: 'abnormal', breastFollowupStatus: 'completed', breastFollowupDate: '2024-01',
+      cervicalMethod: 'hpv_every_5yr', cervicalLastDate: '2026-03', cervicalResult: 'abnormal', cervicalFollowupStatus: 'completed', cervicalFollowupDate: '2024-01' } as ScreeningInputs;
+    const form = screeningForm(50, 'female', female);
+    for (const t of ['breast', 'cervical']) {
+      expect(field(form, `${t}_result`), t).toMatchObject({ value: 'abnormal' });
+      expect(keys(form), t).toContain(`${t}_followup_date`);
+    }
+  });
+
+  it('US-07 AC1j: the colorectal follow-up date never goes before the last screening: its field carries min = that month', () => {
+    const done = { colorectalMethod: 'fit_annual', colorectalLastDate: '2025-11', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2026-02' } as ScreeningInputs;
+    const date = (scr: ScreeningInputs) => field(screeningForm(60, 'male', scr), 'colorectal_followup_date') as { min?: string };
+    expect(date(done).min).toBe('2025-11');
+    expect(date({ ...done, colorectalLastDate: '2025-09-14' }).min).toBe('2025-09');
+    expect(date({ ...done, colorectalFollowupStatus: 'scheduled', colorectalFollowupDate: '2027-01' }).min).toBe('2025-11');
+    // No last date: no result question, so no follow-up date and no bound.
+    expect(date({ ...done, colorectalLastDate: undefined })).toBeUndefined();
+    // Every other date field: no min.
+    const female = { breastFrequency: 'annual', breastLastDate: '2026-03', breastResult: 'abnormal', breastFollowupStatus: 'completed', breastFollowupDate: '2024-01',
+      cervicalMethod: 'hpv_every_5yr', cervicalLastDate: '2026-03', cervicalResult: 'abnormal', cervicalFollowupStatus: 'completed', cervicalFollowupDate: '2024-01',
+      dexaScreening: 'dexa_scan', dexaLastDate: '2025-01', dexaResult: 'osteoporosis', dexaFollowupStatus: 'completed', dexaFollowupDate: '2025-02' } as ScreeningInputs;
+    const months = [...screeningForm(60, 'female', female), ...screeningForm(60, 'male', done)].flatMap((s) => s.groups.flatMap((g) => g.fields)).filter((f) => f.kind === 'month');
+    expect(months.filter((f) => 'min' in f).map((f) => f.key)).toEqual(['colorectal_followup_date']);
+    expect(months.map((f) => f.key)).toEqual(expect.arrayContaining(['breast_followup_date', 'cervical_followup_date', 'dexa_followup_date', 'colorectal_last_date']));
+  });
+
   it('asks for PSA as a measurement once a man will screen', () => {
     const form = screeningForm(55, 'male', { prostateDiscussion: 'will_screen' });
     expect(form[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa', label: 'PSA (ng/mL)' });

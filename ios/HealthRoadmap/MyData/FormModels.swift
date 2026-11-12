@@ -31,15 +31,15 @@ struct FormOption: Decodable, Hashable {
 /// One question. The engine's `kind` picks the control.
 enum FormField: Decodable, Identifiable, Equatable {
     case choice(key: String, label: String, hint: String?, options: [FormOption], value: String)
-    /// A month, YYYY-MM, past or future.
-    case month(key: String, label: String, value: String, future: Bool)
+    /// A month, YYYY-MM, past or future; never before `min` when set (US-07 AC1j: colorectal's follow-up date).
+    case month(key: String, label: String, value: String, future: Bool, min: String?)
     case number(key: String, label: String, hint: String?, value: String)
     /// A dated value kept as a measurement (PSA).
     case measurement(metric: String, label: String, hint: String?)
 
     var id: String {
         switch self {
-        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
+        case .choice(let key, _, _, _, _), .month(let key, _, _, _, _), .number(let key, _, _, _): key
         case .measurement(let metric, _, _): "measurement:\(metric)"
         }
     }
@@ -47,12 +47,12 @@ enum FormField: Decodable, Identifiable, Equatable {
     /// The key its answer and the plan's suggestions on it go by: a dated value's metric.
     var key: String {
         switch self {
-        case .choice(let key, _, _, _, _), .month(let key, _, _, _), .number(let key, _, _, _): key
+        case .choice(let key, _, _, _, _), .month(let key, _, _, _, _), .number(let key, _, _, _): key
         case .measurement(let metric, _, _): metric
         }
     }
 
-    private enum Key: String, CodingKey { case kind, key, label, hint, options, value, when, metric }
+    private enum Key: String, CodingKey { case kind, key, label, hint, options, value, when, min, metric }
 
     init(from decoder: Decoder) throws {
         let json = try decoder.container(keyedBy: Key.self)
@@ -64,7 +64,8 @@ enum FormField: Decodable, Identifiable, Equatable {
                            options: try json.decode([FormOption].self, forKey: .options), value: try json.decode(String.self, forKey: .value))
         case "month":
             self = .month(key: try json.decode(String.self, forKey: .key), label: label,
-                          value: try json.decode(String.self, forKey: .value), future: try json.decode(String.self, forKey: .when) == "future")
+                          value: try json.decode(String.self, forKey: .value), future: try json.decode(String.self, forKey: .when) == "future",
+                          min: try json.decodeIfPresent(String.self, forKey: .min))
         case "number":
             self = .number(key: try json.decode(String.self, forKey: .key), label: label, hint: hint, value: try json.decode(String.self, forKey: .value))
         default:
