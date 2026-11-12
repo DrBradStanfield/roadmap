@@ -13,7 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, preloadGis, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, adoptNextErase, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, forgetClearedErase, connectRefusal, forgetBackend, liftLocalInto, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
@@ -184,7 +184,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
     run(async () => {
       await adapterFor(provider)?.disconnect();
       forgetBackend();
-      adoptNextErase(); // this browser's record from now: a switch
+      forgetClearedErase(); // this browser's record from now: a switch
       location.reload();
     });
 

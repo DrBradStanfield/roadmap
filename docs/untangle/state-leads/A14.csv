@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A14,erase,"Same-provider different-account sign-in keeps the cleared-erase key; needs an account identity",lead,accepted as US-11 AC6 Limit,"Lead A11 review (A-R1), 2026-11-12. widget-src/standalone/resolve-backend.ts: an OAuth return to the provider already remembered keeps health_roadmap_cleared_erase as the same record; the adapters expose no account identity to tell two accounts apart. Pinned by connect-cleared-erase.test.ts (an OAuth return to the provider already chosen)",,yes

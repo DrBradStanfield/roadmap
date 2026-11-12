@@ -94,9 +94,15 @@ export function stillShown(asked: string): boolean {
 }
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
- *  the erase (US-11 AC6). The page never clears stored originals itself. */
+ *  the erase (US-11 AC6). The page never clears stored originals itself. A
+ *  clear that did not work never stops the page's reset: it stays owed, and
+ *  the next load tries it again and reports it (US-11 AC3b). */
 export function clearOffFileAfterErase(): void {
-  store?.clearOffFileData();
+  try {
+    store?.clearOffFileData();
+  } catch {
+    /* owed: the erase kept is not moved */
+  }
 }
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);

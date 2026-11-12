@@ -7,10 +7,11 @@ import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import {
-  adoptNextErase,
   connectRefusal,
+  forgetClearedErase,
   liftLocalInto,
   rememberBackend,
+  rememberedBackend,
   reportConnectFailure,
   resolveRemembered,
   type ResolvedBackend,
@@ -35,8 +36,8 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
+    if (rememberedBackend() !== 'dropbox') forgetClearedErase(); // another record (US-11 AC6)
     rememberBackend('dropbox');
-    adoptNextErase();
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
     return { resolved: { adapter: resumed, backend: 'dropbox' } };
   }
@@ -51,8 +52,8 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
+    if (rememberedBackend() !== 'google-drive') forgetClearedErase(); // another record (US-11 AC6)
     rememberBackend('google-drive');
-    adoptNextErase();
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
     return { resolved: { adapter: gdResumed, backend: 'google-drive' } };
   }

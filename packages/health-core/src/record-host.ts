@@ -6,7 +6,7 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
-import { eraseIdentityOf, eraseLater, eraseOf, readErase } from './erase-identity';
+import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
@@ -52,35 +52,38 @@ export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncCont
 /**
  * At a session's open: the erase this device's off-file data was last cleared
  * for, so a clear is owed once the record is at a later one (US-11 AC6). With
- * none kept, or one that cannot be read, a record that was erased owes one
- * (''), and a record never erased owes none and is kept as cleared, so its
- * live drafts stay. On the mark a connect leaves (ADOPT_ERASE), the record
- * adopts: it owes none, and its erase replaces the mark, except on an
- * on-device `fallback`, which leaves the mark for the cloud's first open.
+ * none kept (a first run, or a connect or log-off removed it), or one that
+ * cannot be read, the record adopts its own erase: it owes no clear, and its
+ * erase is kept, except on an on-device `fallback`, which keeps nothing, so
+ * the cloud's first open adopts the cloud's erase.
  */
 export function clearedAtOpen(host: RecordHost, file: RoadmapFile, fallback: boolean): string {
-  const kept = host.clearedErase();
-  if (kept === ADOPT_ERASE) {
-    if (!fallback) host.noteCleared(eraseIdentityOf(file));
-    return eraseIdentityOf(file);
-  }
-  if (kept != null && readErase(kept)) return kept;
-  return eraseOf(file)[0] > 0 ? '' : keepCleared(host, eraseIdentityOf(file));
+  const kept = keptErase(host);
+  if (kept != null) return kept;
+  if (!fallback) host.noteCleared(eraseIdentityOf(file));
+  return eraseIdentityOf(file);
 }
 
-/** What a connect (a sign-in, a switch) writes as the erase kept: no erase and
- *  no identity, only "the next record opened keeps its own" (US-11 AC6). */
-export const ADOPT_ERASE = 'adopt';
+/** Whether a clear is owed for `identity`: it is later than the erase this
+ *  session cleared for. With none kept (removed by a connect or a log-off, or
+ *  this tab's record is no longer the one chosen), none is owed (US-11 AC6). */
+export function clearOwed(host: RecordHost, identity: string, clearedFor: string): boolean {
+  return keptErase(host) != null && eraseLater(identity, clearedFor);
+}
 
 /** Keep `identity` as the erase last cleared for, unless the one kept is later:
- *  the kept erase never moves back (US-11 AC6). Answers the erase now kept.
- *  The mark stays, so the record the connect opens still adopts. */
+ *  the kept erase never moves back (US-11 AC6). Answers the erase now kept. */
 export function keepCleared(host: RecordHost, identity: string): string {
-  const kept = host.clearedErase();
-  if (kept === ADOPT_ERASE) return identity;
+  const kept = keptErase(host);
   if (kept != null && !eraseLater(identity, kept)) return kept;
   host.noteCleared(identity);
   return identity;
+}
+
+/** The erase kept as cleared for; null when none is kept, or it cannot be read. */
+function keptErase(host: RecordHost): string | null {
+  const kept = host.clearedErase();
+  return kept != null && readErase(kept) ? kept : null;
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).

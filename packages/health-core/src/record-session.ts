@@ -8,10 +8,10 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
-import { eraseIdentityOf, eraseLater, eraseOf } from './erase-identity';
+import { eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, clearOwed, keepCleared, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
@@ -535,7 +535,7 @@ export class RecordSession {
 
   /** The clear an erase taken in owes: retried at each load, save and re-read until it lands (US-11 AC6, AC7). */
   private settleClear(): void {
-    if (!eraseLater(this.eraseIdentity, this.clearedFor)) return;
+    if (!clearOwed(this.host, this.eraseIdentity, this.clearedFor)) return;
     try {
       this.clearOffFileData();
     } catch (error) {
