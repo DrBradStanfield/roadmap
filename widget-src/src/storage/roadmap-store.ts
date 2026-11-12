@@ -561,7 +561,7 @@ export class RoadmapStore {
   }
 
   /** Clear the off-file health data for this copy's erase, sparing outliving originals (US-11 AC6; see the session).
-   *  A failed clear is reported ('Record upkeep failed') and stays owed: it never stops the page's reset. */
+   *  A failed clear is reported ('Record upkeep failed') and not retried in this session: it never stops the page's reset. */
   clearOffFileData(): void {
     try { this.session.clearOffFileData(); } catch (error) { this.host.report(error, { op: 'clear-off-file', repeat: false }); }
   }
