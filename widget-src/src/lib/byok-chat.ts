@@ -24,7 +24,7 @@ import { toolOnlyAck, type ProposedEdit } from '@roadmap/health-core/chat-edits'
 import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
-import { getChatHistory } from './chat-history-access';
+import { askChatHistory, getChatHistory } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
@@ -157,7 +157,9 @@ export async function sendMessage(
   // Don't stall the answer on the store: only conversation FOLLOW-UPS need it
   // (for history); new conversations use it solely for the fire-and-forget
   // persist below.
-  const storePromise = getChatHistory();
+  // Saved only under the erase marks taken now (US-11 AC2h).
+  const opened = askChatHistory();
+  const storePromise = opened.then(({ store }) => store);
   const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? shownHistory : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
@@ -211,9 +213,10 @@ export async function sendMessage(
   // (US-11 AC2h) — fire-and-forget, history is best-effort.
   const convId = conversationId ?? `conv-${Date.now()}`;
   const assistantId = `a-${Date.now()}`;
-  void storePromise
-    .then((store) =>
+  void opened
+    .then(({ store, askedMarks }) =>
       chatAskedUnder() !== asked ? undefined : store?.recordExchange({
+        askedMarks,
         conversationId: convId,
         isNew: !conversationId,
         userText: message,
