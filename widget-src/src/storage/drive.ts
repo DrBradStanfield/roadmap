@@ -11,7 +11,7 @@
  *    browser (same posture as Dropbox's). Result: connect once, stay connected.
  *  - FALLBACK: if the endpoint is unreachable (server down / gone dark), a GIS
  *    popup on a user gesture mints a ~1 h access token and sync continues
- *    serverless (connectViaPopup, used by the Reconnect button).
+ *    serverless (acquireViaPopup, used by the Reconnect button).
  *
  * SCOPING: drive.file — the app sees ONLY files it created (including raw lab
  * documents later), never the rest of the user's Drive. The record lives as a
@@ -342,17 +342,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
-  }
-
-  /**
-   * FALLBACK connect/reconnect: GIS popup (~1 h token, no refresh token).
-   * Needs a user gesture; works even with the exchange endpoint down. True
-   * when this adapter saved its own sign-in (US-09 AC45). */
-  async connectViaPopup(): Promise<boolean> {
-    const token = await this.acquireViaGis();
-    this.stored = this.stored ?? {};
-    this.tokens = { accessToken: token.accessToken, expiresAt: token.expiresAt };
-    return setSignIns({ [TOKENS_KEY]: this.tokens, [CONFIG_KEY]: this.stored }, this.gen);
   }
 
   /**
@@ -725,9 +714,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     throw new StorageError('Google Drive needs to be reconnected.');
   }
 
-  /** GIS popup token grant (requires a user gesture). With GIS loaded, the
-   *  popup opens synchronously inside the click; otherwise it waits for the load. */
-  private acquireViaGis(): Promise<{ accessToken: string; expiresAt: number }> {
+  /** FALLBACK reconnect: a GIS popup grant (~1 h token, no refresh token), which
+   *  works even with the exchange endpoint down. It writes nothing: savePopupGrant
+   *  (drive-popup-grant.ts) keeps it (US-09 AC45). Needs a user gesture: with GIS
+   *  loaded, the popup opens synchronously inside the click; otherwise it waits for the load. */
+  acquireViaPopup(): Promise<{ accessToken: string; expiresAt: number }> {
     return gisReady() ? this.requestGisToken() : loadGis().then(() => this.requestGisToken());
   }
 

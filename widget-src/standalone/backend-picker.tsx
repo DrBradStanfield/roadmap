@@ -202,6 +202,14 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             <h2 tabIndex={-1} data-initial-focus>{PICKER_TITLE}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
+            {/* The Drive reconnect is a move too (AC45): its moves wait, and Stop ends it with no
+                error until its popup answer is saved; from then it runs to its reload. */}
+            {(flow.kind === 'reconnecting' || flow.kind === 'reconnected') && (
+              <div className="hr-modal-logoff">
+                <p className="hr-modal-sub" role="status">Reconnecting Google Drive…</p>
+                {flow.kind === 'reconnecting' && <button type="button" className="hr-sync-link" onClick={() => dispatch({ type: 'cancel', run: flow.run })}>Stop reconnecting</button>}
+              </div>
+            )}
             {OPTIONS.map((o, i) => (
               <React.Fragment key={o.id}>
                 {o.advanced && !OPTIONS[i - 1]?.advanced && <div className="hr-opt-divider">Advanced</div>}

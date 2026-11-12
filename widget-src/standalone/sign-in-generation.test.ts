@@ -382,12 +382,12 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     await connect.finishFormConnect(new WebDavAdapter({ url: DAV, username: 'someone', password: 'test-pass-this' }, gen), 'self-host', gen);
   }
 
-  /** The storage bar's Drive reconnect, clicked: the GIS popup grants a token. */
+  /** The storage bar's Drive reconnect, clicked in a reconnect session (Drive is still the chosen home): the GIS popup grants a token. */
   async function reconnectDrive(drop?: string) {
-    vi.resetModules();
+    vi.resetModules(); localStorage.setItem(BACKEND_KEY, 'google-drive');
     vi.doMock('react', async (importOriginal) => {
       const react = await importOriginal<typeof import('react')>();
-      const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {} };
+      const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {}, useSyncExternalStore: (_s: unknown, get: () => unknown) => get() };
       return { ...react, ...hooks, default: { ...react, ...hooks } };
     });
     Object.assign(window, { google: { accounts: { oauth2: { initTokenClient: (options: { callback: (r: object) => void }) => ({
@@ -458,7 +458,7 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     for (const [saved, value] of Object.entries(otherAccount())) localStorage.setItem(saved, JSON.stringify(value));
     await seedGuest();
     await run(key);
-    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe(run === reconnectDrive ? 'google-drive' : null); // a reconnect keeps its home as it was
     expect(cloudWrites()).toEqual([]);
   });
 
@@ -475,7 +475,7 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
       ['a redirect return', (drop: string) => returnFrom('google-drive', drop)],
     ] as const)('%s', async (_name, run) => {
       await run(DRIVE_CONFIG);
-      expect([DRIVE_TOKENS, DRIVE_CONFIG, BACKEND_KEY].map((key) => localStorage.getItem(key))).toEqual([null, null, null]);
+      expect([DRIVE_TOKENS, DRIVE_CONFIG, BACKEND_KEY].map((key) => localStorage.getItem(key))).toEqual([null, null, run === reconnectDrive ? 'google-drive' : null]);
     });
 
     it.each([
