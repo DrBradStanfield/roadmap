@@ -4,7 +4,7 @@
 // a fixed sleep, so a busy Mac cannot end them early. macOS only (lockf): CI runs Linux, so these run locally:
 //   npx vitest run tools/mac-slot.test.ts
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -30,6 +30,8 @@ const hold = (name: string, code = 0) =>
   ['sh', '-c', `echo started >> "${fake}/${name}.log"; while [ ! -f "${fake}/${name}.go" ]; do sleep 0.1; done; exit ${code}`];
 const release = (name: string) => writeFileSync(join(fake, `${name}.go`), '');
 const started = (name: string) => existsSync(join(fake, `${name}.log`));
+// A waiter's queue marker: waiting.<kind>.<stamp>.<pid> (or the older waiting.<kind>.<pid>).
+const marker = (pid?: number) => readdirSync(home).filter((f) => new RegExp(`^waiting\\.codex\\.(.*\\.)?${pid}$`).test(f));
 
 function bg(kind: string, cmd: string[], extra: Record<string, string> = {}) {
   const p = spawn('sh', [SCRIPT, kind, '--', ...cmd], { env: env(extra) });
@@ -231,13 +233,216 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     await until(() => started('a'));
     const w = bg('codex', hold('b'), extra);
     await until(() => /waiting for a codex slot/.test(w.err()));
+    expect(marker(w.p.pid)).toHaveLength(1);
     const t = Date.now();
     w.p.kill('SIGTERM');
     expect(await w.done).toBe(143);
-    expect(Date.now() - t).toBeLessThan(3000);
-    expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
+    expect(Date.now() - t).toBeLessThan(1000);
+    expect(marker(w.p.pid)).toEqual([]);
     expect(started('b')).toBe(false);
   });
+
+  // A queued waiter must not spin: macOS lockf in its fd form burns a full core while it blocks, so the slot wait
+  // tries an instant lockf every 0.2 s. CPU over a 3 s wait = the live children's time from ps just before TERM
+  // (a blocked lockf) plus /usr/bin/time's count after TERM (the shell and every child it reaped). A live child
+  // the shell then reaps is counted twice, so the sum is an upper bound: the spinning script read 6.06 s, about
+  // 3 s of it the one lockf. An exec drops a process's child counts on macOS, so the waiter is ended by TERM,
+  // never by starting its command.
+  it('a slot waiter uses almost no CPU while it waits', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const p = spawn('/usr/bin/time', ['-p', 'sh', SCRIPT, 'codex', '--', 'true'], { env: env(extra) });
+    kids.push(p);
+    let err = '';
+    p.stderr.on('data', (d) => { err += d; });
+    const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
+    await until(() => /waiting for a codex slot/.test(err));
+    await new Promise((r) => setTimeout(r, 3000));
+    const sh = spawnSync('pgrep', ['-P', String(p.pid)], { encoding: 'utf8' }).stdout.trim();
+    const live = spawnSync('pgrep', ['-P', sh], { encoding: 'utf8' }).stdout.trim().split('\n').filter(Boolean);
+    const ps = live.length ? spawnSync('ps', ['-o', 'time=', '-p', live.join(',')], { encoding: 'utf8' }).stdout : '';
+    const liveCpu = ps.trim().split('\n').filter(Boolean)
+      .reduce((t, l) => { const [m, sec] = l.trim().split(':'); return t + Number(m) * 60 + Number(sec); }, 0);
+    process.kill(Number(sh), 'SIGTERM');
+    expect(await done).toBe(143);
+    const cpu = (k: string) => Number(new RegExp(`^${k} +([0-9.]+)$`, 'm').exec(err)?.[1]);
+    const total = liveCpu + cpu('user') + cpu('sys');
+    expect(Number.isNaN(total)).toBe(false);
+    expect(total).toBeLessThan(0.3);
+  }, 20000);
+
+  it('INT while waiting for a slot exits promptly with 130 and drops its waiting entry', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', hold('b'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    expect(marker(w.p.pid)).toHaveLength(1);
+    const t = Date.now();
+    w.p.kill('SIGINT');
+    expect(await w.done).toBe(130);
+    expect(Date.now() - t).toBeLessThan(1000);
+    expect(marker(w.p.pid)).toEqual([]);
+    expect(started('b')).toBe(false);
+  });
+
+  // R1 (PR 1427 review): a caller that reruns straight after its own run scans within milliseconds of the slot
+  // freeing. Waiters queue by marker and a newcomer defers to a live one, so the chain cannot starve them; the old
+  // blocking lockf likewise handed a freed slot to a blocked waiter at once.
+  const chain = (runs: number) => ['sh', '-c', `i=1; while [ $i -le ${runs} ]; do sh "${SCRIPT}" codex -- sh -c "echo C$i >> '${fake}/order'; sleep 0.5"; i=$((i + 1)); done`];
+  const queued = (name: string) => ['sh', '-c', `echo ${name} >> "${fake}/order"; sleep 0.3`];
+  const order = () => (existsSync(join(fake, 'order')) ? readFileSync(join(fake, 'order'), 'utf8').trim().split('\n') : []);
+  it('a waiter runs before a chain of back-to-back runs ends (no starvation)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
+    kids.push(ch);
+    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    await until(() => order().includes('C1'));
+    const w = bg('codex', queued('W'), extra);
+    expect(await chDone).toBe(0);
+    expect(await w.done).toBe(0);
+    const o = order();
+    expect(o.indexOf('W')).toBeGreaterThan(-1);
+    expect(o.indexOf('W')).toBeLessThan(o.indexOf('C6'));
+  }, 30000);
+
+  it('two waiters run in arrival order, before a chain of back-to-back runs ends', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    const ch = spawn(chain(6)[0], chain(6).slice(1), { env: env(extra) });
+    kids.push(ch);
+    const chDone = new Promise<number>((r) => ch.on('exit', (x) => r(x ?? -1)));
+    await until(() => order().includes('C1'));
+    const w1 = bg('codex', queued('W1'), extra);
+    await until(() => /waiting for a codex slot/.test(w1.err()));
+    const w2 = bg('codex', queued('W2'), extra);
+    expect(await chDone).toBe(0);
+    expect(await w1.done).toBe(0);
+    expect(await w2.done).toBe(0);
+    const o = order();
+    expect(o.indexOf('W1')).toBeGreaterThan(-1);
+    expect(o.indexOf('W1')).toBeLessThan(o.indexOf('W2'));
+    expect(o.indexOf('W2')).toBeLessThan(o.indexOf('C6'));
+  }, 30000);
+
+  // R2: a waiter tries every slot on each retry, so a slot freeing while another stays held is taken within ~0.2 s.
+  // The slot released is the one the old code's waiter did not watch (pid mod N + 1), so the pin is deterministic.
+  it('with 2 slots, a waiter takes a freed slot within 1 s while the other stays held', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '2' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    bg('codex', hold('b'), extra);
+    await until(() => started('b'));
+    const w = bg('codex', hold('c'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    const watched = ((w.p.pid ?? 0) % 2) + 1;
+    release(watched === 1 ? 'b' : 'a'); // a holds slot 1, b slot 2
+    const t = Date.now();
+    await until(() => started('c'), 5000);
+    expect(Date.now() - t).toBeLessThan(1000);
+  }, 20000);
+
+  // Lead T17: under a decimal-comma locale sysctl prints "6,44", which read as unreadable and failed open. This
+  // runs the real sysctl path (no injected reader) under de_DE with a cap of 0, so a read load always waits and a
+  // 0-second bound refuses; a fake sysctl would only test our guess of its locale behaviour.
+  const commaLocale = process.platform === 'darwin'
+    && /,/.test(spawnSync('sysctl', ['-n', 'vm.loadavg'], { env: { ...process.env, LC_ALL: 'de_DE.UTF-8' }, encoding: 'utf8' }).stdout ?? '');
+  it.skipIf(!commaLocale)('reads the real load under a decimal-comma locale (lead T17)', async () => {
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`],
+      { LC_ALL: 'de_DE.UTF-8', LANG: 'de_DE.UTF-8', MAC_SLOT_LOAD_CMD: '', MAC_SLOT_MAX_LOAD: '0', MAC_SLOT_LOAD_WAIT_SECONDS: '0' });
+    expect(await r.done).toBe(75);
+    expect(existsSync(join(fake, 'ran'))).toBe(false);
+    expect(r.err()).toMatch(/refused: the 1-minute load [0-9]+\.[0-9]+ is still 0 or more after 0s/);
+    expect(r.err()).not.toMatch(/could not read the load/);
+  });
+
+  // R4 (PR 1427 review): a marker is live only while its waiter holds the kernel lock on it (fd 7). A pid can be
+  // reused, and a marker left by a SIGKILL or a reboot names one; on 220c9803c ahead() judged by `kill -0`, so a
+  // stale marker naming any live pid queued every caller of that kind behind it, with no limit.
+  const sleeper = () => { const s = spawn('sleep', ['300']); kids.push(s); return s.pid ?? 0; };
+  const waiting = (kind: string) => (existsSync(home) ? readdirSync(home).filter((f) => f.startsWith(`waiting.${kind}.`)) : []);
+  it('a stale marker naming a live unrelated pid does not hold up a caller (R4)', () => {
+    mkdirSync(home, { recursive: true });
+    writeFileSync(join(home, `waiting.codex.${Date.now() - 60000}.${sleeper()}`), 'left behind\n');
+    const t = Date.now();
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(Date.now() - t).toBeLessThan(2000);
+    expect(s.stderr).not.toMatch(/waiting for a codex slot/);
+    expect(waiting('codex')).toEqual([]);
+  });
+
+  it('a marker left from before a reboot (unlocked, naming a live pid) is cleared by status and blocks no one (R4)', () => {
+    mkdirSync(home, { recursive: true });
+    writeFileSync(join(home, `waiting.tests.1000000000000.${process.pid}`), 'before the reboot\n');
+    const st = spawnSync('sh', [SCRIPT, 'status'], { env: env(), encoding: 'utf8' });
+    expect(st.stdout).toMatch(/tests: 0\/3 held, 0 waiting/);
+    expect(waiting('tests')).toEqual([]);
+    writeFileSync(join(home, `waiting.tests.1000000000000.${process.pid}`), 'before the reboot\n');
+    const s = spawnSync('sh', [SCRIPT, 'tests', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(s.stderr).not.toMatch(/waiting for a tests slot/);
+    expect(waiting('tests')).toEqual([]);
+  });
+
+  it('a waiter SIGKILLed mid-wait holds up no one, and leaves no marker once the next caller runs (R4)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', hold('b'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    w.p.kill('SIGKILL');
+    await w.done;
+    release('a');
+    const t = Date.now();
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(extra), encoding: 'utf8', timeout: 5000 });
+    expect(s.status).toBe(0);
+    expect(Date.now() - t).toBeLessThan(2000);
+    expect(started('b')).toBe(false);
+    expect(waiting('codex')).toEqual([]);
+  });
+
+  it('the command does not inherit the queue marker descriptor (fd 7), only the slot (fd 9) (R4)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', ['sh', '-c', `ls /dev/fd > "${fake}/fds"`], extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    release('a');
+    expect(await w.done).toBe(0);
+    const fds = readFileSync(join(fake, 'fds'), 'utf8').trim().split('\n');
+    expect(fds).toContain('9');
+    expect(fds).not.toContain('7');
+  });
+
+  // R5: a caller writes and locks its marker before its first scan, so arrival order is start order. On 220c9803c
+  // the marker came only after a failed `scan retry` (0.6 s with three slots held), and a later caller could slip in.
+  it('a caller holds its marker before its first scan ends (R5)', async () => {
+    for (const n of ['a', 'b', 'c']) bg('tests', hold(n));
+    await until(() => started('a') && started('b') && started('c'));
+    const d = bg('tests', hold('d'));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(waiting('tests').filter((f) => f.endsWith(`.${d.p.pid}`))).toHaveLength(1);
+  });
+
+  it('two callers started 0.15 s apart while the slot is held run in that order, every time (R5)', async () => {
+    const extra = { MAC_SLOT_CODEX_MAX: '1' };
+    for (let round = 0; round < 3; round += 1) {
+      const h = bg('codex', hold('x'), extra);
+      await until(() => started('x'));
+      const first = bg('codex', queued(`F${round}`), extra);
+      await new Promise((r) => setTimeout(r, 150));
+      const second = bg('codex', queued(`S${round}`), extra);
+      await until(() => /waiting for a codex slot/.test(first.err()) && /waiting for a codex slot/.test(second.err()));
+      release('x');
+      expect(await h.done).toBe(0);
+      expect(await first.done).toBe(0);
+      expect(await second.done).toBe(0);
+      rmSync(join(fake, 'x.go'));
+      rmSync(join(fake, 'x.log'));
+      expect(order().slice(-2)).toEqual([`F${round}`, `S${round}`]);
+    }
+  }, 30000);
 
   it('honours MAC_SLOT_MAX_LOAD', async () => {
     setLoads('9.00');

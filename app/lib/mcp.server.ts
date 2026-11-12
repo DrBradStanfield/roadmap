@@ -237,7 +237,7 @@ async function callHostedTool(
   if (twoPhase) {
     args = twoPhase.args;
     if (twoPhase.confirm !== undefined) {
-      const refusal = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, twoPhase.approval, now);
+      const refusal = await checkConfirm(token, name, twoPhase.args, twoPhase.confirm, twoPhase.approval, now);
       if (refusal) return refuse(refusal, 'confirm');
       confirmed = true;
     }
@@ -389,7 +389,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
  * then the receipt unused. Every failure is worded; an early call is told when
  * to come back and not to spin.
  */
-function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): string | null {
+async function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): Promise<string | null> {
   const nowMs = Date.parse(now);
   const conn = hash(connectionKey(token));
   const { ttlSeconds } = STEP_WINDOWS.proposal;
@@ -422,10 +422,9 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   if (approval.length > MAX_APPROVAL_LENGTH) {
     return `approval is at most ${MAX_APPROVAL_LENGTH} characters: quote only the user’s own words approving this change. Nothing was written.`;
   }
-  if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
-    return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
-  }
-  return null;
+  const claim = await claimProposal(confirm, conn, ttlSeconds * 1000, nowMs);
+  if (claim === 'spent') return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
+  return claim === 'unavailable' ? 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.' : null;
 }
 
 // ---------------------------------------------------------------------------

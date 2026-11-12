@@ -15,11 +15,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
+import type { ClaimsState } from '../lib/single-use-claims.test-helpers';
+
+/** One claim store behind every server instance in this file (US-36 AC9). */
+const claims = vi.hoisted(() => ({ state: null as null | ClaimsState, noClient: false }));
+vi.mock('../lib/supabase-client.server', async (actual) => {
+  const helpers = await import('../lib/single-use-claims.test-helpers');
+  claims.state ??= helpers.newClaimsState();
+  const client = helpers.claimsAdmin(claims.state);
+  return { ...(await actual<object>()), get supabaseAdmin() { return claims.noClient ? null : client; } };
+});
+vi.mock('@sentry/react-router', async (actual) => ({ ...(await actual<object>()), captureMessage: vi.fn() }));
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createCoreRow } from '../../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
+import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
 import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
@@ -53,6 +65,8 @@ beforeEach(() => {
   process.env.DROPBOX_APP_KEY = 'app-key';
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
+  resetClaimsState(claims.state!);
+  claims.noClient = false;
   cloud = new MemoryCloud();
   setAdapterFactory(() => new MemoryAdapter(cloud));
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
@@ -256,6 +270,8 @@ const QUOTE_APPROVAL = (name: string) =>
   `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
+/** The refusal while a confirm cannot be checked: worded, and nothing is written. */
+const CLAIM_UNCHECKED = 'The confirm could not be checked just now, so nothing was written. Try the same call once more in a minute. If it is then refused as already used, propose the change again.';
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
 
 async function callToolAt(access: string, name: string, args: unknown, now: string) {
@@ -521,6 +537,174 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const withConfirm = (listed.result!.tools as Array<{ name: string; inputSchema: { properties: Record<string, unknown> } }>)
       .filter((t) => 'confirm' in t.inputSchema.properties).map((t) => t.name);
     expect(withConfirm).toEqual(['correct_value', 'update_profile', 'report_feedback']);
+  });
+});
+
+describe('US-36 AC9 — a confirm works once across restarts', () => {
+  const FIX = { id: LDL_ID, newValue: 2.8, expectedValue: STORED_LDL };
+  afterEach(() => {
+    delete process.env.GITHUB_ISSUES_TOKEN;
+  });
+
+  /** A GitHub that files, counted. */
+  function stubGithub(): { filed: number } {
+    process.env.GITHUB_ISSUES_TOKEN = 'test-token-good';
+    const count = { filed: 0 };
+    const passThrough = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (!String(url).startsWith('https://api.github.com/')) return passThrough(url, init);
+      count.filed++;
+      return Response.json({ html_url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 }, { status: 201 });
+    }));
+    return count;
+  }
+
+  it('a confirm resent after a memory reset is refused as already used, and nothing is written or filed again', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const github = stubGithub();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11))).isError).toBe(false);
+    const version = cloud.files.get(ROADMAP_FILE_NAME)!.version;
+    resetMcpMemory();
+    const again = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(12));
+    expect(again.isError).toBe(true);
+    expect(again.text).toContain('already been used');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(version);
+    expect(storedRecord().labValues).toHaveLength(2);
+
+    const report = { kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps here.' };
+    const filing = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
+    expect((await callToolAt(access, 'report_feedback', { ...report, confirm: filing, approval: APPROVED }, at(31))).isError).toBe(false);
+    expect(github.filed).toBe(1);
+    resetMcpMemory();
+    const refiled = await callToolAt(access, 'report_feedback', { ...report, confirm: filing, approval: APPROVED }, at(32));
+    expect(refiled.isError).toBe(true);
+    expect(refiled.text).toContain('already been used');
+    expect(github.filed).toBe(1);
+  });
+
+  it('an update_profile confirm resent after the stored value was set back writes nothing', async () => {
+    seedEmpty();
+    const record = storedRecord();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify({ ...record, profile: { ...record.profile, heightCm: 170 } }), version: 2 });
+    const access = await connect();
+    const args = { heightCm: 180, expected: { heightCm: 170 } };
+    const receipt = OUTPUTS.update_profile.parse((await callToolAt(access, 'update_profile', args, NOW)).structured).confirm!;
+    expect((await callToolAt(access, 'update_profile', { ...args, confirm: receipt, approval: APPROVED }, at(11))).isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(180);
+    const changed = storedRecord();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify({ ...changed, profile: { ...changed.profile, heightCm: 170 } }), version: 9 });
+    resetMcpMemory();
+    const again = await callToolAt(access, 'update_profile', { ...args, confirm: receipt, approval: APPROVED }, at(12));
+    expect(again.isError).toBe(true);
+    expect(again.text).toContain('already been used');
+    expect(storedRecord().profile.heightCm).toBe(170);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(9);
+  });
+
+  it('two server instances over one claim store: the second confirm is refused', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11))).isError).toBe(false);
+    vi.resetModules();
+    const second = await import('../lib/mcp.server');
+    second.setAdapterFactory(() => new MemoryAdapter(cloud));
+    try {
+      const res = await second.mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'correct_value', arguments: { ...FIX, confirm: receipt, approval: APPROVED } } }),
+      }), at(12));
+      const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
+      expect(answer.result.isError).toBe(true);
+      expect(answer.result.content[0].text).toContain('already been used');
+      expect(storedRecord().labValues).toHaveLength(2);
+    } finally {
+      second.setAdapterFactory(null);
+    }
+  });
+
+  it('while the claim store cannot be reached a confirm is refused in words, writes nothing and charges nothing', async () => {
+    const Sentry = await import('@sentry/react-router');
+    vi.mocked(Sentry.captureMessage).mockClear();
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    for (const down of ['throw', 'error'] as const) {
+      claims.state!.down = down;
+      const refused = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
+      expect(refused.isError, down).toBe(true);
+      expect(refused.text, down).toBe(CLAIM_UNCHECKED);
+      expect(storedRecord().labValues, down).toHaveLength(1);
+      expect(cloud.files.get(ROADMAP_FILE_NAME)!.version, down).toBe(1);
+    }
+    // Fixed words and a fixed tag: nothing that names the receipt, the connection or the client.
+    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+      ['mcp_confirm: claim store unavailable', { level: 'warning', tags: { feature: 'mcp_confirm' } }],
+      ['mcp_confirm: claim store unavailable', { level: 'warning', tags: { feature: 'mcp_confirm' } }],
+    ]);
+
+    claims.state!.down = false;
+    const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(12));
+    expect(written.isError).toBe(false);
+    expect(storedRecord().labValues).toHaveLength(2);
+
+    // Only the proposal was charged: eleven more charged proposals fit in the hour; the twelfth meets the allowance.
+    const newRow = storedRecord().labValues.find((m) => m.correctsId === LDL_ID)!;
+    for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct - 1; i++) {
+      const wrong = await callToolAt(access, 'correct_value', { id: newRow.id, newValue: 2.7, expectedValue: 9.9 }, at(13));
+      expect(wrong.text, `guess ${i}`).not.toContain('allowance');
+    }
+    const spent = await callToolAt(access, 'correct_value', { id: newRow.id, newValue: 2.7, expectedValue: 2.8 }, at(13));
+    expect(spent.text).toContain('allowance');
+  });
+
+  it('a claim the store kept but whose answer was lost: the retry is refused as already used, and nothing is written', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    claims.state!.down = 'commit-then-throw';
+    const lost = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
+    expect(lost.text).toBe(CLAIM_UNCHECKED);
+    claims.state!.down = false;
+    // This machine forgot the key before refusing, so the retry asks the store, which answers.
+    const retry = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(12));
+    expect(retry.isError).toBe(true);
+    expect(retry.text).toContain('already been used');
+    expect(claims.state!.inserts).toBe(2);
+    expect(storedRecord().labValues).toHaveLength(1);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+
+  it('a claim the store did not keep: the retry claims and writes once, and a resend after that is refused from memory', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    claims.state!.down = 'throw';
+    expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11))).text).toBe(CLAIM_UNCHECKED);
+    claims.state!.down = false;
+    expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(12))).isError).toBe(false);
+    expect(storedRecord().labValues).toHaveLength(2);
+    expect(claims.state!.inserts).toBe(2);
+    // A claim the store accepted stays in this machine's map: the resend never reaches the store.
+    const resend = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(13));
+    expect(resend.text).toContain('already been used');
+    expect(claims.state!.inserts).toBe(2);
+    expect(storedRecord().labValues).toHaveLength(2);
+  });
+
+  it('with no claim store configured a confirm is refused in words and nothing is written', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    claims.noClient = true;
+    const refused = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toBe(CLAIM_UNCHECKED);
+    expect(storedRecord().labValues).toHaveLength(1);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
 });
 

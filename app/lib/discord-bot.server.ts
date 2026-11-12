@@ -22,7 +22,7 @@ import {
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
-import { findDuplicateReply } from './chat-dedup.server';
+import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
@@ -257,6 +257,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   // How far the turn got, for the outer catch's Sentry report (H47). Plain
   // progress state inside one function, not a mode beside a union.
   let stage: 'prepare' | 'history' | 'ask' | 'send' | 'store' = 'prepare';
+  let release = (): void => undefined; // the turn claim's, once taken
 
   try {
     const strippedContent = stripBotMention(content, clientUserId);
@@ -286,32 +287,23 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     }
     const conversationId = dbResult.conversationId;
 
-    // Dedup check (shared with web — app/lib/chat-dedup.server.ts). Only when we have
-    // DB-backed conversation history with timestamps + is_fallback flag. Re-serves the
-    // previous bot reply via Discord without re-running classifier/router/main LLM.
-    if (conversationId) {
-      const dup = findDuplicateReply(dbResult.history, truncatedInput);
-      if (dup) {
-        Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
-          level: 'info',
-          tags: { feature: 'chat', platform: PLATFORM_DISCORD, diagnostic: 'dedup' },
-          extra: {
-            conversationId,
-            ageMs: dup.ageMs,
-            messageLength: truncatedInput.length,
-          },
-        });
-        if (typingInterval) {
-          clearInterval(typingInterval);
-          typingInterval = null;
-        }
-        // US-15 AC62: a partial re-send stores nothing; the 60 s window bounds a repeat.
-        stage = 'send';
-        const resent = await sendAnswer(message, splitForDiscord(dup.content, DISCORD_SPLIT_CHARS));
-        if (resent.kind === 'none-sent') await safeReply(message, ERROR_REPLY);
-        return;
+    // Dedup and turn claim (shared with web, app/lib/chat-dedup.server.ts): re-serve a reply
+    // the DB history shows was just given, or say nothing while an identical turn still runs:
+    // its answer arrives anyway (US-15 AC63).
+    const turn = await claimChatTurn(conversationId ?? authorId, truncatedInput, conversationId ? dbResult.history : [], PLATFORM_DISCORD);
+    if (turn.kind !== 'run') {
+      if (typingInterval) {
+        clearInterval(typingInterval);
+        typingInterval = null;
       }
+      if (turn.kind === 'busy') return;
+      // US-15 AC62: a partial re-send stores nothing; the 60 s window bounds a repeat.
+      stage = 'send';
+      const resent = await sendAnswer(message, splitForDiscord(turn.content, DISCORD_SPLIT_CHARS));
+      if (resent.kind === 'none-sent') await safeReply(message, ERROR_REPLY);
+      return;
     }
+    release = turn.release;
 
     // Narrow history to what the LLM call needs (role+content). When there's no
     // DB-backed reply chain but the message is in a thread, fall back to Discord-API
@@ -402,6 +394,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     await safeReply(message, ERROR_REPLY);
   } finally {
     activeLlmCalls--;
+    release();
   }
 }
 
