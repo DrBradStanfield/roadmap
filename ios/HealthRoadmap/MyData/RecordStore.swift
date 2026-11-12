@@ -19,7 +19,7 @@ final class RecordStore {
     }
 
     /// The record as stored, JSON text.
-    var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
+    private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
     /// My health's rows and the plan, from one engine call, so the two always show the same record
     /// (US-25 AC2); nil while the record cannot be read.
     private(set) var drawn: HealthEngine.Drawn?
@@ -30,27 +30,15 @@ final class RecordStore {
     /// The plan's cards by topic, from the same call (US-73 AC3).
     var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
-    var problem: RecordProblem?
-    // Source union (next PR) replaces the phone/cloud fields: cloudErase, cloudSession,
-    // cloudName, cloudAccount and marksPending here, and recordJSON above. Their readers
-    // and writers live in RecordStore+Source.swift.
-    /// While a cloud record is open (US-25 AC11): the erase the screen shows. Every
-    /// edit then goes through the engine's session, which refuses one made for
-    /// another erase. Nil: the record is the phone's file, written here.
-    var cloudErase: String?
-    /// The engine session the cloud record came from.
-    var cloudSession: Int?
+    private(set) var problem: RecordProblem?
+    /// Which record is shown, the phone's file or a cloud's, and the connected cloud's link
+    /// (US-25 AC11; RecordStore+Source.swift). Changed only through `land`. A phone edit made
+    /// while a cloud is connected sets the link's pending marker in the step that writes it,
+    /// read when the edit's turn comes (US-09 AC4).
+    private(set) var source = Source.phone(link: nil)
     /// Told after each edit: in the cloud, that a save is on its way; on the
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
-    /// While a cloud is connected but its record is not open: the marker a phone edit
-    /// sets, in the same engine step that writes it, so the next open merges it up
-    /// (US-09 AC4). Read when the edit's turn comes: an edit asked for before a first
-    /// connect, landing after it, is marked too. Set by CloudSync; nil with no cloud.
-    @ObservationIgnored var marksPending: PhoneFiles?
-    /// The connected cloud's provider and account, from CloudSync; `draw` sets `cloudName` from it with `cloudErase`.
-    @ObservationIgnored var cloudAccount: String?
-    @ObservationIgnored var cloudName: String?
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
@@ -94,7 +82,7 @@ final class RecordStore {
     @ObservationIgnored private var tail: (@MainActor () async -> Void)?
     @ObservationIgnored private var chained = 0
     /// The engine's stamp on the cloud record shown: one handed over earlier is stale.
-    @ObservationIgnored var shownOrder = 0
+    @ObservationIgnored private var shownOrder = 0
 
     /// Unit switches asked for and not yet landed, per-test or the master one. While one
     /// is pending, a sheet would pin the old units and label itself from the new row:
@@ -179,10 +167,74 @@ final class RecordStore {
     }
 
     /// Shows what the phone's file holds.
-    func show(_ loaded: PhoneLoad) {
-        recordJSON = loaded.record
-        display(loaded.drawn)
-        problem = loaded.problem
+    private func show(_ loaded: PhoneLoad) {
+        land(.phoneLoaded, record: loaded.record, drawn: loaded.drawn, problem: loaded.problem)
+    }
+
+    // MARK: Source (US-25 AC11)
+
+    /// The one door to `source`: the event's transition, then what it shows, in one synchronous
+    /// step. Assigns only on change, so CloudSync's link after every send moves nothing it need not.
+    @discardableResult
+    private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil) -> Source.Effect {
+        let (next, effect) = Source.transition(source, event)
+        if next != source { source = next }
+        switch effect {
+        case .show:
+            if let record { recordJSON = record }
+            display(drawn)
+            self.problem = problem
+        case .unreadable:
+            display(nil)
+            self.problem = problem
+        case .none, .drop: break
+        }
+        return effect
+    }
+
+    /// The connected cloud's account and pending marker, from CloudSync after each change to its
+    /// connection; nil with no cloud. Synchronous, never chained (lead S23).
+    func link(_ link: Source.Link?) {
+        land(.linked(link))
+    }
+
+    /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
+    /// False when it was not drawn: nothing on screen moved, the units included.
+    @discardableResult
+    func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil) async -> Bool {
+        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices)
+    }
+
+    /// A cloud record onto the screen: `event` says whether the session sent it or an edit made it.
+    @discardableResult
+    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil) async -> Bool {
+        // One the engine handed over before the record now shown is stale: the screen
+        // keeps the newer one (a re-read that crossed an edit).
+        if let order {
+            guard order > shownOrder else { return false }
+            shownOrder = order
+        }
+        let choices = choices ?? unitChoices
+        guard let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json),
+              land(event, record: record, drawn: shown) == .show
+        else { return false }
+        publish(choices)
+        return true
+    }
+
+    /// Back to the phone's own file (Disconnect, or a cloud that could not open). While the file
+    /// is read, the source is `leaving`: the screen still shows and reports the cloud (lead S10).
+    @discardableResult
+    func showPhone() -> Task<Void, Never> {
+        chain {
+            self.land(.phoneRequested)
+            let (file, deviceId, units) = (self.file, self.deviceId, self.unitChoices.json)
+            do {
+                self.show(try await self.engine.loadPhone(file, deviceId: deviceId, units: units))
+            } catch {
+                self.land(.phoneUnreadable, problem: RecordProblem(error))
+            }
+        }
     }
 
     /// The same record drawn again at `now` (Codex R1): the plan reads the time (ages,
@@ -227,7 +279,8 @@ final class RecordStore {
     /// neither lands between the other's read and write (ChatHistoryStore).
     func erasePhone(historyJSON: String?, keepChat: @escaping @Sendable (_ chatHistory: String?, _ engineErased: Bool) -> Bool) async -> PhoneErase {
         await chain {
-            guard self.problem == nil else { return .unreadable }
+            // Never on a cloud record: DataEraser takes those through the session.
+            guard case .phone = self.source, self.problem == nil else { return .unreadable }
             let (file, deviceId) = (self.file, self.deviceId)
             // The file is read on the engine's queue, in the same step as the erase.
             guard let result = try? await self.engine.perform({ engine -> HealthEngine.PhoneErase? in
@@ -240,11 +293,9 @@ final class RecordStore {
                 // Marked and counted as any phone edit is: a connect in flight that lifted
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
-                let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.marksPending, deviceId: self.deviceId)
-                self.recordJSON = result.record
-                self.display(shown)
+                let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.source.link?.pending, deviceId: self.deviceId)
+                self.land(.phoneWritten, record: result.record, drawn: shown)
                 self.publish(UnitChoices())
-                self.problem = nil
                 self.erasures += 1
                 self.onEdit?()
                 return .erased(chatErased: chatErased)
@@ -307,13 +358,16 @@ final class RecordStore {
         await chain { await self.applyInTurn(edit, as: self.screen) }.value
     }
 
+    /// An edit asked on a record no longer shown: an erase taken in, or sync turned on or off.
+    static let recordChanged = "Your record changed while this was open, so this was not saved. Close this and enter the value again."
+
     func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
         // An erase taken in, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
         // in a record or units it never showed (re-check R1).
         guard seen.erase == cloudErase else {
-            return .refused(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
+            return .refused(message: Self.recordChanged, existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
@@ -331,7 +385,7 @@ final class RecordStore {
             // changed: a failed write keeps both as they were (Codex R1).
             let choices = Self.clearsChoices(edit) ? UnitChoices() : unitChoices
             // One engine call: the edit, My data and the atomic write, off the main thread.
-            let answer = try await engine.applyOnPhone(edit, to: recordJSON, units: seen.choices, shownIn: choices.json, file: file, marking: marksPending, deviceId: deviceId)
+            let answer = try await engine.applyOnPhone(edit, to: recordJSON, units: seen.choices, shownIn: choices.json, file: file, marking: source.link?.pending, deviceId: deviceId)
             switch answer {
             case .refused(let outcome):
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
@@ -339,8 +393,7 @@ final class RecordStore {
             case .unchanged:
                 return .saved()
             case .saved(let next, let shown, let counts):
-                recordJSON = next
-                display(shown)
+                land(.phoneWritten, record: next, drawn: shown)
                 publish(choices)
                 onEdit?()
                 return .saved(healthRecords: counts)
@@ -348,6 +401,28 @@ final class RecordStore {
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
         }
+    }
+
+    /// Through the engine's open session: the save loop sends it to the cloud.
+    private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) async -> ApplyResult {
+        do {
+            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit), of: edit)
+        } catch {
+            return .refused(message: error.localizedDescription, existingId: nil)
+        }
+    }
+
+    /// A document save's record, onto the phone's file: written only over the record the
+    /// save began from (`before`), never over an edit made while it ran. False when refused.
+    /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
+    func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
+        guard cloudErase == nil, recordJSON == before else { return false }
+        if next != recordJSON {
+            let shown = try await engine.drawAndWrite(next, units: unitChoices.json, to: file, marking: source.link?.pending, deviceId: deviceId)
+            land(.phoneWritten, record: next, drawn: shown)
+            onEdit?()
+        }
+        return true
     }
 
     // MARK: Per-test units (US-25 AC17e)
