@@ -8,7 +8,6 @@
     "tools/codex-review.mjs": 1699,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "packages/health-core/src/suggestions.ts": 1160,
-    "tools/chat-audit-pull.ts": 1068,
     "packages/health-core/src/record-edits.ts": 1029,
     "widget-src/src/components/InputPanel.tsx": 1026,
     "widget-src/src/components/BloodTestTimeline.tsx": 1020,
