@@ -6,7 +6,7 @@
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 // SIM_RUN_SCRIPT runs these tests against another copy (how an older version was shown to fail them).
@@ -116,12 +116,15 @@ const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');
   const tracked = live.splice(0);
-  await sweep(tracked.map(({ p }) => p.pid!).filter(Boolean));
-  for (const { p, done } of tracked) {
-    if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
-    await done;
+  try {
+    await sweep(tracked.map(({ p }) => p.pid!).filter(Boolean));
+  } finally {
+    for (const { p, done } of tracked) {
+      if (p.exitCode === null && p.signalCode === null) p.kill('SIGTERM');
+      await done;
+    }
+    rmSync(dir, { recursive: true, force: true });
   }
-  rmSync(dir, { recursive: true, force: true });
   if (existsSync(reached())) throw new Error(`a real xcrun was reached (T22): ${readFileSync(reached(), 'utf8')}`);
 }, 30_000); // the sweep is bounded (three passes of a 1.5 s grace), but a loaded Mac slows each ps
 
@@ -155,7 +158,8 @@ const ours = (roots: number[]) => {
   const self = new Set<number>();
   for (let p = process.pid; p > 1 && !self.has(p); p = rows.find((r) => r.pid === p)?.ppid ?? 0) self.add(p);
   const workDir = realpathSync(work);
-  const cwd = cwds(rows.filter((r) => !r.cmd.includes(dir) && r.cmd.includes('sim-run.sh')).map((r) => r.pid));
+  const named = (cmd: string) => cmd.includes('sim-run.sh') || cmd.includes(basename(SCRIPT)); // SIM_RUN_SCRIPT may be a copy
+  const cwd = cwds(rows.filter((r) => !r.cmd.includes(dir) && named(r.cmd)).map((r) => r.pid));
   const found = new Set(rows.filter((r) => r.cmd.includes(dir) || cwd.get(r.pid) === workDir).map((r) => r.pid));
   const leaders = new Set([...roots, ...found]);
   for (let grew = true; grew;) {
@@ -174,7 +178,9 @@ const signal = (target: number, sig: NodeJS.Signals) => {
 };
 const running = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 /** TERM every group led by one of ours (or by a tracked child) and every process of ours, then KILL
- * what is left after 1.5 s; again, in case one forked on its way out (the shim's idle sleeper). */
+ * what is left after 1.5 s; again, in case one forked on its way out (the shim's idle sleeper). Anything
+ * still alive after three passes fails the test that leaked it, rather than a later one its sleeper's
+ * xcrun call would trip. */
 async function sweep(roots: number[]) {
   for (let pass = 0; pass < 3; pass++) {
     const found = ours(roots);
@@ -187,6 +193,8 @@ async function sweep(roots: number[]) {
       for (const end = Date.now() + 1500; sig === 'SIGTERM' && [...pids].some(running) && Date.now() < end;) await sleep(50);
     }
   }
+  const left = ours(roots);
+  if (left.length) throw new Error(`sweep: still alive after three passes (T22): ${left.map((r) => `${r.pid} ${r.cmd}`).join('; ')}`);
 }
 
 const env = (extra: Record<string, string> = {}) => ({
@@ -1063,7 +1071,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
   // The first test is that test: its sim-run is orphaned (the shell that started it SIGKILLed) with the
   // watchdog ticking and a command that ignores the release file, and then the test fails. The command
   // names the test's folder, so sim-run, its shim and its watchdog all carry it on their command lines.
-  // The second checks, after afterEach, that nothing of it is left and no real xcrun was reached.
+  // The second checks, after afterEach, that nothing of it is left and no real xcrun was reached. It is
+  // the real check: vitest flips the first test's result after afterEach, so a sweep error there is swallowed.
   describe('a test that fails mid-run leaves nothing behind (T22)', () => {
     const killed = { dir: '', log: '', ready: false };
     it.fails('(fails on purpose) a test fails while its orphaned sim-run and watchdog run', async () => {
