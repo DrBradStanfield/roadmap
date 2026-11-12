@@ -15,7 +15,7 @@ const gitError = (e) => String(e.stderr || e.message).trim();
 // Only git's own answer means "no repo": a git that cannot run (ENOENT) refuses, so a guard never skips.
 const notARepo = (e) => /not a git repository/.test(String(e.stderr));
 // A line git writes into a conflicted file.
-const MARKER = /^(<{7}|={7}|>{7})( |$)/;
+const MARKER = /^(<{7}|\|{7}|={7}|>{7})( |$)/;
 
 /** The real path of `p` (symlinks, `..` and the disk's own letter case resolved); a missing tail is kept as given. */
 function real(p) {
