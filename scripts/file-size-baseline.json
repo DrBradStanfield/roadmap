@@ -42,7 +42,6 @@
     "packages/health-core/src/mcp-tool-contract.ts": 523,
     "packages/health-core/src/plan.ts": 518,
     "app/lib/mcp-clients.server.ts": 508,
-    "packages/health-core/src/run-roadmap.ts": 505,
-    "instrument-scrub.mjs": 503
+    "packages/health-core/src/run-roadmap.ts": 505
   }
 }

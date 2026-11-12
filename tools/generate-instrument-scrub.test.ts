@@ -62,7 +62,8 @@ describe('US-09 AC7j: the generated server scrub', () => {
     // reads the process, the environment, the console, a timer or the network.
     const topLevel = committed.split('\n').filter((line) => /^\S/.test(line) && !/^(\/\/|var |function |export \{|\}|\]|\))/.test(line));
     expect(topLevel).toEqual([]);
-    expect(committed).not.toMatch(/\b(process|globalThis|console|setTimeout|setInterval|fetch|import\.meta)\b/);
+    // (The words "console" and "fetch" appear only as breadcrumb category strings.)
+    expect(committed).not.toMatch(/\b(process|globalThis|console|setTimeout|setInterval|setImmediate|queueMicrotask|fetch)\s*[.([]|import\.meta/);
   });
 });
 

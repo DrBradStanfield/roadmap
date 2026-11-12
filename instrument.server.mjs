@@ -5,11 +5,13 @@
 //
 // CRITICAL (HIPAA): the beforeSend* / beforeBreadcrumb scrubbing below removes PII/PHI before
 // any event leaves the server. This logic is moved verbatim from the old entry.server.tsx —
-// do not weaken it. The scrub helpers come from ./instrument-scrub.mjs (a self-contained,
-// plain-ESM copy) rather than @roadmap/health-core: this file is `node --import`-ed before the
-// server bundle, and in the production Docker image node_modules/ and health-core/dist/ are
-// .dockerignored and never rebuilt, so importing the workspace package here would fail to
-// resolve and crash startup. A parity test keeps the copy in sync with the health-core source.
+// do not weaken it. The scrub helpers come from ./instrument-scrub.mjs, a self-contained
+// plain-ESM file GENERATED from health-core's sentry-scrub-server.ts by
+// `node tools/generate-instrument-scrub.mjs` (US-09 AC7j), rather than @roadmap/health-core:
+// this file is `node --import`-ed before the server bundle, and in the production Docker image
+// node_modules/ and health-core/dist/ are .dockerignored and never rebuilt, so importing the
+// workspace package here would fail to resolve and crash startup. A freshness test fails CI
+// when the generated file falls behind its source.
 import * as Sentry from "@sentry/react-router";
 import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
 import { selfReportIntegration, selfReportTransport } from "./instrument-self-report.mjs";
