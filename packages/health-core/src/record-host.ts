@@ -178,6 +178,8 @@ export type RecordHost =
       /** The content-free marker `clearNamedFiles` moves: a chat session
        *  that sees it move drops its pre-erase copy (US-11 AC3b). */
       eraseFence(): string | null;
+      /** True while this page may read and write this device's health files; read at each use, and left out means open (the iPhone), as with ownsOffFileData. */
+      deviceFilesOpen?(): boolean;
     })
   | (HostBase & { tier: 'cloud'; mirror: DeviceMirror; sync?: never });
 

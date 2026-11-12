@@ -172,7 +172,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     // named-file prefix, which only disconnect() clears — and disconnect()
     // after an erase would delete the erased record file just written.
     noteDevicePage();
-    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration };
+    return { ...base, tier: 'device', sync: store, clearNamedFiles: clearLocalNamedFiles, eraseFence: localEraseGeneration, deviceFilesOpen: healthWritesAllowed };
   }
   const device = new LocalStorageAdapter();
   // Note a log-off from another page from now, not only once the first cloud
