@@ -28,7 +28,11 @@ vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, capture
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
-vi.mock('./chat-dedup.server', () => ({ findDuplicateReply: edge.duplicate }));
+// The claim always grants the turn here; the re-serve answers from edge.duplicate (the claim itself: discord-bot.inflight.test.ts).
+vi.mock('./chat-dedup.server', () => ({ claimChatTurn: async (_scope: string, message: string, history: unknown[]) => {
+  const dup = edge.duplicate(history, message);
+  return dup ? { kind: 'duplicate', content: dup.content } : { kind: 'run', release: () => undefined };
+} }));
 vi.mock('./cron-helpers.server', () => ({ sleep: edge.sleep }));
 vi.mock('./supabase.server', () => ({ supabaseAdmin: {
   from: (table: string) => {

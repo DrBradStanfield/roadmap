@@ -83,6 +83,8 @@ let cachedPrompt: string | null = null;
 let promptCachedAt = 0;
 const PROMPT_TTL_MS = 60_000;
 const PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-router-prompt.md');
+/** One attempt; anthropic-fetch retries once (chat-dedup.server.ts CHAT_TURN_TTL_MS counts on it). */
+export const ROUTER_TIMEOUT_MS = 5_000;
 
 function getRouterPrompt(): string {
   if (cachedPrompt && Date.now() - promptCachedAt < PROMPT_TTL_MS) {
@@ -254,7 +256,7 @@ export async function routeQuery(
   let usage = EMPTY_USAGE;
 
   try {
-    const result = await callAnthropicWithUsage(body, 5_000);
+    const result = await callAnthropicWithUsage(body, ROUTER_TIMEOUT_MS);
     rawJson = result.content;
     usage = result.usage;
 

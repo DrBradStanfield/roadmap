@@ -125,6 +125,23 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
     expect(error?.error).toBe('Chat limit reached. Please try again later.');
   });
 
+  it('US-15 AC63: a busy 409 shows the server words, is not retried and raises no Sentry event; a JSON 500 still does', async () => {
+    const busy = 'Still answering this question. Try sending it again in a moment.';
+    fetchMock.mockResolvedValueOnce(jsonError(409, busy));
+    vi.mocked(Sentry.captureMessage).mockClear();
+
+    const { result, error } = await send();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
+    expect(error?.error).toBe(busy);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValueOnce(jsonError(500, 'Failed to process message'));
+    await send();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat sendMessage failed', expect.objectContaining({ level: 'error' }));
+  });
+
   it('listConversations surfaces the failure when the retry also fails', async () => {
     fetchMock
       .mockResolvedValueOnce(emptyServerError())
