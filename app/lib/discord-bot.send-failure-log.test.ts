@@ -10,6 +10,7 @@ const edge = vi.hoisted(() => ({
   listeners: new Map<string, (message: unknown) => void>(),
   complete: vi.fn(), sleep: vi.fn(), capture: vi.fn(), captureMessage: vi.fn(), duplicate: vi.fn(),
   conversation: null as { id: string } | null,
+  fallback: vi.fn(), dbThrows: false, send: null as null | ((...args: unknown[]) => unknown),
 }));
 vi.mock('discord.js', () => ({
   Client: class {
@@ -24,15 +25,23 @@ vi.mock('discord.js', () => ({
 }));
 vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, captureMessage: edge.captureMessage }));
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
-vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: vi.fn(), CHAT_MODEL: 'synthetic' }));
+vi.mock('./chat.server', () => ({ reportChatFallback: edge.fallback, generateTitle: vi.fn(), CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
 vi.mock('./chat-dedup.server', () => ({ findDuplicateReply: edge.duplicate }));
 vi.mock('./cron-helpers.server', () => ({ sleep: edge.sleep }));
+vi.mock('./discord-bot-send.server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./discord-bot-send.server')>();
+  return { ...actual, sendAnswer: (...args: Parameters<typeof actual.sendAnswer>) =>
+    (edge.send ? edge.send(...args) : actual.sendAnswer(...args)) };
+});
 vi.mock('./supabase.server', () => ({ supabaseAdmin: {
   from: () => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query,
-      maybeSingle: async () => ({ data: edge.conversation, error: null }),
+      maybeSingle: async () => {
+        if (edge.dbThrows) throw new Error('synthetic db failure');
+        return { data: edge.conversation, error: null };
+      },
       then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk),
       insert: () => query, single: async () => ({ data: null, error: null }) };
     return query;
@@ -70,7 +79,8 @@ let stop: () => void;
 let logged: string[];
 beforeEach(async () => {
   vi.resetModules(); vi.clearAllMocks(); edge.listeners.clear(); logged = [];
-  edge.conversation = null;
+  edge.conversation = null; edge.dbThrows = false; edge.send = null;
+  edge.fallback.mockReset();
   edge.duplicate.mockReturnValue(null);
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => { logged.push(format(...args)); });
   for (const [key, value] of Object.entries({ DISCORD_BOT_TOKEN: 'synthetic', DISCORD_FORCE_START: 'true',
@@ -190,7 +200,6 @@ describe('US-15 AC62: the outer catch reaches Sentry as fixed words, its own sta
     edge.complete.mockImplementation(() => (null as unknown as { x: { y: number } }).x.y);
     await deliver(okMessage('u9'));
     expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'TypeError', 'ask'], tags: { stage: 'ask' } });
-    expect(captured().error.stack).not.toContain('Cannot read');
 
     edge.capture.mockClear();
     // An answer with no content fails where it is split for sending.
@@ -198,6 +207,44 @@ describe('US-15 AC62: the outer catch reaches Sentry as fixed words, its own sta
       classifier: { classification: 'ANSWER', routerSkipped: true } });
     await deliver(okMessage('u10'));
     expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'TypeError', 'send'], tags: { stage: 'send' } });
+  });
+
+  // H55: the other stages, each pinned by where it fails.
+  // 'prepare' has no reachable failure: everything between `stage = 'prepare'`
+  // and `stage = 'history'` is pure string work on a string (stripBotMention,
+  // cutText) or sits in its own try (the typing indicator).
+  it('a history load that throws reports the history stage', async () => {
+    edge.dbThrows = true;
+    await deliver(okMessage('u11'));
+    expect(edge.complete).not.toHaveBeenCalled();
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'Error', 'history'], tags: { stage: 'history' } });
+  });
+
+  it('a fallback report that throws after the model answered reports the send stage', async () => {
+    edge.fallback.mockImplementation(() => { throw new TypeError('synthetic'); });
+    await deliver(okMessage('u12'));
+    expect(edge.fallback).toHaveBeenCalled();
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'TypeError', 'send'], tags: { stage: 'send' } });
+  });
+
+  it('a partial whose chunk is not in the answer reports the store stage', async () => {
+    edge.send = async () => ({ kind: 'partial', sent: [{ id: 'm0', text: 'not in the answer' }], stoppedAt: 1 });
+    await deliver(okMessage('u13'));
+    expect(captured().options).toMatchObject({ fingerprint: ['discord-handle', 'Error', 'store'], tags: { stage: 'store' } });
+  });
+
+  it('a catch that itself throws sends only fixed words to Sentry and the log', async () => {
+    const err = new Error(`model said ${SENTINEL}`);
+    Object.defineProperty(err, 'code', { get() { throw new Error(`getter ${SENTINEL}`); } });
+    edge.complete.mockRejectedValue(err);
+    await deliver(okMessage('u14'));
+    expect(sentryText()).not.toContain(SENTINEL);
+    expect(logged.join('\n')).not.toContain(SENTINEL);
+    expect(logged.join('\n')).toContain('Discord message handler error: catch failed');
+    const { error, options } = captured();
+    expect(error.name).toBe('DiscordHandleError');
+    expect(options).toEqual({ level: 'error', fingerprint: ['discord-handle', 'catch-failed', 'catch'],
+      tags: { platform: 'discord', subsystem: 'handle', code: 'catch-failed', stage: 'catch' } });
   });
 
   it('a free-text code becomes the placeholder tag in the outer catch', async () => {

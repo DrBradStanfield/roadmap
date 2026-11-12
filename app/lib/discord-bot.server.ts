@@ -137,9 +137,12 @@ export function startDiscordBot(): void {
   });
 
   client.on(Events.MessageCreate, (message) => {
-    handleMessage(message).catch((err) => {
-      console.error('Discord message handler error:', safeErrorFields(err));
-      Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
+    // Reached only when the outer catch itself throws (a throwing getter on the
+    // error): fixed words only, never the error (US-15 AC62).
+    handleMessage(message).catch(() => {
+      console.error('Discord message handler error: catch failed');
+      Sentry.captureException(new DiscordHandleError(), { level: 'error', fingerprint: ['discord-handle', 'catch-failed', 'catch'],
+        tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: 'catch-failed', stage: 'catch' } });
     });
   });
 
@@ -324,6 +327,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       history,
     });
     const tAfterLlm = Date.now();
+    stage = 'send';
 
     // Fire the shared fallback reporter (no-op when result.isFallback is false).
     // Without this, Discord fallbacks would silently miss Sentry alerts — the
@@ -346,7 +350,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // ~22 chars. Splitting at 2000 exactly caused Discord to reject the first
     // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
     // US-15 AC48: a silent (SPAM) turn sends nothing; below, only its match event is stored.
-    stage = 'send';
     const chunks = result.silent ? [] : splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
     const sent = await sendAnswer(message, chunks);
     // US-15 AC62: nothing went out, so say so and store nothing. A partial is
@@ -358,6 +361,8 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 
     // Fire-and-forget: persist the conversation and the router event.
     // All DB errors go to Sentry but never block the Discord response.
+    // 'store' covers building the stored text (sentText, the history find and
+    // filter) as well as the write.
     stage = 'store';
     persistConversation({
       conversationId,
