@@ -14,7 +14,7 @@ enum WelcomeConnect {
         case failed(SyncProblem)
         /// The cloud record is open: the screen can go on.
         case opened
-        /// A Disconnect ("Use a different cloud") is closing: a spinner, no Connect rows.
+        /// A Disconnect (a switch's first half) is closing: a spinner, no Connect rows.
         case disconnecting
     }
 
@@ -50,7 +50,7 @@ enum WelcomeConnect {
     }
 
     /// At failed, and only there: one row to sign in to the connected cloud again (the Sync
-    /// screen's own row) and "Use a different cloud", which disconnects it (US-54 AC2d).
+    /// screen's own row) and a "Switch to <cloud>" row per other cloud (US-54 AC2d, US-25 AC11n).
     static func showsRecovery(_ phase: Phase) -> Bool {
         switch phase {
         case .failed: true
@@ -96,8 +96,6 @@ enum WelcomeConnect {
         case phaseChanged
         /// The person closed a connect error's alert (US-25 AC11j).
         case alertDismissed
-        /// "Use a different cloud", at failed (US-54 AC2d).
-        case useDifferentCloud
     }
 
     enum Decision: Equatable {
@@ -108,8 +106,6 @@ enum WelcomeConnect {
         case showSheet
         case showSheetAndOpen
         case open
-        /// Disconnect the cloud on file; the sheet stays and shows choosing (US-54 AC2d).
-        case disconnect
         case nothing
     }
 
@@ -129,8 +125,6 @@ enum WelcomeConnect {
         case (.phaseChanged, _): .nothing
         case (.alertDismissed, .opened): sheetShown ? .goOn : .nothing
         case (.alertDismissed, _): .nothing
-        case (.useDifferentCloud, .failed): .disconnect
-        case (.useDifferentCloud, _): .nothing
         }
     }
 }
