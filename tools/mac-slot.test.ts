@@ -234,9 +234,65 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const t = Date.now();
     w.p.kill('SIGTERM');
     expect(await w.done).toBe(143);
-    expect(Date.now() - t).toBeLessThan(3000);
+    expect(Date.now() - t).toBeLessThan(1000);
     expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
     expect(started('b')).toBe(false);
+  });
+
+  // A queued waiter must not spin: macOS lockf in its fd form burns a full core while it blocks, so the slot wait
+  // retries an instant lockf once a second. CPU over a 3 s wait = the live children's time from ps just before
+  // TERM (a blocked lockf) plus /usr/bin/time's count after TERM (the shell and every child it reaped). An exec
+  // drops a process's child counts on macOS, so the waiter is ended by TERM, never by starting its command.
+  it('a slot waiter uses almost no CPU while it waits', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const p = spawn('/usr/bin/time', ['-p', 'sh', SCRIPT, 'codex', '--', 'true'], { env: env(extra) });
+    kids.push(p);
+    let err = '';
+    p.stderr.on('data', (d) => { err += d; });
+    const done = new Promise<number>((r) => p.on('exit', (c) => r(c ?? -1)));
+    await until(() => /waiting for a codex slot/.test(err));
+    await new Promise((r) => setTimeout(r, 3000));
+    const sh = spawnSync('pgrep', ['-P', String(p.pid)], { encoding: 'utf8' }).stdout.trim();
+    const live = spawnSync('pgrep', ['-P', sh], { encoding: 'utf8' }).stdout.trim().split('\n').filter(Boolean);
+    const ps = live.length ? spawnSync('ps', ['-o', 'time=', '-p', live.join(',')], { encoding: 'utf8' }).stdout : '';
+    const liveCpu = ps.trim().split('\n').filter(Boolean)
+      .reduce((t, l) => { const [m, sec] = l.trim().split(':'); return t + Number(m) * 60 + Number(sec); }, 0);
+    process.kill(Number(sh), 'SIGTERM');
+    expect(await done).toBe(143);
+    const cpu = (k: string) => Number(new RegExp(`^${k} +([0-9.]+)$`, 'm').exec(err)?.[1]);
+    const total = liveCpu + cpu('user') + cpu('sys');
+    expect(Number.isNaN(total)).toBe(false);
+    expect(total).toBeLessThan(0.3);
+  }, 20000);
+
+  it('INT while waiting for a slot exits promptly with 130 and drops its waiting entry', async () => {
+    const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '1' };
+    bg('codex', hold('a'), extra);
+    await until(() => started('a'));
+    const w = bg('codex', hold('b'), extra);
+    await until(() => /waiting for a codex slot/.test(w.err()));
+    const t = Date.now();
+    w.p.kill('SIGINT');
+    expect(await w.done).toBe(130);
+    expect(Date.now() - t).toBeLessThan(1000);
+    expect(existsSync(join(home, `waiting.codex.${w.p.pid}`))).toBe(false);
+    expect(started('b')).toBe(false);
+  });
+
+  // Lead T17: under a decimal-comma locale sysctl prints "6,44", which read as unreadable and failed open. This
+  // runs the real sysctl path (no injected reader) under de_DE with a cap of 0, so a read load always waits and a
+  // 0-second bound refuses; a fake sysctl would only test our guess of its locale behaviour.
+  const commaLocale = process.platform === 'darwin'
+    && /,/.test(spawnSync('sysctl', ['-n', 'vm.loadavg'], { env: { ...process.env, LC_ALL: 'de_DE.UTF-8' }, encoding: 'utf8' }).stdout ?? '');
+  it.skipIf(!commaLocale)('reads the real load under a decimal-comma locale (lead T17)', async () => {
+    const r = bg('tests', ['sh', '-c', `touch "${fake}/ran"`],
+      { LC_ALL: 'de_DE.UTF-8', LANG: 'de_DE.UTF-8', MAC_SLOT_LOAD_CMD: '', MAC_SLOT_MAX_LOAD: '0', MAC_SLOT_LOAD_WAIT_SECONDS: '0' });
+    expect(await r.done).toBe(75);
+    expect(existsSync(join(fake, 'ran'))).toBe(false);
+    expect(r.err()).toMatch(/refused: the 1-minute load [0-9]+\.[0-9]+ is still 0 or more after 0s/);
+    expect(r.err()).not.toMatch(/could not read the load/);
   });
 
   it('honours MAC_SLOT_MAX_LOAD', async () => {
