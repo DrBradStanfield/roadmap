@@ -3,7 +3,7 @@ import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, t
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UsProduct } from '@roadmap/health-core/us-products';
-import { safeGetItem, safeSetItem } from './storage';
+import { safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import { randomId } from './random-id';
@@ -79,6 +79,7 @@ export function getVisitorId(): string {
   const KEY = 'hr_vid';
   const stored = safeGetItem(KEY);
   if (stored && UUID.test(stored)) { cachedVisitorId = stored; return stored; }
+  if (stored) safeRemoveItem(KEY);
   const id = randomId();
   // The server takes only a UUID: randomId's last-resort id serves this page alone.
   if (UUID.test(id)) safeSetItem(KEY, id);

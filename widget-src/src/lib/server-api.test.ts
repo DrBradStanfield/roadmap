@@ -139,6 +139,12 @@ describe('getVisitorId: stored only as a UUID', () => {
     expect([id, stored]).toEqual([UUID_A, UUID_A]);
   });
 
+  it('a stored id that is not a UUID is removed when no UUID can replace it', async () => {
+    const { id, stored } = await freshVisitorId(undefined, 'mwd2h3tg-1');
+    expect(id).not.toBe('mwd2h3tg-1');
+    expect(stored).toBeNull();
+  });
+
   it('control: a stored UUID is kept', async () => {
     const kept = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
     const { id, stored } = await freshVisitorId({ randomUUID: () => UUID_A }, kept);
