@@ -78,8 +78,8 @@ beforeEach(() => {
 });
 // Holders wait on a release file rather than a fixed sleep, so a loaded machine cannot end them early.
 // Whatever a test leaves running (a failed assertion included) is released and stopped here.
-// Keep it that way: a waiter queued behind a holder that ignores the release file (a plain sleep)
-// would block cleanup, because bash defers SIGTERM while the wrapper waits in lockf.
+// A waiter stops at once on SIGTERM (its 0.2 s sleep runs in the background), so cleanup never
+// waits on one.
 const live: { p: ChildProcess; done: Promise<unknown> }[] = [];
 afterEach(async () => {
   writeFileSync(join(dir, 'release'), '');

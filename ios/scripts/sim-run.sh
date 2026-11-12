@@ -123,14 +123,14 @@ wait_guard() {
 }
 
 # True while a live caller queued ahead of this one: waiting.<start>.<pid> markers in name order, up
-# to this caller's own; a dead pid's marker goes.
+# to this caller's own. A waiter holds the kernel lock on its marker while it waits, so a marker this
+# probe can lock has no live owner (it died, even by SIGKILL) and goes; the pid is for order and humans.
 ahead() {
-  local f p
+  local f
   for f in "$HOME_DIR"/waiting.*; do
     [ -e "$f" ] || continue
-    p=${f##*.}
-    [ "$p" = $$ ] && return 1
-    kill -0 "$p" 2>/dev/null && return 0
+    [ "$f" = "$MARK" ] && return 1
+    ( exec 8>>"$f"; lockf -s -t 0 8 ) || return 0
     rm -f "$f"
   done
   return 1
@@ -139,21 +139,26 @@ ahead() {
 # Takes the lock on fd 9, waiting what is left of WAIT_SECONDS with one line naming the holder. It
 # tries every 0.2 s, never waiting inside lockf, which spins a core on macOS; the sleep runs in the
 # background so a signal reaches the trap at once. Waiters queue by marker, and a newcomer waits behind
-# them, so a caller that reruns at once cannot starve one already waiting.
+# them, so a caller that reruns at once cannot starve one already waiting. A stopped (SIGSTOP) waiter
+# still holds its marker's lock, so it holds the queue up while stopped, within HR_SIM_WAIT_MIN.
 take_lock() {
   mkdir -p "$HOME_DIR" || die "cannot make $HOME_DIR"
   exec 9>>"$LOCK"
   if ahead || ! lockf -s -t 0 9; then
+    # The marker is locked on fd 7 before it takes its name, so no probe sees it unlocked.
+    exec 7>>"$HOME_DIR/queue.$$"
+    lockf -s -t 0 7
     MARK="$HOME_DIR/waiting.$(now).$$"
-    : > "$MARK"
+    mv "$HOME_DIR/queue.$$" "$MARK"
     echo "sim-run: the shared simulator is $(describe)" >&2
     echo "sim-run: waiting up to $(( $(left) / 60 ))m (HR_SIM_WAIT_MIN)" >&2
     until ! ahead && lockf -s -t 0 9; do
       [ "$(left)" -gt 0 ] || die "gave up after ${WAIT_SECONDS}s: the simulator is still $(describe)" 75
-      sleep 0.2 9>&- & wait $!
+      sleep 0.2 7>&- 9>&- & wait $!
     done
     rm -f "$MARK"
     MARK=""
+    exec 7>&-
   fi
   OWN=1
 }
