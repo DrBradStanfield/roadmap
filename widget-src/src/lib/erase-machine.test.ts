@@ -81,7 +81,8 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['d g order', 'erasing: own-end at its own erase, an erase overtaken at the same epoch: its own shows, the overtaken one never counts', erasing(W, X), end(Y), idle(Y, { said: set(W) }), [FORGET, CLEAR, SAY]],
   ['d g order', 'erasing: own-end at a merge\'s pick with an EARLIER erasedAt than the shown erase, at that epoch: shown', erasing(X), end(E), idle(E, { said: set(X) }), [FORGET, CLEAR, SAY]],
   ['g', 'idle: an own-end with no erase under way: nothing (the newer one stays shown)', idle(Z), end(Y), 'same', []],
-  ['-', 'erasing: own-failed, nothing overtook it: back to idle, the failure said', erasing(W), FAILED, idle(W), [SAY_FAILED]],
+  // A6 R1: a save refused while the erase read is not saved; the read shows what is stored, not the value typed.
+  ['US-16 AC2a A6 R1', 'erasing: own-failed, nothing overtook it: back to idle, the record re-read, the failure said', erasing(W), FAILED, idle(W), [READ, SAY_FAILED]],
   ['d i R1', 'erasing: own-failed, another writer\'s erase heard: idle, still heard, read, the failure said; the read shows and counts it', erasing(W, Z), FAILED, idle(W, { heard: Z }), [READ, SAY_FAILED]],
   ['known cost', 'erasing: own-end at the heard erase when that arrival was really this tab\'s own echo (record-session.ts:595/600 rule it out): the person sees their erase done, plus one extra re-read of the empty record (no visible change) and one wrong count', erasing(W, O), end(O), idle(O, { said: set(W), pending: O, shownBy: 'remote' }), [FORGET, CLEAR, READ, SAY]],
   ['R3', 'erasing: own-end at this tab\'s own erase, an erase heard: its own shows, the heard one dropped, never counted', erasing(W, Z), end(O), idle(O, { said: set(W) }), [FORGET, CLEAR, SAY]],
@@ -295,10 +296,10 @@ describe('erase machine: an erase pressed before the first read shows (Q3)', () 
     expect(result.state).toEqual(idle(Y, { said: set(W) }));
     expect(result.effects).toEqual([FORGET, CLEAR, SAY]);
   });
-  it('nothing held: own-start, own-failed: idle at the old erase, the failure said; a later loaded is a no-op', () => {
+  it('nothing held: own-start, own-failed: idle at the old erase, the record re-read, the failure said; a later loaded is a no-op', () => {
     const result = run(loading(W), [{ type: 'own-start' }, FAILED, { type: 'loaded' }]);
     expect(result.state).toEqual(idle(W));
-    expect(result.effects).toEqual([SAY_FAILED]);
+    expect(result.effects).toEqual([READ, SAY_FAILED]);
   });
   it('an erase held: own-start, own-failed: the held erase is read, and the read shows and counts it', () => {
     const result = run(loading(W, Z), [{ type: 'own-start' }, FAILED, { type: 'read', identity: Z }]);

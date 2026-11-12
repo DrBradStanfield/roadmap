@@ -51,6 +51,8 @@ interface ChatEditsDeps {
   unitSystem: UnitSystem;
   /** The store holds an erase the screen does not show (US-16 AC2a). */
   eraseUnshown: () => boolean;
+  /** This tab's erase is under way (the erase machine's phase). */
+  erasing: boolean;
   handleInputChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat?: boolean) => void;
   handleMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   /** A medication's save still waits on its timer. */
@@ -64,7 +66,7 @@ interface ChatEditsDeps {
 }
 
 export function useChatEdits({
-  medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
+  medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing, handleInputChange, handleMedicationChange,
   medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal,
 }: ChatEditsDeps) {
   // A one-shot undo for a medication change the chat just applied (meds
@@ -80,7 +82,9 @@ export function useChatEdits({
   // or because a part of the reply could not be read (US-67 AC2: one sentence
   // per part, the iPhone's words, each shown beside its own part's banner).
   // It goes at the next send or conversation switch too, as the iPhone's does.
-  const [notice, setNotice] = useState<{ kind: 'recordChanged'; at: string; words: string } | { kind: 'unreadable'; medications: string | null; review: string | null } | null>(null);
+  // 'erasing': the reply landed while this tab's erase read; it goes when that erase stops short (A6 R2).
+  const [notice, setNotice] = useState<{ kind: 'recordChanged' | 'erasing'; at: string } | { kind: 'unreadable'; medications: string | null; review: string | null } | null>(null);
+  if (notice?.kind === 'erasing' && !erasing) setNotice(null); // nothing was deleted: "being deleted" never stands beside that
   // The form's medications, unsaved changes included: a chat change is
   // judged against these as well as the saved ones (US-06 AC12).
   const medicationsRef = useRef(medications);
@@ -154,7 +158,7 @@ export function useChatEdits({
     if (standing === 'threadLeft') return;
     if (standing === 'recordChanged' || standing === 'erasing') {
       setMedUndo(null);
-      setNotice({ kind: 'recordChanged', at: getEraseIdentity(), words: standing === 'erasing' ? ERASE_IN_PROGRESS : RECORD_CHANGED_SINCE_ASKED });
+      setNotice({ kind: standing, at: getEraseIdentity() });
       return;
     }
     // A refused part saves nothing; its line takes the place of an earlier reply's Undo for medications.
@@ -220,7 +224,7 @@ export function useChatEdits({
   const clearChatEdits = useCallback(() => {
     setMedUndo(null);
     setProfileProposal(null);
-    setNotice((n) => (n?.kind === 'recordChanged' && n.at === getEraseIdentity() ? n : null));
+    setNotice((n) => (n && n.kind !== 'unreadable' && n.at === getEraseIdentity() ? n : null));
   }, []);
   /** The user's own sex or height outranks a chat proposal for it (US-16 AC2). */
   const dropProfileProposal = useCallback(() => setProfileProposal(null), []);
@@ -248,9 +252,9 @@ export function useChatEdits({
   // the Clarity mask (US-09 AC8), and stacks them (styles.css .chat-banners).
   const banners = (medUndo || pendingProfile || notice) && createPortal(
     <div className="chat-banners no-print" data-clarity-mask="true">
-      {notice?.kind === 'recordChanged' && (
+      {notice && notice.kind !== 'unreadable' && (
         <div className="chat-med-undo" role="status">
-          <span className="chat-med-undo-text">{notice.words}</span>
+          <span className="chat-med-undo-text">{notice.kind === 'erasing' ? ERASE_IN_PROGRESS : RECORD_CHANGED_SINCE_ASKED}</span>
           <button type="button" className="chat-med-undo-dismiss" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
         </div>
       )}

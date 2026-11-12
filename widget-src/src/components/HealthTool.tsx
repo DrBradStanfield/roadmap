@@ -528,7 +528,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     setSettingsOpen(false);
   }, [selectTab]);
   const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
-    medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
+    medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing: isDeleting, handleInputChange, handleMedicationChange,
     medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
   });
 

@@ -23,7 +23,8 @@
  * it heard); in erasing it waits for the end: an own-end at it
  * shows it and reads its rows, an own-end at this tab's erase drops it unless
  * the heard erase is at a higher epoch (then it stays heard and is read), an
- * own-failed reads it. A
+ * own-failed reads it (an own-failed always reads: a save refused while the
+ * erase read was not saved, A6 R1). A
  * read never feeds `heard`: a read during this tab's erase can report this
  * tab's own new identity (record-session.ts sets it before the flush).
  *
@@ -45,7 +46,7 @@
  * `said` holds the erases whose refused save was said: one alert per erase.
  * A refused save in loading or idle while an erase is heard emits one `read`,
  * with `alert-refused` before it only when its erase is not yet said (Q3);
- * in erasing it emits nothing. A failed read dispatches no event, so nothing
+ * in erasing it emits nothing: own-end or own-failed then shows the record. A failed read dispatches no event, so nothing
  * repeats until the next refused save.
  *
  * What the events carry (the hook's contract, PR 2b):
@@ -229,11 +230,13 @@ export function transition(state: EraseState, event: EraseEvent): Step {
     case 'own-end':
       return state.phase === 'erasing' ? ownEnd(state, event.identity, event.message) : same;
     case 'own-failed':
-      // Nothing moved: a heard erase is read, stays heard until that read shows it (and counts it).
+      // Nothing moved, so the record is read: a save refused while the erase read was never saved, and the screen
+      // must show what is stored (A6 R1). A heard erase stays heard until that read shows it (and counts it).
       if (state.phase !== 'erasing') return same;
-      return { state: { ...state, phase: 'idle' }, effects: state.heard === null ? [say(event.message)] : [READ, say(event.message)] };
+      return { state: { ...state, phase: 'idle' }, effects: [READ, say(event.message)] };
     case 'refused': {
-      // Inside this tab's erase a refusal is no news: the erase throws the change away anyway.
+      // Inside this tab's erase a refusal is no news: an erase that lands throws the change away, and one that
+      // stops short re-reads the record (own-failed), so the screen shows what is stored.
       if (state.phase === 'erasing') return same;
       // A heard erase not yet shown (L1): every refused save asks for its read once, news or not (Q3).
       // No loop: a failed read dispatches nothing, and only the next refused save reads again.

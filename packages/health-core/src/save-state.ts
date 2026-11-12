@@ -28,6 +28,8 @@
  *   `under` keeps its mode, so an erase that stops here gives `under` back and
  *   re-arms its debounce, with no change added. `writing`: the erased copy is
  *   swapped in and written. Erasing while a pass runs is erasing over saving.
+ *   `writePending` reads `under`, so while an erase reads over a waiting save,
+ *   a refresh from the cloud waits until the erase swaps or stops.
  *
  * Where RecordSession dispatches:
  * - saveLoop: `passFailed` in its catch, clearing `running` in the same turn,
