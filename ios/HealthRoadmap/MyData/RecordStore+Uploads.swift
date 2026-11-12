@@ -20,18 +20,21 @@ extension RecordStore {
     }
 
     private func importLabsInTurn(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
+        // Another record since the review opened (a sync, a Disconnect's read): refused before
+        // anything is read against the record now shown, as `applyInTurn` refuses it.
+        guard seen.erase == cloudErase else { return .failure(LabRefusal(message: Self.recordChanged)) }
         let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
         do {
             let summary: Result<LabSaveSummary, LabRefusal>
             let result: ApplyResult
-            if let erase = seen.erase, erase == cloudErase {
+            if let erase = seen.erase {
                 let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
                                                              units: seen.units, now: .now, choices: seen.choices)
                 result = await shown(answer.outcome, of: edit)
                 summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
-                // The phone's file (or a screen that moved on, which `apply` refuses): nothing
-                // else changes the record before this turn ends.
+                if let problem { return .failure(LabRefusal(message: problem.words)) }
+                // The phone's file: nothing else changes the record before this turn ends.
                 summary = try await engine.labSaveSummary(recordJSON: recordJSON, extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, now: .now, deviceId: deviceId)
                 guard case .success = summary else { return summary }
                 result = await applyInTurn(edit, as: seen)
@@ -83,7 +86,7 @@ extension RecordStore {
                 // The engine's session took it; the screen follows unless it has moved on to another record.
                 guard cloudErase == erase, let nextErase = answer.erase else { return result }
                 if next != recordJSON {
-                    await draw(HealthEngine.CloudView(record: next, erase: nextErase, session: cloudSession ?? 0, order: answer.order))
+                    await draw(next, order: answer.order, as: .cloudEdited(erase: nextErase))
                     onEdit?()
                 }
                 return result
@@ -95,19 +98,5 @@ extension RecordStore {
         } catch {
             return .refused(error.localizedDescription)
         }
-    }
-
-    /// A document save's record, onto the phone's file: written only over the record the
-    /// save began from (`before`), never over an edit made while it ran. False when refused.
-    /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
-    func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
-        guard cloudErase == nil, recordJSON == before else { return false }
-        if next != recordJSON {
-            let shown = try await engine.drawAndWrite(next, units: unitChoices.json, to: file, marking: marksPending, deviceId: deviceId)
-            recordJSON = next
-            display(shown)
-            onEdit?()
-        }
-        return true
     }
 }

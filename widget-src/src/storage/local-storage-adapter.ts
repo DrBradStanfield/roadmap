@@ -37,6 +37,8 @@ export function stopRoadmapLocalWrites(): void {
 /** Tell the other tabs. A full localStorage drops the write silently, so
  *  log-off sends it again once the device wipe has freed space (Codex R1). */
 export function signalLogOff(): void {
+  // Log-off calls this twice, so the id changes twice: the second write is the
+  // retry for a full disk, and a sign-in begun between the two is refused by design.
   newLogOffId();
   safeSetItem(LOG_OFF_SIGNAL_KEY, '1');
   safeRemoveItem(LOG_OFF_SIGNAL_KEY);
