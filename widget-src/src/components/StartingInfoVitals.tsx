@@ -79,7 +79,7 @@ interface StartingInfoVitalsProps {
   plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
   knownMinor?: boolean;
-  /** The weight cell's answer (`neverLands`: a past day's, or the chat's), its ref, and its rest: the landing (US-62 AC25b). */
+  /** The weight cell's answer (`neverLands`: a past day's), its ref, and its rest: the landing (US-62 AC25b). */
   onWeightAnswered?: (neverLands?: boolean) => void;
   weightRef?: (el: HTMLInputElement | null) => void;
   rested?: () => void;
@@ -339,7 +339,6 @@ export function StartingInfoVitals({
 
     if (metric !== 'weight' && metric !== 'waist') return null;
     if (metric === 'weight' && withoutWeight) return null; // The weight asked beside the height has no row here: its edit goes to that field (US-62 AC13).
-    if (metric === 'weight' && !trend.lastW) onWeightAnswered?.(true); // The chat's weight answers here, as in the box, only while the record holds none; it never lands (US-62 AC31a).
     if (date && column && column[metric] == null) {
       type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);

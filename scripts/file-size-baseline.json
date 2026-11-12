@@ -26,7 +26,7 @@
     "packages/health-core/src/record-session.ts": 773,
     "widget-src/src/storage/drive.ts": 757,
     "packages/health-core/src/mcp-tools.ts": 747,
-    "widget-src/src/components/StartingInfoVitals.tsx": 736,
+    "widget-src/src/components/StartingInfoVitals.tsx": 735,
     "packages/health-core/src/drive-rest.ts": 730,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,

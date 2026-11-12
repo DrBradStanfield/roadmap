@@ -696,8 +696,9 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
   });
 
   describe('US-62 AC31a: the chat\'s weight is an answer given here, in the box or the grid (AC13 Events, AC31)', () => {
-    // Parity pins, marked "(parity pin)": they passed before PR 1331, since the box path already
-    // handled them. They keep the box and the grid alike. The rest are regression tests: they fail without it.
+    // Parity pins, marked "(parity pin)", passed before PR 1331: the box's because the box already reported
+    // the chat's weight; the grid's (a chat waist, a record already holding a weight) because the grid then
+    // reported nothing. The rest are regression tests: they fail without PR 1331 or its follow-up (PR 1388).
     const chatWeight = (date: string | null = null) =>
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date }]));
     const ready = (view: RenderResult) => q(view, '.mh-ready-title')?.textContent ?? null;
@@ -795,6 +796,41 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       birth(view, '5', '1975'); // the last answer; its rest's frame held, so the landing awaits it
       chatWeight();
       await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
+    });
+
+    it('the weight in the box, typed and saved earlier this visit: the chat\'s weight during the typed birth year\'s wait is no answer, so the year still lands', async () => {
+      const view = await open();
+      await measurements(view); // saved, so the record holds a plausible weight; typed here, it stays in the box
+      fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+      await settle(50);
+      await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+      const frames = heldFrames();
+      birth(view, '5', '1975'); // the last answer; its rest's frame held, so the landing awaits it
+      chatWeight();
+      expect((q(view, '#weightKg') as HTMLInputElement).value).toBe('105'); // the box took it, not the grid
+      await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
+    });
+
+    it('a record whose only saved weight is out of range: the chat\'s grid weight is still the last answer', async () => {
+      await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+      await addMeasurement('waist', 90, '2026-09-01');
+      await addMeasurement('weight', 80, '2026-08-01');
+      await flushRoadmapStore();
+      // Another writer's weight below 20 kg (this store refuses one): the stage still asks the weight.
+      const disk = new LocalStorageAdapter();
+      const { body, version } = await disk.read(ROADMAP_FILE_NAME);
+      const file = body as RoadmapFile;
+      for (const m of file.measurements) if (m.metricType === 'weight') m.value = 10;
+      await disk.write(ROADMAP_FILE_NAME, file, version);
+      await initRoadmapStore(new LocalStorageAdapter());
+      const view = await open();
+      await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
+      await settle(200);
+      await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+      chatWeight();
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
+      expect(calls('onboarding_done')).toHaveLength(1);
     });
   });
 });
