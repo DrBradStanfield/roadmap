@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T7,tooling,"Two test files fail when test order is shuffled: app/lib/outbound-fetch-deadline.test.ts and widget-src/src/components/HealthTool.list-departure.test.tsx share state or fake timers between cases",bug,not started,"Adversary review of screening Change 1, 2026-11-12: passes 37/37 in order, fails 4 cases under --sequence.shuffle; review-note issue 1333",,no

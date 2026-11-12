@@ -73,6 +73,10 @@ struct WelcomeView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: phase) { apply(.phaseChanged) }
         .onChange(of: connectMessage) { old, new in if old != nil, new == nil { apply(.alertDismissed) } }
+        // A connect error that lands after the person left the sheet never shows later, out of
+        // context: cleared as the sheet opens or closes. With the sheet closed its alertDismissed
+        // decides nothing; on opening the record is not open yet (US-25 AC11j).
+        .onChange(of: choosingCloud) { connectMessage = nil }
         .sheet(isPresented: $choosingCloud) {
             if let sync { cloudChooser(sync) }
         }
@@ -131,23 +135,26 @@ struct WelcomeView: View {
                     }
                 }
                 switch phase {
-                case .opening:
-                    Section {
-                        HStack {
-                            ProgressView()
-                            Text("Opening your record").foregroundStyle(.secondary)
+                case .opening: busy("Opening your record")
+                case .disconnecting: busy("Disconnecting…")
+                case .failed(let problem):
+                    if let provider = sync.provider {
+                        let failure = WelcomeConnect.failure(problem, provider: provider)
+                        Section {
+                            Text(failure.words).foregroundStyle(.secondary)
+                            if failure.offersTryAgain { Button("Try again") { apply(.tryAgain) } }
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Opening your record")
-                    }
-                case .failed:
-                    Section {
-                        Text("Signed in, but your record could not be opened yet. Check your connection, then try again.")
-                            .foregroundStyle(.secondary)
-                        Button("Try again") { apply(.tryAgain) }
                     }
                 case .choosing, .opened:
                     EmptyView()
+                }
+                if WelcomeConnect.showsRecovery(phase), let provider = sync.provider {
+                    Section {
+                        ConnectCloudButton(sync: sync, provider: provider, message: $connectMessage, connected: {}) {
+                            Label("Sign in to \(provider.label) again", systemImage: "person.badge.key")
+                        }
+                        Button("Use a different cloud") { apply(.useDifferentCloud) }
+                    }
                 }
             }
             .messageAlert("Your record", $connectMessage)
@@ -158,6 +165,18 @@ struct WelcomeView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    /// A spinner row and what it waits on.
+    private func busy(_ words: LocalizedStringKey) -> some View {
+        Section {
+            HStack {
+                ProgressView()
+                Text(words).foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(words)
+        }
     }
 
     /// "Get started" with a cloud connected waits on its record, so the questions never
@@ -174,6 +193,9 @@ struct WelcomeView: View {
             choosingCloud = true
             openRecord()
         case .open: openRecord()
+        case .disconnect:
+            guard let sync, let provider = sync.provider else { return }
+            Task { if await sync.disconnectOutcome() == .failed { connectMessage = SyncStatusText.disconnectFailed(provider) } }
         case .nothing: break
         }
     }

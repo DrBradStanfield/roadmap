@@ -4,13 +4,15 @@
  */
 import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES } from '@roadmap/health-core/chat-history';
-import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-edits';
+import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
+import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
-import { readChatStream } from './chat-stream';
+import { ChatStreamError, readChatStream } from './chat-stream';
 
 // On local-first builds sendMessage tells the server to trust the
 // client-supplied context instead of looking for a DB record.
@@ -24,8 +26,9 @@ import { getChatArticle } from './assistant-config';
 export interface ChatConversation {
   id: string;
   title: string;
-  updatedAt: string;
-  createdAt: string;
+  /** Absent on a thread the chat listed itself as its first reply landed (chat-turn.ts `done`). */
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface ChatMessage {
@@ -47,6 +50,8 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
+  /** Parts of the reply's edits refused as unreadable, with the iPhone's words (US-67 AC2). */
+  editRefusals?: ChatEditRefusal[];
   /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
   subscriptionCard?: SubscriptionCard;
 }
@@ -245,61 +250,67 @@ export async function listConversations(): Promise<ChatListResult | null> {
       isGuest: result.isGuest,
     };
   } catch (error) {
-    console.warn('Error listing conversations:', error);
-    Sentry.captureException(error);
+    console.warn('Chat list failed.'); // as a failed load: the error can quote titles (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind: 'fetch' } });
     return null;
   }
 }
+
+const threadNotFound = (status: number, data: ChatReply | null) => status === 404 && data?.error === 'Conversation not found'; // the server's (AC6a), not a proxy's
 
 /**
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
 function guestThreadGone(status: number, data: ChatReply | null): boolean {
-  if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
+  if (!threadNotFound(status, data) || data?.isGuest !== true) return false;
   const sessionToken = tokenOf(data);
   if (sessionToken) setGuestSessionToken(sessionToken);
   return true;
 }
 
-/** null: the server no longer recognizes this guest thread (US-15 AC6a). */
-export async function loadConversation(conversationId: string): Promise<ChatMessage[] | null> {
-  const store = await cloudHistory();
-  if (store) return store.getMessages(conversationId);
+/** Settles 'failed' when `signal` aborts; never, without one. */
+const untilAborted = (signal?: AbortSignal) => new Promise<'failed'>((resolve) => {
+  if (signal?.aborted) resolve('failed');
+  else signal?.addEventListener('abort', () => resolve('failed'), { once: true });
+});
+
+/**
+ * A thread's turns. 'gone': the server no longer recognizes this thread, a guest's or a customer's (US-15 AC6a).
+ * 'failed': they could not be read (an error answer, a throw, or `signal` aborting), so the
+ * thread never shows as empty and no send goes out with an empty history (N2).
+ */
+export async function loadConversation(conversationId: string, signal?: AbortSignal): Promise<ChatMessage[] | 'gone' | 'failed'> {
+  let kind: 'store' | 'fetch' = 'store';
   try {
+    const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
+    if (store === 'failed') return 'failed';
+    if (store) return store.getMessages(conversationId);
+    kind = 'fetch';
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
-    const response = await fetchWithTransientRetry(
-      `${PROXY_PATH}/api/chat?${params}`,
-    );
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return null;
+      const data = await parseJsonResponse<ChatReply>(response).catch(() => null);
+      if (guestThreadGone(response.status, data) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
         extra: { status: response.status, contentType: response.headers.get('content-type') },
       });
-      return [];
+      return 'failed';
     }
-    const result = await parseJsonResponse<{
-      success: boolean;
-      messages: ChatMessage[];
-    }>(response);
-    if (!result?.success) return [];
-    return result.messages;
+    const result = await parseJsonResponse<{ success: boolean; messages: ChatMessage[] }>(response);
+    return result?.success ? result.messages : 'failed';
   } catch (error) {
-    console.warn('Error loading conversation:', error);
-    Sentry.captureException(error);
-    return [];
+    if (signal?.aborted) return 'failed'; // the caller's timeout, not an error to report
+    console.warn('Chat load failed.'); // never the error: it or its cause can quote chat text (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat load failed'), { tags: { feature: 'chat', kind } });
+    return 'failed';
   }
 }
 
 /** Same window as the server's chat-dedup.server.ts. */
 const DEDUP_WINDOW_MS = 60_000;
-
-/** The server's proposed edits of a kind this build applies; any other is dropped, never applied as something else. */
-const EDIT_KINDS: readonly unknown[] = ['field', 'medication', 'profile'] satisfies ProposedEdit['kind'][];
-const knownEdits = (edits: unknown): ProposedEdit[] =>
-  Array.isArray(edits) ? edits.filter((e): e is ProposedEdit => EDIT_KINDS.includes(e?.kind)) : [];
 
 /**
  * `history` is the conversation so far, from the widget's own file. On
@@ -318,6 +329,7 @@ export async function sendMessage(
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
   sessionToken = getGuestSessionToken(),
+  asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
@@ -366,15 +378,10 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked);
     }
 
-    if (response.status === 429) {
-      return {
-        result: null,
-        error: { error: CHAT_LIMIT_MESSAGE },
-      };
-    }
+    if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
 
     if (!response.ok || !data?.success) {
       Sentry.captureMessage('Chat sendMessage failed', {
@@ -394,11 +401,12 @@ export async function sendMessage(
     }
 
     // Local-first: mirror the exchange into the user's cloud history file,
-    // keyed by the server's canonical conversation id. Fire-and-forget —
-    // history must never block or fail the chat itself.
+    // keyed by the server's canonical conversation id, unless an erase began
+    // since the question (US-11 AC2h). Fire-and-forget — history must never
+    // block or fail the chat itself.
     void cloudHistory()
       .then((store) =>
-        store?.recordExchange({
+        chatAskedUnder() !== asked ? undefined : store?.recordExchange({
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,
@@ -412,6 +420,15 @@ export async function sendMessage(
         Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
       });
 
+    // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind is
+    // left out, and an entry of a known kind that is not its shape refuses every edit of its part.
+    // A missing or non-list `proposedEdits` is no edits, as the iPhone takes it.
+    const read = Array.isArray(data.proposedEdits) ? readProposedEdits(data.proposedEdits) : { edits: [], invalid: [] };
+    // The invalid kinds only: never a value or the reply's words (CLAUDE.md, health values never in telemetry).
+    if (read.invalid.length > 0) {
+      Sentry.captureMessage('Chat edits unreadable', { level: 'warning', tags: { feature: 'chat-edits', invalid: [...new Set(read.invalid)].join(',') } });
+    }
+    const { edits, refusals } = refuseUnreadableEdits(read);
     return {
       result: {
         conversationId: data.conversationId,
@@ -420,18 +437,17 @@ export async function sendMessage(
         sessionToken: newToken,
         isGuest: data.isGuest,
         ...(data.isFallback === true ? { isFallback: true } : {}),
-        ...(knownEdits(data.proposedEdits).length > 0 ? { proposedEdits: knownEdits(data.proposedEdits) } : {}),
+        ...(edits.length > 0 ? { proposedEdits: edits } : {}),
+        ...(refusals.length > 0 ? { editRefusals: refusals } : {}),
         ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,
     };
   } catch (error) {
-    console.warn('Error sending message:', error);
-    Sentry.captureException(error);
-    return {
-      result: null,
-      error: { error: 'Network error' },
-    };
+    // Fixed words only: the error can quote the chat (US-15 AC47).
+    console.warn('Chat send failed');
+    Sentry.captureException(recordFailure(error, error instanceof ChatStreamError ? error.failure : 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
+    return { result: null, error: { error: 'Network error' } };
   }
 }
 
@@ -471,8 +487,8 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
     const data = await parseJsonResponse<{ success: boolean }>(response);
     return data?.success ?? false;
   } catch (error) {
-    console.warn('Error deleting conversation:', error);
-    Sentry.captureException(error);
+    console.warn('Chat delete failed');
+    Sentry.captureException(recordFailure(error, 'Chat delete failed'), { tags: { feature: 'chat', kind: 'delete' } });
     return false;
   }
 }

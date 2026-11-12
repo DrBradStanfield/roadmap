@@ -95,6 +95,7 @@ final class DataEraser {
         self.reminders = reminders
         self.health = health
         self.live = live
+        sync.waitsFor(self)
     }
 
     /// The erase's words were dismissed: after an erase the questions start again on the

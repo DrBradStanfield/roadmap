@@ -170,7 +170,7 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 
 ## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
 Named area: `widget-src/**` and `packages/health-core/src/**` — MINUS the
-constitution's standing exclusions (clinical: evidence.ts + the three-file sync
+constitution's standing exclusions (clinical: `packages/health-core/src/evidence*.ts` + the three-file sync
 set; merge.ts; security surfaces), which sit above every tier. Process is the
 constitution's Tier 3 verbatim: `claude/` branch, failing test citing the
 US-id, /simplify, PR with evidence; the pipeline (claude-review.yml →

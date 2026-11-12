@@ -10,9 +10,10 @@ final class WelcomeConnectTests: XCTestCase {
     private let unreachable = SyncProblem(kind: .unreachable)
 
     func testEveryStatusHasAPhase_US54_AC2b() {
-        let statuses: [CloudSync.Status] = [.onPhone, .connecting, .synced(.now), .saving, .problem(unreachable)]
-        // With a cloud and no open record: an open shows as opening, a failure as failed.
-        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable)]
+        let statuses: [CloudSync.Status] = [.onPhone, .connecting, .synced(.now), .saving, .problem(unreachable), .disconnecting]
+        // With a cloud and no open record: an open shows as opening, a failure as failed,
+        // a Disconnect closing as disconnecting (US-25 AC11m, owner R2 b).
+        let connected: [Phase] = [.opening, .opening, .opening, .opening, .failed(unreachable), .disconnecting]
         for (status, expected) in zip(statuses, connected) {
             XCTAssertEqual(WelcomeConnect.phase(provider: .dropbox, status: status, recordOpen: false), expected, "\(status)")
             // An open record wins over any status.
@@ -23,11 +24,24 @@ final class WelcomeConnectTests: XCTestCase {
         }
     }
 
-    /// No second cloud can be chosen while a record opens.
+    /// No second cloud can be chosen while a record opens, nor at failed, where a cloud is
+    /// still connected (US-25 AC11l, US-54 AC2d).
     func testTheConnectButtonsHideWhileARecordOpens_US54_AC2b() {
-        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), true), (.opened, false)]
+        let rows: [(Phase, Bool)] = [(.choosing, true), (.opening, false), (.failed(unreachable), false), (.opened, false), (.disconnecting, false)]
         for (phase, shows) in rows {
             XCTAssertEqual(WelcomeConnect.showsConnect(phase), shows, "\(phase)")
+        }
+    }
+
+    /// US-54 AC2d (review of PR 1329): at failed, and only there, the sheet shows one row to
+    /// sign in to the connected cloud again and "Use a different cloud".
+    func testOnlyAFailedOpenOffersSignInAgainAndADifferentCloud_US54_AC2d() {
+        let rows: [(Phase, Bool)] = [(.choosing, false), (.opening, false), (.failed(unreachable), true), (.opened, false), (.disconnecting, false)]
+        for (phase, shows) in rows {
+            XCTAssertEqual(WelcomeConnect.showsRecovery(phase), shows, "\(phase)")
+        }
+        for kind in SyncProblem.Kind.allCases {
+            XCTAssertTrue(WelcomeConnect.showsRecovery(.failed(SyncProblem(kind: kind))), "\(kind)")
         }
     }
 
@@ -45,6 +59,9 @@ final class WelcomeConnectTests: XCTestCase {
             (.phaseChanged, true, true, [.nothing, .nothing, .nothing, .nothing]),
             (.alertDismissed, true, false, [.nothing, .nothing, .nothing, .goOn]),
             (.alertDismissed, false, false, [.nothing, .nothing, .nothing, .nothing]),
+            // US-54 AC2d: "Use a different cloud" disconnects, at failed only; the sheet stays.
+            (.useDifferentCloud, true, false, [.nothing, .nothing, .disconnect, .nothing]),
+            (.useDifferentCloud, true, true, [.nothing, .nothing, .disconnect, .nothing]),
         ]
         for (event, sheetShown, alertShown, expected) in rows {
             for (phase, decision) in zip(phases, expected) {
@@ -82,6 +99,32 @@ final class WelcomeConnectTests: XCTestCase {
         // goOn closed the sheet.
         XCTAssertEqual(WelcomeConnect.decide(.phaseChanged, phase: .opened, sheetShown: false, alertShown: false), .nothing)
         XCTAssertEqual(WelcomeConnect.decide(.alertDismissed, phase: .opened, sheetShown: false, alertShown: false), .nothing)
+    }
+
+    /// US-54 AC2c: a failed open says what the Sync screen says for that problem, from the same
+    /// source, except a cloud that could not be reached, which keeps AC2's sentence. Try again
+    /// shows only where trying again can help: a revoked sign-in needs the Connect rows, a
+    /// newer app's record an update; a full cloud's Try again checks the freed space.
+    func testTheFailedRowSaysEachProblemInTheSyncScreensWords_US54_AC2c() {
+        let sentence = "Signed in, but your record could not be opened yet. Check your connection, then try again."
+        // (kind, the Sync screen's words or nil for AC2's sentence, Try again)
+        let rows: [(SyncProblem.Kind, Bool, Bool)] = [
+            (.unreachable, false, true),
+            (.busy, true, true),
+            (.signIn, true, false),
+            (.tooNew, true, false),
+            (.storageFull, true, true),
+        ]
+        XCTAssertEqual(Set(rows.map(\.0)), Set(SyncProblem.Kind.allCases), "one row per kind")
+        for provider in CloudProvider.allCases {
+            for (kind, syncWords, tryAgain) in rows {
+                let problem = SyncProblem(kind: kind)
+                let failure = WelcomeConnect.failure(problem, provider: provider)
+                let expected = syncWords ? SyncStatusText.detail(.problem(problem), provider: provider) : sentence
+                XCTAssertEqual(failure.words, expected, "\(kind) \(provider)")
+                XCTAssertEqual(failure.offersTryAgain, tryAgain, "\(kind)")
+            }
+        }
     }
 
     // MARK: Through the real CloudSync, on a stubbed Dropbox

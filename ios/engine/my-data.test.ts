@@ -790,15 +790,15 @@ describe('forms (AC8)', () => {
     expect(data.psa.latest).toMatchObject({ value: '1.2', day: '2026-10-02' });
   });
 
-  it('US-06 AC18 (Brad 2026-11-03): a raised PSA of 4.04 reads 4.04, as the web, not 4.0', () => {
+  it('US-06 AC18 (Brad 2026-11-12, turned round): a PSA of 3.96 reads 3.96, as the web, not 4.0', () => {
     const psa = (value: number) => myData(man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
       { kind: 'add', metric: 'psa', value, day: '2026-10-02' }), NOW).psa.latest?.value;
-    expect(psa(4.04)).toBe('4.04');
-    expect([psa(6.53), psa(4.0)]).toEqual(['6.5', '4.0']);
+    expect(psa(3.96)).toBe('3.96');
+    expect([psa(6.53), psa(4.0), psa(4.04)]).toEqual(['6.5', '4.0', '4.0']);
     // The PSA page's history rows (and its headline) print the same (adversary R1).
     const file = man60({ kind: 'screening', key: 'prostate_discussion', value: 'will_screen' },
-      { kind: 'add', metric: 'psa', value: 4.04, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
-    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['4.04', '6.5']);
+      { kind: 'add', metric: 'psa', value: 3.96, day: '2026-10-02' }, { kind: 'add', metric: 'psa', value: 6.53, day: '2026-09-02' });
+    expect(metricHistory(file, 'psa', NOW).rows.map((r) => r.value)).toEqual(['3.96', '6.5']);
   });
 
   // US-06 AC1a: accepted names must produce keys accepted by the real native writer.

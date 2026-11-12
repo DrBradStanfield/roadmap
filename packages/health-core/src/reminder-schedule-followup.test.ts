@@ -7,7 +7,8 @@
 // Neither date depends on today, so the phone's repeat days never move.
 import { describe, it, expect } from 'vitest';
 import { computeNextDueDates, computeReminderSchedule, followupKinds } from './reminder-schedule';
-import type { ScreeningInputs } from './types';
+import { getPostFollowupDueDate, type ScreeningInputs } from './types';
+import { SCREENING_RULES, followupTrigger, opensFollowup, ruleOf } from './screening-rules';
 import type { ReminderCategory } from './reminders';
 import { createEmptyFile } from './roadmap-file';
 
@@ -81,9 +82,11 @@ describe('US-17 AC15: follow-up reminders follow the follow-up card', () => {
     }
   });
 
-  it('a completed follow-up with no date is unchanged: the routine date', () => {
+  it('a completed follow-up with no date: the routine date, except colorectal, which has none until dated (US-07 AC1j)', () => {
     const s: ScreeningInputs = { colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: '2026-09', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed' };
-    expect(dueOf('male', 60, s, 'screening_colorectal')).toBe('2036-09-01');
+    expect(dueOf('male', 60, s, 'screening_colorectal')).toBeUndefined();
+    const breast: ScreeningInputs = { breastFrequency: 'annual', breastLastDate: '2026-09', breastResult: 'abnormal', breastFollowupStatus: 'completed' };
+    expect(dueOf('female', 60, breast, 'screening_breast')).toBe('2027-09-01');
   });
 
   it('lung below 20 pack-years (AC1f) and past 80 (AC1g): organize at the last CT, scheduled at 3 months, completed gives no reminder', () => {
@@ -120,5 +123,29 @@ describe('US-17 AC15: follow-up reminders follow the follow-up card', () => {
     const result = type === 'dexa' ? { dexaResult: 'osteoporosis' } : { [`${type}Result`]: 'abnormal' };
     f.screenings = { ...f.screenings, ...method, ...result, [`${type}LastDate`]: '2026-09', [`${type}FollowupStatus`]: 'scheduled' } as typeof f.screenings;
     expect(followupKinds(f, NOW)[`screening_${type}`]).toEqual({ kind: 'checkin', name });
+  });
+
+  // D8 (Brad 2026-11-12): the table's follow-up option decides, never a literal 'abnormal'.
+  const METHODS: Record<string, Record<string, string>> = {
+    colorectal: { colorectalMethod: 'fit_annual' }, breast: { breastFrequency: 'annual' },
+    cervical: { cervicalMethod: 'hpv_every_5yr' }, lung: { lungScreening: 'annual_ldct' }, dexa: { dexaScreening: 'dexa_scan' },
+  };
+  it.each(SCREENING_RULES.filter((r) => r.result))('$id: only the table\'s follow-up option opens the follow-up reminder', (r) => {
+    expect(METHODS[r.id]).toBeDefined();
+    const trigger = followupTrigger(r);
+    expect(trigger).toBeDefined();
+    for (const { value } of r.result!.options) {
+      const f = createEmptyFile({ deviceId: 'followup_test', now: '2026-10-01T00:00:00Z' });
+      f.screenings = { ...f.screenings, ...METHODS[r.id], [`${r.id}Result`]: value, [`${r.id}LastDate`]: '2026-09' } as typeof f.screenings;
+      expect(followupKinds(f, NOW)[`screening_${r.id}` as ReminderCategory]?.kind).toBe(value === trigger ? 'organize' : undefined);
+      expect(getPostFollowupDueDate(r.id, undefined, value, 'completed', '2026-10') !== null).toBe(value === trigger);
+    }
+  });
+
+  // D8 adversary F1: a row with no result has no trigger, so an unset result never matches it.
+  it.each(['prostate', 'endometrial'] as const)('%s: no result row opens no follow-up, even completed and dated', (id) => {
+    expect(followupTrigger(ruleOf(id))).toBeUndefined();
+    expect(opensFollowup(ruleOf(id), undefined)).toBe(false);
+    expect(getPostFollowupDueDate(id, undefined, undefined, 'completed', '2026-10')).toBeNull();
   });
 });

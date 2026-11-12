@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { format } from 'node:util';
+import { format, inspect } from 'node:util';
 import { DiscordAPIError } from '@discordjs/rest';
 
 // US-09 AC6d: a failed Discord send never writes the reply to the host log.
@@ -8,7 +8,7 @@ import { DiscordAPIError } from '@discordjs/rest';
 // put the answer (and the asker's <@id> mention) in the Fly log.
 const edge = vi.hoisted(() => ({
   listeners: new Map<string, (message: unknown) => void>(),
-  complete: vi.fn(), sleep: vi.fn(), capture: vi.fn(), duplicate: vi.fn(),
+  complete: vi.fn(), sleep: vi.fn(), capture: vi.fn(), captureMessage: vi.fn(), duplicate: vi.fn(),
   conversation: null as { id: string } | null,
 }));
 vi.mock('discord.js', () => ({
@@ -22,7 +22,7 @@ vi.mock('discord.js', () => ({
   Events: { MessageCreate: 'message', ClientReady: 'ready', Error: 'error' },
   GatewayIntentBits: {}, Partials: {},
 }));
-vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, captureMessage: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, captureMessage: edge.captureMessage }));
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: vi.fn(), CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
@@ -63,6 +63,9 @@ async function deliver(message: ReturnType<typeof failingMessage>) {
   await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
 }
 
+// Every argument of every Sentry call, serialized deep.
+const sentryText = () => inspect([edge.capture.mock.calls, edge.captureMessage.mock.calls], { depth: null, showHidden: true });
+
 let stop: () => void;
 let logged: string[];
 beforeEach(async () => {
@@ -86,9 +89,13 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
     const log = logged.join('\n');
     expect(log).not.toContain('4.9 mmol/L');
     expect(log).not.toContain('<@u1>');
-    expect(log).toContain('Discord handleMessage error: DiscordAPIError[50013] 50013 403');
-    // Sentry keeps the error itself; its scrub runs there.
-    expect(edge.capture).toHaveBeenCalledWith(expect.any(DiscordAPIError), expect.anything());
+    expect(log).toContain('Discord: chunk send failed: DiscordAPIError[50013] 50013 403');
+    // Sentry gets fixed words and the Discord code, never the error object,
+    // whose requestBody holds the reply (US-15 AC62).
+    expect(sentryText()).not.toContain('4.9 mmol/L');
+    expect(sentryText()).not.toContain('<@u1>');
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: chunk send failed',
+      expect.objectContaining({ tags: expect.objectContaining({ code: '50013' }) }));
   });
 
   it('a failed duplicate re-send logs the same way', async () => {
@@ -101,14 +108,19 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
     const log = logged.join('\n');
     expect(log).not.toContain('4.9 mmol/L');
     expect(log).not.toContain('<@u3>');
-    expect(log).toContain('Discord: dedup re-send failed: DiscordAPIError[50013] 50013 403');
+    // US-15 AC62: the re-send goes through the same sendChunks as the answer.
+    expect(log).toContain('Discord: chunk send failed: DiscordAPIError[50013] 50013 403');
+    expect(sentryText()).not.toContain('4.9 mmol/L');
+    expect(sentryText()).not.toContain('<@u3>');
   });
 
   it('a plain error logs its name, not its message', async () => {
     await deliver(failingMessage('u2', 'plain'));
     const log = logged.join('\n');
-    expect(log).toContain('Discord handleMessage error: Error');
+    expect(log).toContain('Discord: chunk send failed: Error');
     expect(log).not.toContain('Missing Permissions');
     expect(log).not.toContain('4.9 mmol/L');
+    expect(sentryText()).not.toContain('4.9 mmol/L');
+    expect(sentryText()).not.toContain('Missing Permissions');
   });
 });

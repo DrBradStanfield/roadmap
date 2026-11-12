@@ -1,4 +1,4 @@
-/// The welcome screen's cloud connect (US-54 AC2, AC2b). The screen keeps no copy of
+/// The welcome screen's cloud connect (US-54 AC2, AC2b, AC2c). The screen keeps no copy of
 /// how an open went: it reads its phase from CloudSync each time, so a relaunch shows
 /// the launch open still running, and Cancel never leaves an old failure behind.
 /// Residual: WelcomeView's wiring (its onChange, openRecord on showSheetAndOpen, the empty
@@ -14,6 +14,8 @@ enum WelcomeConnect {
         case failed(SyncProblem)
         /// The cloud record is open: the screen can go on.
         case opened
+        /// A Disconnect ("Use a different cloud") is closing: a spinner, no Connect rows.
+        case disconnecting
     }
 
     /// No spinner without an open behind it: every tap that can show `opening` also
@@ -32,15 +34,57 @@ enum WelcomeConnect {
         // .connecting in the same turn; saving and synced need an open session). No
         // open is implied, so the taps start one.
         case .onPhone, .synced, .saving: return .opening
+        // A Disconnect closing: the Connect rows stay hidden, since a connect is dropped while
+        // it closes; choosing follows (owner, R2 b).
+        case .disconnecting: return .disconnecting
         }
     }
 
-    /// The Connect buttons hide while a record opens: a second cloud chosen mid-open would
-    /// set the provider while the first cloud's open hands over (review, PR 1281).
+    /// A Connect row for every cloud shows only with no cloud: with one connected, connect
+    /// refuses any other (US-25 AC11l), so at failed the sheet offers `showsRecovery` instead.
     static func showsConnect(_ phase: Phase) -> Bool {
         switch phase {
-        case .choosing, .failed: true
-        case .opening, .opened: false
+        case .choosing: true
+        case .opening, .failed, .opened, .disconnecting: false
+        }
+    }
+
+    /// At failed, and only there: one row to sign in to the connected cloud again (the Sync
+    /// screen's own row) and "Use a different cloud", which disconnects it (US-54 AC2d).
+    static func showsRecovery(_ phase: Phase) -> Bool {
+        switch phase {
+        case .failed: true
+        case .choosing, .opening, .opened, .disconnecting: false
+        }
+    }
+
+    /// What a failed open's row says, and whether it offers Try again (US-54 AC2c).
+    struct Failure: Equatable {
+        let words: String
+        let offersTryAgain: Bool
+    }
+
+    /// The Sync screen's own words for the problem (`SyncProblem.words`, which
+    /// `SyncStatusText.detail` shows), except a cloud that could not be reached, which keeps
+    /// AC2's sentence. No new copy. Try again shows only where trying again can help.
+    static func failure(_ problem: SyncProblem, provider: CloudProvider) -> Failure {
+        // No default arm: a new kind does not compile until its words and Try again are decided.
+        switch problem.kind {
+        // The network or the provider may answer next time.
+        case .unreachable:
+            Failure(words: "Signed in, but your record could not be opened yet. Check your connection, then try again.",
+                    offersTryAgain: true)
+        // Edits kept landing during the open; a fresh open may find them settled.
+        case .busy,
+             // The words say to free space; Try again checks it worked, and on a still-full
+             // cloud it only fails again (owner, review F2 of PR 1328).
+             .storageFull:
+            Failure(words: problem.words(provider), offersTryAgain: true)
+        // Only signing in again helps: the sign-in-again row, which shows at failed, is the remedy.
+        case .signIn,
+             // Only an app update helps.
+             .tooNew:
+            Failure(words: problem.words(provider), offersTryAgain: false)
         }
     }
 
@@ -52,6 +96,8 @@ enum WelcomeConnect {
         case phaseChanged
         /// The person closed a connect error's alert (US-25 AC11j).
         case alertDismissed
+        /// "Use a different cloud", at failed (US-54 AC2d).
+        case useDifferentCloud
     }
 
     enum Decision: Equatable {
@@ -62,6 +108,8 @@ enum WelcomeConnect {
         case showSheet
         case showSheetAndOpen
         case open
+        /// Disconnect the cloud on file; the sheet stays and shows choosing (US-54 AC2d).
+        case disconnect
         case nothing
     }
 
@@ -81,6 +129,8 @@ enum WelcomeConnect {
         case (.phaseChanged, _): .nothing
         case (.alertDismissed, .opened): sheetShown ? .goOn : .nothing
         case (.alertDismissed, _): .nothing
+        case (.useDifferentCloud, .failed): .disconnect
+        case (.useDifferentCloud, _): .nothing
         }
     }
 }

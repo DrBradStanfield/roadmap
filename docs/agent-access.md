@@ -78,7 +78,8 @@ document has `fileRef: ""`.
      is "> 60", never 60. Say it with its symbol. No `comparator` means an exact value.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
-   `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
+   `profile` and `screenings` are singletons. `screenings.colorectalFollowupIntervalYears` (whole years, 1 to 10) is the repeat interval the colonoscopy report gave after an abnormal colorectal result; absent means the report gave none, and the plan then uses 3 years.
+   Each may carry `fieldStamps`, the merge's
    clock for each field; it is not part of what the record says, so skip it when reading.
    `read_record` leaves it out, with the rest of the sync bookkeeping (US-32 AC41): `meta`,
    every row's `createdAt` and `lamport`, `updatedAt` except on the two history logs (there

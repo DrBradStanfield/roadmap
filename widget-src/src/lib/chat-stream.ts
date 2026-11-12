@@ -1,5 +1,10 @@
 import type { ChatDelta, ChatReply } from './chat-api';
 
+/** The stream's own failures: fixed words that never quote the stream, so reported as they are. */
+export class ChatStreamError extends Error {
+  constructor(readonly failure: 'Chat stream line was not JSON' | 'Chat stream ended without an answer') { super(failure); }
+}
+
 /**
  * Read an NDJSON answer (US-15 AC16): hand each delta to `onDelta` and return
  * the `done` line, which is the JSON the non-streamed reply would have been.
@@ -30,7 +35,7 @@ export async function readChatStream(response: Response, onDelta: (delta: ChatDe
       // a corrupted line can hold answer or thinking text, which must not
       // reach the caller's Sentry capture in chat-api.ts (the server scrubs the same case).
       let event;
-      try { event = JSON.parse(line); } catch { throw new Error('Chat stream line was not JSON'); }
+      try { event = JSON.parse(line); } catch { throw new ChatStreamError('Chat stream line was not JSON'); }
       if (event.type === 'done') {
         await reader.cancel().catch(() => {});
         const { type: _type, ...reply } = event;
@@ -41,6 +46,6 @@ export async function readChatStream(response: Response, onDelta: (delta: ChatDe
         onDelta({ type: 'sources', titles: Array.isArray(event.titles) ? event.titles.filter((t: unknown) => typeof t === 'string') : [] });
       }
     }
-    if (done) throw new Error('Chat stream ended without an answer');
+    if (done) throw new ChatStreamError('Chat stream ended without an answer');
   }
 }
