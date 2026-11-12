@@ -253,6 +253,15 @@ describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)',
     }
   });
 
+  it('a newer "< 5" after 4.5 keeps the item, under the plain label (AC21 item 6, review F4)', () => {
+    for (const d of [undefined, 'elected_not_to', 'will_screen']) {
+      const file = psa(4.5, d);
+      file.measurements = [...file.measurements, { ...file.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+        recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+      expect(prostate(file), String(d)).toMatchObject({ label: 'PSA test', dueAt: '2026-09-01' });
+    }
+  });
+
   it('below 4.0 the list keeps the plain label; one who declined has no item', () => {
     expect(prostate(psa(3.0, 'will_screen'))).toMatchObject({ label: 'PSA test', dueAt: '2027-04-01' });
     expect(prostate(psa(3.0, 'elected_not_to'))).toBeUndefined();
