@@ -33,8 +33,10 @@ extension RecordStore {
             let session: Int
             /// CloudSync's link now: a switch may replace it while this record is still shown.
             let link: Link?
-            /// The link's account when this record was drawn. A link never moves it, so a record
-            /// is never named after an account it does not come from (US-72 AC10).
+            /// The link's account, set when a session's first record is drawn; a re-read, an edit or
+            /// an erase in the same session keeps it; a link never moves it. So a record is never
+            /// named after an account it does not come from (US-72 AC10). Engine sessions only rise
+            /// (ios/engine/cloud.ts), so the session alone tells a re-read from a new open.
             let drawnAccount: String?
 
             func linked(_ link: Link?) -> Cloud { Cloud(erase: erase, session: session, link: link, drawnAccount: drawnAccount) }
@@ -90,7 +92,9 @@ extension RecordStore {
             case (.leaving, .phoneWritten): (state, .drop)
 
             case (.cloud(let cloud), .linked(let link)): (.cloud(cloud.linked(link)), .none)
-            case (.cloud(let cloud), .cloudShown(let erase, let session)): (.cloud(Cloud(erase: erase, session: session, link: cloud.link, drawnAccount: cloud.link?.account)), .show)
+            case (.cloud(let cloud), .cloudShown(let erase, let session)):
+                (.cloud(Cloud(erase: erase, session: session, link: cloud.link,
+                              drawnAccount: session == cloud.session ? cloud.drawnAccount : cloud.link?.account)), .show)
             case (.cloud(let cloud), .cloudEdited(let erase)): (.cloud(Cloud(erase: erase, session: cloud.session, link: cloud.link, drawnAccount: cloud.drawnAccount)), .show)
             case (.cloud(let cloud), .phoneRequested): (.leaving(from: cloud), .none)
             case (.cloud, .phoneLoaded): (state, .drop)
