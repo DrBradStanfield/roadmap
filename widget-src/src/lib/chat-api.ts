@@ -483,8 +483,8 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
     const data = await parseJsonResponse<{ success: boolean }>(response);
     return data?.success ?? false;
   } catch (error) {
-    console.warn('Error deleting conversation:', error);
-    Sentry.captureException(error);
+    console.warn('Chat delete failed');
+    Sentry.captureException(recordFailure(error, 'Chat delete failed'), { tags: { feature: 'chat', kind: 'delete' } });
     return false;
   }
 }
