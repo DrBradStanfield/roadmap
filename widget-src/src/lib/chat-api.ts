@@ -381,12 +381,7 @@ export async function sendMessage(
       return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked);
     }
 
-    if (response.status === 429) {
-      return {
-        result: null,
-        error: { error: CHAT_LIMIT_MESSAGE },
-      };
-    }
+    if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
 
     if (!response.ok || !data?.success) {
       Sentry.captureMessage('Chat sendMessage failed', {
@@ -452,10 +447,7 @@ export async function sendMessage(
     // Fixed words only: the error can quote the chat (US-15 AC47).
     console.warn('Chat send failed');
     Sentry.captureException(recordFailure(error, error instanceof ChatStreamError ? error.failure : 'Chat send failed'), { tags: { feature: 'chat', kind: 'send' } });
-    return {
-      result: null,
-      error: { error: 'Network error' },
-    };
+    return { result: null, error: { error: 'Network error' } };
   }
 }
 
