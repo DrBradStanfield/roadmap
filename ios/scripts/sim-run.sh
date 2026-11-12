@@ -24,13 +24,7 @@
 # skips it. Guard and lock waits share HR_SIM_WAIT_MIN; giving up on the guard exits 75. status and lease
 # calls skip it; an unreadable load fails open; a non-numeric HR_SIM_MAX_LOAD skips the load check only
 # (US-71 AC8).
-# One booted simulator (US-71 AC7): after taking the lock, a run refuses at once (75) while any other
-# device is booted, in the default set or in --set testing (parallel-test clones), the demo device
-# included. A device left booted makes every later run refuse until someone shuts it down; the refusal
-# names it and prints the command (xcrun simctl shutdown <udid>, or --set testing for a clone). While
-# the command runs, a watchdog checks every HR_SIM_GUARD_SECONDS (15); a device booted meanwhile ends
-# the command (exit 76), but is never shut down, since it may be Brad's own. The demo device is spared
-# there when ALLOW_EXTRA_SIMULATOR=other-device. HR_SIM_ALLOW_SECOND=1 skips both.
+# One booted simulator (US-71 AC7): ios/scripts/sim-guard.sh, sourced below.
 # Tests: ios/scripts/sim-run.test.ts (macOS only: lockf).
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -52,6 +46,7 @@ for v in POLL WATCH_EVERY; do [[ "${!v}" =~ $NUM ]] && awk -v p="${!v}" 'BEGIN {
 START=$(date +%s) REASON="" WARNED=0 BADMAX=0
 PROJECT="$(dirname "$SELF")/../HealthRoadmap.xcodeproj/project.pbxproj"
 OWN=0 SHIM="" WATCH="" UDID="" MARK="" TOKEN="$$-$(date +%s)"
+. "$(dirname "$SELF")/sim-guard.sh"
 
 die() { echo "sim-run: $*" >&2; exit "${2:-1}"; }
 now() { date +%s; }
@@ -214,42 +209,6 @@ ensure_device() {
     echo "sim-run: created $NAME ($UDID) on $runtime" >&2
   fi
   echo "$UDID" > "$HOME_DIR/udid"
-}
-
-# The first booted device other than the shared one (the recorded UDID, else any named HR Shared iPhone),
-# in the default set then the testing set, as "<name> (<udid>)|<shutdown command>". $1=1 spares the demo
-# device. Fails open: a list that cannot be read finds nothing.
-other_booted() {
-  local set hit shared
-  shared=$(cat "$HOME_DIR/udid" 2>/dev/null)
-  for set in "" testing; do
-    hit=$(xcrun simctl ${set:+--set $set} list devices booted 2>/dev/null | awk -v set="$set" -v me="$shared" \
-        -v name="$NAME" -v demo="$([ "${1:-0}" = 1 ] && echo "$DEMO")" 'match($0, / \([0-9A-F-]+\) \(Booted\)/) {
-      u = substr($0, RSTART + 2, RLENGTH - 12); n = substr($0, 1, RSTART - 1); sub(/^ +/, "", n)
-      if (set == "" && (u == me || (me == "" && n == name) || n == demo)) next
-      print n " (" u ")|xcrun simctl " (set == "" ? "" : "--set testing ") "shutdown " u; exit }')
-    [ -n "$hit" ] && { echo "$hit"; return 0; }
-  done
-  return 1
-}
-
-# The watchdog, in the background without fd 9 or 7: a device booted during the run ends the command
-# through the shim (TERM to its group, then the usual cleanup) and exits 76. It shuts nothing down, and
-# exits on TERM (killing its own sleep) or once this script is gone.
-watch_devices() {
-  local hit spare=0 s=""
-  [ "${ALLOW_EXTRA_SIMULATOR:-}" = other-device ] && spare=1
-  trap '[ -n "$s" ] && kill "$s" 2>/dev/null; exit 0' TERM
-  while :; do
-    sleep "$WATCH_EVERY" & s=$!
-    wait "$s"
-    kill -0 $$ 2>/dev/null || exit 0
-    hit=$(other_booted "$spare") || continue
-    trap '' TERM
-    echo "sim-run: stopped the command (exit 76): another simulator booted during the run, ${hit%%|*}; one at a time. Shut it down: ${hit#*|}" >&2
-    kill -TERM "$SHIM" 2>/dev/null
-    exit 76
-  done
 }
 
 device_state() { xcrun simctl list devices | sed -n -E "s/.*\($1\) \(([A-Za-z]+)\).*/\1/p" | head -1; }
@@ -443,7 +402,7 @@ if [ -n "${HR_SIM_LEASE:-}" ] && [ "$HR_SIM_LEASE" = "$(field token)" ] && held;
   exec "$SELF" _inner "$RESET" "$@"
 fi
 
-on_exit() { [ -n "$WATCH" ] && kill "$WATCH" 2>/dev/null; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
+on_exit() { [ -n "$WATCH" ] && kill "$WATCH" 2>/dev/null; rm -f "$FOUND"; [ -n "$MARK" ] && rm -f "$MARK"; [ "$OWN" = 1 ] && arm_idle; }
 # A signal goes to the shim, which stops the command's group; this script waits for it, then exits.
 on_signal() { [ -n "$SHIM" ] && { kill -TERM "$SHIM" 2>/dev/null; wait "$SHIM"; }; exit "$1"; }
 trap on_exit EXIT
@@ -461,9 +420,7 @@ done
 write_info "$@"
 GUARD=1
 [ "${HR_SIM_ALLOW_SECOND:-}" = 1 ] && GUARD=0
-if [ "$GUARD" = 1 ] && hit=$(other_booted 0); then
-  die "refused: another simulator is booted, ${hit%%|*}; one at a time. Shut it down (${hit#*|}) or set HR_SIM_ALLOW_SECOND=1 to run beside it" 75
-fi
+[ "$GUARD" = 1 ] && refuse_second
 # In the background so a signal reaches the trap at once (bash defers traps while a foreground child
 # runs), with stdin kept (a background job would otherwise lose it).
 HR_SIM_LEASE="$TOKEN" perl -e "$SHIM" "$RUN_LIMIT" "$KILL_SECONDS" "$SELF" "$HOME_DIR" "$IDLE_SECONDS" \
@@ -473,10 +430,5 @@ SHIM=$!
 wait "$SHIM"
 RC=$?
 SHIM=""
-if [ -n "$WATCH" ]; then
-  kill "$WATCH" 2>/dev/null
-  wait "$WATCH"
-  [ $? = 76 ] && RC=76
-  WATCH=""
-fi
+[ -n "$WATCH" ] && end_watch
 exit "$RC"
