@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { InputPanel } from '../components/InputPanel';
 import { StartingInfoVitals } from '../components/StartingInfoVitals';
+import { useAutoAdvance } from './useAutoAdvance';
 import { myHealth } from '../testing/my-health-props';
 import type { HealthInputs } from '@roadmap/health-core/types';
 
@@ -89,6 +90,27 @@ describe('US-02 AC6b: the wait ends in a jump only if the field has the focus', 
     act(() => { $('#systolicBp').blur(); });
     wait(900);
     expect(focused()).toBe(document.body);
+  });
+});
+
+describe('US-02 AC6b: the wait ends with its field', () => {
+  it('the field unmounts during the wait while the focus stays put: no jump', () => {
+    // The focus sits outside the unmounted part, so only the hook's unmount
+    // cleanup, not its focus check, can stop the jump.
+    const outside = document.body.appendChild(document.createElement('input'));
+    const target = document.body.appendChild(document.createElement('input'));
+    const advance = vi.fn(() => target.focus());
+    let schedule!: ReturnType<typeof useAutoAdvance>;
+    function Field() { schedule = useAutoAdvance(); return null; }
+    const { unmount } = render(<Field/>);
+    focus(outside);
+    act(() => { schedule({ ambiguous: true, advance }); });
+    wait(400);
+    unmount();
+    wait(500);
+    expect(advance).not.toHaveBeenCalled();
+    expect(focused()).toBe(outside);
+    outside.remove(); target.remove();
   });
 });
 

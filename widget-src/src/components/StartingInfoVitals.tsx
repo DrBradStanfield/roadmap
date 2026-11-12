@@ -674,8 +674,8 @@ function BpInputCell({
   };
   // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
   // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
-  // Never steal focus if the user has left systolic (AC6b, the hook's rule)
-  // or if dia had content when systolic last changed.
+  // A pause moves only if systolic has the focus when it ends (AC6b, the hook's rule: leaving
+  // and coming back first still moves); never if dia had content when systolic last changed.
   const handleSysChange = (raw: string) => {
     const v = raw.replace(/[^0-9]/g, '');
     typedHalf('sys', v);
