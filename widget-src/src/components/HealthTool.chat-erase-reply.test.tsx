@@ -22,6 +22,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { stampFields } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import type { SendMessageResult } from '../lib/chat-api';
@@ -108,6 +109,7 @@ class HeldCloud extends MemoryAdapter {
 
 /** A synthetic returning user on rosuvastatin, with the chat column open. */
 async function userOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>): Promise<RenderResult> {
+  localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
   await initRoadmapStore(adapter);
   await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
   await addMeasurement('weight', 82, '2026-09-01');

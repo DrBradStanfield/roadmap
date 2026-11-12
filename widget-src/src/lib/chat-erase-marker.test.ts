@@ -49,7 +49,8 @@ beforeEach(async () => {
     pageRecord = this;
     return () => {};
   });
-  const keys = new Map([['hr_anthropic_key', 'sk-ant-synthetic']]);
+  // The page's cloud, remembered as connect.ts does: the erase is this tab's to make (US-11 AC6).
+  const keys = new Map([['hr_anthropic_key', 'sk-ant-synthetic'], ['health_roadmap_backend', 'memory']]);
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => keys.get(k) ?? null,
     setItem: (k: string, v: string) => void keys.set(k, v),

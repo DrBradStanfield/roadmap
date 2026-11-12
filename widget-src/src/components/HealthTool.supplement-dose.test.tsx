@@ -12,6 +12,7 @@ import { rowRootIds } from '@roadmap/health-core/merge';
 import { upsertSupplement } from '@roadmap/health-core/state-edits';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveSupplement } from '../lib/roadmap-data';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
@@ -199,6 +200,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
     const created = vi.spyOn(RoadmapStore, 'create');
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
+    localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
     await initRoadmapStore(adapter);
     const store = await created.mock.results[0].value;
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
