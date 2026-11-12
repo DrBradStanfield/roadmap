@@ -163,6 +163,8 @@ vi.mock('./supabase.server', async () => {
 const MARKER = 'zebra-marker-9931';
 /** In every Google error body; the bot must never log or report a body. */
 const GOOGLE_BODY = 'google-body-sentinel-4417';
+/** One serializer for every sentinel check: expands an Error, even one nested in an object, which JSON.stringify turns into {}. */
+const dump = (a: unknown) => (a instanceof Error ? `${a.name} ${a.message} ${a.stack}` : JSON.stringify(a, (_k, v) => (v instanceof Error ? `${v.message} ${v.stack}` : v)) ?? String(a));
 const NOW = new Date('2026-11-12T10:00:00.000Z');
 const FIRST_TICK_MS = 30_000;
 const TICK_MS = 30 * 60_000;
@@ -503,7 +505,7 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
     ...(['log', 'warn', 'error', 'info'] as const).flatMap((l) => vi.mocked(console[l]).mock.calls.flat()),
     ...spy.captureException.mock.calls.flat(),
     ...spy.captureMessage.mock.calls.flat(),
-  ].map((a) => (a instanceof Error ? `${a.message} ${a.stack}` : JSON.stringify(a) ?? String(a))).join('\n');
+  ].map(dump).join('\n');
 
   for (const status of [401, 429]) {
     it(`a ${status} with a broken body still deletes the claim by its token and halts the tick`, async () => {
@@ -536,8 +538,133 @@ describe('Codex review: a status whose body cannot be read keeps its status', ()
       expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
       expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
       expect(reported()).not.toContain(GOOGLE_BODY);
+      // N2: the status tells an unreadable 2xx from an unreadable 400 in triage.
+      expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+        tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: String(status) },
+      }));
     });
   }
+
+  // N3: a readable 400 with no reason code (a proxy's HTML page) may hide processingFailure: unknown, not refused.
+  it('a readable 400 whose body is not JSON is unknown: the mark is kept, counted, never posted again', async () => {
+    g.threads = ['c1'];
+    g.plan = [async () => new Response(`<html>Bad Request ${GOOGLE_BODY}</html>`, { status: 400 })];
+    const bot = await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 1, dailyTotal: 1 });
+    expect((await bot.readPostingCaps()).dailyCount).toBe(1);
+    expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+      level: 'error', // (b): an unreadable 400 alerts
+      tags: { feature: 'youtube-bot', subsystem: 'post', why: 'unreadable', status: '400' },
+    }));
+    expect(reported()).not.toContain(GOOGLE_BODY);
+
+    await tickTo(TICK_MS, 2);
+    expect(g.posts).toHaveLength(1);
+  });
+
+  it('(b) a 5xx unknown stays a warning', async () => {
+    g.threads = ['c1'];
+    g.plan = [{ status: 503 }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(spy.captureMessage).toHaveBeenCalledWith('YouTube bot: post outcome unknown', expect.objectContaining({
+      level: 'warning', tags: { feature: 'youtube-bot', subsystem: 'post', why: '5xx' },
+    }));
+  });
+
+  it('a readable JSON 400 with a real reason stays refused: the mark is reverted, not counted', async () => {
+    g.threads = ['c1'];
+    g.plan = [{ status: 400, reason: 'invalidCommentText' }];
+    const bot = await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: false, posted_at: null, video_id: null });
+    expect((await bot.readPostingCaps()).dailyCount).toBe(0);
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 0, skipped: 1 });
+  });
+});
+
+/** A 400 with no reason code: unknown, mark kept (N3). */
+const html400 = async () => new Response('<html>Bad Request</html>', { status: 400 });
+
+describe('(c) the second unreadable 400 in one tick ends its posting', () => {
+  const seedFollowUp = (thread: string) => {
+    seedPosted(thread, { posted_youtube_id: `bot-${thread}` });
+    g.replies.set(thread, [
+      { id: `bot-${thread}`, author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' },
+      { id: `${thread}.r2`, author: 'Viewer', channel: 'UC_viewer', text: `${MARKER} and what about at night?`, publishedAt: '2026-11-12T09:50:00.000Z' },
+    ]);
+  };
+
+  it('two in one tick: the second halts, no further model call or follow-up; both marks kept and counted', async () => {
+    seedFollowUp('T1');
+    g.threads = ['c1', 'c2', 'c3'];
+    g.plan = [html400, html400];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(ctl.pipelineCalls).toEqual(['c1', 'c2']); // no model call for c3 or the follow-up
+    expect(g.calls.filter((c) => c === 'GET /youtube/v3/comments')).toHaveLength(0); // no follow-up scan
+    for (const id of ['c1', 'c2']) expect(row(id)).toMatchObject({ posted: true, posted_youtube_id: null });
+    expect(tickLogs()[0]).toMatchObject({ posted: 0, unknown: 2, followUpsUnknown: 0 });
+
+    // The next tick starts fresh: c3 and the follow-up are answered.
+    await tickTo(TICK_MS, 2);
+    expect(row('c3')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+  });
+
+  it('one, then a success: the tick goes on, follow-ups included', async () => {
+    seedFollowUp('T1');
+    g.threads = ['c1', 'c2'];
+    g.plan = [html400];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null });
+    expect(row('c2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    expect(tickLogs()[0]).toMatchObject({ posted: 1, unknown: 1, followUpsPosted: 1 });
+  });
+
+  it('one top-level, then one follow-up: the second halts the follow-up pass', async () => {
+    seedFollowUp('T1');
+    seedFollowUp('T2');
+    g.threads = ['c1'];
+    g.plan = [html400, html400];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(ctl.pipelineCalls).toHaveLength(2); // c1 and one follow-up; none for the other
+    expect(tickLogs()[0]).toMatchObject({ unknown: 1, followUpsUnknown: 1, followUpsPosted: 0 });
+  });
+
+  it('the count resets each tick: one per tick never halts', async () => {
+    g.threads = ['c1'];
+    g.plan = [html400];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    g.threads = ['c2', 'c3'];
+    g.plan = [html400];
+    await tickTo(TICK_MS, 2);
+
+    expect(row('c2')).toMatchObject({ posted: true, posted_youtube_id: null });
+    expect(row('c3')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+  });
+
+  it('unreadable 2xx and 5xx answers do not count toward it', async () => {
+    g.threads = ['c1', 'c2', 'c3', 'c4'];
+    g.plan = [html400, async () => new Response('<html>ok</html>', { status: 200 }), { status: 503 }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(ctl.pipelineCalls).toEqual(['c1', 'c2', 'c3', 'c4']);
+    expect(row('c4')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+  });
 });
 
 describe('R3: a 401 drops the cached Google token', () => {
@@ -668,7 +795,6 @@ describe('condition 5: no viewer or answer text, and no Google body, in the mark
     g.plan = [{ status: 429, reason: 'rateLimitExceeded' }];
     await tickTo(TICK_MS, 2);
 
-    const dump = (a: unknown) => (a instanceof Error ? `${a.name} ${a.message} ${a.stack}` : JSON.stringify(a, (_k, v) => (v instanceof Error ? `${v.message} ${v.stack}` : v)) ?? String(a));
     const out = [
       ...(['log', 'warn', 'error', 'info'] as const).flatMap((l) => vi.mocked(console[l]).mock.calls.flat()),
       ...spy.captureException.mock.calls.flat(),

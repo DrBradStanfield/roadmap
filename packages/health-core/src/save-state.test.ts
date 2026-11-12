@@ -1,5 +1,7 @@
 // Lead A1 (b): the record session's save mode as one union (US-10 AC5, AC5a;
-// US-11 AC7; US-16 AC2a; US-34). The table covers every sample state x event pair.
+// US-11 AC7; US-16 AC2a; US-34). Lead A6: the erase owns one mode, `erasing`,
+// from its confirm (reading) through its write (writing). The table covers
+// every sample state x event pair.
 import { describe, expect, it } from 'vitest';
 import {
   debounceArmed, saveStatus, transition, unsaved, writePending,
@@ -10,8 +12,8 @@ const clean = (changes: number): SaveBase => ({ mode: 'clean', changes });
 const waiting = (changes: number, saved: number): SaveBase => ({ mode: 'waiting', changes, saved });
 const saving = (changes: number, saved: number, from: number, armed = false): SaveBase => ({ mode: 'saving', changes, saved, from, armed });
 const failed = (changes: number, saved: number): SaveBase => ({ mode: 'failed', changes, saved });
-const held = (changes: number, saved: number): SaveBase => ({ mode: 'held', changes, saved });
-const erasing = (under: SaveBase): SaveState => ({ mode: 'erasing', under });
+const reading = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'reading', under });
+const writing = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'writing', under });
 
 const ARM: SaveEffect = { type: 'arm' };
 const CANCEL: SaveEffect = { type: 'cancel' };
@@ -23,13 +25,15 @@ const EVENTS: Record<string, SaveEvent> = {
   landed: { type: 'passLanded', from: 6 },
   failed: { type: 'passFailed' },
   synced: { type: 'synced' },
-  hold: { type: 'hold' },
-  eraseStarted: { type: 'eraseStarted' },
-  eraseEnded: { type: 'eraseEnded' },
-  holdEnded: { type: 'holdEnded' },
+  began: { type: 'eraseBegan' },
+  swapped: { type: 'eraseSwapped' },
+  aborted: { type: 'eraseAborted' },
+  ended: { type: 'eraseEnded' },
 };
 type Row = [SaveState, SaveEffect[]];
 const same = (s: SaveState): Row => [s, []];
+/** The erase's three closing events on a base state: stale, they change nothing (pinned). */
+const stale = (s: SaveState) => ({ swapped: same(s), aborted: same(s), ended: same(s) });
 
 const STATES: Record<string, SaveState> = {
   clean: clean(5),
@@ -37,34 +41,31 @@ const STATES: Record<string, SaveState> = {
   saving: saving(6, 4, 6),
   savingArmed: saving(7, 4, 6, true),
   failed: failed(6, 4),
-  held: held(6, 4),
-  erasingWaiting: erasing(waiting(7, 6)), // unreachable by any event; held to the table all the same
-  erasingSaving: erasing(saving(7, 4, 6)),
-  erasingHeld: erasing(held(7, 6)),
-  erasingClean: erasing(clean(7)),
-  erasingFailed: erasing(failed(7, 4)),
+  readingClean: reading(clean(5)),
+  readingWaiting: reading(waiting(6, 5)), // the debounce put aside, its mode kept
+  readingSavingArmed: reading(saving(7, 4, 6, true)),
+  readingFailed: reading(failed(6, 4)),
+  writingClean: writing(clean(7)),
+  writingSaving: writing(saving(7, 4, 6)),
+  writingFailed: writing(failed(7, 4)),
 };
 
 // state -> event -> [next state, effects asked for]
 const TABLE: Record<string, Record<string, Row>> = {
   clean: {
     edited: [waiting(6, 5), [ARM]], save: same(clean(5)), landed: same(clean(5)), failed: same(clean(5)),
-    synced: same(clean(5)), hold: same(clean(5)), eraseStarted: [erasing(held(6, 5)), []], eraseEnded: same(clean(5)),
-    holdEnded: same(clean(5)),
+    synced: same(clean(5)), began: [reading(clean(5)), []], ...stale(clean(5)),
   },
   waiting: {
     edited: [waiting(7, 5), [ARM]], save: [saving(6, 5, 6), [CANCEL, pass(6)]],
-    landed: same(waiting(6, 5)), failed: same(waiting(6, 5)),
-    synced: [clean(6), [CANCEL]], hold: [held(6, 5), [CANCEL]],
-    eraseStarted: [erasing(held(7, 5)), [CANCEL]], eraseEnded: same(waiting(6, 5)),
-    holdEnded: same(waiting(6, 5)),
+    landed: same(waiting(6, 5)), failed: same(waiting(6, 5)), synced: [clean(6), [CANCEL]],
+    began: [reading(waiting(6, 5)), [CANCEL]], ...stale(waiting(6, 5)),
   },
   saving: {
     edited: [saving(7, 4, 6, true), [ARM]], save: same(saving(6, 4, 6)), // joins, never a second pass
-    landed: [clean(6), []], failed: [failed(6, 4), []],
-    synced: [saving(6, 6, 6), []], hold: same(saving(6, 4, 6)),
-    eraseStarted: [erasing(saving(7, 4, 6)), []], eraseEnded: same(saving(6, 4, 6)),
-    holdEnded: same(saving(6, 4, 6)),
+    landed: [clean(6), []], failed: [failed(6, 4), []], synced: [saving(6, 6, 6), []],
+    began: [reading(saving(6, 4, 6)), []], // the pass goes on under the erase
+    ...stale(saving(6, 4, 6)),
   },
   savingArmed: {
     edited: [saving(8, 4, 6, true), [ARM]], save: [saving(7, 4, 6), [CANCEL]],
@@ -72,64 +73,61 @@ const TABLE: Record<string, Record<string, Row>> = {
     landed: [saving(7, 6, 7, true), [pass(7)]],
     // The re-armed debounce outlives a failed pass, and retries it (as today).
     failed: [waiting(7, 4), []],
-    synced: [saving(7, 7, 6), [CANCEL]], hold: [saving(7, 4, 6), [CANCEL]],
-    eraseStarted: [erasing(saving(8, 4, 6)), [CANCEL]], eraseEnded: same(saving(7, 4, 6, true)),
-    holdEnded: same(saving(7, 4, 6, true)),
+    synced: [saving(7, 7, 6), [CANCEL]],
+    began: [reading(saving(7, 4, 6, true)), [CANCEL]], ...stale(saving(7, 4, 6, true)),
   },
   failed: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
-    landed: same(failed(6, 4)), failed: same(failed(6, 4)),
-    synced: [clean(6), []], hold: same(failed(6, 4)),
-    eraseStarted: [erasing(held(7, 4)), []], eraseEnded: same(failed(6, 4)),
-    holdEnded: same(failed(6, 4)),
+    landed: same(failed(6, 4)), failed: same(failed(6, 4)), synced: [clean(6), []],
+    began: [reading(failed(6, 4)), []], ...stale(failed(6, 4)),
   },
-  held: {
-    edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
-    landed: same(held(6, 4)), failed: same(held(6, 4)),
-    synced: [clean(6), []], hold: same(held(6, 4)),
-    // an erase that ended before eraseStarted (beforeErase threw): held settles
-    eraseStarted: [erasing(held(7, 4)), []], eraseEnded: [failed(6, 4), []],
-    holdEnded: [failed(6, 4), []], // an erase that ended before eraseStarted settles its held
+  readingClean: {
+    edited: same(reading(clean(5))), save: same(reading(clean(5))), landed: same(reading(clean(5))),
+    failed: same(reading(clean(5))), synced: same(reading(clean(5))), began: same(reading(clean(5))),
+    swapped: [writing(failed(6, 5)), []], aborted: [clean(5), []], ended: [clean(5), []],
   },
-  erasingWaiting: {
-    edited: same(erasing(waiting(7, 6))), save: [erasing(saving(7, 6, 7)), [CANCEL, pass(7)]],
-    landed: same(erasing(waiting(7, 6))), failed: same(erasing(waiting(7, 6))),
-    synced: [erasing(clean(7)), [CANCEL]], hold: [erasing(held(7, 6)), [CANCEL]],
-    eraseStarted: [erasing(held(8, 6)), [CANCEL]], eraseEnded: [waiting(7, 6), []],
-    holdEnded: same(erasing(waiting(7, 6))),
+  readingWaiting: {
+    edited: same(reading(waiting(6, 5))), // refused: refuses() answers the caller
+    save: [reading(saving(6, 5, 6)), [CANCEL, pass(6)]], // a flush during the read saves the pre-erase copy, as today
+    landed: same(reading(waiting(6, 5))), failed: same(reading(waiting(6, 5))),
+    synced: [reading(clean(6)), [CANCEL]],
+    began: same(reading(waiting(6, 5))), // erase() refuses a second erase before dispatching
+    swapped: [writing(failed(7, 5)), []],
+    aborted: [waiting(6, 5), [ARM]], // the debounce back, no change added
+    ended: [waiting(6, 5), []],
   },
-  erasingSaving: {
-    edited: same(erasing(saving(7, 4, 6))), // refused: refuses() answers the caller
-    save: same(erasing(saving(7, 4, 6))),
-    landed: [erasing(saving(7, 6, 7)), [pass(7)]], // the erased copy still to write
-    failed: [erasing(failed(7, 4)), []],
-    synced: [erasing(saving(7, 7, 6)), []], hold: same(erasing(saving(7, 4, 6))),
-    eraseStarted: [erasing(saving(8, 4, 6)), []],
-    eraseEnded: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
-    holdEnded: same(erasing(saving(7, 4, 6))), // another erase ending never unwraps this one (US-16 AC2a)
+  readingSavingArmed: {
+    edited: same(reading(saving(7, 4, 6, true))), save: [reading(saving(7, 4, 6)), [CANCEL]],
+    landed: [reading(saving(7, 6, 7, true)), [pass(7)]], failed: [reading(waiting(7, 4)), []],
+    synced: [reading(saving(7, 7, 6)), [CANCEL]], began: same(reading(saving(7, 4, 6, true))),
+    swapped: [writing(saving(8, 4, 6)), []], // the pass goes on and carries the erased copy
+    aborted: [saving(7, 4, 6, true), [ARM]], ended: [saving(7, 4, 6, true), []],
   },
-  erasingHeld: {
-    edited: same(erasing(held(7, 6))), save: [erasing(saving(7, 6, 7)), [pass(7)]],
-    landed: same(erasing(held(7, 6))), failed: same(erasing(held(7, 6))),
-    synced: [erasing(clean(7)), []], hold: same(erasing(held(7, 6))),
-    // the erase's write threw (say a non-Conflict error): held settles, nothing left running
-    eraseStarted: [erasing(held(8, 6)), []], eraseEnded: [failed(7, 6), []],
-    holdEnded: same(erasing(held(7, 6))),
+  readingFailed: {
+    edited: same(reading(failed(6, 4))), save: [reading(saving(6, 4, 6)), [pass(6)]],
+    landed: same(reading(failed(6, 4))), failed: same(reading(failed(6, 4))),
+    synced: [reading(clean(6)), []], began: same(reading(failed(6, 4))),
+    swapped: [writing(failed(7, 4)), []], aborted: [failed(6, 4), []], ended: [failed(6, 4), []],
   },
-  erasingClean: {
-    edited: same(erasing(clean(7))), save: same(erasing(clean(7))),
-    landed: same(erasing(clean(7))), failed: same(erasing(clean(7))),
-    synced: same(erasing(clean(7))), hold: same(erasing(clean(7))),
-    eraseStarted: [erasing(held(8, 7)), []], eraseEnded: [clean(7), []],
-    holdEnded: same(erasing(clean(7))),
+  writingClean: {
+    edited: same(writing(clean(7))), save: same(writing(clean(7))), landed: same(writing(clean(7))),
+    failed: same(writing(clean(7))), synced: same(writing(clean(7))), began: same(writing(clean(7))),
+    swapped: same(writing(clean(7))), aborted: same(writing(clean(7))), // past the swap: nothing to abort
+    ended: [clean(7), []],
   },
-  erasingFailed: {
-    edited: same(erasing(failed(7, 4))), save: [erasing(saving(7, 4, 7)), [pass(7)]],
-    landed: same(erasing(failed(7, 4))), failed: same(erasing(failed(7, 4))),
-    synced: [erasing(clean(7)), []], hold: same(erasing(failed(7, 4))),
-    eraseStarted: [erasing(held(8, 4)), []],
-    eraseEnded: [failed(7, 4), []], // an erase whose write rejected never stays erasing
-    holdEnded: same(erasing(failed(7, 4))),
+  writingSaving: {
+    edited: same(writing(saving(7, 4, 6))), save: same(writing(saving(7, 4, 6))),
+    landed: [writing(saving(7, 6, 7)), [pass(7)]], // the erased copy still to write
+    failed: [writing(failed(7, 4)), []], synced: [writing(saving(7, 7, 6)), []],
+    began: same(writing(saving(7, 4, 6))), swapped: same(writing(saving(7, 4, 6))), aborted: same(writing(saving(7, 4, 6))),
+    ended: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
+  },
+  writingFailed: {
+    edited: same(writing(failed(7, 4))), save: [writing(saving(7, 4, 7)), [pass(7)]],
+    landed: same(writing(failed(7, 4))), failed: same(writing(failed(7, 4))),
+    synced: [writing(clean(7)), []], began: same(writing(failed(7, 4))),
+    swapped: same(writing(failed(7, 4))), aborted: same(writing(failed(7, 4))),
+    ended: [failed(7, 4), []], // an erase whose write rejected never stays erasing
   },
 };
 
@@ -144,7 +142,7 @@ const run = (start: SaveState, events: SaveEvent[]) => {
   return { state, effects };
 };
 
-describe('save-state transition table (A1)', () => {
+describe('save-state transition table (A1, A6)', () => {
   it('covers every sample state x event pair', () => {
     for (const name of Object.keys(STATES)) expect(Object.keys(TABLE[name]).sort()).toEqual(Object.keys(EVENTS).sort());
   });
@@ -159,34 +157,31 @@ describe('save-state transition table (A1)', () => {
 
   it('edge rows: a leftover debounce over nothing unsaved, a stale pass report, a failed pass after a sync landed', () => {
     expect(transition(waiting(5, 5), EVENTS.save)).toEqual({ state: clean(5), effects: [CANCEL] });
-    expect(transition(waiting(5, 5), EVENTS.hold)).toEqual({ state: clean(5), effects: [CANCEL] });
     expect(transition(saving(6, 4, 6), { type: 'passLanded', from: 5 })).toEqual({ state: saving(6, 4, 6), effects: [] });
     expect(transition(saving(6, 6, 6), EVENTS.failed)).toEqual({ state: clean(6), effects: [] });
     // a pass landing under an armed debounce leaves it armed, over nothing unsaved
     expect(transition(saving(6, 4, 6, true), EVENTS.landed)).toEqual({ state: waiting(6, 6), effects: [] });
-    // held over nothing unsaved settles to clean when the erase ends
-    expect(transition(held(5, 5), EVENTS.eraseEnded)).toEqual({ state: clean(5), effects: [] });
-    expect(transition(held(5, 5), EVENTS.holdEnded)).toEqual({ state: clean(5), effects: [] });
-    expect(transition(erasing(held(5, 5)), EVENTS.eraseEnded)).toEqual({ state: clean(5), effects: [] });
+    // a leftover debounce over nothing unsaved is put aside and given back as it was
+    expect(run(waiting(5, 5), [EVENTS.began, EVENTS.aborted])).toEqual({ state: waiting(5, 5), effects: [CANCEL, ARM] });
   });
 
-  it('held never outlives an erase, aborted or failed', () => {
-    // beforeErase threw after hold: no eraseStarted ever comes
-    expect(run(waiting(6, 5), [EVENTS.hold, EVENTS.holdEnded]).state).toEqual(failed(6, 5));
-    // the whole erase, as erase() dispatches it: the outer holdEnded finds nothing left to settle
-    expect(run(waiting(6, 5), [EVENTS.hold, EVENTS.eraseStarted, EVENTS.eraseEnded, EVENTS.holdEnded]).state).toEqual(failed(7, 5));
+  it('every erase ends at a base state: aborted while reading, or swapped then ended', () => {
+    for (const start of [clean(5), waiting(6, 5), saving(6, 4, 6), saving(7, 4, 6, true), failed(6, 4)]) {
+      expect(run(start, [EVENTS.began, EVENTS.aborted]).state).toEqual(start);
+      const done = run(start, [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state;
+      expect(done.mode).not.toBe('erasing');
+    }
     // the erase's synchronous write threw: no save, no synced
-    expect(run(clean(5), [EVENTS.eraseStarted, EVENTS.eraseEnded]).state).toEqual(failed(6, 5));
+    expect(run(clean(5), [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state).toEqual(failed(6, 5));
   });
 
-  it('erasing over waiting, or over an armed pass, is unreachable by eraseStarted or hold', () => {
+  it('an edit is refused in every erasing state, and the swap never leaves an armed debounce under the write', () => {
     for (const state of Object.values(STATES)) {
-      for (const event of [EVENTS.eraseStarted, EVENTS.hold]) {
-        const next = transition(state, event).state;
-        if (next.mode !== 'erasing') continue;
-        expect(next.under.mode).not.toBe('waiting');
-        expect(next.under.mode === 'saving' && next.under.armed).toBe(false);
-      }
+      if (state.mode !== 'erasing') continue;
+      expect(transition(state, EVENTS.edited)).toEqual({ state, effects: [] });
+      const next = transition(state, EVENTS.swapped).state;
+      if (next.mode !== 'erasing') continue;
+      expect(debounceArmed(next.under)).toBe(state.phase === 'writing' && debounceArmed(state.under));
     }
   });
 });
@@ -201,12 +196,14 @@ describe('derived answers', () => {
     ['saving armed', saving(7, 4, 6, true), true, true, true, 'saving'],
     // US-34: a failed save never stops the re-read.
     ['failed', failed(6, 4), true, false, false, 'not-saved'],
-    ['held: an erase is in progress', held(6, 4), true, false, false, 'saving'],
-    ['erasing over saving', erasing(saving(7, 4, 6)), true, true, false, 'saving'],
-    ['erasing over clean', erasing(clean(7)), false, false, false, 'saved'],
-    ['erasing over failed', erasing(failed(7, 4)), true, false, false, 'not-saved'],
-    // an erase whose sync write failed: eraseStarted, then eraseEnded with no synced
-    ['after a failed erase write', run(clean(5), [EVENTS.eraseStarted, EVENTS.eraseEnded]).state, true, false, false, 'not-saved'],
+    // the debounce put aside: no timer runs, the change still waits
+    ['reading over waiting', reading(waiting(6, 5)), true, true, false, 'saving'],
+    ['reading over clean', reading(clean(5)), false, false, false, 'saved'],
+    ['writing over saving', writing(saving(7, 4, 6)), true, true, false, 'saving'],
+    ['writing over clean', writing(clean(7)), false, false, false, 'saved'],
+    ['writing over failed', writing(failed(7, 4)), true, false, false, 'not-saved'],
+    // an erase whose sync write failed: swapped, then ended with no synced
+    ['after a failed erase write', run(clean(5), [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state, true, false, false, 'not-saved'],
   ];
   for (const [name, s, u, w, a, status] of rows) {
     it(name, () => {
@@ -259,15 +256,22 @@ describe('any order is safe where two events race', () => {
   });
 
   it('an erase during a pass: the erased copy is written by a pass before the erase ends', () => {
-    const a = run(saving(6, 4, 6), [EVENTS.eraseStarted, EVENTS.save, EVENTS.landed]);
-    expect(a).toEqual({ state: erasing(saving(7, 6, 7)), effects: [pass(7)] });
-    const b = run(saving(6, 4, 6), [EVENTS.landed, EVENTS.eraseStarted, EVENTS.save]);
-    expect(b).toEqual({ state: erasing(saving(7, 6, 7)), effects: [pass(7)] });
-    expect(run(a.state, [{ type: 'passLanded', from: 7 }, EVENTS.eraseEnded]).state).toEqual(clean(7));
+    const a = run(saving(6, 4, 6), [EVENTS.began, EVENTS.swapped, EVENTS.save, EVENTS.landed]);
+    expect(a).toEqual({ state: writing(saving(7, 6, 7)), effects: [pass(7)] });
+    const b = run(saving(6, 4, 6), [EVENTS.landed, EVENTS.began, EVENTS.swapped, EVENTS.save]);
+    expect(b).toEqual({ state: writing(saving(7, 6, 7)), effects: [pass(7)] });
+    expect(run(a.state, [{ type: 'passLanded', from: 7 }, EVENTS.ended]).state).toEqual(clean(7));
+  });
+
+  it('a pass landing during the read vs after an abort: the debounce comes back either way', () => {
+    const a = run(saving(7, 4, 6, true), [EVENTS.began, EVENTS.landed, EVENTS.aborted]);
+    expect(a).toEqual({ state: saving(7, 6, 7, true), effects: [CANCEL, pass(7), ARM] });
+    const b = run(saving(7, 4, 6, true), [EVENTS.began, EVENTS.aborted, EVENTS.landed]);
+    expect(b).toEqual({ state: saving(7, 6, 7, true), effects: [CANCEL, ARM, pass(7)] });
   });
 
   it('an erase whose write rejects leaves erasing for failed, and its change stays unsaved', () => {
-    const r = run(waiting(6, 5), [EVENTS.hold, EVENTS.eraseStarted, EVENTS.save, EVENTS.failed, EVENTS.eraseEnded]);
+    const r = run(waiting(6, 5), [EVENTS.began, EVENTS.swapped, EVENTS.save, EVENTS.failed, EVENTS.ended]);
     expect(r).toEqual({ state: failed(7, 5), effects: [CANCEL, pass(7)] });
     expect(unsaved(r.state)).toBe(true);
   });
