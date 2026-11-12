@@ -12,6 +12,7 @@
  * fresh lib/storage and sync-control.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { act, cleanup, render } from '@testing-library/react';
 
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
@@ -104,5 +105,44 @@ describe('US-09 AC2i: a page whose device writes stopped says it has stopped sav
     expect(storage.healthWritesAllowed()).toBe(false);
     expect(notice()).toBeNull();
     expect(document.body.textContent).not.toContain('stopped saving');
+  });
+});
+
+describe('US-09 AC2i: a page still loading (HealthWrites "loading")', () => {
+  // The standalone app renders HealthTool only after boot() has opened a record, so these pin the
+  // component's own reading of the loading state, not a frame the app draws today.
+  it('with no log-off: no notice on the first paint, and none once it opens as a guest', () => {
+    const ui = <><sync.StorageBar backend="local" /><sync.LocalSaveAlert backend="local" /></>;
+    expect(renderToStaticMarkup(ui)).not.toContain(STOPPED);
+    render(ui);
+    expect(notice()).toBeNull();
+    act(() => storage.noteDevicePage());
+    expect(storage.healthWritesAllowed()).toBe(true);
+    expect(notice()).toBeNull();
+  });
+
+  // Pins today's behaviour, for the owner (C31 review): each step's result is asserted.
+  it('another tab logs off while it loads (the id changes and the signal is heard), then it opens on the device with no cloud chosen', () => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'id-after'); // the other tab's new id
+    storage.noteLogOffHeard(); // the other tab's signal
+    const ui = <><sync.StorageBar backend="local" /><sync.LocalSaveAlert backend="local" /></>;
+    // Step 1, still loading: the changed id makes writes not allowed, so the notice shows.
+    expect(storage.healthWritesAllowed()).toBe(false);
+    expect(renderToStaticMarkup(ui)).toContain(STOPPED);
+    render(ui);
+    expect(notice()).not.toBeNull();
+    // Step 2, it opens on the device: a heard log-off or a changed id stops it (AC2h), so the notice stays.
+    act(() => storage.noteDevicePage());
+    expect(storage.healthWritesAllowed()).toBe(false);
+    expect(notice()).not.toBeNull();
+  });
+
+  it('a log-off signal heard while it loads with the id unchanged: no notice while loading, the notice once it opens', () => {
+    storage.noteLogOffHeard();
+    render(<sync.LocalSaveAlert backend="local" />);
+    expect(storage.healthWritesAllowed()).toBe(true);
+    expect(notice()).toBeNull();
+    act(() => storage.noteDevicePage());
+    expect(notice()).not.toBeNull();
   });
 });
