@@ -349,6 +349,16 @@ describe('--normalize fixes the shape of a split tree, never its content (US-64 
     expect(files(dir)).toEqual(before);
     expect(shapeReport(dir)).toContain('docs/stories/US-02.md line 3 is a conflict marker: "||||||| merged common ancestors"');
   });
+
+  it('names the marker first, though the conflict leaves the heading twice in a part (US-64 AC33)', () => {
+    writeFileSync(part('US-02.md'), '<<<<<<< HEAD\n### US-02 · Two\n=======\n### US-02 · Deux\n>>>>>>> main\n- AC1 two\n');
+    const before = files(dir);
+    const r = cli(dir, '--normalize');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('docs/stories/US-02.md line 1 is a conflict marker: "<<<<<<< HEAD"');
+    expect(files(dir)).toEqual(before);
+    expect(shapeReport(dir)).toContain('docs/stories/US-02.md line 1 is a conflict marker: "<<<<<<< HEAD"');
+  });
 });
 
 describe('writing into a repo that already holds parts (the PR 3 rebase path)', () => {
@@ -571,6 +581,54 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     expect(r.stderr).toContain('port its own story edits into the parts by hand');
     expect(r.stderr).not.toContain('merge exactly the split commit');
     expect(tree()).toEqual(before);
+  });
+
+  it('when the incoming commit holds no docs/stories/, the merge refusal gives the general advice, not the impure-split one (US-64 AC33)', () => {
+    run('checkout', '-q', '-b', 'main4', 'pre-split');
+    writeFileSync(join(repo, 'docs/user-stories.md'), text.replace('- AC1 one', '- AC1 one, edited on main'));
+    commit('main edit, no split');
+    mergeIntoFeat('main4');
+    const before = readFileSync(join(repo, 'docs/user-stories.md'), 'utf8');
+    const r = cli(repo, '--from', 'HEAD');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('docs/stories/US-01.md is missing');
+    expect(r.stderr).toContain('merge exactly the split commit');
+    expect(r.stderr).not.toContain('port its own story edits');
+    expect(readFileSync(join(repo, 'docs/user-stories.md'), 'utf8')).toBe(before);
+    expect(existsSync(join(repo, 'docs/stories'))).toBe(false);
+  });
+
+  // macOS reaches every folder of the data volume a second way, under this firmlink prefix; git's toplevel never uses it.
+  const DATA = '/System/Volumes/Data';
+  const viaData = (p: string) => `${DATA}${realpathSync.native(p)}`;
+  const onMac = process.platform === 'darwin' && existsSync(DATA);
+
+  it.skipIf(!onMac)('from a worktree, an --out at another checkout through /System/Volumes/Data is guarded as that repo (US-64 AC33)', () => {
+    const wt = join(repo, '.claude/wt');
+    run('worktree', 'add', '-q', '--detach', wt, 'split');
+    expect(existsSync(viaData(repo))).toBe(true);
+    const before = tree();
+    const r = cli(wt, '--from', 'pre-split', '--out', viaData(repo));
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split: docs\/stories\/US-01\.md differs/);
+    expect(tree()).toEqual(before);
+  });
+
+  it.skipIf(!onMac)('an --out naming its own repo through /System/Volumes/Data is writing into the repo, every guard on (US-64 AC33)', () => {
+    const before = tree();
+    const r = cli(repo, '--from', 'pre-split', '--out', viaData(repo));
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/already holds parts that differ from the split/);
+    const sub = cli(join(repo, 'docs'), '--from', 'pre-split', '--out', viaData(repo));
+    expect(sub.status).toBe(1);
+    expect(sub.stderr).toMatch(/^split-stories: refused, nothing written: writing into the repo runs from its toplevel, /);
+    expect(tree()).toEqual(before);
+    mergeIntoFeat('main');
+    const merging = tree();
+    const m = cli(repo, '--from', 'HEAD', '--out', viaData(repo), '--replace');
+    expect(m.status).toBe(1);
+    expect(m.stderr).toMatch(/refused, nothing written: a merge is in progress/);
+    expect(tree()).toEqual(merging);
   });
 
   it('outside a merge, a rerun whose output equals docs/stories/ needs no flag', () => {
