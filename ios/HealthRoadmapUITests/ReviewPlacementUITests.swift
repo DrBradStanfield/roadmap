@@ -33,18 +33,31 @@ final class ReviewPlacementUITests: XCTestCase {
         }
         let app = XCUIApplication()
         app.launchArguments = ["--demo-record", "--ui-testing"]
+        // TEST_RUNNER_REVIEW_TEXT_SIZE, e.g. UICTContentSizeCategoryAccessibilityXXXL: the card shot only.
+        let textSize = ProcessInfo.processInfo.environment["REVIEW_TEXT_SIZE"]
+        if let textSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize] }
         app.launch()
         let myHealth = app.tabBars.buttons["My health"]
         XCTAssertTrue(myHealth.waitForExistence(timeout: 15), "the tabs, not onboarding")
         myHealth.tap()
 
-        // A closed card with its Sources mark, beside the chevron.
-        let cited = app.buttons.matching(NSPredicate(format: "identifier == 'plan.suggestion' AND label CONTAINS 'Sources'")).firstMatch
-        for _ in 0..<12 where !(cited.exists && cited.isHittable) { app.swipeUp() }
+        // A closed card with its Sources mark: by the mark's identifier where the tree exposes it,
+        // else the card that carries the mark's accessibility label.
+        let cited = app.descendants(matching: .any).matching(NSPredicate(format:
+            "identifier == 'plan.sourcesMark' OR (identifier == 'plan.suggestion' AND label CONTAINS 'Has sources')")).firstMatch
+        for _ in 0..<40 where !(cited.exists && cited.isHittable) { app.swipeUp() }
         XCTAssertTrue(cited.isHittable, "a card that cites sources marks it while closed")
+        print("REVIEW_SHOTS sources mark found by identifier: \(cited.identifier)")
+        if textSize != nil {
+            // At accessibility sizes the mark sits under the summary: lift the card so it shows above the tab bar.
+            let middle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            middle.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)),
+                         withVelocity: XCUIGestureVelocity(300), thenHoldForDuration: 0.5)
+        }
         sleep(1)
         // The whole screen: on an iPad an iPhone app sits in a window, and its own shot is cut.
         keepScreenshot(XCUIScreen.main.screenshot(), named: "card sources")
+        if textSize != nil { return }
 
         // The foot of My health: the disclaimer, unchanged.
         let foot = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Disclaimer'")).firstMatch
