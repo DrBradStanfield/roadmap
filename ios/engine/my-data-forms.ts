@@ -259,7 +259,7 @@ function fieldsByKey(sections: FormSection[]): Map<string, FormField> {
 function offered(field: FormField, value: string, months: FormsView['months']): boolean {
   switch (field.kind) {
     case 'choice': return field.options.some((o) => o.value === value && !o.disabled);
-    case 'month': return value === '' || months[field.when].includes(value);
+    case 'month': return value === '' || (months[field.when].includes(value) && !(field.min && value < field.min));
     case 'number': {
       if (value === '') return true;
       const n = Number(value);

@@ -9,7 +9,7 @@
  * Pure: no DOM, no React. Every text below is the web form's own, moved here
  * word for word.
  */
-import { reopenClears, shownColorectalResult } from './colonoscopy-schedule';
+import { followupDateMin, reopenClears, shownColorectalResult } from './colonoscopy-schedule';
 import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
@@ -35,8 +35,8 @@ export interface FormOption { value: string; label: string; disabled?: boolean }
 export type FormField =
   /** Pick one. `value` '' is unanswered. */
   | { kind: 'choice'; key: string; label: string; hint?: string; options: FormOption[]; value: string }
-  /** A month, YYYY-MM: in the last ten years (`past`) or the next five (`future`). */
-  | { kind: 'month'; key: string; label: string; value: string; when: 'past' | 'future' }
+  /** A month, YYYY-MM: in the last ten years (`past`) or the next five (`future`), and never before `min` when set. */
+  | { kind: 'month'; key: string; label: string; value: string; when: 'past' | 'future'; min?: string }
   /** A whole number. */
   | { kind: 'number'; key: string; label: string; hint?: string; value: string; min: number; max: number }
   /** A dated clinical value (PSA): the form asks for it, the record keeps it as a measurement. */
@@ -410,7 +410,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
   if (age === undefined) return [];
   const str = (key: string) => readScreening(scr, key);
   const choice = (key: string, label: string, options: FormOption[], value = str(key)): FormField => ({ kind: 'choice', key, label, options, value });
-  const month = (key: string, label: string, when: 'past' | 'future' = 'past'): FormField => ({ kind: 'month', key, label, value: str(key), when });
+  const month = (key: string, label: string, when: 'past' | 'future' = 'past', min = ''): FormField => ({ kind: 'month', key, label, value: str(key), when, ...(min ? { min } : {}) });
   const L = SCREENING_LABELS, O = SCREENING_OPTIONS, X = SCREENING_TEXT;
   const shown = (r: ScreeningRule) => (r.id === 'colorectal' ? shownColorectalResult(scr) : str(r.result!.key)); // US-07 AC1j
 
@@ -421,7 +421,7 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
     const name = followupName(r.id, method);
     const status = str(statusKey);
     const fields = [choice(statusKey, `${name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Follow-up'} status`, O.followup_status)];
-    if (status === 'scheduled' || status === 'completed') fields.push(month(dateKey, followupDateLabel(name, status), status === 'scheduled' ? 'future' : 'past'));
+    if (status === 'scheduled' || status === 'completed') fields.push(month(dateKey, followupDateLabel(name, status), status === 'scheduled' ? 'future' : 'past', followupDateMin(r.id, scr)));
     return [...fields, ...intervalQuestion(r, status).map((q) => choice(q.key, q.label, q.options))]; // US-07 AC1j
   };
   /** The result, then its follow-up: shown once the last screening has a date. */

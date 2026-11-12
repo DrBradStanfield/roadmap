@@ -2279,7 +2279,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G056": [
    "# colorectal | Colorectal",
@@ -2287,7 +2287,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"2026-12\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"2026-12\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G057": [
    "# colorectal | Colorectal",
@@ -2295,7 +2295,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G058": [
@@ -2304,7 +2304,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G059": [
@@ -2350,7 +2350,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the repeat colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the repeat colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G066": [
    "# colorectal | Colorectal",
@@ -2358,7 +2358,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the repeat colonoscopy scheduled?\",\"value\":\"2026-12\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the repeat colonoscopy scheduled?\",\"value\":\"2026-12\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G067": [
    "# colorectal | Colorectal",
@@ -2366,7 +2366,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G068": [
@@ -2375,7 +2375,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G069": [
@@ -2421,7 +2421,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the follow-up investigation scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the follow-up investigation scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G076": [
    "# colorectal | Colorectal",
@@ -2429,7 +2429,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the follow-up investigation scheduled?\",\"value\":\"2026-12\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the follow-up investigation scheduled?\",\"value\":\"2026-12\",\"when\":\"future\",\"min\":\"2026-04\"}"
   ],
   "G077": [
    "# colorectal | Colorectal",
@@ -2437,7 +2437,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G078": [
@@ -2446,7 +2446,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G079": [
@@ -3673,7 +3673,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"5\"}"
   ],
   "G238": [
@@ -3682,7 +3682,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G239": [
@@ -3691,7 +3691,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"2\"}"
   ],
   "G240": [
@@ -3700,7 +3700,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"5\"}"
   ],
   "G241": [
@@ -3709,7 +3709,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G242": [
@@ -3718,7 +3718,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"2\"}"
   ],
   "G243": [
@@ -3727,7 +3727,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-04\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"5\"}"
   ],
   "G244": [
@@ -3736,7 +3736,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G245": [
@@ -3745,7 +3745,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-05\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-06\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-06\",\"when\":\"past\",\"min\":\"2023-05\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"2\"}"
   ],
   "G246": [
@@ -3754,7 +3754,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2026-07\",\"when\":\"past\",\"min\":\"2026-07\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G247": [
@@ -4006,7 +4006,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\",\"min\":\"2023-11\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G286": [
@@ -4015,7 +4015,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\",\"min\":\"2023-10\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G287": [
@@ -4024,7 +4024,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\",\"min\":\"2023-09\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G288": [
@@ -4033,7 +4033,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-11\",\"when\":\"past\",\"min\":\"2023-11\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G289": [
@@ -4042,7 +4042,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-10\",\"when\":\"past\",\"min\":\"2023-10\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G290": [
@@ -4051,7 +4051,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Repeat colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the repeat colonoscopy completed?\",\"value\":\"2023-09\",\"when\":\"past\",\"min\":\"2023-09\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G291": [
@@ -4060,7 +4060,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-11\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-11\",\"when\":\"past\",\"min\":\"2023-11\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G292": [
@@ -4069,7 +4069,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-10\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-10\",\"when\":\"past\",\"min\":\"2023-10\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G293": [
@@ -4078,7 +4078,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2023-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Follow-up investigation status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"completed\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-09\",\"when\":\"past\"}",
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When was the follow-up investigation completed?\",\"value\":\"2023-09\",\"when\":\"past\",\"min\":\"2023-09\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_interval_years\",\"label\":\"Did the colonoscopy report give a follow-up time?\",\"options\":[{\"value\":\"\",\"label\":\"Not given\"},{\"value\":\"1\",\"label\":\"1 year\"},{\"value\":\"2\",\"label\":\"2 years\"},{\"value\":\"3\",\"label\":\"3 years\"},{\"value\":\"4\",\"label\":\"4 years\"},{\"value\":\"5\",\"label\":\"5 years\"},{\"value\":\"6\",\"label\":\"6 years\"},{\"value\":\"7\",\"label\":\"7 years\"},{\"value\":\"8\",\"label\":\"8 years\"},{\"value\":\"9\",\"label\":\"9 years\"},{\"value\":\"10\",\"label\":\"10 years\"}],\"value\":\"\"}"
   ],
   "G294": [
@@ -4274,7 +4274,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-11\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-11\"}"
   ],
   "G317": [
    "# dexa | ",
@@ -4297,7 +4297,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-10\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-10\"}"
   ],
   "G320": [
    "# dexa | ",
@@ -4320,7 +4320,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-09\"}"
   ],
   "G323": [
    "# dexa | ",
@@ -4343,7 +4343,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-08\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-08\"}"
   ],
   "G326": [
    "# dexa | ",
@@ -4366,7 +4366,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-07\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-07\"}"
   ],
   "G329": [
    "# dexa | ",
@@ -4389,7 +4389,7 @@
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-06\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_followup_status\",\"label\":\"Colonoscopy status\",\"options\":\"SCREENING_OPTIONS.followup_status\",\"value\":\"scheduled\"}",
-   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\"}"
+   "{\"kind\":\"month\",\"key\":\"colorectal_followup_date\",\"label\":\"When is the colonoscopy scheduled?\",\"value\":\"\",\"when\":\"future\",\"min\":\"2026-06\"}"
   ],
   "G332": [
    "# dexa | ",

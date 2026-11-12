@@ -449,36 +449,32 @@ export function InputPanel({
   const pastYears = Array.from({ length: 11 }, (_, i) => currentYear - i);
 
   /** Render a month/year date picker for screening dates. Used by both cancer screening and bone density. */
-  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => {
+  /** `min` (YYYY-MM, the form field's): no earlier year or month is offered or written (US-07 AC1j). */
+  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean; min?: string }) => {
     const futureOnly = options?.futureOnly ?? false;
+    const [minYear, minMonth] = (options?.min ?? '').split('-');
     const savedValue = readScreening(scr, key);
     const [savedYear, savedMonth] = savedValue.split('-');
 
     const { year: displayYear, month: displayMonth } = shownDate(dateInputs[key], savedYear, savedMonth);
 
-    const availableYears = futureOnly
+    const availableYears = (futureOnly
       ? Array.from({ length: 6 }, (_, i) => currentYear + i)
-      : pastYears;
+      : pastYears).filter(y => !minYear || y >= Number(minYear));
 
-    const availableMonths = futureOnly
+    const availableMonths = (futureOnly
       ? (displayYear === String(currentYear)
         ? MONTHS_FULL.filter(m => parseInt(m.value, 10) >= currentMonth)
         : MONTHS_FULL)
       : (displayYear === String(currentYear)
         ? MONTHS_FULL.filter(m => parseInt(m.value, 10) <= currentMonth)
-        : MONTHS_FULL);
+        : MONTHS_FULL)).filter(m => !minYear || displayYear !== minYear || m.value >= minMonth);
 
     const handleDateChange = (newYear: string, newMonth: string) => {
-      let adjustedMonth = newMonth;
-      if (futureOnly) {
-        if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) < currentMonth) {
-          adjustedMonth = '';
-        }
-      } else {
-        if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
-          adjustedMonth = '';
-        }
-      }
+      const beyondToday = newYear === String(currentYear) && newMonth && (futureOnly ? parseInt(newMonth, 10) < currentMonth : parseInt(newMonth, 10) > currentMonth);
+      let adjustedMonth = beyondToday ? '' : newMonth;
+      // A year change never writes a month before `min`: the month moves up to it.
+      if (minYear && newYear === minYear && adjustedMonth && adjustedMonth < minMonth) adjustedMonth = minMonth;
 
       setDateInputs(prev => ({
         ...prev,

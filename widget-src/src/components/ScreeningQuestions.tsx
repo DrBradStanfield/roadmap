@@ -27,7 +27,7 @@ interface ScreeningQuestionsProps {
   /** Sends one screening answer and the clears it implies. */
   writeScreening: (scr: ScreeningInputs, key: string, value: string) => void;
   /** A screening's month and year pickers. */
-  renderScreeningDateInput: (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => ReactNode;
+  renderScreeningDateInput: (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean; min?: string }) => ReactNode;
 }
 
 // Cancer screening, for an age with a screening due. The caller checks both,
@@ -82,7 +82,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
           </div>
         )}
 
-        {date?.kind === 'month' && renderScreeningDateInput(scr, date.key, date.label, { futureOnly: date.when === 'future' })}
+        {date?.kind === 'month' && renderScreeningDateInput(scr, date.key, date.label, { futureOnly: date.when === 'future', min: date.min })}
 
         {interval?.kind === 'choice' && (
           <div className="health-field">

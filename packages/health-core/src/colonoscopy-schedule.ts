@@ -46,6 +46,11 @@ const reopens = (result: string | undefined, lastDate: string | undefined, follo
 export const shownColorectalResult = (s: ScreeningInputs): string =>
   reopens(s.colorectalResult, s.colorectalLastDate, s.colorectalFollowupDate) ? '' : (s.colorectalResult ?? '');
 
+/** The earliest month a screening's follow-up date form field takes (its `min`): colorectal's last screening
+ *  month, so the picker never writes a date that reads as the reopen. '' (no bound) for the rest, or no last date.
+ *  A form bound only: screeningWrites, uploads and merges take any date (US-07 AC1j). */
+export const followupDateMin = (id: string, s: ScreeningInputs): string => (id === 'colorectal' ? monthOf(s.colorectalLastDate) : '');
+
 /** The follow-up answers the colorectal result write clears when it starts the follow-up again: status, date and
  *  time. screeningWrites writes them always, so the stamped nulls win a merge. A date write never clears. */
 export function reopenClears(s: ScreeningInputs, key: string, value: string): string[] {

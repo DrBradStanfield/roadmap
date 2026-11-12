@@ -784,6 +784,19 @@ describe('forms (AC8)', () => {
       .toEqual(['', '']);
   });
 
+  it('US-07 AC1j: the colorectal follow-up date carries the last screening month as its min across the bridge, and the form takes nothing earlier', () => {
+    const file = man60(
+      { kind: 'screening', key: 'colorectal_method', value: 'fit_annual' }, { kind: 'screening', key: 'colorectal_last_date', value: '2025-09' },
+      { kind: 'screening', key: 'colorectal_result', value: 'abnormal' }, { kind: 'screening', key: 'colorectal_followup_status', value: 'completed' });
+    type Field = { key?: string; kind: string; min?: string };
+    const fields = (JSON.parse(screenJson(JSON.stringify(file), NOW, 'phone', '{}')) as { myData: { screenings: { groups: { fields: Field[] }[] }[] } })
+      .myData.screenings.flatMap((s) => s.groups.flatMap((g) => g.fields));
+    expect(fields.find((f) => f.key === 'colorectal_followup_date')).toMatchObject({ kind: 'month', when: 'past', min: '2025-09' });
+    expect(fields.filter((f) => f.kind === 'month' && f.key !== 'colorectal_followup_date').every((f) => !('min' in f))).toBe(true);
+    expect(applyEdit(file, { kind: 'screening', key: 'colorectal_followup_date', value: '2025-08' }, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    expect(edited(file, { kind: 'screening', key: 'colorectal_followup_date', value: '2025-09' }).screenings.colorectalFollowupDate).toBe('2025-09');
+  });
+
   it('refuses an unknown key, a hidden question, a month out of range and a bad pack-years', () => {
     const file = man60({ kind: 'screening', key: 'lung_smoking_history', value: 'former_smoker' });
     const refused = (key: string, value: string) => expect(applyEdit(file, { kind: 'screening', key, value }, NOW), `${key}=${value}`).toMatchObject({ ok: false });

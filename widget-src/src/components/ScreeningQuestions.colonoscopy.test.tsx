@@ -12,6 +12,11 @@ import { InputPanel } from './InputPanel';
 import { MY_HEALTH_PROPS } from '../testing/my-health-props';
 
 vi.mock('../lib/server-api', async importOriginal => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
+// R2: a spy that calls through, so a date write that skipped the shared rules fails the last test.
+vi.mock('@roadmap/health-core/input-form', async importOriginal => {
+  const real = await importOriginal<typeof import('@roadmap/health-core/input-form')>();
+  return { ...real, screeningWrites: vi.fn(real.screeningWrites) };
+});
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 
@@ -115,5 +120,55 @@ describe('US-07 AC1j: a newer last screening asks the result again on the web fo
     pick('colorectal_last_date', 'month', '06');
     expect(onScreeningChange.mock.calls).toEqual([['colorectal_last_date', '2025-06']]);
     expect(result().value).toBe('abnormal');
+  });
+});
+
+// US-07 AC1j (review of PR 1371): the follow-up date picker never writes a month before the last screening. The web
+// picker writes each in-between date; a year change that would land before the last screening clamps the month up to
+// it, so the result never blanks mid-pick. The bound is the shared form field's `min` (input-form.ts screeningForm).
+describe('US-07 AC1j: the colonoscopy date picker stays on or after the last screening', () => {
+  const STORED = {
+    colorectal_method: 'fit_annual', colorectal_last_date: '2025-11', colorectal_result: 'abnormal',
+    colorectal_followup_status: 'completed', colorectal_followup_date: '2026-02', colorectal_followup_interval_years: '5',
+  };
+  /** The panel over its own stored answers: each write lands, as on the live page, and is recorded. */
+  function live(initial: Record<string, string>) {
+    const writes: Array<[string, string]> = [];
+    let state = { ...initial };
+    const view = panel(state);
+    view.onScreeningChange.mockImplementation((k: string, v: string) => { writes.push([k, v]); state = { ...state, [k]: v }; });
+    const sync = () => { cleanup(); const next = panel(state); next.onScreeningChange.mockImplementation(view.onScreeningChange.getMockImplementation()!); };
+    return { writes, sync, state: () => state };
+  }
+  const select = (id: string) => document.querySelector<HTMLSelectElement>(`select#${id}`);
+  const offered = (id: string) => [...select(id)!.options].map(o => o.value).filter(Boolean);
+
+  it('picking 2025 writes 2025-11 (clamped), the result and follow-up stay, then December writes 2025-12', () => {
+    const run = live(STORED);
+    expect(offered('colorectal_followup_date-year').map(Number).every(y => y >= 2025)).toBe(true);
+    fireEvent.change(select('colorectal_followup_date-year')!, { target: { value: '2025' } });
+    expect(run.writes).toEqual([['colorectal_followup_date', '2025-11']]);
+    run.sync();
+    expect(select('colorectal-result')!.value).toBe('abnormal');
+    expect(select('colorectal-followup-status')!.value).toBe('completed');
+    expect(select('colorectal-followup-interval')!.value).toBe('5');
+    expect(offered('colorectal_followup_date-month')).toEqual(['11', '12']);
+    fireEvent.change(select('colorectal_followup_date-month')!, { target: { value: '12' } });
+    expect(run.writes).toEqual([['colorectal_followup_date', '2025-11'], ['colorectal_followup_date', '2025-12']]);
+    run.sync();
+    expect(select('colorectal-result')!.value).toBe('abnormal');
+  });
+
+  it('other date pickers keep their plain ranges: the last-screening picker still offers ten years back', () => {
+    live(STORED);
+    expect(offered('colorectal_last_date-year')).toContain('2016');
+    expect(offered('colorectal_followup_date-year')).not.toContain('2024');
+  });
+
+  it('R2: the date picker writes through screeningWrites, the shared write rules', async () => {
+    const forms = await import('@roadmap/health-core/input-form');
+    live(STORED);
+    fireEvent.change(select('colorectal_followup_date-month')!, { target: { value: '03' } });
+    expect(vi.mocked(forms.screeningWrites)).toHaveBeenLastCalledWith(expect.objectContaining({ colorectalLastDate: '2025-11' }), 'colorectal_followup_date', '2026-03');
   });
 });

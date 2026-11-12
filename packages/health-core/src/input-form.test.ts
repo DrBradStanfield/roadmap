@@ -188,6 +188,23 @@ describe('screeningForm', () => {
     }
   });
 
+  it('US-07 AC1j: the colorectal follow-up date never goes before the last screening: its field carries min = that month', () => {
+    const done = { colorectalMethod: 'fit_annual', colorectalLastDate: '2025-11', colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2026-02' } as ScreeningInputs;
+    const date = (scr: ScreeningInputs) => field(screeningForm(60, 'male', scr), 'colorectal_followup_date') as { min?: string };
+    expect(date(done).min).toBe('2025-11');
+    expect(date({ ...done, colorectalLastDate: '2025-09-14' }).min).toBe('2025-09');
+    expect(date({ ...done, colorectalFollowupStatus: 'scheduled', colorectalFollowupDate: '2027-01' }).min).toBe('2025-11');
+    // No last date: no result question, so no follow-up date and no bound.
+    expect(date({ ...done, colorectalLastDate: undefined })).toBeUndefined();
+    // Every other date field: no min.
+    const female = { breastFrequency: 'annual', breastLastDate: '2026-03', breastResult: 'abnormal', breastFollowupStatus: 'completed', breastFollowupDate: '2024-01',
+      cervicalMethod: 'hpv_every_5yr', cervicalLastDate: '2026-03', cervicalResult: 'abnormal', cervicalFollowupStatus: 'completed', cervicalFollowupDate: '2024-01',
+      dexaScreening: 'dexa_scan', dexaLastDate: '2025-01', dexaResult: 'osteoporosis', dexaFollowupStatus: 'completed', dexaFollowupDate: '2025-02' } as ScreeningInputs;
+    const months = [...screeningForm(60, 'female', female), ...screeningForm(60, 'male', done)].flatMap((s) => s.groups.flatMap((g) => g.fields)).filter((f) => f.kind === 'month');
+    expect(months.filter((f) => 'min' in f).map((f) => f.key)).toEqual(['colorectal_followup_date']);
+    expect(months.map((f) => f.key)).toEqual(expect.arrayContaining(['breast_followup_date', 'cervical_followup_date', 'dexa_followup_date', 'colorectal_last_date']));
+  });
+
   it('asks for PSA as a measurement once a man will screen', () => {
     const form = screeningForm(55, 'male', { prostateDiscussion: 'will_screen' });
     expect(form[0].groups.find((g) => g.id === 'prostate')!.fields[1]).toMatchObject({ kind: 'measurement', metric: 'psa', label: 'PSA (ng/mL)' });
