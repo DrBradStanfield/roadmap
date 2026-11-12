@@ -55,12 +55,13 @@ async function tabCOpensBWhileAIsInFlight() {
 afterEach(() => { cleanup(); postSync.mockClear(); vi.useRealTimers(); });
 
 describe('US-15 AC7a — a tab that did not send opens another thread', () => {
-  // Flipped in slice 2 (N4, Fable 2026-11-12): a tab says only whether its own request is open. Saying
-  // another tab's send, or its own thread load, as busy locked Send in every tab that heard it.
-  it('US-15 AC7a, N4: tab C opening B while tab A\'s reply is in flight says only that C has no request open', async () => {
+  // Flipped in slice 2 (N4, Fable 2026-11-12): `sending` says only whether this tab's own request is open, never its
+  // thread load. `isLoading`, read only by an older bundle, also says another tab's request (PR 1359 R4), so a post
+  // here never ends an older bundle's wait in a tab that heard it.
+  it('US-15 AC7a, N4: tab C opening B while tab A\'s reply is in flight says C has no request open, and A\'s is', async () => {
     const { finishB, openingB } = await tabCOpensBWhileAIsInFlight();
     await act(async () => { finishB(threadB); await openingB; });
-    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: false, sending: false });
+    expect(postSync.mock.calls.at(-1)![0].payload).toMatchObject({ activeConversationId: 'B', isLoading: true, sending: false, loaded: true });
   });
 
   // Tab A's "reply ended" says A is shown, and every tab follows the latest state, so it

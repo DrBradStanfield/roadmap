@@ -126,7 +126,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
           ref={messagesContainerRef}
           onScroll={handleMessagesScroll}
         >
-          {state.messages.length === 0 && !state.replying && state.load === 'none' && (
+          {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
             <div className="chat-empty">
               <p>{muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
             </div>
@@ -143,7 +143,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
               )}
             </React.Fragment>
           ))}
-          <ChatLoadLine load={state.load} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+          <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
           {state.replying && (
             <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}

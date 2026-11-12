@@ -15,6 +15,7 @@ const store = vi.hoisted(() => ({
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
+import * as Sentry from '@sentry/react';
 import { deleteConversation, loadConversation, sendMessage } from './chat-api';
 
 const ok = () =>
@@ -128,5 +129,21 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     store.getMessages.mockImplementationOnce(() => { throw new Error('file unreadable'); });
     expect(await loadConversation('c1')).toBe('failed');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Codex R1 (privacy): the cloud store's StorageError can quote chat text in its message or cause.
+  it('a store error\'s message and cause reach neither the console nor Sentry', async () => {
+    const MARKER = 'SYNTHETIC_CHAT_MARKER';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    store.getMessages.mockImplementationOnce(() => { throw Object.assign(new Error(`bad file: ${MARKER}`), { cause: new Error(MARKER) }); });
+    expect(await loadConversation('c1')).toBe('failed');
+    const text = (v: unknown, depth = 0): string => depth > 4 || v == null ? '' : v instanceof Error
+      ? `${v.message} ${v.stack ?? ''} ${text((v as { cause?: unknown }).cause, depth + 1)}`
+      : typeof v === 'object' ? Object.values(v).map((x) => text(x, depth + 1)).join(' ') : String(v);
+    const said = [warn, error, vi.mocked(Sentry.captureException), vi.mocked(Sentry.captureMessage)].flatMap((m) => m.mock.calls).map((c) => text(c)).join(' ');
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { feature: 'chat', kind: 'store' } });
+    expect(said).not.toContain(MARKER);
+    warn.mockRestore(); error.mockRestore();
   });
 });

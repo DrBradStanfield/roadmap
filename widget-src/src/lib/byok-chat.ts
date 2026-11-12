@@ -76,8 +76,13 @@ export async function listConversations(): Promise<ChatListResult | null> {
   };
 }
 
-export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
-  return (await getChatHistory())?.getMessages(conversationId) ?? [];
+/** chat-api's union (N2): no store, or a read that throws, is 'failed', never an empty thread a send could go out from. */
+export async function loadConversation(conversationId: string): Promise<ChatMessage[] | 'failed'> {
+  try {
+    return (await getChatHistory())?.getMessages(conversationId) ?? 'failed';
+  } catch {
+    return 'failed'; // nothing logged: the error can quote chat text (Codex R1)
+  }
 }
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {

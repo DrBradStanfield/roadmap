@@ -249,18 +249,20 @@ export async function listConversations(): Promise<ChatListResult | null> {
       isGuest: result.isGuest,
     };
   } catch (error) {
-    console.warn('Error listing conversations:', error);
-    Sentry.captureException(error);
+    console.warn('Chat list failed.'); // as a failed load: the error can quote titles (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind: 'fetch' } });
     return null;
   }
 }
+
+const threadNotFound = (status: number, data: ChatReply | null) => status === 404 && data?.error === 'Conversation not found'; // the server's (AC6a), not a proxy's
 
 /**
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
 function guestThreadGone(status: number, data: ChatReply | null): boolean {
-  if (status !== 404 || data?.error !== 'Conversation not found' || data.isGuest !== true) return false;
+  if (!threadNotFound(status, data) || data?.isGuest !== true) return false;
   const sessionToken = tokenOf(data);
   if (sessionToken) setGuestSessionToken(sessionToken);
   return true;
@@ -273,19 +275,22 @@ const untilAborted = (signal?: AbortSignal) => new Promise<'failed'>((resolve) =
 });
 
 /**
- * A thread's turns. 'gone': the server no longer recognizes this guest thread (US-15 AC6a).
+ * A thread's turns. 'gone': the server no longer recognizes this thread, a guest's or a customer's (US-15 AC6a).
  * 'failed': they could not be read (an error answer, a throw, or `signal` aborting), so the
  * thread never shows as empty and no send goes out with an empty history (N2).
  */
 export async function loadConversation(conversationId: string, signal?: AbortSignal): Promise<ChatMessage[] | 'gone' | 'failed'> {
+  let kind: 'store' | 'fetch' = 'store';
   try {
     const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
     if (store === 'failed') return 'failed';
     if (store) return store.getMessages(conversationId);
+    kind = 'fetch';
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
     const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return 'gone';
+      const data = await parseJsonResponse<ChatReply>(response).catch(() => null);
+      if (guestThreadGone(response.status, data) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
@@ -297,8 +302,8 @@ export async function loadConversation(conversationId: string, signal?: AbortSig
     return result?.success ? result.messages : 'failed';
   } catch (error) {
     if (signal?.aborted) return 'failed'; // the caller's timeout, not an error to report
-    console.warn('Error loading conversation:', error);
-    Sentry.captureException(error);
+    console.warn('Chat load failed.'); // never the error: it or its cause can quote chat text (Codex R1)
+    Sentry.captureException(recordFailure(error, 'Chat load failed'), { tags: { feature: 'chat', kind } });
     return 'failed';
   }
 }

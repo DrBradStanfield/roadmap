@@ -132,13 +132,15 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   useLayoutEffect(() => joinChats(store), [store]);
   useEffect(() => () => { reads.forEach((stop) => stop()); cancelAnimationFrame(streamRef.current.frame); }, [reads]);
 
-  /** This instance's chat state, to every other instance (US-15 AC17c names its fields). Only a request
-   *  in flight is said to be busy: a thread load here never locks another tab's Send (N4). */
+  /** This instance's chat state, to every other instance (US-15 AC17c names its fields). Only requests
+   *  in flight are said to be busy, never a thread load here (N4); `isLoading`, for an older bundle, adds
+   *  other tabs' so a post never ends their waits elsewhere (R4). `loaded`: whether `messages` are a history (R1). */
   const postState = () => {
     const s = store.getSnapshot();
     const sending = s.turn.phase !== 'idle';
     postSync({ instanceId, type: 'state', ts: Date.now(), payload: {
-      conversations: s.conversations, activeConversationId: s.shown.id, messages: s.messages, isLoading: sending, sending, error: s.error,
+      conversations: s.conversations, activeConversationId: s.shown.id, messages: s.messages,
+      isLoading: sending || othersBusyNow(), sending, loaded: s.load.phase === 'none', error: s.error,
     } });
   };
 
@@ -187,7 +189,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // N1/N2: every read ends in a landing for the load it began under; the store drops one that load has outlived.
   const readTurns = async (opening: number, id: string) => {
     const gen = ++loadGenRef.current;
-    const turns = await readThread(id, reads);
+    const turns = await readThread(store, opening, id, reads);
     if (turns === 'gone') await store.dispatch({ type: 'load-landed', opening, id, turns: null });
     else if (turns === 'failed') await store.dispatch({ type: 'load-failed', opening, id });
     else if (gen === loadGenRef.current) await store.dispatch({ type: 'load-landed', opening, id, turns });
@@ -305,6 +307,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       replying: isLocalSender(chat) || othersBusy,
       isLocalSender: isLocalSender(chat),
       load: chat.load.phase,
+      // Words beside a Send this tab's own request locks (R3): one an erase emptied, or one for a chat not on screen.
+      wait: chat.turn.phase === 'orphaned' ? 'orphaned' as const : chat.turn.phase !== 'idle' && chat.turn.asked.key !== chat.shown.key ? 'other-chat' as const : null,
       error: cut ? CUT_NOTICE : chat.error,
       pending: showsPending(chat) ?? NO_PENDING,
       approachById,

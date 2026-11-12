@@ -23,8 +23,9 @@ export interface SendResult {
   conversationId: string; messageId: string | null; content: string; isFallback?: boolean;
   proposedEdits?: ProposedEdit[]; editRefusals?: ChatEditRefusal[]; subscriptionCard?: unknown;
 }
-/** Another tab's state post. `erase` is absent from an older bundle: it counts as this tab's. */
-export interface MirrorPayload { conversations: Conv[]; activeConversationId: string | null; messages: Msg[]; error: string | null; erase?: Erase }
+/** Another tab's state post. `erase` is absent from an older bundle: it counts as this tab's. `loaded` false: that
+ *  tab has not read its thread's turns (its load is not none), so its `messages` are no history; absent, they are. */
+export interface MirrorPayload { conversations: Conv[]; activeConversationId: string | null; messages: Msg[]; error: string | null; erase?: Erase; loaded?: boolean }
 
 export type Key = `new:${number}` | `thread:${string}`;
 export type Erase = string;
@@ -275,11 +276,20 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     case 'mirror-state': {
       const p = e.payload;
       if ((p.erase ?? s.erase.shown) !== s.erase.shown) return same(s);
-      const base: ChatState = { ...s, messages: p.messages, conversations: p.conversations, error: p.error, load: { phase: 'none' } };
-      if (p.activeConversationId === s.shown.id) return same(base);
       const id = p.activeConversationId;
+      const moved: Effect[] = [{ type: 'remote-selected' }, { type: 'edits-leave' }];
+      if (p.loaded === false) { // R1: its turns are no history; this tab keeps its own, or reads the thread itself
+        const kept: ChatState = { ...s, conversations: p.conversations, error: p.error };
+        if (id === s.shown.id) return same(kept);
+        if (id === null) return { state: { ...freshChat(kept), error: p.error, notice: s.notice }, effects: moved };
+        const opened = openThread({ ...kept, messages: [] }, id);
+        const opening = opened.shown.opening;
+        return { state: { ...opened, load: { phase: 'loading', opening, id } }, effects: [...moved, { type: 'read-turns', opening, id }] };
+      }
+      const base: ChatState = { ...s, messages: p.messages, conversations: p.conversations, error: p.error, load: { phase: 'none' } };
+      if (id === s.shown.id) return same(base);
       const next = id === null ? { ...freshChat(base), messages: p.messages, error: p.error, notice: s.notice } : openThread(base, id);
-      return { state: next, effects: [{ type: 'remote-selected' }, { type: 'edits-leave' }] };
+      return { state: next, effects: moved };
     }
     case 'thread-gone': {
       const dropped: ChatState = { ...s, conversations: s.conversations.filter((c) => c.id !== e.id) };

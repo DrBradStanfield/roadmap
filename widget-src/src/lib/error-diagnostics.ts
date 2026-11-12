@@ -20,7 +20,9 @@ type RecordFailure =
   | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
-  | 'Upload save failed';
+  | 'Upload save failed'
+  | 'Chat load failed'
+  | 'Chat list failed';
 
 /** Fresh exception: no provider text, original cause or document reference. */
 export function recordFailure(error: unknown, message: RecordFailure): Error {

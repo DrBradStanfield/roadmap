@@ -506,8 +506,9 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     expect(hook.result.current.state).toMatchObject({ isLocalSender: true, replying: true });
   });
 
-  // Review 2026-10-31 item 3: the stale check returned before dropping a thread that 404ed.
-  it('US-15 AC7a with AC6a: A not found after B was opened is dropped from the list, and B stays', async () => {
+  // Review 2026-10-31 item 3 pinned the drop of a left thread that 404ed. PR 1359 R2 flipped it: opening B
+  // stops A's read (its timer and its fetch), so A's not-found never lands; A drops when it is next opened.
+  it('US-15 AC7a with AC6a: A left for B before its read ends: its late not-found changes nothing, and B stays', async () => {
     const api = await import('../lib/chat-api');
     let finishA!: (m: 'gone') => void;
     vi.mocked(api.loadConversation)
@@ -522,7 +523,7 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
     await act(async () => { await hook.result.current.actions.selectConversation('B'); });
     await act(async () => { finishA('gone'); await openingA; });
     const { state } = hook.result.current;
-    expect(state.conversations.map(c => c.id)).toEqual(['B']);
+    expect(state.conversations.map(c => c.id)).toEqual(['A', 'B']);
     expect(state.activeConversationId).toBe('B');
     expect(state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
   });
@@ -558,11 +559,11 @@ describe('US-15 AC7a — opening another thread while a reply is in flight', () 
       expect((history as { content: string }[]).map(m => m.content)).toEqual(['B question', 'B answer']);
     });
 
-    it('US-15 AC7a with AC6a: A not found on first load after B was opened is dropped, and B stays', async () => {
+    it('US-15 AC7a with AC6a: A\'s first load stopped when B was opened: its late not-found changes nothing, and B stays (PR 1359 R2)', async () => {
       const { hook, finishA, firstLoad } = await openBDuringFirstLoad();
       await act(async () => { finishA('gone'); await firstLoad; });
       const { state } = hook.result.current;
-      expect(state.conversations.map(c => c.id)).toEqual(['B']);
+      expect(state.conversations.map(c => c.id)).toEqual(['A', 'B']);
       expect(state.activeConversationId).toBe('B');
       expect(state.messages.map(m => m.content)).toEqual(['B question', 'B answer']);
     });

@@ -172,7 +172,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
         {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
-            {state.messages.length === 0 && !state.replying && state.load === 'none' && (
+            {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
               <div className="chat-empty">
                 <p>{muted ? MUTED_CHAT.empty : copy.empty}</p>
               </div>
@@ -189,7 +189,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
                 )}
               </React.Fragment>
             ))}
-            <ChatLoadLine load={state.load} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
+            <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
             {state.replying && (
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}

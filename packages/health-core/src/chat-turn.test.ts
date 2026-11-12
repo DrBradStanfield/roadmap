@@ -432,6 +432,36 @@ describe('§3 Shown chat, list and load', () => {
     loadCells('mirror-state same erase', id, NEW_ID, { none: [NONE, FX], loading: [NONE, FX], failed: [NONE, FX] });
     loadCells('mirror-state same erase, same id', id, SAME_ID, { none: [NONE, []], loading: [NONE, []], failed: [NONE, []] });
     loadCells('mirror-state other erase', id, OTHER, both([]));
+    // Adversary R1, Codex R2: a post from a tab whose thread is not read carries no turns to trust.
+    const UNREAD: ChatEvent = { type: 'mirror-state', payload: { ...payload, loaded: false } };
+    const UNREAD_SAME: ChatEvent = { type: 'mirror-state', payload: { ...payload, activeConversationId: 'A', loaded: false } };
+    const READ_OUT = (opening: number): Effect[] => [...FX, { type: 'read-turns', opening, id: 'B' }];
+    it('mirror-state, loaded false, a new id | the thread opened here: no turns taken, read here, Send locked', () => {
+      const { state, effects } = transition(S, UNREAD);
+      expect(state).toMatchObject({ shown: { key: 'thread:B', id: 'B', opening: 3 }, messages: [], conversations: [convB], error: 'theirs', load: { phase: 'loading', opening: 3, id: 'B' } });
+      expect(effects).toEqual(READ_OUT(3));
+      expect(busy(state, false)).toBe(true);
+    });
+    it('mirror-state, loaded false, same id | this tab\'s own turns and load kept; the list and error taken', () => {
+      for (const load of [NONE, LOADS.loading, LOADS.failed]) {
+        const { state, effects } = transition({ ...S, load }, UNREAD_SAME);
+        expect(state).toMatchObject({ shown: S.shown, messages: [m1], conversations: [convB], error: 'theirs', load });
+        expect(effects).toEqual([]);
+      }
+    });
+    it('mirror-state, loaded true | as an older bundle\'s post (no field): the payload\'s turns', () => {
+      const loaded = transition(S, { type: 'mirror-state', payload: { ...payload, loaded: true } });
+      expect(loaded).toEqual(transition(S, NEW_ID));
+      expect(loaded.state).toMatchObject({ messages: [m2], load: NONE });
+    });
+    it('mirror-state, loaded false, then a send | refused until the thread is read here, then sent with its own turns', () => {
+      const opened = transition(S, UNREAD).state;
+      expect(transition(opened, SEND).effects).toEqual([]);
+      const read = transition(opened, { type: 'load-landed', opening: 3, id: 'B', turns: [m1, m2] }).state;
+      expect(transition(read, SEND).effects).toContainEqual({ type: 'request', turn: 1, question: 'hi', convId: 'B', history: [m1, m2] });
+    });
+    const B3: Load = { phase: 'loading', opening: 3, id: 'B' };
+    loadCells('mirror-state loaded false, a new id', id, UNREAD, { none: [B3, READ_OUT(3)], loading: [B3, READ_OUT(3)], failed: [B3, READ_OUT(3)] });
   });
 
   describe('mirror-new', () => {

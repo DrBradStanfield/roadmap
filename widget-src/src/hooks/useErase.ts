@@ -87,13 +87,13 @@ export function useErase(props: EraseDoorProps): Erase {
   // keeps the old mark and is refused (US-16 AC2d). Children's layout effects
   // run before this one, so none may write; none does (2026-11-10). The same
   // moment counts another writer's erase now on screen (`committed`, Codex R1),
-  // and tells every chat which erase it now shows (chat-turn R6): another
-  // writer's is still `pending` here, before `committed` counts it.
+  // and tells every chat which erase it now shows and who moved it there
+  // (chat-turn R6; `shownBy`, PR 1359 R5).
   useLayoutEffect(() => {
     markEraseShown(state.shown);
-    tellChats({ type: 'erase-shown', erase: state.shown, by: state.pending === state.shown ? 'remote' : 'own' });
+    tellChats({ type: 'erase-shown', erase: state.shown, by: state.shownBy });
     store.dispatch({ type: 'committed', identity: state.shown });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per erase shown; `pending` is read as it stands then
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per erase shown; `shownBy` is read as it stands then
   }, [state.shown, store]);
 
   const eraseUnshown = useCallback(() => getEraseIdentity() !== getShownErase(), []);
