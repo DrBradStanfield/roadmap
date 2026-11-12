@@ -2,6 +2,8 @@
  * tools/stories.mjs reads the user stories as one text from either shape: the monolith
  * docs/user-stories.md, or the split index with one file per story (the stories-split plan, PR 1).
  * These pin both shapes, on disk and at a git ref, and the reassembly rule in the module header.
+ * US-64 AC11: the story-loss gate reads through this loader, so it must fail closed (a missing part,
+ * an unreadable stories tree, an index with no stories/ folder); US-64 AC13: a story listed twice.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
