@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
+import { ERASE_BUSY, ERASE_UNREACHABLE, RecordSession, PERSIST_DEBOUNCE_MS, saveRecordInto } from './record-session';
 import type { RecordHost, RemoteChange } from './record-host';
 import type { SaveEvent, SaveState } from './save-state';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
@@ -1239,20 +1239,83 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(add(session, 'after')).toBe(true);
   });
 
-  it("today, refuses() is still false before the erase's stored read answers (lead A6; a later PR may change it)", async () => {
+  it('refuses from the erase confirm: an edit, and a write stamped with the erase the page shows, made while the erase reads (lead A6, US-16 AC2a)', async () => {
     const store = new TestStore();
     const session = await RecordSession.open(fakeHost(store).host);
     add(session, 'a');
     await session.flush();
+    const shown = session.eraseIdentity;
+    session.showErase(shown);
     const held = holdNext(store, 'read');
     const erasing = session.erase();
     await held.reached;
-    // Lead A6 may flip this in a later PR.
-    expect(session.refuses()).toBe(false);
-    expect(add(session, 'during-read')).toBe(true); // an edit is let in
+    expect(session.refuses()).toBe(true);
+    expect(add(session, 'during-read')).toBe(false);
+    expect(add(session, 'store-write', 80, '2026-10-01', shown)).toBe(false);
     held.release();
     expect((await erasing).success).toBe(true);
-    expect(session.refuses()).toBe(false);
+    expect(session.file.measurements).toEqual([]);
+    expect(session.file.erasedRows?.ids).toEqual(['a']);
+    expect(session.refuses(session.eraseIdentity)).toBe(false);
+  });
+
+  describe('an erase that stops before its swap gives back the save it found, with no change added (lead A6)', () => {
+    const modeOf = (session: RecordSession) => (session as unknown as { mode: SaveState }).mode;
+    const cases: Array<[string, (store: TestStore) => (() => Promise<void>) | undefined, (result: Promise<unknown>) => Promise<void>]> = [
+      ['the cloud record cannot be read (US-09 AC23)', (store) => { store.failReads = true; return undefined; },
+        async (result) => { expect(await result).toEqual({ success: false, error: ERASE_UNREACHABLE }); }],
+      ['the caller step throws', () => async () => { throw new Error('teardown down'); },
+        async (result) => { await expect(result).rejects.toThrow('teardown down'); }],
+      ['the build throws', () => { vi.mocked(buildErasedFile).mockImplementationOnce(() => { throw new Error('build failed'); }); return undefined; },
+        async (result) => { expect(await result).toEqual({ success: false, error: 'build failed' }); }],
+    ];
+    for (const [name, arrange, answers] of cases) {
+      it(name, async () => {
+        const store = new TestStore();
+        const fake = fakeHost(store);
+        const session = await RecordSession.open(fake.host);
+        add(session, 'a');
+        await session.flush();
+        add(session, 'b'); // on the debounce
+        const before = structuredClone(modeOf(session));
+        const writes = store.writes;
+        await answers(session.erase(arrange(store)));
+        store.failReads = false;
+        // The same save state: no phantom change counted, the debounce armed again.
+        expect(modeOf(session)).toEqual(before);
+        expect(fake.timers).toHaveLength(1);
+        expect(session.refuses()).toBe(false);
+        expect(store.writes).toBe(writes);
+        fake.timers.splice(0).forEach((t) => t.run());
+        await session.flush();
+        expect(store.writes).toBe(writes + 1);
+        expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+        expect(session.saveStatus).toBe('saved');
+      });
+    }
+  });
+
+  it('a second erase while one runs answers ERASE_BUSY, runs no step and changes nothing (lead A6)', async () => {
+    for (const phase of ['read', 'write'] as const) {
+      const store = new TestStore();
+      const session = await RecordSession.open(fakeHost(store).host);
+      add(session, 'a');
+      await session.flush();
+      const held = holdNext(store, phase);
+      const first = session.erase();
+      await held.reached;
+      const file = JSON.stringify(session.file);
+      const mode = JSON.stringify((session as unknown as { mode: SaveState }).mode);
+      const beforeErase = vi.fn(async () => {});
+      expect(await session.erase(beforeErase)).toEqual({ success: false, error: ERASE_BUSY });
+      expect(beforeErase).not.toHaveBeenCalled();
+      expect(JSON.stringify(session.file)).toBe(file);
+      expect(JSON.stringify((session as unknown as { mode: SaveState }).mode)).toBe(mode);
+      expect(session.refuses()).toBe(true);
+      held.release();
+      expect((await first).success).toBe(true);
+      expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
+    }
   });
 });
 

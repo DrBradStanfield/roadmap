@@ -281,3 +281,22 @@ describe('any order is safe where two events race', () => {
     expect(b.state).toEqual(saving(7, 6, 7));
   });
 });
+
+describe('lead A6: the erase from its confirm (US-16 AC2a)', () => {
+  const BEGAN = { type: 'eraseBegan' } as SaveEvent;
+  const SWAPPED = { type: 'eraseSwapped' } as SaveEvent;
+  const ABORTED = { type: 'eraseAborted' } as SaveEvent;
+  const reading = (under: SaveBase) => ({ mode: 'erasing', phase: 'reading', under }) as SaveState;
+
+  it('an erase that begins puts the debounce aside, refuses an edit, and an abort gives it back with no change added', () => {
+    expect(transition(waiting(6, 5), BEGAN)).toEqual({ state: reading(waiting(6, 5)), effects: [CANCEL] });
+    expect(transition(reading(waiting(6, 5)), EVENTS.edited)).toEqual({ state: reading(waiting(6, 5)), effects: [] });
+    expect(transition(reading(waiting(6, 5)), ABORTED)).toEqual({ state: waiting(6, 5), effects: [ARM] });
+  });
+
+  it('stale erase events on a base state change nothing', () => {
+    for (const s of [clean(5), waiting(6, 5), saving(6, 4, 6), saving(7, 4, 6, true), failed(6, 4)]) {
+      for (const e of [SWAPPED, ABORTED, EVENTS.eraseEnded]) expect(transition(s, e)).toEqual({ state: s, effects: [] });
+    }
+  });
+});
