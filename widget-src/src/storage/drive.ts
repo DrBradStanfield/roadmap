@@ -24,10 +24,11 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
-import { codeGrantReply } from './drive-token-reply';
+import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
+import { refreshOnce } from './token-flight';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
@@ -114,34 +115,6 @@ function expiry(expiresIn?: number): number {
 
 /** The one scope Drive access needs; `google-config.ts` builds the request from it. */
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-
-type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string };
-
-/**
- * POST a refresh grant to the stateless endpoint and read a 2xx body, both in
- * one 5 s deadline and one catch. This runs at page load before first render:
- * a black-holing server must fail fast into the on-device + Reconnect
- * fallback, not hang. Null when the call or the body read failed (no answer, a
- * body that stalls past the deadline, dies or is not JSON), which the caller
- * treats as transient, never a rejection (review of #788). A non-2xx body is
- * not read; a 2xx whose body is JSON `null` comes back with `json: null`.
- */
-async function postRefreshGrant(url: string, refreshToken: string): Promise<{ status: number; json?: RefreshGrant | null } | null> {
-  const deadline = timeoutDeadline(5000);
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      // No Content-Type: keep it a CORS simple request (no preflight).
-      body: JSON.stringify({ grantType: 'refresh', refreshToken }),
-      signal: deadline.signal,
-    });
-    return { status: res.status, json: res.ok ? ((await res.json()) as RefreshGrant | null) : undefined };
-  } catch {
-    return null;
-  } finally {
-    deadline.clear();
-  }
-}
 
 /**
  * Google names the approved scopes on both connect paths (the redirect URL,
@@ -355,7 +328,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /**
    * The refresh with its failure mode kept: 'none' = there is no refresh token
-   * to use (never had one, or it was revoked), which will not change on its
+   * to use (never had one, or it was revoked), or the endpoint refused it with
+   * a 400/401 (kept unless Google said invalid_grant), which will not change on its
    * own; 'transient' = the endpoint was unreachable or errored, so the next
    * attempt may succeed. The reminders identity needs the difference — a
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
@@ -363,12 +337,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
     const startedFrom = this.tokens?.refreshToken;
     if (!startedFrom) return 'none';
-    const answer = await postRefreshGrant(this.config.exchangeUrl, startedFrom);
+    // One flight per page and grant (US-09 AC47); each caller judges its answer below.
+    const answer = await refreshOnce('google-drive', startedFrom, () => postRefreshGrant(this.config.exchangeUrl, startedFrom));
     if (!answer) return 'transient'; // network/server down/timeout → caller falls back to the popup path
     const { status, json } = answer;
     if (status === 400 || status === 401) {
       if (this.grantMoved(startedFrom)) return 'none';
-      this.clearTokens(); // refresh token revoked/expired — stop retrying
+      if (answer.error === 'invalid_grant') this.clearTokens(); // only Google's "revoked or expired" forgets the grant (US-09 AC47)
       return 'none';
     }
     if (!json) return 'transient';
