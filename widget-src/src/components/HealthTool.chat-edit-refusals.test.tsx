@@ -24,7 +24,7 @@ const sentry = vi.hoisted(() => ({ captureMessage: vi.fn(), captureException: vi
 vi.mock('@sentry/react', async (original) => ({ ...(await original<typeof import('@sentry/react')>()), ...sentry }));
 vi.mock('../lib/sentry', () => ({ Sentry: sentry }));
 vi.mock('../lib/build-flags', async (original) => ({ ...(await original<typeof import('../lib/build-flags')>()), LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
-vi.mock('../lib/chat-history-access', async (original) => ({ ...(await original<typeof import('../lib/chat-history-access')>()), getChatHistory: () => Promise.resolve(null) }));
+vi.mock('../lib/chat-history-access', async (original) => ({ ...(await original<typeof import('../lib/chat-history-access')>()), getChatHistory: () => Promise.resolve(null), askChatHistory: () => Promise.resolve({ store: null }) }));
 // The real sendMessage; the thread list is a stand-in.
 vi.mock('../lib/chat-api', async (original) => ({
   ...(await original<typeof import('../lib/chat-api')>()),

@@ -115,7 +115,7 @@ async function callAgainstFile(path: string, name: string, args: unknown): Promi
   const now = new Date().toISOString();
   const adapter = new FileAdapter(path);
   return runToolOverSync(recordSync(adapter, 'mcp-stdio', now), name, args, now, {
-    savedNote: () => (adapter.lastBackup ? `Saved (backup: ${adapter.lastBackup}).` : 'Saved. No backup kept (erase).'),
+    savedNote: (warning) => [adapter.lastBackup ? `Saved (backup: ${adapter.lastBackup}).` : 'Saved. No backup kept (erase).', warning].filter(Boolean).join(' '),
     importer: receipts,
   });
 }

@@ -8,11 +8,12 @@ vi.mock('@sentry/react', () => ({ captureMessage: vi.fn(), captureException: vi.
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 const store = vi.hoisted(() => ({
   recordExchange: vi.fn(async () => {}),
+  eraseMarks: vi.fn(() => []),
   deleteConversation: vi.fn(async () => {}),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store) }));
+vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import * as Sentry from '@sentry/react';
