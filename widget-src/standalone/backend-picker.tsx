@@ -17,7 +17,7 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, type Backend } from './connect';
-import { dispatch, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
+import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
@@ -126,11 +126,15 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
   onClose: () => void;
 }) {
   // One move at a time, for the page's life (US-09 AC45): a picker reopened
-  // while one runs opens at its step, with that step's busy label.
+  // while one runs opens at its step, with that step's busy label. Opening it
+  // first ends a move whose page did not leave.
+  const [step, setStep] = useState<MoveStep>(() => {
+    dispatch({ type: 'reopened' });
+    return stepOf(getSwitchFlow()) ?? 'list';
+  });
   const flow = useSwitchFlow();
   const busy = flow.kind !== 'idle';
   const error = flow.kind === 'idle' ? flow.error : null;
-  const [step, setStep] = useState<MoveStep>(stepOf(flow) ?? 'list');
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
   const dialogRef = useModalDialog();

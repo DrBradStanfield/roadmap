@@ -9,8 +9,9 @@
  * and `settled` name the run they report on, so a report from an older move
  * changes nothing. A move that hands the page to a redirect or a reload is
  * `navigating`; only then can the browser's back-forward cache show this page
- * again with nothing running (`restored`). A move still waiting on a fetch
- * stays claimed.
+ * again with nothing running (`restored`), and only then does a reopened
+ * picker mean the page did not leave (`reopened`), so the move is over. A move
+ * still waiting on a fetch stays claimed.
  *
  * Never holds a credential: the GitHub token and the WebDAV password stay in
  * the picker's component state and die with its mount.
@@ -35,7 +36,8 @@ export type SwitchEvent =
   | { type: 'settled'; run: number }
   | { type: 'failed'; run: number; message: string }
   | { type: 'clearError' }
-  | { type: 'restored' };
+  | { type: 'restored' }
+  | { type: 'reopened' };
 
 /** The step a running state shows on a reopened picker. */
 export function stepOf(state: SwitchFlow): MoveStep | null {
@@ -52,7 +54,7 @@ export function transition(state: SwitchFlow, event: SwitchEvent): { next: Switc
     if (event.type === 'clearError' && state.error !== null) return { next: { kind: 'idle', run: state.run, error: null }, run: false };
     return same;
   }
-  if (event.type === 'restored') {
+  if (event.type === 'restored' || event.type === 'reopened') {
     return state.kind === 'navigating' ? { next: { kind: 'idle', run: state.run, error: null }, run: false } : same;
   }
   if (!('run' in event) || event.run !== state.run) return same;

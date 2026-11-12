@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 /**
  * US-09 AC45: the cloud picker runs one move at a time. While a connect, a
- * move or a log-off runs, closing and reopening the picker shows it running,
- * and no second one can start.
+ * move or a log-off runs, closing and reopening the picker shows it busy, and
+ * no second one can start. A move that handed off to a sign-in page and did
+ * not leave ends when the picker is reopened or the page is shown again.
  *
  * Real picker, connect.ts, the store and the storage adapters; only fetch,
- * Sentry, product events and location.reload are fakes. The picker is mounted
+ * Sentry, product events, location.reload and location.assign are fakes. The picker is mounted
  * only while open, as SyncControl mounts it. Every credential is synthetic.
  */
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -23,9 +24,11 @@ const DROPBOX_TOKENS = 'health_roadmap_dropbox_tokens';
 const GOOD_TOKEN = 'test-token-good';
 const GOOD_PASSWORD = 'test-pass-good';
 const DAV_URL = 'https://dav.example.test/health/';
+const SELF_HOST_CONFIG = 'health_roadmap_selfhost';
 
 let fetchCalls: string[];
 let reload: ReturnType<typeof vi.fn>;
+let assign: ReturnType<typeof vi.fn>;
 let holdGitHub: Promise<void> | null;
 let holdDropbox: Promise<void> | null;
 let holdDav: Promise<void> | null;
@@ -81,7 +84,9 @@ beforeEach(async () => {
   dropboxFails = false;
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   reload = vi.fn();
-  Object.defineProperty(window, 'location', { value: { ...window.location, reload }, writable: true, configurable: true });
+  // A sign-in redirect that never leaves: the page stays, as when the user stops it.
+  assign = vi.fn();
+  Object.defineProperty(window, 'location', { value: { ...window.location, reload, assign }, writable: true, configurable: true });
 }, 30_000); // a fresh module graph per test: slow to import on a loaded machine
 
 afterEach(() => {
@@ -90,12 +95,12 @@ afterEach(() => {
 });
 
 /** SyncControl's shape: the picker is mounted only while open. */
-function Host() {
+function Host({ current = 'dropbox' }: { current?: 'dropbox' | 'self-host' }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button onClick={() => setOpen(true)}>open-picker</button>
-      {open && <BackendPickerModal current="dropbox" onClose={() => setOpen(false)} />}
+      {open && <BackendPickerModal current={current} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -239,6 +244,9 @@ describe('US-09 AC45: a picker reopened while a move runs shows it running', () 
   });
 
   it('a log-off: the picker opens at it, reading "Logging off…"', async () => {
+    const signOut = deferred();
+    const { DropboxAdapter } = await import('../src/storage/dropbox');
+    vi.spyOn(DropboxAdapter.prototype, 'disconnect').mockReturnValue(signOut.promise);
     const view = render(<Host />);
     open(view);
     fireEvent.click(logOffLink()!);
@@ -247,7 +255,8 @@ describe('US-09 AC45: a picker reopened while a move runs shows it running', () 
 
     open(view);
     expect((view.getByRole('button', { name: 'Logging off…' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(reload).toHaveBeenCalledTimes(1);
+    signOut.resolve();
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
   });
 });
 
@@ -288,19 +297,19 @@ describe('US-09 AC45: a page the browser shows again from its back-forward cache
     act(() => { window.dispatchEvent(event); });
   }
 
-  async function connectGitHubThenClose(view: View): Promise<void> {
+  /** The picker stays open: only the page show can free it. */
+  async function connectGitHub(view: View): Promise<void> {
     open(view);
     await startGitHubConnect(view);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
-    close(view);
   }
 
-  it('after a move, the reopened picker offers every choice and Log off again', async () => {
+  it('after a move, the open picker offers every choice and Log off again', async () => {
     const view = render(<Host />);
-    await connectGitHubThenClose(view);
+    await connectGitHub(view);
     pageshow(true);
 
-    open(view);
+    fireEvent.click(view.getByRole('button', { name: '← Back' }));
     expect(optionButtons()).toHaveLength(5);
     expect(optionButtons().every((b) => !b.disabled)).toBe(true);
     expect(logOffLink()?.disabled).toBe(false);
@@ -330,10 +339,77 @@ describe('US-09 AC45: a page the browser shows again from its back-forward cache
 
   it('control: a first page show leaves the move running', async () => {
     const view = render(<Host />);
-    await connectGitHubThenClose(view);
+    await connectGitHub(view);
     pageshow(false);
 
-    open(view);
     expect(view.getByRole('button', { name: 'Connecting…' })).toBeTruthy();
+  });
+
+  it('a Dropbox move that handed off to its sign-in page ends when the page is shown again', async () => {
+    await dropboxHandOff();
+    pageshow(true);
+
+    expect(optionButtons().every((b) => !b.disabled)).toBe(true);
+    expect(errorText()).toBe('');
+  });
+
+  it('control: with no page show, the open picker stays locked after the hand-off', async () => {
+    await dropboxHandOff();
+
+    expect(optionButtons().every((b) => b.disabled)).toBe(true);
+  });
+});
+
+/** From a self-hosted record, choose Dropbox: the copy-down answers and the
+ *  picker hands the page to Dropbox's sign-in, which never leaves. */
+async function dropboxHandOff(): Promise<View> {
+  localStorage.setItem(BACKEND_KEY, 'self-host');
+  localStorage.setItem(SELF_HOST_CONFIG, JSON.stringify({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }));
+  const view = render(<Host current="self-host" />);
+  open(view);
+  await act(async () => { fireEvent.click(view.getByRole('button', { name: /^Dropbox/ })); });
+  await vi.waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
+  expect(String(assign.mock.calls[0][0])).toMatch(/^https:\/\/www\.dropbox\.com\//);
+  expect(optionButtons().every((b) => b.disabled)).toBe(true);
+  return view;
+}
+
+describe('US-09 AC45: a move whose page did not leave ends when the picker is reopened', () => {
+  it('a Dropbox move: the sign-in page never loads, and the reopened picker offers every choice', async () => {
+    const view = await dropboxHandOff();
+    close(view);
+
+    open(view);
+    expect(optionButtons()).toHaveLength(5);
+    expect(optionButtons().every((b) => !b.disabled)).toBe(true);
+    expect(errorText()).toBe('');
+  });
+
+  it('a GitHub connect: the reload never happens, and the reopened picker offers every choice', async () => {
+    const view = render(<Host />);
+    open(view);
+    await startGitHubConnect(view);
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    close(view);
+
+    open(view);
+    expect(view.queryByRole('button', { name: 'Connecting…' })).toBeNull();
+    expect(optionButtons()).toHaveLength(5);
+    expect(optionButtons().every((b) => !b.disabled)).toBe(true);
+  });
+
+  it('control: a reopen while the copy-down still waits keeps the picker locked', async () => {
+    holdDav = deferred().promise;
+    localStorage.setItem(BACKEND_KEY, 'self-host');
+    localStorage.setItem(SELF_HOST_CONFIG, JSON.stringify({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }));
+    const view = render(<Host current="self-host" />);
+    open(view);
+    await act(async () => { fireEvent.click(view.getByRole('button', { name: /^Dropbox/ })); });
+    await vi.waitFor(() => expect(fetchCalls.some((u) => u.startsWith(DAV_URL))).toBe(true));
+    close(view);
+
+    open(view);
+    expect(optionButtons().every((b) => b.disabled)).toBe(true);
+    expect(assign).not.toHaveBeenCalled();
   });
 });

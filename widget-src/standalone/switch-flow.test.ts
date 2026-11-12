@@ -26,6 +26,8 @@ const EVENTS = {
   clearError: { type: 'clearError' },
   // The browser shows this page again from its back-forward cache.
   restored: { type: 'restored' },
+  // The picker opens again on this page.
+  reopened: { type: 'reopened' },
 } satisfies Record<string, SwitchEvent>;
 
 const NEW_GITHUB: SwitchFlow = { kind: 'switching', run: 2, to: 'github', step: 'github' };
@@ -40,34 +42,34 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
   IDLE: {
     start: [NEW_GITHUB, true], logOff: [NEW_LOG_OFF, true],
     navigating: S(IDLE), navigatingOld: S(IDLE), settled: S(IDLE), settledOld: S(IDLE),
-    failed: S(IDLE), failedOld: S(IDLE), clearError: S(IDLE), restored: S(IDLE),
+    failed: S(IDLE), failedOld: S(IDLE), clearError: S(IDLE), restored: S(IDLE), reopened: S(IDLE),
   },
   FAILED: {
     start: [NEW_GITHUB, true], logOff: [NEW_LOG_OFF, true],
     navigating: S(FAILED), navigatingOld: S(FAILED), settled: S(FAILED), settledOld: S(FAILED),
-    failed: S(FAILED), failedOld: S(FAILED), clearError: S(IDLE), restored: S(FAILED),
+    failed: S(FAILED), failedOld: S(FAILED), clearError: S(IDLE), restored: S(FAILED), reopened: S(FAILED),
   },
   TO_DRIVE: {
     start: S(TO_DRIVE), logOff: S(TO_DRIVE),
     navigating: S(LEAVING), navigatingOld: S(TO_DRIVE), settled: S(LEAVING), settledOld: S(TO_DRIVE),
-    failed: S(ERROR_2), failedOld: S(TO_DRIVE), clearError: S(TO_DRIVE), restored: S(TO_DRIVE),
+    failed: S(ERROR_2), failedOld: S(TO_DRIVE), clearError: S(TO_DRIVE), restored: S(TO_DRIVE), reopened: S(TO_DRIVE),
   },
   TO_GITHUB: {
     start: S(TO_GITHUB), logOff: S(TO_GITHUB),
     navigating: S({ kind: 'navigating', run: 2, step: 'github' }), navigatingOld: S(TO_GITHUB),
     settled: S({ kind: 'navigating', run: 2, step: 'github' }), settledOld: S(TO_GITHUB),
-    failed: S(ERROR_2), failedOld: S(TO_GITHUB), clearError: S(TO_GITHUB), restored: S(TO_GITHUB),
+    failed: S(ERROR_2), failedOld: S(TO_GITHUB), clearError: S(TO_GITHUB), restored: S(TO_GITHUB), reopened: S(TO_GITHUB),
   },
   LOGGING_OFF: {
     start: S(LOGGING_OFF), logOff: S(LOGGING_OFF),
     navigating: S({ kind: 'navigating', run: 2, step: 'log-off' }), navigatingOld: S(LOGGING_OFF),
     settled: S({ kind: 'navigating', run: 2, step: 'log-off' }), settledOld: S(LOGGING_OFF),
-    failed: S(ERROR_2), failedOld: S(LOGGING_OFF), clearError: S(LOGGING_OFF), restored: S(LOGGING_OFF),
+    failed: S(ERROR_2), failedOld: S(LOGGING_OFF), clearError: S(LOGGING_OFF), restored: S(LOGGING_OFF), reopened: S(LOGGING_OFF),
   },
   LEAVING: {
     start: S(LEAVING), logOff: S(LEAVING),
     navigating: S(LEAVING), navigatingOld: S(LEAVING), settled: S(LEAVING), settledOld: S(LEAVING),
-    failed: S(ERROR_2), failedOld: S(LEAVING), clearError: S(LEAVING), restored: S(IDLE_2),
+    failed: S(ERROR_2), failedOld: S(LEAVING), clearError: S(LEAVING), restored: S(IDLE_2), reopened: S(IDLE_2),
   },
 };
 
@@ -77,7 +79,7 @@ const ROWS = Object.entries(TABLE).flatMap(([stateName, row]) =>
   ] as const));
 
 describe('US-09 AC45: switch-flow transition, every state against every event', () => {
-  it('covers 6 states by 10 events', () => expect(ROWS).toHaveLength(60));
+  it('covers 6 states by 11 events', () => expect(ROWS).toHaveLength(66));
 
   it.each(ROWS)('%s', (_name, state, event, next, run) => {
     expect(transition(state, event)).toEqual({ next, run });
