@@ -104,6 +104,10 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
     clearOffFileData: (keepOriginals: ReadonlySet<string>) => clearOffFileHealthData((ref) => keepOriginals.has(ref)),
+    // The off-file data is the chosen record's: the device record ('local')
+    // when no cloud is chosen. A tab on another record, or after log-off,
+    // takes an erase in without clearing it (US-11 AC6).
+    ownsOffFileData: () => !roadmapLocalWritesStopped() && (safeGetItem(BACKEND_KEY) ?? 'local') === store.id,
     // The localStorage record: a guest or on-device fallback tab keeps its
     // documents there, whatever record the erase came in on (US-09 AC23).
     deviceRecord: () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body,

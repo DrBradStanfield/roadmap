@@ -49,9 +49,11 @@ export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStat
  * the device's own record copy once the erase is applied to it, so an
  * original the erase listed goes even where a stale device copy still names
  * it. A device copy that cannot be read names nothing. Throws what the host's
- * clear throws.
+ * clear throws. A host whose tab is not on the record this device has chosen
+ * clears nothing: that data is the chosen record's (`ownsOffFileData`).
  */
 export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
+  if (host.ownsOffFileData?.() === false) return;
   let kept = after;
   try {
     const body = host.deviceRecord?.();
@@ -115,6 +117,10 @@ interface HostBase {
    *  originals stay, the engine's call (`RecordSession.clearOffFileData`);
    *  every other original goes. */
   clearOffFileData(keepOriginals: ReadonlySet<string>): void;
+  /** True while this tab's record is the one this device has chosen, so the
+   *  off-file data is its own to clear (US-11 AC6). Read at each clear. Leave
+   *  it out when the device has one record (the iPhone): it always owns. */
+  ownsOffFileData?(): boolean;
   /** The raw body of the record copy this device keeps beside the session's
    *  store (on the web, the localStorage record a guest or on-device fallback
    *  tab writes), read synchronously; null when there is none. May throw when

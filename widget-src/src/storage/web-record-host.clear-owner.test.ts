@@ -149,3 +149,18 @@ describe('US-11 AC6 — only the tab on the chosen record clears off-file data',
     expect(drafts()).toEqual([null, null]);
   });
 });
+
+describe('US-11 AC6 — the page\'s clear after its erase', () => {
+  it('a clear that throws is reported as upkeep and never stops the page', async () => {
+    const { Sentry } = await import('../lib/sentry');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    vi.spyOn(RecordSession.prototype, 'clearOffFileData').mockImplementation(() => { throw new Error('storage gone'); });
+
+    expect(() => store.clearOffFileData()).not.toThrow();
+
+    expect(warn).toHaveBeenCalledWith('Record upkeep failed');
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'cloud-sync', op: 'clear-off-file' } });
+    vi.restoreAllMocks();
+  });
+});

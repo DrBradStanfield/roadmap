@@ -28,6 +28,7 @@ import { toOldShape } from '@roadmap/health-core/blood-tests';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { REMOTE_CHANGED_EVENT, RoadmapStore, type CorrectStatus } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,
@@ -1771,6 +1772,7 @@ describe('US-11: an erase made on another device', () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
+    localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: it owns the off-file clear
     await initRoadmapStore(adapter);
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
@@ -1810,6 +1812,7 @@ describe('US-11: an erase made on another device', () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
+    localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: it owns the off-file clear
     await initRoadmapStore(adapter);
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
     await addMeasurement('weight', 82, '2026-09-01');
