@@ -16,8 +16,9 @@
  * (empty, or holding `[` or `]`), a `### US-` heading lacks its ` · `, the input already holds index lines, or
  * loadStories of the would-be output is not the input byte for byte (checked in a temporary folder first).
  * It writes into a repo only with no --out, from the toplevel of the checkout it runs in; an --out inside any git work
- * tree refuses. Git's GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE are ignored. Writing into the repo,
- * it refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
+ * tree, or one that exists as a symlink, a file or a folder with entries, refuses. With git's GIT_DIR, GIT_WORK_TREE,
+ * GIT_COMMON_DIR or GIT_INDEX_FILE set it refuses at once. A write that fails says what it had already changed.
+ * Writing into the repo, it refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
  * - during a merge (MERGE_HEAD exists), unless the incoming side holds exactly the split of the monolith at the merge
  *   base, which is how an open branch takes the split commit and re-splits its own monolith;
  * - otherwise, when docs/stories/ exists and the index or a part differs from the output, unless --replace is given.
@@ -34,8 +35,7 @@
  *
  * Usage, from the repo root: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>] [--replace] | --normalize
  *   --from       read the stories at a git ref instead of the working tree.
- *   --out        a dry run into <dir>, a scratch folder outside any git work tree (inside one it refuses). Stale
- *                docs/stories/*.md there are removed.
+ *   --out        a dry run into <dir>: a new or empty real folder outside any git work tree, or it refuses.
  *   --replace    outside a merge, overwrite a docs/stories/ that differs from the output.
  *   --normalize  put the repo's split tree into the split's exact form (above); takes no other flag.
  */
@@ -44,7 +44,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INDEX, STORY_LINE, CONSTITUTION_LINE, loadStories, toPart } from './stories.mjs';
-import { SplitRefusal, checkExisting, checkMerge, checkNormalize, conflictMarker, diffs, gitIn, guardedRoot, mergeHead, readTree } from './split-stories-guards.mjs';
+import { SplitRefusal, checkExisting, checkGitEnv, checkMerge, checkNormalize, conflictMarker, diffs, gitIn, guardedRoot, mergeHead, readTree } from './split-stories-guards.mjs';
 
 export { SplitRefusal };
 
@@ -91,22 +91,40 @@ export function planSplit(text) {
   return { index: index.join('\n'), parts };
 }
 
-/** Writes a plan under `root`: the index and docs/stories/, removing any other part file there. */
+/**
+ * Writes a plan under `root`: the index and docs/stories/, removing any other part file there. A failure throws
+ * SplitRefusal, its `partway` naming what was already created, removed or written.
+ */
 function writePlan(root, { index, parts }) {
   const dir = join(root, 'docs/stories');
-  mkdirSync(dir, { recursive: true });
-  const stale = readdirSync(dir).filter((f) => f.endsWith('.md') && !parts.has(f));
-  for (const f of stale) rmSync(join(dir, f));
-  for (const [name, text] of parts) writeFileSync(join(dir, name), text);
-  writeFileSync(join(root, INDEX), index);
-  return stale;
+  const removed = [];
+  let made, written = 0;
+  try {
+    made = mkdirSync(dir, { recursive: true });
+    for (const f of readdirSync(dir).filter((f) => f.endsWith('.md') && !parts.has(f))) {
+      rmSync(join(dir, f));
+      removed.push(f);
+    }
+    for (const [path, text] of [...[...parts].map(([n, t]) => [join(dir, n), t]), [join(root, INDEX), index]]) {
+      writeFileSync(path, text);
+      written++;
+    }
+    return removed;
+  } catch (e) {
+    const done = [`${written} file${written === 1 ? '' : 's'} written`, removed.length && `${removed.length} removed`, made && 'docs/stories/ created'];
+    throw new SplitRefusal(`cannot write under ${root}: ${e.message}`, written || removed.length || made ? `${done.filter(Boolean).join(', ')} under ${root}` : undefined);
+  }
 }
 
 /** Throws SplitRefusal unless loadStories of the plan, written to a temporary folder, is `text` byte for byte. */
 export function verifyPlan(text, plan) {
   const tmp = mkdtempSync(join(tmpdir(), 'split-stories-'));
   try {
-    writePlan(tmp, plan);
+    try {
+      writePlan(tmp, plan);
+    } catch (e) {
+      throw new SplitRefusal(e.message); // the temporary folder goes below, so nothing stays written
+    }
     const back = loadStories(tmp);
     if (back === text) return;
     let k = 0;
@@ -221,6 +239,7 @@ function main(argv) {
   }
   if (opts.normalize && Object.keys(opts).length > 1) return usage();
   try {
+    checkGitEnv();
     if (opts.normalize) {
       const changed = normalizeStories();
       console.log(changed.length
@@ -235,7 +254,7 @@ function main(argv) {
     return 0;
   } catch (e) {
     if (!(e instanceof SplitRefusal)) throw e;
-    console.error(`split-stories: refused, nothing written: ${e.message}`);
+    console.error(`split-stories: ${e.partway ? `refused partway: ${e.partway}` : 'refused, nothing written'}: ${e.message}`);
     return 1;
   }
 }

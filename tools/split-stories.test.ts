@@ -7,7 +7,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,13 +76,14 @@ describe('the round trip on the real stories', () => {
   it('is idempotent: splitting loadStories of its output writes the same bytes, and a rerun on it changes nothing', () => {
     const a = join(scratch, 'idem-a');
     const b = join(scratch, 'idem-b');
+    const c = join(scratch, 'idem-c');
     splitStories({ root: mono, out: a });
     const first = files(a);
     // loadStories of the output, split again into a fresh folder.
     mkdirSync(join(b, 'docs'), { recursive: true });
     writeFileSync(join(b, 'docs/user-stories.md'), loadStories(a));
-    splitStories({ root: b, out: b });
-    expect(files(b)).toEqual(first);
+    splitStories({ root: b, out: c });
+    expect(files(c)).toEqual(first);
     // Run on its own output: it refuses and leaves every file as it was.
     const r = cli(a);
     expect(r.status).toBe(1);
@@ -531,7 +532,9 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
   // Git reads these before it looks at the folder it runs in; a run must answer for its own folder whatever they say.
   const wtEnv = (wt: string, extra: Record<string, string>) => spawnSync('node', [SCRIPT, '--from', 'pre-split', '--replace'], { cwd: wt, encoding: 'utf8', env: { ...process.env, ...extra } });
 
-  it('ignores GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE set for a worktree: the main checkout mid-merge still refuses as a merge (US-64 AC33)', () => {
+  const UNSET = '; unset GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE and run from the checkout\n';
+
+  it('refuses at once when GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR or GIT_INDEX_FILE is set, naming them, mid-merge or with --out (US-64 AC33)', () => {
     const wt = join(repo, '.claude/wt');
     run('worktree', 'add', '-q', '--detach', wt, 'split');
     const gitdir = join(repo, '.git/worktrees/wt');
@@ -540,23 +543,127 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     const before = tree();
     const r = wtEnv(repo, vars);
     expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: a merge is in progress/);
+    expect(r.stderr).toBe(`split-stories: refused, nothing written: GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE are set${UNSET}`);
     expect(tree()).toEqual(before);
-    // adv6: the same variables with an --out at the main checkout refuse outright.
     const out = spawnSync('node', [SCRIPT, '--from', 'pre-split', '--replace', '--out', repo], { cwd: wt, encoding: 'utf8', env: { ...process.env, ...vars } });
     expect(out.status).toBe(1);
-    expect(out.stderr).toMatch(/^split-stories: refused, nothing written: --out .* is inside a git work tree/);
+    expect(out.stderr).toBe(`split-stories: refused, nothing written: GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE are set${UNSET}`);
     expect(tree()).toEqual(before);
   });
 
-  it("in a worktree with GIT_DIR naming the main checkout's gitdir, the main checkout's merge is not taken as its own (US-64 AC33)", () => {
+  it("in a worktree with GIT_DIR naming the main checkout's gitdir, it refuses and writes nothing (US-64 AC33)", () => {
     const wt = join(repo, '.claude/wt');
     run('worktree', 'add', '-q', '--detach', wt, 'split');
     mergeIntoFeat('main');
+    const before = files(wt);
     const r = wtEnv(wt, { GIT_DIR: join(repo, '.git') });
-    expect(r.stderr).toBe('');
-    expect(r.status).toBe(0);
-    expect(loadStories(wt)).toBe(text);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toBe(`split-stories: refused, nothing written: GIT_DIR is set${UNSET}`);
+    expect(files(wt)).toEqual(before);
+  });
+
+  it('a work tree reached only through GIT_DIR and GIT_WORK_TREE, mid-merge, with --replace, refuses (adv7 sep, US-64 AC33)', () => {
+    mergeIntoFeat('main');
+    const wt = mkdtempSync(join(tmpdir(), 'split-stories-sep-'));
+    try {
+      mkdirSync(join(wt, 'docs'));
+      writeFileSync(join(wt, 'docs/user-stories.md'), featText);
+      const before = readdirSync(join(wt, 'docs'));
+      const r = spawnSync('node', [SCRIPT, '--replace'], { cwd: wt, encoding: 'utf8', env: { ...process.env, GIT_DIR: join(repo, '.git'), GIT_WORK_TREE: wt } });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toBe(`split-stories: refused, nothing written: GIT_DIR and GIT_WORK_TREE are set${UNSET}`);
+      expect(readdirSync(join(wt, 'docs'))).toEqual(before);
+    } finally {
+      rmSync(wt, { recursive: true, force: true });
+    }
+  });
+
+  // Rule 1: --out must not exist or be an empty real folder, so nothing below it (a symlinked or nested docs/) is written through.
+  const refusesShape = (out: string, why: RegExp) => {
+    const at = () => {
+      const st = lstatSync(out);
+      return st.isSymbolicLink() ? 'symlink' : st.isDirectory() ? readdirSync(out).sort() : readFileSync(out, 'utf8');
+    };
+    const [beforeRepo, beforeOut] = [tree(), at()];
+    const r = cli(repo, '--from', 'pre-split', '--out', out);
+    expect(r.status, out).toBe(1);
+    expect(r.stderr.split('\n'), out).toHaveLength(2); // one line, then the final newline: no stack
+    expect(r.stderr, out).toMatch(why);
+    expect(tree()).toEqual(beforeRepo);
+    expect(at()).toEqual(beforeOut);
+  };
+  const NEW_OR_EMPTY = 'a dry run needs a new or empty scratch folder outside any git work tree';
+
+  it('--out refuses a non-empty folder, a symlink (dangling or not) and a file; an empty folder works (adv7 sA, sB, US-64 AC33)', () => {
+    const s = mkdtempSync(join(tmpdir(), 'split-stories-shape-'));
+    try {
+      const notEmpty = new RegExp(`^split-stories: refused, nothing written: --out .* is not empty: ${NEW_OR_EMPTY}`);
+      mkdirSync(join(s, 'sA'));
+      symlinkSync(join(repo, 'docs'), join(s, 'sA/docs')); // sA: docs/ is a symlink into the repo
+      refusesShape(join(s, 'sA'), notEmpty);
+      mkdirSync(join(s, 'sB/docs'), { recursive: true });
+      git(join(s, 'sB/docs'), 'init', '-q'); // sB: docs/ is a git repo of its own
+      refusesShape(join(s, 'sB'), notEmpty);
+      mkdirSync(join(s, 'full'));
+      writeFileSync(join(s, 'full/note'), 'x');
+      refusesShape(join(s, 'full'), notEmpty);
+      mkdirSync(join(s, 'empty'));
+      symlinkSync(join(s, 'empty'), join(s, 'link'));
+      refusesShape(join(s, 'link'), new RegExp(`^split-stories: refused, nothing written: --out .* is a symlink: ${NEW_OR_EMPTY}`));
+      expect(readdirSync(join(s, 'empty'))).toEqual([]);
+      symlinkSync(join(s, 'nowhere'), join(s, 'dangling'));
+      refusesShape(join(s, 'dangling'), new RegExp(`^split-stories: refused, nothing written: --out .* is a symlink: ${NEW_OR_EMPTY}`));
+      expect(existsSync(join(s, 'nowhere'))).toBe(false);
+      writeFileSync(join(s, 'file'), 'x');
+      refusesShape(join(s, 'file'), new RegExp(`^split-stories: refused, nothing written: --out .* is not a folder: ${NEW_OR_EMPTY}`));
+      expect(readFileSync(join(s, 'file'), 'utf8')).toBe('x');
+      const ok = cli(repo, '--from', 'pre-split', '--out', join(s, 'empty'));
+      expect(ok.stderr).toBe('');
+      expect(ok.status).toBe(0);
+      expect(loadStories(join(s, 'empty'))).toBe(text);
+    } finally {
+      rmSync(s, { recursive: true, force: true });
+    }
+  });
+
+  it('`--out /` and an --out under an ancestor it cannot search refuse in one line, never a stack (US-64 AC33)', () => {
+    refusesShape('/', new RegExp(`^split-stories: refused, nothing written: --out / is not empty: ${NEW_OR_EMPTY}`));
+    if (process.getuid?.() === 0) return; // root searches any folder
+    const locked = mkdtempSync(join(tmpdir(), 'split-stories-locked-'));
+    chmodSync(locked, 0o000);
+    try {
+      const r = cli(repo, '--from', 'pre-split', '--out', join(locked, 'sub'));
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/^split-stories: refused, nothing written: cannot check --out .*: EACCES[^\n]*\n$/);
+    } finally {
+      chmodSync(locked, 0o700);
+      rmSync(locked, { recursive: true, force: true });
+    }
+  });
+
+  it('a write that fails says what it already changed, or that nothing was written, in one line (US-64 AC33)', () => {
+    // Partway: US-03.md (stale) is removed and US-01.md written before US-02.md, a folder, cannot be.
+    rmSync(join(repo, 'docs/stories/US-02.md'));
+    mkdirSync(join(repo, 'docs/stories/US-02.md'));
+    const r = cli(repo, '--from', 'pre-split', '--replace');
+    expect(r.status).toBe(1);
+    expect(r.stderr.startsWith(`split-stories: refused partway: 1 file written, 1 removed under ${realpathSync.native(repo)}: `)).toBe(true);
+    expect(r.stderr).toMatch(/^[^\n]*EISDIR[^\n]*\n$/);
+    expect(r.stderr).not.toContain('nothing written');
+    if (process.getuid?.() === 0) return;
+    // Nothing: a read-only docs/stories/ fails on the first removal, so nothing changed.
+    rmSync(join(repo, 'docs/stories/US-02.md'), { recursive: true });
+    writeFileSync(join(repo, 'docs/stories/US-03.md'), 'stale\n');
+    const before = tree();
+    chmodSync(join(repo, 'docs/stories'), 0o555);
+    try {
+      const n = cli(repo, '--from', 'pre-split', '--replace');
+      expect(n.status).toBe(1);
+      expect(n.stderr).toMatch(/^split-stories: refused, nothing written: cannot write under .*: [^\n]*EACCES[^\n]*\n$/);
+    } finally {
+      chmodSync(join(repo, 'docs/stories'), 0o755);
+    }
+    expect(tree()).toEqual(before);
   });
 
   it('when git cannot run, it refuses and writes nothing, with and without --replace (US-64 AC33)', () => {

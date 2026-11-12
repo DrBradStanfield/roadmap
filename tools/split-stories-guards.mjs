@@ -8,12 +8,25 @@ import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSyn
 import { dirname, join } from 'node:path';
 import { INDEX } from './stories.mjs';
 
-export class SplitRefusal extends Error {}
+/** A refusal. `partway`, when set, says what a write had already changed before it failed. */
+export class SplitRefusal extends Error {
+  constructor(message, partway) {
+    super(message);
+    this.partway = partway;
+  }
+}
 
-// Git with the variables that point it at another repo removed, so it answers for the folder it runs in.
+// The variables that point git at another repo. A run refuses when any is set; git runs with them removed besides.
 const MOVERS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE'];
 const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !MOVERS.includes(k)));
 export const gitIn = (root) => (...args) => execFileSync('git', args, { cwd: root, env: gitEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
+/** Throws SplitRefusal, naming them, when any of git's GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR or GIT_INDEX_FILE is set. */
+export function checkGitEnv() {
+  const set = MOVERS.filter((k) => process.env[k] !== undefined);
+  if (!set.length) return;
+  const names = set.length === 1 ? set[0] : `${set.slice(0, -1).join(', ')} and ${set.at(-1)}`;
+  throw new SplitRefusal(`${names} ${set.length === 1 ? 'is' : 'are'} set; unset GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE and run from the checkout`);
+}
 const gitError = (e) => String(e.stderr || e.message).trim();
 // Only git's own answer means "no repo": a git that cannot run (ENOENT) refuses, so a guard never skips.
 const notARepo = (e) => /not a git repository/.test(String(e.stderr));
@@ -38,11 +51,11 @@ export function toplevel(root) {
 
 /**
  * The folder holding a `.git` entry (file or folder) at or above the real path of `path`, or of its nearest existing
- * ancestor, or undefined. It walks the disk and never asks git, so no git variable can move the answer.
+ * ancestor folder, or undefined. It walks the disk and never asks git, so no git variable can move the answer.
  */
 function workTreeAbove(path) {
   let p = path;
-  while (!existsSync(p)) p = dirname(p);
+  while (!existsSync(p) || !statSync(p).isDirectory()) p = dirname(p);
   for (p = realpathSync.native(p); ; p = dirname(p)) {
     if (lstatSync(join(p, '.git'), { throwIfNoEntry: false })) return p;
     if (dirname(p) === p) return undefined;
@@ -50,15 +63,25 @@ function workTreeAbove(path) {
 }
 
 /**
- * The folder whose guards the run must pass, or undefined for a dry run. An `out` is a dry run into a scratch folder,
- * and inside any git work tree it throws SplitRefusal. With no `out` it is `root`, which must be its repo's toplevel
- * (or in no repo), or it throws SplitRefusal.
+ * The folder whose guards the run must pass, or undefined for a dry run. An `out` is a dry run into a scratch folder:
+ * inside any git work tree, or when it exists as anything but an empty real folder (a symlink, a file, a folder with
+ * entries), it throws SplitRefusal. With no `out` it is `root`, which must be its repo's toplevel (or in no repo), or
+ * it throws SplitRefusal.
  */
 export function guardedRoot(root, out) {
   if (out !== undefined) {
-    const tree = workTreeAbove(out);
-    if (tree === undefined) return undefined;
-    throw new SplitRefusal(`--out ${out} is inside a git work tree (${tree}): a dry run writes only to a scratch folder outside any git work tree; the real split writes only through the default path (no --out), from the toplevel of the checkout it runs in`);
+    let tree, st, entries;
+    try {
+      tree = workTreeAbove(out);
+      st = lstatSync(out, { throwIfNoEntry: false });
+      entries = st?.isDirectory() ? readdirSync(out).length : 0;
+    } catch (e) {
+      throw new SplitRefusal(`cannot check --out ${out}: ${e.message}`);
+    }
+    if (tree !== undefined) throw new SplitRefusal(`--out ${out} is inside a git work tree (${tree}): a dry run writes only to a scratch folder outside any git work tree; the real split writes only through the default path (no --out), from the toplevel of the checkout it runs in`);
+    const bad = st === undefined ? undefined : st.isSymbolicLink() ? 'a symlink' : !st.isDirectory() ? 'not a folder' : entries ? 'not empty' : undefined;
+    if (bad === undefined) return undefined;
+    throw new SplitRefusal(`--out ${out} is ${bad}: a dry run needs a new or empty scratch folder outside any git work tree`);
   }
   const top = toplevel(root) ?? root;
   if (!sameFolder(root, top)) throw new SplitRefusal(`writing into the repo runs from its toplevel, ${top}, not from ${root}: cd there and run this again`);
