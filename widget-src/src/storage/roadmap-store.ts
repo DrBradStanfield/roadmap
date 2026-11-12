@@ -52,7 +52,7 @@ import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -431,7 +431,7 @@ export class RoadmapStore {
       write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
-        if (this.refuses(erase)) return; // a refusal, not a failure
+        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal, not a failure (A15)
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },

@@ -11,6 +11,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { Sentry } from '../lib/sentry';
+import { WritesStoppedError } from '../lib/error-diagnostics';
+import { StorageError } from '@roadmap/health-core/adapter';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -112,4 +114,25 @@ it('stated limit: a file write already in progress when the erase lands may leav
   await page.flush();
   expect((await page.deleteAllData()).success).toBe(true);
   expect(blobKeys()).toEqual([]);
+});
+
+/** The device tier, its blob writes refused with one given error. */
+class RefusingBlobs extends LocalStorageAdapter {
+  constructor(private readonly refusal: Error) { super(); }
+  async writeDocument(): Promise<void> { throw this.refusal; }
+}
+
+it('A15: a document write the device refuses after log-off is not reported', async () => {
+  const page = await RoadmapStore.create(new RefusingBlobs(new WritesStoppedError()));
+  const { saved } = await page.bulkSaveDocuments([doc('Lipids')]);
+  expect(saved).toHaveLength(1);
+  expect(saved[0].fileRef).toBeNull(); // metadata kept, file not stored
+  expect(Sentry.captureException).not.toHaveBeenCalled();
+});
+
+it('A15: a real document write failure (storage full) is still reported once', async () => {
+  const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full')));
+  await page.bulkSaveDocuments([doc('Lipids')]);
+  expect(Sentry.captureException).toHaveBeenCalledOnce();
+  expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).toMatchObject({ message: 'Document file not stored' });
 });
