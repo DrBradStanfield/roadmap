@@ -9,9 +9,15 @@
  * names the function followed by "(" (webChatAction: any mention, as it is an
  * import alias); a line that defines it ("function name(") and comment lines
  * (starting with //, /* or *) do not count. A file also counts when it imports
- * a guarded name from its defining module under any alias (named, namespace,
- * dynamic or re-export). A file that re-exports a name, under any alias,
+ * a guarded name from its defining module under any alias (named, default,
+ * namespace, dynamic or re-export). A file that re-exports a name, under any alias,
  * becomes a source of that alias too, through chains of re-exports.
+ *
+ * This pin is a best-effort early warning, not the guard. The guards are the
+ * three production checks: chatAction's prompt check (api.chat.ts), appChat's
+ * first-line check (app-routes.server.ts) and the getChatCompletion throw
+ * (chat.server.ts). The scan does not normalise `.js`-suffixed specifiers or
+ * `app/`-rooted and other non-relative paths (lead H68: an AST import walk).
  *
  * Gap it does not close: a NEW export in a listed file that wraps a guarded
  * call (`export const ask = (p) => getChatCompletion(p)` in api.chat.ts), or
@@ -59,7 +65,8 @@ const DEFINED_IN: Record<string, string> = {
 
 /** One import or re-export edge; each name is [name in the source module, name it takes here]. */
 type Import = { file: string; from: string; names: Array<[string, string]> | '*'; reexport: boolean };
-const NAMED = /\b(import|export)\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g;
+const NAMED = /\b(import|export)\s+(?:type\s+)?(?:(\w+)\s*,\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g;
+const DEFAULT = /\bimport\s+(?!type\s)(\w+)\s+from\s*['"]([^'"]+)['"]/g;
 const WHOLE = /\b(import\s+\*\s+as\s+\w+\s+from|export\s+\*\s+(?:as\s+\w+\s+)?from|import\()\s*['"`]([^'"`]+)['"`]/g;
 
 function imports(files: Source[]): Import[] {
@@ -67,12 +74,16 @@ function imports(files: Source[]): Import[] {
     const text = f.lines.join('\n');
     const at = (spec: string) => (spec.startsWith('.') ? join(dirname(f.path), spec).replace(/\.tsx?$/, '') : spec);
     const named = [...text.matchAll(NAMED)].map((m) => ({
-      file: f.path, from: at(m[3]), reexport: m[1] === 'export',
-      names: m[2].split(',').map((n) => n.trim().replace(/^type\s+/, '')).filter(Boolean)
-        .map((n) => { const [orig, alias] = n.split(/\s+as\s+/); return [orig, alias ?? orig] as [string, string]; }),
+      file: f.path, from: at(m[4]), reexport: m[1] === 'export',
+      names: [
+        ...(m[2] ? [['default', m[2]] as [string, string]] : []),
+        ...m[3].split(',').map((n) => n.trim().replace(/^type\s+/, '')).filter(Boolean)
+          .map((n) => { const [orig, alias] = n.split(/\s+as\s+/); return [orig, alias ?? orig] as [string, string]; }),
+      ],
     }));
+    const defaults = [...text.matchAll(DEFAULT)].map((m) => ({ file: f.path, from: at(m[2]), reexport: false, names: [['default', m[1]] as [string, string]] }));
     const whole = [...text.matchAll(WHOLE)].map((m) => ({ file: f.path, from: at(m[2]), reexport: m[1].startsWith('export'), names: '*' as const }));
-    return [...named, ...whole];
+    return [...named, ...defaults, ...whole];
   });
 }
 
@@ -155,6 +166,15 @@ describe('US-15 AC65: chat model entries, pinned (add a missing-prompt guard bef
     expect(entries('getChatCompletion', fake)).toEqual([
       'app/lib/end.server.ts', 'app/lib/hop1.server.ts', 'app/lib/hop2.server.ts', 'app/lib/hop3.server.ts', 'app/lib/lazy.server.ts',
     ]);
+  });
+
+  it('a default re-export taken by a default import is caught (R3)', () => {
+    const fake: Source[] = [
+      { path: 'app/lib/youtube-bot.server.ts', lines: ["export { runPipeline as default } from './youtube-bot-pipeline.server';"] },
+      { path: 'app/routes/new-route.ts', lines: ["import answer from '../lib/youtube-bot.server';", 'answer(args);'] },
+      { path: 'app/routes/mixed-route.ts', lines: ["import go, { other } from '../lib/youtube-bot.server';", 'go(args);'] },
+    ];
+    expect(entries('runPipeline', fake)).toEqual(['app/lib/youtube-bot.server.ts', 'app/routes/mixed-route.ts', 'app/routes/new-route.ts']);
   });
 
   it('the pin reads real source: it finds a definition file it then excludes', () => {
