@@ -217,7 +217,10 @@ async function eraseElsewhere(cloud: MemoryCloud) {
 }
 
 describe('US-11 AC6 — a page stopped by another tab\'s log-off takes an erase in and clears nothing on this device', () => {
-  it('a cloud page that heard another tab\'s log-off takes in an erase made elsewhere: the guest\'s drafts, original and kept answer stay; nothing is written to the device', async () => {
+  it.each([
+    ['a cloud page that heard another tab\'s log-off takes in an erase made elsewhere: the guest\'s drafts, original and kept answer stay; nothing is written to the device', false],
+    ['the same, with someone signed in again to the same provider: their drafts, original and kept answer stay; nothing is written to the device', true],
+  ])('%s', async (_, signInAgain) => {
     const cloud = new MemoryCloud();
     localStorage.setItem(BACKEND_KEY, 'memory');
     const page = await loadPage();
@@ -238,11 +241,13 @@ describe('US-11 AC6 — a page stopped by another tab\'s log-off takes an erase 
     expect(page.healthWritesStopped()).toBe(true);
     expect(page.healthWritesAllowed()).toBe(false);
 
-    // That tab, now a guest, saves a record, types drafts, keeps an original and answers the Lp(a) check.
-    const guestPage = await loadPage();
-    const guest = await guestPage.openDevice();
-    add(guest, 'guest');
-    await guest.flush();
+    // That tab, now a guest or signed in again to the same provider (another account), saves a record, types
+    // drafts, keeps an original and answers the Lp(a) check.
+    if (signInAgain) localStorage.setItem(BACKEND_KEY, 'memory');
+    const nextPage = await loadPage();
+    const next = await (signInAgain ? nextPage.openCloud(new MemoryCloud()) : nextPage.openDevice());
+    add(next, 'next');
+    await next.flush();
     offFileData();
     localStorage.setItem(MIRROR_KEY, '{"synthetic":"mirror"}');
 
