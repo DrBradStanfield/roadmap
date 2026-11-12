@@ -104,6 +104,37 @@ describe('US-09 AC2c: a page that may not write this device\'s chat file does no
     expect(sync.files.get('chat-history.json')!.version).toBe(1); // the other page's save, untouched
   });
 
+  it('a conversation begun before closing keeps its follow-up after closing, on this page only', async () => {
+    const sync = new DeviceStore();
+    const state = { fence: 'g1', open: true };
+    const page = await ChatSession.open(host(sync, state));
+    await exchange(page, 'talk', 'synthetic first question');
+    state.open = false;
+    sync.readSync.mockClear();
+    sync.writeSync.mockClear();
+    await page.recordExchange({ conversationId: 'talk', isNew: false, userText: 'synthetic follow-up', assistantText: 'synthetic reply' });
+    expect(page.getMessages('talk').map((m) => m.content)).toEqual(['synthetic follow-up', 'synthetic reply']);
+    expect(page.listConversations().map((c) => [c.id, c.title])).toEqual([['talk', 'Chat']]);
+    expect(sync.readSync).not.toHaveBeenCalled();
+    expect(sync.writeSync).not.toHaveBeenCalled();
+  });
+
+  it('a closed page that opens again reads the device file again and saves to it', async () => {
+    const sync = new DeviceStore();
+    const state = { fence: 'g1', open: false };
+    const page = await ChatSession.open(host(sync, state));
+    await exchange(page, 'closed-turn');
+    await otherPageSaves(sync, 'other');
+    expect(ids(page)).toEqual(['closed-turn']);
+    state.open = true;
+    sync.readSync.mockClear();
+    expect(ids(page)).toEqual(['other']);
+    expect(sync.readSync).toHaveBeenCalled();
+    await exchange(page, 'reopened');
+    const stored = sync.files.get('chat-history.json')!.body as { conversations: Array<{ id: string }> };
+    expect(stored.conversations.map((c) => c.id).sort()).toEqual(['other', 'reopened']);
+  });
+
   it('a page closed at open starts empty and reads nothing', async () => {
     const sync = new DeviceStore();
     await otherPageSaves(sync, 'other');

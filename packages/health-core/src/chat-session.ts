@@ -319,14 +319,17 @@ export class ChatSession {
 
   /** After a device erase, replace the entire stale working copy before
    *  appending new chat. Never merge pre-erase ids into the now-missing file.
-   *  A page that may not write the device's files drops its copy once and
-   *  reads none: it keeps only the turns it makes from then on. */
+   *  A page that may not write the device's files drops its copy when it
+   *  closes and reads none while closed: it keeps in page memory only the
+   *  turns it makes from then on, a follow-up in an open conversation
+   *  included. It reopens, and reads the file again, when the write gate does. */
   private refreshAfterDeviceErase(): void {
     if (!this.device) return;
     const fence = this.device.closed() ? CLOSED : this.device.fence();
     if (fence === this.fenceSeen) return;
+    const erased = fence !== CLOSED && this.fenceSeen !== CLOSED;
     for (const conv of this.file.conversations) {
-      this.erasedIds.add(conv.id);
+      if (erased) this.erasedIds.add(conv.id);
       this.pending.delete(conv.id);
     }
     const body = fence === CLOSED ? null : this.device.sync.readSync(CHAT_HISTORY_DOC.fileName).body;

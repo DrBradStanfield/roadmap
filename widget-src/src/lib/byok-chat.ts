@@ -26,7 +26,7 @@ import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
 import { askChatHistory, getChatHistory } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
-import { recordFailure, WritesStoppedError } from './error-diagnostics';
+import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
 // type` is erased, so the Shopify transport never enters the Pages bundle.
@@ -225,8 +225,8 @@ export async function sendMessage(
       }),
     )
     .catch((error) => {
-      // A turn missing from the history file is reported, not only dropped (US-15 AC47); a log-off refusal is not (A15).
-      if (!(error instanceof WritesStoppedError)) Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
+      // A turn missing from the history file is reported, not only dropped (US-15 AC47).
+      Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
     });
 
   return {
