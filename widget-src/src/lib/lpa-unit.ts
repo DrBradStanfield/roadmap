@@ -8,7 +8,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import { getLpaUnit, setLpaUnit } from './roadmap-data';
 import { trackProductEvent } from './server-api';
-import { getJson, healthWritesAllowed, LPA_CHECK_KEPT_KEY, safeGetItem, setJson } from './storage';
+import { getJson, LPA_CHECK_KEPT_KEY, pageOnChosenRecord, safeGetItem, setJson } from './storage';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 /**
@@ -114,10 +114,11 @@ export function lpaRowsToCheck(rows: ApiMeasurement[], unitSystem: UnitSystem): 
 
 /** The report matches neither number, or its correction would save what is stored: keep the row as saved, and never ask about it again on this device. */
 export function keepLpaAsIs(id: string): void {
-  // The kept ids are off-file health data that log-off clears (US-09 AC2d):
-  // after the latch they are kept on this page only, as when the browser
-  // refuses the store, so the answer still frees Move (AC2e).
-  if (healthWritesAllowed()) setJson(LPA_CHECK_KEPT_KEY, [...keptIds(), id]);
+  // The kept ids are off-file health data that log-off clears (US-09 AC2d),
+  // written only by a page on the chosen record (US-11 AC6): any other keeps
+  // them on this page only, as when the browser refuses the store, so the
+  // answer still frees Move (AC2e).
+  if (pageOnChosenRecord()) setJson(LPA_CHECK_KEPT_KEY, [...keptIds(), id]);
   if (!getJson<unknown[]>(LPA_CHECK_KEPT_KEY)?.includes(id)) keptHere.add(id);
   for (const onChange of listeners) onChange();
 }
