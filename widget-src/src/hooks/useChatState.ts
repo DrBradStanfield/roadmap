@@ -109,12 +109,6 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const latest = useRef({ guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded });
   useLayoutEffect(() => { latest.current = { guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded }; });
 
-  // Lists and loads keep today's guards until slice 3 deletes them. hasLoadedRef and isLoadingConvsRef
-  // gate the list read before list-wanted; loadGenRef drops a thread's turns once a later read began.
-  // The store's List and Load rule every landing either way: these refs guard nothing the store does not.
-  const hasLoadedRef = useRef(!!prefetchedData);
-  const isLoadingConvsRef = useRef(false);
-  const loadGenRef = useRef(0);
   // Deltas collect here and reach the store at most once per animation frame (a render throttle only).
   const streamRef = useRef({ deltas: [] as ChatEvent[], frame: 0 });
   const [reads] = useState(() => new Set<() => void>());
@@ -180,19 +174,16 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   };
 
   const readList = async (read: number) => {
-    isLoadingConvsRef.current = true;
     const result = await listConversations();
-    isLoadingConvsRef.current = false;
     await store.dispatch({ type: 'list-landed', read, conversations: result?.conversations ?? null });
   };
 
   // N1/N2: every read ends in a landing for the load it began under; the store drops one that load has outlived.
   const readTurns = async (opening: number, id: string) => {
-    const gen = ++loadGenRef.current;
     const turns = await readThread(store, opening, id, reads);
     if (turns === 'gone') await store.dispatch({ type: 'load-landed', opening, id, turns: null });
     else if (turns === 'failed') await store.dispatch({ type: 'load-failed', opening, id });
-    else if (gen === loadGenRef.current) await store.dispatch({ type: 'load-landed', opening, id, turns });
+    else await store.dispatch({ type: 'load-landed', opening, id, turns });
   };
 
   const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
@@ -242,11 +233,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     else if (msg.type === 'thread-deleted') void store.dispatch({ type: 'thread-gone', id: msg.payload.id, tell: false });
   }), [instanceId, store, onRemote]);
 
-  const loadConversationsIfNeeded = useCallback(async () => {
-    if (hasLoadedRef.current || isLoadingConvsRef.current) return;
-    hasLoadedRef.current = true;
-    await store.dispatch({ type: 'list-wanted', guest: !isLoggedIn });
-  }, [isLoggedIn, store]);
+  const loadConversationsIfNeeded = useCallback(() => store.dispatch({ type: 'list-wanted', guest: !isLoggedIn }), [isLoggedIn, store]);
 
   const selectConversation = useCallback((id: string) => store.dispatch({ type: 'open-thread', id }), [store]);
   /** Try again: open the thread whose read failed once more (N2). */
