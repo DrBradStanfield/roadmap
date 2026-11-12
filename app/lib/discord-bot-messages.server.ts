@@ -30,6 +30,14 @@ export function errorKind(err: unknown): string {
   return [name, code, status].filter((v) => typeof v === 'string' || typeof v === 'number').join(' ') || 'unknown';
 }
 
+/** A Sentry tag for an error: its code, or its name when it has none, only when
+ *  shaped like one (H46). Anything else is 'unknown', so no free text rides in a tag. */
+export function errorTag(err: unknown): string {
+  const { name, code } = (err ?? {}) as { name?: unknown; code?: unknown };
+  const value = typeof code === 'number' || typeof code === 'string' ? String(code) : name;
+  return typeof value === 'string' && /^[\w-]{1,40}$/.test(value) ? value : 'unknown';
+}
+
 export async function safeReply(message: GuildMessage, text: string): Promise<void> {
   try {
     await message.reply({ content: text, allowedMentions: { repliedUser: false } });

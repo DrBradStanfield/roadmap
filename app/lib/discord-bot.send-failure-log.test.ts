@@ -124,3 +124,49 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
     expect(sentryText()).not.toContain('Missing Permissions');
   });
 });
+
+// H47 (US-15 AC62, US-09 AC6d): the message handler's outer catch sends Sentry
+// fixed words and a shape-checked tag, never the error: a model or history
+// error can carry the question or a request body in its message or cause.
+describe('US-15 AC62: the outer catch reaches Sentry as fixed words and a shaped tag', () => {
+  const SENTINEL = 'zz-sentinel-question-text';
+  function okMessage(id: string) {
+    const reply = vi.fn().mockResolvedValue({ id: `r-${id}` });
+    return { ...failingMessage(id, 'plain'), reply };
+  }
+
+  it('a model error whose message and cause hold text never reaches Sentry or the log', async () => {
+    const err = Object.assign(new Error(`model said ${SENTINEL}`, { cause: new Error(`body ${SENTINEL}`) }),
+      { requestBody: { json: { messages: [{ content: SENTINEL }] } } });
+    edge.complete.mockRejectedValue(err);
+    const m = okMessage('u4');
+    await deliver(m);
+    expect(sentryText()).not.toContain(SENTINEL);
+    expect(logged.join('\n')).not.toContain(SENTINEL);
+    expect(edge.capture).not.toHaveBeenCalled();
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: handleMessage failed',
+      { level: 'error', tags: { platform: 'discord', subsystem: 'handle', code: 'Error' } });
+    // The person still gets the same error line.
+    expect(m.reply).toHaveBeenLastCalledWith(expect.objectContaining(
+      { content: 'Something went wrong on my end. Please try again in a moment.' }));
+  });
+
+  it('a free-text code becomes the placeholder tag in the outer catch', async () => {
+    edge.complete.mockRejectedValue(Object.assign(new Error('x'), { code: `bad code ${SENTINEL}` }));
+    await deliver(okMessage('u5'));
+    expect(sentryText()).not.toContain(SENTINEL);
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: handleMessage failed',
+      expect.objectContaining({ tags: expect.objectContaining({ code: 'unknown' }) }));
+  });
+});
+
+describe('H46: the send path shape-checks its Sentry code tag', () => {
+  it('a free-text code on a failed chunk becomes the placeholder tag', async () => {
+    const m = failingMessage('u6', 'plain');
+    m.reply.mockRejectedValue(Object.assign(new Error('x'), { code: 'free text zz-sentinel-code' }));
+    await deliver(m);
+    expect(sentryText()).not.toContain('zz-sentinel-code');
+    expect(edge.captureMessage).toHaveBeenCalledWith('Discord: chunk send failed',
+      expect.objectContaining({ tags: expect.objectContaining({ code: 'unknown' }) }));
+  });
+});
