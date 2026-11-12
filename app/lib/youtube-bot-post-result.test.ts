@@ -6,7 +6,7 @@
  * Google's, shape-checked, so no body text ever leaves this function.
  */
 import { describe, expect, it } from 'vitest';
-import { classifyPost, isAccountWide, type PostResult } from './youtube-bot-post-result';
+import { classifyPost, isAccountWide, nextPosting, OPEN_POSTING, type Posting, type PostResult, type Sent } from './youtube-bot-post-result';
 
 const body = (reason: string, message = 'Some message with viewer words') =>
   JSON.stringify({ error: { code: 0, message, errors: [{ reason, domain: 'youtube.comment', message }] } });
@@ -59,4 +59,25 @@ describe('US-27 AC5 (Q3, R1): 401, 429 and the quota and rate-limit reasons are 
   for (const [result, want] of table) {
     it(JSON.stringify(result), () => expect(isAccountWide(result)).toBe(want));
   }
+});
+
+describe('US-27 AC5 (c): one tick posts until an account-wide refusal or the second unreadable 400', () => {
+  const open = (n: number): Posting => ({ kind: 'open', unreadable400s: n });
+  const halted: Posting = { kind: 'halted' };
+  const table: Array<[Posting, Sent, Posting]> = [
+    [open(0), 'posted', open(0)],
+    [open(0), 'unknown', open(0)],
+    [open(0), 'skipped', open(0)],
+    [open(0), 'unknown400', open(1)],
+    [open(1), 'posted', open(1)],
+    [open(1), 'unknown', open(1)],
+    [open(1), 'unknown400', halted],
+    [open(0), 'halt', halted],
+    [open(1), 'halt', halted],
+    [halted, 'posted', halted],
+  ];
+  for (const [from, sent, want] of table) {
+    it(`${JSON.stringify(from)} + ${sent}`, () => expect(nextPosting(from, sent)).toEqual(want));
+  }
+  it('a tick starts open with none seen', () => expect(OPEN_POSTING).toEqual(open(0)));
 });

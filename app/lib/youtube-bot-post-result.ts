@@ -53,3 +53,19 @@ const ACCOUNT_WIDE_REASONS = new Set(['quotaExceeded', 'rateLimitExceeded', 'use
 export function isAccountWide(r: PostResult): boolean {
   return r.kind === 'refused' && (r.status === 401 || r.status === 429 || ACCOUNT_WIDE_REASONS.has(r.reason));
 }
+
+/** What postClaimed did with one claimed comment. `unknown400`: an unknown whose answer was an unreadable 400
+ *  (counted as unknown). `halt`: an account-wide refusal. */
+export type Sent = 'posted' | 'unknown' | 'unknown400' | 'skipped' | 'halt';
+
+/** One tick's posting (C15 c): open, or halted by an account-wide refusal or by the second unreadable 400,
+ *  which may mean Google is rejecting every post behind a page we cannot read. Each tick starts open. */
+export type Posting = { kind: 'open'; unreadable400s: number } | { kind: 'halted' };
+
+export const OPEN_POSTING: Posting = { kind: 'open', unreadable400s: 0 };
+
+export function nextPosting(p: Posting, sent: Sent): Posting {
+  if (p.kind === 'halted' || sent === 'halt') return { kind: 'halted' };
+  if (sent !== 'unknown400') return p;
+  return p.unreadable400s >= 1 ? { kind: 'halted' } : { kind: 'open', unreadable400s: p.unreadable400s + 1 };
+}
