@@ -4,23 +4,23 @@
  * Every failure, git's included, is a SplitRefusal (exit 1, "refused…"), never a stack trace.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { INDEX } from './stories.mjs';
 
 export class SplitRefusal extends Error {}
 
-export const gitIn = (root) => (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
+// Git with the variables that point it at another repo removed, so it answers for the folder it runs in.
+const MOVERS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE'];
+const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !MOVERS.includes(k)));
+export const gitIn = (root) => (...args) => execFileSync('git', args, { cwd: root, env: gitEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
 const gitError = (e) => String(e.stderr || e.message).trim();
 // Only git's own answer means "no repo": a git that cannot run (ENOENT) refuses, so a guard never skips.
 const notARepo = (e) => /not a git repository/.test(String(e.stderr));
 // A line git writes into a conflicted file.
 const MARKER = /^(<{7}|\|{7}|={7}|>{7})( |$)/;
 
-/**
- * Whether two existing paths are one folder, by identity (device and inode), never by path: a symlink, a `..`,
- * another letter case or macOS's /System/Volumes/Data firmlink prefix all name the same folder.
- */
+/** Whether two existing paths are one folder, by identity (device and inode), never by path. */
 function sameFolder(a, b) {
   const [x, y] = [statSync(a), statSync(b)];
   return x.dev === y.dev && x.ino === y.ino;
@@ -37,18 +37,30 @@ export function toplevel(root) {
 }
 
 /**
- * The folder whose guards the run must pass, or undefined for a plain dry run. It is `root` when the run writes into
- * the repo it runs in (no `out`, or an `out` that is the same folder as its toplevel, or `root` itself outside a
- * repo), and throws SplitRefusal when `root` is not that toplevel. It is `out` when `out` is the toplevel of any other
- * git repo (another worktree, the main checkout, a clone). A missing folder, one in no repo, or one below another
- * repo's toplevel is a dry run.
+ * The folder holding a `.git` entry (file or folder) at or above the real path of `path`, or of its nearest existing
+ * ancestor, or undefined. It walks the disk and never asks git, so no git variable can move the answer.
+ */
+function workTreeAbove(path) {
+  let p = path;
+  while (!existsSync(p)) p = dirname(p);
+  for (p = realpathSync.native(p); ; p = dirname(p)) {
+    if (lstatSync(join(p, '.git'), { throwIfNoEntry: false })) return p;
+    if (dirname(p) === p) return undefined;
+  }
+}
+
+/**
+ * The folder whose guards the run must pass, or undefined for a dry run. An `out` is a dry run into a scratch folder,
+ * and inside any git work tree it throws SplitRefusal. With no `out` it is `root`, which must be its repo's toplevel
+ * (or in no repo), or it throws SplitRefusal.
  */
 export function guardedRoot(root, out) {
-  const top = toplevel(root) ?? root;
-  if (out !== undefined && !(existsSync(out) && sameFolder(out, top))) {
-    const outTop = existsSync(out) ? toplevel(out) : undefined;
-    return outTop !== undefined && sameFolder(out, outTop) ? out : undefined;
+  if (out !== undefined) {
+    const tree = workTreeAbove(out);
+    if (tree === undefined) return undefined;
+    throw new SplitRefusal(`--out ${out} is inside a git work tree (${tree}): a dry run writes only to a scratch folder outside any git work tree; the real split writes only through the default path (no --out), from the toplevel of the checkout it runs in`);
   }
+  const top = toplevel(root) ?? root;
   if (!sameFolder(root, top)) throw new SplitRefusal(`writing into the repo runs from its toplevel, ${top}, not from ${root}: cd there and run this again`);
   return root;
 }

@@ -9,7 +9,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadStories } from './stories.mjs';
 import { planSplit, shapeReport, splitStories, SplitRefusal, verifyPlan } from './split-stories.mjs';
@@ -222,9 +222,10 @@ describe('refuses and writes nothing', () => {
 
   it('when the input cannot be read at the ref', () => {
     git(dir, 'init', '-q');
-    const r = cli(dir, '--from', 'HEAD', '--out', join(dir, 'out'));
+    const r = cli(dir, '--from', 'HEAD', '--out', `${dir}-out`); // outside the repo, as a dry run must be
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/refused, nothing written: cannot read the stories at HEAD/);
+    expect(existsSync(`${dir}-out`)).toBe(false);
   });
 
   it('when the round trip would not be exact', () => {
@@ -377,6 +378,16 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     spawnSync('git', ['merge', '--no-commit', '--no-ff', '-q', ref], { cwd: repo, env });
     expect(existsSync(join(repo, '.git/MERGE_HEAD'))).toBe(true);
   };
+  // An --out inside any git work tree refuses before anything is read or written.
+  const refusesOut = (cwd: string, out: string, ...extra: string[]) => {
+    const at = resolve(cwd, out);
+    const look = () => [tree(), existsSync(join(at, 'docs/stories')) ? files(at) : existsSync(at)];
+    const before = look();
+    const r = cli(cwd, '--from', 'pre-split', '--out', out, ...extra);
+    expect(r.status, out).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: --out .* is inside a git work tree .*: a dry run writes only to a scratch folder outside any git work tree; the real split writes only through the default path \(no --out\), from the toplevel of the checkout it runs in/);
+    expect(look()).toEqual(before);
+  };
 
   beforeEach(() => {
     repo = mkdtempSync(join(tmpdir(), 'split-stories-repo-'));
@@ -462,37 +473,19 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     expect(loadStories(repo)).toContain('- AC1 two, edited on the branch');
   });
 
-  it('an --out that resolves to the repo through a symlink is writing into the repo (US-64 AC33)', () => {
+  it('an --out inside the repo refuses, by symlink, other letter case, `..` or a missing subfolder, even with --replace (US-64 AC33)', () => {
     const link = `${repo}-link`;
     symlinkSync(repo, link);
     try {
-      const before = tree();
-      const r = cli(repo, '--from', 'pre-split', '--out', link);
-      expect(r.status).toBe(1);
-      expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split/);
-      expect(tree()).toEqual(before);
+      refusesOut(repo, link);
+      refusesOut(repo, repo, '--replace');
+      refusesOut(repo, join(repo, 'not/yet'));
+      refusesOut(join(repo, 'docs'), '..');
+      const upper = join(dirname(repo), basename(repo).toUpperCase());
+      if (existsSync(upper)) refusesOut(repo, upper); // only where the disk ignores case
     } finally {
       rmSync(link);
     }
-  });
-
-  it('an --out that names the repo in other letter case is writing into the repo, where the disk ignores case (US-64 AC33)', () => {
-    const upper = join(dirname(repo), basename(repo).toUpperCase());
-    if (!existsSync(upper)) return; // a case-sensitive disk: two different folders
-    const before = tree();
-    const r = cli(repo, '--from', 'pre-split', '--out', upper);
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/already holds parts that differ from the split/);
-    expect(tree()).toEqual(before);
-  });
-
-  it('from a subfolder, an --out of `..` landing on the repo is refused, naming the toplevel (US-64 AC33)', () => {
-    const before = tree();
-    const r = cli(join(repo, 'docs'), '--from', 'pre-split', '--out', '..');
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: /);
-    expect(r.stderr).toContain(realpathSync.native(repo));
-    expect(tree()).toEqual(before);
   });
 
   it('from a subfolder, with no --out, it refuses rather than write a stray docs/ tree there (US-64 AC33)', () => {
@@ -525,29 +518,45 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     }
   });
 
-  it('from a worktree, an --out at another checkout is guarded as that repo: refused when its parts differ, --replace passes (US-64 AC33)', () => {
+  it('from a worktree, an --out at the main checkout refuses, with or without --replace, mid-merge or not (US-64 AC33)', () => {
     const wt = join(repo, '.claude/wt');
     run('worktree', 'add', '-q', '--detach', wt, 'split');
-    const before = tree();
-    const r = cli(wt, '--from', 'pre-split', '--out', repo);
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split: docs\/stories\/US-01\.md differs/);
-    expect(tree()).toEqual(before);
-    const ok = cli(wt, '--from', 'pre-split', '--out', repo, '--replace');
-    expect(ok.stderr).toBe('');
-    expect(ok.status).toBe(0);
-    expect(loadStories(repo)).toBe(text);
+    refusesOut(wt, repo);
+    refusesOut(wt, repo, '--replace');
+    mergeIntoFeat('main');
+    refusesOut(wt, repo, '--replace');
+    refusesOut(repo, wt, '--replace');
   });
 
-  it('from a worktree, an --out at another checkout mid-merge refuses even with --replace (US-64 AC33)', () => {
+  // Git reads these before it looks at the folder it runs in; a run must answer for its own folder whatever they say.
+  const wtEnv = (wt: string, extra: Record<string, string>) => spawnSync('node', [SCRIPT, '--from', 'pre-split', '--replace'], { cwd: wt, encoding: 'utf8', env: { ...process.env, ...extra } });
+
+  it('ignores GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE set for a worktree: the main checkout mid-merge still refuses as a merge (US-64 AC33)', () => {
+    const wt = join(repo, '.claude/wt');
+    run('worktree', 'add', '-q', '--detach', wt, 'split');
+    const gitdir = join(repo, '.git/worktrees/wt');
+    const vars = { GIT_DIR: gitdir, GIT_WORK_TREE: wt, GIT_COMMON_DIR: join(repo, '.git'), GIT_INDEX_FILE: join(gitdir, 'index') };
+    mergeIntoFeat('main');
+    const before = tree();
+    const r = wtEnv(repo, vars);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^split-stories: refused, nothing written: a merge is in progress/);
+    expect(tree()).toEqual(before);
+    // adv6: the same variables with an --out at the main checkout refuse outright.
+    const out = spawnSync('node', [SCRIPT, '--from', 'pre-split', '--replace', '--out', repo], { cwd: wt, encoding: 'utf8', env: { ...process.env, ...vars } });
+    expect(out.status).toBe(1);
+    expect(out.stderr).toMatch(/^split-stories: refused, nothing written: --out .* is inside a git work tree/);
+    expect(tree()).toEqual(before);
+  });
+
+  it("in a worktree with GIT_DIR naming the main checkout's gitdir, the main checkout's merge is not taken as its own (US-64 AC33)", () => {
     const wt = join(repo, '.claude/wt');
     run('worktree', 'add', '-q', '--detach', wt, 'split');
     mergeIntoFeat('main');
-    const before = tree();
-    const r = cli(wt, '--from', 'pre-split', '--out', repo, '--replace');
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/refused, nothing written: a merge is in progress/);
-    expect(tree()).toEqual(before);
+    const r = wtEnv(wt, { GIT_DIR: join(repo, '.git') });
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(loadStories(wt)).toBe(text);
   });
 
   it('when git cannot run, it refuses and writes nothing, with and without --replace (US-64 AC33)', () => {
@@ -604,32 +613,15 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
   const viaData = (p: string) => `${DATA}${realpathSync.native(p)}`;
   const onMac = process.platform === 'darwin' && existsSync(DATA);
 
-  it.skipIf(!onMac)('from a worktree, an --out at another checkout through /System/Volumes/Data is guarded as that repo (US-64 AC33)', () => {
+  it.skipIf(!onMac)('an --out at a checkout through /System/Volumes/Data refuses, from its own repo, a subfolder or a worktree (US-64 AC33)', () => {
     const wt = join(repo, '.claude/wt');
     run('worktree', 'add', '-q', '--detach', wt, 'split');
     expect(existsSync(viaData(repo))).toBe(true);
-    const before = tree();
-    const r = cli(wt, '--from', 'pre-split', '--out', viaData(repo));
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/refused, nothing written: docs\/stories\/ already holds parts that differ from the split: docs\/stories\/US-01\.md differs/);
-    expect(tree()).toEqual(before);
-  });
-
-  it.skipIf(!onMac)('an --out naming its own repo through /System/Volumes/Data is writing into the repo, every guard on (US-64 AC33)', () => {
-    const before = tree();
-    const r = cli(repo, '--from', 'pre-split', '--out', viaData(repo));
-    expect(r.status).toBe(1);
-    expect(r.stderr).toMatch(/already holds parts that differ from the split/);
-    const sub = cli(join(repo, 'docs'), '--from', 'pre-split', '--out', viaData(repo));
-    expect(sub.status).toBe(1);
-    expect(sub.stderr).toMatch(/^split-stories: refused, nothing written: writing into the repo runs from its toplevel, /);
-    expect(tree()).toEqual(before);
+    refusesOut(repo, viaData(repo));
+    refusesOut(join(repo, 'docs'), viaData(repo));
+    refusesOut(wt, viaData(repo));
     mergeIntoFeat('main');
-    const merging = tree();
-    const m = cli(repo, '--from', 'HEAD', '--out', viaData(repo), '--replace');
-    expect(m.status).toBe(1);
-    expect(m.stderr).toMatch(/refused, nothing written: a merge is in progress/);
-    expect(tree()).toEqual(merging);
+    refusesOut(repo, viaData(repo), '--replace');
   });
 
   it('outside a merge, a rerun whose output equals docs/stories/ needs no flag', () => {

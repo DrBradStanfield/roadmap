@@ -15,8 +15,8 @@
  * It refuses, writing nothing (exit 1), when a story id repeats, a short title would not make an index line
  * (empty, or holding `[` or `]`), a `### US-` heading lacks its ` · `, the input already holds index lines, or
  * loadStories of the would-be output is not the input byte for byte (checked in a temporary folder first).
- * Writing into the repo (no --out, or an --out that is the same folder as the repo's toplevel), it runs only from the
- * toplevel. Writing into a repo, that one or any other whose toplevel --out is (another worktree, the main checkout),
+ * It writes into a repo only with no --out, from the toplevel of the checkout it runs in; an --out inside any git work
+ * tree refuses. Git's GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR and GIT_INDEX_FILE are ignored. Writing into the repo,
  * it refuses rather than overwrite parts written after the split (tools/split-stories-guards.mjs):
  * - during a merge (MERGE_HEAD exists), unless the incoming side holds exactly the split of the monolith at the merge
  *   base, which is how an open branch takes the split commit and re-splits its own monolith;
@@ -34,8 +34,8 @@
  *
  * Usage, from the repo root: node tools/split-stories.mjs [--from <git-ref>] [--out <dir>] [--replace] | --normalize
  *   --from       read the stories at a git ref instead of the working tree.
- *   --out        write under <dir> instead of the repo root: a dry run unless <dir> is a repo's toplevel (guarded
- *                as above). Stale docs/stories/*.md there are removed.
+ *   --out        a dry run into <dir>, a scratch folder outside any git work tree (inside one it refuses). Stale
+ *                docs/stories/*.md there are removed.
  *   --replace    outside a merge, overwrite a docs/stories/ that differs from the output.
  *   --normalize  put the repo's split tree into the split's exact form (above); takes no other flag.
  */
