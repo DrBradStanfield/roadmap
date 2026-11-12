@@ -660,9 +660,10 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
 ALTER TABLE reminder_optin_v2 ADD COLUMN IF NOT EXISTS attempting_on DATE;
 -- Applied to production 2026-11-11 with the cron_lock columns above; nullable, no default, RLS on.
 
--- Only the Google-verified lane upserts on email (an owner may replace their
--- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as
--- "the owner already has a row": schedule refresh at most, never a new token.
+-- Both lanes INSERT, and a 23505 on this UNIQUE means a row already exists.
+-- Address-only opt-ins then refresh the schedule at most, never a new token.
+-- The Google-verified lane then rotates the token with one compare-and-set
+-- (only a row not yet verified matches) and reads the token back (US-17 AC16).
 
 -- Service-role only (no policies = zero rows via the anon/authenticated API).
 ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;

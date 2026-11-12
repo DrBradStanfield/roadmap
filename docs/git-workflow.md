@@ -57,11 +57,25 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    refuses only a force-push to `main` or deleting it (the ruleset below); nothing on GitHub enforces the
    reviews, so you do. Before merging, file a `review-note` issue for every finding
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
+   **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
+   AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
+   that sha ended success, every rollup check finished green with a `test` check SUCCESS, and no Deploy run is
+   unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI was started by
+   workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the `ci.yml` run check.
+   A PR that changes a gate file (`tools/merge-gated.sh` or `.github/workflows/ci.yml`) needs nothing different
+   from you: the script fetches main and lets main's copy judge it, and refuses (16) when main has no copy, so the
+   owner merges that PR by hand. A `ci.yml` PR also prints a note: its own CI ran the PR's workflow, so read that
+   diff before merging. Every gh call and the fetch are killed after 60 s; a merge cut off that way has an unknown
+   outcome, so check the PR. Each refusal has its own exit code (header of the script). Waiting first:
+   `sh tools/wait-run.sh pr <n>`.
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
-   is never a gate: while working, run only the tests your change touches (`npx vitest related <changed files>
-   --run`, seconds). Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
-   counts, the head sha and mergeability, exits non-zero on a failure, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
+   is never a gate: while working, run only the test files you touched (`npx vitest run <test files>`, seconds),
+   then push; CI runs everything on each push (Brad 2026-11-12: sessions share one Mac, and even a capped
+   `vitest related` took the load to 19.7). A hook refuses the broad forms on the Mac (US-71 AC10): `npm test`,
+   `npm run test:all` and the other whole-suite scripts, `vitest related`, and vitest with no file argument.
+   `ALLOW_BROAD_TESTS=<reason>` before the command lets one through, for a flake hunt or a run Brad asks for. The hook is off in CI and outside macOS. Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
+   counts, the head sha and mergeability, exits non-zero on a failure or when no `test` check succeeded, as on a draft PR whose checks all skip, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push); never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
    `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
@@ -179,6 +193,7 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 | Stale-PR watch | `.github/workflows/stale-pr-watch.yml` | One refreshed issue listing open PRs idle 48h+ (drafts 7 days+), daily. These two watches are the only exception to Brad's Claude-app-only notification rule (Brad 2026-11-01) |
 | Test worker cap | both `vitest.config.ts` (`scripts/test-workers.mjs`) | Every local vitest run, targeted ones too, takes max(2, cpus/4) workers unless a `--maxWorkers` flag says otherwise; CI unchanged (US-71 AC5) |
 | Simulator guard | `.claude/hooks/simulator-guard.cjs` (PreToolUse Bash) | Refuses `xcodebuild test` without `-parallel-testing-enabled NO`, and a simulator boot, create or clone while 2 are booted (`ALLOW_EXTRA_SIMULATOR=1` for demos); best effort, fails open if the check errors (US-71 AC6) |
+| Broad-test guard | `.claude/hooks/broad-test-guard.cjs` (PreToolUse Bash) | Refuses `npm test`, `npm run test:all` and the other whole-suite scripts, `vitest related`, and vitest with no file argument; run only the test files you touched, CI runs the rest. `ALLOW_BROAD_TESTS=<reason>` lets one through; off in CI and outside macOS (cloud sessions); best effort, the simulator guard's parser (US-71 AC10) |
 | File-size ratchet | `scripts/file-size-ratchet.test.ts`, `scripts/file-size-baseline.json` | A production file over 500 lines never grows; a new one starts at 500 or under; shrinking lowers the baseline (`node scripts/file-size-baseline.mjs --write`); raising a number by hand is caught only by review (US-64 AC23) |
 | Live-write gate | `tools/write-gate.mjs` | Live writes only from the main checkout or a session worktree, at exactly `origin/main` with no tracked change |
 | Deploy | `deploy.yml` (CI, `ref: main`); `tools/release-checkout.sh` (manual, docs/deploy-runbook.md step 0) | Only merged code ships |
@@ -251,8 +266,8 @@ Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.cl
   the tree after it: an edit can keep its mtime (`touch -r`, `cp -p`, `rsync -t`). By hand, run `git status`
   first, then `git -c core.trustctime=false merge ...`, or rerun once the tagging is done.
 - Hooks load from the session's settings at start; a hook change applies to new sessions.
-- A full local `npm run test:all` is never a merge gate (CI is, step 4); run it only when you want the whole
-  suite on this Mac. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
+- A full local `npm run test:all` is never a merge gate (CI is, step 4), and the broad-test hook refuses it
+  (US-71 AC10); run it only with `ALLOW_BROAD_TESTS=<reason>`, for a flake hunt or when Brad asks. It takes a machine-wide lock so one full local run happens at a time (US-71). It lives at
   `<main checkout>/.git/test-all.lock` (`owner.json` holds the wrapper and vitest pids, start, cwd).
   A lock whose pid is dead is taken over by the next run; to clear a stuck one, `rm -rf` that directory.
   Waiters give up after 60 min (`TEST_ALL_LOCK_TIMEOUT_MIN`); workers cap at max(2, cpus/4)

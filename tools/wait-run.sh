@@ -7,10 +7,13 @@
 #   sh tools/wait-run.sh pr <number>       wait until no check is pending; print pass/fail counts, the head sha
 #                                          and mergeability; while checks are unfinished, a PR GitHub reports
 #                                          in conflict with main on two polls in a row gets no new CI run, so
-#                                          it says so and exits 1
+#                                          it says so and exits 1; no successful check named `test` (a draft
+#                                          PR, every check skipped) is not a pass: it says so and exits 1
 #
-# Exit: 0 success; 1 the run or a check failed, a final read failed, or healthz is not 200; 2 usage; 3 gave up
-# (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is cut off at 60 s).
+# Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
+# 200; 2 usage; 3 gave up
+# (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is killed at 60 s,
+# even a hung gh that ignores signals).
 #
 # Cheap on purpose: many sessions run this at once on one GitHub account, and on 2026-11-10 they spent the
 # 5000/hour REST limit (US-64 AC26). Each poll is ONE gh call: deploy reads the run over REST, pr reads the checks
@@ -37,9 +40,22 @@ esac
 budget=core; [ "$mode" = pr ] && budget=graphql
 
 start=$(date +%s); errors=0; polls=0; conflicts=0
-# Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; perl's alarm, since macOS has no `timeout`), so a
-# stuck request counts as a gh error instead of hanging the wait.
-gh() { perl -e 'alarm shift; exec @ARGV' "${WAIT_RUN_GH_TIMEOUT:-60}" gh "$@"; }
+# Every gh call gets WAIT_RUN_GH_TIMEOUT seconds (default 60; zero or not a number is 60), so a stuck request
+# counts as a gh error instead of hanging the wait. gh is Go, which ignores SIGALRM, so `alarm; exec gh` cannot
+# stop it: perl forks gh into its own process group, waits, and on the alarm SIGKILLs the group and exits 124.
+# INT, TERM and HUP kill the group too. Copied from tools/merge-gated.sh, not shared: that gate also runs main's
+# copy from a temp file, where a sourced helper would not be beside it.
+T=${WAIT_RUN_GH_TIMEOUT:-60}
+case "$T" in *[!0-9]*|'') T=60 ;; esac
+[ "$T" -gt 0 ] || T=60
+gh() {
+  perl -e 'my $t = shift; my $pid = fork; defined $pid or exit 125;
+    if (!$pid) { setpgrp(0, 0); open STDIN, "<", "/dev/null"; exec @ARGV or exit 127 }
+    my $end = sub { kill "KILL", -$pid, $pid; exit $_[0] };
+    $SIG{ALRM} = sub { $end->(124) }; $SIG{$_} = sub { $end->(130) } for qw(INT TERM HUP);
+    alarm $t; waitpid $pid, 0; alarm 0;
+    exit($? & 127 ? 128 + ($? & 127) : $? >> 8)' "$T" gh "$@"
+}
 say_budget() {
   b=$(gh api rate_limit --jq '"core=\(.resources.core.remaining) graphql=\(.resources.graphql.remaining)"' 2>/dev/null)
   case "$b" in core=[0-9]*" graphql="[0-9]*) echo "GitHub budget at $1: $b" >&2 ;; esac
@@ -127,9 +143,10 @@ fi
 while :; do
   poll pr_state
   checks=$(gh pr checks "$id" --json name,bucket --jq '
-    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) pending=\([.[] | select(.bucket == "pending")] | length)",
+    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" else "no" end) pending=\([.[] | select(.bucket == "pending")] | length)",
     (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name)")' 2>/dev/null)
-  # Verdicts come only from line 1, the fixed-format summary; check names (outside text) never decide anything.
+  # Verdicts come only from line 1, the fixed-format summary. A check name (outside text) cannot forge it: the
+  # names go only into the `failed:` lines, and the one name that counts, tested=, is an exact match on `test`.
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
   case "$summary" in pass=*" pending=0") break ;; esac
   # Pending again, or the read failed: wait again, still inside the same time limit.
@@ -140,5 +157,9 @@ echo "$checks"
 gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
   --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"' \
   || { echo "could not read the PR's head and mergeability" >&2; exit 1; }
-case "$summary" in *" fail=0 skipped="*) exit 0 ;; esac
+# All skipped (a draft PR: CI skips every job) is finished but tested nothing, so it is not a pass.
+case "$summary" in
+  *" fail=0 skipped="*" tested=yes "*) exit 0 ;;
+  *" fail=0 skipped="*) echo "no successful test check (a draft PR? mark it ready: gh pr ready $id)"; exit 1 ;;
+esac
 exit 1
