@@ -49,6 +49,7 @@ import {
   isExcludedChannel,
   errorKind,
   errorTag,
+  handleFailure,
   safeReply,
   getRepliedToUsers,
   stripBotMention,
@@ -380,9 +381,10 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   } catch (err) {
     if (typingInterval) clearInterval(typingInterval);
     console.error('Discord handleMessage error:', errorKind(err));
-    // Fixed words and a shaped tag, never the error: a model or history error
-    // can carry the question or a request body (US-15 AC62, H47).
-    Sentry.captureMessage('Discord: handleMessage failed', { level: 'error', tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: errorTag(err) } });
+    // Fixed words, frames and a shaped tag, never the error: a model or history
+    // error can carry the question or a request body (US-15 AC62, H47).
+    Sentry.captureException(handleFailure(err), { level: 'error', fingerprint: ['discord-handle', errorTag(err)],
+      tags: { platform: PLATFORM_DISCORD, subsystem: 'handle', code: errorTag(err) } });
     await safeReply(message, ERROR_REPLY);
   } finally {
     activeLlmCalls--;

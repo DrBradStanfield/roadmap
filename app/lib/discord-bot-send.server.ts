@@ -78,9 +78,14 @@ export async function sendAnswer(message: GuildMessage, chunks: string[]): Promi
 /** The answer exactly as far as its sent chunks reach, the original separators
  *  included: splitForDiscord trims the whitespace at each cut, so joining the
  *  chunks would not give back what went out. Each sent chunk is a slice of
- *  `content` after the one before (splitForDiscord), so the search always finds it. */
+ *  `content` after the one before (splitForDiscord); a chunk not found means a
+ *  caller passed other content, and throws rather than store a wrong prefix. */
 export function sentText(content: string, sent: SentChunk[]): string {
   let end = 0;
-  for (const { text } of sent) end = content.indexOf(text, end) + text.length;
+  for (const { text } of sent) {
+    const at = content.indexOf(text, end);
+    if (at < 0) throw new Error('Discord: sent chunk not found in the answer');
+    end = at + text.length;
+  }
   return content.slice(0, end);
 }
