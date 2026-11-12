@@ -4,7 +4,7 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
 import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
-import { localHealthWritesStopped, patchMirror } from '../lib/storage';
+import { healthWritesAllowed, patchMirror } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
@@ -64,7 +64,7 @@ export function useProfileSave(args: {
   // A fresh function each render: the timer runs the one from the render that scheduled it.
   async function flushProfile(erase?: string): Promise<boolean> {
     // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
-    if (getBackendKind() === 'local' && localHealthWritesStopped()) { units.saved(units.pending()); onClean(); return true; }
+    if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onClean(); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
     // This tab's unit switch is written even when the copy saved holds it: switched,
@@ -86,7 +86,7 @@ export function useProfileSave(args: {
       return false;
     }
     units.saved(inputs.unitSystem); // written; before onClean: a held change then finds the switch saved
-    if (getBackendKind() === 'local' && localHealthWritesStopped()) return true;
+    if (getBackendKind() === 'local' && !healthWritesAllowed()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
     const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
