@@ -11,7 +11,7 @@ import {
 const clean = (changes: number): SaveBase => ({ mode: 'clean', changes });
 const waiting = (changes: number, saved: number): SaveBase => ({ mode: 'waiting', changes, saved });
 const saving = (changes: number, saved: number, from: number, armed = false): SaveBase => ({ mode: 'saving', changes, saved, from, armed });
-const failed = (changes: number, saved: number): SaveBase => ({ mode: 'failed', changes, saved });
+const failed = (changes: number, saved: number, mirrored = false): SaveBase => ({ mode: 'failed', changes, saved, mirrored });
 const reading = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'reading', under });
 const writing = (under: SaveBase): SaveState => ({ mode: 'erasing', phase: 'writing', under });
 
@@ -29,6 +29,7 @@ const EVENTS: Record<string, SaveEvent> = {
   swapped: { type: 'eraseSwapped' },
   aborted: { type: 'eraseAborted' },
   ended: { type: 'eraseEnded' },
+  mirrored: { type: 'mirrored', changes: 6 }, // the failed pass's device write landed, holding change 6
 };
 type Row = [SaveState, SaveEffect[]];
 const same = (s: SaveState): Row => [s, []];
@@ -41,6 +42,7 @@ const STATES: Record<string, SaveState> = {
   saving: saving(6, 4, 6),
   savingArmed: saving(7, 4, 6, true),
   failed: failed(6, 4),
+  failedMirrored: failed(6, 4, true), // US-09 AC30: the device copy holds its changes
   readingClean: reading(clean(5)),
   readingWaiting: reading(waiting(6, 5)), // the debounce put aside, its mode kept
   readingSavingArmed: reading(saving(7, 4, 6, true)),
@@ -54,18 +56,18 @@ const STATES: Record<string, SaveState> = {
 const TABLE: Record<string, Record<string, Row>> = {
   clean: {
     edited: [waiting(6, 5), [ARM]], save: same(clean(5)), landed: same(clean(5)), failed: same(clean(5)),
-    synced: same(clean(5)), began: [reading(clean(5)), []], ...stale(clean(5)),
+    synced: same(clean(5)), began: [reading(clean(5)), []], ...stale(clean(5)), mirrored: same(clean(5)),
   },
   waiting: {
     edited: [waiting(7, 5), [ARM]], save: [saving(6, 5, 6), [CANCEL, pass(6)]],
     landed: same(waiting(6, 5)), failed: same(waiting(6, 5)), synced: [clean(6), [CANCEL]],
-    began: [reading(waiting(6, 5)), [CANCEL]], ...stale(waiting(6, 5)),
+    began: [reading(waiting(6, 5)), [CANCEL]], ...stale(waiting(6, 5)), mirrored: same(waiting(6, 5)),
   },
   saving: {
     edited: [saving(7, 4, 6, true), [ARM]], save: same(saving(6, 4, 6)), // joins, never a second pass
     landed: [clean(6), []], failed: [failed(6, 4), []], synced: [saving(6, 6, 6), []],
     began: [reading(saving(6, 4, 6)), []], // the pass goes on under the erase
-    ...stale(saving(6, 4, 6)),
+    ...stale(saving(6, 4, 6)), mirrored: same(saving(6, 4, 6)),
   },
   savingArmed: {
     edited: [saving(8, 4, 6, true), [ARM]], save: [saving(7, 4, 6), [CANCEL]],
@@ -75,16 +77,25 @@ const TABLE: Record<string, Record<string, Row>> = {
     failed: [waiting(7, 4), []],
     synced: [saving(7, 7, 6), [CANCEL]],
     began: [reading(saving(7, 4, 6, true)), [CANCEL]], ...stale(saving(7, 4, 6, true)),
+    mirrored: same(saving(7, 4, 6, true)),
   },
   failed: {
     edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
     landed: same(failed(6, 4)), failed: same(failed(6, 4)), synced: [clean(6), []],
     began: [reading(failed(6, 4)), []], ...stale(failed(6, 4)),
+    mirrored: [failed(6, 4, true), []],
+  },
+  failedMirrored: {
+    edited: [waiting(7, 4), [ARM]], save: [saving(6, 4, 6), [pass(6)]],
+    landed: same(failed(6, 4, true)), failed: same(failed(6, 4, true)), synced: [clean(6), []],
+    began: [reading(failed(6, 4, true)), []], ...stale(failed(6, 4, true)),
+    mirrored: same(failed(6, 4, true)),
   },
   readingClean: {
     edited: same(reading(clean(5))), save: same(reading(clean(5))), landed: same(reading(clean(5))),
     failed: same(reading(clean(5))), synced: same(reading(clean(5))), began: same(reading(clean(5))),
     swapped: [writing(failed(6, 5)), []], aborted: [clean(5), []], ended: [clean(5), []],
+    mirrored: same(reading(clean(5))),
   },
   readingWaiting: {
     edited: same(reading(waiting(6, 5))), // refused: refuses() answers the caller
@@ -95,6 +106,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     swapped: [writing(failed(7, 5)), []],
     aborted: [waiting(6, 5), [ARM]], // the debounce back, no change added
     ended: [waiting(6, 5), []],
+    mirrored: same(reading(waiting(6, 5))),
   },
   readingSavingArmed: {
     edited: same(reading(saving(7, 4, 6, true))), save: [reading(saving(7, 4, 6)), [CANCEL]],
@@ -102,18 +114,20 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [reading(saving(7, 7, 6)), [CANCEL]], began: same(reading(saving(7, 4, 6, true))),
     swapped: [writing(saving(8, 4, 6)), []], // the pass goes on and carries the erased copy
     aborted: [saving(7, 4, 6, true), [ARM]], ended: [saving(7, 4, 6, true), []],
+    mirrored: same(reading(saving(7, 4, 6, true))),
   },
   readingFailed: {
     edited: same(reading(failed(6, 4))), save: [reading(saving(6, 4, 6)), [pass(6)]],
     landed: same(reading(failed(6, 4))), failed: same(reading(failed(6, 4))),
     synced: [reading(clean(6)), []], began: same(reading(failed(6, 4))),
     swapped: [writing(failed(7, 4)), []], aborted: [failed(6, 4), []], ended: [failed(6, 4), []],
+    mirrored: [reading(failed(6, 4, true)), []], // passes to `under`: the device write held change 6
   },
   writingClean: {
     edited: same(writing(clean(7))), save: same(writing(clean(7))), landed: same(writing(clean(7))),
     failed: same(writing(clean(7))), synced: same(writing(clean(7))), began: same(writing(clean(7))),
     swapped: same(writing(clean(7))), aborted: same(writing(clean(7))), // past the swap: nothing to abort
-    ended: [clean(7), []],
+    ended: [clean(7), []], mirrored: same(writing(clean(7))),
   },
   writingSaving: {
     edited: same(writing(saving(7, 4, 6))), save: same(writing(saving(7, 4, 6))),
@@ -121,6 +135,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     failed: [writing(failed(7, 4)), []], synced: [writing(saving(7, 7, 6)), []],
     began: same(writing(saving(7, 4, 6))), swapped: same(writing(saving(7, 4, 6))), aborted: same(writing(saving(7, 4, 6))),
     ended: [saving(7, 4, 6), []], // replaceUnreadable threw a non-Conflict error while a pre-erase pass runs
+    mirrored: same(writing(saving(7, 4, 6))),
   },
   writingFailed: {
     edited: same(writing(failed(7, 4))), save: [writing(saving(7, 4, 7)), [pass(7)]],
@@ -128,6 +143,7 @@ const TABLE: Record<string, Record<string, Row>> = {
     synced: [writing(clean(7)), []], began: same(writing(failed(7, 4))),
     swapped: same(writing(failed(7, 4))), aborted: same(writing(failed(7, 4))),
     ended: [failed(7, 4), []], // an erase whose write rejected never stays erasing
+    mirrored: same(writing(failed(7, 4))), // a write that held change 6 does not hold change 7
   },
 };
 
@@ -163,6 +179,21 @@ describe('save-state transition table (A1, A6)', () => {
     expect(transition(saving(6, 4, 6, true), EVENTS.landed)).toEqual({ state: waiting(6, 6), effects: [] });
     // a leftover debounce over nothing unsaved is put aside and given back as it was
     expect(run(waiting(5, 5), [EVENTS.began, EVENTS.aborted])).toEqual({ state: waiting(5, 5), effects: [CANCEL, ARM] });
+  });
+
+  it('mirrored (US-09 AC30): only a write that holds every change marks a failed pass, so an older write never vouches for a newer failure', () => {
+    // pass A failed at change 6; an edit and pass B failed at 7 before A's device write landed
+    const b = run(failed(6, 4), [EVENTS.edited, EVENTS.save, EVENTS.failed]).state;
+    expect(b).toEqual(failed(7, 4));
+    expect(transition(b, { type: 'mirrored', changes: 6 })).toEqual({ state: failed(7, 4), effects: [] });
+    expect(transition(b, { type: 'mirrored', changes: 7 })).toEqual({ state: failed(7, 4, true), effects: [] });
+    // under an erase, either phase, it passes to `under`
+    expect(transition(reading(failed(7, 4)), { type: 'mirrored', changes: 7 })).toEqual({ state: reading(failed(7, 4, true)), effects: [] });
+    expect(transition(writing(failed(7, 4)), { type: 'mirrored', changes: 7 })).toEqual({ state: writing(failed(7, 4, true)), effects: [] });
+    // the erased copy swapped in is one more change the device write never held
+    expect(transition(reading(failed(6, 4, true)), EVENTS.swapped)).toEqual({ state: writing(failed(7, 4)), effects: [] });
+    // a new failure starts unmirrored, whatever the last one was
+    expect(run(failed(6, 4, true), [EVENTS.save, EVENTS.failed]).state).toEqual(failed(6, 4));
   });
 
   it('every erase ends at a base state: aborted while reading, or swapped then ended', () => {
@@ -204,6 +235,10 @@ describe('derived answers', () => {
     ['writing over failed', writing(failed(7, 4)), true, false, false, 'not-saved'],
     // an erase whose sync write failed: swapped, then ended with no synced
     ['after a failed erase write', run(clean(5), [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state, true, false, false, 'not-saved'],
+    // US-09 AC30: a failed save whose device write landed; until it lands, not-saved
+    ['failed, its device write landed', failed(6, 4, true), true, false, false, 'not-saved-on-device'],
+    ['reading over a mirrored failed', reading(failed(6, 4, true)), true, false, false, 'not-saved-on-device'],
+    ['writing over a mirrored failed', writing(failed(7, 4, true)), true, false, false, 'not-saved-on-device'],
   ];
   for (const [name, s, u, w, a, status] of rows) {
     it(name, () => {

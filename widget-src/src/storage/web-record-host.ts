@@ -7,6 +7,7 @@
  */
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import type { RecordFailureOp, RecordHost, RemoteChange } from '@roadmap/health-core/record-host';
+import type { SaveStatus } from '@roadmap/health-core/save-state';
 import {
   LocalStorageAdapter,
   clearLocalNamedFiles,
@@ -41,6 +42,10 @@ export const BACKEND_KEY = 'health_roadmap_backend';
 /** Fired on every marker flip; the sync-status UI listens (same convention as
  *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
 export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
+
+/** Fired each time the record session's save status changes (US-09 AC30),
+ *  with it as the detail; the storage line listens. */
+export const SAVE_STATUS_EVENT = 'hr:save-status-changed';
 
 /**
  * Fired when a re-read brought something new into the working copy — another
@@ -116,6 +121,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       clear: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
     },
     remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
+    saveStatusChanged: (status: SaveStatus) => notify(SAVE_STATUS_EVENT, status),
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }) {
       // The erase's best-effort steps: an orphaned server row or chat history
