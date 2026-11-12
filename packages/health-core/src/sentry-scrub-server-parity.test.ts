@@ -2,9 +2,12 @@
  * Audit A2-6/A3-1, step 1: the server scrub now lives in health-core
  * (sentry-scrub-server.ts) beside the hand copy in instrument-scrub.mjs, until a
  * later change generates the .mjs from it. Until then the two must give the
- * same output for the same event, whatever its shape. The vocabulary both
- * scrubbers share is a leaf module, so a bundle of the server scrub carries
- * the lab catalogue and nothing else.
+ * same output for the same event, whatever its shape (US-09 AC7, and AC7b-AC7h
+ * on both copies of the scrubber). The vocabulary both scrubbers share imports
+ * only ./lab-catalog directly; the catalogue still brings its own graph. That
+ * one direct import is the place step 2 (PR 2) swaps out: an esbuild plugin
+ * replaces the vocabulary with generated literal lists, so the generated
+ * server file does not carry the catalogue's graph.
  */
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
@@ -105,12 +108,12 @@ const errorEvent = () => ({
   request: { url: 'https://shop.test/a/e2 45', headers: { 'X-Custom': 'v' } },
 });
 
-describe('A2-6/A3-1 — the server scrub in health-core matches instrument-scrub.mjs', () => {
-  it('scrub-vocabulary.ts imports the lab catalogue and nothing else', () => {
+describe('US-09 AC7, A2-6/A3-1 — the server scrub in health-core matches instrument-scrub.mjs', () => {
+  it('scrub-vocabulary.ts directly imports ./lab-catalog and nothing else', () => {
     expect(importsOf('./scrub-vocabulary.ts')).toEqual(['./lab-catalog']);
   });
 
-  it('sentry-scrub-server.ts imports only the vocabulary and the shared scrub', () => {
+  it('sentry-scrub-server.ts directly imports only the vocabulary and the shared scrub', () => {
     expect(importsOf('./sentry-scrub-server.ts').sort()).toEqual(['./scrub-vocabulary', './sentry-scrub']);
   });
 

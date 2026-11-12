@@ -2,8 +2,11 @@
  * The word lists and regex vocabulary both Sentry scrubbers share: the
  * browser's (sentry-scrub.ts) and the server's (sentry-scrub-server.ts).
  *
- * A leaf: its only import is the lab catalogue, so a bundle of the server
- * scrubber carries nothing else (audit A2-6/A3-1). A test holds it to that.
+ * Its only DIRECT import is ./lab-catalog (which pulls in its own graph:
+ * mappings, units and more). That keeps one place to swap in step 2 (PR 2),
+ * where an esbuild plugin replaces this module with generated literal lists,
+ * so the generated server file does not carry the catalogue's graph (audit
+ * A2-6/A3-1). A test holds the direct-import list to that.
  */
 
 import { CATALOG_UNITS, LAB_CATALOG, metricNameWords } from './lab-catalog';
