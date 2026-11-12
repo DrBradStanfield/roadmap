@@ -114,11 +114,11 @@ function sameSignInAndProvider(store: StorageAdapter, openedUnder: LogOffId): bo
 export function webRecordHost(store: StorageAdapter): RecordHost {
   const base = {
     store,
-    // Another tab takes an erase in without clearing, dropping only the drafts on its screen, and its own erase
+    // Another tab, or an owner whose storage is already cleared for this erase, drops only its screen; another tab's erase
     // is refused first (US-11 AC6).
     // An owner's clear that does not read back throws, so the erase cleared for stays and the next load clears again.
-    clearOffFileData: (keepOriginals: ReadonlySet<string>) => {
-      if (!ownsOffFileData(store.id)) return dropDraftsOnScreen();
+    clearOffFileData: (keepOriginals: ReadonlySet<string>, storage: boolean) => {
+      if (!storage || !ownsOffFileData(store.id)) return dropDraftsOnScreen();
       if (!clearOffFileHealthData((ref) => keepOriginals.has(ref))) throw new Error('Off-file data still stored');
     },
     clearedErase: () => clearedEraseFor(store.id),

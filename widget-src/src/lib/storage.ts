@@ -288,7 +288,8 @@ export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
  * otherwise leave behind. `keepDocument` spares the blobs of documents an
  * erase did not remove (US-09 AC20, AC23): by default none is spared.
  * Answers whether every key it removed reads back as gone: safeRemoveItem
- * drops the error of a remove the storage refused (US-11 AC6).
+ * drops the error of a remove the storage refused (US-11 AC6). The check reads
+ * strictly: a read or a listing that throws is not clean.
  */
 export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): boolean {
   const keep = (key: string) => keepDocument(key.slice(DOC_KEY_PREFIX.length));
@@ -297,8 +298,12 @@ export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = 
   dropDraftsOnScreen();
   removeByPrefix(DOC_KEY_PREFIX, keep);
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
-  return keysUnder(DOC_KEY_PREFIX).every(keep)
-    && [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY].every((key) => safeGetItem(key) == null);
+  try {
+    return Object.keys(localStorage).filter((key) => key.startsWith(DOC_KEY_PREFIX)).every(keep)
+      && [BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY].every((key) => localStorage.getItem(key) === null);
+  } catch {
+    return false;
+  }
 }
 
 /** Fired by `dropDraftsOnScreen`: a matrix on screen drops its own copy of

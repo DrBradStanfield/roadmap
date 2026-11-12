@@ -6,7 +6,7 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
-import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
+import { clearOwed, eraseIdentityOf, eraseLater, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
@@ -52,8 +52,12 @@ export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStat
  * it. A device copy that cannot be read names nothing. Throws what the host's
  * clear throws. What the host clears is its call: a tab not on the record this
  * device has chosen drops only what its screen holds (`ownsOffFileData`).
+ * STORAGE vs SCREEN: the stored data is owed a clear only while `after`'s erase
+ * is later than the erase the host keeps, read live here, the shared truth of
+ * every tab (with none kept, it is owed: the host decides). Otherwise the host
+ * drops only what this tab's screen holds. Answers whether storage was owed.
  */
-export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): void {
+export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncContext): boolean {
   let kept = after;
   try {
     const body = host.deviceRecord?.();
@@ -61,33 +65,34 @@ export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncCont
   } catch {
     /* unreadable: it names nothing */
   }
-  host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)));
+  const cleared = keptErase(host);
+  const storage = cleared == null || clearOwed(eraseIdentityOf(after), cleared);
+  host.clearOffFileData(new Set(kept.documents.filter((d) => !d.deleted && d.fileRef).map((d) => d.fileRef)), storage);
+  return storage;
 }
 
 /**
- * At a session's open: the erase this device's off-file data counts as cleared
- * up to (US-11 AC6). The erase the host keeps for this store, when it keeps a
- * readable one: a record at a later erase then owes a clear (`clearOwed`), and
- * one at an earlier erase (a lagging copy) owes none. With none kept (a first
- * run, another record, log-off, or a page that does not own the off-file
- * data), the record's own erase: it adopts it, the host keeps it, and nothing
- * is cleared. Always a readable identity.
+ * At a session's open: the erase this tab counts as seen (US-11 AC6). The
+ * erase the host keeps for this store, when it keeps a readable one and the
+ * record's erase is later: the open then owes a clear (`clearOwed`), its
+ * screen's and its storage's. Otherwise the record's own: a lagging copy owes
+ * none, and with none kept (a first run, another record, log-off, or a page
+ * that does not own the off-file data) the record adopts its erase, the host
+ * keeps it, and nothing is cleared. Always a readable identity.
  */
 export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
   const kept = keptErase(host);
-  if (kept != null) return kept;
-  host.noteCleared(eraseIdentityOf(file));
-  return eraseIdentityOf(file);
+  const own = eraseIdentityOf(file);
+  if (kept == null) host.noteCleared(own);
+  return kept != null && clearOwed(own, kept) ? kept : own;
 }
 
-/** After a clear for `identity` worked: keep it as the erase cleared up to,
- *  unless the one kept is later (another tab's): the kept erase never moves
- *  back. Answers the erase now cleared up to. */
-export function keepCleared(host: RecordHost, identity: string): string {
+/** After the stored data's clear for `identity` worked: keep it as the erase
+ *  storage is cleared up to, unless the one kept is later (another tab's): the
+ *  kept erase never moves back. */
+export function keepCleared(host: RecordHost, identity: string): void {
   const kept = keptErase(host);
-  if (kept != null && !eraseLater(identity, kept)) return kept;
-  host.noteCleared(identity);
-  return identity;
+  if (kept == null || eraseLater(identity, kept)) host.noteCleared(identity);
 }
 
 /** The erase the host keeps as cleared up to; null when none, or it cannot be read. */
@@ -148,9 +153,11 @@ interface HostBase {
    *  from another device (AC6). `keepOriginals`: the `fileRef`s whose stored
    *  originals stay, the engine's call (`RecordSession.clearOffFileData`);
    *  every other original goes. A host whose tab does not own that data
-   *  (`ownsOffFileData`) clears none of it, and drops only what its screen holds.
-   *  Throws when the owner's clear cannot say every store it meant to clear is clear. */
-  clearOffFileData(keepOriginals: ReadonlySet<string>): void;
+   *  (`ownsOffFileData`) clears none of it, and drops only what its screen holds;
+   *  so does an owner when `storage` is false (storage is already cleared for
+   *  this erase, `clearOffFile`). Throws when the owner's clear of storage
+   *  cannot say every store it meant to clear is clear. */
+  clearOffFileData(keepOriginals: ReadonlySet<string>, storage: boolean): void;
   /** The erase identity (`eraseIdentityOf`) this device's off-file data was
    *  last cleared for, kept across loads with the store id it was cleared on and
    *  nothing else: the erase's epoch and time only. Null unless this host's

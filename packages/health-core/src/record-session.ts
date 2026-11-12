@@ -150,7 +150,7 @@ export class RecordSession {
   private shown: string | null = null;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
-  /** The erase the off-file data is cleared up to: a clear is owed once this copy's is later (US-11 AC6, AC7). */
+  /** SCREEN: the erase this tab has seen; a later one drops its screen's drafts (storage: the host's live key). */
   private clearedFor = '';
   private clearReportedFor = ''; // the erase whose failed clear was reported
 
@@ -362,12 +362,10 @@ export class RecordSession {
       // the erase on this device (US-11). On a failed flush we keep the mirror
       // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
       // merge and carries the erase to the cloud next session.
-      // Document blobs and the unsaved drafts sit outside the record file, so
-      // the erased file alone doesn't reach them. They go in every mode — a
-      // device-tier user gets no wipe below (it would delete the erased file
-      // just written), and used to keep them — except the originals of
-      // documents the erase did not remove (another tab's, saved meanwhile).
-      this.clearOffFileData();
+      // Document blobs and the unsaved drafts sit outside the record file. They go in every mode (a device-tier
+      // user gets no wipe below), except the originals of documents the erase did not remove (another tab's, saved
+      // meanwhile). A clear that fails is reported on its own: the cleanup below still runs, the next load clears.
+      this.tryClear();
       if (host.tier === 'device') {
         // The other record files (chat history): their contents are already
         // tombstoned (the caller's beforeErase erases chat history first).
@@ -526,19 +524,20 @@ export class RecordSession {
     }
   }
 
-  /** Clear this device's off-file health data for this copy's erase, and keep it once the clear worked; the page
-   *  calls it after an erase whose write failed (record-host `clearOffFile`). */
+  /** Clear this device's off-file health data for this copy's erase (record-host `clearOffFile`: storage only while
+   *  owed), moving the kept erase once storage's clear worked; the page calls it after an erase whose write failed. */
   clearOffFileData(): void {
-    clearOffFile(this.host, this.current, this.ctx());
-    this.clearedFor = keepCleared(this.host, this.eraseIdentity);
+    if (clearOffFile(this.host, this.current, this.ctx())) keepCleared(this.host, this.eraseIdentity);
+    this.clearedFor = this.eraseIdentity;
   }
 
-  /** The clear a later erase owes: tried at each load, save and re-read until it lands (US-11 AC6, AC7). */
+  /** The clear a later erase owes this tab: tried at each load, save and re-read until it lands (US-11 AC6, AC7). */
   private settleClear(): void {
-    if (!clearOwed(this.eraseIdentity, this.clearedFor)) return;
-    try {
-      this.clearOffFileData();
-    } catch (error) {
+    if (clearOwed(this.eraseIdentity, this.clearedFor)) this.tryClear();
+  }
+  /** Clear, reporting a failure once per erase per session; the kept erase then stays, so the next load clears again. */
+  private tryClear(): void {
+    try { this.clearOffFileData(); } catch (error) {
       this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
       this.clearReportedFor = this.eraseIdentity;
     }

@@ -201,6 +201,25 @@ describe('US-16 AC2a, US-11 AC6: another tab\'s erase, heard through the storage
   });
 });
 
+describe('US-11 AC6: another tab of this browser erased and already cleared storage up to its erase', () => {
+  it('the page drops its screen copy, and its matrix removes the draft it stored', async () => {
+    await seedGuest(PROFILE, [['weight', 82]]);
+    const view = await openPage();
+    await matrixHoldsDraft(view);
+    await act(async () => {
+      await anotherWriterErases(new LocalStorageAdapter());
+      // What the erasing tab's clear left: the erase it cleared storage for (cleared-erase.ts).
+      const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+      const meta = (body as RoadmapFile).meta;
+      localStorage.setItem('health_roadmap_cleared_erase', JSON.stringify({ lineage: 'local', erase: JSON.stringify([meta.eraseEpoch, meta.erasedAt]) }));
+      window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
+      await drain();
+    });
+    await settle();
+    draftGone(view);
+  });
+});
+
 describe('US-34 AC4 (loading-held), US-16 AC2a: an erase heard before the page has shown its first read', () => {
   it('waits for that read, then shows, once', async () => {
     await seedGuest(PROFILE, [['weight', 82]]);

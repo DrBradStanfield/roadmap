@@ -3,7 +3,7 @@
  * keeps (merge.ts: a higher eraseEpoch wins). record-session.ts re-exports it;
  * the web widget's erase machine orders by `epochOf` (fix 4, design Q4).
  */
-import { stampInstant } from './merge';
+import { eraseTimeLater } from './merge';
 import type { RoadmapFile } from './roadmap-file';
 
 /** Which erase the record is at. It lives in `meta` beside the clocks but is
@@ -31,16 +31,14 @@ export function readErase(identity: string): [number, string | null] | null {
 }
 
 /** Whether `record`'s erase came after `kept`'s: a higher epoch, or the same
- *  epoch with a later erasedAt, as instants (none, or one that is no time,
- *  counts as earliest). A `kept` that cannot be read is earlier than any erase;
- *  a `record` that cannot be read is never later (US-11 AC6). */
+ *  epoch with a later erasedAt in the merge's own order (`eraseTimeLater`).
+ *  A `kept` that cannot be read is earlier than any erase; a `record` that
+ *  cannot be read is never later (US-11 AC6). */
 export function eraseLater(record: string, kept: string): boolean {
   const [r, k] = [readErase(record), readErase(kept)];
   if (!r) return false;
   if (!k) return true;
-  if (r[0] !== k[0]) return r[0] > k[0];
-  const instant = (at: string | null) => (Number.isNaN(stampInstant(at)) ? -Infinity : stampInstant(at));
-  return instant(r[1]) > instant(k[1]);
+  return r[0] !== k[0] ? r[0] > k[0] : eraseTimeLater(r[1] ?? undefined, k[1] ?? undefined);
 }
 
 /** The one rule for an owed clear, at a session's open and in it (US-11 AC6):
