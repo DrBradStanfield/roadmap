@@ -214,6 +214,22 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC7 + AC8 sim-run.sh (macO
       expect((await b.done).code).toBe(0);
     });
 
+    it('a caller that reruns straight after its own run does not starve a waiter queued behind it', async () => {
+      // Six back-to-back runs; the waiter queues during the first and must run before the sixth.
+      const chain = spawn('bash', ['-c', 'for i in 1 2 3 4 5 6; do bash "$0" -- sh -c \'echo c >> "$FAKE/order"; sleep 0.5\'; done', SCRIPT],
+        { env: env(), cwd: work });
+      const chainDone = new Promise((res) => chain.on('exit', res));
+      live.push({ p: chain, done: chainDone });
+      await until(() => busy() && log('order') === 'c\n');
+      const w = start(['--', 'sh', '-c', 'echo W >> "$FAKE/order"'], { HR_SIM_WAIT_SECONDS: '60' });
+      await until(() => w.err().includes('waiting up to'));
+      expect((await w.done).code).toBe(0);
+      await chainDone;
+      const order = log('order').trim().split('\n');
+      expect(order.filter((x) => x === 'c')).toHaveLength(6);
+      expect(order.indexOf('W')).toBeLessThan(order.length - 1);
+    });
+
     it('on SIGTERM keeps the lock until the command is gone, killing one that ignores TERM', async () => {
       const pidFile = join(dir, 'child.pid');
       const a = start(['--', 'sh', '-c', `trap "" TERM; echo $$ > ${pidFile}; while :; do sleep 0.1; done`], { HR_SIM_KILL_SECONDS: '5' });
