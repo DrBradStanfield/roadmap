@@ -1,13 +1,14 @@
 // US-07 AC1j (Brad 2026-11-12): "The new abnormal result starts the follow-up again. The old follow-up
 // answers are cleared, the existing urgent 'Organize colonoscopy' card shows, and the person works through
-// the follow-up questions afresh. No new words." Colorectal only. A new last screening (its month later than
-// the follow-up's) with an abnormal result clears the follow-up status, date and time when the answer is
-// written (screeningWrites, web and iPhone), always, so the stamped nulls win a merge. The plan and reminders
-// read stored answers as they are: an older engine's or a merge's leftovers are not reopened on read.
+// the follow-up questions afresh. No new words." Colorectal only. While the last screening's month is later
+// than the follow-up's, the form asks the result again (shownColorectalResult: blank, follow-up hidden).
+// Writing abnormal then clears the follow-up status, date and time (screeningWrites, web and iPhone), always,
+// so the stamped nulls win a merge. A date write never clears; the plan reads the stored answers as they are.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { screeningWrites } from './input-form';
+import { screeningForm, screeningWrites } from './input-form';
+import { shownColorectalResult } from './colonoscopy-schedule';
 import { computeNextDueDates, followupKinds } from './reminder-schedule';
 import { mergeFiles } from './merge';
 import { computePlan, derivePlanInputs } from './plan';
@@ -58,30 +59,34 @@ const old = (method: Method, extra: ScreeningInputs = {}): ScreeningInputs => ({
   colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2020-01', colorectalFollowupIntervalYears: 5, ...extra,
 });
 
-describe('US-07 AC1j: a new abnormal last screening starts the follow-up again (Brad 2026-11-12)', () => {
-  it.each(METHODS)('%s: result already abnormal, a new last date 2026-07 clears the follow-up; the urgent Organize card and its reminder', (method) => {
-    const writes = screeningWrites(old(method), 'colorectal_last_date', '2026-07');
-    expect(writes).toEqual([['colorectal_last_date', '2026-07'], [S, ''], [D, ''], [I, '']]);
-    const file = answer(fileWith(old(method)), 'colorectal_last_date', '2026-07');
+/** The old follow-up, with a newer last screening (2026-07) written over it: the form asks the result again. */
+const newer = (method: Method, extra: ScreeningInputs = {}): ScreeningInputs => old(method, { colorectalLastDate: '2026-07', ...extra });
+const colorectalFields = (scr: ScreeningInputs) => screeningForm(60, 'male', scr)[0].groups.find((g) => g.id === 'colorectal')!.fields
+  .flatMap((f) => ('key' in f && f.key.startsWith('colorectal_') ? [[f.key, 'value' in f ? f.value : undefined]] : []));
+
+describe('US-07 AC1j: the abnormal result written for a newer last screening starts the follow-up again (Brad 2026-11-12)', () => {
+  it.each(METHODS)('%s: the result write clears the follow-up; the urgent Organize card and its reminder', (method) => {
+    expect(screeningWrites(newer(method), 'colorectal_result', 'abnormal')).toEqual([['colorectal_result', 'abnormal'], [S, ''], [D, ''], [I, '']]);
+    const file = answer(fileWith(newer(method)), 'colorectal_result', 'abnormal');
     expect(followup(file)).toEqual([null, null, null]);
     expect(cards(file)).toEqual(organize(method));
     expect(reminder(file)).toBe('2026-07-01');
+    expect(shownColorectalResult(derivePlanInputs(file, NOW).screenings)).toBe('abnormal');
   });
 
-  it.each(METHODS)('%s: date then result: the date is written over an unanswered result, then abnormal clears', (method) => {
-    // An older engine or a merge left the follow-up answers with no result.
-    let file = setScreening(fileWith(old(method)), 'colorectal_result', '', '2026-11-01T00:00:00Z');
-    file = answer(file, 'colorectal_last_date', '2026-07');
-    expect(followup(file)).toEqual(['completed', '2020-01', 5]);
-    expect(screeningWrites(derivePlanInputs(file, NOW).screenings, 'colorectal_result', 'abnormal').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
-    file = answer(file, 'colorectal_result', 'abnormal');
+  it.each(METHODS)('%s: the clears are stamped even when this device holds no follow-up time', (method) => {
+    expect(screeningWrites(newer(method, { colorectalFollowupIntervalYears: undefined }), 'colorectal_result', 'abnormal').slice(1))
+      .toEqual([[S, ''], [D, ''], [I, '']]);
+  });
+
+  it('an unanswered result (an older engine or a merge left it blank), answered abnormal, clears too', () => {
+    const file = answer(fileWith(newer('fit_annual', { colorectalResult: undefined })), 'colorectal_result', 'abnormal');
     expect(followup(file)).toEqual([null, null, null]);
-    expect(cards(file)).toEqual(organize(method));
-    expect(reminder(file)).toBe('2026-07-01');
+    expect(cards(file)).toEqual(organize('fit_annual'));
   });
 
   it('the person works through the follow-up afresh: completed, then a date, gives the schedule again', () => {
-    let file = answer(fileWith(old('colonoscopy_10yr')), 'colorectal_last_date', '2026-07');
+    let file = answer(fileWith(newer('colonoscopy_10yr')), 'colorectal_result', 'abnormal');
     file = answer(file, S, 'completed');
     file = answer(file, D, '2026-09');
     expect(followup(file)).toEqual(['completed', '2026-09', null]);
@@ -90,39 +95,62 @@ describe('US-07 AC1j: a new abnormal last screening starts the follow-up again (
   });
 
   it('a full date (YYYY-MM-DD) compares by its month', () => {
-    const on = old('fit_annual', { colorectalFollowupDate: '2020-01-20' });
-    expect(screeningWrites(on, 'colorectal_last_date', '2020-01-05').slice(1)).toEqual([]);
-    expect(screeningWrites(on, 'colorectal_last_date', '2020-02-01').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
+    expect(screeningWrites(old('fit_annual', { colorectalLastDate: '2020-01-25', colorectalFollowupDate: '2020-01-20' }), 'colorectal_result', 'abnormal').slice(1)).toEqual([]);
+    expect(screeningWrites(old('fit_annual', { colorectalLastDate: '2020-02-01', colorectalFollowupDate: '2020-01-20' }), 'colorectal_result', 'abnormal').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
   });
 
-  it('the same month, or an earlier one, clears nothing and keeps the schedule', () => {
-    for (const date of ['2020-01', '2019-12']) {
-      expect(screeningWrites(old('fit_annual'), 'colorectal_last_date', date).slice(1), date).toEqual([]);
-      expect(screeningWrites(old('fit_annual', { colorectalLastDate: date, colorectalResult: undefined }), 'colorectal_result', 'abnormal').slice(1), date).toEqual([]);
-      const file = answer(fileWith(old('fit_annual')), 'colorectal_last_date', date);
-      expect(followup(file), date).toEqual(['completed', '2020-01', 5]);
-      expect(cards(file)[0].title, date).toBe('Colonoscopy overdue');
+  it('the same month, an earlier one, or a follow-up with no date: the stored result shows and abnormal clears nothing', () => {
+    for (const scr of [old('fit_annual', { colorectalLastDate: '2020-01' }), old('fit_annual'), newer('fit_annual', { colorectalFollowupDate: undefined })]) {
+      expect(shownColorectalResult(scr), JSON.stringify(scr)).toBe('abnormal');
+      expect(screeningWrites(scr, 'colorectal_result', 'abnormal').slice(1), JSON.stringify(scr)).toEqual([]);
     }
   });
 
-  it('a new last date with a normal result clears the chain, as before (pin)', () => {
-    let file = answer(fileWith(old('fit_annual')), 'colorectal_last_date', '2026-07');
-    file = answer(file, 'colorectal_result', 'normal');
-    expect(followup(file)).toEqual([null, null, null]);
-    expect(screeningWrites(old('fit_annual', { colorectalLastDate: '2026-07' }), 'colorectal_result', 'normal').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
-  });
-
-  it('a follow-up with no date is left alone (open question, not decided here)', () => {
-    const on = old('fit_annual', { colorectalFollowupDate: undefined });
-    expect(screeningWrites(on, 'colorectal_last_date', '2026-07').slice(1)).toEqual([]);
-    expect(cards(fileWith({ ...on, colorectalLastDate: '2026-07' }))[0].title).toBe('Add your colonoscopy date');
+  it('a normal result clears the chain, as before (pin)', () => {
+    expect(screeningWrites(newer('fit_annual'), 'colorectal_result', 'normal')).toEqual([['colorectal_result', 'normal'], [S, ''], [D, ''], [I, '']]);
+    expect(followup(answer(fileWith(newer('fit_annual')), 'colorectal_result', 'normal'))).toEqual([null, null, null]);
   });
 });
 
-describe('US-07 AC1j: the rule fires only when the answer is written (stated limit: stored answers are read as they are)', () => {
-  it.each(METHODS)('%s: a file left with last 2026-07 over a follow-up completed 2020-01 keeps that schedule, never Organize', (method) => {
-    const file = fileWith(old(method, { colorectalLastDate: '2026-07' }));
+describe('US-07 AC1j: a date write never clears anything', () => {
+  it.each(METHODS)('%s: a new last date over the old follow-up writes the date alone', (method) => {
+    expect(screeningWrites(old(method), 'colorectal_last_date', '2026-07')).toEqual([['colorectal_last_date', '2026-07']]);
+    expect(followup(answer(fileWith(old(method)), 'colorectal_last_date', '2026-07'))).toEqual(['completed', '2020-01', 5]);
+  });
+
+  it('the December-first half-edit (2025-12, then 2024-12) keeps every follow-up answer', () => {
+    let file = fileWith(old('fit_annual', { colorectalLastDate: '2025-03', colorectalFollowupDate: '2025-06' }));
+    file = answer(file, 'colorectal_last_date', '2025-12');
+    file = answer(file, 'colorectal_last_date', '2024-12');
+    expect(followup(file)).toEqual(['completed', '2025-06', 5]);
+    expect(shownColorectalResult(derivePlanInputs(file, NOW).screenings)).toBe('abnormal');
+  });
+
+  it('a typo fix on a newer last date (2026-07 to 2026-08) keeps every follow-up answer', () => {
+    const file = answer(fileWith(newer('other')), 'colorectal_last_date', '2026-08');
     expect(followup(file)).toEqual(['completed', '2020-01', 5]);
+  });
+});
+
+describe('US-07 AC1j: the form asks the result again for a newer last screening', () => {
+  it('the result shows blank and the follow-up questions hide; the stored answers stay', () => {
+    expect(shownColorectalResult(newer('fit_annual'))).toBe('');
+    expect(colorectalFields(newer('fit_annual'))).toEqual([['colorectal_method', 'fit_annual'], ['colorectal_last_date', '2026-07'], ['colorectal_result', '']]);
+    expect(colorectalFields(old('fit_annual')).map(([k]) => k)).toContain(S);
+  });
+
+  it('a result other than abnormal shows as stored', () => {
+    expect(shownColorectalResult(newer('fit_annual', { colorectalResult: 'normal' }))).toBe('normal');
+    expect(shownColorectalResult({})).toBe('');
+  });
+});
+
+describe('US-07 AC1j: while the result shows blank, the plan does not move (it reads the stored answers)', () => {
+  it.each(METHODS)('%s: the same cards and reminder as the stored answers give, never Organize', (method) => {
+    const file = fileWith(newer(method));
+    expect(shownColorectalResult(derivePlanInputs(file, NOW).screenings)).toBe('');
+    expect(followup(file)).toEqual(['completed', '2020-01', 5]);
+    expect(cards(file)).toEqual(cards(fileWith(old(method))));
     expect(cards(file)[0].title).toBe('Colonoscopy overdue');
     expect(reminder(file)).toBe('2025-01-01');
     expect(followupKinds(file, NOW).screening_colorectal?.kind).not.toBe('organize');
@@ -136,32 +164,31 @@ describe('US-07 AC1j: colorectal only: breast and cervical keep their follow-up 
   };
   const other = (file: RoadmapFile) => computePlan(file, NOW).results.suggestions.filter((s) => /^screening-(breast|cervical)/.test(s.id)).map((s) => s.title);
   const stored: ScreeningInputs = {
-    breastFrequency: 'annual', breastLastDate: '2023-03', breastResult: 'abnormal', breastFollowupStatus: 'completed', breastFollowupDate: '2024-01',
-    cervicalMethod: 'hpv_every_5yr', cervicalLastDate: '2023-03', cervicalResult: 'abnormal', cervicalFollowupStatus: 'completed', cervicalFollowupDate: '2024-01',
+    breastFrequency: 'annual', breastLastDate: '2026-03', breastResult: 'abnormal', breastFollowupStatus: 'completed', breastFollowupDate: '2024-01',
+    cervicalMethod: 'hpv_every_5yr', cervicalLastDate: '2026-03', cervicalResult: 'abnormal', cervicalFollowupStatus: 'completed', cervicalFollowupDate: '2024-01',
   };
 
-  it('a newer last date over an abnormal result clears nothing', () => {
-    expect(screeningWrites(stored, 'breast_last_date', '2026-03').slice(1)).toEqual([]);
-    expect(screeningWrites(stored, 'cervical_last_date', '2026-03').slice(1)).toEqual([]);
-    expect(screeningWrites({ ...stored, breastLastDate: '2026-03', breastResult: undefined }, 'breast_result', 'abnormal').slice(1)).toEqual([]);
+  it('an abnormal result or a date over a newer last date clears nothing, and the result shows as stored', () => {
+    for (const t of ['breast', 'cervical']) {
+      expect(screeningWrites(stored, `${t}_result`, 'abnormal').slice(1), t).toEqual([]);
+      expect(screeningWrites(stored, `${t}_last_date`, '2026-04').slice(1), t).toEqual([]);
+    }
+    const fields = screeningForm(50, 'female', stored)[0].groups.flatMap((g) => g.fields);
+    expect(fields.filter((f) => 'key' in f && /^(breast|cervical)_result$/.test(f.key)).map((f) => 'value' in f && f.value)).toEqual(['abnormal', 'abnormal']);
+    expect(fields.filter((f) => 'key' in f && /^(breast|cervical)_followup_status$/.test(f.key))).toHaveLength(2);
   });
 
-  it('the file with newer last dates shows the same cards as before, never Organize', () => {
-    const file = female({ ...stored, breastLastDate: '2026-03', cervicalLastDate: '2026-03' });
-    expect(other(file)).toEqual(['Breast screening overdue', 'Cervical screening overdue']);
+  it('the file shows the same cards as before, never Organize', () => {
+    expect(other(female(stored))).toEqual(['Breast screening overdue', 'Cervical screening overdue']);
   });
 });
 
 describe('US-07 AC1j: the reopen\'s clears are always written, so they win the merge', () => {
-  const base = fileWith(old('fit_annual', { colorectalLastDate: '2025-01', colorectalFollowupDate: '2025-06', colorectalFollowupIntervalYears: undefined }), 'dev_base', '2026-10-01T00:00:00Z');
+  const base = fileWith(old('fit_annual', { colorectalLastDate: '2026-07', colorectalFollowupDate: '2025-06', colorectalFollowupIntervalYears: undefined }), 'dev_base', '2026-10-01T00:00:00Z');
 
-  it('written even when this device holds no follow-up time', () => {
-    expect(screeningWrites(derivePlanInputs(base, NOW).screenings, 'colorectal_last_date', '2026-07').slice(1)).toEqual([[S, ''], [D, ''], [I, '']]);
-  });
-
-  it('A writes a new last date, B (earlier, unsynced) gave a 10-year time: merged both ways, the follow-up starts again', () => {
+  it('A answers abnormal for the newer screening, B (earlier, unsynced) gave a 10-year time: merged both ways, the follow-up starts again', () => {
     const b = setScreening(base, I, '10', '2026-11-01T09:00:00Z');
-    const a = answer(base, 'colorectal_last_date', '2026-07', '2026-11-02T09:00:00Z');
+    const a = answer(base, 'colorectal_result', 'abnormal', '2026-11-02T09:00:00Z');
     for (const merged of [mergeFiles(a, b, { deviceId: 'm', now: '2026-11-04T00:00:00Z' }), mergeFiles(b, a, { deviceId: 'm', now: '2026-11-04T00:00:00Z' })]) {
       expect(followup(merged)).toEqual([null, null, null]);
       expect(cards(merged)).toEqual(organize('fit_annual'));

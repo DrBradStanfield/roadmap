@@ -86,25 +86,34 @@ describe('US-07 AC1j: the colonoscopy follow-up time on the web form', () => {
   });
 });
 
-// US-07 AC1j (Brad 2026-11-12): "The new abnormal result starts the follow-up again." The web's date picker saves
-// through screeningWrites, the iPhone's one write path (ios/engine/my-data-forms.ts), so a later last date over an
-// abnormal result clears the follow-up status, date and time here too.
-describe('US-07 AC1j: the web date picker saves through the shared write path', () => {
+// US-07 AC1j (Brad 2026-11-12): "The new abnormal result starts the follow-up again." A date write never clears:
+// the web picker writes intermediate dates (December first writes that year's December). With a last date later
+// than the follow-up, the form asks the result again (blank, follow-up hidden); choosing Abnormal clears the
+// follow-up status, date and time through screeningWrites, the iPhone's one write path (ios/engine/my-data-forms.ts).
+describe('US-07 AC1j: a newer last screening asks the result again on the web form', () => {
   const pick = (key: string, part: 'month' | 'year', value: string) =>
     fireEvent.change(document.querySelector<HTMLSelectElement>(`select#${key}-${part}`)!, { target: { value } });
+  const result = () => document.querySelector<HTMLSelectElement>('select#colorectal-result')!;
 
-  it('a later last date with an abnormal result clears the follow-up status, date and time', () => {
+  it('picking a later year writes the date alone; the result then shows blank; Abnormal writes the result and the three clears', () => {
     const { onScreeningChange } = panel({ ...DONE, colorectal_followup_interval_years: '3' });
     pick('colorectal_last_date', 'year', '2026');
-    expect(onScreeningChange.mock.calls).toEqual([
-      ['colorectal_last_date', '2026-01'], ['colorectal_followup_status', ''],
+    expect(onScreeningChange.mock.calls).toEqual([['colorectal_last_date', '2026-01']]);
+    cleanup();
+    const next = panel({ ...DONE, colorectal_last_date: '2026-01', colorectal_followup_interval_years: '3' });
+    expect(result().value).toBe('');
+    expect(document.querySelector('select#colorectal-followup-status')).toBeNull();
+    fireEvent.change(result(), { target: { value: 'abnormal' } });
+    expect(next.onScreeningChange.mock.calls).toEqual([
+      ['colorectal_result', 'abnormal'], ['colorectal_followup_status', ''],
       ['colorectal_followup_date', ''], ['colorectal_followup_interval_years', ''],
     ]);
   });
 
-  it('a last date in the follow-up\'s month or earlier writes only the date', () => {
+  it('a last date in the follow-up\'s month or earlier writes only the date, and the result shows as stored', () => {
     const { onScreeningChange } = panel({ ...DONE, colorectal_followup_interval_years: '3' });
     pick('colorectal_last_date', 'month', '06');
     expect(onScreeningChange.mock.calls).toEqual([['colorectal_last_date', '2025-06']]);
+    expect(result().value).toBe('abnormal');
   });
 });

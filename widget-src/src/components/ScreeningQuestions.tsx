@@ -45,9 +45,11 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
 
   /** Render result dropdown + follow-up status + follow-up date for a screening type. */
   const renderResultFollowup = (type: string) => {
-    if (!field(`${type}_result`)) return null;
+    const resultField = field(`${type}_result`);
+    if (resultField?.kind !== 'choice') return null;
 
-    const result = readScreening(scr, `${type}_result`);
+    // The form's value: colorectal's shows blank to ask again for a newer last screening (US-07 AC1j).
+    const result = resultField.value;
     const followupStatus = readScreening(scr, `${type}_followup_status`);
     const status = field(`${type}_followup_status`);
     const date = field(`${type}_followup_date`);

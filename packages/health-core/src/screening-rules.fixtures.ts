@@ -168,8 +168,9 @@ function colonoscopyFixtures(): Fixture[] {
       fx(`${tag(monthsAgo(41))}@${OVERDUE},years=2`, { ...done(monthsAgo(41)), colorectalFollowupDate: OVERDUE, colorectalFollowupIntervalYears: 2 }),
     ];
   }).concat(
-    // A newer abnormal last screening starts the follow-up again (US-07 AC1j, Brad 2026-11-12) when the answer is
-    // written: the writes table shows the clears; the cards read the stored answers as they are. The same month never.
+    // A newer last screening starts the follow-up again (US-07 AC1j, Brad 2026-11-12) when its abnormal result is
+    // written: the form shows the result blank, the writes table shows the result write's clears, and the cards read
+    // the stored answers as they are. The same month never.
     fx(`colonoscopy:colonoscopy_10yr,last=${RECENT},abnormal,fu=completed@${OVERDUE},years=5,newer-last`,
       { colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: RECENT, colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: OVERDUE, colorectalFollowupIntervalYears: 5 }),
     fx(`colonoscopy:fit_annual,last=${RECENT},abnormal,fu=scheduled@${OVERDUE},newer-last`,

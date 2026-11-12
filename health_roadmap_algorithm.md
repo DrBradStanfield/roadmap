@@ -1117,7 +1117,7 @@ With no sex on record only the unsexed screenings (colorectal, lung) show (US-07
 Colorectal method by age (Brad 2026-11-12): Dr Brad's sequence is a FIT test every year until 55, then a colonoscopy every 10 years; the ACS treats them as equal options. The start card names the sequence by age (35-44, 45-54, 55-75). From 55 to 75, a person on `fit_annual` sees one more line on the FIT up-to-date and overdue cards, suggesting a colonoscopy. The FIT schedule and reminder are unchanged until the method changes.
 The line is not shown when the recorded result is abnormal (Brad 2026-11-12).
 After an abnormal result, once the colonoscopy is done, the person is on a colonoscopy schedule: the next is due at the interval the report gave, counted once from the colonoscopy date, or 3 years with none given (Dr Brad's recommendation). colorectalMethod is never rewritten; the person records the next colonoscopy by switching the method to Colonoscopy.
-"The new abnormal result starts the follow-up again" (Brad 2026-11-12): when the last screening is abnormal and its month is later than the follow-up's date, the old follow-up answers (status, date, follow-up time) are cleared and the existing urgent 'Organize colonoscopy' card shows; the same month, or a follow-up with no date, does not reopen it. No new words.
+"The new abnormal result starts the follow-up again" (Brad 2026-11-12): while the last screening's month is later than the follow-up's date, the form asks the result again for that screening. When the abnormal result is written, the old follow-up answers (status, date, follow-up time) are cleared and the existing urgent 'Organize colonoscopy' card shows. A date write or an upload never reopens it; until the result is answered the plan reads the stored answers as they are. The same month, or a follow-up with no date, does not reopen it. No new words.
 
 Lung: the plan does not ask when someone quit. Like the American Cancer Society's 2023 guideline, a former smoker with >= 20 pack-years stays eligible however long ago they quit (Brad 2026-11-03; US-07 AC1e).
 
@@ -1162,7 +1162,7 @@ For abnormal results, the follow-up status progresses through:
 2. `scheduled` -> **info**: keep appointment
 3. `completed` + follow-up date -> check post-follow-up interval for overdue/upcoming
 4. Colorectal, completed with no follow-up date: the 'Add your colonoscopy date' card (attention); no reminder until the date is added (Brad 2026-11-12).
-5. Colorectal, abnormal with a last screening later (by month) than the follow-up date: back to step 1. "The old follow-up answers are cleared" when that answer is written (Brad 2026-11-12).
+5. Colorectal, a last screening later (by month) than the follow-up date: the form asks the result again; once abnormal is written for it, back to step 1. "The old follow-up answers are cleared" by that result write alone (Brad 2026-11-12).
 
 ### Overdue Calculation
 

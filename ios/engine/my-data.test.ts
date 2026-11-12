@@ -769,6 +769,21 @@ describe('forms (AC8)', () => {
     expect(file.screenings.colorectalLastDate ?? '').toBe('');
   });
 
+  it('US-07 AC1j: a newer last screening shows the result blank; abnormal is offered and clears the old follow-up', () => {
+    let file = man60(
+      { kind: 'screening', key: 'colorectal_method', value: 'fit_annual' }, { kind: 'screening', key: 'colorectal_last_date', value: '2019-06' },
+      { kind: 'screening', key: 'colorectal_result', value: 'abnormal' }, { kind: 'screening', key: 'colorectal_followup_status', value: 'completed' },
+      { kind: 'screening', key: 'colorectal_followup_date', value: '2020-01' }, { kind: 'screening', key: 'colorectal_last_date', value: '2026-07' });
+    expect(file.screenings).toMatchObject({ colorectalResult: 'abnormal', colorectalFollowupStatus: 'completed', colorectalFollowupDate: '2020-01' });
+    const colorectal = myData(file, NOW).screenings[0].groups.find((g) => g.id === 'colorectal')!.fields;
+    expect(colorectal.map((f) => ('key' in f ? [f.key, 'value' in f ? f.value : null] : null))).toEqual([
+      ['colorectal_method', 'fit_annual'], ['colorectal_last_date', '2026-07'], ['colorectal_result', '']]);
+    file = edited(file, { kind: 'screening', key: 'colorectal_result', value: 'abnormal' });
+    expect(file.screenings.colorectalResult).toBe('abnormal');
+    expect([file.screenings.colorectalFollowupStatus ?? '', file.screenings.colorectalFollowupDate ?? ''])
+      .toEqual(['', '']);
+  });
+
   it('refuses an unknown key, a hidden question, a month out of range and a bad pack-years', () => {
     const file = man60({ kind: 'screening', key: 'lung_smoking_history', value: 'former_smoker' });
     const refused = (key: string, value: string) => expect(applyEdit(file, { kind: 'screening', key, value }, NOW), `${key}=${value}`).toMatchObject({ ok: false });

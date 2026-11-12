@@ -40,14 +40,17 @@ const monthOf = (d: string | undefined): string => (/^\d{4}-\d{2}/.test(d ?? '')
 const reopens = (result: string | undefined, lastDate: string | undefined, followupDate: string | undefined): boolean =>
   opensFollowup(ruleOf('colorectal'), result) && !!monthOf(followupDate) && monthOf(lastDate) > monthOf(followupDate);
 
-/** The follow-up answers a colorectal last date or result write clears when it starts the follow-up again:
- *  status, date and time. screeningWrites writes them always, so the stamped nulls win a merge. The rule
- *  fires only at write: the plan and reminders read the stored answers as they are. */
+/** The colorectal result the form shows: blank while a stored abnormal result's last screening is newer than its
+ *  follow-up, so the form asks it again for that screening. The only place that decides it; the plan, cards and
+ *  reminders read the stored answers as they are. */
+export const shownColorectalResult = (s: ScreeningInputs): string =>
+  reopens(s.colorectalResult, s.colorectalLastDate, s.colorectalFollowupDate) ? '' : (s.colorectalResult ?? '');
+
+/** The follow-up answers the colorectal result write clears when it starts the follow-up again: status, date and
+ *  time. screeningWrites writes them always, so the stamped nulls win a merge. A date write never clears. */
 export function reopenClears(s: ScreeningInputs, key: string, value: string): string[] {
   const r = ruleOf('colorectal');
-  if (key !== r.dateKey && key !== r.result!.key) return [];
-  const [last, result] = key === r.dateKey ? [value, s.colorectalResult] : [s.colorectalLastDate, value];
-  return reopens(result, last, s.colorectalFollowupDate) ? chainKeys(r).slice(1) : [];
+  return key === r.result!.key && reopens(value, s.colorectalLastDate, s.colorectalFollowupDate) ? chainKeys(r).slice(1) : [];
 }
 
 /** Whether an abnormal result's colonoscopy is done: the person is on the colonoscopy schedule. */
