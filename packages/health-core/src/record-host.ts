@@ -6,7 +6,7 @@
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
 import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
-import { eraseIdentityOf, eraseOf } from './erase-identity';
+import { eraseIdentityOf, eraseLater, eraseOf, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
@@ -51,16 +51,24 @@ export function clearOffFile(host: RecordHost, after: RoadmapFile, ctx: SyncCont
 
 /**
  * At a session's open: the erase this device's off-file data was last cleared
- * for, so a clear is owed while the record is at another one (US-11 AC6). With
- * none kept, a record that was erased owes one (''), and a record never erased
- * owes none and is kept as cleared, so its live drafts stay.
+ * for, so a clear is owed once the record is at a later one (US-11 AC6). With
+ * none kept, or one that cannot be read, a record that was erased owes one
+ * (''), and a record never erased owes none and is kept as cleared, so its
+ * live drafts stay.
  */
 export function clearedAtOpen(host: RecordHost, file: RoadmapFile): string {
   const kept = host.clearedErase();
-  if (kept != null) return kept;
-  if (eraseOf(file)[0] > 0) return '';
-  host.noteCleared(eraseIdentityOf(file));
-  return eraseIdentityOf(file);
+  if (kept != null && readErase(kept)) return kept;
+  return eraseOf(file)[0] > 0 ? '' : keepCleared(host, eraseIdentityOf(file));
+}
+
+/** Keep `identity` as the erase last cleared for, unless the one kept is later:
+ *  the kept erase never moves back (US-11 AC6). Answers the erase now kept. */
+export function keepCleared(host: RecordHost, identity: string): string {
+  const kept = host.clearedErase();
+  if (kept != null && !eraseLater(identity, kept)) return kept;
+  host.noteCleared(identity);
+  return identity;
 }
 
 /** A store that reads and writes synchronously (localStorage, a local file).

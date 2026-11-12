@@ -8,10 +8,10 @@
  */
 import { ConflictError, ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { buildErasedFile } from './erase';
-import { eraseIdentityOf, eraseOf } from './erase-identity';
+import { eraseIdentityOf, eraseLater, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearedAtOpen, clearOffFile, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
@@ -147,7 +147,7 @@ export class RecordSession {
   private shown: string | null = null;
   /** The latest save's `SaveResult.warning`, for the erase to pass on. */
   private saveWarning: string | undefined;
-  /** The erase the off-file data was last cleared for: a clear is owed while it is not this copy's (US-11 AC6, AC7). */
+  /** The erase the off-file data was last cleared for: a clear is owed once this copy's is later (US-11 AC6, AC7). */
   private clearedFor = '';
   private clearReportedFor = ''; // the erase whose failed clear was reported
 
@@ -527,16 +527,15 @@ export class RecordSession {
     }
   }
 
-  /** Clear the off-file data for this copy's erase, and keep that erase once it worked (also after a failed erase write). */
+  /** Clear the off-file data for this copy's erase, and keep it (or the later one kept) once it worked, also after a failed erase write. */
   clearOffFileData(): void {
     clearOffFile(this.host, this.current, this.ctx());
-    this.clearedFor = this.eraseIdentity;
-    this.host.noteCleared(this.clearedFor);
+    this.clearedFor = keepCleared(this.host, this.eraseIdentity);
   }
 
   /** The clear an erase taken in owes: retried at each load, save and re-read until it lands (US-11 AC6, AC7). */
   private settleClear(): void {
-    if (this.clearedFor === this.eraseIdentity) return;
+    if (!eraseLater(this.eraseIdentity, this.clearedFor)) return;
     try {
       this.clearOffFileData();
     } catch (error) {

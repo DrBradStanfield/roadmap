@@ -159,6 +159,7 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
   await adapter.connect();
   await liftLocalInto(adapter, backend);
   rememberBackend(backend);
+  forgetClearedErase();
   trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
   location.reload();
 }
@@ -198,6 +199,13 @@ export function rememberBackend(backend: Backend): void {
 }
 export function forgetBackend(): void {
   safeRemoveItem(BACKEND_KEY);
+}
+
+/** A sign-in, or a switch to another record: the erase kept as cleared for
+ *  was the old record's, so the next record's first load keeps its own (US-11
+ *  AC6). Never a reload, a token refresh or a reconnect of the same record. */
+export function forgetClearedErase(): void {
+  safeRemoveItem(CLEARED_ERASE_KEY);
 }
 
 /** The remembered choice, or the on-device tier. The credential/token lives
@@ -271,7 +279,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
   clearOffFileHealthData();
-  safeRemoveItem(CLEARED_ERASE_KEY);
+  forgetClearedErase();
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();
@@ -304,6 +312,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     );
   }
   await adapter.disconnect();
+  forgetClearedErase();
   preparedFrom = current;
 }
 
