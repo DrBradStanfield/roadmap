@@ -3,7 +3,7 @@
  * docs/user-stories.md, or the split index with one file per story (the stories-split plan, PR 1).
  * These pin both shapes, on disk and at a git ref, and the reassembly rule in the module header.
  * US-64 AC11: the story-loss gate reads through this loader, so it must fail closed (a missing part,
- * an unreadable stories tree, an index with no stories/ folder); US-64 AC13: a story listed twice.
+ * an unreadable stories tree, an index with no stories/ folder, a story listed twice).
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -157,11 +157,13 @@ describe('fails closed rather than return a raw index that defines no story (US-
     const tree = git(dir, 'rev-parse', 'HEAD:docs/stories').trim();
     rmSync(join(dir, '.git/objects', tree.slice(0, 2), tree.slice(2)), { force: true }); // a broken tree: `cat-file -e` exits 1, silent
     rmSync(join(dir, 'docs'), { recursive: true });
-    expect(() => loadStories(dir, { ref: 'HEAD' })).toThrow();
+    // has() rethrows git's own error; the no-stories-folder guard would throw its own message instead.
+    expect(() => loadStories(dir, { ref: 'HEAD' })).toThrow(/Command failed: git cat-file -e HEAD:\.\/docs\/stories/);
+    expect(() => loadStories(dir, { ref: 'HEAD' })).not.toThrow(/no stories\/ folder/);
   });
 });
 
-describe('a story listed twice (US-64 AC13)', () => {
+describe('a story listed twice (US-64 AC11)', () => {
   it('the loader refuses an index that lists one story twice, naming it, on disk and at a ref', () => {
     writeSplit(dir);
     writeFileSync(join(dir, 'docs/user-stories.md'), `${INDEX}- [US-02 · Two](stories/US-02.md)\n`);

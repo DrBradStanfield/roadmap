@@ -13,7 +13,7 @@ import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
 import { announce, clearOffFile, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { changesOf, debounceArmed, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
@@ -66,6 +66,8 @@ export function visibleContentOf(file: RoadmapFile): string {
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
 export const ERASE_UNREACHABLE = 'Your cloud storage could not be reached, so nothing was deleted. Try again once it answers.';
+/** A second erase asked for while one runs; both clients refuse it first. */
+export const ERASE_BUSY = 'Already deleting your data.';
 
 /** The refusal for a stored record a newer app wrote, read from its raw
  *  `schemaVersion` before any shape check; null for bytes that do not parse,
@@ -253,7 +255,7 @@ export class RecordSession {
 
   /** Every write takes `erase`, the erase the page showed when the write was
    *  asked for (a keystroke, a chat reply, a timer armed), and is refused when
-   *  this copy is at another one, or while its own erase swaps in and writes:
+   *  this copy is at another one, or while its own erase runs, from its confirm:
    *  the write would carry a pre-erase screen into the erased record (US-16
    *  AC2a). A refusal is the caller's error answer, never a throw. */
   refuses(erase = this.shownErase): boolean {
@@ -284,34 +286,31 @@ export class RecordSession {
     // removes them from. A session on-device because the cloud could not be
     // read cannot, and refuses before anything moves.
     if (this.cloudUnreachable) return { success: false, error: ERASE_UNREACHABLE };
-    // A change still on the debounce is one the erase throws away: saving it
-    // during the read would only send a pre-erase copy up ahead of the erase.
-    const debounced = debounceArmed(this.mode);
-    this.dispatch({ type: 'hold' });
+    if (this.mode.mode === 'erasing') return { success: false, error: ERASE_BUSY }; // one at a time (US-16 AC2f)
+    // On this device, the revision of the bytes read: an unreadable record is
+    // replaced only at it, so another tab's repair is never written over (AC9).
+    const host = this.host;
+    const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
+    let readError: unknown = null;
+    // From the confirm on every write is refused, or it would answer "saved"
+    // for a change the erase removes (lead A6). The debounce is put aside.
+    this.dispatch({ type: 'eraseBegan' });
     try {
       // The WHOLE stored record, read now: another tab or device may have erased
       // and started again since this copy was read, and an erase at an equal
       // epoch unions with that record instead of beating it (US-11 AC7). On a
-      // cloud an unreadable record refuses the erase, and the change on the
-      // debounce goes back on it. On this device an unreadable record leaves
-      // this copy's epoch, as before: there is no other copy to list.
-      // On this device, the revision of the bytes read: an unreadable record is
-      // replaced only at it, so another tab's repair is never written over (AC9).
-      const revision = this.host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
-      let readError: unknown = null;
+      // cloud an unreadable record refuses the erase. On this device an
+      // unreadable record leaves this copy's epoch, as before: there is no
+      // other copy to list.
       const stored = await this.sync.load().catch((error) => { readError = error; return null; });
       // A newer app's record is never written over, whatever else fails in it:
       // update first (US-11 AC9).
-      const tooNew = readError && this.host.tier === 'device' ? newerSchema(this.host.sync) : null;
-      if (!stored && (this.host.tier === 'cloud' || tooNew)) {
-        if (debounced) this.dispatch({ type: 'edited' });
-        return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
-      }
+      const tooNew = readError && host.tier === 'device' ? newerSchema(host.sync) : null;
+      if (!stored && (host.tier === 'cloud' || tooNew)) return { success: false, error: tooNew ? tooNew.message : ERASE_UNREACHABLE };
       // The device file, on a cloud, is where other tabs' failed saves wait.
       // One that cannot be read, or read into a record, lists nothing; a
       // successful erase removes it below. Read before the caller's step, which
       // needs its opt-in too.
-      const host = this.host;
       const device = host.tier === 'device'
         ? null
         : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
@@ -340,53 +339,52 @@ export class RecordSession {
       await beforeErase?.();
       // From here every failure comes back as a refusal, never a rejection: the
       // caller's step has run, and its page must leave its deleting state.
-      // Once the flush lands the record IS erased: a later cleanup failure is a
-      // warning, so the caller still clears its screen and mirror (US-11 AC3b).
-      let erased = false;
-      try {
-        this.dispatch({ type: 'hold' }); // an edit made during the read waits too
-        this.saveWarning = undefined;
-        this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() });
-        this.clearedFor = this.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
-        this.dispatch({ type: 'eraseStarted' }); // after the build, so one that throws refuses nothing
-        try {
-          if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
-          else await this.flush();
-        } finally {
-          this.dispatch({ type: 'eraseEnded' });
-        }
-        erased = true;
-        // The erase reached the cloud — wipe the on-device residue too (failure
-        // mirror + marker + named files/documents), so no pre-erase copy outlives
-        // the erase on this device (US-11). On a failed flush we keep the mirror
-        // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
-        // merge and carries the erase to the cloud next session.
-        // Document blobs and the unsaved drafts sit outside the record file, so
-        // the erased file alone doesn't reach them. They go in every mode — a
-        // device-tier user gets no wipe below (it would delete the erased file
-        // just written), and used to keep them — except the originals of
-        // documents the erase did not remove (another tab's, saved meanwhile).
-        this.clearOffFileData();
-        if (host.tier === 'device') {
-          // The other record files (chat history): their contents are already
-          // tombstoned (the caller's beforeErase erases chat history first).
-          // Also rotate the content-free fence so another tab cannot merge its
-          // old snapshot into the missing file.
-          host.clearNamedFiles();
-        } else {
-          // The wipe takes the whole device copy, every stored original with
-          // it: a row a device-tier tab saved after the erase read that copy
-          // goes too (the residual US-11 AC6 names).
-          host.mirror.pending.clear();
-          await host.mirror.wipe();
-        }
-        return { success: true, ...(this.saveWarning ? { warning: this.saveWarning } : {}) };
-      } catch (e) {
-        const message = (e as Error).message;
-        return erased ? { success: true, warning: message } : { success: false, error: message };
-      }
+      this.saveWarning = undefined;
+      try { this.current = buildErasedFile({ stored, own: this.current, device, ctx: this.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
+      this.clearedFor = this.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
+      this.dispatch({ type: 'eraseSwapped' });
     } finally {
-      this.dispatch({ type: 'holdEnded' }); // held never outlives the erase, an aborted one's included; another erase's erasing stays
+      this.dispatch({ type: 'eraseAborted' }); // a no-op in the swap's turn: only an erase stopped short gives its save back
+    }
+    // Once the flush lands the record IS erased: a later cleanup failure is a
+    // warning, so the caller still clears its screen and mirror (US-11 AC3b).
+    let erased = false;
+    try {
+      try {
+        if (readError && host.tier === 'device') await this.replaceUnreadable(host.sync, revision);
+        else await this.flush();
+      } finally {
+        this.dispatch({ type: 'eraseEnded' });
+      }
+      erased = true;
+      // The erase reached the cloud — wipe the on-device residue too (failure
+      // mirror + marker + named files/documents), so no pre-erase copy outlives
+      // the erase on this device (US-11). On a failed flush we keep the mirror
+      // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
+      // merge and carries the erase to the cloud next session.
+      // Document blobs and the unsaved drafts sit outside the record file, so
+      // the erased file alone doesn't reach them. They go in every mode — a
+      // device-tier user gets no wipe below (it would delete the erased file
+      // just written), and used to keep them — except the originals of
+      // documents the erase did not remove (another tab's, saved meanwhile).
+      this.clearOffFileData();
+      if (host.tier === 'device') {
+        // The other record files (chat history): their contents are already
+        // tombstoned (the caller's beforeErase erases chat history first).
+        // Also rotate the content-free fence so another tab cannot merge its
+        // old snapshot into the missing file.
+        host.clearNamedFiles();
+      } else {
+        // The wipe takes the whole device copy, every stored original with
+        // it: a row a device-tier tab saved after the erase read that copy
+        // goes too (the residual US-11 AC6 names).
+        host.mirror.pending.clear();
+        await host.mirror.wipe();
+      }
+      return { success: true, ...(this.saveWarning ? { warning: this.saveWarning } : {}) };
+    } catch (e) {
+      const message = (e as Error).message;
+      return erased ? { success: true, warning: message } : { success: false, error: message };
     }
   }
 

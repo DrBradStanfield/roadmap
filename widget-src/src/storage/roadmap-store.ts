@@ -226,7 +226,7 @@ export class RoadmapStore {
   /** Every write below takes `erase`, the erase the page showed when the
    *  write was asked for, and is refused as the session's `refuses` says
    *  (US-16 AC2a). A refusal is the method's error answer, never a throw. */
-  private refuses(erase?: string): boolean {
+  refuses(erase?: string): boolean {
     return this.session.refuses(erase);
   }
 

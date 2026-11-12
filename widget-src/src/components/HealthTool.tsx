@@ -7,7 +7,7 @@ import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUni
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, METRIC_TO_FIELD, withPsaMeasurement } from '@roadmap/health-core/mappings';
+import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, weightStepOpen, METRIC_TO_FIELD, withPsaMeasurement } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
@@ -486,9 +486,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
   // field, so several made at once all land (US-16 AC1). The weight and year
-  // fields report their own answers (US-62 AC25b); the chat's weight lands nothing.
+  // fields report their own answers (US-62 AC25b), and the chat's weight its own (chatWeight, AC31a).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat = false) => {
-    if (ONBOARDING_FIELDS.includes(field) && (fromChat || !LANDING_FIELDS.includes(field))) answered(false); // US-62 AC13: an answer given in this tab
+    if (ONBOARDING_FIELDS.includes(field) && (fromChat ? field !== 'weightKg' : !LANDING_FIELDS.includes(field))) answered(false); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') dropProfileProposal();
@@ -528,8 +528,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     setSettingsOpen(false);
   }, [selectTab]);
   const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
-    medications, inputs, inputsRef, unitSystem, eraseUnshown, handleInputChange, handleMedicationChange,
-    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell,
+    medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing: isDeleting, handleInputChange, handleMedicationChange,
+    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, chatWeight: () => { if (weightStepOpen(previousMeasurements)) answered(false); }, // never lands (AC25b)
   });
 
   const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server

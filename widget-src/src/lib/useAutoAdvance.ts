@@ -9,7 +9,9 @@ import { useEffect, useRef } from 'react';
  * `frame`, an immediate advance waits for the next frame, also cancelled by
  * the next call. A wait ends in an advance only if, when it ends, the focus
  * is in the field where the value was typed (still, or back again): leaving
- * and coming back before it ends still advances (US-02 AC6b). The
+ * and coming back before it ends still advances (US-02 AC6b). "The field" is
+ * the DOM element focused when the wait was scheduled: if the box remounts
+ * during the wait (a layout change), there is no move, by design. The
  * field-specific "could this extend?" predicate stays at the call site.
  */
 export function useAutoAdvance(frame = false): (opts: { ambiguous: boolean; advance: () => void } | null) => void {

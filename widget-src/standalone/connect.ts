@@ -153,7 +153,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * adapter.connect() (throws on failure — the caller surfaces the message), lift
  * on-device data up, remember the choice, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
- * app.tsx on return), so they don't go through here.
+ * resolve-backend.ts on return), so they don't go through here.
  */
 export async function finishFormConnect(adapter: StorageAdapter, backend: CloudBackend): Promise<void> {
   await adapter.connect();
@@ -164,7 +164,7 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: CloudB
 }
 
 /**
- * Shared busy/error scaffold for connect-flow buttons (picker + sync control).
+ * Busy/error scaffold for the sync control's connect buttons (the picker uses switch-flow.ts).
  * Success is expected to end in a navigation or reload, so busy stays true.
  */
 export function useBusyRun() {

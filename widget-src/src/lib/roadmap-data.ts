@@ -87,11 +87,11 @@ export function getShownErase(): string {
 export const askedUnder = getShownErase;
 /** Whether the record is still at the erase `asked` names, and the page still
  *  shows it. Whole identities, never epochs: a merge can move the identity
- *  within one epoch (US-16 AC2a). The record half refuses while an erase still
- *  writes, since the erase swaps the copy before it flushes; the shown half
- *  covers the gap between the record moving and the screen showing it. */
+ *  within one epoch (US-16 AC2a). The record half refuses while this tab's
+ *  erase runs, from its confirm (lead A6); the shown half covers the gap
+ *  between the record moving and the screen showing it. */
 export function stillShown(asked: string): boolean {
-  return asked === getEraseIdentity() && asked === getShownErase();
+  return asked === getEraseIdentity() && asked === getShownErase() && !store?.refuses(asked);
 }
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
