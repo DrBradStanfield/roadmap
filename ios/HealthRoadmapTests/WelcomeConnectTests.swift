@@ -33,9 +33,10 @@ final class WelcomeConnectTests: XCTestCase {
         }
     }
 
-    /// US-54 AC2d (review of PR 1329): at failed, and only there, the sheet shows one row to
-    /// sign in to the connected cloud again and "Use a different cloud".
-    func testOnlyAFailedOpenOffersSignInAgainAndADifferentCloud_US54_AC2d() {
+    /// US-54 AC2d (review of PR 1329; US-25 AC11n): at failed, and only there, the sheet shows
+    /// one row to sign in to the connected cloud again and a "Switch to <cloud>" row for each
+    /// other configured cloud, never the connected one.
+    func testOnlyAFailedOpenOffersSignInAgainAndTheSwitchRows_US54_AC2d() {
         let rows: [(Phase, Bool)] = [(.choosing, false), (.opening, false), (.failed(unreachable), true), (.opened, false), (.disconnecting, false)]
         for (phase, shows) in rows {
             XCTAssertEqual(WelcomeConnect.showsRecovery(phase), shows, "\(phase)")
@@ -43,6 +44,8 @@ final class WelcomeConnectTests: XCTestCase {
         for kind in SyncProblem.Kind.allCases {
             XCTAssertTrue(WelcomeConnect.showsRecovery(.failed(SyncProblem(kind: kind))), "\(kind)")
         }
+        XCTAssertEqual(SwitchCloudRow.targets(from: .googleDrive), [.dropbox])
+        XCTAssertEqual(SwitchCloudRow.targets(from: .dropbox), [.googleDrive])
     }
 
     func testWhatEachTapDoes_US54_AC2b() {
@@ -59,9 +62,7 @@ final class WelcomeConnectTests: XCTestCase {
             (.phaseChanged, true, true, [.nothing, .nothing, .nothing, .nothing]),
             (.alertDismissed, true, false, [.nothing, .nothing, .nothing, .goOn]),
             (.alertDismissed, false, false, [.nothing, .nothing, .nothing, .nothing]),
-            // US-54 AC2d: "Use a different cloud" disconnects, at failed only; the sheet stays.
-            (.useDifferentCloud, true, false, [.nothing, .nothing, .disconnect, .nothing]),
-            (.useDifferentCloud, true, true, [.nothing, .nothing, .disconnect, .nothing]),
+            // US-54 AC2d: the switch rows call CloudSync.switchTo themselves (US-25 AC11n): no event here.
         ]
         for (event, sheetShown, alertShown, expected) in rows {
             for (phase, decision) in zip(phases, expected) {

@@ -339,6 +339,37 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(activeDays(dropbox.record), [], "the erase reached the cloud")
     }
 
+    /// US-25 AC11n, condition 2: a switch is refused for the whole of an erase, here at its last
+    /// step, with the existing words, before its Disconnect: nothing closes, no sign-in shows.
+    func testASwitchWaitsForTheWholeErase_US25_AC11n() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        let app = try app(connected: true)
+        await app.sync.start()
+        lastStep.armed = true
+        let erase = Task { await app.eraser.eraseAll() }
+        for await _ in lastStep.reached { break }
+        XCTAssertTrue(app.eraser.erasing)
+        let noSignIn: OAuthClient.Authenticate = { _, _ in
+            XCTFail("no sign-in sheet shows")
+            throw OAuthClient.Failure.cancelled
+        }
+        do {
+            _ = try await app.sync.switchTo(.googleDrive, authenticate: noSignIn)
+            XCTFail("a switch waits for the erase")
+        } catch {
+            XCTAssertEqual(error as? OAuthClient.Failure, refusal)
+        }
+        XCTAssertEqual(app.sync.provider, .dropbox)
+        XCTAssertNotEqual(app.sync.status, .disconnecting, "the Disconnect never began")
+        XCTAssertEqual(text("sync-provider"), "dropbox")
+        XCTAssertEqual(text("sync-account"), "dbid:A")
+        XCTAssertEqual(tokens.load(.dropbox)?.refreshToken, "r")
+        lastStep.release()
+        guard case .erased = await erase.value else { return XCTFail("the erase finishes") }
+        XCTAssertEqual(app.sync.provider, .dropbox)
+    }
+
     // MARK: The one source: DataEraser.phase, read through eraseRunning
 
     func testEraseRunningIsTrueOnlyWhileTheEraserErases_US25_AC16e() async throws {

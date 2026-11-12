@@ -804,16 +804,19 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         return (sync, gate, asked)
     }
 
-    // MARK: US-54 AC2d: "Use a different cloud" at failed (review of PR 1329)
+    // MARK: US-54 AC2d: the switch rows at failed (review of PR 1329; US-25 AC11n)
 
-    /// The welcome sheet's "Use a different cloud" is Disconnect. With the cloud never
-    /// opened, the phone's record is byte for byte what it was: nothing merged down,
-    /// nothing erased.
-    func testUseADifferentCloudAtFailedLeavesThePhoneRecordUntouched_US54_AC2d() async throws {
+    /// A sign-in that the person closes.
+    private let cancelledSignIn: OAuthClient.Authenticate = { _, _ in throw OAuthClient.Failure.cancelled }
+
+    /// A switch at failed whose sign-in is cancelled: with the cloud never opened, its
+    /// Disconnect leaves the phone's record byte for byte what it was (nothing merged down,
+    /// nothing erased), and the sheet shows choosing.
+    func testASwitchAtFailedLeavesThePhoneRecordUntouched_US54_AC2d() async throws {
         let (store, sync, drive) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         let before = try Data(contentsOf: store.file)
-        await sync.disconnect()
+        guard case .moved(_?) = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
         XCTAssertEqual(try Data(contentsOf: store.file), before, "the phone's record is unchanged")
         XCTAssertNil(sync.provider)
         XCTAssertEqual(WelcomeConnect.phase(provider: sync.provider, status: sync.status, recordOpen: sync.recordOpen), .choosing)
@@ -821,14 +824,13 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(drive.unexpected, [])
     }
 
-    /// A Try again whose open is still reading when "Use a different cloud" runs lands
-    /// after it and changes nothing. The engine supersedes it: Disconnect's cloudClose moves
-    /// `latest` on (ios/engine/cloud.ts:521) and the late cloudOpen throws 'superseded'
-    /// (:167-171), so only the catch path runs here: its `openFailed` names an attempt that
-    /// has ended, and the transition drops it (US-25 AC11m). The success path (in and after
-    /// the handover) is pinned by CloudConnectionPinsTests
-    /// testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins.
-    func testAnOpenLandingAfterUseADifferentCloudChangesNothing_US54_AC2d() async throws {
+    /// A Try again whose open is still reading when a switch runs lands after the switch's
+    /// Disconnect and changes nothing. The engine supersedes it: cloudClose moves `latest` on
+    /// (ios/engine/cloud.ts:521) and the late cloudOpen throws 'superseded' (:167-171), so only
+    /// the catch path runs here: its `openFailed` names an attempt that has ended, and the
+    /// transition drops it (US-25 AC11m). The success path (in and after the handover) is
+    /// pinned by CloudConnectionPinsTests testADisconnectWhileTheResolvedOpenWaitsForTheStoresLineWins.
+    func testAnOpenLandingAfterASwitchBeganChangesNothing_US54_AC2d() async throws {
         let (store, sync, drive) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         let gate = StubHTTP.Gate()
@@ -839,7 +841,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let opening = Task { await sync.foreground() } // Try again
         for await _ in reading { break }
         let before = try Data(contentsOf: store.file)
-        await sync.disconnect()
+        guard case .moved(_?) = try await sync.switchTo(.dropbox, authenticate: cancelledSignIn) else { return XCTFail("disconnected, then cancelled") }
         gate.open()
         await opening.value
         XCTAssertNil(sync.provider)
@@ -852,16 +854,16 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(drive.unexpected, [])
     }
 
-    /// The whole way: Drive failed, "Use a different cloud", then Connect Dropbox, which is
-    /// a first connect: the phone's record is merged up into Dropbox's.
-    func testUseADifferentCloudThenConnectDropboxIsAFirstConnect_US54_AC2d() async throws {
+    /// The whole way: Drive failed, then "Switch to Dropbox", whose connect is a first
+    /// connect: the phone's record is merged up into Dropbox's.
+    func testASwitchToDropboxAtFailedIsAFirstConnect_US54_AC2d() async throws {
         let (store, sync, _) = try await driveFailedAtLaunch()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 79, day: "2026-10-02")))
         dropbox.put(try record(days: ["2026-10-01"], device: "web"))
-        await sync.disconnect()
-        try await sync.connect(.dropbox, authenticate: signIn())
+        guard case .moved(nil) = try await sync.switchTo(.dropbox, authenticate: signIn()) else { return XCTFail("the switch connects") }
         XCTAssertEqual(sync.provider, .dropbox)
         XCTAssertTrue(sync.recordOpen)
+        XCTAssertNil(tokens.load(.googleDrive))
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-01", "2026-10-02"], "the phone's record was merged up")
         XCTAssertEqual(activeDays(store.recordJSON), ["2026-10-01", "2026-10-02"])
     }
@@ -888,7 +890,8 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
     /// Google Drive holding one copy of the record, enough for an open to read it, beside
     /// the fake Dropbox. Counts every call to Dropbox's files; a sign-in reaches only its
     /// token and account endpoints.
-    private final class DriveOnFile {
+    /// Shared with CloudSwitchTests (US-25 AC11n).
+    final class DriveOnFile {
         let text: String
         let dropbox: FakeDropbox
         /// False: Drive fails as a dead network does.
