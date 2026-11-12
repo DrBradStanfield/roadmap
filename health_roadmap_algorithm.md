@@ -1015,6 +1015,8 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Condition:** GLP-1 is null, undefined, or drug is `'none'`.
 
+**Title:** "Consider discussing a GLP-1 medication with your doctor" (Brad 2026-11-13, US-25 AC28; it read "Consider a GLP-1 medication").
+
 **Text:** "With a BMI of {bmi}{ and {reasons}}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
 ### Step 2: GLP-1 Escalation (`weight-med-glp1-increase` or `weight-med-glp1-switch`)
