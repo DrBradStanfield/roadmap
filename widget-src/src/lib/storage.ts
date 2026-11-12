@@ -304,11 +304,26 @@ export function newLogOffId(): void {
 export function setSignIn(key: string, value: object | string, gen: LogOffId): boolean {
   if (ownLogOffBegun || gen !== logOffId()) return false;
   try {
-    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify({ ...value, gen }));
+    localStorage.setItem(key, signInText(value, gen));
     return true;
   } catch {
     return false;
   }
+}
+const signInText = (value: object | string, gen: LogOffId): string =>
+  (typeof value === 'string' ? value : JSON.stringify({ ...value, gen }));
+
+/** Save a sign-in kept in several entries, in order. When one is not saved,
+ *  those this call saved are removed, each only while it still holds what this
+ *  call wrote, so no partial sign-in is left. True when all were saved. */
+export function setSignIns(entries: Record<string, object>, gen: LogOffId): boolean {
+  const saved: string[] = [];
+  for (const [key, value] of Object.entries(entries)) {
+    if (setSignIn(key, value, gen)) { saved.push(key); continue; }
+    for (const done of saved) if (safeGetItem(done) === signInText(entries[done], gen)) safeRemoveItem(done);
+    return false;
+  }
+  return true;
 }
 
 /** The id an entry was saved under; one with none was saved before the first log-off. */
