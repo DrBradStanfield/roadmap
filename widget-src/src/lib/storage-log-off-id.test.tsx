@@ -139,7 +139,7 @@ describe('US-09 AC2c controls', () => {
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBe(theirs);
   });
 
-  it('a page whose device copy is its only store keeps writing after the id changes; its typed draft stays on screen only', async () => {
+  it('a guest page (no cloud chosen) keeps writing its record after the id changes; its typed draft and Lp(a) answer stay on screen only', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
@@ -153,8 +153,9 @@ describe('US-09 AC2c controls', () => {
     store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z');
     await store.flush();
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
-    expect(localStorage.getItem(LPA_KEPT_KEY)).not.toBeNull();
-    // A page whose log-off id changed since load owns no off-file data, so it writes no draft (US-11 AC6).
+    // A page whose log-off id changed since load is off the chosen record, so it writes no draft and no
+    // Lp(a) answer (US-11 AC6); the answer is kept on the page.
+    expect(localStorage.getItem(LPA_KEPT_KEY)).toBeNull();
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
@@ -191,6 +192,18 @@ describe('US-09 AC2h: a page whose record is still opening', () => {
     patchMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
   });
+
+  it('a page that never opens a record (the chat embed, the blog bubble) writes only while the id is the one it loaded with', async () => {
+    const { patchMirror, healthWritesAllowed, healthWritesStopped } = await import('./storage');
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
+    localStorage.removeItem(MIRROR_KEY);
+    logOffElsewhere();
+    patchMirror({ medications: [med] });
+    expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
+    expect(healthWritesAllowed()).toBe(false);
+    expect(healthWritesStopped()).toBe(false); // no record opened: it stays loading
+  });
 });
 
 describe('US-09 AC2c: a cloud page restored from the back-forward cache', () => {
@@ -209,39 +222,60 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
   const quiet = { mode: 'loading', logOffHeard: false } as const;
   const heard = { mode: 'loading', logOffHeard: true } as const;
   const device = { mode: 'device' } as const;
+  const fallback = { mode: 'fallback', backend: 'memory' } as const;
   const cloud = { mode: 'cloud', storeId: 'memory' } as const;
   const otherCloud = { mode: 'cloud', storeId: 'google-drive' } as const;
   const stopped = { mode: 'stopped' } as const;
-  const same = { type: 'deviceOpened', sameSignIn: true } as const;
-  const changed = { type: 'deviceOpened', sameSignIn: false } as const;
+  // A page opening on the device: a guest (no cloud chosen) or a cloud's fallback, same id or changed.
+  const guest = { type: 'deviceOpened', sameSignIn: true, chosen: 'local' } as const;
+  const guestChanged = { type: 'deviceOpened', sameSignIn: false, chosen: 'local' } as const;
+  const fellBack = { type: 'deviceOpened', sameSignIn: true, chosen: 'memory' } as const;
+  const fellBackChanged = { type: 'deviceOpened', sameSignIn: false, chosen: 'memory' } as const;
   const opened = { type: 'cloudOpened', storeId: 'memory' } as const;
   const otherOpened = { type: 'cloudOpened', storeId: 'google-drive' } as const;
   const hear = { type: 'logOffHeard' } as const;
   const stop = { type: 'stop' } as const;
   it.each([
-    [quiet, same, device],
-    [quiet, changed, stopped],
+    [quiet, guest, device],
+    [quiet, guestChanged, stopped],
+    [quiet, fellBack, fallback],
+    [quiet, fellBackChanged, stopped],
     [quiet, opened, cloud],
     [quiet, hear, heard],
     [quiet, stop, stopped],
-    [heard, same, stopped],
-    [heard, changed, stopped],
+    [heard, guest, stopped],
+    [heard, guestChanged, stopped],
+    [heard, fellBack, stopped],
+    [heard, fellBackChanged, stopped],
     [heard, opened, stopped],
     [heard, hear, heard],
     [heard, stop, stopped],
-    [device, same, device],
-    [device, changed, device],
+    [device, guest, device],
+    [device, guestChanged, device],
+    [device, fellBack, device], // a second host on a guest page (the chat history's) keeps the guest rule
+    [device, fellBackChanged, device],
     [device, opened, cloud],
     [device, hear, device],
     [device, stop, stopped],
-    [cloud, same, device],
-    [cloud, changed, stopped],
+    [fallback, guest, fallback], // a second host on a fallback page changes nothing
+    [fallback, guestChanged, fallback],
+    [fallback, fellBack, fallback],
+    [fallback, fellBackChanged, fallback],
+    [fallback, opened, cloud],
+    [fallback, hear, stopped],
+    [fallback, stop, stopped],
+    [cloud, guest, device],
+    [cloud, guestChanged, stopped],
+    [cloud, fellBack, fallback],
+    [cloud, fellBackChanged, stopped],
     [cloud, opened, cloud],
     [cloud, otherOpened, otherCloud], // two cloud hosts in a row (the OAuth return's lift, then the store): the last one's id
     [cloud, hear, stopped],
     [cloud, stop, stopped],
-    [stopped, same, stopped],
-    [stopped, changed, stopped],
+    [stopped, guest, stopped],
+    [stopped, guestChanged, stopped],
+    [stopped, fellBack, stopped],
+    [stopped, fellBackChanged, stopped],
     [stopped, opened, stopped],
     [stopped, otherOpened, stopped],
     [stopped, hear, stopped],
@@ -249,5 +283,10 @@ describe('US-09 AC2c, AC2h: the health-write state', () => {
   ] as const)('%o + %o -> %o', async (state, event, next) => {
     const { healthWritesTransition } = await import('./storage');
     expect(healthWritesTransition(state, event)).toEqual(next);
+  });
+
+  it('PIN: a guest that connects without a reload takes the cloud rule (device + cloudOpened -> cloud)', async () => {
+    const { healthWritesTransition } = await import('./storage');
+    expect(healthWritesTransition(device, opened)).toEqual(cloud);
   });
 });

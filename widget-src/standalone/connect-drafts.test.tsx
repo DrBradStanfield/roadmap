@@ -13,7 +13,7 @@ import { StartingInfoVitals } from '../src/components/StartingInfoVitals';
 import { turnFrom } from '../src/testing/matrix-gestures';
 import {
   BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, LPA_CHECK_KEPT_KEY, DOC_KEY_PREFIX,
-  MIRROR_KEY, DRAFTS_CLEARED_EVENT,
+  MIRROR_KEY, DRAFTS_CLEARED_EVENT, noteCloudPage,
 } from '../src/lib/storage';
 import { BACKEND_KEY, type Backend } from './connect';
 let logOff: typeof import('./connect').logOff;
@@ -140,6 +140,7 @@ describe('shared-device cloud log-off clears off-file health data', () => {
     localStorage.setItem(VITALS_DRAFT_KEY, draft('weight', '84', refused));
     // Positive control: both real matrices actually consume these stored fixtures.
     // Do not focus/type: a draft restored from an earlier load need not commit.
+    noteCloudPage('dropbox'); // the previous user's page is on their cloud's record, as it is before it renders
     const previous = matrices();
     expect(input(previous.container, 'LDL Cholesterol').value).toBe('2.7');
     expect(input(previous.container, 'Weight').value).toBe('84');

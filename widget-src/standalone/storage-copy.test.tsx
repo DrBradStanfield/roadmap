@@ -265,6 +265,14 @@ describe('US-09 AC13: the fallback notice on a live page', () => {
 
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
   // Last in this file: the stop lasts for the module's life.
+  it('a notice already on screen drops the promise when the writes stop, with no other change', () => {
+    const { container } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(container.textContent).toContain('kept in this browser');
+    act(() => stopLocalHealthWrites());
+    expect(container.textContent).toContain('Your record is safe in your');
+    expect(container.textContent).not.toContain('kept in this browser');
+  });
+
   it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {
     stopLocalHealthWrites();
     const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);

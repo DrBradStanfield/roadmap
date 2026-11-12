@@ -18,6 +18,10 @@ import { BloodTestTimeline, SAVE_ERRORS, type BloodTestPrefillFn } from './Blood
 import { formatShortDate } from '../lib/constants';
 import { slotOf } from '../lib/matrix-save';
 import { press, turnFrom } from '../testing/matrix-gestures';
+import { noteDevicePage } from '../lib/storage';
+
+// This page's record is open, on this device: the drafts and Lp(a) answers it keeps are its own (US-11 AC6).
+noteDevicePage();
 
 const { trackProductEvent } = vi.hoisted(() => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/server-api', async (original) => ({ ...(await original<typeof import('../lib/server-api')>()), trackProductEvent }));
