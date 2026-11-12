@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T14,tooling,sim-run.test.ts cleanup would block if a future test queued a waiter behind a holder that ignores the release file,note,not started,"bash defers SIGTERM while waiting in lockf, so a holder that never reads the release file keeps the waiter; no current test does this (review of the M18 fix, PR 1312)",1312,no

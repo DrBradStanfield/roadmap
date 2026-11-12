@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T17,tooling,"mac-slot reads the load under the caller's locale: with a decimal-comma locale every reading is unreadable, so the first read fails open and the load cap never applies",gap,not started,"tools/mac-slot.sh load() runs `sysctl -n vm.loadavg` without LC_ALL=C; under de_DE.UTF-8 it prints ""{ 6,44 37,19 64,92 }"" (measured in review of PR 1424). Brad's Mac is en_NZ and agent shells run with LANG empty, so no effect today. Fix: LC_ALL=C on the sysctl call",,no
