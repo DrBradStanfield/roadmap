@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A13,web sync,"A matrix restores the stored draft as it mounts: decide which pages read it (the read side of the chosen-record rule)",lead,"not started, unverified","Adversary on PR 1409 round 2, 2026-11-12; widget-src/src/lib/useMatrixDraft.ts initial state (loadDraft); owner asks the UI thread whether its fallback PR covers it",,no

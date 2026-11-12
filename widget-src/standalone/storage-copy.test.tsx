@@ -41,7 +41,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { SyncControl } from './sync-control';
-import { stopLocalHealthWrites } from '../src/lib/storage';
+import { noteDevicePage, stopLocalHealthWrites } from '../src/lib/storage';
 import { BackendPickerModal } from './backend-picker';
 
 beforeAll(() => {
@@ -263,8 +263,85 @@ describe('US-09 AC13: the fallback notice on a live page', () => {
   });
 });
 
+describe('US-09 AC13: the fallback notice on a page that missed another tab\'s log-off', () => {
+  // The fallback state lasts for the module's life, so the stop tests below follow.
+  it('shows no promise once the log-off id has changed, and drops it when the change arrives as a storage event', () => {
+    localStorage.setItem('health_roadmap_backend', 'dropbox');
+    noteDevicePage(); // a fallback page for Dropbox
+    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(shown.container.textContent).toContain('kept in this browser');
+    act(() => {
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+    });
+    expect(shown.container.textContent).toContain('Your record is safe in your');
+    expect(shown.container.textContent).not.toContain('kept in this browser');
+    shown.unmount();
+
+    const later = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
+    expect(later.container.textContent).not.toContain('kept in this browser');
+    localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+  });
+
+  it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {
+    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(shown.container.textContent).toContain('kept in this browser');
+    try {
+      act(() => {
+        // Changed while the page sat in the cache: no storage event reaches it.
+        localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+      });
+      expect(shown.container.textContent).toContain('Your record is safe in your');
+      expect(shown.container.textContent).not.toContain('kept in this browser');
+    } finally {
+      localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+    }
+  });
+
+  it('an unmounted sync control hears no log-off id change and no back-forward restore', () => {
+    const heard = vi.fn();
+    const wrappers = new Map<EventListenerOrEventListenerObject, EventListener>();
+    const add = window.addEventListener.bind(window);
+    const remove = window.removeEventListener.bind(window);
+    vi.spyOn(window, 'addEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
+      if (type !== 'storage' && type !== 'pageshow') return add(type, fn, opts);
+      const wrapper: EventListener = (event) => { heard(type); (typeof fn === 'function' ? fn : fn.handleEvent.bind(fn))(event); };
+      wrappers.set(fn, wrapper);
+      add(type, wrapper, opts);
+    });
+    vi.spyOn(window, 'removeEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | EventListenerOptions) =>
+      remove(type, wrappers.get(fn) ?? fn, opts));
+    const fire = () => act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    try {
+      const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+      fire();
+      expect(heard).toHaveBeenCalledWith('storage');
+      expect(heard).toHaveBeenCalledWith('pageshow');
+      shown.unmount();
+      heard.mockClear();
+      fire();
+      expect(heard).not.toHaveBeenCalled();
+    } finally {
+      cleanup(); // unmount through the wrapped removal first, so no wrapped listener outlives the test
+      vi.restoreAllMocks();
+    }
+  });
+});
+
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
   // Last in this file: the stop lasts for the module's life.
+  it('a notice already on screen drops the promise when the writes stop, with no other change', () => {
+    const { container } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(container.textContent).toContain('kept in this browser');
+    act(() => stopLocalHealthWrites());
+    expect(container.textContent).toContain('Your record is safe in your');
+    expect(container.textContent).not.toContain('kept in this browser');
+  });
+
   it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {
     stopLocalHealthWrites();
     const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);

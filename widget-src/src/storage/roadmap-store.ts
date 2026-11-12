@@ -560,10 +560,10 @@ export class RoadmapStore {
     };
   }
 
-  /** Clear the off-file health data for the erase this copy is at, sparing
-   *  the originals of documents that outlive it (US-11 AC6); see the session. */
+  /** Clear the off-file health data for this copy's erase, sparing outliving originals (US-11 AC6; see the session).
+   *  A failed clear is reported ('Record upkeep failed') and not retried in this session: it never stops the page's reset. */
   clearOffFileData(): void {
-    this.session.clearOffFileData();
+    try { this.session.clearOffFileData(); } catch (error) { this.host.report(error, { op: 'clear-off-file', repeat: false }); }
   }
 
   /** Last-ditch save for tab close and hide (US-10 AC5); see the session. */

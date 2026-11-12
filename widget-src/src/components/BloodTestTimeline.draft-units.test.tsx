@@ -17,8 +17,11 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { press, pressMouse, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
-import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, noteDevicePage } from '../lib/storage';
 import type { SaveTask } from '../lib/matrix-save';
+
+// This page's record is open, on this device: the drafts and Lp(a) answers it keeps are its own (US-11 AC6).
+noteDevicePage();
 
 beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); });
 afterEach(() => { cleanup(); showPage(); vi.useRealTimers(); });

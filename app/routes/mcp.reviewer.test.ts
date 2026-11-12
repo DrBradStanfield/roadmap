@@ -18,6 +18,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
+/** A claim store for the two-phase confirms (US-36 AC9): every other table is inert. */
+const claims = vi.hoisted(() => ({ state: null as null | import('../lib/single-use-claims.test-helpers').ClaimsState }));
+vi.mock('../lib/supabase-client.server', async (actual) => {
+  const helpers = await import('../lib/single-use-claims.test-helpers');
+  claims.state ??= helpers.newClaimsState();
+  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(claims.state) };
+});
+import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
 vi.mock('../lib/product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('../lib/product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
@@ -92,6 +100,7 @@ function stubFetch(documents: Record<string, unknown> = {}) {
 let adapterTokens: string[];
 
 beforeEach(() => {
+  resetClaimsState(claims.state!);
   process.env.MCP_ISSUER = ISSUER;
   process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 3).toString('base64');
   process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 4).toString('base64');

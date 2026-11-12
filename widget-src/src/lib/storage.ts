@@ -22,33 +22,40 @@ const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 /** Where this page may write health data on the device (US-09 AC2c, AC2e,
  *  AC2h). 'loading': no record has opened yet; it may write only while this
  *  device's log-off id is the one the page loaded with, and it holds another
- *  tab's log-off heard meanwhile until it knows which kind of page it is.
- *  'device': its device copy is its only store, so it always may. 'cloud': a
- *  cloud record opened here, so it may write only while the id is the one it
- *  loaded with. 'stopped': its own log-off, or another tab's heard on a cloud
- *  page or while loading, or found as a changed id when the page opens on the
- *  device. Never back: log-off navigates away. It lives in this module, which
- *  every device writer imports, so all of them check the same state. */
+ *  tab's log-off heard meanwhile until it knows which kind of page it is. A
+ *  page that never opens a record (the chat embed, the blog bubble) stays
+ *  'loading' for life. 'device': a guest, whose device copy is its only store,
+ *  so it always may. 'fallback': a page on its device copy while this browser
+ *  has chosen `backend`, a cloud; the copy is a queue for that cloud, so it
+ *  takes the cloud rule. 'cloud': a cloud record opened here, so it may write
+ *  only while the id is the one it loaded with. 'stopped': its own log-off, or
+ *  another tab's heard on a page that is not a guest, or found as a changed id
+ *  when the page opens on the device. Never back: log-off navigates away. It
+ *  lives in this module, which every device writer imports, so all of them
+ *  check the same state. */
 export type HealthWrites =
   | { mode: 'loading'; logOffHeard: boolean }
   | { mode: 'device' }
-  | { mode: 'cloud' }
+  | { mode: 'fallback'; backend: string }
+  | { mode: 'cloud'; storeId: string }
   | { mode: 'stopped' };
-/** deviceOpened's `sameSignIn`: the log-off id is still the one the page loaded with. */
+/** deviceOpened's `sameSignIn`: the log-off id is still the one the page loaded
+ *  with; `chosen`: the store this browser has chosen ('local': none, a guest). */
 export type HealthWritesEvent =
-  | { type: 'deviceOpened'; sameSignIn: boolean }
-  | { type: 'cloudOpened' }
+  | { type: 'deviceOpened'; sameSignIn: boolean; chosen: string }
+  | { type: 'cloudOpened'; storeId: string }
   | { type: 'logOffHeard' }
   | { type: 'stop' };
 export function healthWritesTransition(state: HealthWrites, event: HealthWritesEvent): HealthWrites {
   if (state.mode === 'stopped' || event.type === 'stop') return { mode: 'stopped' };
   if (event.type === 'logOffHeard') {
     if (state.mode === 'loading') return { mode: 'loading', logOffHeard: true };
-    // A device page's copy is its only store, so a heard log-off never stops it.
-    return state.mode === 'cloud' ? { mode: 'stopped' } : state;
+    // A guest's copy is its only store, so a heard log-off never stops it.
+    return state.mode === 'device' ? state : { mode: 'stopped' };
   }
-  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud' };
-  if (state.mode === 'device') return state;
+  if (event.type === 'cloudOpened') return state.mode === 'loading' && state.logOffHeard ? { mode: 'stopped' } : { mode: 'cloud', storeId: event.storeId };
+  // A second host on the same page (the chat history's) changes nothing.
+  if (state.mode === 'device' || state.mode === 'fallback') return state;
   // A heard log-off, or a changed id, which proves one: the device copy may
   // be a new sign-in's mirror, so the page stops. Otherwise the device store
   // decides.
@@ -57,34 +64,70 @@ export function healthWritesTransition(state: HealthWrites, event: HealthWritesE
   // host only when init throws, and nothing after mirror.opened() does: the
   // rest of RecordSession.open catches, RoadmapStore.create does not await
   // writeMovedRecord, and initRoadmapStore's later steps raise no storage failure.
-  return event.sameSignIn ? { mode: 'device' } : { mode: 'stopped' };
+  if (!event.sameSignIn) return { mode: 'stopped' };
+  return event.chosen === 'local' ? { mode: 'device' } : { mode: 'fallback', backend: event.chosen };
 }
 let healthWrites: HealthWrites = { mode: 'loading', logOffHeard: false };
-const dispatchHealthWrites = (event: HealthWritesEvent) => { healthWrites = healthWritesTransition(healthWrites, event); };
+const stopListeners = new Set<() => void>();
+const dispatchHealthWrites = (event: HealthWritesEvent) => {
+  const was = healthWrites;
+  healthWrites = healthWritesTransition(was, event);
+  if (was.mode !== 'stopped' && healthWrites.mode === 'stopped') stopListeners.forEach((onStop) => onStop());
+};
 export function stopLocalHealthWrites(): void {
   dispatchHealthWrites({ type: 'stop' });
 }
-/** A cloud record has opened on this page (the web host's mirror.opened()). */
-export function noteCloudPage(): void {
-  dispatchHealthWrites({ type: 'cloudOpened' });
+/** The record of `storeId`, a cloud, has opened on this page (the web host's mirror.opened()). */
+export function noteCloudPage(storeId: string): void {
+  dispatchHealthWrites({ type: 'cloudOpened', storeId });
 }
-/** This page runs on the device tier: a guest, or a cloud load's fallback. */
+/** This page runs on the device tier: a guest, or a cloud load's fallback while a cloud is chosen. */
 export function noteDevicePage(): void {
-  dispatchHealthWrites({ type: 'deviceOpened', sameSignIn: logOffId() === logOffIdAtLoad });
+  dispatchHealthWrites({ type: 'deviceOpened', sameSignIn: logOffId() === logOffIdAtLoad, chosen: chosenStore() });
 }
 /** Another tab's log-off signal reached this page. */
 export function noteLogOffHeard(): void {
   dispatchHealthWrites({ type: 'logOffHeard' });
 }
-/** This page's own log-off, or another tab's it heard: the device was wiped. */
-export function healthWritesStopped(): boolean {
-  return healthWrites.mode === 'stopped';
+/** Calls `onChange` when healthWritesAllowed() may have changed: this page's writes stop, another tab
+ *  changes the log-off id, or the page comes back from the back-forward cache, where no storage event
+ *  reaches it (useSyncExternalStore's subscribe). */
+export function onHealthWritesChange(onChange: () => void): () => void {
+  const idChanged = (event: StorageEvent) => { if (event.key === LOG_OFF_ID_KEY) onChange(); };
+  const restored = (event: PageTransitionEvent) => { if (event.persisted) onChange(); };
+  stopListeners.add(onChange);
+  window.addEventListener('storage', idChanged);
+  window.addEventListener('pageshow', restored);
+  return () => { stopListeners.delete(onChange); window.removeEventListener('storage', idChanged); window.removeEventListener('pageshow', restored); };
 }
 /** The one check every on-device health writer makes.
  *  The single rule for on-device health writes; callers import it, never copy it. */
 export function healthWritesAllowed(): boolean {
   if (healthWrites.mode === 'device') return true;
   return healthWrites.mode !== 'stopped' && logOffId() === logOffIdAtLoad;
+}
+/** The backend this browser uses, as the standalone picker remembers it
+ *  (standalone/connect.ts); absent on the device tier. */
+export const BACKEND_KEY = 'health_roadmap_backend';
+/** The store this browser has chosen: a cloud's id, or 'local' (none: the device record). */
+function chosenStore(): string {
+  return safeGetItem(BACKEND_KEY) ?? 'local';
+}
+/** The one owner rule for this browser's off-file health data (the drafts, stored originals, the Lp(a) kept
+ *  answer): the record `storeId` ('local' is the device record) is the one this browser has chosen, and
+ *  no log-off came on this device since the page loaded, a device page's included. Only the store that owns
+ *  it erases or clears that data (US-11 AC6): a fallback page's store is the device, so it clears nothing while
+ *  a cloud is chosen. Read live; callers import it, never copy it. */
+export function ownsOffFileData(storeId: string): boolean {
+  return healthWritesAllowed() && logOffId() === logOffIdAtLoad && chosenStore() === storeId;
+}
+/** The same rule for the record this page is on: the device record for a guest, the cloud it fell back from for a
+ *  fallback page, the cloud whose record opened last on a cloud. A page still loading is on no record yet and owns
+ *  nothing. useMatrixDraft reads and writes its draft key, and keepLpaAsIs writes its answer, only while it holds. */
+export function pageOnChosenRecord(): boolean {
+  const record = healthWrites.mode === 'device' ? 'local' : healthWrites.mode === 'fallback' ? healthWrites.backend
+    : healthWrites.mode === 'cloud' ? healthWrites.storeId : null;
+  return record !== null && ownsOffFileData(record);
 }
 
 interface StoredData {
@@ -246,20 +289,20 @@ export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
  * erase did not remove (US-09 AC20, AC23): by default none is spared.
  */
 export function clearOffFileHealthData(keepDocument: (ref: string) => boolean = () => false): void {
-  clearMatrixDrafts();
+  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  safeRemoveItem(VITALS_DRAFT_KEY);
+  dropDraftsOnScreen();
   removeByPrefix(DOC_KEY_PREFIX, (key) => keepDocument(key.slice(DOC_KEY_PREFIX.length)));
   safeRemoveItem(LPA_CHECK_KEPT_KEY);
 }
 
-/** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of
+/** Fired by `dropDraftsOnScreen`: a matrix on screen drops its own copy of
  *  the draft too (useMatrixDraft), or its next keystroke writes it back. */
 export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
 
-/** Remove both matrices' unsaved drafts: an erase, made here or on another
- *  device, leaves none behind (US-11). */
-function clearMatrixDrafts(): void {
-  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
-  safeRemoveItem(VITALS_DRAFT_KEY);
+/** An erase reached this page: what its screen holds of the drafts goes, on
+ *  every page, the owner of the stored drafts or not (US-11 AC6). */
+export function dropDraftsOnScreen(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 

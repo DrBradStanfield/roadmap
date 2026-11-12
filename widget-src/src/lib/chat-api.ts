@@ -301,7 +301,8 @@ export async function sendMessage(
     if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
 
     if (!response.ok || !data?.success) {
-      Sentry.captureMessage('Chat sendMessage failed', {
+      // A 409 is the server's busy answer (US-15 AC63), not a failure: shown, never reported.
+      if (response.status !== 409) Sentry.captureMessage('Chat sendMessage failed', {
         level: 'error',
         tags: { feature: 'chat' },
         extra: {

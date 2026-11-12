@@ -4,7 +4,10 @@
  *
  * NOTHING HERE MAY LOG A URL.
  */
+import crypto from 'node:crypto';
+import * as Sentry from '@sentry/react-router';
 import { createQuotaCounter, createRateLimiter, DAY_MS } from './rate-limiter';
+import { claimSingleUse, type ClaimOutcome } from './single-use-claims.server';
 import { MCP_SCOPES, resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
@@ -146,12 +149,10 @@ export function issueTokens(clientId: string, provider: McpProvider, from: Grant
 const spentCodes = new Map<string, number>();
 
 /**
- * Proposal receipts already confirmed (US-36 AC9), per machine, the same
- * best-effort single-use as `spentCodes`: a replay on a second Fly machine
- * meets `not-active` on `correct_value` and an `expected` mismatch on
- * `update_profile`, and could file a second public issue. Keyed on the whole
- * receipt AND the connection hash, so a receipt seen elsewhere cannot spend
- * this connection's. Pruned at the receipt's own lifetime.
+ * Proposal receipts already confirmed on this machine (US-36 AC9): the fast
+ * first check before the shared claim store in `claimProposal`. Keyed on the
+ * whole receipt AND the connection hash, so a receipt seen elsewhere cannot
+ * spend this connection's. Pruned at the receipt's own lifetime.
  */
 const spentProposals = new Map<string, number>();
 
@@ -164,7 +165,24 @@ function claimOnce(spent: Map<string, number>, key: string, lifetimeMs: number, 
 }
 
 export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce(spentCodes, jti, CODE_LIFETIME_SECONDS * 1000, nowMs);
-export const claimProposal = (receipt: string, conn: string, lifetimeMs: number, nowMs = Date.now()): boolean => claimOnce(spentProposals, `${conn} ${receipt}`, lifetimeMs, nowMs);
+
+/**
+ * A confirm receipt works once, across machines and restarts (US-36 AC9): this
+ * machine's map first, then the shared store, keyed on the sha256 hex of the
+ * connection hash and the receipt and nothing else. A store that cannot answer
+ * fails closed, and this machine forgets the key before the refusal returns, so
+ * a retry asks the store, which decides. A claim the store accepted stays here.
+ */
+export async function claimProposal(receipt: string, conn: string, lifetimeMs: number, nowMs = Date.now()): Promise<ClaimOutcome> {
+  const key = `${conn} ${receipt}`;
+  if (!claimOnce(spentProposals, key, lifetimeMs, nowMs)) return 'spent';
+  const outcome = await claimSingleUse(crypto.createHash('sha256').update(key, 'utf8').digest('hex'), 'mcp-confirm');
+  if (outcome === 'unavailable') {
+    spentProposals.delete(key);
+    Sentry.captureMessage('mcp_confirm: claim store unavailable', { level: 'warning', tags: { feature: 'mcp_confirm' } });
+  }
+  return outcome;
+}
 
 /**
  * Writes already spent by one CONNECTION this hour, per machine. Keyed on the

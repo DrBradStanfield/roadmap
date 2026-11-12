@@ -392,6 +392,7 @@ class SlowAdapter extends MemoryAdapter {
 /** A slow cloud holding one weight, and a page open on it with 83 kg typed. */
 async function slowCloudWithEdit(): Promise<{ cloud: MemoryCloud; adapter: SlowAdapter; store: RoadmapStore }> {
   const cloud = new MemoryCloud();
+  localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-11 AC6)
   const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
   seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
   await seeded.flush();
@@ -431,6 +432,7 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
 
   it('so does a device that never heard of the other device\'s erase and fresh start', async () => {
     const cloud = new MemoryCloud();
+    localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-11 AC6)
     const phone = await RoadmapStore.create(new MemoryAdapter(cloud));
     phone.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
     await phone.flush();

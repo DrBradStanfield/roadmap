@@ -23,10 +23,9 @@ const FILE_KEY = 'health_roadmap_file_v2';
 export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 
 // Page-lifetime barrier: logout navigates away. Never reopen it in this page;
-// an async save may still hold pre-logout health data. Other named files are
-// separate stores and are deliberately outside this roadmap-only barrier.
-// Every other cloud-mode tab on this device latches too (US-09 AC2c): a
-// content-free key set and removed at once reaches them as `storage` events,
+// an async save may still hold pre-logout health data. It holds every named
+// file written through this adapter. Every other cloud-mode tab on this device
+// latches too (US-09 AC2c): a content-free key set and removed at once reaches them as `storage` events,
 // leaving no residue.
 const LOG_OFF_SIGNAL_KEY = 'health_roadmap_log_off_signal';
 // The health-write state itself is in lib/storage, shared with the mirror and the drafts.
@@ -133,7 +132,11 @@ export class LocalStorageAdapter implements StorageAdapter {
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
     // Check at the synchronous write boundary, including saves whose async
     // read/merge began BEFORE logout. A catch-only guard is too early.
-    if (fileName === ROADMAP_FILE_NAME && roadmapLocalWritesStopped()) {
+    // Every named file takes the record's write rule (US-09 AC2c): each one
+    // written here holds health data (the record, the chat history), so a new
+    // file is refused by default. A guest page that opened with no log-off on
+    // this device since it loaded always may write.
+    if (roadmapLocalWritesStopped()) {
       throw new StorageError('On-device roadmap persistence stopped for logout.');
     }
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
@@ -210,6 +213,8 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const dataUrl = await blobToDataUrl(bytes);
+    // The record's write rule (US-09 AC2c): every device document's bytes pass here.
+    if (roadmapLocalWritesStopped()) throw new StorageError('On-device roadmap persistence stopped for logout.');
     try {
       // Direct setItem (not safeSetItem) so a quota overflow surfaces instead of
       // silently dropping the document — no silent data loss.

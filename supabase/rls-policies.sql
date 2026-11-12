@@ -842,6 +842,18 @@ ALTER TABLE chat_question_archive ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON chat_question_archive FROM anon, authenticated;
 NOTIFY pgrst, 'reload schema';
 
+-- ===== single_use_claims: one-time claims, content-free (US-36 AC9, 2026-11-12) =====
+-- Apply to production BEFORE deploying the code that reads it. Until then every
+-- hosted MCP confirm is refused in words and nothing is written: the claim fails
+-- closed. One row per spent key: a sha256 hex the caller makes, never the thing
+-- it names, and the kind of claim ('mcp-confirm'). Rows of a kind older than an
+-- hour are deleted as each new claim is made. Service role only: RLS on, no
+-- policies. Columns only ever via ADD COLUMN IF NOT EXISTS; never DROP.
+CREATE TABLE IF NOT EXISTS single_use_claims (key text primary key, kind text not null, created_at timestamptz not null default now());
+ALTER TABLE single_use_claims ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON single_use_claims FROM anon, authenticated;
+NOTIFY pgrst, 'reload schema';
+
 -- ===== Lock down SECURITY DEFINER functions (2026-10-21) =====
 -- KEEP THIS SECTION LAST. A definer function runs with its owner's rights,
 -- and Postgres grants EXECUTE to PUBLIC on every new function; Supabase's

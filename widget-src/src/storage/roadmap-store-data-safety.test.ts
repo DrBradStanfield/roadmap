@@ -156,6 +156,20 @@ describe('RoadmapStore.correctValue refusals (US-04)', () => {
 // US-11 · Deleting my data — coverage priority #1
 // (docs/user-stories.md: "deleteUserData store path untested").
 describe('RoadmapStore.deleteUserData (US-11)', () => {
+  beforeEach(() => {
+    // The page's cloud, remembered as connect.ts does: the erase is this tab's to make (US-11 AC6).
+    const backing = new Map<string, string>([['health_roadmap_backend', 'memory']]);
+    const store = {
+      getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
+      setItem: (k: string, v: string) => void backing.set(k, v),
+      removeItem: (k: string) => void backing.delete(k),
+    };
+    Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  });
+
   it('bumps eraseEpoch and empties every collection', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
@@ -1025,15 +1039,21 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   const KEEP: Record<string, string> = {
     health_roadmap_gdrive_tokens: '{"access_token":"secret"}',
     health_roadmap_dropbox_tokens: '{"access_token":"secret"}',
-    health_roadmap_backend: 'dropbox',
+    health_roadmap_backend: 'memory', // the chosen backend; choose() sets it to the scenario's store (US-11 AC6)
     health_roadmap_device_id: 'device-1',
     hr_reminders_autoenrol_blocked: '1',
     hr_ab: '{"variant":"b"}',
     hr_vid: 'visitor-1',
     hr_anthropic_key: 'sk-ant-typed-by-the-user',
   };
+  /** The backend this browser has chosen: the store the test's page runs on. */
+  function choose(id: string) {
+    KEEP.health_roadmap_backend = id;
+    localStorage.setItem('health_roadmap_backend', id);
+  }
 
   beforeEach(() => {
+    KEEP.health_roadmap_backend = 'memory';
     const store = makeStorage();
     Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
     store.setItem(DRAFT_KEY, '{"draft":{"date":"2026-09-01","values":{"ldl":"3.2"}}}');
@@ -1049,6 +1069,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   });
 
   it('clears both matrices\' unsaved drafts and every document blob for a localStorage-only user', async () => {
+    choose('local');
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
 
@@ -1072,6 +1093,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   it('clears the Lp(a) check\'s kept answers, for a localStorage-only and a cloud user', async () => {
     const KEPT_KEY = 'health_roadmap_lpa_check_kept';
     for (const adapter of [new LocalStorageAdapter(), new MemoryAdapter(new MemoryCloud())]) {
+      choose(adapter.id);
       localStorage.setItem(KEPT_KEY, '["row-1"]');
       const store = await RoadmapStore.create(adapter);
       store.addMeasurement('lpa', 120, '2026-09-18T00:00:00.000Z');
@@ -1101,6 +1123,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const CHAT_KEY = 'health_roadmap_file_v2:chat-history.json';
     localStorage.setItem(CHAT_KEY, '{"conversations":[{"id":"c1","title":"my ldl is 3.2","messages":[]}]}');
     localStorage.setItem(`${CHAT_KEY}_rev`, '3');
+    choose('local');
 
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     expect((await store.deleteAllData()).success).toBe(true);
@@ -1112,6 +1135,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
   });
 
   it('leaves connection tokens, consent flags and the typed API key alone (named keys, never a prefix wipe)', async () => {
+    choose('local');
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     expect((await store.deleteAllData()).success).toBe(true);
 
@@ -1288,6 +1312,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
   });
 
   it('a guest whose device record cannot be read still erases its own copy, and lists it', async () => {
+    localStorage.removeItem('health_roadmap_backend'); // a guest: no cloud chosen
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     store.addMeasurement('weight', 80, '2026-06-01');
     await store.flush();
