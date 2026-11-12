@@ -21,7 +21,7 @@ import {
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
-import { PROVIDERS, providerOf, type CloudBackend } from './providers';
+import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
@@ -246,7 +246,8 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  * What it clears:
  *  - the active provider's auth tokens/credentials (adapter.disconnect() —
  *    each adapter only does safeRemoveItem on its OWN local token/config keys,
- *    no network delete is issued against the remote file)
+ *    no network delete is issued against the remote file), then every other
+ *    provider's sign-in entries (SIGN_IN_KEYS)
  *  - the local RoadmapFile cache (health_roadmap_file_v2 + _rev), any named
  *    record files (chat-history.json, …) and stored documents
  *    (LocalStorageAdapter.disconnect())
@@ -271,6 +272,8 @@ export async function logOff(backend: Backend): Promise<void> {
     console.warn('Cloud disconnect during log-off failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
   }
+  // Every provider's sign-in, not only the active one's (US-09 AC45).
+  for (const key of SIGN_IN_KEYS) safeRemoveItem(key);
   // Wipe the on-device copy (RoadmapFile + version + named files + documents).
   // Only its content-free erase-fence write can throw, after the health keys
   // are gone; log-off still finishes (US-09 AC2c).
