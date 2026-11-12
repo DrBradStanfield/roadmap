@@ -462,6 +462,13 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     expect(cloudWrites()).toEqual([]);
   });
 
+  it('control: a Drive popup reconnect that saves is remembered and lifts the device copy', async () => {
+    await seedGuest();
+    await reconnectDrive();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expect(cloudWrites().length).toBeGreaterThan(0);
+  });
+
   describe('Drive keeps no partial sign-in: tokens saved without their account are removed', () => {
     it.each([
       ['the popup reconnect', reconnectDrive],

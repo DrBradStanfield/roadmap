@@ -78,7 +78,7 @@ export function getVisitorId(): string {
   if (cachedVisitorId) return cachedVisitorId;
   const KEY = 'hr_vid';
   const stored = safeGetItem(KEY);
-  if (stored) { cachedVisitorId = stored; return stored; }
+  if (stored && UUID.test(stored)) { cachedVisitorId = stored; return stored; }
   const id = randomId();
   // The server takes only a UUID: randomId's last-resort id serves this page alone.
   if (UUID.test(id)) safeSetItem(KEY, id);
