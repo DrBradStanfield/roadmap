@@ -86,7 +86,7 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
     const log = logged.join('\n');
     expect(log).not.toContain('4.9 mmol/L');
     expect(log).not.toContain('<@u1>');
-    expect(log).toContain('Discord handleMessage error: DiscordAPIError[50013] 50013 403');
+    expect(log).toContain('Discord: chunk send failed: DiscordAPIError[50013] 50013 403');
     // Sentry keeps the error itself; its scrub runs there.
     expect(edge.capture).toHaveBeenCalledWith(expect.any(DiscordAPIError), expect.anything());
   });
@@ -101,13 +101,14 @@ describe('US-09 AC6d: a failed Discord send logs the error kind, never the reply
     const log = logged.join('\n');
     expect(log).not.toContain('4.9 mmol/L');
     expect(log).not.toContain('<@u3>');
-    expect(log).toContain('Discord: dedup re-send failed: DiscordAPIError[50013] 50013 403');
+    // US-15 AC62: the re-send goes through the same sendChunks as the answer.
+    expect(log).toContain('Discord: chunk send failed: DiscordAPIError[50013] 50013 403');
   });
 
   it('a plain error logs its name, not its message', async () => {
     await deliver(failingMessage('u2', 'plain'));
     const log = logged.join('\n');
-    expect(log).toContain('Discord handleMessage error: Error');
+    expect(log).toContain('Discord: chunk send failed: Error');
     expect(log).not.toContain('Missing Permissions');
     expect(log).not.toContain('4.9 mmol/L');
   });

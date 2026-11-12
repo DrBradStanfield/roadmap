@@ -19,7 +19,6 @@ import {
   Events,
   GatewayIntentBits,
   Partials,
-  type Message,
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
@@ -60,10 +59,13 @@ import {
   loadThreadHistory,
 } from './discord-bot-history.server';
 import { persistConversation } from './discord-bot-persist.server';
+import { sendAnswer } from './discord-bot-send.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 export { splitForDiscord } from './discord-bot-messages.server';
 export { persistConversation } from './discord-bot-persist.server';
+
+const ERROR_REPLY = 'Something went wrong on my end. Please try again in a moment.';
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -224,14 +226,14 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   if (!checkUserCooldown(authorId)) return;              // silently ignore flooding (< 3s since last reply)
 
   if (!checkUserRateLimit(authorId)) {
-    await safeReply(message, 'You are sending messages a bit quickly — try again in a few minutes.');
+    await safeReply(message, 'You are sending messages a bit quickly. Try again in a few minutes.');
     return;
   }
 
   // ----- Concurrency gate -----
   if (activeLlmCalls >= CONCURRENCY_LIMIT) {
     if (waitingLlmCalls >= QUEUE_MAX_DEPTH) {
-      await safeReply(message, 'Busy helping other people right now — try again in a moment.');
+      await safeReply(message, 'Busy helping other people right now. Try again in a moment.');
       return;
     }
     waitingLlmCalls++;
@@ -294,20 +296,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
           clearInterval(typingInterval);
           typingInterval = null;
         }
-        const dupChunks = splitForDiscord(dup.content, DISCORD_SPLIT_CHARS);
-        let dupFirst = true;
-        for (const chunk of dupChunks) {
-          try {
-            if (dupFirst) {
-              await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } });
-            } else if (message.channel.isTextBased() && 'send' in message.channel) {
-              await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
-            }
-          } catch (sendErr) {
-            console.error('Discord: dedup re-send failed:', errorKind(sendErr));
-          }
-          dupFirst = false;
-        }
+        await sendAnswer(message, splitForDiscord(dup.content, DISCORD_SPLIT_CHARS));
         return;
       }
     }
@@ -348,16 +337,12 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
     // US-15 AC48: a silent (SPAM) turn sends nothing; below, only its match event is stored.
     const chunks = result.silent ? [] : splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
-    const sentMessages: Message[] = [];
-    let firstChunk = true;
-    for (const chunk of chunks) {
-      const sent = firstChunk
-        ? await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } })
-        : (message.channel.isTextBased() && 'send' in message.channel
-            ? await message.channel.send({ content: chunk, allowedMentions: { parse: [] } })
-            : null);
-      if (sent) sentMessages.push(sent);
-      firstChunk = false;
+    const sent = await sendAnswer(message, chunks);
+    // US-15 AC62: nothing went out, so say so and store nothing. A partial is
+    // stored as the text that went out, marked so the dedup never re-serves it.
+    if (sent.kind === 'none-sent') {
+      await safeReply(message, ERROR_REPLY);
+      return;
     }
 
     // Fire-and-forget: persist the conversation and the router event.
@@ -367,12 +352,12 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       authorId,
       userMessage: truncatedInput,
       userDiscordMessageId: message.id,
-      assistantContent: result.content,
+      assistantContent: sent.kind === 'partial' ? sent.sent.map(c => c.text).join('\n\n') : result.content,
       silent: result.silent === true,
-      assistantDiscordMessageIds: sentMessages.map(m => m.id),
+      assistantDiscordMessageIds: sent.sent.map(c => c.id),
       usage: result.usage,
       isFallback: result.isFallback,
-      failureMode: result.failureMode,
+      failureMode: sent.kind === 'partial' ? 'partial' : result.failureMode,
       errorDetail: result.errorDetail,
       routerResult: result.routerResult,
       replaced: result.replaced,
@@ -393,7 +378,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     if (typingInterval) clearInterval(typingInterval);
     console.error('Discord handleMessage error:', errorKind(err));
     Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
-    await safeReply(message, 'Something went wrong on my end — please try again in a moment.');
+    await safeReply(message, ERROR_REPLY);
   } finally {
     activeLlmCalls--;
   }

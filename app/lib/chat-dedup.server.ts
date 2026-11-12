@@ -29,7 +29,8 @@ export interface DedupHistoryItem {
   created_at: string;
   /** Only set on assistant messages; missing from older rows is treated as false. */
   is_fallback?: boolean | null;
-  /** 'refusal' marks a refusal line (US-15 AC14), never re-served either. */
+  /** 'refusal' marks a refusal line (US-15 AC14), 'partial' a Discord answer cut
+   *  off part way (US-15 AC62); neither is ever re-served. */
   failure_mode?: string | null;
 }
 
@@ -61,7 +62,7 @@ export function findDuplicateReply(
   if (lastMsg.role !== 'assistant') return null;
   if (prevUserMsg.role !== 'user') return null;
   if (prevUserMsg.content !== newMessage) return null;
-  if (lastMsg.is_fallback === true || lastMsg.failure_mode === 'refusal') return null;
+  if (lastMsg.is_fallback === true || lastMsg.failure_mode === 'refusal' || lastMsg.failure_mode === 'partial') return null;
   const ageMs = Date.now() - new Date(lastMsg.created_at).getTime();
   if (ageMs >= DEDUP_WINDOW_MS) return null;
   return { content: lastMsg.content, assistantCreatedAt: lastMsg.created_at, ageMs };
