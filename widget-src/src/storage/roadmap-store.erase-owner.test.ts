@@ -69,7 +69,7 @@ async function guestUsesDevice(optIn = false) {
   offFileData();
   localStorage.setItem(LPA_CHECK_KEPT_KEY, '{"synthetic":"kept"}');
   if (!optIn) return;
-  const device = new LocalStorageAdapter();
+  const device = guest.device(); // the guest page's own: it loaded after the log-off, so it may write
   const { body, version } = device.readSync(ROADMAP_FILE_NAME);
   const reminderOptIn = { status: 'active', token: 'test-token-guest', email: 'guest@example.test', provider: 'dropbox', updatedAt: '2026-11-12T10:00:00.000Z' };
   device.writeSync(ROADMAP_FILE_NAME, { ...(body as object), reminderOptIn }, version);
@@ -200,11 +200,45 @@ describe('US-11 AC6 — an out-of-date tab cannot delete data; it is told to rel
     expect(cloudBody(cloud)).toBe(remote);
   });
 
-  it('control: a device page, after a log-off elsewhere, still erases its own record', async () => {
+  it('a device page, after a log-off elsewhere: refused first, nothing moves', async () => {
     localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-before');
     const guestPage = await loadPage(); // a fresh page: nothing from an earlier test or page carries in
     const guest = await withWeight(guestPage, guestPage.device());
     localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-after');
+    offFileData();
+    const device = snapshot();
+    const run = steps();
+
+    expect(await guest.deleteAllData(run)).toEqual({ success: false, error: ERASE_STALE_TAB, chatErased: false });
+
+    expect(run.teardown).not.toHaveBeenCalled();
+    expect(run.chat).not.toHaveBeenCalled();
+    expect(snapshot()).toEqual(device);
+  });
+
+  it('a guest page open while someone signed in, logged off and a guest then used this browser: refused first; the guest\'s record, drafts, original, kept answer and opt-in stay', async () => {
+    const stalePage = await loadPage();
+    const stale = await withWeight(stalePage, stalePage.device());
+    localStorage.setItem(BACKEND_KEY, 'memory'); // another tab signs in
+    const signedIn = await loadPage();
+    await withWeight(signedIn, signedIn.cloud(new MemoryCloud()));
+    await anotherTabLogsOff();
+    await guestUsesDevice(true);
+    const device = snapshot();
+    const run = steps();
+
+    expect(await stale.deleteAllData(run)).toEqual({ success: false, error: ERASE_STALE_TAB, chatErased: false });
+
+    expect(run.teardown).not.toHaveBeenCalled(); // the guest's reminder row on the server is not cancelled
+    expect(run.chat).not.toHaveBeenCalled();
+    expect(stale.getReminderOptIn()).toBeUndefined();
+    expect(snapshot()).toEqual(device);
+  });
+
+  it('control: a device page with no log-off since it loaded erases its own record', async () => {
+    localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-before');
+    const guestPage = await loadPage();
+    const guest = await withWeight(guestPage, guestPage.device());
     offFileData();
 
     expect((await guest.deleteAllData(steps())).success).toBe(true);
