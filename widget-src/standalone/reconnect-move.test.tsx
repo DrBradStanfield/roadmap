@@ -180,6 +180,22 @@ describe('US-09 AC45: once the popup answer is saved, the reconnect runs to its 
     expect(getSwitchFlow()).toEqual({ kind: 'navigating', run: 1, step: 'list' });
   });
 
+  it('a reconnect that fails after it saved ends as a failure: the picker unlocks and the panel says why', async () => {
+    lift.mockRejectedValueOnce(new Error('Google Drive could not be reached.'));
+    mount();
+    fireEvent.click(reconnectButton());
+    await answerPopup();
+    expect(lift).toHaveBeenCalledTimes(1);
+    expect(getSwitchFlow()).toEqual({ kind: 'idle', run: 1, error: 'Google Drive could not be reached.' });
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Google Drive could not be reached.');
+    act(() => openBackendPicker());
+    expect(document.querySelector('dialog')!.textContent).not.toContain('Reconnecting Google Drive…');
+    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toBe('Google Drive could not be reached.');
+    expect(option('Dropbox').disabled).toBe(false);
+    expect(reconnectButton().disabled).toBe(false);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it('an answer after another tab left Drive saves nothing and reloads onto what that tab chose', async () => {
     mount();
     fireEvent.click(reconnectButton());

@@ -16,7 +16,7 @@ import { currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
-import { dispatch, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
+import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
@@ -127,8 +127,9 @@ export const GIS_LOADING = 'Google is loading. Tap again.';
  *  synchronously inside the click; local edits made while signed out merge up
  *  before the reload. The others can only try the read again. The Drive
  *  reconnect and "Use this browser only" are moves, one at a time with the
- *  picker (US-09 AC45). A reconnect's failure is said only here; a failed "Use this
- *  browser only" is a picker kind of move, so the picker says it too. */
+ *  picker (US-09 AC45). A reconnect's failure before it saved is said only here; a failed
+ *  "Use this browser only", or a reconnect that fails after it saved, ends the
+ *  move as a failure, so the picker says it too. */
 function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
   const flow = useSwitchFlow();
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +142,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
       if (!isCurrentRun(m.run)) return; // it was stopped: nothing to say
       const message = e instanceof Error ? e.message : 'Connection failed.';
       setError(message);
-      dispatch(event.type === 'reconnect' ? { type: 'cancel', run: m.run } : { type: 'failed', run: m.run, message });
+      dispatch(event.type === 'reconnect' && getSwitchFlow().kind === 'reconnecting' ? { type: 'cancel', run: m.run } : { type: 'failed', run: m.run, message });
     }));
   };
   const reconnectNow = (): void => {
