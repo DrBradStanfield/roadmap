@@ -12,10 +12,10 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { DOC_KEY_PREFIX, VITALS_DRAFT_KEY, stopLocalHealthWrites } from '../lib/storage';
+import { DOC_KEY_PREFIX, LPA_CHECK_KEPT_KEY, VITALS_DRAFT_KEY, clearLocalStorage, clearOffFileHealthData, stopLocalHealthWrites } from '../lib/storage';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
-import { BACKEND_KEY } from './web-record-host';
+import { BACKEND_KEY, PENDING_MIRROR_KEY } from './web-record-host';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -37,6 +37,26 @@ function offFileData() {
   localStorage.setItem(ORIGINAL, 'synthetic bytes');
   localStorage.setItem(VITALS_DRAFT_KEY, DRAFT);
   localStorage.setItem(CHAT, '{"synthetic":"chat"}');
+}
+/** What another tab's log-off leaves in this browser's storage (connect.ts logOff): a new log-off id, the
+ *  device copy and off-file data gone, no backend remembered. This tab hears no event (frozen). */
+async function anotherTabLogsOff() {
+  localStorage.setItem('health_roadmap_log_off_id', `synthetic-log-off-${Math.random()}`);
+  await new LocalStorageAdapter().disconnect();
+  clearLocalStorage();
+  clearOffFileHealthData();
+  localStorage.removeItem(BACKEND_KEY);
+}
+/** Then someone else uses this browser as a guest: a record, an original, a chat history, a draft and a kept answer. */
+async function guestUsesDevice(optIn = false) {
+  await withWeight(new LocalStorageAdapter());
+  offFileData();
+  localStorage.setItem(LPA_CHECK_KEPT_KEY, '{"synthetic":"kept"}');
+  if (!optIn) return;
+  const device = new LocalStorageAdapter();
+  const { body, version } = device.readSync(ROADMAP_FILE_NAME);
+  const reminderOptIn = { status: 'active', token: 'test-token-guest', email: 'guest@example.test', provider: 'dropbox', updatedAt: '2026-11-12T10:00:00.000Z' };
+  device.writeSync(ROADMAP_FILE_NAME, { ...(body as object), reminderOptIn }, version);
 }
 /** The erase's two steps, as the page passes them. */
 const steps = () => ({ teardown: vi.fn(async () => {}), chat: vi.fn(async () => ({ eraseAll: vi.fn(async () => {}) })) });
@@ -87,6 +107,7 @@ describe('US-11 AC6 — an out-of-date tab cannot delete data; it is told to rel
     localStorage.setItem(BACKEND_KEY, 'memory');
     const tab = await withWeight(new MemoryAdapter(cloud));
     offFileData();
+    localStorage.setItem(PENDING_MIRROR_KEY, '1');
     const run = steps();
 
     expect((await tab.deleteAllData(run)).success).toBe(true);
@@ -96,6 +117,73 @@ describe('US-11 AC6 — an out-of-date tab cannot delete data; it is told to rel
     const erased = JSON.parse(cloudBody(cloud)!) as RoadmapFile;
     expect(erased.meta.eraseEpoch).toBeGreaterThan(0);
     expect(erased.measurements).toEqual([]);
+    expect(localStorage.getItem(ORIGINAL)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+    expect(localStorage.getItem(CHAT)).toBeNull();
+  });
+
+  it('a cloud tab that heard no log-off, after another tab logged off and a guest used this browser: refused first; the guest\'s data stays', async () => {
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const frozen = await withWeight(new MemoryAdapter(new MemoryCloud()));
+    await anotherTabLogsOff();
+    await guestUsesDevice();
+    localStorage.setItem(PENDING_MIRROR_KEY, '1');
+    const device = snapshot();
+    const read = vi.spyOn(LocalStorageAdapter.prototype, 'read');
+    const run = steps();
+
+    expect(await frozen.deleteAllData(run)).toEqual({ success: false, error: ERASE_STALE_TAB, chatErased: false });
+
+    expect(read).not.toHaveBeenCalled(); // the device copy is not read
+    read.mockRestore();
+    expect(run.teardown).not.toHaveBeenCalled();
+    expect(run.chat).not.toHaveBeenCalled();
+    expect(snapshot()).toEqual(device);
+  });
+
+  it('the same, with the guest opted in to reminders: the erase\'s server step is never reached and the opt-in stays the guest\'s', async () => {
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const frozen = await withWeight(new MemoryAdapter(new MemoryCloud()));
+    await anotherTabLogsOff();
+    await guestUsesDevice(true);
+    const device = snapshot();
+    const run = steps();
+
+    expect((await frozen.deleteAllData(run)).error).toBe(ERASE_STALE_TAB);
+
+    expect(run.teardown).not.toHaveBeenCalled();
+    expect(frozen.getReminderOptIn()).toBeUndefined();
+    expect(snapshot()).toEqual(device);
+  });
+
+  it('the same, with someone signed in again to the same provider: refused first; their data stays', async () => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const frozen = await withWeight(new MemoryAdapter(cloud));
+    await anotherTabLogsOff();
+    localStorage.setItem(BACKEND_KEY, 'memory'); // signed in again, to the same provider
+    await withWeight(new MemoryAdapter(new MemoryCloud()));
+    offFileData();
+    const device = snapshot();
+    const remote = cloudBody(cloud);
+    const run = steps();
+
+    expect(await frozen.deleteAllData(run)).toEqual({ success: false, error: ERASE_STALE_TAB, chatErased: false });
+
+    expect(run.teardown).not.toHaveBeenCalled();
+    expect(snapshot()).toEqual(device);
+    expect(cloudBody(cloud)).toBe(remote);
+  });
+
+  it('control: a device page, after a log-off elsewhere, still erases its own record', async () => {
+    localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-before');
+    const guest = await withWeight(new LocalStorageAdapter());
+    localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-after');
+    offFileData();
+
+    expect((await guest.deleteAllData(steps())).success).toBe(true);
+    expect((new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile).measurements).toEqual([]);
     expect(localStorage.getItem(ORIGINAL)).toBeNull();
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
   });
@@ -112,7 +200,7 @@ describe('US-11 AC6 — an out-of-date tab cannot delete data; it is told to rel
     expect((JSON.parse(cloudBody(cloud)!) as RoadmapFile).measurements).toEqual([]);
   });
 
-  it('a cloud tab after a log-off in another tab: refused first, nothing moves', async () => {
+  it('control: a cloud tab that heard another tab\'s log-off (latched): refused first, nothing moves', async () => {
     const cloud = new MemoryCloud();
     localStorage.setItem(BACKEND_KEY, 'memory');
     const tab = await withWeight(new MemoryAdapter(cloud));

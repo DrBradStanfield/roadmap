@@ -17,7 +17,8 @@ import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY, webRecordHost } from './web-record-host';
-import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, LPA_CHECK_KEPT_KEY, MIRROR_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -133,6 +134,38 @@ describe('US-11 AC6 — only the tab on the chosen record clears off-file data',
     stale.clearOffFileData();
 
     expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);
+  });
+
+  it.each([
+    ['a guest uses this browser', null],
+    ['someone signs in again to the same provider', 'memory'],
+  ])('a cloud tab that heard no log-off takes in an erase made elsewhere after another tab logged off and %s: drafts and kept answers stay', async (_, backend) => {
+    const cloud = new MemoryCloud();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const frozen = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
+    add(frozen, 'old');
+    await frozen.flush();
+    const before = frozen.eraseIdentity;
+    const elsewhere = new MemoryAdapter(cloud); // another device erases the cloud record: only its cloud file is shared
+    const { body, version } = await elsewhere.read(ROADMAP_FILE_NAME);
+    const erased = body as { meta: { eraseEpoch?: number }; measurements: unknown[] };
+    await elsewhere.write(ROADMAP_FILE_NAME, { ...erased, measurements: [], meta: { ...erased.meta, eraseEpoch: (erased.meta.eraseEpoch ?? 0) + 1 } }, version);
+    // Another tab logs off (a new log-off id; the device copy, off-file data and backend gone; no event here).
+    localStorage.setItem('health_roadmap_log_off_id', 'synthetic-log-off-after');
+    await new LocalStorageAdapter().disconnect();
+    localStorage.removeItem(BACKEND_KEY);
+    if (backend) localStorage.setItem(BACKEND_KEY, backend);
+    typeDrafts();
+    localStorage.setItem(LPA_CHECK_KEPT_KEY, '{"synthetic":"kept"}');
+    localStorage.setItem(MIRROR_KEY, '{"synthetic":"mirror"}');
+
+    later();
+    await frozen.refreshFromRemote();
+
+    expect(frozen.eraseIdentity).not.toBe(before); // taken in
+    expect(drafts()).toEqual([GUEST_DRAFT, CLOUD_DRAFT]);
+    expect(localStorage.getItem(LPA_CHECK_KEPT_KEY)).toBe('{"synthetic":"kept"}');
+    expect(localStorage.getItem(MIRROR_KEY)).toBe('{"synthetic":"mirror"}');
   });
 
   it('the tab on the chosen record still clears an erase it takes in', async () => {
