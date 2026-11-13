@@ -188,51 +188,40 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
     expect({ kept, targetKept }).toEqual({ kept: [true, true, true, false, false], targetKept: true });
   });
 
-  it.skipIf(!hasMkfifo)('reads the copy it checked, when a pipe takes its name in between', async () => {
+  // At the open the name holds `first`; right after, `then` takes the name.
+  // A copy is at the current epoch, so the prune keeps it.
+  it.skipIf(!hasMkfifo).each([
+    ['reads the copy it checked, when a pipe takes its name in between', 'copy', 'pipe'],
+    ["checks what its open reached, when a copy takes a device link's name in between", 'device link', 'copy'],
+  ] as const)('%s', async (_name, first, then) => {
     const dir = mkdtempSync(join(tmpdir(), 'file-adapter-bak-swap-'));
     const aside = mkdtempSync(join(tmpdir(), 'file-adapter-bak-aside-'));
     const path = join(dir, ROADMAP_FILE_NAME);
     writeFileSync(path, at(2));
-    // A copy at the current epoch: one the prune keeps.
     const bak = join(dir, `${ROADMAP_FILE_NAME}.bak-2026-01-01T00-00-00.000Z`);
-    writeFileSync(bak, at(2));
-    expect(spawnSync('mkfifo', [join(aside, 'pipe')]).status).toBe(0);
+    const make = {
+      copy: (to: string) => writeFileSync(to, at(2)),
+      pipe: (to: string) => expect(spawnSync('mkfifo', [to]).status).toBe(0),
+      'device link': (to: string) => symlinkSync('/dev/zero', to),
+    };
+    make[first](bak);
+    make[then](join(aside, 'next'));
 
     const { stuck, swapped, leftOpen } = await watchedWrite(path, {
       at: bak,
       run: () => {
-        renameSync(bak, join(aside, 'copy'));
-        renameSync(join(aside, 'pipe'), bak);
+        renameSync(bak, join(aside, 'was'));
+        renameSync(join(aside, 'next'), bak);
       },
     });
     const saved = JSON.parse(readFileSync(path, 'utf8'));
     const lockLeft = existsSync(`${path}.lock`);
-    const pipeKept = lstatSync(bak).isFIFO();
+    const nowThere = lstatSync(bak);
+    const thenKept = then === 'pipe' ? nowThere.isFIFO() : nowThere.isFile();
     rmSync(dir, { recursive: true, force: true });
     rmSync(aside, { recursive: true, force: true });
 
     expect({ swapped, stuck, leftOpen }).toEqual({ swapped: true, stuck: [], leftOpen: 0 });
-    expect({ marker: saved.marker, lockLeft, pipeKept }).toEqual({ marker: 'saved', lockLeft: false, pipeKept: true });
-  });
-
-  it.skipIf(!hasMkfifo)('checks what its open reached, when a copy takes a device link\'s name in between', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'file-adapter-bak-swap-'));
-    const aside = mkdtempSync(join(tmpdir(), 'file-adapter-bak-aside-'));
-    const path = join(dir, ROADMAP_FILE_NAME);
-    writeFileSync(path, at(2));
-    // A link to /dev/zero when the prune opens the name; a copy at the current
-    // epoch there by the time a check by name would look.
-    const bak = join(dir, `${ROADMAP_FILE_NAME}.bak-2026-01-01T00-00-00.000Z`);
-    symlinkSync('/dev/zero', bak);
-    writeFileSync(join(aside, 'copy'), at(2));
-
-    const { stuck, swapped, leftOpen } = await watchedWrite(path, { at: bak, run: () => renameSync(join(aside, 'copy'), bak) });
-    const saved = JSON.parse(readFileSync(path, 'utf8'));
-    const copyKept = lstatSync(bak).isFile();
-    rmSync(dir, { recursive: true, force: true });
-    rmSync(aside, { recursive: true, force: true });
-
-    expect({ swapped, stuck, leftOpen }).toEqual({ swapped: true, stuck: [], leftOpen: 0 });
-    expect({ marker: saved.marker, copyKept }).toEqual({ marker: 'saved', copyKept: true });
+    expect({ marker: saved.marker, lockLeft, thenKept }).toEqual({ marker: 'saved', lockLeft: false, thenKept: true });
   });
 });
