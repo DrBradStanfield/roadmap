@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-S-12,S2 server,App gate reads caps through envCap and the shared file cap,not started,app-gate.server.ts:87-89 parses caps with its own num() and re-reads AI_DAILY_FILE_CAP (unchanged since baseline),,,no
+S-12,S2 server,App gate reads caps through envCap and the shared file cap,done,"app-gate.server.ts appLimits.machine reads APP_CHAT_DAILY_CAP and APP_LAB_DAILY_CAP through envCap and AI_DAILY_FILE_CAP through dailyFileCap (rate-limiter.ts), so a bad value now warns naming its variable; num() deleted (no other callers)",1515,app/lib/app-gate.env-cap.test.ts (US-52 AC4e: edge values and warnings),no
