@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ROADMAP_FILE_NAME } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { OUTPUTS, runToolOverSync, type ExtractedFile, type ImportPayload, type ImportSurface } from './mcp-tools';
+import { OUTPUTS, runToolOverSync } from './mcp-tools';
+import { type ExtractedFile, type ImportPayload, type ImportSurface } from './mcp-import';
 import { recordSync } from './roadmap-doc';
 import { createEmptyFile } from './roadmap-file';
 

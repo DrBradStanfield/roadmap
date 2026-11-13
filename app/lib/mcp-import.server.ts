@@ -42,21 +42,17 @@ import {
   fileNameLine,
   inflateCapped,
 } from '../../packages/health-core/src/lab-extraction';
+import { type ImportCommit, type ImportRequest, MAX_FILE_NAME_LENGTH, MAX_IMPORT_FILES_PER_CALL, RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-tool-contract';
 import {
   type ExtractedFile,
   type ImportBundle,
-  type ImportCommit,
   type ImportFileStatus,
   type ImportPayload,
   type ImportRefusal,
-  type ImportRequest,
   type ImportSurface,
   importableFileName,
   isAlreadyImported,
-  MAX_FILE_NAME_LENGTH,
-  MAX_IMPORT_FILES_PER_CALL,
-  RECEIPT_LIFETIME_SECONDS,
-} from '../../packages/health-core/src/mcp-tools';
+} from '../../packages/health-core/src/mcp-import';
 import { oneLine } from '../../packages/health-core/src/plan';
 import { importFilesBucket, type McpImportRoute } from '../../packages/health-core/src/product-events';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
