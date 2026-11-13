@@ -12,7 +12,7 @@ import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
-import type { FileResult, DocumentToSave, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
+import type { FileResult, ReviewDecisions, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
 import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, normaliseLabName, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
 
 interface ReviewTableProps {
@@ -28,15 +28,7 @@ interface ReviewTableProps {
   /** Whom the hints and status colours grade for; null for a known minor,
    *  as in the blood-test matrix (US-07 AC6). */
   grading: Grading;
-  onSave: (payload: {
-    values: ReviewedValue[];
-    documents: DocumentToSave[];
-    labValues: ReviewedLabValue[];
-    /** Every result as reviewed: its report date (the column day, or null) and
-     *  its document's title and date. The archive files originals from these,
-     *  an unselected document included (US-13 AC6). */
-    reviewed: FileResult[];
-  }) => void;
+  onSave: (decisions: ReviewDecisions) => void;
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;

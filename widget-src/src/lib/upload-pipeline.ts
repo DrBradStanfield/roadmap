@@ -58,6 +58,16 @@ export interface ReviewedLabValue {
   recordedAt: string; correctsId?: string;
   comparator?: Comparator;
 }
+/** The person's review decisions: what ReviewTable's Save hands up and the
+ *  upload flow saves (US-12). `reviewed` is every result as reviewed: its
+ *  report date (the column day, or null) and its document's title and date.
+ *  The archive files originals from these, an unselected document included (US-13 AC6). */
+export interface ReviewDecisions {
+  values: ReviewedValue[];
+  documents: DocumentToSave[];
+  labValues: ReviewedLabValue[];
+  reviewed: FileResult[];
+}
 
 /**
  * Brad D5 (US-66 AC6): an extra value named like a core test, creatinine
