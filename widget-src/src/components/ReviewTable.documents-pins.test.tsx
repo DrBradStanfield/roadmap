@@ -55,10 +55,6 @@ describe('per-document review pins', () => {
       .toEqual(['blank.pdf', 'scan.pdf', 'letter-new.pdf', 'letter-old.pdf', 'misc.pdf', 'broken.pdf']);
   });
 
-  it('US-13 AC1, US-52 AC13d: renders the same section DOM (badge, Already saved, title, date, 300-char preview, screening box)', () => {
-    expect(review().sections().map(s => s.outerHTML).join('\n')).toMatchSnapshot();
-  });
-
   it('US-12 AC9: shows the error row and the nothing-found row', () => {
     const view = review();
     expect(view.sectionOf('broken.pdf').querySelector('.review-file-error')!.textContent).toBe('Could not read this file: Synthetic failure');

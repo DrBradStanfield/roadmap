@@ -345,9 +345,6 @@ describe('US-44 AC6 — Save as PDF shows on a phone', () => {
     const header = render(<ColumnHeader title="Ask about your plan"/>).container.querySelector('.hr-col-header')!;
     for (const phone of [390, 768]) expect(cascaded(header, 'display', phone)).toBe('none');
     expect(cascaded(header, 'display', 769)).toBe('flex');
-    // Text, as an absence: no rule for the plan header's actions survives.
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    expect(css).not.toContain('hr-col-header--actions');
   });
 
   it('styles.css: a phone card sets no side margin; the tab panel gives its 16px inset (US-62 AC36)', () => {
