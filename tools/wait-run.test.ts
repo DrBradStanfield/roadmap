@@ -29,6 +29,10 @@ jqf=; prev=
 for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; prev=$a; done
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 poll_n() { n=$((n+1)); echo $n > "$STATE"; [ "$n" = "\${FAIL_AT:-}" ] && exit 1; [ $n -ge "\${DONE_AT:-2}" ]; }
+# BLOCK_END_BUDGET: the second budget-line read (the EXIT trap's) says so in a file, then waits for the test's go.
+case "$*" in *rate_limit*graphql=*) if [ -n "\${BLOCK_END_BUDGET:-}" ]; then
+  if [ -e "$STATE.budget1" ]; then : > "$STATE.inend"; until [ -e "$STATE.go" ]; do /bin/sleep 0.05; done
+  else : > "$STATE.budget1"; fi; fi ;; esac
 case "$*" in
   *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
   *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
@@ -55,7 +59,7 @@ cat "$STATE.clock" 2>/dev/null || echo 1000000
 `);
   writeFileSync(join(S, 'sleep'), `#!/bin/sh
 echo "$1" >> "$STATE.sleeps"
-[ -n "\${SLEEP_REAL:-}" ] && exec /bin/sleep "$SLEEP_REAL" >/dev/null 2>&1 # off the pipes, so close waits only for the script
+[ -n "\${SLEEP_REAL:-}" ] && exec /bin/sleep "$SLEEP_REAL"
 t=$(cat "$STATE.clock" 2>/dev/null || echo 1000000); echo $((t + $1)) > "$STATE.clock"
 `);
   chmodSync(join(S, 'date'), 0o755);
@@ -371,6 +375,15 @@ describe('wait-run.sh (US-64 AC26)', () => {
       expect(statusLines(r.stdout)).toHaveLength(1);
       expect(status(r.stdout).wait_run).toBe('usage');
     }
+    // Above a day, or too long to compare, is a usage error too; 0 and 1440 still run.
+    for (const v of ['1441', '99999999999999999999']) {
+      const r = run(['deploy', '123'], { WAIT_RUN_MAX_MIN: v });
+      expect({ v, code: r.status }).toEqual({ v, code: 2 });
+      expect(r.calls).toEqual([]);
+      expect(status(r.stdout).wait_run).toBe('usage');
+    }
+    expect(run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '1440' }).status).toBe(0);
+    expect(run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
     // A leading zero is still decimal: 010 is ten minutes, not eight.
     const r = run(['deploy', '123'], { RL_CORE: '50', RL_RESET: '2000000', WAIT_RUN_MAX_MIN: '010' });
     expect(r.sleeps).toEqual([600]);
@@ -394,10 +407,12 @@ describe('wait-run.sh (US-64 AC26)', () => {
   for (const shell of shells) {
     it(`US-64 AC26: TERM during the wait prints the interrupted line last and exits 143 (${shell})`, async () => {
       const state = join(S, `state-${Math.random()}`);
-      const child = spawn(shell, [SCRIPT, 'deploy', '123'], { env: envFor(state, { SLEEP_REAL: '30' }) });
+      // A long nap: the stub sleep keeps whatever stdout it inherits, so a caller's pipe must not wait on it.
+      const child = spawn(shell, [SCRIPT, 'deploy', '123'], { env: envFor(state, { SLEEP_REAL: '120' }) });
       let out = '';
       child.stdout.on('data', (d) => { out += d; });
-      const done = new Promise<number | null>((res) => child.on('close', (code) => res(code)));
+      const eof = new Promise<string>((res) => child.stdout.on('end', () => res('eof')));
+      const done = new Promise<number | null>((res) => child.on('exit', (code) => res(code)));
       const t = Date.now();
       while (!existsSync(`${state}.sleeps`)) {
         expect(Date.now() - t).toBeLessThan(10_000);
@@ -407,11 +422,33 @@ describe('wait-run.sh (US-64 AC26)', () => {
       const sent = Date.now();
       child.kill('SIGTERM');
       expect(await done).toBe(143);
-      expect(Date.now() - sent).toBeLessThan(5_000); // not after the 30 s sleep
+      const late = new Promise<string>((res) => setTimeout(() => res('pipe still open'), 5_000));
+      expect(await Promise.race([eof, late])).toBe('eof'); // not after the 120 s sleep
+      expect(Date.now() - sent).toBeLessThan(5_000);
       expect(statusLines(out)).toHaveLength(1);
       const s = status(out);
       expect(s.wait_run).toBe('interrupted');
       expect(s.run).toBe(123);
+    }, 20_000);
+    it(`US-64 AC26: TERM while the EXIT trap prints still yields a complete status line (${shell})`, async () => {
+      const state = join(S, `state-${Math.random()}`);
+      const child = spawn(shell, [SCRIPT, 'deploy', '123'], { env: envFor(state, { BLOCK_END_BUDGET: '1' }) });
+      let out = '';
+      child.stdout.on('data', (d) => { out += d; });
+      const done = new Promise<number | null>((res) => child.on('close', (code) => res(code)));
+      const t = Date.now();
+      while (!existsSync(`${state}.inend`)) {
+        expect(Date.now() - t).toBeLessThan(10_000);
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      child.kill('SIGTERM'); // pending while the end budget read blocks, so it lands inside the EXIT trap
+      writeFileSync(`${state}.go`, '');
+      await done;
+      expect(statusLines(out)).toHaveLength(1);
+      const s = status(out);
+      expect(s.wait_run).toBe('success');
+      expect(s.run).toBe(123);
+      expect(s.sha).toBe('abc123');
     }, 20_000);
   }
 });

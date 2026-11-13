@@ -12,13 +12,13 @@
 #
 # Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
 # 200; 2 usage; 3 gave up
-# (WAIT_RUN_MAX_MIN of wall-clock time, default 90, or 10 gh errors in a row; each gh call is killed at 60 s,
+# (WAIT_RUN_MAX_MIN of wall-clock time, default 90, at most 1440, or 10 gh errors in a row; each gh call is killed at 60 s,
 # even a hung gh that ignores signals).
 # Every exit the script controls (not SIGKILL) ends with one JSON line, the last on stdout (`tail -1`), naming its
 # outcome (US-64 AC26):
 #   {"wait_run":"<outcome>","run"|"pr":<id>,"sha":"<head, or empty>","detail":"<short>"}
 # success 0; run_failed, unhealthy, result_unreadable (deploy), checks_failed, untested, conflict, head_unreadable
-# (pr) 1; usage 2 (no id key; also a bad id, mode or WAIT_RUN_MAX_MIN, which must be a whole number); timeout,
+# (pr) 1; usage 2 (no id key; also a bad id, mode or WAIT_RUN_MAX_MIN, which must be a whole number up to 1440); timeout,
 # gh_errors 3; interrupted on INT, TERM or HUP, and the exit is the signal's 128+n (130, 143, 129).
 #
 # Cheap on purpose: many sessions run this at once on one GitHub account, and on 2026-11-10 they spent the
@@ -39,6 +39,7 @@ interval=${WAIT_RUN_INTERVAL:-60}
 max_min=${WAIT_RUN_MAX_MIN:-90}
 case "$max_min" in *[!0-9]*) mode=bad; max_min=0 ;; esac
 max_min=${max_min#"${max_min%%[!0]*}"}
+[ ${#max_min} -le 4 ] && [ "${max_min:-0}" -le 1440 ] || { mode=bad; max_min=0; }
 max_s=$(( ${max_min:-0} * 60 ))
 healthz=${WAIT_RUN_HEALTHZ:-https://health-tool-app.fly.dev/healthz}
 case "$id" in ''|*[!0-9]*) mode=bad ;; esac
@@ -86,7 +87,8 @@ say_budget() {
   case "$b" in core=[0-9]*" graphql="[0-9]*) echo "GitHub budget at $1: $b" >&2 ;; esac
 }
 say_budget start
-trap 'say_budget end; say_status "$outcome" "$key" "$id" "$sha" "$detail"' EXIT
+# A second signal must not cut the status line off, so the trap ignores them first.
+trap 'trap "" INT TERM HUP; say_budget end; say_status "$outcome" "$key" "$id" "$sha" "$detail"' EXIT
 # dash (CI's sh) skips the EXIT trap on a signal it does not trap, so trap each one and exit with its 128+n.
 trap 'exit 130' INT; trap 'exit 143' TERM; trap 'exit 129' HUP
 # Wall-clock, so slow gh calls count too.
@@ -108,15 +110,16 @@ nap() {
         [ "$s" -le "$cap" ] || s=$cap
         [ "$s" -ge 1 ] || s=1
         echo "GitHub rate limit low ($left left); sleeping ${s}s until it resets" >&2
-        sleep "$s" & wait $!; return
+        sleep "$s" >/dev/null 2>&1 & wait $!; return
       fi ;;
     esac
   fi
   s=$interval
   if [ "$waited" -ge 1800 ]; then [ "$s" -ge 300 ] || s=300
   elif [ "$waited" -ge 600 ]; then [ "$s" -ge 120 ] || s=120; fi
-  # In the background: a trapped signal waits for a foreground command, but cuts a wait short.
-  sleep "$s" & wait $!
+  # In the background: a trapped signal waits for a foreground command, but cuts a wait short. Off the caller's
+  # pipes, so a sleep left behind when the script dies does not hold them open.
+  sleep "$s" >/dev/null 2>&1 & wait $!
 }
 # Poll until `$1` prints "done"; gh errors are retried, not fatal (a network blip must not end the wait).
 # GitHub recomputes mergeability after a push, so one CONFLICTING read can be stale: a conflict is final only on
