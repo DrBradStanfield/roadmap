@@ -15,6 +15,8 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PDFWorker, type PDFDocumentLoadingTask } from 'pdfjs-dist';
 
 const tasks: PDFDocumentLoadingTask[] = [];
+/** Runs as each loading task is made: a test aborts its read there, mid-read. */
+let onTask: (() => void) | null = null;
 vi.mock('pdfjs-dist', async importOriginal => {
   const real = await importOriginal<typeof import('pdfjs-dist')>();
   return {
@@ -22,6 +24,7 @@ vi.mock('pdfjs-dist', async importOriginal => {
     getDocument: (...args: Parameters<typeof real.getDocument>) => {
       const task = real.getDocument(...args);
       tasks.push(task);
+      onTask?.();
       return task;
     },
   };
@@ -61,6 +64,7 @@ beforeAll(async () => {
 });
 beforeEach(() => {
   tasks.length = 0;
+  onTask = null;
   workerDestroy.mockClear();
 });
 
@@ -93,5 +97,29 @@ describe('US-12 AC7a: a PDF read by the upload releases its pdf.js worker', () =
     expect(tasks).toHaveLength(1);
     expect(tasks[0].destroyed).toBe(true);
     expect(workerDestroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('US-12 AC7b (U15): a PDF read stopped at the upload\'s time limit releases its worker then', () => {
+  it('an abort during the read stops it and destroys the loading task', async () => {
+    const stop = new AbortController();
+    onTask = () => queueMicrotask(() => stop.abort()); // just after the task is made, while pdf.js opens the file
+    await expect(extractFromPdf(textPdf(), stop.signal)).rejects.toThrow();
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].destroyed).toBe(true);
+    expect(workerDestroy).toHaveBeenCalled();
+  });
+
+  it('a read already stopped before it starts opens nothing', async () => {
+    const stop = new AbortController();
+    stop.abort();
+    await expect(extractFromPdf(textPdf(), stop.signal)).rejects.toThrow();
+    expect(tasks).toHaveLength(0);
+  });
+
+  it('a signal that never fires changes nothing', async () => {
+    const { pages } = await extractFromPdf(textPdf(), new AbortController().signal);
+    expect(pages).toEqual([expect.objectContaining({ type: 'text', content: expect.stringContaining('LDL 3.1 mmol/L') })]);
+    expect(tasks[0].destroyed).toBe(true);
   });
 });

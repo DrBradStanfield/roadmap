@@ -136,10 +136,12 @@ const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .do
 export const shortName = (fileName: string) => fileName.split('/').pop() || fileName;
 
 export const hasValues = (r: FileResult) => r.values.length + r.additionalValues.length > 0;
-function withTimeout<T>(work: Promise<T>): Promise<T> {
+/** Runs one file's read against EXTRACT_TIMEOUT; at the limit the read is told to stop (US-12 AC7b). */
+function withTimeout<T>(read: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const stop = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT); });
-  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => { stop.abort(); reject(new Error('timeout')); }, EXTRACT_TIMEOUT); });
+  return Promise.race([read(stop.signal), timeout]).finally(() => clearTimeout(timer));
 }
 
 /** One file to read. A ZIP member's `fileName` is its ZIP's name, then its
@@ -159,13 +161,14 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
       return { pages: [] };
     }
     if (upload.isPdf(file)) {
-      const { pages, truncated } = await withTimeout(upload.extractFromPdf(file));
+      const { pages, truncated } = await withTimeout((signal) => upload.extractFromPdf(file, signal));
       if (truncated) notices.push({ name, reason: 'truncated' });
       if (pages.length > 0) return { pages, file };
     } else if (upload.isImage(file)) {
-      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, UPLOAD_LIMITS.web.photoPx)), mimeType: 'image/jpeg' }], file };
+      return { pages: [{ type: 'image', content: await withTimeout(() => upload.resizeImage(file, UPLOAD_LIMITS.web.photoPx)), mimeType: 'image/jpeg' }], file };
     } else if (isDocx(file)) {
-      const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
+      const data = await file.arrayBuffer();
+      const { text, truncated, picturesOnly } = await withTimeout((signal) => upload.docxToText(data, signal));
       if (truncated) notices.push({ name, reason: 'truncated' });
       if (text) return { pages: [{ type: 'text', content: text }], file };
       if (picturesOnly) {
