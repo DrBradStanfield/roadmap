@@ -34,8 +34,9 @@ final class RecordStore {
     /// Told after each edit: in the cloud, that a save is on its way; on the
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
-    /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
-    /// so a view holding health data outside the record, the open chat, drops it.
+    /// Moves each time an erase reaches the record: "Delete all my data" here (US-25 AC16), or one
+    /// taken in from another device or a switch to a record at another erase (`land`, S70, S63).
+    /// A view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
     /// The erase count the drawn screen shows: behind `erasures` when an erase's draw failed, so
     /// its rows predate the erase (a failed metric read's words, S25). Caught up only by a record
@@ -103,15 +104,6 @@ final class RecordStore {
     /// entry waits (AC17e).
     var unitSwitches = 0
 
-    struct Stamp: Equatable {
-        let revision: Int
-        let draws: Int?
-    }
-
-    struct KeptHistory {
-        let stamp: Stamp
-        let chart: ChartData
-    }
     var histories: [String: KeptHistory] = [:]
     /// A history the engine is reading, for the stamp it was asked at.
     @ObservationIgnored var reading: [String: (stamp: Stamp, task: Task<ChartData?, Never>)] = [:]
@@ -191,6 +183,7 @@ final class RecordStore {
     /// step. Assigns only on change, so CloudSync's link after every send moves nothing it need not.
     @discardableResult
     private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil) -> Source.Effect {
+        let before = mark
         let (next, effect) = Source.transition(source, event)
         if next != source { source = next }
         switch effect {
@@ -206,6 +199,7 @@ final class RecordStore {
             self.problem = problem
         case .none, .drop: break
         }
+        if before.erased(by: mark) { (erasures, screenErasures) = (erasures + 1, erasures + 1) }  // landed, on evidence (S70, S63)
         return effect
     }
 
@@ -217,10 +211,12 @@ final class RecordStore {
 
     /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
     /// Not drawn: nothing on screen moved, the units included.
-    /// `holdUndrawn`: one the engine cannot draw is held all the same, with no drawing (showErased).
+    /// `holdUndrawn`: one the engine cannot draw is held all the same, with no drawing (showErased), as is
+    /// the shown session's own record at another erase: never the pre-erase record shown (S63, AC16f).
     @discardableResult
     func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> DrawResult {
-        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices, holdUndrawn: holdUndrawn)
+        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices,
+                   holdUndrawn: holdUndrawn || (view.session == source.session && view.erase != source.erase))
     }
 
     /// A cloud record onto the screen: `event` says whether the session sent it or an edit made it.
@@ -312,9 +308,10 @@ final class RecordStore {
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
                 let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.source.link?.pending, deviceId: self.deviceId)
+                let counted = self.erasures
                 let drawnErase = self.land(.phoneWritten, record: result.record, drawn: shown) == .show
                 self.publish(UnitChoices())
-                self.erasures += 1
+                if self.erasures == counted { self.erasures += 1 }  // once, if land has not counted it
                 if drawnErase { self.screenErasures = self.erasures }
                 self.onEdit?()
                 return .erased(chatErased: chatErased)
@@ -333,8 +330,9 @@ final class RecordStore {
         chain {
             // A fresh start: no per-test choice, published only with the erase held (adversary R4).
             // Stale: the record drawn was stamped after the erase, so it holds it (owner's ruling b).
+            let counted = self.erasures
             let shown = await self.drawErased(view, stillShown: stillShown())
-            self.erasures += 1
+            if self.erasures == counted { self.erasures += 1 }  // once, if land has not counted it
             if shown != .failed { self.screenErasures = self.erasures }
         }
     }
