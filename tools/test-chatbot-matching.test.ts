@@ -1,10 +1,15 @@
 /**
- * US-15 AC13 — an answer-check timeout counts as an API error.
+ * The router and answer harness (tools/test-chatbot-matching.ts), offline: `fetch` is stubbed, so no
+ * call leaves the machine and no real key is passed.
  *
- * The harness is a paid script, so it runs here as a real subprocess with
- * `fetch` stubbed: no call leaves the machine. With three answer runs and a
- * majority vote, one timeout and two passes still pass the case, so only the
- * error count keeps the run from exiting green.
+ * Most cases run the harness in this process (runHarness, test audit TA-T01) or score an answer
+ * directly (scoreAnswer). Five still spawn the real CLI through tsx, to prove the boundary: argv,
+ * stdout and the exit code (US-15 AC13 timeout, AC28 parse error, --estimate with no key, the
+ * pending listing, and one user_context request shape).
+ *
+ * US-15 AC13: an answer-check timeout counts as an API error. With three answer runs and a
+ * majority vote, one timeout and two passes still pass the case, so only the error count keeps
+ * the run from exiting green.
  */
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
@@ -12,13 +17,39 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
+import { noColour, reply, runHarness, textReply } from './test-chatbot-matching-inprocess';
+import { scoreAnswer, type AnswerChecks } from './harness-answers';
 import { loadBlogArticle } from '../app/lib/matched-content';
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import { resolveChatContext } from '../app/lib/chat.server';
 import { runRoadmap } from '../packages/health-core/src/run-roadmap';
 import { DISCORD_SAVED_CHAT, SAVED_CHAT_BY_RETENTION, YOUTUBE_SAVED_CHAT, savedChatBlock } from '../app/lib/chat-save-answers';
 
-interface Case { category: string; expected: string[]; must_mention?: string[] }
+/** Run the real CLI under tsx, preloading the ES module `stub(log)` builds; calls it appends to `log` (JSON lines) come back. */
+function spawnCli(stub: (log: string) => string, argv: string[], key = true) {
+  const dir = mkdtempSync(join(tmpdir(), 'chatbot-cli-'));
+  try {
+    const file = join(dir, 'fetch-stub.mjs');
+    const log = join(dir, 'calls.jsonl');
+    writeFileSync(file, stub(log));
+    const [bin, args] = tsxSpawn(['--import', file, 'tools/test-chatbot-matching.ts', ...argv]);
+    const { ANTHROPIC_API_KEY: _live, ANTHROPIC_TEST_API_KEY: _test, ...rest } = process.env; // never a real key: no call leaves the machine
+    const env = key ? { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' } : rest;
+    // A killed harness must throw: its missing lines would read as passes (deploy run 39484726768).
+    const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 110_000 });
+    if (res.error) throw res.error;
+    let calls: any[] = [];
+    try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+    return { status: res.status, stderr: res.stderr, out: noColour(res.stdout), calls };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** The answer text the harness scores: a text-only turn, no tool call. */
+const textTurn = (text: string) => ({ final: { contentBlocks: [{ type: 'text' as const, text }] }, counts: null, proposedEdits: [] });
+
+interface Case { query: string; category: string; expected: string[]; must_mention?: string[] }
 
 // A category holding exactly one routed case with a must_mention list, so the run is one case.
 function pickCase(): Case {
@@ -31,39 +62,28 @@ function pickCase(): Case {
 }
 
 describe('test-chatbot-matching --answer-check (US-15 AC13)', () => {
+  // CLI spawn 1 of 5: the apiErrors count reaches the real exit code.
   it('counts an answer-check timeout in apiErrors and exits non-zero', () => {
     const q = pickCase();
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-matching-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      // Router calls send `system` as an array; answer calls send a string.
-      writeFileSync(stub, `
-        let answerCalls = 0;
-        const ok = (text) => new Response(JSON.stringify({
-          content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-        }), { status: 200, headers: { 'content-type': 'application/json' } });
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          if (Array.isArray(body.system)) return ok(${JSON.stringify(JSON.stringify({ handles: [q.expected[0]] }))});
-          answerCalls++;
-          if (answerCalls === 2) throw new DOMException('timed out', 'TimeoutError');
-          return ok(${JSON.stringify(q.must_mention!.join(' '))});
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', q.category, '--answer-check', '--runs', '3']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+    // Router calls send `system` as an array; answer calls send a string.
+    const { status, stderr, out } = spawnCli(() => `
+      let answerCalls = 0;
+      const ok = (text) => new Response(JSON.stringify({
+        content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+      globalThis.fetch = async (_url, init) => {
+        const body = JSON.parse(init.body);
+        if (Array.isArray(body.system)) return ok(${JSON.stringify(JSON.stringify({ handles: [q.expected[0]] }))});
+        answerCalls++;
+        if (answerCalls === 2) throw new DOMException('timed out', 'TimeoutError');
+        return ok(${JSON.stringify(q.must_mention!.join(' '))});
+      };
+    `, ['--category', q.category, '--answer-check', '--runs', '3']);
 
-      expect(out, res.stderr).toContain('Passing:     1'); // the majority vote still passes the case
-      expect(out).toContain('[api-error timeout]');
-      expect(out).toMatch(/SUMMARY .* apiErrors=1 /);
-      expect(res.status).toBe(1);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    expect(out, stderr).toContain('Passing:     1'); // the majority vote still passes the case
+    expect(out).toContain('[api-error timeout]');
+    expect(out).toMatch(/SUMMARY .* apiErrors=1 /);
+    expect(status).toBe(1);
   }, 60_000);
 });
 
@@ -81,31 +101,17 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
   const snippet = stripFrontmatter(loadBlogArticle(q.answer_handles![0]) ?? '').slice(0, 300);
 
   /** Run the harness offline. goodAnswer: answer well when the article is in the prompt; otherwise always fail. */
-  function run(flags: string[], goodAnswer: boolean) {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-fixed-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      // A router call (system as an array) throws, so it would show as an API error.
-      writeFileSync(stub, `
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          if (Array.isArray(body.system)) throw new Error('router called');
-          const ok = ${goodAnswer} && body.system.includes(${JSON.stringify(snippet)});
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: ok ? 'answer from the article' : 'Grokipedia says' }],
-            stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', q.category, '--source', q.source!, '--runs', '1', ...flags]);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, '') };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  async function run(flags: string[], goodAnswer: boolean) {
+    // A router call (system as an array) throws, so it would show as an API error.
+    const { status, err, out } = await runHarness(['--category', q.category, '--source', q.source!, '--runs', '1', ...flags], {
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        if (Array.isArray(body.system)) throw new Error('router called');
+        const ok = goodAnswer && body.system.includes(snippet);
+        return textReply(ok ? 'answer from the article' : 'Grokipedia says');
+      },
+    });
+    return { status, stderr: err, out: noColour(out) };
   }
 
   it('the case is alone under its filters', () => {
@@ -113,21 +119,21 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
     expect(all.filter(y => y.category === q.category && y.source === q.source)).toEqual([q]);
   });
 
-  it('scores the answer against its answer_handles and never calls the router', () => {
-    const { status, stderr, out } = run(['--fixed-handles-only'], true);
+  it('scores the answer against its answer_handles and never calls the router', async () => {
+    const { status, stderr, out } = await run(['--fixed-handles-only'], true);
     expect(out, stderr).toContain('Queries:     0 + 1 fixed-handle answer checks');
     expect(out).toContain('Fixed-handle answer checks: 1/1');
     expect(status).toBe(0);
   }, 60_000);
 
-  it('a failing fixed-handle check fails the run under --fixed-handles-only', () => {
-    const { status, stderr, out } = run(['--fixed-handles-only'], false);
+  it('a failing fixed-handle check fails the run under --fixed-handles-only', async () => {
+    const { status, stderr, out } = await run(['--fixed-handles-only'], false);
     expect(out, stderr).toContain('Fixed-handle answer checks: 0/1 ✗ all must pass');
     expect(status).toBe(1);
   }, 60_000);
 
-  it('under plain --answer-check it is reported but does not gate the exit code', () => {
-    const { status, stderr, out } = run(['--answer-check'], false);
+  it('under plain --answer-check it is reported but does not gate the exit code', async () => {
+    const { status, stderr, out } = await run(['--answer-check'], false);
     expect(out, stderr).toContain('Queries:     0 + 1 fixed-handle answer checks');
     expect(out).toContain('Fixed-handle answer checks: 0/1 ✗ reported, not gating');
     expect(status).toBe(0);
@@ -135,17 +141,22 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
 
   // Brad 2026-11-10: a failing answer prints in full and the answer calls show their cost, so no
   // run is repeated just to read what the bot said or what it cost.
-  it('a failing answer prints the whole reply and an answer cost line', () => {
-    const { stderr, out } = run(['--fixed-handles-only'], false);
+  it('a failing answer prints the whole reply and an answer cost line', async () => {
+    const { stderr, out } = await run(['--fixed-handles-only'], false);
     expect(out, stderr).toContain('Response (last run):');
     expect(out).toContain('      Grokipedia says');
     expect(out).toMatch(/SUMMARY answer .* pass=0\/1 .* calls=1 .*cost=\$/);
   }, 60_000);
 
-  it('--estimate prices the run and makes no API call', () => {
-    const { status, stderr, out } = run(['--fixed-handles-only', '--estimate'], false);
+  // CLI spawn 2 of 5: --estimate needs no key and exits 0 before any call (with the pin file's keyless case, TA-T03).
+  it('--estimate prices the run, needs no key and makes no API call', () => {
+    const { status, stderr, out, calls } = spawnCli(log => `
+      import fs from 'node:fs';
+      globalThis.fetch = async () => { fs.appendFileSync(${JSON.stringify(log)}, '{}\\n'); throw new Error('fetch called'); };
+    `, ['--category', q.category, '--source', q.source!, '--runs', '1', '--fixed-handles-only', '--estimate'], false);
     expect(out, stderr).toMatch(/ESTIMATE router calls=0 \$0\.00; answer calls=1 up to \$0\.\d\d; .*No API call made\./);
     expect(out).not.toContain('=== Results');
+    expect(calls).toEqual([]);
     expect(status).toBe(0);
   }, 60_000);
 });
@@ -161,39 +172,22 @@ describe('test-chatbot-matching --category comma list (US-15 AC13)', () => {
   const b = all.find(q => Array.isArray(q.expected) && q.category !== a && fixed(q.category) === 0)!.category;
 
   /** The "Queries:" line of an offline run: router returns no handles, answers are fixed text. */
-  function queriesLine(category: string): string {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-category-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      writeFileSync(stub, `
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          const text = Array.isArray(body.system) ? '{"handles":[]}' : 'stub answer';
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', category, '--answer-check', '--runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      const line = res.stdout.replace(/\x1b\[[0-9;]*m/g, '').split('\n').find(l => l.startsWith('Queries:'));
-      if (!line) throw new Error(`no Queries line for "${category}": ${res.stderr}`);
-      return line;
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  async function queriesLine(category: string): Promise<string> {
+    const res = await runHarness(['--category', category, '--answer-check', '--runs', '1'], {
+      fetch: async (_url, init) => textReply(Array.isArray(JSON.parse(String(init.body)).system) ? '{"handles":[]}' : 'stub answer'),
+    });
+    const line = noColour(res.out).split('\n').find(l => l.startsWith('Queries:'));
+    if (!line) throw new Error(`no Queries line for "${category}": ${res.err}`);
+    return line;
   }
   const expectLine = (r: number, f: number) => `Queries:     ${r}${f ? ` + ${f} fixed-handle answer checks` : ''}`;
 
-  it('runs the sum of two categories, and one category runs only its own', () => {
+  it('runs the sum of two categories, and one category runs only its own', async () => {
     expect(fixed(a)).toBeGreaterThan(0);
     expect(routed(b)).toBeGreaterThan(0);
-    expect(queriesLine(`${a},${b}`)).toBe(expectLine(routed(a) + routed(b), fixed(a) + fixed(b)));
-    expect(queriesLine(b)).toBe(expectLine(routed(b), fixed(b)));
-    expect(queriesLine(a)).toBe(expectLine(routed(a), fixed(a)));
+    expect(await queriesLine(`${a},${b}`)).toBe(expectLine(routed(a) + routed(b), fixed(a) + fixed(b)));
+    expect(await queriesLine(b)).toBe(expectLine(routed(b), fixed(b)));
+    expect(await queriesLine(a)).toBe(expectLine(routed(a), fixed(a)));
   }, 120_000);
 });
 
@@ -206,50 +200,32 @@ describe('test-chatbot-matching surface posture (US-45 AC6)', () => {
   const DOCTOR = '## SURFACE CONTEXT — Dr Brad education assistant';
   const BRAND = '## SURFACE CONTEXT — MicroVitamin brand assistant';
 
-  it('each answer call carries exactly its own surface posture, before the articles', () => {
+  it('each answer call carries exactly its own surface posture, before the articles', async () => {
     expect(cases.length).toBeGreaterThan(0);
     expect(cases.every(q => q.surface === 'doctor' || q.surface === 'brand')).toBe(true);
     expect(new Set(cases.map(q => q.surface))).toEqual(new Set(['doctor', 'brand']));
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-surface-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      const log = join(dir, 'calls.jsonl');
-      writeFileSync(stub, `
-        import { appendFileSync } from 'node:fs';
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          if (Array.isArray(body.system)) throw new Error('router called');
-          const s = body.system;
-          const at = (t) => s.indexOf(t);
-          appendFileSync(${JSON.stringify(log)}, JSON.stringify({
-            query: body.messages[0].content,
-            doctor: at(${JSON.stringify(DOCTOR)}), brand: at(${JSON.stringify(BRAND)}),
-            products: at("## Dr Stanfield's Products"), articles: at('## Referenced Blog Articles'),
-          }) + '\\n');
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      const calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l) as
-        { query: string; doctor: number; brand: number; products: number; articles: number });
-      expect(calls.length, res.stderr).toBe(cases.length);
-      const seen = calls.map(c => {
-        expect((c.doctor >= 0) !== (c.brand >= 0)).toBe(true); // one posture, never both or none
-        const at = Math.max(c.doctor, c.brand);
-        expect(at).toBeGreaterThan(c.products);
-        if (c.articles >= 0) expect(at).toBeLessThan(c.articles);
-        return `${c.query}|${c.doctor >= 0 ? 'doctor' : 'brand'}`;
-      }).sort();
-      expect(seen).toEqual(cases.map(q => `${q.query}|${q.surface}`).sort());
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    const calls: Array<{ query: string; doctor: number; brand: number; products: number; articles: number }> = [];
+    const res = await runHarness(['--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1'], {
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        if (Array.isArray(body.system)) throw new Error('router called');
+        const at = (t: string) => (body.system as string).indexOf(t);
+        calls.push({
+          query: body.messages[0].content, doctor: at(DOCTOR), brand: at(BRAND),
+          products: at("## Dr Stanfield's Products"), articles: at('## Referenced Blog Articles'),
+        });
+        return textReply('stub answer');
+      },
+    });
+    expect(calls.length, res.err).toBe(cases.length);
+    const seen = calls.map(c => {
+      expect((c.doctor >= 0) !== (c.brand >= 0)).toBe(true); // one posture, never both or none
+      const at = Math.max(c.doctor, c.brand);
+      expect(at).toBeGreaterThan(c.products);
+      if (c.articles >= 0) expect(at).toBeLessThan(c.articles);
+      return `${c.query}|${c.doctor >= 0 ? 'doctor' : 'brand'}`;
+    }).sort();
+    expect(seen).toEqual(cases.map(q => `${q.query}|${q.surface}`).sort());
   }, 120_000);
 });
 
@@ -261,37 +237,17 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
   const GUT = 'Is Potassium Fiber good for gut health and regularity?|doctor';
   const ORGANIC = 'Is Potassium Fiber organic?|brand';
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as
-    { category: string; query: string; surface?: string; must_mention?: string[] }[];
+    (AnswerChecks & { category: string; query: string; surface?: string; expected?: string[]; answer_handles?: string[]; pending?: string })[];
+  // The cases a --fixed-handles-only run of the category answers and scores.
+  const fixedCases = all.filter(q => q.category === 'product-potassium-fiber' && !q.pending && !Array.isArray(q.expected) && Array.isArray(q.answer_handles));
   // Fixtures a bare "stub answer" fails: every one with a must_mention list.
   const needText = all.filter(q => q.category === 'product-potassium-fiber' && q.must_mention?.length)
     .map(q => `${q.query}|${q.surface}`);
 
-  /** Offline run of the category; answers come from `answers` by "query|surface". Returns the failing keys. */
+  /** Each fixed-handle case of the category scored on `answers` by "query|surface" ("stub answer" otherwise). Returns the failing keys. */
   function failing(answers: Record<string, string>): string[] {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-claim-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      writeFileSync(stub, `
-        const answers = ${JSON.stringify(answers)};
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          const surface = body.system.includes('MicroVitamin brand assistant') ? 'brand' : 'doctor';
-          const text = answers[body.messages[0].content + '|' + surface] ?? 'stub answer';
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-      return [...out.matchAll(/^✗ \[product-potassium-fiber\] "(.+)" \((doctor|brand)\)$/gm)].map(m => `${m[1]}|${m[2]}`);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    return fixedCases.map(q => `${q.query}|${q.surface}`)
+      .filter((key, i) => !scoreAnswer(fixedCases[i], textTurn(answers[key] ?? 'stub answer')).passed);
   }
 
   it('passes compliant answers, denials included', () => {
@@ -361,42 +317,30 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
 describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
   const q = pickCase();
 
-  /** Run the one-case category offline; the router answers `routerText` for the case's own query. */
-  function run(routerText: string) {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-reply-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      // The cache warmup asks about "health": it gets a clean empty route.
-      writeFileSync(stub, `
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          const mine = body.messages[0].content.includes(${JSON.stringify(q.query)});
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: mine ? ${JSON.stringify(routerText)} : '{"handles":[]}' }],
-            stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts', '--category', q.category, '--runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
-      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, '') };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }
-
-  it('routes on the corrected second object', () => {
+  it('routes on the corrected second object', async () => {
     const text = `{"handles": ["guideline-${q.expected[0]}x"]}\n\nCorrection: copying handles exactly from the index (without the type label):\n\n{"handles": ["${q.expected[0]}"]}`;
-    const { status, stderr, out } = run(text);
-    expect(out, stderr).toContain('Passing:     1');
+    // The cache warmup asks about "health": it gets a clean empty route.
+    const res = await runHarness(['--category', q.category, '--runs', '1'], {
+      fetch: async (_url, init) => textReply(JSON.parse(String(init.body)).messages[0].content.includes(q.query) ? text : '{"handles":[]}'),
+    });
+    const out = noColour(res.out);
+    expect(out, res.err).toContain('Passing:     1');
     expect(out).toMatch(/SUMMARY .* apiErrors=0 /);
-    expect(status).toBe(0);
+    expect(res.status).toBe(0);
   }, 60_000);
 
+  // CLI spawn 3 of 5: a router parse error reaches the real exit code.
   it('counts a reply nothing parses as an error and exits non-zero', () => {
-    const { status, stderr, out } = run('Sorry, nothing in the index fits.');
+    const { status, stderr, out } = spawnCli(() => `
+      globalThis.fetch = async (_url, init) => {
+        const body = JSON.parse(init.body);
+        const mine = body.messages[0].content.includes(${JSON.stringify(q.query)});
+        return new Response(JSON.stringify({
+          content: [{ type: 'text', text: mine ? 'Sorry, nothing in the index fits.' : '{"handles":[]}' }],
+          stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      };
+    `, ['--category', q.category, '--runs', '1']);
     expect(out, stderr).toContain('[parse-error');
     expect(out).toMatch(/SUMMARY .* apiErrors=1 /);
     expect(status).toBe(1);
@@ -409,10 +353,9 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 // make the intended plan, or a fixture with no posture, exits the harness before
 // any API call; an explicit {} is production's empty context.
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
-  interface Entry {
+  interface Entry extends AnswerChecks {
     query: string; category: string; surface?: string; answer_handles?: string[]; expected?: string[]; user_context?: unknown;
-    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
-    expect_roadmap_run?: boolean; expect_profile_edit?: object;
+    expect_no_plan?: true;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
@@ -421,49 +364,41 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   const cases = all.filter(q => CATEGORIES.split(',').includes(q.category)
     && !Array.isArray(q.expected) && Array.isArray(q.answer_handles));
 
+  type Call = { query: string; system: Array<{ text: string }>; tools: boolean };
+  const lastUserText = (body: { messages: Array<{ role: string; content: unknown }> }) =>
+    body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1)!.content as string;
+
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
-  function run(fixtures?: Entry[], answer: string | Record<string, string> = 'stub answer') {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-user-context-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      const log = join(dir, 'calls.jsonl');
-      writeFileSync(stub, `
-        import fs from 'node:fs';
-        const fixtures = ${JSON.stringify(fixtures ?? null)};
-        const read = fs.readFileSync;
-        if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
-        const answers = ${JSON.stringify(answer)};
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          const query = body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1).content;
-          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query, system: body.system, tools: !!body.tools }) + '\\n');
-          const text = typeof answers === 'string' ? answers : answers[query];
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      // Under the tests' 120 s. A killed harness must throw: its missing ✗ lines would read as passes
-      // (deploy run 39484726768: three graded answers "passed" on a loaded runner).
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 110_000 });
-      if (res.error) throw res.error;
-      let calls: Array<{ query: string; system: Array<{ text: string }>; tools: boolean }> = [];
-      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
-      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  async function run(fixtures?: Entry[], answer: string | Record<string, string> = 'stub answer') {
+    const calls: Call[] = [];
+    const res = await runHarness(['--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1'], {
+      fixtures,
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        const query = lastUserText(body);
+        calls.push({ query, system: body.system, tools: !!body.tools });
+        return textReply(typeof answer === 'string' ? answer : answer[query]);
+      },
+    });
+    return { status: res.status, stderr: res.err, out: noColour(res.out), calls };
   }
 
   // C1 (US-45 AC8): a doctor user_context fixture defaults to the widget's SAVED-CHAT block, which
   // production places between the posture and the user data.
+  // CLI spawn 4 of 5: the request the real CLI sends carries production's system blocks in order.
   it('each answer call carries its own user data block, after the doctor posture and its SAVED-CHAT block, and before the articles', () => {
     expect(cases.length).toBeGreaterThan(0);
-    const { stderr, calls } = run();
+    const { stderr, calls } = spawnCli(log => `
+      import fs from 'node:fs';
+      globalThis.fetch = async (_url, init) => {
+        const body = JSON.parse(init.body);
+        const query = body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1).content;
+        fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query, system: body.system, tools: !!body.tools }) + '\\n');
+        return new Response(JSON.stringify({
+          content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      };
+    `, ['--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1']) as { stderr: string; calls: Call[] };
     expect(calls.length, stderr).toBe(cases.length);
     for (const q of cases) {
       // Two fixtures may share a query; the user data block tells them apart.
@@ -484,25 +419,25 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     }
   }, 60_000);
 
-  it('a payload that makes no plan, carries an unknown key or loses a value exits before any API call', () => {
+  it('a payload that makes no plan, carries an unknown key or loses a value exits before any API call', async () => {
     const good = { sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] };
     const fixture = (user_context: unknown): Entry => ({ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context, must_mention: ['x'] });
-    expect(run([fixture(good)]).calls.length).toBe(1); // liveness: the good payload is answered
+    expect((await run([fixture(good)])).calls.length).toBe(1); // liveness: the good payload is answered
     // US-07 AC8: no sex still makes a plan; no height does not.
     for (const bad of [{ ...good, heightCm: undefined }, { ...good, ldl: 3.6 }, { ...good, hba1c: 400 }, 'male, 178 cm']) {
-      const { status, stderr, calls } = run([fixture(bad)]);
+      const { status, stderr, calls } = await run([fixture(bad)]);
       expect(stderr).toMatch(/user_context does not parse.* on: how am I doing\?/);
       expect(calls).toEqual([]);
       expect(status).toBe(1);
     }
   }, 120_000);
 
-  it('an explicit {} sends production\'s empty context; a fixture with no surface exits before any API call', () => {
+  it('an explicit {} sends production\'s empty context; a fixture with no surface exits before any API call', async () => {
     const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, must_mention: ['x'], ...extra });
-    const empty = run([fixture({})]);
+    const empty = await run([fixture({})]);
     expect(empty.calls.length, empty.stderr).toBe(1);
     expect(empty.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
-    const noSurface = run([fixture({ surface: undefined })]);
+    const noSurface = await run([fixture({ surface: undefined })]);
     expect(noSurface.stderr).toMatch(/user_context needs a surface on: can you analyze my data/);
     expect(noSurface.calls).toEqual([]);
     expect(noSurface.status).toBe(1);
@@ -512,29 +447,25 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   // missing (it used to send '{}'; since US-07 AC8 a missing sex still makes a plan). A fixture declares
   // a payload that makes no plan, so a payload that silently lost its height still exits; the harness
   // sends the context production sends.
-  it('a payload declared expect_no_plan sends production\'s no-plan context; undeclared, or making a plan, it exits', () => {
+  it('a payload declared expect_no_plan sends production\'s no-plan context; undeclared, or making a plan, it exits', async () => {
     const noHeight = { sex: 'female', systolicBp: 138, diastolicBp: 88, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] };
     const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: noHeight, must_mention: ['x'], ...extra });
-    const declared = run([fixture({ expect_no_plan: true })]);
+    const declared = await run([fixture({ expect_no_plan: true })]);
     expect(declared.calls.length, declared.stderr).toBe(1);
     expect(declared.calls[0].system.map(b => b.text)).toContain(`## Current User Health Data\n\n${resolveChatContext(noHeight).userContextJson}`);
     expect(JSON.parse(resolveChatContext(noHeight).userContextJson).missingInputs).toContain('heightCm');
     for (const bad of [fixture({}), fixture({ expect_no_plan: true, user_context: { ...noHeight, heightCm: 168 } })]) {
-      const { status, stderr, calls } = run([bad]);
+      const { status, stderr, calls } = await run([bad]);
       expect(stderr).toMatch(/user_context does not parse.* on: can you analyze my data/);
       expect(calls).toEqual([]);
       expect(status).toBe(1);
     }
   }, 120_000);
 
-  /** One offline run scoring each answer against the fixture's own text checks: each answer gets a copy with its own query.
+  /** Each answer scored against the fixture's own checks, as a text-only reply.
    *  The stub answers in text only, so the tool-call check is left out (its own tests are in the run_roadmap block). */
   function verdicts(q: Entry, answers: string[]): Array<'pass' | 'fail'> {
-    const copies = answers.map((_, i) => ({ ...q, expect_profile_edit: undefined, query: `${q.query} [case ${i}]` }));
-    const { out, stderr, calls } = run(copies, Object.fromEntries(copies.map((c, i) => [c.query, answers[i]])));
-    expect(calls.length, stderr).toBe(answers.length); // every answer was scored
-    // The harness lists only failures (✗ "query") without --verbose.
-    return copies.map(c => out.split('\n').some(l => l.trim().startsWith('✗') && l.includes(`"${c.query}"`)) ? 'fail' : 'pass');
+    return answers.map(a => scoreAnswer({ ...q, expect_profile_edit: undefined }, textTurn(a)).passed ? 'pass' : 'fail');
   }
   const fixtureOf = (query: string, weightKg?: number) =>
     cases.find(q => q.query.startsWith(query) && (weightKg === undefined || (q.user_context as { weightKg?: number }).weightKg === weightKg))!;
@@ -692,7 +623,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   // answer that gave metformin first-line as the NZ pathway's. Its regexes score whose order it is.
   it('must_match and must_not_match score whose first step it is (the BMI 32 diabetes case)', () => {
     const p3 = cases.find(q => q.query === 'Which diabetes medicine would come first for me?' && q.must_match)!;
-    const verdict = (answer: string) => run([p3], answer).status;
+    const verdict = (answer: string) => scoreAnswer(p3, textTurn(answer)).passed ? 0 : 1; // the run's exit code
     // Baseline shape: the pathway's order only, GLP-1 only as the separate weight card.
     expect(verdict('Metformin is the usual first-line medicine in the loaded pathway. Your roadmap separately suggests discussing a GLP-1 medication for weight.')).toBe(1);
     // The roadmap's order first, the pathway's attributed: passes.
@@ -715,10 +646,10 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   }, 120_000);
 
   // US-07 AC6 (2026-10-14): the minor-gate fixture's payload resolves to a knownMinor context, sent after the posture.
-  it('the minor-gate fixture sends its knownMinor context after the posture (US-07 AC6)', () => {
+  it('the minor-gate fixture sends its knownMinor context after the posture (US-07 AC6)', async () => {
     const minor = all.find(q => q.category === 'minor-gate')!;
     expect(JSON.parse(resolveChatContext(minor.user_context).userContextJson).profile.knownMinor).toBe(true);
-    const { status, stderr, out, calls } = run([minor], 'The plan is built for adults. Please talk with your doctor.');
+    const { status, stderr, out, calls } = await run([minor], 'The plan is built for adults. Please talk with your doctor.');
     expect(calls.length, stderr).toBe(1);
     const texts = calls[0].system.map(b => b.text);
     const data = texts.findIndex(t => t.startsWith('## Current User Health Data') && t.includes('"knownMinor": true'));
@@ -728,9 +659,9 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(status).toBe(0);
   }, 60_000);
 
-  it('a must_match or must_not_match regex that does not compile exits before any API call', () => {
+  it('a must_match or must_not_match regex that does not compile exits before any API call', async () => {
     for (const extra of [{ must_match: ['(unclosed'] }, { must_not_match: ['[a-'] }]) {
-      const { status, stderr, calls } = run([{ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, ...extra }]);
+      const { status, stderr, calls } = await run([{ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, ...extra }]);
       expect(stderr).toMatch(/regexes that do not compile/);
       expect(calls).toEqual([]);
       expect(status).toBe(1);
@@ -750,40 +681,25 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
   });
 
   /** Run one fixture offline: the first answer call asks for run_roadmap when `callTool`, the next answers. */
-  function run(fx: object, callTool: boolean) {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-run-roadmap-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      const log = join(dir, 'calls.jsonl');
-      writeFileSync(stub, `
-        import fs from 'node:fs';
-        const read = fs.readFileSync;
-        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify([fx]))} : read(p, ...rest);
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(body) + '\\n');
-          const round = Array.isArray(body.messages.at(-1).content);
-          const content = ${JSON.stringify(callTool)} && !round
-            ? [{ type: 'thinking', thinking: 'run it', signature: 'sig' }, { type: 'tool_use', id: 'toolu_1', name: 'run_roadmap', input: ${JSON.stringify(INPUT)} }]
-            : [{ type: 'text', text: round ? 'From the roadmap: LDL 4.1.' : 'A plain answer.' }];
-          return new Response(JSON.stringify({ content, stop_reason: round || !${JSON.stringify(callTool)} ? 'end_turn' : 'tool_use', usage: { input_tokens: 1, output_tokens: 1 } }),
-            { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-      let calls: Array<Record<string, any>> = [];
-      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
-      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  async function run(fx: object, callTool: boolean) {
+    const calls: Array<Record<string, any>> = [];
+    const res = await runHarness(['--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1'], {
+      fixtures: [fx],
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        calls.push(body);
+        const round = Array.isArray(body.messages.at(-1).content);
+        const content = callTool && !round
+          ? [{ type: 'thinking', thinking: 'run it', signature: 'sig' }, { type: 'tool_use', id: 'toolu_1', name: 'run_roadmap', input: INPUT }]
+          : [{ type: 'text', text: round ? 'From the roadmap: LDL 4.1.' : 'A plain answer.' }];
+        return reply(content, round || !callTool ? 'end_turn' : 'tool_use');
+      },
+    });
+    return { status: res.status, stderr: res.err, out: noColour(res.out), calls };
   }
 
-  it('the tool runs on the fixture\'s payload, the second call replays the first, and the answer is scored on it', () => {
-    const { status, stderr, out, calls } = run(fixture({ expect_roadmap_run: true }), true);
+  it('the tool runs on the fixture\'s payload, the second call replays the first, and the answer is scored on it', async () => {
+    const { status, stderr, out, calls } = await run(fixture({ expect_roadmap_run: true }), true);
     expect(calls.length, stderr).toBe(2);
     expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
     expect(calls[1].tool_choice).toEqual({ type: 'none' });
@@ -794,15 +710,15 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(status).toBe(0);
   }, 60_000);
 
-  it('as production, a query with no digit is not offered run_roadmap', () => {
-    const { calls, stderr } = run(fixture({ query: 'can you analyse my data', must_mention: ['plain'] }), false);
+  it('as production, a query with no digit is not offered run_roadmap', async () => {
+    const { calls, stderr } = await run(fixture({ query: 'can you analyse my data', must_mention: ['plain'] }), false);
     expect(calls.length, stderr).toBe(1);
     expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
   }, 60_000);
 
-  it('a two-turn fixture sends its history before the query, and a digit in the previous user message offers run_roadmap (C2)', () => {
+  it('a two-turn fixture sends its history before the query, and a digit in the previous user message offers run_roadmap (C2)', async () => {
     const history = [{ role: 'user', content: 'My Lp(a) came back at 75' }, { role: 'assistant', content: 'Is that nmol/L or mg/dL?' }];
-    const { status, stderr, out, calls } = run(fixture({ query: 'nmol/L', history, expect_roadmap_run: true }), true);
+    const { status, stderr, out, calls } = await run(fixture({ query: 'nmol/L', history, expect_roadmap_run: true }), true);
     expect(calls.length, stderr).toBe(2);
     expect(calls[0].messages).toEqual([...history, { role: 'user', content: 'nmol/L' }]);
     expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
@@ -811,73 +727,59 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(status).toBe(0);
   }, 60_000);
 
-  it('a history that does not alternate user, assistant, ending on the assistant, exits before any API call', () => {
+  it('a history that does not alternate user, assistant, ending on the assistant, exits before any API call', async () => {
     for (const history of [[{ role: 'assistant', content: 'hi' }], [{ role: 'user', content: 'a' }], 'LDL 4', [{ role: 'user', content: 3 }, { role: 'assistant', content: 'x' }]]) {
-      const { status, stderr, calls } = run(fixture({ history }), true);
+      const { status, stderr, calls } = await run(fixture({ history }), true);
       expect(stderr).toMatch(/history/);
       expect(calls).toEqual([]);
       expect(status).toBe(1);
     }
   }, 120_000);
 
-  it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', () => {
-    expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
-    expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', async () => {
+    expect((await run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false)).out).toContain('did not call run_roadmap');
+    expect((await run(fixture({ expect_roadmap_run: false }), true)).out).toContain('called run_roadmap');
   }, 120_000);
 
   // US-16 AC2 (review 2026-10-20, adversary R3): the reply must propose saving the stated values.
-  it('expect_profile_edit passes the stated values, fails a wrong or missing proposal, and scores an empty reply on toolOnlyAck', () => {
-    const profileRun = (expect_profile_edit: unknown, content: unknown[], extra: Record<string, unknown> = {}) => {
-      const dir = mkdtempSync(join(tmpdir(), 'chatbot-profile-'));
-      try {
-        const stub = join(dir, 'fetch-stub.mjs');
-        const fx = fixture({ query: "I'm a man, 165 cm", must_mention: undefined, expect_profile_edit, ...extra });
-        writeFileSync(stub, `
-          import fs from 'node:fs';
-          const read = fs.readFileSync;
-          fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify([fx]))} : read(p, ...rest);
-          globalThis.fetch = async () => new Response(JSON.stringify({ content: ${JSON.stringify(content)}, stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }),
-            { status: 200, headers: { 'content-type': 'application/json' } });
-        `);
-        const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-          '--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1', '--verbose']);
-        const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-        const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-        return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, '') };
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
+  it('expect_profile_edit passes the stated values, fails a wrong or missing proposal, and scores an empty reply on toolOnlyAck', async () => {
+    const profileRun = async (expect_profile_edit: unknown, content: unknown[], extra: Record<string, unknown> = {}) => {
+      const fx = fixture({ query: "I'm a man, 165 cm", must_mention: undefined, expect_profile_edit, ...extra });
+      const res = await runHarness(['--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1', '--verbose'], {
+        fixtures: [fx], fetch: async () => reply(content),
+      });
+      return { status: res.status, stderr: res.err, out: noColour(res.out) };
     };
     const call = (input: unknown, id = 'toolu_p') => ({ type: 'tool_use', id, name: 'propose_profile_edit', input });
     const text = { type: 'text', text: 'Press Save on the banner to keep them.' };
     const both = { sex: 'male', heightCm: 165 };
-    expect(profileRun(both, [text, call({ sex: 'male', height: { value: 165, unit: 'cm' } })]).out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    expect((await profileRun(both, [text, call({ sex: 'male', height: { value: 165, unit: 'cm' } })])).out).toContain('Fixed-handle answer checks: 1/1 ✓');
     // Merged as the widget merges one reply's calls; 65 in is 165.1 cm, within 0.1.
-    expect(profileRun(both, [call({ sex: 'male' }), call({ height: { value: 65, unit: 'in' } }, 'toolu_q'), text]).out).toContain('1/1 ✓');
-    expect(profileRun(both, [text]).out).toContain('no propose_profile_edit');
-    expect(profileRun(both, [text, call({ sex: 'female', height: { value: 170, unit: 'cm' } })]).out)
+    expect((await profileRun(both, [call({ sex: 'male' }), call({ height: { value: 65, unit: 'in' } }, 'toolu_q'), text])).out).toContain('1/1 ✓');
+    expect((await profileRun(both, [text])).out).toContain('no propose_profile_edit');
+    expect((await profileRun(both, [text, call({ sex: 'female', height: { value: 170, unit: 'cm' } })])).out)
       .toMatch(/proposed sex female, not male[\s\S]*proposed height 170 cm, not 165/);
     // A call the parser refuses (feet) proposes nothing.
-    expect(profileRun(both, [text, call({ height: { value: 5.4, unit: 'ft' } })]).out).toContain('no propose_profile_edit');
+    expect((await profileRun(both, [text, call({ height: { value: 5.4, unit: 'ft' } })])).out).toContain('no propose_profile_edit');
     // A tool-only reply is scored on the line the widget shows, so a must_match on it passes.
-    expect(profileRun({ heightCm: 165 }, [call({ height: { value: 165, unit: 'cm' } })], { must_match: ['press save'] }).out).toContain('1/1 ✓');
+    expect((await profileRun({ heightCm: 165 }, [call({ height: { value: 165, unit: 'cm' } })], { must_match: ['press save'] })).out).toContain('1/1 ✓');
     for (const bad of [{}, { heightCm: '165' }, { sex: 'man' }, { weight: 80 }, 'yes']) {
-      const { status, stderr } = profileRun(bad, [text]);
+      const { status, stderr } = await profileRun(bad, [text]);
       expect(stderr).toMatch(/expect_profile_edit must name/);
       expect(status).toBe(1);
     }
   }, 180_000);
 
-  it('expect_roadmap_run alone still triggers the answer check (Codex PR 150 round 4)', () => {
-    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false).out).toContain('did not call run_roadmap');
-    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  it('expect_roadmap_run alone still triggers the answer check (Codex PR 150 round 4)', async () => {
+    expect((await run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false)).out).toContain('did not call run_roadmap');
+    expect((await run(fixture({ must_mention: undefined, expect_roadmap_run: false }), true)).out).toContain('called run_roadmap');
   }, 120_000);
 });
 
 // US-50 AC3: the harness builds its router view through the production
 // function, so a hidden post leaves its index block and entry count too.
 describe('test-chatbot-matching router view (US-50 AC3)', () => {
-  it('drops a hidden post whose master is up to date from the index block and the count', () => {
+  it('drops a hidden post whose master is up to date from the index block and the count', async () => {
     interface Entry { handle: string; type?: string; youtube?: string; topics?: string[]; router?: string; reviewed?: string }
     const index = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Entry[];
     for (const e of index) delete e.router; // start from a view that hides nothing, so the counts below are exact
@@ -890,25 +792,17 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'chatbot-view-'));
     try {
       const indexPath = join(dir, 'index.json');
-      const seen = join(dir, 'router-system.json');
       writeFileSync(indexPath, JSON.stringify(index));
-      const stub = join(dir, 'fetch-stub.mjs');
-      writeFileSync(stub, `
-        import { writeFileSync } from 'node:fs';
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          if (Array.isArray(body.system)) writeFileSync(${JSON.stringify(seen)}, JSON.stringify(body.system.map(b => b.text)));
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: '{"handles":[]}' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', q.category, '--runs', '1', '--index', indexPath]);
-      const { ANTHROPIC_API_KEY: _live, TOPIC_MASTER_HIDE: _flag, ...rest } = process.env; // never a real key: no call leaves the machine
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-      const [prompt, block] = JSON.parse(readFileSync(seen, 'utf-8')) as string[];
-      expect(block, res.stderr).not.toContain(`] ${p.handle}:`);
+      let seen: string[] = [];
+      const res = await runHarness(['--category', q.category, '--runs', '1', '--index', indexPath], {
+        fetch: async (_url, init) => {
+          const body = JSON.parse(String(init.body));
+          if (Array.isArray(body.system)) seen = body.system.map((b: { text: string }) => b.text);
+          return textReply('{"handles":[]}');
+        },
+      });
+      const [prompt, block] = seen;
+      expect(block, res.err).not.toContain(`] ${p.handle}:`);
       expect(block).toContain(`] ${m.handle}:`);
       expect(block.split('\n')).toHaveLength(index.length - 1);
       expect(prompt).toContain(`a ${index.length - 1}-entry index`);
@@ -919,7 +813,7 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
 
   // L3 (review 2026-10-20): fixture handles are checked against the full index;
   // one the view hides is reported on its own line, and the run goes on.
-  it('reports expected and must_not_route handles the view hides, without exiting', () => {
+  it('reports expected and must_not_route handles the view hides, without exiting', async () => {
     interface Entry { handle: string; type?: string; youtube?: string; topics?: string[]; router?: string; reviewed?: string }
     const index = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Entry[];
     const m = index.find(e => e.type === 'reference')!;
@@ -931,21 +825,12 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
     try {
       const indexPath = join(dir, 'index.json');
       writeFileSync(indexPath, JSON.stringify(index));
-      const stub = join(dir, 'fetch-stub.mjs');
-      writeFileSync(stub, `
-        import fs from 'node:fs';
-        const read = fs.readFileSync;
-        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify(fixtures))} : read(p, ...rest);
-        globalThis.fetch = async () => new Response(JSON.stringify({
-          content: [{ type: 'text', text: ${JSON.stringify(JSON.stringify({ handles: [m.handle] }))} }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-        }), { status: 200, headers: { 'content-type': 'application/json' } });
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts', '--category', 'view-test', '--runs', '1', '--index', indexPath]);
-      const { ANTHROPIC_API_KEY: _live, TOPIC_MASTER_HIDE: _flag, ...rest } = process.env; // never a real key: no call leaves the machine
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-      expect(res.stderr).not.toContain('not in the index');
-      expect(out, res.stderr).toContain(`Hidden by the router view (US-50 AC3): expected ${p1.handle}; must_not_route ${p2.handle}`);
+      const res = await runHarness(['--category', 'view-test', '--runs', '1', '--index', indexPath], {
+        fixtures, fetch: async () => textReply(JSON.stringify({ handles: [m.handle] })),
+      });
+      const out = noColour(res.out);
+      expect(res.err).not.toContain('not in the index');
+      expect(out, res.err).toContain(`Hidden by the router view (US-50 AC3): expected ${p1.handle}; must_not_route ${p2.handle}`);
       expect(out).toContain('Passing:     1');
       expect(res.status).toBe(0);
     } finally {
@@ -961,58 +846,47 @@ describe('test-chatbot-matching pending entries (US-50)', () => {
     query, category: 'pending-test', surface: 'doctor', answer_handles: [] as string[], must_mention: ['ok'], ...(pending ? { pending } : {}),
   });
 
-  function run(fixtures: object[], flags: string[] = []) {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-pending-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      const log = join(dir, 'calls.jsonl');
-      writeFileSync(stub, `
-        import fs from 'node:fs';
-        const read = fs.readFileSync;
-        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify(fixtures))} : read(p, ...rest);
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          fs.appendFileSync(${JSON.stringify(log)}, body.messages.at(-1).content + '\\n');
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'pending-test', '--fixed-handles-only', '--answer-check-runs', '1', ...flags]);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-      let calls: string[] = [];
-      try { calls = readFileSync(log, 'utf-8').trim().split('\n').filter(Boolean); } catch { /* no call made */ }
-      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  const ARGV = ['--category', 'pending-test', '--fixed-handles-only', '--answer-check-runs', '1'];
+
+  async function run(fixtures: object[], flags: string[] = []) {
+    const calls: string[] = [];
+    const res = await runHarness([...ARGV, ...flags], {
+      fixtures,
+      fetch: async (_url, init) => { calls.push(JSON.parse(String(init.body)).messages.at(-1).content); return textReply('ok'); },
+    });
+    return { status: res.status, stderr: res.err, out: noColour(res.out), calls };
   }
 
-  it('skips a pending entry and lists it with its reason', () => {
-    const { status, stderr, out, calls } = run([fixture('runs now'), fixture('waits', 'masters not merged')]);
+  it('skips a pending entry and lists it with its reason', async () => {
+    const { status, stderr, out, calls } = await run([fixture('runs now'), fixture('waits', 'masters not merged')]);
     expect(calls, stderr).toEqual(['runs now']);
     expect(out).toContain('Pending (skipped; --include-pending runs them): 1');
     expect(out).toContain('[pending-test] "waits": masters not merged');
     expect(status).toBe(0);
   }, 60_000);
 
-  it('--include-pending runs it', () => {
-    const { stderr, calls } = run([fixture('runs now'), fixture('waits', 'masters not merged')], ['--include-pending']);
+  it('--include-pending runs it', async () => {
+    const { stderr, calls } = await run([fixture('runs now'), fixture('waits', 'masters not merged')], ['--include-pending']);
     expect(calls.sort(), stderr).toEqual(['runs now', 'waits']);
   }, 60_000);
 
+  // CLI spawn 5 of 5: the pending listing reaches stdout, and setup's early exit 0 the real exit code.
   it('a category holding only pending entries lists them and exits 0 with no call', () => {
-    const { status, stderr, out, calls } = run([fixture('waits', 'masters not merged')]);
+    const fixtures = [fixture('waits', 'masters not merged')];
+    const { status, stderr, out, calls } = spawnCli(log => `
+      import fs from 'node:fs';
+      const read = fs.readFileSync;
+      fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify(fixtures))} : read(p, ...rest);
+      globalThis.fetch = async () => { fs.appendFileSync(${JSON.stringify(log)}, '{}\\n'); throw new Error('fetch called'); };
+    `, ARGV);
     expect(calls, stderr).toEqual([]);
     expect(out).toContain('[pending-test] "waits": masters not merged');
     expect(status).toBe(0);
   }, 60_000);
 
-  it('an invalid pending entry never stops a run: it is dropped before validation (Codex, merged branch)', () => {
+  it('an invalid pending entry never stops a run: it is dropped before validation (Codex, merged branch)', async () => {
     const broken = { ...fixture('broken', 'masters not merged'), answer_handles: ['no-such-handle'], must_not_match: ['(unclosed'], history: 'bad' };
-    const { status, stderr, out, calls } = run([fixture('runs now'), broken]);
+    const { status, stderr, out, calls } = await run([fixture('runs now'), broken]);
     expect(stderr).not.toMatch(/would not load|do not compile|history/);
     expect(calls, stderr).toEqual(['runs now']);
     expect(out).toContain('[pending-test] "broken": masters not merged');
@@ -1038,42 +912,24 @@ describe('test-chatbot-matching saved_chat (C1, US-45 AC8)', () => {
   const BLOCKS: Record<string, string> = { ...SAVED_CHAT_BY_RETENTION, discord: DISCORD_SAVED_CHAT, youtube: YOUTUBE_SAVED_CHAT };
 
   /** Run the harness offline on the saved-chat category; `fixtures` (if given) replaces tools/test-queries.json. */
-  function run(fixtures?: Entry[]) {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-saved-chat-'));
-    try {
-      const stub = join(dir, 'fetch-stub.mjs');
-      const log = join(dir, 'calls.jsonl');
-      writeFileSync(stub, `
-        import fs from 'node:fs';
-        const fixtures = ${JSON.stringify(fixtures ?? null)};
-        const read = fs.readFileSync;
-        if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
-        globalThis.fetch = async (_url, init) => {
-          const body = JSON.parse(init.body);
-          const system = Array.isArray(body.system) ? body.system.map(b => b.text) : body.system.split('\\n\\n---\\n\\n');
-          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query: body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1)?.content, system }) + '\\n');
-          return new Response(JSON.stringify({
-            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
-          }), { status: 200, headers: { 'content-type': 'application/json' } });
-        };
-      `);
-      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'saved-chat', '--fixed-handles-only', '--answer-check-runs', '1']);
-      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 110_000 });
-      if (res.error) throw res.error;
-      let calls: Array<{ query: string; system: string[] }> = [];
-      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
-      return { status: res.status, stderr: res.stderr, calls };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  async function run(fixtures?: Entry[]) {
+    const calls: Array<{ query: string; system: string[] }> = [];
+    const res = await runHarness(['--category', 'saved-chat', '--fixed-handles-only', '--answer-check-runs', '1'], {
+      fixtures,
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        const system = Array.isArray(body.system) ? body.system.map((b: { text: string }) => b.text) : body.system.split('\n\n---\n\n');
+        const query = body.messages.filter((m: { role: string; content: unknown }) => m.role === 'user' && typeof m.content === 'string').at(-1)?.content;
+        calls.push({ query, system });
+        return textReply('stub answer');
+      },
+    });
+    return { status: res.status, stderr: res.err, calls };
   }
 
-  it('one fixture per sentence, each answer call carrying its own block right after the posture and no other', () => {
+  it('one fixture per sentence, each answer call carrying its own block right after the posture and no other', async () => {
     expect(cases.map(q => q.saved_chat).sort()).toEqual(Object.keys(BLOCKS).sort());
-    const { stderr, calls } = run();
+    const { stderr, calls } = await run();
     expect(calls.length, stderr).toBe(cases.length);
     const seen = calls.map(({ system }) => {
       const posture = system.findIndex(t => t.startsWith('## SURFACE CONTEXT — Dr Brad education assistant'));
@@ -1086,9 +942,9 @@ describe('test-chatbot-matching saved_chat (C1, US-45 AC8)', () => {
     expect(seen.sort()).toEqual(Object.keys(BLOCKS).sort());
   }, 120_000);
 
-  it('a fixture left without saved_chat gets the block its production route sends; the bubble may carry a context', () => {
+  it('a fixture left without saved_chat gets the block its production route sends; the bubble may carry a context', async () => {
     const fixture = (query: string, extra: Partial<Entry>): Entry => ({ query, category: 'saved-chat', answer_handles: [], must_mention: ['x'], ...extra });
-    const { stderr, calls } = run([
+    const { stderr, calls } = await run([
       fixture('brand default', { surface: 'brand' }),
       fixture('widget default', { surface: 'doctor', user_context: {} }),
       fixture('bubble with context', { surface: 'doctor', saved_chat: 'transcript', user_context: {} }),
@@ -1109,10 +965,158 @@ describe('test-chatbot-matching saved_chat (C1, US-45 AC8)', () => {
     [{ surface: 'doctor', saved_chat: 'discord', user_context: {} }],
     [{ surface: 'doctor', saved_chat: 'toString' }],
     [{ saved_chat: 'none' }],
-  ])('%j exits before any API call', (extra) => {
-    const { status, stderr, calls } = run([{ query: 'is this saved?', category: 'saved-chat', answer_handles: [], must_mention: ['x'], ...extra }]);
+  ])('%j exits before any API call', async (extra) => {
+    const { status, stderr, calls } = await run([{ query: 'is this saved?', category: 'saved-chat', answer_handles: [], must_mention: ['x'], ...extra }]);
     expect(status).toBe(1);
     expect(stderr).toMatch(/saved_chat "[^"]+" is not one production sends on surface/);
     expect(calls).toEqual([]);
   }, 120_000);
+});
+
+// Moved from the pre-split pin file (test audit TA-T02): whole-report and request-shape snapshots of
+// SYNTHETIC fixtures against a synthetic three-entry index. They pin what no case above does: the
+// report layout, the router's cached blocks and entry count, handle repair, a forbidden route, 500 and
+// 429 replies (retried once), a refusal, the length cap, a router-only run, the --estimate call counts,
+// and the setup exits for an unknown must_not_route handle, an answer handle with no file, no match,
+// no key and the wrong folder. Elapsed time, latency, dollar figures and the temp folder are normalised.
+describe('test-chatbot-matching report and request shapes (synthetic fixtures)', () => {
+  const INDEX = [
+    { title: 'Pin A', handle: 'pin-a', url: 'https://example.com/a', type: 'article', summary: 'Synthetic summary A.' },
+    { title: 'Pin B', handle: 'pin-b', url: 'https://example.com/b', type: 'guideline', summary: 'Synthetic summary B.' },
+    { title: 'Pin C', handle: 'pin-c', url: 'https://example.com/c', type: 'reference', summary: 'Synthetic summary C.' },
+  ];
+
+  const FIXTURES = [
+    { query: 'q-pass', category: 'pin', expected: ['pin-a'], must_mention: ['alpha'], notes: 'a synthetic note' },
+    { query: 'q-miss', category: 'pin', expected: ['pin-b'] },
+    { query: 'q-forbid', category: 'pin', expected: ['pin-a'], must_not_route: ['pin-c'] },
+    { query: 'q-empty', category: 'pin', expected: [] },
+    { query: 'q-repair', category: 'pin', expected: ['pin-b'] },
+    { query: 'q-parse', category: 'pin', expected: ['pin-a'] },
+    { query: 'q-500', category: 'pin', expected: ['pin-a'] },
+    { query: 'q-429', category: 'pin', expected: ['pin-a'] },
+    {
+      query: 'q-answer-fail', category: 'pin', expected: ['pin-a'], must_not_mention: ['beta'], must_not_claim: ['lowers blood pressure'],
+      must_match: ['gamma'], must_not_match: ['delta'], max_length_chars: 20,
+    },
+    { query: 'q-refusal', category: 'pin', expected: ['pin-a'], must_mention: ['x'] },
+    { query: 'q-answer-timeout', category: 'pin', expected: ['pin-a'], must_mention: ['x'] },
+    { query: 'q-answer-429', category: 'pin', expected: ['pin-a'], must_mention: ['ok'] },
+    { query: 'q-pending', category: 'pin', expected: ['pin-a'], pending: 'waits on content' },
+    { query: 'q-fixed', category: 'pin2', surface: 'doctor', answer_handles: [], must_mention: ['ok'] },
+    { query: 'q-context', category: 'pin2', surface: 'doctor', answer_handles: [], user_context: {}, expect_roadmap_run: false, must_mention: ['ok'] },
+    {
+      query: 'q-history', category: 'pin2', surface: 'brand', answer_handles: [], must_mention: ['ok'],
+      history: [{ role: 'user', content: 'earlier question' }, { role: 'assistant', content: 'earlier answer' }],
+    },
+    { query: 'q-other', category: 'other', expected: ['pin-a'] },
+  ];
+
+  type Plan = string | { status?: number; body?: string; once?: boolean; timeout?: boolean; refusal?: boolean };
+  const ROUTER: Record<string, Plan> = {
+    'q-pass': '{"handles":["pin-a"]}', 'q-miss': '{"handles":[]}', 'q-forbid': '{"handles":["pin-a","pin-c"]}',
+    'q-empty': '{"handles":[]}', 'q-repair': 'Here: {"handles":["guideline-pin-b"]}', 'q-parse': 'no json here',
+    'q-500': { status: 500, body: 'synthetic outage' }, 'q-429': { status: 429, once: true },
+  };
+  const ANSWER: Record<string, Plan> = {
+    'q-pass': 'Alpha answer.', 'q-answer-fail': 'Beta. It lowers blood pressure. delta delta delta.',
+    'q-refusal': { refusal: true }, 'q-answer-timeout': { timeout: true }, 'q-answer-429': { status: 429, once: true },
+  };
+
+  const norm = (s: string) => s
+    .replace(/\x1b\[[0-9;]*m/g, '')
+    .replace(/=== Results \([0-9.]+s\) ===/, '=== Results (<T>s) ===')
+    .replace(/p50=\d+ms p90=\d+ms/g, 'p50=<T>ms p90=<T>ms')
+    .replace(/\$\d+\.\d+/g, '$<N>')
+    .split(REPO_ROOT).join('<ROOT>')
+    .replace(/\S*chatbot-matching-pin-\w+/g, '<DIR>');
+
+  /** One in-process run on FIXTURES (or `fixtures`) with the router and answer plans above; returns the normalised run. */
+  async function harness(flags: string[], opts: { fixtures?: object[]; key?: boolean; cwd?: (dir: string) => string } = {}) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-matching-pin-'));
+    try {
+      const index = join(dir, 'index.json');
+      writeFileSync(index, JSON.stringify(INDEX));
+      const base = ['--index', index, '--model', 'claude-sonnet-5-5', '--answer-model', 'claude-sonnet-5-5'];
+      const seen = new Map<string, number>();
+      const calls: unknown[] = [];
+      const sys = (s: string | Array<{ text: string; cache_control?: unknown }>) => typeof s === 'string'
+        ? { kind: 'string', refs: s.includes('## Referenced Blog Articles'), user: s.includes('## Current User Health Data') }
+        : { kind: 'blocks', n: s.length, cached: s.map(b => !!b.cache_control), user: s.some(b => b.text.includes('## Current User Health Data')) };
+      const res = await runHarness([...base, ...flags], {
+        fixtures: opts.fixtures ?? FIXTURES, key: opts.key, cwd: opts.cwd?.(dir),
+        fetch: async (url, init) => {
+          if (String(url) !== 'https://api.anthropic.com/v1/messages') throw new Error('unexpected fetch ' + url);
+          const body = JSON.parse(String(init.body));
+          const first = body.messages[0].content;
+          const router = typeof first === 'string' && first.startsWith('Current query: ');
+          const query: string = router ? first.slice(15)
+            : body.messages.filter((m: { role: string; content: unknown }) => m.role === 'user' && typeof m.content === 'string').at(-1).content;
+          const key = (router ? 'r:' : 'a:') + query;
+          const n = (seen.get(key) ?? 0) + 1;
+          seen.set(key, n);
+          calls.push(router
+            ? { router: query, blocks: body.system.length, cached: body.system.map((b: { cache_control?: unknown }) => !!b.cache_control),
+              count: body.system[0].text.includes('a 3-entry index'), index: body.system[1].text }
+            : { answer: query, system: sys(body.system), roles: body.messages.map((m: { role: string }) => m.role), tools: (body.tools ?? []).map((t: { name: string }) => t.name) });
+          const plan = (router ? ROUTER : ANSWER)[query];
+          if (plan && typeof plan === 'object') {
+            if (plan.status && (!plan.once || n === 1)) return new Response(plan.body ?? '', { status: plan.status, headers: { 'retry-after': '0' } });
+            if (plan.timeout) throw new DOMException('timed out', 'TimeoutError');
+            if (plan.refusal) return reply([{ type: 'text', text: '' }], 'refusal', { stop_details: { category: 'bio' } });
+          }
+          if (router) return textReply(typeof plan === 'string' ? plan : '{"handles":["pin-a"]}');
+          return textReply(typeof plan === 'string' ? plan : 'ok');
+        },
+      });
+      return { status: res.status, out: norm(res.out), err: norm(res.err), calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('a full router and answer-check run: report, request shapes, exit code', async () => {
+    const r = await harness(['--category', 'pin,pin2', '--runs', '2', '--answer-check', '--answer-check-runs', '1', '--verbose']);
+    expect(r.out, r.err).toContain('=== LLM Router Test Harness ===');
+    expect(r.out).toContain('Pending (skipped; --include-pending runs them): 1');
+    expect(r.calls.some(c => (c as { router?: string }).router === 'q-other')).toBe(false);
+    expect(r.status).toBe(1);
+    expect(r).toMatchSnapshot();
+  });
+
+  it('a router-only run makes no answer call', async () => {
+    const r = await harness(['--category', 'pin', '--runs', '1']);
+    expect(r.calls.every(c => 'router' in (c as object)), r.err).toBe(true);
+    expect(r).toMatchSnapshot();
+  });
+
+  it('--fixed-handles-only runs only the fixed-handle checks and gates on them', async () => {
+    const r = await harness(['--category', 'pin,pin2', '--fixed-handles-only', '--answer-check-runs', '3', '--include-pending']);
+    expect(r.calls.every(c => 'answer' in (c as object)), r.err).toBe(true);
+    expect(r).toMatchSnapshot();
+  });
+
+  it('--estimate counts the router and answer calls of a routed run, with no key and no call', async () => {
+    const r = await harness(['--category', 'pin,pin2', '--answer-check', '--estimate'], { key: false });
+    expect(r.out, r.err).toContain('No API call made.');
+    expect(r.calls).toEqual([]);
+    expect(r).toMatchSnapshot();
+  });
+
+  it('an unknown must_not_route handle, an answer handle with no file, no match, no key and the wrong folder each exit before any call', async () => {
+    const bad = (name: string, fixture: object, flags: string[] = []) =>
+      harness(['--category', 'v', ...flags], { fixtures: [{ query: name, category: 'v', ...fixture }] });
+    const runs: Record<string, Awaited<ReturnType<typeof harness>>> = {
+      badForbidden: await bad('badForbidden', { expected: ['pin-a'], must_not_route: ['nope'] }),
+      badFixed: await bad('badFixed', { answer_handles: ['no-such-handle'], must_mention: ['ok'] }, ['--answer-check']),
+      noMatch: await harness(['--category', 'nothing-here']),
+      noKey: await harness(['--category', 'pin'], { key: false }),
+      wrongCwd: await harness(['--category', 'pin'], { cwd: dir => dir }),
+    };
+    for (const [n, r] of Object.entries(runs)) {
+      expect(r.calls, n).toEqual([]);
+      expect(r.status, `${n}: ${r.err}`).toBe(1);
+    }
+    expect(runs).toMatchSnapshot();
+  });
 });
