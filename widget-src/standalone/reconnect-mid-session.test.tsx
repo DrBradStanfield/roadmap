@@ -59,6 +59,8 @@ let driveFiles: Array<{ id: string; name: string; content: string; version: numb
 let revoked: { drive: boolean; dropbox: boolean };
 /** No answer at all, as in an outage. */
 let dropboxDown: boolean;
+/** Dropbox's long-poll reports a change, so the watch next makes a call that carries the token. */
+let dropboxChanged: boolean;
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const refuse = (): Promise<Response> => Promise.reject(new TypeError('Failed to fetch'));
@@ -127,7 +129,7 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   }
   // Dropbox's long-poll: quiet, answered after its 30 seconds.
   if (url.startsWith('https://notify.dropboxapi.com/')) {
-    return dropboxDown ? refuse() : new Promise<Response>((done) => setTimeout(() => done(json({ changes: false })), 30_000));
+    return dropboxDown ? refuse() : new Promise<Response>((done) => setTimeout(() => done(json({ changes: dropboxChanged })), 30_000));
   }
   if (url.startsWith('https://www.googleapis.com/drive/') || url.startsWith('https://www.googleapis.com/upload/drive/')) {
     const auth = new Headers(init?.headers).get('Authorization') ?? '';
@@ -224,8 +226,8 @@ const barLabel = () => document.querySelector('button.action-btn-small')?.textCo
 const button = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === name);
 const option = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button.hr-opt')].find((b) => b.textContent?.startsWith(name))!;
 
-/** A page open on a working cloud, the bar and panel mounted as app.tsx mounts them; then the provider revokes the app. */
-async function revokeMidSession(cloud: Cloud): Promise<void> {
+/** This browser chose `cloud` and holds a working sign-in to it. */
+function chooseCloud(cloud: Cloud): void {
   localStorage.setItem(BACKEND_KEY, cloud);
   if (cloud === 'dropbox') {
     localStorage.setItem(DROPBOX_CONFIG, JSON.stringify({}));
@@ -234,6 +236,11 @@ async function revokeMidSession(cloud: Cloud): Promise<void> {
     localStorage.setItem(DRIVE_CONFIG, JSON.stringify({}));
     localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() + 3_600_000 }));
   }
+}
+
+/** A page open on a working cloud, the bar and panel mounted as app.tsx mounts them; then the provider revokes the app. */
+async function revokeMidSession(cloud: Cloud): Promise<void> {
+  chooseCloud(cloud);
   const p = await loadPage();
   expect(p.backend).toBe(cloud);
   render(<><p.sync.StorageBar backend={p.backend} /><p.sync.SyncControl backend={p.backend} hasData /></>);
@@ -277,6 +284,7 @@ beforeEach(() => {
   driveFiles = [];
   revoked = { drive: false, dropbox: false };
   dropboxDown = false;
+  dropboxChanged = false;
   gisAnswer = null;
   vi.stubGlobal('Blob', NodeBlob);
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
@@ -397,5 +405,125 @@ describe('US-09 AC48 (R1, R3): exit (c) the reconnect lifts the saved session in
     const { resolved } = await resolveBackend();
     expect(resolved.backend).toBe('google-drive');
     expect(driveWeights()).toMatchObject(BOTH);
+  });
+});
+
+// ------------------------------------------------- review round 1 (lead A3)
+
+const SEEDED = { day: '2026-05-01', value: 75 };
+const cloudWeights = (cloud: Cloud) => (cloud === 'dropbox' ? weightsIn(dropboxFile?.body) : driveWeights());
+const panelText = (cloud: Cloud) => `${cloud === 'dropbox' ? 'Dropbox' : 'Google Drive'} is signed out`;
+
+/** Codex R1: an earlier visit put the record in the cloud. This visit opens it clean, keeps no device copy
+ *  and is never edited; then the provider revokes the app and the watch raises (Dropbox's after a change). */
+async function revokeCleanSession(cloud: Cloud): Promise<void> {
+  chooseCloud(cloud);
+  await loadPage();
+  await edit(SEEDED);
+  await advance(PERSIST_DEBOUNCE_MS);
+  await until(() => cloudWeights(cloud)[SEEDED.day] === SEEDED.value, 'the earlier visit\'s save');
+  const p = await loadPage();
+  expect(p.backend).toBe(cloud);
+  render(<><p.sync.StorageBar backend={p.backend} /><p.sync.SyncControl backend={p.backend} hasData /></>);
+  expect(status()).toMatch(/lives in your/);
+  expect(await deviceWeights()).toEqual({}); // no device copy: the cloud holds the record alone
+  revoked[cloud === 'dropbox' ? 'dropbox' : 'drive'] = true;
+  dropboxChanged = cloud === 'dropbox';
+  await advance(cloud === 'dropbox' ? 35_000 : 10_000);
+  await until(() => status() === panelText(cloud), 'the panel');
+}
+
+function connectGitHub(): void {
+  act(() => page!.notice.openBackendPicker());
+  fireEvent.click(option('GitHub'));
+  fireEvent.change(document.querySelector('input[placeholder^="Fine-grained token"]')!, { target: { value: GOOD_TOKEN } });
+  fireEvent.change(document.querySelector('input[placeholder^="Owner"]')!, { target: { value: 'someone' } });
+  fireEvent.change(document.querySelector('input[placeholder^="Repository name"]')!, { target: { value: 'health' } });
+  fireEvent.click(button('Connect GitHub')!);
+}
+
+describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps the record', () => {
+  it.each(['google-drive', 'dropbox'] as const)('%s: "Use this browser only" copies the record to this browser first', async (cloud) => {
+    await revokeCleanSession(cloud);
+    fireEvent.click(button('Use this browser only')!);
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    const next = await loadPage();
+    expect(next.backend).toBe('local');
+    expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
+  });
+
+  it('google-drive: a copy this browser refuses stops "Use this browser only"; the panel stays as it was', async () => {
+    await revokeCleanSession('google-drive');
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'health_roadmap_file_v2') throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    fireEvent.click(button('Use this browser only')!);
+    await until(() => page!.switchFlow.getSwitchFlow().kind === 'idle', 'the move to end');
+    await turns();
+    expect(reload).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expect(localStorage.getItem(DRIVE_CONFIG)).not.toBeNull(); // not disconnected
+    expect(status()).toBe(panelText('google-drive'));
+    expect(document.querySelector('.hr-sync-error')).toBeNull(); // no new words
+  });
+
+  it.each(['google-drive', 'dropbox'] as const)('%s: a picker move is refused, and the record stays in the cloud', async (cloud) => {
+    await revokeCleanSession(cloud);
+    connectGitHub();
+    await until(() => !!document.querySelector('dialog .hr-sync-error'), 'the refused move');
+    expect(reload).not.toHaveBeenCalled();
+    expect(githubFile).toBeNull();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);
+    expect(cloudWeights(cloud)).toMatchObject({ [SEEDED.day]: SEEDED.value });
+  });
+
+  it('google-drive: the reconnect\'s lift keeps the Drive record', async () => {
+    await revokeCleanSession('google-drive');
+    fireEvent.click(button('Reconnect Google Drive')!);
+    revoked.drive = false;
+    await act(async () => { gisAnswer!({ access_token: GOOD_TOKEN, expires_in: 3600, scope: DRIVE_SCOPE }); });
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(driveWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
+  });
+
+  it('dropbox: the reconnect\'s return keeps the Dropbox record', async () => {
+    await revokeCleanSession('dropbox');
+    fireEvent.click(button('Reconnect Dropbox')!);
+    await until(() => assign.mock.calls.length > 0, 'the Dropbox redirect');
+    const { state } = JSON.parse(sessionStorage.getItem('health_roadmap_dropbox_pkce') ?? '{}') as { state?: string };
+    window.location.search = `?code=test-code&state=${state}`;
+    revoked.dropbox = false;
+    const { resolveBackend } = await import('./resolve-backend');
+    expect((await resolveBackend()).resolved.backend).toBe('dropbox');
+    expect(weightsIn(dropboxFile?.body)).toMatchObject({ [SEEDED.day]: SEEDED.value });
+  });
+});
+
+describe('US-09 AC48 (lead A3, Codex R3, owner order 2): a Dropbox sign-in from before the config key', () => {
+  it('meets invalid_grant; the next load shows the signed-out panel, not the guest pitch, and keeps the choice', async () => {
+    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: 0 }));
+    revoked.dropbox = true;
+    expect((await loadPage()).backend).toBe('local'); // the load's refresh meets invalid_grant, which forgets the tokens
+    expect(localStorage.getItem(DROPBOX_TOKENS)).toBeNull();
+    const p = await loadPage();
+    render(<p.sync.SyncControl backend={p.backend} hasData />);
+    expect(status()).toBe('Dropbox is signed out');
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('dropbox');
+  });
+});
+
+describe('US-09 AC48 (lead A3, owner order 1): the guest\'s own GitHub connect saves the session before its lift', () => {
+  it('an edit still on the debounce reaches the new GitHub record', async () => {
+    const p = await loadPage();
+    expect(p.backend).toBe('local');
+    render(<p.sync.SyncControl backend={p.backend} hasData />);
+    await bothEdits();
+    connectGitHub();
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(weightsIn(githubFile?.body)).toMatchObject(BOTH);
   });
 });

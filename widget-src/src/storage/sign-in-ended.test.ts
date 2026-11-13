@@ -308,3 +308,123 @@ describe('US-09 AC48 (R6): the Dropbox config, an empty object whose presence sa
     expect(localStorage.getItem(DROPBOX_CONFIG)).toBeNull();
   });
 });
+
+describe('US-09 AC48 (lead A3, Codex R2): a page signed out uses no cached token, from any adapter', () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] }); });
+
+  it('google-drive: the reminders\' refusal on its own adapter stops the live adapter\'s saves and its established watch', async () => {
+    chosen('google-drive', LIVE());
+    answer = (url) => (url === EXCHANGE ? reply(400, { error: 'invalid_grant' }) : reply(200, { startPageToken: 't1', changes: [], newStartPageToken: 't1' }));
+    const live = new GoogleDriveAdapter(DRIVE);
+    const stop = new AbortController();
+    live.watch(ROADMAP_FILE_NAME, vi.fn(), stop.signal);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(apiCalls()).toBeGreaterThan(1); // the watch is established on the cached token
+    expect(await new GoogleDriveAdapter(DRIVE).getReminderIdToken()).toBeNull();
+    expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'google-drive' });
+    const before = calls.length;
+    const error = await failure(live.write(ROADMAP_FILE_NAME, {}, null));
+    await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
+    stop.abort();
+    expect(error?.reason).toBe('reconnect'); // a sign-in failure: the save's cause is 'auth'
+    expect(calls.length).toBe(before);
+  });
+
+  it('dropbox: a separate adapter\'s refusal stops the live adapter\'s saves and its established watch', async () => {
+    chosen('dropbox', LIVE());
+    answer = (url) => {
+      if (url === DROPBOX_TOKEN_URL) return reply(400, { error: 'invalid_grant' });
+      if (url.startsWith('https://notify.dropboxapi.com/')) return new Promise((done) => setTimeout(() => done(reply(200, { changes: false })), 30_000));
+      return reply(200, { cursor: 'c0' });
+    };
+    const live = new DropboxAdapter(DROPBOX);
+    const stop = new AbortController();
+    live.watch(ROADMAP_FILE_NAME, vi.fn(), stop.signal);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(apiCalls()).toBeGreaterThan(1); // the cursor, then the long-poll
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify(EXPIRED)); // the same grant, its access token spent for any adapter built now
+    await failure(new DropboxAdapter(DROPBOX).write(ROADMAP_FILE_NAME, {}, null));
+    expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'dropbox' });
+    const before = calls.length;
+    const error = await failure(live.write(ROADMAP_FILE_NAME, {}, null));
+    await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
+    stop.abort();
+    expect(error?.reason).toBe('reconnect');
+    expect(calls.length).toBe(before);
+  });
+});
+
+describe('US-09 AC48 (lead A3, adversary F5): a failure that is not a refusal never raises or forgets', () => {
+  const tokenKey = (provider: 'google-drive' | 'dropbox') => (provider === 'dropbox' ? DROPBOX_TOKENS : DRIVE_TOKENS);
+  const adapterOf = (provider: 'google-drive' | 'dropbox') => (provider === 'dropbox' ? new DropboxAdapter(DROPBOX) : new GoogleDriveAdapter(DRIVE));
+  const FAILURES: Record<string, () => Response | Promise<Response>> = {
+    '503': () => reply(503, { error: 'unavailable' }),
+    '403': () => reply(403, { error: 'forbidden' }),
+    '429': () => reply(429, { error: 'rate_limited' }),
+    'a network failure': () => Promise.reject(new TypeError('Failed to fetch')),
+  };
+  const cases = (['google-drive', 'dropbox'] as const).flatMap((provider) => Object.keys(FAILURES).map((name) => [provider, name] as const));
+
+  it.each(cases)('%s: the token endpoint answering %s', async (provider, name) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    chosen(provider, EXPIRED);
+    const tokenUrl = provider === 'dropbox' ? DROPBOX_TOKEN_URL : EXCHANGE;
+    answer = (url) => (url === tokenUrl ? FAILURES[name]() : reply(200, {}));
+    const read = failure(adapterOf(provider).read(ROADMAP_FILE_NAME));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await read).not.toBeNull();
+    expect(currentSignIn()).toEqual({ kind: 'signedIn', provider });
+    expect(raises).toBe(0);
+    expect(localStorage.getItem(tokenKey(provider))).not.toBeNull();
+  });
+
+  it.each(['google-drive', 'dropbox'] as const)('%s: the API answering 403 on a cached token', async (provider) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    chosen(provider, LIVE());
+    const tokenUrl = provider === 'dropbox' ? DROPBOX_TOKEN_URL : EXCHANGE;
+    answer = (url) => (url === tokenUrl ? reply(400, { error: 'invalid_grant' }) : reply(403, { error: { code: 403 } }));
+    const adapter = adapterOf(provider);
+    const first = failure(adapter.read(ROADMAP_FILE_NAME));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await first).not.toBeNull();
+    const second = failure(adapter.read(ROADMAP_FILE_NAME));
+    await vi.advanceTimersByTimeAsync(60_000);
+    await second;
+    expect(posts(tokenUrl)).toBe(0); // a 403 is not a refused token: no refresh is asked
+    expect(currentSignIn()).toEqual({ kind: 'signedIn', provider });
+    expect(raises).toBe(0);
+    expect(localStorage.getItem(tokenKey(provider))).not.toBeNull();
+  });
+});
+
+describe('US-09 AC48 (lead A3, Codex R3): a Dropbox sign-in from before the config key gets one at load', () => {
+  it('is backfilled under the current log-off id, with no account data', () => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'gen-1');
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ ...LIVE(), gen: 'gen-1' }));
+    new DropboxAdapter(DROPBOX);
+    expect(JSON.parse(localStorage.getItem(DROPBOX_CONFIG)!)).toEqual({ gen: 'gen-1' });
+  });
+
+  it('is backfilled for a browser that never logged off (no log-off id)', () => {
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify(LIVE()));
+    new DropboxAdapter(DROPBOX);
+    expect(JSON.parse(localStorage.getItem(DROPBOX_CONFIG)!)).toEqual({ gen: null });
+  });
+
+  it('is not backfilled under an old log-off id, so the load sweep still drops the old sign-in', async () => {
+    const { SIGN_IN_KEYS } = await import('../../standalone/providers');
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ ...LIVE(), gen: 'gen-1' }));
+    localStorage.setItem(LOG_OFF_ID_KEY, 'gen-2');
+    new DropboxAdapter(DROPBOX); // tokens saved before the log-off
+    expect(localStorage.getItem(DROPBOX_CONFIG)).toBeNull();
+    sweepStaleSignIns(SIGN_IN_KEYS);
+    expect([localStorage.getItem(DROPBOX_CONFIG), localStorage.getItem(DROPBOX_TOKENS)]).toEqual([null, null]);
+  });
+
+  it('is not backfilled by an adapter begun under an older log-off id', () => {
+    localStorage.setItem(LOG_OFF_ID_KEY, 'gen-2');
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ ...LIVE(), gen: 'gen-2' }));
+    new DropboxAdapter(DROPBOX, 'gen-1');
+    expect(localStorage.getItem(DROPBOX_CONFIG)).toBeNull();
+  });
+});

@@ -110,6 +110,16 @@ describe('US-09 AC48: a refusal counts only while this browser still chose that 
     expect(state.currentSignIn()).toEqual(IN_DRIVE);
   });
 
+  it('ignores it once this page may not write (lead A3, adversary F5): another tab\'s log-off was heard', async () => {
+    localStorage.setItem(BACKEND_KEY, 'google-drive');
+    const storage = await import('../lib/storage');
+    storage.noteCloudPage('google-drive');
+    storage.noteLogOffHeard();
+    expect(storage.healthWritesAllowed()).toBe(false);
+    state.signInEnded('google-drive', 'gen-1'); // same home, same log-off id: only the write guard stops it
+    expect(state.currentSignIn()).toEqual(IN_DRIVE);
+  });
+
   it('tells its subscribers once per change', () => {
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     const heard = vi.fn();
