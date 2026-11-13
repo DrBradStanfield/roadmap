@@ -65,3 +65,11 @@ Net prod LOC: about +10 (arguments), -8 when step 5 deletes `shown`, `showErase`
 ## Decisions for Brad
 
 None. No visible change and no new words. Step 4 needs an engine release, under the standing signing permission.
+
+## Rulings (owner, 2026-11-14)
+
+1 (b): the mark moves into lib/roadmap-data.ts, out of health-core and the engine.
+2 (a): required everywhere. The test call sites are updated by a script committed in its PR, its output reviewed as a mechanical diff: a test-only PR, separate from the production change.
+3 (a): reminders.ts:393 is a bug with its own Lane A PR first, taken by another worker.
+4 yes: filed as state-leads H18b (reminders.ts:305), H18c (reminders.ts:441) and H18d (roadmap-store.ts:177), needs_brad no.
+Not started.

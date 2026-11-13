@@ -25,9 +25,7 @@ Not per IP, left alone: visitor, email, customer, key, connection, Discord user,
 
 ## The one key shape
 
-`clientKey(request, trust) = ipBucket(getClientIp(request, trust))`, beside `getClientIp`; `ipBucket` moves there. A guard test fails on any `getClientIp` call outside `clientKey` that is not on a named list, as app/lib/ttl-bound.test.ts does for maps. Hashed limiters hash the bucket.
-
-**IPv4:** the bucket is the address. Not a /24: that would join unrelated customers of one ISP. So for IPv4, carrier NAT and offices, nothing changes; they share one count today.
+`clientKey(request, trust) = ipBucket(getClientIp(request, trust))`, beside `getClientIp`; `ipBucket` moves there. A guard test fails on any `getClientIp` call outside `clientKey` that is not on a named list, as app/lib/ttl-bound.test.ts does for maps. Hashed limiters hash the bucket. **IPv4:** the bucket is the address. Not a /24: that would join unrelated customers of one ISP. So for IPv4, carrier NAT and offices, nothing changes; they share one count today.
 
 **Who notices:** only IPv6 networks. Devices on one /64 (a home or office LAN, a hotspot) count separately today and would share, as the same people do on IPv4. A device whose privacy address rotates keeps its count. Phones on mobile data each hold their own /64. Limits an IPv6 LAN would meet sooner: feedback (4th message in an hour), email capture (21st in an hour), guest sessions (11th new one in an hour), lab files (201st file a day, everyone together). events, ab, google token and reminders sit far above one LAN's use. Today a caller holding a /64 counts as many callers on the address-keyed limiters; the bucket counts it once.
 
@@ -44,9 +42,7 @@ Tests per change: per route, two IPv6 addresses in one /64 share the count (refu
 ## Build order (small PRs)
 
 1. Move `ipBucket`, add `clientKey` and the guard test listing today's raw callers. No behaviour change.
-2. feedback, events, ab, email capture. 3. Lab upload files (quota, `daySpent`, `remaining` on one key).
-4. google token, reminders, mcp authorize, rate-limit events, reviewer failures.
-5. Guest sessions onto `createRateLimiter`: deletes the hand-rolled map and sweep (about -10 prod LOC) and settles S-24's guestIpRateMap.
+2. feedback, events, ab, email capture. 3. Lab upload files (quota, `daySpent`, `remaining` on one key). 4. google token, reminders, mcp authorize, rate-limit events, reviewer failures. 5. Guest sessions onto `createRateLimiter`: deletes the hand-rolled map and sweep (about -10 prod LOC) and settles S-24's guestIpRateMap.
 
 ## S-23: clock order and the refused charge
 
@@ -75,3 +71,8 @@ Tests per change: per route, two IPv6 addresses in one /64 share the count (refu
 ## Decisions for Brad
 
 1. No limit number changes. IPv6 homes and offices would share feedback (3 an hour), email capture (20 an hour), new guest chats (10 an hour) and lab files (200 a day), as IPv4 ones already do. Yes, or raise feedback (say to 10 an hour)? Recommend yes, unchanged. No new words: the refusal texts stay.
+
+## Rulings (owner, 2026-11-14)
+
+Owner 1 (b): bucket everywhere but mcp token. 2 (a): guest binding stays on the address. 3 (a): lab join key stays on the address. 4 (a): the one-line fix. 5 (a): leave the clock, documented. 6 yes: ttl-bound.test.ts must see activeBatches' bound where it lives (api.lab-import-v2.ts:181), not a hand reclassification; move guestIpRateMap; leave the rest.
+Brad 1 goes to Brad as written. Security class: a fresh adversary reviews this note before any PR is built, and nothing in the S-21 series merges before Brad answers. Not started.
