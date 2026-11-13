@@ -358,26 +358,60 @@ describe('US-62 AC11: All results as a table', () => {
 
   // H79: at 390 px each grid is 397 inner against 334 visible, its date columns 91.
   // Scrolled to the right edge (63), the vitals grid hid most of its first date
-  // column under the name column and showed a clipped sliver of it. It snaps to
-  // whole columns (0); the blood grid still opens at its right edge.
-  it('H79: opening the table puts the vitals grid on whole columns (0) and the blood grid at its right edge (63)', async () => {
-    await seed();
-    const view = await renderTool();
+  // column under the name column and showed a clipped sliver of it. Where Trend
+  // scrolls with the data (a phone), it snaps to whole columns; where Trend is
+  // sticky (desktop), it keeps the right edge, so New never slides under Trend.
+  // The blood grid always opens at its right edge.
+  async function openedAt(view: ReturnType<typeof render>, scrollWidth: number, clientWidth: number) {
     await new Promise(r => setTimeout(r, 600)); // the hidden grids' mount scroll has given up
     const scrollers = new Map<string, HTMLElement>();
     for (const sel of ['.bt-vitals-card .bt-timeline-scroll', '.bt-timeline:not(.bt-vitals-card) .bt-timeline-scroll']) {
-      const el = view.container.querySelector<HTMLElement>(`.md-table ${sel}`)!;
+      const el = view.container.querySelector<HTMLElement>(`.md-table ${sel}`);
+      if (!el) continue;
       let left = 0;
-      Object.defineProperty(el, 'scrollWidth', { configurable: true, get: () => 397 });
-      Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => 334 });
-      Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left, set: (v: number) => { left = Math.min(Math.max(v, 0), 63); } });
-      el.querySelectorAll<HTMLElement>('.bt-header-row .bt-cell-date').forEach(cell =>
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, get: () => scrollWidth });
+      Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => clientWidth });
+      Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left,
+        set: (v: number) => { left = Math.min(Math.max(v, 0), scrollWidth - clientWidth); } });
+      el.querySelectorAll<HTMLElement>('.bt-header-row .bt-cell-value').forEach(cell =>
         Object.defineProperty(cell, 'offsetWidth', { configurable: true, get: () => 91 }));
       scrollers.set(sel.startsWith('.bt-vitals') ? 'vitals' : 'blood', el);
     }
     fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
-    expect(scrollers.get('vitals')!.scrollLeft).toBe(0);
-    expect(scrollers.get('blood')!.scrollLeft).toBe(63);
+    return { vitals: scrollers.get('vitals')!.scrollLeft, blood: scrollers.get('blood')?.scrollLeft };
+  }
+
+  it('H79: at 390 the vitals grid opens on whole columns (0) and the blood grid at its right edge (63)', async () => {
+    await seed();
+    expect(await openedAt(await renderTool(), 397, 334)).toEqual({ vitals: 0, blood: 63 });
+  });
+
+  it('H79: with more than a column of overflow (154), the vitals grid scrolls whole columns (91)', async () => {
+    await seed();
+    expect(await openedAt(await renderTool(), 488, 334)).toEqual({ vitals: 91, blood: 154 });
+  });
+
+  it('H79: where Trend is sticky (desktop CSS), the vitals grid keeps its right edge, so New stays clear of Trend', async () => {
+    await seed();
+    const view = await renderTool();
+    const real = window.getComputedStyle;
+    const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
+      const style = real(el, pseudo);
+      return el.classList.contains('bt-cell-trend') ? { ...style, position: 'sticky' } as CSSStyleDeclaration : style;
+    });
+    try {
+      expect(await openedAt(view, 488, 334)).toEqual({ vitals: 154, blood: 154 });
+    } finally { spy.mockRestore(); }
+  });
+
+  it('H79: with no saved vitals, the lone New column is a whole column too (320 px: 42 overflow -> 0)', async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z');
+    await flushRoadmapStore();
+    const view = await renderTool();
+    expect(view.container.querySelector('.bt-vitals-card .bt-header-row .bt-cell-draft-date')).not.toBeNull();
+    expect(view.container.querySelectorAll('.bt-vitals-card .bt-header-row .bt-cell-date').length).toBe(0);
+    expect((await openedAt(view, 306, 264)).vitals).toBe(0);
   });
 });
 
