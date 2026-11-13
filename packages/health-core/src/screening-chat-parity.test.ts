@@ -54,5 +54,12 @@ describe('plan and chat read a numeric screening answer alike (US-06 AC14)', () 
     );
     expect(planIds(file, 'screening-prostate')).toEqual([]);
     expect(chatIds(file, 'screening-prostate')).toEqual([]);
+    // Control: the same record with the date alone keeps the rule, so both show "Repeat PSA test".
+    const dateOnly = fileWith(
+      { prostateDiscussion: 'elected_not_to', prostateLastDate: '2026-07' },
+      [{ value: 4.5, day: '2026-01-10' }, { value: 5, day: '2026-06-01', comparator: '<' }],
+    );
+    expect(planIds(dateOnly, 'screening-prostate')).toEqual([expect.stringMatching(/^screening-prostate-repeat: /)]);
+    expect(chatIds(dateOnly, 'screening-prostate')).toEqual(planIds(dateOnly, 'screening-prostate'));
   });
 });

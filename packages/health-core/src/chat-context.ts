@@ -425,8 +425,9 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
     if (typeof value !== 'string') return [];
-    // A number is checked as the plan reads it, whatever its length (US-06 AC14), and kept as typed,
-    // so screeningsToInputs reads the same text the plan reads.
+    // A number is checked by screeningNumber, whatever its length (US-06 AC14), and kept as typed, so
+    // screeningsToInputs reads the text the plan reads. The plan reads the PSA answer through screeningNumber
+    // too; it reads pack-years with no range check, so an answer over 200 counts there and not here (H87).
     if (screeningRange(screeningKey)) return screeningNumber(screeningKey, value) === undefined ? [] : [{ screeningKey, value }];
     return value.length > MAX_SCREENING_VALUE ? [] : [{ screeningKey, value }];
   });

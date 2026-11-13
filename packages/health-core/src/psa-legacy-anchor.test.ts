@@ -154,6 +154,11 @@ describe('an out-of-range old answer keeps its date and loses its value: a date-
 
   it.each([['"3.0" and 30 spaces', `3.0${' '.repeat(30)}`], ['"3.0" with 30 leading zeros', `${'0'.repeat(30)}3.0`]])(
     'an in-range answer longer than 32 characters, %s: plan and chat both read 3.0, which ends the rule', (_what, value) => {
+      // Control: the same record with the date alone keeps the rule, in plan and chat.
+      const dateOnly = fileWith(RAISED_THEN_VAGUE, { prostateLastDate: '2026-07' });
+      expect(cards(dateOnly).map((c) => c.id)).toEqual(['screening-prostate-repeat']);
+      expect(reminders(dateOnly)).toEqual(['2026-10-01']);
+      expect(chatPlan(dateOnly).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
       const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-07' });
       expect(cards(file)).toEqual([]);
       expect(reminders(file)).toEqual([]);
