@@ -70,8 +70,8 @@ export function countForwardedShape(request: Request, resolvedIp: string): void 
   counter.count(request.headers.get('x-forwarded-for'), request.headers.get('fly-client-ip'), resolvedIp);
 }
 
-/** The hourly line. Unref'd: never holds the process open. Exported for tests. */
-export const forwardedShapeTimer = setInterval(() => {
+/** The hourly line. Unref'd: never holds the process open. */
+const forwardedShapeTimer = setInterval(() => {
   const line = counter.drain();
   if (line) console.log(line);
 }, HOUR_MS);
