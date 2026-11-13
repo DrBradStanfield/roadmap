@@ -193,18 +193,15 @@ const fakeAdmin = vi.hoisted(() => ({
 vi.mock('./chat-question-scrub.server', () => ({ scrubQuestion: vi.fn(), SCRUB_TIMEOUT_MS: 15_000 }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
-vi.mock('./supabase.server', () => ({
-  supabaseAdmin: fakeAdmin,
-  tryAcquireCronLock: vi.fn(async () => 'won' as const),
-  endCronLock: vi.fn(),
-}));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: fakeAdmin }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(async () => 'won' as const), endCronLock: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
 import {
   ARCHIVE_MAX_QUESTIONS, ARCHIVED_PLATFORMS, clearConversationMatchEvents, purgeOldChatText, purgeWithLock, PURGE_AFTER_DAYS, PURGED_PLATFORMS, PURGED_TEXT,
 } from './chat-purge-cron.server';
 import { DISCORD_SAVED_CHAT, YOUTUBE_SAVED_CHAT } from './chat-save-answers';
-import { tryAcquireCronLock } from './supabase.server';
+import { tryAcquireCronLock } from './supabase-cron-lock.server';
 import { scrubQuestion } from './chat-question-scrub.server';
 import { recordServerEvent } from './product-events.server';
 

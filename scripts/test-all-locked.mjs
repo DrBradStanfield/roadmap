@@ -116,7 +116,9 @@ async function main() {
   if (!bin) { console.error('test:all: no node_modules/.bin/vitest found above ' + process.cwd()); process.exit(1); }
   const locked = !inCI() && !isTargeted(extra);
   const dir = lockDir();
-  if (locked) await acquire(dir, { timeoutMs: timeoutMinutes() * 60_000 });
+  // TEST_ALL_LOCK_POLL_MS is for tests only; unset, acquire() keeps its 3 s poll.
+  const poll = Number(process.env.TEST_ALL_LOCK_POLL_MS) > 0 ? { pollMs: Number(process.env.TEST_ALL_LOCK_POLL_MS) } : {};
+  if (locked) await acquire(dir, { timeoutMs: timeoutMinutes() * 60_000, ...poll });
 
   // Handlers before spawn: a signal that lands as vitest starts must not kill us by default
   // and strand vitest with the lock. They run from the event loop, so `child` is set by then.

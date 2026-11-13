@@ -27,14 +27,14 @@
  * youtube-bot-pipeline.server.ts (filters, follow-up gates, chat pipeline) and
  * youtube-bot-post.server.ts (mark, post, record: US-27 AC5).
  * This file keeps the start/stop, the cron tick and the follow-up scan, and
- * re-exports every name it exported before the split.
+ * re-exports the pipeline names it exported before the split.
  *
  * See:
  *   claude_business docs/chat-architecture.md § YouTube comment replier
  *   tools/youtube-comment-dryrun.ts (preview tool, same pipeline)
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { YOUTUBE_PROMPT_TEMPLATE } from './youtube-context';
 import {
   POLL_INTERVAL_MS,
@@ -79,10 +79,7 @@ import { postClaimed, countSent } from './youtube-bot-post.server';
 import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
 
-// Every name this file exported before the split (issue #429).
-export { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
-export { addressReply, type YouTubeReply } from './youtube-bot-api.server';
-export { readPostingCaps, persistYouTubeTurn } from './youtube-bot-store.server';
+// The pipeline names this file exported before the split (issue #429).
 export {
   filterThread,
   assessThreadFollowUp,

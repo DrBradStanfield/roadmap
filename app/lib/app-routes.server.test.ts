@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
   rootPem: '',
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./supabase.server', () => ({
-  supabaseAdmin: null,
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guest,

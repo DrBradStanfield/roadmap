@@ -8,7 +8,7 @@
 import { readCappedBytes } from './capped-body.server';
 import { getClientIp } from './local-first-route.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
   requestClientData, validKeyId, CHALLENGE_TTL_MS, type AttestEnvironment, type AttestedKey,

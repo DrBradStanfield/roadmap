@@ -10,7 +10,7 @@ import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-p
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { LIMIT_TEST_WORDS } from '../../packages/health-core/src/lab-extraction';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 
 /** US-32: how a hosted tool call ended, on `mcp_tool_call`. */
 const MCP_TOOL_OUTCOMES = ['ok', 'refused', 'error'] as const;

@@ -30,8 +30,8 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
   BACKEND_KEY: 'health_roadmap_backend',
   // Real behaviour (connect.test.ts pins it); the rest of the module is stubbed.
-  storageState: (backend: string, reconnect?: string) =>
-    (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
+  storageState: (backend: string, signIn?: { kind: string }) =>
+    (signIn?.kind === 'signedOut' || signIn?.kind === 'unreachable' ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
@@ -42,6 +42,7 @@ vi.mock('./connect', () => ({
 import { SyncControl } from './sync-control';
 import { noteDevicePage, stopLocalHealthWrites } from '../src/lib/storage';
 import { BackendPickerModal } from './backend-picker';
+import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
@@ -49,7 +50,16 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-const guest = (ui: React.ReactNode) => render(<>{ui}</>);
+/** The load's answer, as boot seeds it (US-09 AC48): Drive's sign-in ended; any other cloud did not answer. */
+const lostAtLoad = (provider: 'google-drive' | 'dropbox' | 'github' | 'self-host') => {
+  resetSignIn();
+  bootSignIn(provider === 'google-drive' ? { kind: 'signedOut', provider } : { kind: 'unreachable', provider });
+};
+/** `lost`: the provider the load could not use, or none. */
+const guest = (ui: React.ReactNode, lost?: Parameters<typeof lostAtLoad>[0]) => {
+  if (lost) lostAtLoad(lost); else resetSignIn();
+  return render(<>{ui}</>);
+};
 
 describe('US-09 AC5 — under the plan', () => {
   it('offers the record question as the primary button, with the explainer under it', () => {
@@ -78,14 +88,14 @@ describe('US-09 AC5 — under the plan', () => {
   });
 
   it('the signed-out Drive state talks about the browser, not the device', () => {
-    const { container, getByRole } = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
+    const { container, getByRole } = guest(<SyncControl backend="local" hasData />, 'google-drive');
     expect(container.textContent).toContain('Google Drive is signed out');
     expect(container.textContent).toContain('kept in this browser and merges when you reconnect');
     expect(getByRole('button', { name: 'Use this browser only' })).toBeTruthy();
   });
 
   it('US-09 AC13: a Dropbox record that could not be read names Dropbox and offers a retry', () => {
-    const { container, getByRole } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    const { container, getByRole } = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(container.textContent).toContain('Dropbox could not be reached');
     expect(getByRole('button', { name: 'Retry' })).toBeTruthy();
     expect(container.textContent).not.toContain(PLAN_STORAGE_CTA); // never the guest pitch
@@ -176,12 +186,14 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
   let Sync: typeof SyncControl;
   let openPicker: () => void;
   let show: (ui: React.ReactNode) => ReturnType<typeof render>;
+  let signIn: typeof import('../src/storage/sign-in-state');
   beforeEach(async () => {
     localStorage.clear();
     vi.resetModules();
     ({ SyncControl: Sync } = await import('./sync-control'));
     const notice = await import('../src/lib/storage-notice');
     openPicker = notice.openBackendPicker;
+    signIn = await import('../src/storage/sign-in-state');
     show = (ui) => render(<>{ui}</>);
   });
   afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
@@ -233,12 +245,11 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
   });
 
   it('a cloud or reconnect session has no such button, so nothing pulses', () => {
-    for (const ui of [
-      <Sync backend="dropbox" hasData attention />,
-      <Sync backend="local" reconnect="google-drive" hasData attention />,
-      <Sync backend="local" reconnect="dropbox" hasData attention />,
-    ]) {
-      expect(show(ui).container.querySelector('.hr-sync-btn-attention')).toBeNull();
+    const lost = [{ kind: 'signedOut', provider: 'google-drive' }, { kind: 'unreachable', provider: 'dropbox' }] as const;
+    for (const [backend, state] of [['dropbox', undefined], ['local', lost[0]], ['local', lost[1]]] as const) {
+      signIn.resetSignIn();
+      if (state) signIn.bootSignIn(state);
+      expect(show(<Sync backend={backend} hasData attention />).container.querySelector('.hr-sync-btn-attention')).toBeNull();
       cleanup();
     }
   });
@@ -257,7 +268,7 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
 
 describe('US-09 AC13: the fallback notice on a live page', () => {
   it.each(['google-drive', 'dropbox'] as const)('%s: says changes are kept in this browser', (provider) => {
-    const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);
+    const { container } = guest(<SyncControl backend="local" hasData />, provider);
     expect(container.textContent).toContain('kept in this browser');
   });
 });
@@ -267,7 +278,7 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
   it('shows no promise once the log-off id has changed, and drops it when the change arrives as a storage event', () => {
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     noteDevicePage(); // a fallback page for Dropbox
-    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    const shown = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(shown.container.textContent).toContain('kept in this browser');
     try {
       act(() => {
@@ -278,7 +289,7 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
       expect(shown.container.textContent).not.toContain('kept in this browser');
       shown.unmount();
 
-      const later = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
+      const later = guest(<SyncControl backend="local" hasData />, 'google-drive');
       expect(later.container.textContent).not.toContain('kept in this browser');
     } finally {
       localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
@@ -286,7 +297,7 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
   });
 
   it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {
-    const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    const shown = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(shown.container.textContent).toContain('kept in this browser');
     try {
       act(() => {
@@ -319,7 +330,7 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
       window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
     });
     try {
-      const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+      const shown = guest(<SyncControl backend="local" hasData />, 'dropbox');
       fire();
       expect(heard).toHaveBeenCalledWith('storage');
       expect(heard).toHaveBeenCalledWith('pageshow');
@@ -337,7 +348,7 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
   // Last in this file: the stop lasts for the module's life.
   it('a notice already on screen drops the promise when the writes stop, with no other change', () => {
-    const { container } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    const { container } = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(container.textContent).toContain('kept in this browser');
     act(() => stopLocalHealthWrites());
     expect(container.textContent).toContain('Your record is safe in your');
@@ -346,7 +357,7 @@ describe('US-09 AC13: the fallback notice on a page whose device writes stopped'
 
   it.each(['google-drive', 'dropbox'] as const)('%s: names the provider and makes no promise that changes are kept', (provider) => {
     stopLocalHealthWrites();
-    const { container } = guest(<SyncControl backend="local" reconnect={provider} hasData />);
+    const { container } = guest(<SyncControl backend="local" hasData />, provider);
     expect(container.textContent).toContain('Your record is safe in your');
     expect(container.textContent).not.toContain('kept in this browser');
   });

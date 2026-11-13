@@ -16,7 +16,7 @@ vi.hoisted(() => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 // The bot starts only with an admin client; these ticks never reach it.
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 const TICK_MS = 30 * 60_000;
 const FIRST_TICK_MS = 30_000;

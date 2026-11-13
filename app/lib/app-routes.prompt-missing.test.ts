@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('./chat-system-prompt.server', () => ({ get CHAT_PROMPT() { return mocks.prompt; } }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./supabase.server', () => ({
-  supabaseAdmin: null,
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(), getOrCreateGuestSession: vi.fn(),
   GuestRateLimitError: class extends Error {},

@@ -19,11 +19,16 @@
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 import { refreshOnce } from './token-flight';
+import { isSignedOut, signInEnded } from './sign-in-state';
 
 export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
+/** Dropbox was chosen and signed in to, as Drive's config says it (US-09 AC48): an empty object, kept
+ *  when a revoked sign-in forgets the tokens, so a reload shows the reconnect panel, not the guest pitch.
+ *  A sign-in entry (AC45): removed by disconnect, log-off and the load sweep; an erase keeps it. */
+export const CONFIG_KEY = 'health_roadmap_dropbox';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
@@ -83,10 +88,13 @@ export class DropboxAdapter implements StorageAdapter {
   /** `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
   constructor(private readonly config: DropboxConfig, readonly gen: LogOffId = logOffId()) {
     this.tokens = loadTokens();
+    // A sign-in from before the config key gets one now, under this adapter's log-off id (tokens under an older
+    // id read as none), so a refresh that forgets the tokens still leaves the panel (US-09 AC48, Codex R3).
+    if (this.tokens && getSignIn(CONFIG_KEY) === null) setSignIn(CONFIG_KEY, {}, this.gen);
   }
 
   isConnected(): boolean {
-    return !!this.tokens?.refreshToken;
+    return !!this.tokens?.refreshToken || getSignIn(CONFIG_KEY) !== null;
   }
 
   /**
@@ -151,10 +159,9 @@ export class DropboxAdapter implements StorageAdapter {
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
     const json = tokenReply(await res.json().catch(() => null), true);
-    const saved = saveTokens({
-      accessToken: json.access_token,
-      refreshToken: json.refresh_token,
-      expiresAt: Date.now() + json.expires_in * 1000,
+    const saved = setSignIns({
+      [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
+      [CONFIG_KEY]: {},
     }, claimed.gen);
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
@@ -163,12 +170,17 @@ export class DropboxAdapter implements StorageAdapter {
 
   async disconnect(): Promise<void> {
     this.tokens = null;
+    safeRemoveItem(CONFIG_KEY); // first, so no other tab reads a forgotten sign-in (US-09 AC48)
     safeRemoveItem(TOKEN_KEY);
   }
 
   // --- file ops -------------------------------------------------------------
 
-  async read(fileName: string): Promise<ReadResult> {
+  read(fileName: string): Promise<ReadResult> {
+    return this.readFile(fileName).catch(this.refused);
+  }
+
+  private async readFile(fileName: string): Promise<ReadResult> {
     const token = await this.accessToken();
     // A secondary file (chat-history.json before the first chat) is often
     // absent, and files/download answers absence with a 409 the browser logs
@@ -181,15 +193,15 @@ export class DropboxAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    return dropboxWrite(await this.accessToken(), fileName, body, expectedVersion);
+    return dropboxWrite(await this.accessToken(), fileName, body, expectedVersion).catch(this.refused);
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    return new Blob([await dropboxDownload(await this.accessToken(), ref)]);
+    return new Blob([await dropboxDownload(await this.accessToken(), ref).catch(this.refused)]);
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    return dropboxUploadDocument(await this.accessToken(), ref, bytes);
+    return dropboxUploadDocument(await this.accessToken(), ref, bytes).catch(this.refused);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -210,7 +222,8 @@ export class DropboxAdapter implements StorageAdapter {
   private async watchLoop(onChange: () => void, signal: AbortSignal): Promise<void> {
     let cursor: string | null = null;
     let retryMs = 0;
-    while (!signal.aborted) {
+    // A sign-in this page knows has ended stops it until a reload (US-09 AC48).
+    while (!signal.aborted && !isSignedOut(this.id)) {
       try {
         // A cursor is dropped on every failure, so this re-establishes it: the
         // one Dropbox refused may be expired, and re-listing is cheap.
@@ -270,7 +283,7 @@ export class DropboxAdapter implements StorageAdapter {
       body: JSON.stringify(body),
       signal,
     });
-    if (!res.ok) throw new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) this.refused(new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status));
     return res;
   }
 
@@ -294,15 +307,24 @@ export class DropboxAdapter implements StorageAdapter {
     return account.email.toLowerCase();
   }
 
+  /** Dropbox refused the access token (an API 401): it is not used again, so the next call refreshes
+   *  and the refresh decides (US-09 AC48). Rethrows: the 401 still fails this call. */
+  private readonly refused = (error: unknown): never => {
+    if (error instanceof StorageError && error.status === 401 && this.tokens) this.tokens = { ...this.tokens, expiresAt: 0 };
+    throw error;
+  };
+
   private async accessToken(): Promise<string> {
-    if (!this.tokens) throw new StorageError('Dropbox is not connected.');
-    // Refresh a minute before expiry.
-    if (Date.now() >= this.tokens.expiresAt - 60_000) await this.refresh();
+    if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect'); // a forgotten sign-in
+    // Refresh a minute before expiry. A page signed out sends a cached token to the refresh too, which
+    // refuses it: no adapter goes on using a sign-in this page knows has ended (US-09 AC48, Codex R2).
+    if (Date.now() >= this.tokens.expiresAt - 60_000 || isSignedOut(this.id)) await this.refresh();
     return this.tokens.accessToken;
   }
 
   private async refresh(): Promise<void> {
-    if (!this.tokens?.refreshToken) throw new StorageError('Dropbox session expired — please reconnect.');
+    // No grant, or one this page knows is dead: only a new sign-in mends it, so nothing is posted (US-09 AC48).
+    if (!this.tokens?.refreshToken || isSignedOut(this.id)) throw new StorageError('Dropbox session expired — please reconnect.', undefined, undefined, undefined, 'reconnect');
     const startedFrom = this.tokens.refreshToken;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
@@ -321,10 +343,17 @@ export class DropboxAdapter implements StorageAdapter {
       throw error;
     });
     if (!res.ok) {
-      this.dropIfGrantMoved(startedFrom);
-      // invalid_grant: the refresh token was revoked, and only a new sign-in mends it (US-09 AC30).
-      const revoked = res.status === 400 && ((await res.json().catch(() => null)) as { error?: unknown } | null)?.error === 'invalid_grant';
-      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status, revoked ? 'reconnect' : undefined);
+      // A 400 or 401 refuses the sign-in: it ends here (US-09 AC48). Only invalid_grant, a revoked
+      // token, forgets it, as Drive does (AC47, Brad B-2); the config stays, so a reload shows the panel.
+      const refused = res.status === 400 || res.status === 401;
+      const revoked = refused && ((await res.json().catch(() => null)) as { error?: unknown } | null)?.error === 'invalid_grant';
+      this.dropIfGrantMoved(startedFrom); // after the last await
+      if (revoked) {
+        this.tokens = null;
+        safeRemoveItem(TOKEN_KEY);
+      }
+      if (refused) signInEnded(this.id, this.gen);
+      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status, refused ? 'reconnect' : undefined);
     }
     const reply: unknown = await res.json().catch(() => null);
     this.dropIfGrantMoved(startedFrom);
@@ -342,11 +371,15 @@ export class DropboxAdapter implements StorageAdapter {
    * grant is the only shared truth. Read after a refresh's last await: if it is
    * no longer the grant the refresh started from, this adapter keeps nothing
    * and leaves storage alone. A replaced grant may be another account, so it
-   * is never adopted (US-09 AC2f).
+   * is never adopted (US-09 AC2f). A grant gone while the config stays is
+   * another tab's invalid_grant: this page's sign-in ended too (US-09 AC48).
    */
   private dropIfGrantMoved(startedFrom: string): void {
-    if (loadTokens()?.refreshToken === startedFrom) return;
+    const stored = loadTokens();
+    if (stored?.refreshToken === startedFrom) return;
     this.tokens = null;
-    throw new StorageError('Dropbox was disconnected — please reconnect.');
+    const ended = !stored && getSignIn(CONFIG_KEY) !== null;
+    if (ended) signInEnded(this.id, this.gen);
+    throw new StorageError('Dropbox was disconnected — please reconnect.', undefined, undefined, undefined, ended ? 'reconnect' : undefined);
   }
 }

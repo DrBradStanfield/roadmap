@@ -34,6 +34,8 @@ case "$*" in
   *"pr view"*state,headRefOid*) json "$PR" ;;
   *"pr view"*changedFiles*) json "$FILES" ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
+  *"pr view"*labels*) json "{\\"labels\\":$LABELS}" ;;
+  *"run list --workflow ci.yml --branch main"*) json "$MAINRUNS" ;;
   *"run list"*ci.yml*) json "$CIRUNS" ;;
   *"run list"*deploy.yml*) runs=$RUNS
     # FLIP=<id>:<k>: in the status-filtered reads, run <id> is pending for the first k and in_progress after.
@@ -41,6 +43,7 @@ case "$*" in
       to=pending; [ "$n" -gt "\${FLIP#*:}" ] && to=in_progress
       runs=$(printf '%s\\n' "$RUNS" | jq -c --argjson id "\${FLIP%%:*}" --arg to "$to" 'map(if .databaseId == $id then .status = $to else . end)'); fi
     json "$(printf '%s\\n' "$runs" | jq -c --arg s "$st" --argjson n "$lim" '[.[] | select($s == "" or .status == $s)] | .[0:$n]')" ;;
+  *"pr comment"*) echo "commented" ;;
   *"pr merge"*) echo "merged"; exit "\${MERGE_RC:-0}" ;;
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
 esac
@@ -48,16 +51,18 @@ esac
   chmodSync(join(S, 'gh'), 0o755);
   // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none,
   // and prints the real tools/generated-files.json (US-64 AC34). Step 6 (AC34) finds the PR head, a merge base and a
-  // diff that lists no generated file, so it never refuses here.
+  // diff that lists no generated file, so it never refuses here; main is $GIT_BEHIND commits past that base (0).
   writeFileSync(join(S, 'git'), `#!/bin/sh
 printf 'git\\t%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
+[ "$1" = -c ] && shift 2
 case "$1" in
   fetch) [ -z "\${GIT_FETCH_FAIL:-}" ] || { echo "fatal: unable to access origin" >&2; exit 128; } ;;
-  show) [ "$2" = origin/main:tools/generated-files.json ] && { cat "${join(dirname(SCRIPT), 'generated-files.json')}"; exit; }
-    [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
+  show) [ "$2" = refs/remotes/origin/main:tools/generated-files.json ] && { cat "${join(dirname(SCRIPT), 'generated-files.json')}"; exit; }
+    [ "$2" = refs/remotes/origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
     cat "$MAIN_COPY" ;;
   cat-file) ;;
-  merge-base) echo ${'b'.repeat(40)} ;;
+  merge-base) [ "$2" = refs/remotes/origin/main ] || exit 1; echo ${'b'.repeat(40)} ;;
+  rev-list) [ -z "\${GIT_REVLIST_FAIL:-}" ] || { echo "fatal: bad revision" >&2; exit 128; }; echo "\${GIT_BEHIND:-0}" ;;
   diff) echo tools/wait-run.sh ;;
   *) echo "unexpected git call: $*" >&2; exit 1 ;;
 esac
@@ -74,6 +79,10 @@ const GREEN = [cr('review', 'SKIPPED', 'COMPLETED', 'Claude Review'), cr('review
 const ciRun = (databaseId: number, createdAt: string, conclusion = 'success', status = 'completed', event = 'pull_request') =>
   ({ databaseId, status, conclusion, createdAt, event });
 const CI_GREEN = [ciRun(43112784472, '2026-11-11T22:33:40Z')];
+// ci.yml's runs on main: push, nightly and manual runs (a fork PR from its own main also has branch main).
+const mainRun = (databaseId: number, createdAt: string, conclusion: string | null = 'success', event = 'push', status = 'completed', attempt = 1) =>
+  ({ databaseId, status, conclusion, createdAt, event, attempt, url: `https://github.com/o/r/actions/runs/${databaseId}` });
+const MAIN_GREEN = [mainRun(43358630287, '2026-11-13T03:23:24Z')];
 const FILES = { changedFiles: 2, files: [{ path: 'tools/wait-run.sh' }, { path: 'docs/git-workflow.md' }] };
 
 function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<string, string> = {}) {
@@ -86,6 +95,8 @@ function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<stri
       FILES: JSON.stringify(fx.files ?? FILES),
       ROLLUP: JSON.stringify(fx.rollup ?? GREEN),
       CIRUNS: JSON.stringify(fx.ci ?? CI_GREEN),
+      MAINRUNS: JSON.stringify(fx.main ?? MAIN_GREEN),
+      LABELS: JSON.stringify(fx.labels ?? []),
       RUNS: JSON.stringify(fx.runs ?? [{ databaseId: 1, status: 'completed' }]),
       ...env,
     },
@@ -147,9 +158,17 @@ describe('US-64 AC32 merge-gated.sh', () => {
     it("a plain PR never shows main's copy; step 6 fetches main by an explicit refspec and the PR head", () => {
       const r = gate(['123', SHA]);
       expect(r.status).toBe(0);
-      expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'cat-file', 'merge-base', 'diff']);
+      // The diff runs as `git -c core.quotepath=false diff` (US-64 AC34: a non-ASCII path stays unquoted).
+      expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'cat-file', 'merge-base', 'rev-list', '-c']);
+      expect(r.gits[4].filter((_, i) => i % 2).slice(0, 3)).toEqual(['-c', 'core.quotepath=false', 'diff']);
       // The stub logs `git` before each argument.
       expect(r.gits[0].filter((_, i) => i % 2)).toEqual(['fetch', '-q', 'origin', '+refs/heads/main:refs/remotes/origin/main', 'refs/pull/123/head']);
+    });
+    it('a plain PR whose step-6 fetch fails refuses 4 and never merges (every PR fetches)', () => {
+      const r = gate(['123', SHA], {}, { GIT_FETCH_FAIL: '1' });
+      expect(r.status).toBe(4);
+      expect(r.stderr).toMatch(/cannot fetch main/);
+      expect(r.merges).toEqual([]);
     });
     it("fetches main, runs main's copy with the marker and the same arguments, and exits with its code", () => {
       for (const code of [0, 9]) {
@@ -336,6 +355,117 @@ describe('US-64 AC32 merge-gated.sh', () => {
       const r = gate(['123', SHA], { rollup: GREEN.filter((c) => c.name !== 'test').concat(cr('tests')) });
       expect(r.status).toBe(10);
       expect(r.merges).toEqual([]);
+    });
+  });
+
+  describe('US-64 AC35 stop the line: the newest completed ci.yml run on main', () => {
+    it('refuses (18) when it failed, timed out or failed to start, naming the run and its conclusion', () => {
+      for (const conclusion of ['failure', 'timed_out', 'startup_failure']) {
+        const r = gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', conclusion), ...MAIN_GREEN] });
+        expect(r.status).toBe(18);
+        expect(r.stderr).toContain('https://github.com/o/r/actions/runs/77');
+        expect(r.stderr).toContain(conclusion);
+        expect(r.stderr).toContain('main must be fixed first');
+        expect(r.stderr).not.toContain('fix-main');
+        expect(r.merges).toEqual([]);
+      }
+    });
+    it('reads main runs of every status and every event but pull_request', () => {
+      const call = gate(['123', SHA]).calls.find((c) => c.join(' ').includes('--branch main'))!;
+      expect(call.join(' ')).toContain('run list --workflow ci.yml --branch main --limit 20');
+      expect(call.join(' ')).not.toContain('--status');
+      for (const event of ['schedule', 'workflow_dispatch']) {
+        expect(gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', 'failure', event), ...MAIN_GREEN] }).status).toBe(18);
+      }
+    });
+    it('judges only the newest by createdAt: an older red run under a newer green one passes', () => {
+      const runs = [mainRun(76, '2026-11-13T01:00:00Z', 'failure'), mainRun(77, '2026-11-13T05:00:00Z')];
+      expect(gate(['123', SHA], { main: runs }).status).toBe(0);
+      expect(gate(['123', SHA], { main: [...runs].reverse() }).status).toBe(0);
+    });
+    it('passes on a green or skipped newest run (only failure, timed_out and startup_failure are red)', () => {
+      for (const conclusion of ['success', 'skipped']) {
+        const r = gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', conclusion), mainRun(76, '2026-11-13T01:00:00Z', 'failure')] });
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+      }
+    });
+    it('a red pull_request run on a branch named main (a fork) is not main', () => {
+      expect(gate(['123', SHA], { main: [mainRun(78, '2026-11-13T06:00:00Z', 'failure', 'pull_request'), ...MAIN_GREEN] }).status).toBe(0);
+    });
+    it('R1: a newest run that is a re-run (attempt 2 or later) still queued or in progress is still red (18)', () => {
+      for (const status of ['in_progress', 'queued']) {
+        const r = gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', null, 'push', status, 2), ...MAIN_GREEN] });
+        expect(r.status).toBe(18);
+        expect(r.stderr).toContain('https://github.com/o/r/actions/runs/77');
+        expect(r.merges).toEqual([]);
+      }
+      // A first attempt still running is not judged: the newest completed run is.
+      expect(gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', null, 'push', 'in_progress', 1), ...MAIN_GREEN] }).status).toBe(0);
+    });
+    it('R1: a cancelled newest run does not hide an older red one (18), and passes over an older green one', () => {
+      const cancelled = mainRun(78, '2026-11-13T06:00:00Z', 'cancelled');
+      const r = gate(['123', SHA], { main: [cancelled, mainRun(77, '2026-11-13T05:00:00Z', 'failure')] });
+      expect(r.status).toBe(18);
+      expect(r.stderr).toContain('actions/runs/77 ended failure');
+      expect(gate(['123', SHA], { main: [cancelled, mainRun(77, '2026-11-13T05:00:00Z')] }).status).toBe(0);
+      expect(gate(['123', SHA], { main: [cancelled] }).status).toBe(4);
+    });
+    it('a PR labelled exactly fix-main merges on a red main, with a note naming the run', () => {
+      const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];
+      const r = gate(['123', SHA], { main: red, labels: [{ name: 'hold' }, { name: 'fix-main' }] });
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(r.stderr).toMatch(/merge-gated: note: main is red .*actions\/runs\/77 ended failure.*carries fix-main/);
+      expect(gate(['123', SHA], { main: red, labels: [{ name: 'fix-main-later' }] }).status).toBe(18);
+    });
+    it('a fix-main pass posts exactly one fixed PR comment holding the run id and nothing taken from GitHub', () => {
+      const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];
+      const r = gate(['123', SHA], { main: red, labels: [{ name: 'fix-main' }], rollup: [...GREEN, cr('ios-compile', 'FAILURE', 'COMPLETED', 'iOS compile')] });
+      expect(r.status).toBe(0);
+      const posts = r.calls.filter((c) => c[0] === 'pr' && c[1] === 'comment');
+      expect(posts).toHaveLength(1);
+      expect(posts[0].slice(0, 4)).toEqual(['pr', 'comment', '123', '--body']);
+      const body = posts[0][4];
+      expect(body).toContain('77');
+      for (const outside of ['https://', 'github.com', 'unit (', 'review', 'ios-compile', 'failure']) expect(body).not.toContain(outside);
+      expect(r.calls.indexOf(posts[0])).toBeLessThan(r.calls.indexOf(r.merges[0]));
+      expect(gate(['123', SHA]).calls.some((c) => c[0] === 'pr' && c[1] === 'comment')).toBe(false);
+    });
+    it('a failed comment post still merges, with a note on stderr', () => {
+      const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];
+      const r = gate(['123', SHA], { main: red, labels: [{ name: 'fix-main' }] }, { GH_FAIL: 'pr comment' });
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(r.stderr).toMatch(/merge-gated: note: .*comment.*failed/);
+    });
+    it('refuses 4 when gh fails or main has no completed run to judge', () => {
+      const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];
+      expect(gate(['123', SHA], {}, { GH_FAIL: '--branch main' }).status).toBe(4);
+      expect(gate(['123', SHA], { main: red }, { GH_FAIL: 'labels' }).status).toBe(4);
+      expect(gate(['123', SHA], { main: [] }).status).toBe(4);
+      expect(gate(['123', SHA], { main: [mainRun(78, '2026-11-13T06:00:00Z', 'success', 'pull_request')] }).status).toBe(4);
+    });
+  });
+
+  describe("US-64 AC35 staleness: main has moved since the PR's merge base", () => {
+    it('notes how many commits main has moved, on stderr, and still merges', () => {
+      const r = gate(['123', SHA], {}, { GIT_BEHIND: '7' });
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(r.stderr).toContain("merge-gated: note: main has moved 7 commits since this PR's merge base; CI may have tested an older main");
+      const rl = r.gits.find((c) => c[1] === 'rev-list')!;
+      expect(rl.filter((_, i) => i % 2)).toEqual(['rev-list', '--count', `${'b'.repeat(40)}..refs/remotes/origin/main`]);
+    });
+    it('a failed git rev-list gives no note, and the merge proceeds', () => {
+      const r = gate(['123', SHA], {}, { GIT_REVLIST_FAIL: '1', GIT_BEHIND: '7' });
+      expect(r.status).toBe(0);
+      expect(r.merges).toEqual([MERGE_ARGV]);
+      expect(r.stderr).not.toMatch(/has moved/);
+    });
+    it('says commit for one, and nothing when main has not moved', () => {
+      expect(gate(['123', SHA], {}, { GIT_BEHIND: '1' }).stderr).toContain('main has moved 1 commit since');
+      expect(gate(['123', SHA]).stderr).not.toMatch(/has moved/);
     });
   });
 

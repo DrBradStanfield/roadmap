@@ -25,9 +25,9 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/chat-classifier.server', () => ({
   classifyMessage: async () => ({ classification: 'SKIP', routerSkipped: true, latencyMs: 0, error: null }),
   shouldFireRouter: () => false,

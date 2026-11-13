@@ -9,7 +9,8 @@
 import type { ActionFunctionArgs } from 'react-router';
 import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
-import { addMessageCredits, getUserIdByCustomerId, logAudit, recordUnprovenPaidOrder } from '../lib/supabase.server';
+import { addMessageCredits, recordUnprovenPaidOrder } from '../lib/supabase-account.server';
+import { getUserIdByCustomerId, logAudit } from '../lib/supabase-identity.server';
 import { VARIANT_CREDIT_MAP } from '../lib/message-packs';
 import { cappedRequest, WEBHOOK_BODY_CAP } from '../lib/capped-body.server';
 import { safeErrorFields } from '../lib/safe-error-fields.server';

@@ -5,7 +5,7 @@
 // warning naming the variable. Synthetic env values only.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 async function loadGate(env: Record<string, string>) {
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);

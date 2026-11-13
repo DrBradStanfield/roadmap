@@ -34,7 +34,7 @@ vi.mock('./chat-dedup.server', () => ({ claimChatTurn: async (_scope: string, me
   return dup ? { kind: 'duplicate', content: dup.content } : { kind: 'run', release: () => undefined };
 } }));
 vi.mock('./cron-helpers.server', () => ({ sleep: edge.sleep }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {
   from: (table: string) => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query, update: () => query,

@@ -40,7 +40,8 @@
  * this Supabase project and the winner would run with its own app's env.
  */
 import * as Sentry from '@sentry/react-router';
-import { endCronLock, supabaseAdmin, tryAcquireCronLock } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
+import { endCronLock, tryAcquireCronLock } from './supabase-cron-lock.server';
 import { archiveQuestions, type ArchiveCounts, type Held } from './chat-question-archive.server';
 import { MACHINE_ID, MACHINE_LABEL, reportStuckRun, sharedCronsOn } from './daily-cron.server';
 import { lockClock, stuckLimitMs, transition, type CronDay } from './cron-day';
