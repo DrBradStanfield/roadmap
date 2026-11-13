@@ -328,15 +328,15 @@ final class RecordStore {
     /// The cloud record, erased by the engine's session: shown like any record it sends. The store
     /// holds it even when the engine cannot draw it, with no drawing, so nothing that reads the
     /// store's record or rows reads the one it replaced. Only a stale one is dropped: a record
-    /// the engine stamped after it is drawn, which holds the erase (`DrawResult`). Always counted (AC16g).
+    /// the engine stamped after it is drawn, which holds the erase (`DrawResult`). Always counted, once (AC16g).
     @discardableResult
     func showErased(_ view: HealthEngine.CloudView?, stillShown: @escaping @MainActor () -> Bool = { true }) -> Task<Void, Never> {
         chain {
             // A fresh start: no per-test choice, published only with the erase held (adversary R4).
-            // Landed, or stale (a record stamped after it, so holding it, is drawn): counted unless land counted it.
+            // Counted unless `land` counted its erase (`countedErases`): the record shown then holds it. No view still counts (AC16g).
             let counted = self.erasures
             let shown = await self.drawErased(view, stillShown: stillShown())
-            if self.erasures == counted, !(shown != .failed && self.countedErases.contains(view?.erase)) { self.erasures += 1 }
+            if self.erasures == counted, !(view.map { self.countedErases.contains($0.erase) } ?? false) { self.erasures += 1 }
             if shown != .failed { self.screenErasures = self.erasures }
         }
     }

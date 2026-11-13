@@ -311,6 +311,40 @@ final class RemoteEraseTakenInTests: XCTestCase {
         XCTAssertFalse(store.predatesErase)
     }
 
+    /// Adversary re-check F2, owner's yes: the news lands the erase (counted), a reopen's new session
+    /// shows the same erased record, then the erase's own result fails (its session no longer shown).
+    /// The record shown holds that erase by construction: nothing is counted again, and nothing is
+    /// marked as predating it (US-25 AC16g, AC16j).
+    func testAFailedOwnEraseResultWhoseEraseLandCountedCountsNothingMore_S63() async throws {
+        let engine = try engine()
+        let (store, before) = try await charted(engine)
+        let erased = try erased(before, engine)
+        await store.showCloud(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 2)).value
+        await store.showCloud(HealthEngine.CloudView(record: erased, erase: "e2", session: 2, order: 3)).value
+        XCTAssertEqual(store.erasures, 1, "the news counted it; the reopen's same erase is no evidence")
+
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4), stillShown: { false }).value
+
+        XCTAssertEqual(store.erasures, 1, "counted once")
+        XCTAssertFalse(store.predatesErase, "the record shown is the erased one")
+        XCTAssertEqual(store.recordJSON, erased)
+    }
+
+    /// AC16g still holds for an erase that came back with no record: it is counted and marks the
+    /// record as predating it, even after an erase land counted with no cloud erase (this phone's
+    /// own file), so a missing view never matches a remembered erase.
+    func testAnEraseWithNoRecordIsStillCountedAndPredatesAfterAPhoneErase_AC16g() async throws {
+        let engine = try engine()
+        let store = try store(engine)
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        XCTAssertEqual(store.erasures, 1)
+
+        await store.showErased(nil).value
+
+        XCTAssertEqual(store.erasures, 2, "an erase with no record is counted (AC16g)")
+        XCTAssertTrue(store.predatesErase, "and the record shown is marked as predating it")
+    }
+
     /// A stale own erase result under a later record at ANOTHER erase (its news never landed) is still
     /// counted: the later record proves it was read after the erase, not that the erase was counted.
     func testAStaleOwnEraseUnderALaterEraseIsStillCounted_S63() async throws {
