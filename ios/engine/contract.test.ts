@@ -30,6 +30,20 @@ describe('bridge contract source (I-2, US-25 AC18)', () => {
     }
   });
 
+  // Review R1: kind reaches neither JSON file, so only this holds it. A settle door hands its
+  // work to settle(); a promise door answers a Promise; a sync door does neither.
+  it('each door\'s kind matches its body', () => {
+    const source = ['entry.ts', 'cloud.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
+    for (const [name, door] of Object.entries(DOORS) as [string, Door][]) {
+      const start = source.search(new RegExp(`export (?:async )?function ${name}\\(`));
+      expect(start, name).toBeGreaterThan(-1);
+      const body = source.slice(start, source.indexOf('\n}\n', start));
+      const kind = /\breturn settle\(/.test(body) ? 'settle'
+        : /^export async function/.test(body) || /\): Promise</.test(body) ? 'promise' : 'sync';
+      expect(kind, name).toBe(door.kind);
+    }
+  });
+
   it('a door is a contract door or an optional door, and only a contract door carries additions', () => {
     for (const [name, door] of Object.entries(DOORS) as [string, Door][]) {
       if (door.optionalDoor) expect(door.optionalAt ?? door.optionalArgs ?? door.optionalReturns, name).toBeUndefined();

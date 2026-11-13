@@ -93,12 +93,12 @@ export const DOORS = {
     returns: "settle handle; read with settledJson",
   },
   chatListJson: {
-    kind: 'sync',
+    kind: 'settle',
     args: [['historyText', nullableText], ['nowIso', text], ['deviceId', text]],
     returns: "conversation list JSON",
   },
   chatMessagesJson: {
-    kind: 'sync',
+    kind: 'settle',
     args: [['historyText', nullableText], ['conversationId', text], ['nowIso', text], ['deviceId', text]],
     returns: "messages JSON",
   },
