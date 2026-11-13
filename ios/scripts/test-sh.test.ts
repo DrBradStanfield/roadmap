@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 const SCRIPT = process.env.TEST_SH_SCRIPT ?? join(__dirname, 'test.sh');
 const SIM_RUN = `#!/bin/sh
 echo "$TEST_RUNNER_TZ" >> "$FAKE_LOG"
+echo "sim-run: zone $TEST_RUNNER_TZ"
 [ "$TEST_RUNNER_TZ" = UTC ] && FAKE_EXIT="\${FAKE_EXIT_UTC:-$FAKE_EXIT}"
 case "$FAKE_EXIT" in
   0) echo "** TEST SUCCEEDED **";;
@@ -84,6 +85,27 @@ describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
     expect(r.out).toContain('iOS tests FAILED in: UTC');
     expect(r.out).not.toContain('All iOS tests passed');
     expect(r.status).toBe(1);
+  });
+
+  // The Auckland run overwrites build/test-output.txt, so a failed zone's log is kept beside it.
+  it('after a UTC failure the UTC copy holds the UTC run and the FAILED line names it', () => {
+    const r = run(0, 65);
+    const build = join(dir, 'ios', 'build');
+    expect(r.out).toContain('FAILED in UTC (log: ios/build/test-output-UTC.txt)');
+    const utc = readFileSync(join(build, 'test-output-UTC.txt'), 'utf8');
+    expect(utc).toContain('sim-run: zone UTC');
+    expect(utc).toContain('** TEST FAILED **');
+    expect(utc).not.toContain('Pacific/Auckland');
+    expect(readFileSync(join(build, 'test-output.txt'), 'utf8')).toContain('sim-run: zone Pacific/Auckland');
+    expect(existsSync(join(build, 'test-output-Pacific-Auckland.txt'))).toBe(false);
+  });
+
+  it('a failed Auckland zone is copied under a name with no slash', () => {
+    const r = run(65, 0);
+    expect(r.out).toContain('FAILED in Pacific/Auckland (log: ios/build/test-output-Pacific-Auckland.txt)');
+    const akl = readFileSync(join(dir, 'ios', 'build', 'test-output-Pacific-Auckland.txt'), 'utf8');
+    expect(akl).toContain('sim-run: zone Pacific/Auckland');
+    expect(existsSync(join(dir, 'ios', 'build', 'test-output-UTC.txt'))).toBe(false);
   });
 
   it('a pass runs both zones and exits 0', () => {

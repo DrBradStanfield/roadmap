@@ -18,7 +18,9 @@ trap scripts/clean-test-clones.sh EXIT
 FAILED=""
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
-  rm -f "$STATUS"
+  # A failed zone's log is copied here, since the next zone's run overwrites $LOG.
+  ZLOG="build/test-output-$(echo "$ZONE" | tr / -).txt"
+  rm -f "$STATUS" "$ZLOG"
   # sim-run adds the shared device, -parallel-testing-enabled NO and a time limit. Its exit code is
   # kept in $STATUS: the pipe drops it. 75 means it refused or gave up waiting, so no test ran (US-71
   # AC7, AC8); 76 means another simulator booted during the run and it stopped (AC7).
@@ -31,9 +33,10 @@ for ZONE in UTC Pacific/Auckland; do
     76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; exit 76;;
   esac
   if ! grep -q "TEST SUCCEEDED" "$LOG"; then
-    echo "FAILED in $ZONE"; FAILED="$FAILED $ZONE"
+    cp "$LOG" "$ZLOG"; echo "FAILED in $ZONE (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
   elif grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
-    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it"; FAILED="$FAILED $ZONE"
+    cp "$LOG" "$ZLOG"
+    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
   else
     echo "passed in $ZONE"
   fi
