@@ -36,8 +36,9 @@ final class ReminderScheduler {
     var optedIn: Bool { if case .on = mode { true } else { false } }
     /// Mints each ask's attempt, so a late answer to an older one is known: a token, not a mode.
     private var attempts = 0
-    /// The store's erase count at the last refresh: a move means an erase here, even one held
-    /// with no record to read (S52). A token, not a mode.
+    /// The store's erase count at the last refresh, or at a tap made while reminders are off,
+    /// since optIn() snapshots it then: a move means an erase here, even one held with no record
+    /// to read (S52). A token, not a mode.
     private var seenErasures: Int
 
     /// Our notifications, and only ours, start with this.
