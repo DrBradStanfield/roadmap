@@ -20,10 +20,9 @@ vi.mock('./supabase.server', () => ({
   GuestRateLimitError: class extends Error {},
 }));
 vi.mock('./chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: 'null' }),
+  resolveChatContext: () => ({ userContextJson: 'null' }),
   buildSystemBlocks: () => [],
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
-  matchDocumentTitle: () => null,
   loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
   getChatCompletion: mocks.getChatCompletion,
