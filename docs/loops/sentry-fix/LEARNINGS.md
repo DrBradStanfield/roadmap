@@ -13,7 +13,7 @@
   native-frames-only unhandled rejections, or onerror with a single
   `<anonymous>` frame (our bundles always load from real CDN URLs). When the
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
-  (08-25 Ba`prod; 09-03 Ka`prod; 10-29 La`, 11-12 Ma`prod, GSA; 09-04 n.data.split, Tizen TV; 09-10
+  (08-25 Ba`prod; 09-03 Ka`prod; 10-29 La`, 11-12 Ma`prod (source grep), GSA; 09-04 n.data.split, Tizen TV; 09-10
   `window.webkit.messageHandlers` in `unload`, GSA's WKWebView; 09-20 zaloJSV2).
   An AbortError's stack names who ABORTED, not who leaked: re-run the
   watch-loop Chromium repro before ledgering one not-ours (11-11, 7K).
