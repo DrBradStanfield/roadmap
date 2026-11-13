@@ -3,7 +3,8 @@
  * iPhone app (ios/architecture.md D4): one working copy, saved one save at a
  * time, re-read and merged, erased, and guarded against writes made for an
  * erase the page no longer shows. What counts as a change to take in or to
- * announce lives here too. The device itself comes in as a RecordHost.
+ * announce lives in record-session-content.ts. The device itself comes in as
+ * a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
