@@ -383,7 +383,7 @@ final class RecordStore {
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
-        // (cloud.ts dependsOnUnits): the master switch landed while the sheet was open.
+        // (guarded-edit.ts dependsOnUnits): the master switch landed while the sheet was open.
         if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
             return .refused(message: "Your units changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
@@ -457,7 +457,7 @@ final class RecordStore {
         if case .units = edit { true } else { false }
     }
 
-    /// An edit whose number is read in the record's units, as cloud.ts `dependsOnUnits`.
+    /// An edit whose number is read in the record's units, as guarded-edit.ts `dependsOnUnits`.
     /// Not feet and inches: they mean the same height in either units.
     nonisolated static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
         switch edit {

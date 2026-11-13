@@ -36,7 +36,7 @@ export interface EditTarget {
 
 /** Only edits whose number is read in the user's units can be misread after a
  *  unit change: a value, a correction, a height. */
-export function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
+function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
   // A lab value's correction is in the unit its row is stored in, whatever the record's units (review R7);
   // a core blood test's is read in the record's units, like a vital's, though it is a lab row (US-66 AC6).
   if (edit.kind === 'correct') {

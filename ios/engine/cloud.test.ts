@@ -1478,11 +1478,17 @@ describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 
     ['a lab row\'s correction after a units change (its own unit)', () => ({ kind: 'correct', id: 'ferritin-1', value: 85 }), metric, false, 'ok'],
     ['a height after a units change', () => ({ kind: 'profile', height: 170 }), metric, false, 'units-changed'],
     ['a sex after a units change (no number)', () => ({ kind: 'profile', sex: 'female' }), metric, false, 'ok'],
-    ['a new Lp(a) after its unit changed', () => ({ kind: 'add', metric: 'lpa', value: 50, day: '2026-10-02' }), us, false, 'units-changed'],
-    ['an Lp(a) correction after its unit changed', () => ({ kind: 'correct', id: 'lpa-1', value: 60 }), us, false, 'units-changed'],
+    ['a new Lp(a) after its unit changed', () => ({ kind: 'add', metric: 'lpa', value: 50, day: '2026-10-02' }), us, false, 'units-changed: Lp(a)'],
+    ['an Lp(a) correction after its unit changed', () => ({ kind: 'correct', id: 'lpa-1', value: 60 }), us, false, 'units-changed: Lp(a)'],
     ['any edit after an erase since', () => ({ kind: 'profile', sex: 'female' }), us, true, 'erased'],
+    // Review (adversary 4 R2): the guards run in order; the units refusal comes before the erase's.
+    ['a new value after a units change and an erase since', () => ({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-02' }), metric, true, 'units-changed'],
+    // An edit that changes nothing saves nothing (the US units the record already holds).
+    ['the units the record already holds', () => ({ kind: 'units', unitSystem: 'conventional' }), us, false, 'ok, unchanged'],
   ];
-  const answerOf = (out: { ok: boolean; reason?: string }) => (out.ok ? 'ok' : out.reason);
+  /** The answer, telling the record's units from Lp(a)'s by their words. */
+  const answerOf = (out: { ok: boolean; reason?: string; message?: string }) =>
+    (out.ok ? 'ok' : out.reason === 'units-changed' && out.message?.includes('Lp(a)') ? 'units-changed: Lp(a)' : out.reason);
 
   it.each(ROWS)('the cloud session: %s', async (_row, edit, shown, erased, expected) => {
     const file = await changedRecord();
@@ -1491,11 +1497,12 @@ describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 
     const { engine } = await phone(dropbox);
     const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const out = JSON.parse(engine.cloudEdit(JSON.stringify(edit(file)), erased ? 'an earlier erase' : erase, shown.units, NOW, '{}', shown.lpaUnit));
-    expect(answerOf(out)).toBe(expected);
+    expect(answerOf(out)).toBe(expected.replace(', unchanged', ''));
   });
 
   it.each(ROWS)('a plain record: %s', async (_row, edit, shown, erased, expected) => {
-    let file = await changedRecord();
+    const before = await changedRecord();
+    let file = before;
     const target: EditTarget = {
       get file() { return file; },
       stale: () => (erased ? refuse('erased', 'erased since') : null),
@@ -1503,6 +1510,13 @@ describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 
       answer: () => ({ record: JSON.stringify(file) }),
     };
     const out = guardedEdit(target, EDIT.parse(edit(file)), { ...shown, choicesJson: '{}' }, NOW);
-    expect(answerOf(out)).toBe(expected);
+    expect(answerOf(out)).toBe(expected.replace(', unchanged', ''));
+    // Review (adversary 4 R1): a save is committed and answered; a refusal or no change commits nothing.
+    if (expected === 'ok') {
+      expect(file).not.toBe(before);
+      expect(JSON.parse((out as { record: string }).record)).toEqual(JSON.parse(JSON.stringify(file)));
+    } else {
+      expect(file).toBe(before);
+    }
   });
 });
