@@ -36,12 +36,21 @@
  * read never feeds `heard`: a read during this tab's erase can report this
  * tab's own new identity (record-session.ts sets it before the flush).
  *
- * `heard.reach` (H39): 'reading' once anything asks for its read (an arrival,
- * or any step that emits `read`), 'failed' when that read failed
- * (`read-failed`, for the heard identity only, outside erasing: a late
- * failure of an older erase's read never marks a newer one). `retry` reads a
- * failed one again, only while settled. `unreachable` (settled, and the heard
- * erase's last read failed) is what the page tells the person (H39 PR 2).
+ * `heard.reach` (H39): 'reading' with the count of its reads in flight, or
+ * 'failed'. Every step that emits `read` while an erase is heard adds one
+ * (a failed one becomes reading at 1); an arrival of another identity starts
+ * its own count (1 if it reads at once, else 0). `read-failed`, for the heard
+ * identity only, takes one off, in every phase, and never below zero: at
+ * zero it is a no-op. A late failure of an older erase's read never touches
+ * a newer one. It becomes 'failed' only when the count reaches zero, so a
+ * read still in flight keeps it reading. A read that lands and clears heard
+ * ends it; one that lands without clearing it (loading, a lower epoch, or a
+ * same-epoch other identity) and one dropped because the store moved take
+ * nothing off, so the count can only run high: the page then misses
+ * `unreachable`, never shows it early. `retry` reads a failed one again,
+ * only when unreachable. `unreachable` (idle, the first read shown, and the
+ * heard erase's reads all failed) is what the page tells the person (H39
+ * PR 2); a failed first read (L2) keeps its own unreadable note.
  *
  * Order: by epoch only, the one order the merge keeps (merge.ts: a higher
  * eraseEpoch wins). Within an epoch the merge's choice is no order on the
@@ -137,14 +146,17 @@ export type EraseIdentity = string;
 /** The page's first read: not shown yet, shown, or failed part-way (the comment above). */
 export type FirstRead = 'pending' | 'shown' | 'failed';
 
+/** A heard erase's reads: how many are in flight, or all failed (H39). */
+export type Reach = { kind: 'reading'; inFlight: number } | { kind: 'failed' };
+
 interface EraseCommon {
   read: FirstRead;
   shown: EraseIdentity;
   /** Who moved `shown` there: a read (another writer's) or this tab's erase ending (own, unless another's overtook it).
    *  Its own field, set wherever `shown` moves; never read off `pending`, which a counted erase leaves null (PR 1359 R5). */
   shownBy: 'own' | 'remote';
-  /** Another writer's erase not yet shown, and whether its last read failed (H39). */
-  heard: null | { identity: EraseIdentity; reach: 'reading' | 'failed' };
+  /** Another writer's erase not yet shown, and its reads in flight or all failed (H39). */
+  heard: null | { identity: EraseIdentity; reach: Reach };
   said: ReadonlySet<EraseIdentity>;
   counted: ReadonlySet<EraseIdentity>;
   /** Another writer's erase now `shown`, counted when the tree showing it commits. */
@@ -171,7 +183,7 @@ export type EraseEvent =
   | { type: 'committed'; identity: EraseIdentity }
   /** The machine's read, begun for the heard erase `identity`, failed. */
   | { type: 'read-failed'; identity: EraseIdentity }
-  /** Read the heard erase again, its last read failed. */
+  /** Read the heard erase again, its reads all failed. */
   | { type: 'retry' };
 
 export type EraseEffect =
@@ -207,10 +219,12 @@ const say = (message: string): EraseEffect => ({ type: 'say-outcome', message })
 const ended = ({ refused: _refused, ...common }: Erasing): EraseState => ({ ...common, phase: 'idle' });
 /** Idle, the first read out of pending: an arrival reads at once. */
 const settled = (state: EraseState): boolean => state.phase === 'idle' && state.read !== 'pending';
-/** Settled, another writer's erase heard, and its last read failed (H39). */
-export const unreachable = (state: EraseState): boolean => settled(state) && state.heard?.reach === 'failed';
-/** The heard erase, its read asked for (a step that emits `read`). */
-const reading = (heard: EraseState['heard']): EraseState['heard'] => (heard === null ? null : { identity: heard.identity, reach: 'reading' });
+/** Idle, the first read shown, another writer's erase heard, and its reads all failed (H39). Not after a failed first read (L2). */
+export const unreachable = (state: EraseState): boolean => state.phase === 'idle' && state.read === 'shown' && state.heard?.reach.kind === 'failed';
+const inFlight = (reach: Reach): number => (reach.kind === 'reading' ? reach.inFlight : 0);
+/** The heard erase, one more read of it asked for (a step that emits `read`). */
+const reading = (heard: EraseState['heard']): EraseState['heard'] =>
+  (heard === null ? null : { identity: heard.identity, reach: { kind: 'reading', inFlight: inFlight(heard.reach) + 1 } });
 
 /** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it.
  *  The evidence this rests on: packages/health-core/src/erase-overtaken.test.ts
@@ -264,7 +278,12 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       return { state: { ...state, pending: null, counted: add(state.counted, event.identity) }, effects: [COUNT] };
     case 'arrived':
       // Heard until something shows it. Settled, read at once, even when shown: the change can carry another writer's rows.
-      return { state: { ...state, heard: { identity: keep(state.heard?.identity ?? null, event.identity), reach: 'reading' } }, effects: settled(state) ? [READ] : [] };
+      const reads = settled(state);
+      const identity = keep(state.heard?.identity ?? null, event.identity);
+      // The same erase again keeps its count (a read adds one; a failed one reads again at 1). Another starts its own.
+      const base = state.heard?.identity === identity ? state.heard : { identity, reach: { kind: 'reading', inFlight: 0 } as const };
+      const heard = reads ? reading(base) : base;
+      return { state: { ...state, heard }, effects: reads ? [READ] : [] };
     case 'loaded': {
       // Once: shown or failed. During this tab's erase the heard erase waits for the erase's end.
       if (state.read !== 'pending') return same;
@@ -290,17 +309,20 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       // A heard erase not yet shown (L1): every refused save asks for its read once, news or not (Q3).
       // No loop: a failed read's read-failed emits nothing; only the next refused save, arrival or retry reads again.
       const reread = state.heard === null ? [] : [READ];
-      const asked = state.heard?.reach === 'failed' ? { ...state, heard: reading(state.heard) } : state;
+      const asked = state.heard === null ? state : { ...state, heard: reading(state.heard) };
       if (state.said.has(event.askedUnder)) return { state: asked, effects: reread };
       return { state: { ...asked, said: add(state.said, event.askedUnder) }, effects: [{ type: 'alert-refused' }, ...reread] };
     }
-    case 'read-failed':
-      // Only the read of the heard erase, in flight: a late failure of an older erase's read marks nothing.
-      // No-op with nothing heard, and while erasing (own-end or own-failed then reads or drops it).
-      if (state.phase === 'erasing' || state.heard?.identity !== event.identity || state.heard.reach !== 'reading') return same;
-      return { state: { ...state, heard: { identity: event.identity, reach: 'failed' } }, effects: [] };
+    case 'read-failed': {
+      // One read of the heard erase off, in every phase; failed when none is left in flight. A late failure of an
+      // older erase's read touches nothing; nothing heard, or nothing in flight, is a no-op (never below zero).
+      if (state.heard?.identity !== event.identity) return same;
+      const left = inFlight(state.heard.reach) - 1;
+      if (left < 0) return same;
+      return { state: { ...state, heard: { identity: event.identity, reach: left === 0 ? { kind: 'failed' } : { kind: 'reading', inFlight: left } } }, effects: [] };
+    }
     case 'retry':
-      // Only when unreachable: never while erasing, loading, with nothing heard, or while its read is in flight.
+      // Only when unreachable: never while erasing, loading, after a failed first read, with nothing heard, or while a read is in flight.
       if (!unreachable(state)) return same;
       return { state: { ...state, heard: reading(state.heard) }, effects: [READ] };
   }

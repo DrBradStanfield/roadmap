@@ -305,4 +305,26 @@ describe('US-16 AC2g (H39): the machine holds a heard erase whose read failed', 
     expect(page.now().erase.shownErase).toBe(B);
     expect(page.now().erase.unreachable).toBe(false);
   });
+
+  it('US-16 AC2g (H39, F2): an older erase\'s read failing after a newer erase arrived leaves the newer one reachable', async () => {
+    const page = setup();
+    /** A read held until `release`, then failed. */
+    const held = () => {
+      let release!: () => void;
+      const gate = new Promise<void>(r => { release = r; });
+      page.fx.reloadValues.mockImplementationOnce(async () => { log.push('read'); await gate; throw new Error('read failed (test)'); });
+      return () => act(async () => { release(); });
+    };
+    const failB = held();
+    const failC = held();
+    await announced(B); // B's read, held open
+    await announced(C); // C's read, held open
+    await failB();
+    await settle();
+    expect(page.now().erase.unreachable).toBe(false); // B's failure is not C's: C's read is still in flight
+    await failC();
+    await settle();
+    expect(page.now().erase.unreachable).toBe(true); // C's own read failed
+    expect(page.reads()).toBe(2);
+  });
 });

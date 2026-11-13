@@ -26,7 +26,7 @@ import { tellChats } from './chatStore';
  *   writer's erase (the relay counts other changes only);
  * - alertRefused, sayOutcome: alerts.
  *
- * `unreachable` (H39): another writer's erase is heard and its last read
+ * `unreachable` (H39): another writer's erase is heard and all its reads
  * failed; `retry` reads it again.
  *
  * `eraseUnshown` stays a store query: true while the store holds an erase the
@@ -65,7 +65,7 @@ export interface Erase {
   loaded: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
-  /** Another writer's erase is heard and its last read failed (H39): saves are refused until a read lands (after a failed first read, L2, until a reload). */
+  /** Another writer's erase is heard and all its reads failed, the first read shown (H39): saves are refused until a read lands. Never after a failed first read (L2: its own unreadable note). */
   unreachable: boolean;
   /** Read that erase again; nothing unless `unreachable`. */
   retry: () => void;
