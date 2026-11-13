@@ -6,28 +6,13 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fields } from './untangle-progress.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'untangle');
 const LEDGERS = {
   leads: 'id,section,title,status,evidence,pr,durability_check,needs_brad',
   'state-leads': 'id,area,title,kind,status,evidence,pr,needs_brad',
 };
-
-// RFC 4180 fields of one line: commas split outside quotes, "" is a literal quote.
-function fields(line: string): string[] {
-  const out: string[] = [];
-  let cur = '';
-  let quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (quoted) {
-      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') quoted = false; else cur += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') { out.push(cur); cur = ''; } else cur += c;
-  }
-  expect(quoted, `unclosed quote in: ${line}`).toBe(false);
-  return [...out, cur];
-}
 
 describe('untangle ledgers: one file per row (US-64 AC31)', () => {
   for (const [name, header] of Object.entries(LEDGERS)) {
