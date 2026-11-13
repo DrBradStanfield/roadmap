@@ -2767,6 +2767,24 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(readOut(out).status).toBe('nothing');
     expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
   });
+  // With HOME unset the default record is the relative .codex-review/scratch-record.json, read against the folder the
+  // run starts in, so the fence covers that folder, not / (Codex, US-40 AC18).
+  const noHome = () => { const env = childEnv(); delete env.HOME; return env; };
+  it('--record with HOME unset: an --out inside the start folder is refused by the fence and nothing is written', () => {
+    const dir = freshRepo({ '.gitignore': 'out.json\n' });
+    const { r, started } = go(dir, ['--record', '--out', join(dir, 'out.json')], noHome());
+    fencedOut(r, '.codex-review/scratch-record.json');
+    expect(existsSync(join(dir, 'out.json'))).toBe(false);
+    expect(existsSync(join(dir, '.codex-review'))).toBe(false);
+    expect(started).toBe(false);
+  });
+  it('--record with HOME unset: an --out outside the start folder is not fenced off', () => {
+    const dir = freshRepo();
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    const { r } = go(dir, ['--record', '--out', out], noHome());
+    expect(r.stderr).not.toContain('does not exist yet and --out is inside the same folder');
+    expect(existsSync(out)).toBe(true);
+  });
   it('Codex R1: only --baseline treats "none" as nothing; a missing --subject named none with --out none is refused', () => {
     const dir = freshRepo({ '.gitignore': 'none\n' });
     const { r, started } = go(dir, ['--subject', 'none', '--baseline', 'none', '--out', 'none']);
@@ -2813,10 +2831,12 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(readdirSync(join(base, 'd')).sort()).toEqual(['link', 'missing.md']);
     expect(started).toBe(false);
   });
-  it('an --include spelled through a link and .. still overlaps by the linked path (e), as before', () => {
+  it('an --include spelled through a link and .. still overlaps by the linked path (e/sub), as before', () => {
+    // Read through the link, d/link/../sub is e/sub, which holds --out. Read lexically it would be d/sub, which is
+    // missing, so the fence would stop at d and this --out would pass: the pin tells the two judgements apart.
     const base = linkedDirs();
-    const out = join(base, 'e', 'out.json');
-    const { r, started } = go(freshRepo(), ['--include', `${base}/d/link/..`, '--out', out]);
+    const out = `${base}/e/sub/out.json`;
+    const { r, started } = go(freshRepo(), ['--include', `${base}/d/link/../sub`, '--out', out]);
     refusedOut(r, 'inside a reviewed input');
     expect(existsSync(out)).toBe(false);
     expect(started).toBe(false);

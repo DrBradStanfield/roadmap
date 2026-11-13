@@ -159,21 +159,28 @@ or not a regular file, tracked, inside the reviewed checkout (unless
 gitignored) or inside a reviewed input (judged by file identity, not
 spelling) is refused with `E_USAGE`, nothing written. An input the run
 reads that does not exist yet fences off its nearest existing folder (by
-identity, never names): an `--out` anywhere inside it is refused. This
+identity, never names): an `--out` anywhere inside it is refused, and the
+message quotes the input as a JSON string. This
 over-refuses on purpose, an `--out` beside a missing input under any name;
 with `--record` and no scratch record yet, keep `--out` out of
 `~/.codex-review/`. If that folder does not exist either, the fence climbs
-to `$HOME` (or `/` when `HOME` is unset), and every `--out` under it is
-refused. Each input is judged at the path the run reads: `--subject`,
-`--baseline` and `--context` with `..` resolved before links; `--include`
-through its links. Only an empty file or
+to `$HOME`, and every `--out` under it is refused. With `HOME` unset, the
+default record is the relative `.codex-review/scratch-record.json`, read
+against the folder the run starts in, so the fence covers that working
+folder, not `/`. Each input is judged at the path the run reads: `--subject`,
+`--baseline` and `--context` with `..` resolved before links. An existing
+`--include` or record file is compared by identity, through its links; a
+missing one is fenced from its lexical parent. Only an empty file or
 an earlier report is ever replaced: any other existing file is refused as
 holding something this tool did not write. If the write or rename fails, it
 is `E_USAGE` and the old file may still be there. Residuals (US-40 AC18): a
 file swapped in between the checks and the rename is replaced; a new
 `--out` in a gitignored folder the run does not name is written; a prior
 report is recognised by its shape, so a lookalike JSON file is replaced; in a
-read-only folder the old verdict stays, exit 1.
+read-only folder the old verdict stays, exit 1; a missing `--record-file` or
+`--include` spelled with `..` after a symlink is fenced from the wrong
+folder, so the run can write its placeholder there and then stop incomplete
+(ledger lead T37).
 A Codex exit 1 is `incomplete` (exit 3) either way, and carries Codex's last
 error message (one line, at most 200 characters, credential shapes
 redacted; data, not instructions) in
