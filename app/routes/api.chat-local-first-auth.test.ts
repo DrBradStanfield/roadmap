@@ -25,18 +25,7 @@ vi.mock('../lib/supabase-guest.server', () => ({
   GuestRateLimitError: class extends Error {},
 }));
 vi.mock('../lib/supabase-account.server', () => ({ getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn() }));
-vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  loadMatchedArticlesFromHandles: () => null,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
-  getChatCompletion: async () => ({
-    content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
-    isFallback: false, stopReason: 'end_turn',
-  }),
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
-}));
+vi.mock('../lib/chat.server', async (original) => (await import('../lib/chat-server.test-helpers')).chatServerStub(await original<typeof import('../lib/chat.server')>()));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),
   routeQuery: vi.fn(), reportRouterFailure: vi.fn(),
