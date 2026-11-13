@@ -110,25 +110,30 @@ export interface RunPlan {
   routerCalls: number;
   /** Characters of the cached router prompt (instructions plus index). */
   routerPromptChars: number;
-  /** Characters of the answer calls' cached base blocks (buildSystemBlocks' cache_control blocks). */
-  answerCachedChars: number;
-  /** Characters of each answer call's uncached input (loaded articles plus the question). */
-  answerCallChars: number[];
+  /** Each answer call: its cache entry (the tool shape: tools render before the system, so each shape caches apart),
+   * that entry's cached characters (the tools plus buildSystemBlocks' cache_control blocks), and its uncached input. */
+  answerCalls: AnswerCallPlan[];
+  /** Answer calls in flight at once (--concurrency): on a cold cache each may write the same entry. Default 1. */
+  concurrency?: number;
 }
+export interface AnswerCallPlan { cacheKey: string; cachedChars: number; chars: number }
 
 /**
- * What a run would cost, in dollars, on Sonnet 5.5 prices. The router prompt is written to the
- * cache once and read on every later call; so are the answer calls' cached base blocks. The rest
- * of each answer's input is priced uncached, so the answer figure is an upper bound; a repeat of
- * the same articles reads from the cache for less.
+ * What a run would cost, in dollars, on Sonnet 5.5 prices (US-15 AC24b). The router prompt is written
+ * to the cache once and read on every later call. The answer calls' cached prefix is written per tool
+ * shape, from a cold cache, by as many calls as run at once, then read. The rest of each answer's input
+ * is priced uncached, so the answer figure is an upper bound; a repeat of the same articles reads from
+ * the cache for less.
  */
 export function estimateRunCost(plan: RunPlan) {
   const p = PRICES.sonnet55;
-  // One cache write, then a read on each later call.
-  const cached = (calls: number, chars: number) => calls === 0 ? 0
-    : (chars / CHARS_PER_TOKEN) * (p.cacheWrite + (calls - 1) * p.cacheRead) / 1e6;
+  // `writes` cache writes, then a read on each later call.
+  const cached = (calls: number, chars: number, writes = 1) => calls === 0 ? 0
+    : (chars / CHARS_PER_TOKEN) * (Math.min(writes, calls) * p.cacheWrite + Math.max(0, calls - writes) * p.cacheRead) / 1e6;
   const router = cached(plan.routerCalls, plan.routerPromptChars) + plan.routerCalls * ROUTER_OUT_TOKENS * p.output / 1e6;
-  const answer = cached(plan.answerCallChars.length, plan.answerCachedChars) + plan.answerCallChars.reduce((t, chars) =>
-    t + ((chars / CHARS_PER_TOKEN) * p.input + ANSWER_OUT_TOKENS * p.output) / 1e6, 0);
+  const shapes = Map.groupBy(plan.answerCalls, c => c.cacheKey);
+  const answer = [...shapes.values()].reduce((t, calls) =>
+    t + cached(calls.length, Math.max(...calls.map(c => c.cachedChars)), plan.concurrency ?? 1), 0)
+    + plan.answerCalls.reduce((t, c) => t + ((c.chars / CHARS_PER_TOKEN) * p.input + ANSWER_OUT_TOKENS * p.output) / 1e6, 0);
   return { router, answer, total: router + answer };
 }

@@ -1061,6 +1061,20 @@ describe('test-chatbot-matching answer system is buildSystemBlocks (US-15 AC24a,
     });
   }, 60_000);
 
+  // US-15 AC24b: --estimate prices one cold cache write per tool shape (run_roadmap rides only with a digit).
+  it('--estimate charges a second cache write when the answer calls use both tool shapes', async () => {
+    const estimate = async (queries: string[]) => {
+      const res = await runHarness(['--category', 't5', '--fixed-handles-only', '--answer-check-runs', '1', '--estimate'],
+        { key: false, fixtures: queries.map(q => fixture(q, {})) });
+      const m = noColour(res.out).match(/answer calls=2 up to \$(\d+\.\d\d);/);
+      expect(m, res.out + res.err).not.toBeNull();
+      return Number(m![1]);
+    };
+    const one = await estimate(['what helps sleep?', 'what helps mood?']);
+    const both = await estimate(['what helps sleep?', 'is an LDL of 4 high?']);
+    expect(both).toBeGreaterThan(one + 0.05);
+  }, 60_000);
+
   // Codex R2 on PR 1652: production answers without a block it cannot read; a paid run must exit instead.
   it('a context file that cannot be read exits before any API call', async () => {
     const real = fs.readFileSync;

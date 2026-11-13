@@ -8,7 +8,8 @@ import { CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL, getArg as getArgOf
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
-import { loadSurfaces } from './chatbot-surfaces';
+import { loadSurfaces, youtubeTurn } from './chatbot-surfaces';
+import { chatToolsFor } from '../packages/health-core/src/run-roadmap';
 import { estimateRunCost } from './harness-answers';
 import { EMPTY_CHAT_CONTEXT, buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
@@ -267,17 +268,33 @@ export function hasAnswerCheck(q: TestQuery): boolean {
     || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit);
 }
 
+/** One answer call's system, messages and tools from these handles: what checkAnswer sends and --estimate prices. */
+export function answerRequest(q: TestQuery, handles: string[]) {
+  const video = YOUTUBE_VIDEOS.get(q);
+  const youtube = video && youtubeTurn(video, handles, q.query, q.history ?? [], FULL_INDEX);
+  const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(handles).content;
+  // Only production's builder makes the system (US-15 AC24a). The YouTube bot's platform context sits where the
+  // widget's user data does (runPipeline); a fixture with no user_context gets production's empty context.
+  const platformContext = youtube ? youtube.platformContext : USER_CONTEXTS.get(q) ?? EMPTY_CHAT_CONTEXT.userContextJson;
+  const system = buildSystemBlocks(platformContext,
+    { surfaceContext: q.surface && POSTURES.get(q.surface), savedChat: SAVED_CHATS.get(q) ?? '', blogArticles: matchedContent || null });
+  const messages = youtube ? youtube.messages : [...q.history ?? [], { role: 'user' as const, content: q.query }];
+  // As production: the tools change what the model writes. The YouTube bot has none (US-15 AC19).
+  return { system, messages, tools: video ? undefined : chatToolsFor(messages) };
+}
+
 if (estimateOnly) {
-  // Routed cases are priced as if routing passes and loads their expected handles, on production's cached base blocks.
-  const answerCachedChars = buildSystemBlocks(EMPTY_CHAT_CONTEXT.userContextJson, { savedChat: '' })
-    .reduce((n, b) => n + (b.cache_control ? b.text.length : 0), 0);
-  const answerCallChars = suite.filter(hasAnswerCheck).flatMap(q => {
-    const chars = q.query.length
-      + (loadMatchedContent(Array.isArray(q.expected) ? q.expected : q.answer_handles!).content ?? '').length;
-    return Array<number>(answerCheckRuns).fill(chars);
+  // Routed cases are priced as if routing passes and loads their expected handles. Each call's cached prefix is
+  // its tools plus the cache_control blocks; each tool shape is its own cache entry (US-15 AC24b).
+  const answerCalls = suite.filter(hasAnswerCheck).flatMap(q => {
+    const { system, messages, tools } = answerRequest(q, Array.isArray(q.expected) ? q.expected : q.answer_handles!);
+    const size = (cached: boolean) => system.reduce((n, b) => n + (!!b.cache_control === cached ? b.text.length : 0), 0);
+    const call = { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
+      chars: size(false) + JSON.stringify(messages).length };
+    return Array(answerCheckRuns).fill(call);
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
-  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCachedChars, answerCallChars });
-  console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCallChars.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
+  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCalls, concurrency });
+  console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCalls.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
   process.exit(0);
 }
