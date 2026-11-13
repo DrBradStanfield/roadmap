@@ -263,8 +263,7 @@ export function MixedUnitsNote({ label, units }: { label: string; units: string[
 export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [readFailed, setReadFailed] = useState(false);
+  const [read, setRead] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
   // Selected metrics (initialized after first fetch)
@@ -277,11 +276,11 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    // A failed read ends the wait and claims nothing (US-06 AC4c); reported as the main form's first read is.
-    loadAllHistory().then(setMeasurements, error => {
-      setReadFailed(true);
+    // A failed read ends the wait and claims nothing (US-21 AC3b); reported as the main form's first read is.
+    loadAllHistory().then(rows => { setMeasurements(rows); setRead('ready'); }, error => {
+      setRead('failed');
       Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } });
-    }).finally(() => setLoading(false));
+    });
     loadLabValues().then(rows => { if (rows) setLabVals(rows); });
     loadMedicationHistory().then(setMedHistory);
   }, []);
@@ -374,9 +373,9 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     <div className="history-panel">
       <h2>Health History</h2>
 
-      {loading && measurements.length === 0 ? (
+      {read === 'loading' ? (
         <p className="history-loading">Loading history...</p>
-      ) : readFailed ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
+      ) : read === 'failed' ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (
         <>

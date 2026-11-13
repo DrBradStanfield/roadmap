@@ -39,9 +39,9 @@ describe('US-07 — complete local history', () => {
   });
 });
 
-// US-06 AC4c: a history read that fails ends the wait and claims nothing. Before,
+// US-21 AC3b: a history read that fails ends the wait and claims nothing. Before,
 // the load had no catch, so a rejected read left "Loading history..." on screen for good.
-describe('US-06 AC4c — a failed history read', () => {
+describe('US-21 AC3b — a failed history read', () => {
   it('ends Loading history, never says there are no measurements, and reports tags only', async () => {
     const error = new Error('read failed');
     mocks.loadAllHistory.mockRejectedValue(error);
