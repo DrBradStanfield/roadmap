@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { BLOOD_TABLE, assertDesktopLayout,assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { BLOOD_TABLE, advisory, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -34,7 +34,7 @@ describe('US-20: WebKit deployment gate', () => {
 describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
-    oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
+    oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761, chatViewportWidth: 390,
     shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountTitleButtons: 0, accountSignInHeight: 44, accountSignInBackground: 'rgb(0, 109, 91)',
     accountSignInLabel: 'Keep my record in Dropbox or Google Drive', accountFirstPart: 'storage',
   };
@@ -55,6 +55,12 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }
+  });
+  // US-62 AC29: at 390 wide the phone chat card ends 12px above the tab bar (styles.css, ceb48e70b).
+  it('passes a 12px gap above the bar at 390, and fails a gap of 0 or 20', () => {
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 749, barTopOnChat: 761 })).not.toThrow();
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 761, barTopOnChat: 761 })).toThrow('12px');
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 741, barTopOnChat: 761 })).toThrow('12px');
   });
 });
 
@@ -194,6 +200,37 @@ describe('US-62 AC29 (design re-check 2026-11-06): WebKit value page gate', () =
     ] as const) {
       expect(() => assertValuePage({ ...valid, ...change })).toThrow(message);
     }
+  });
+});
+
+describe('US-62 AC10b (H78): WebKit focus ring gate', () => {
+  const teal = { active: true, outlineStyle: 'solid', outlineWidth: '2px', outlineColor: 'rgb(0, 124, 106)', outlineOffset: '-2px', boxShadow: 'none' };
+  it('passes when the date box draws the Value box ring', () => {
+    expect(() => assertFocusRing({ date: teal, value: teal })).not.toThrow();
+  });
+  it('fails on the live WebKit read before the fix: the theme\'s outline, style none', () => {
+    const date = { ...teal, outlineStyle: 'none', outlineWidth: '3px', outlineColor: 'rgb(26, 26, 26)', outlineOffset: '0px' };
+    expect(() => assertFocusRing({ date, value: teal })).toThrow('the date box shows no focus ring');
+  });
+  it('fails when focus never reached the date box, or its ring differs from the Value box', () => {
+    expect(() => assertFocusRing({ date: { ...teal, active: false }, value: teal })).toThrow('did not reach the date box');
+    expect(() => assertFocusRing({ date: { ...teal, outlineColor: 'rgb(26, 26, 26)' }, value: teal })).toThrow('differs from the Value box');
+    expect(() => assertFocusRing({ date: teal, value: { ...teal, outlineStyle: 'none' } })).toThrow('the Value box shows no focus ring');
+  });
+  // H90: a new probe is advisory until one green production deploy: printed, never raised.
+  const labels = { passed: (r: string) => `desktop 1440: focus rings verified ${r}`, failed: 'desktop 1440: focus ring probe' };
+  it('prints a pass with its reading', async () => {
+    const log: string[] = [];
+    await advisory(async () => 'teal', labels, (line: string) => log.push(line));
+    expect(log).toEqual(['desktop 1440: focus rings verified teal']);
+  });
+  it('prints a failing assert (or a missing box) and does not raise it', async () => {
+    const log: string[] = [];
+    const date = { ...teal, outlineStyle: 'none' };
+    await expect(advisory(async () => assertFocusRing({ date, value: teal }), labels, (line: string) => log.push(line))).resolves.toBeUndefined();
+    await advisory(async () => { throw new Error('locator timed out'); }, labels, (line: string) => log.push(line));
+    expect(log[0]).toMatch(/^desktop 1440: focus ring probe FAILED \(advisory\): the date box shows no focus ring/);
+    expect(log[1]).toBe('desktop 1440: focus ring probe FAILED (advisory): locator timed out');
   });
 });
 

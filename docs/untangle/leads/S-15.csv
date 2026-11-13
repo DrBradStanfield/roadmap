@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-S-15,S2 server,One old-widget adapter and one lab-extraction error report,not started,lab-extract-one.server.ts:49 withDaysItReads and :71 withRefusalsItReads are still two adapters,,,no
+S-15,S2 server,One old-widget adapter and one lab-extraction error report,done,lab-extract-one.server.ts forWidget is the one old-widget adapter (single file and batch poll) and reportLabImportError the one failure report (extractOneFile and the api.lab-import-v2 outer catch); withDaysItReads and withRefusalsItReads are gone,1629,app/lib/lab-import-pins.server.test.ts pins the exact bytes each client version gets and each failure's exact report,no
