@@ -401,7 +401,8 @@ final class AppleHealthSync {
 
     /// A typed save moves the record's `revision`; the next refresh writes it to Health. An erase
     /// whose draw failed opening or closing `predatesErase` starts one too. A redraw of the same
-    /// record (coming forward, midnight) moves neither, so it starts no HealthKit pass (F3).
+    /// record (coming forward, midnight) moves neither, so it starts no HealthKit pass (F3);
+    /// a per-test units choice moves `revision`, so it starts one.
     private func watchRecord() {
         let seen = (store.revision, store.predatesErase)
         withObservationTracking { _ = (store.revision, store.predatesErase) } onChange: { [weak self] in

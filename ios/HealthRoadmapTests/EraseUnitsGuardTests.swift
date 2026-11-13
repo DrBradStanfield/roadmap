@@ -4,8 +4,9 @@ import XCTest
 /// S52 follow-up F6 (US-25 AC16, AC16f): after "Delete all my data" the eraser puts the user's units
 /// back only onto a record it can read (DataEraser.keepUnits' guard). A cloud erase whose draw
 /// fails leaves the store holding the erased record with no drawing, so `myData` is nil: the
-/// units are not put back and no edit reaches the cloud session. The store's own guard on an
-/// undrawn record would refuse such an edit too; this pins what the user and the cloud see.
+/// units are not put back and no edit reaches the cloud session. This pins the outcome, not the
+/// guard alone: the store's own undrawn guard (RecordStore.applyInTurn) would refuse the edit too,
+/// so the test still passes with keepUnits' guard removed.
 @MainActor
 final class EraseUnitsGuardTests: XCTestCase {
     private var folder: URL!

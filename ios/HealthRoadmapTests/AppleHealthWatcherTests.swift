@@ -43,9 +43,15 @@ final class AppleHealthWatcherTests: XCTestCase {
     }
 
     /// The passes started since `reads`, once every pass the change started has finished.
-    private func passCount(since reads: Int, _ health: FakeHealthStore) async -> Int {
+    /// Polled, not one fixed wait, so a slow simulator caught mid-pass is waited out.
+    private func passCount(since reads: Int, _ w: Watched) async -> Int {
         await settle()
-        let made = health.reads - reads
+        for _ in 0..<300 {
+            let whole = (w.health.reads - reads) % HealthKind.allCases.count == 0
+            if case .working = w.sync.status {} else if whole { break }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        let made = w.health.reads - reads
         XCTAssertEqual(made % HealthKind.allCases.count, 0, "whole passes only")
         return made / HealthKind.allCases.count
     }
@@ -63,7 +69,7 @@ final class AppleHealthWatcherTests: XCTestCase {
         await w.store.redraw(now: .now.addingTimeInterval(86_400)).value
 
         XCTAssertEqual(w.store.draws, draws + 2, "both redraws drew")
-        let passes = await passCount(since: reads, w.health)
+        let passes = await passCount(since: reads, w)
         XCTAssertEqual(passes, 0, "a redraw of the same record reads nothing from HealthKit")
     }
 
@@ -75,7 +81,7 @@ final class AppleHealthWatcherTests: XCTestCase {
         await XCTAssertSaved(await w.store.apply(.add(metric: "waist", value: 90, day: "2026-10-21")))
 
         XCTAssertEqual(w.store.revision, revision + 1)
-        let passes = await passCount(since: reads, w.health)
+        let passes = await passCount(since: reads, w)
         XCTAssertEqual(passes, 1, "the typed value goes to Health in one pass")
     }
 
@@ -92,19 +98,19 @@ final class AppleHealthWatcherTests: XCTestCase {
         await w.store.showErased(nil).value
         XCTAssertTrue(w.store.predatesErase)
         XCTAssertEqual(w.store.revision, revision, "the window opens with no new revision")
-        var passes = await passCount(since: reads, w.health)
+        var passes = await passCount(since: reads, w)
         XCTAssertEqual(passes, 1, "the window opening")
 
         reads = w.health.reads
         await w.store.redraw().value
-        passes = await passCount(since: reads, w.health)
+        passes = await passCount(since: reads, w)
         XCTAssertEqual(passes, 0, "a redraw inside the window")
 
         reads = w.health.reads
         await w.store.showCloud(HealthEngine.CloudView(record: held, erase: "e2", session: 2, order: 1)).value
         XCTAssertFalse(w.store.predatesErase)
         XCTAssertEqual(w.store.revision, revision, "the window closes on the same record text")
-        passes = await passCount(since: reads, w.health)
+        passes = await passCount(since: reads, w)
         XCTAssertEqual(passes, 1, "the window closing")
     }
 }
