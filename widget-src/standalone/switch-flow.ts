@@ -25,6 +25,8 @@
  */
 import { useEffect, useSyncExternalStore } from 'react';
 import { logOffId, type LogOffId } from '../src/lib/storage';
+import { getBackendKind } from '../src/lib/roadmap-data';
+import { exitAnswered, rereadStoredHome } from '../src/storage/sign-in-state';
 import type { Backend } from './connect';
 
 /** The picker step a move started from, where a reopened picker shows it. */
@@ -124,6 +126,7 @@ export interface Move {
 /** Claim the flow with `event`; when it is claimed, run the move and report how it ended. */
 export async function runMove(event: SwitchEvent, move: (m: Move) => Promise<void>): Promise<void> {
   if (!dispatch(event)) return;
+  exitAnswered(); // any move answers the reconnect panel's exit question (US-09 AC51)
   const { run } = flow;
   const gen = logOffId();
   try {
@@ -144,13 +147,17 @@ if (typeof window !== 'undefined') {
  *  before the move counts as over: a page that really leaves is gone by then. */
 export const HAND_OFF_MS = 15_000;
 
-/** Every surface that shows the flow frees a hand-off that never left (US-09 AC45a). */
+/** Every surface that shows the flow frees a hand-off that never left (US-09 AC45a). A page on this
+ *  browser's copy then shows the home this browser stores (AC52); a page on a cloud still runs on it. */
 export function useSwitchFlow(): SwitchFlow {
   const state = useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow, getSwitchFlow);
   const handedOff = state.kind === 'navigating' ? state.run : null;
   useEffect(() => {
     if (handedOff === null) return;
-    const timer = setTimeout(() => dispatch({ type: 'stayed', run: handedOff }), HAND_OFF_MS);
+    const timer = setTimeout(() => {
+      dispatch({ type: 'stayed', run: handedOff });
+      if (getBackendKind() === 'local') rereadStoredHome();
+    }, HAND_OFF_MS);
     return () => clearTimeout(timer);
   }, [handedOff]);
   return state;
