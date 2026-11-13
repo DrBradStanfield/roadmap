@@ -283,6 +283,7 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 /** The page left by a reload, and its departure ran. */
@@ -316,6 +317,42 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (a) "Use this browser only" keeps 
     await openReconnectPanel(cloud);
     await panelEdit();
     expect(await useThisBrowserOnly(cloud)).toEqual(PANEL_ONLY);
+  });
+});
+
+describe('US-09 AC48 (Codex re-check R1, owner): exit (a) from a load-time fallback needs its save to land', () => {
+  const pageWeights = () => Object.fromEntries(page!.data.loadAllHistorySync()
+    .filter((m) => m.metricType === 'weight').map((m) => [m.recordedAt.slice(0, 10), m.value]));
+
+  it('google-drive: an edit this browser refuses to store stops "Use this browser only"; the edit stays in the page', async () => {
+    await openReconnectPanel('google-drive');
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'health_roadmap_file_v2') throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    await edit(PANEL_EDIT);
+    fireEvent.click(button('Use this browser only')!);
+    await until(() => reload.mock.calls.length > 0 || page!.switchFlow.getSwitchFlow().kind === 'idle', 'the move to end');
+    await turns();
+    expect(reload).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expect(localStorage.getItem(DRIVE_CONFIG)).not.toBeNull(); // not disconnected
+    expect(pageWeights()).toMatchObject({ [PANEL_EDIT.day]: PANEL_EDIT.value });
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Could not save on this device (local storage may be full).');
+  });
+
+  it('google-drive: after another tab logs off, the refused save is nothing to copy and the exit finishes', async () => {
+    await openReconnectPanel('google-drive');
+    await edit(PANEL_EDIT);
+    localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
+    const { healthWritesAllowed } = await import('../src/lib/storage');
+    expect(healthWritesAllowed()).toBe(false);
+    fireEvent.click(button('Use this browser only')!);
+    await reloaded();
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(await deviceWeights()).toEqual({}); // nothing written after the log-off
   });
 });
 
