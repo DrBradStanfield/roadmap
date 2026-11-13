@@ -9,8 +9,10 @@ struct RecordSection: View {
 
     var body: some View {
         Section {
-            ShareLink(item: RecordExport(json: store.recordJSON), preview: SharePreview(RecordExport.fileName)) {
-                Label("Export my record", systemImage: "square.and.arrow.up")
+            if let json = store.readable?.json {
+                ShareLink(item: RecordExport(json: json), preview: SharePreview(RecordExport.fileName)) {
+                    Label("Export my record", systemImage: "square.and.arrow.up")
+                }
             }
             NavigationLink {
                 EraseView(sync: sync)

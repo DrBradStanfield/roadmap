@@ -18,7 +18,7 @@ extension RecordStore {
         }
     }
 
-    var mark: Mark { Mark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
+    var mark: Mark { Mark(erase: cloudErase, epoch: heldData?.eraseEpoch, erasures: erasures) }
 
     /// `applyNow` for an Apple Health batch (US-72 AC10), on `mark`, the record it was read
     /// from. Nil when an erase since moved the mark, or the mark was taken on the other side

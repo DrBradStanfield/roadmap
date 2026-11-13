@@ -215,7 +215,7 @@ final class DataEraser {
     /// The units are a setting, not a health value: the web keeps its unit
     /// preference through an erase, so the app puts the user's choice back.
     private func keepUnits(_ units: String?) async {
-        guard let units, store.myData?.unitSystem != units else { return }
+        guard let units, let now = store.myData?.unitSystem, now != units else { return }
         _ = await store.apply(.units(units))
     }
 }

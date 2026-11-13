@@ -185,7 +185,7 @@ struct LabReviewView: View {
     private func load() async {
         guard review == nil, let json = result.extractionJSON else { return }
         do {
-            let loaded = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
+            let loaded = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.readable?.json ?? "", sourceFileName: result.name,
                                               contentHash: result.original?.contentHash ?? "", deviceId: store.deviceId)
             review = loaded
             // A report shown before keeps what the person chose on it (AC8b).

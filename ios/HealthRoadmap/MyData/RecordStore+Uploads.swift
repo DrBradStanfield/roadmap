@@ -23,6 +23,7 @@ extension RecordStore {
         // Another record since the review opened (a sync, a Disconnect's read): refused before
         // anything is read against the record now shown, as `applyInTurn` refuses it.
         guard shows(seen) else { return .failure(LabRefusal(message: Self.recordChanged)) }
+        if predatesErase || (drawn == nil && problem == nil) { return .failure(LabRefusal(message: Self.recordChanged)) }
         let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
         do {
             let summary: Result<LabSaveSummary, LabRefusal>
@@ -70,6 +71,7 @@ extension RecordStore {
         guard shows(seen) else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
+        if predatesErase || (drawn == nil && problem == nil) { return .refused(Self.recordChanged) }
         if seen.erase == nil, let problem { return .refused(problem.words) }
         let before = recordJSON
         do {

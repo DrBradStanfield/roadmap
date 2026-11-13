@@ -184,7 +184,7 @@ struct LabReportSave: Equatable {
         guard result.failure == nil, let json = result.extractionJSON else { return .success(.notSaved("Could not be read")) }
         let review: LabReview
         do {
-            review = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.recordJSON, sourceFileName: result.name,
+            review = try await engine.labReview(extractionJSON: json, now: .now, recordJSON: store.readable?.json ?? "", sourceFileName: result.name,
                                                 contentHash: result.original?.contentHash ?? "", deviceId: store.deviceId)
         } catch {
             return .success(.notSaved("Could not be read"))

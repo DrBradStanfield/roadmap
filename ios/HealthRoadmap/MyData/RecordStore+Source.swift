@@ -138,7 +138,7 @@ extension RecordStore {
     }
 
     var screen: Screen {
-        Screen(erase: source.erase, epoch: myData?.eraseEpoch, erasures: erasures, units: myData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: myData?.lpaUnit ?? "")
+        Screen(erase: source.erase, epoch: heldData?.eraseEpoch, erasures: erasures, units: heldData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: heldData?.lpaUnit ?? "")
     }
 
     /// While a cloud record is shown (US-25 AC11): the erase the screen shows. Nil: the record is

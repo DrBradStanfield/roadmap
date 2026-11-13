@@ -5,14 +5,14 @@ import Foundation
 extension RecordStore {
     /// The units the row for `metric` shows: its per-test choice, else the record's (AC17e).
     func units(for metric: String) -> String {
-        unitChoices.system(for: metric, record: myData?.unitSystem ?? "si")
+        unitChoices.system(for: metric, record: heldData?.unitSystem ?? "si")
     }
 
     /// The range a value typed for `metric` is read against: in `unit` (an Lp(a) unit or
     /// "si"/"conventional") when given, else in the units the metric is shown in (US-02 AC7);
     /// nil from an older engine.
     func inputRange(for metric: String, in unit: String? = nil) -> ClosedRange<Double>? {
-        myData?.inputRange(metric, unit ?? units(for: metric))
+        heldData?.inputRange(metric, unit ?? units(for: metric))
     }
 
     /// One test to the other units, as the web's unit chip does. Back to the record's
@@ -22,7 +22,7 @@ extension RecordStore {
         unitSwitches += 1
         return chain {
             defer { self.unitSwitches -= 1 }
-            guard row.switchable == true, let data = self.myData else { return }
+            guard row.switchable == true, let data = self.heldData else { return }
             let choices = self.unitChoices.setting(row.metric, to: system == data.unitSystem ? nil : system)
             // Drawn first: a choice the screen cannot show is not kept, so labels and reading agree.
             guard let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: .now, deviceId: self.deviceId, units: choices.json) else { return }
@@ -64,7 +64,7 @@ extension RecordStore {
 
     /// Lp(a)'s unit as the record holds it now, for an Lp(a) row; nil for any other.
     func lpaUnit(for row: MyData.Row) -> String? {
-        Self.lpaUnit(for: row, recordUnit: myData?.lpaUnit)
+        Self.lpaUnit(for: row, recordUnit: heldData?.lpaUnit)
     }
 
     /// Lp(a)'s unit only on the core Lp(a) row: a lab test filed as "lpa" is read in its own

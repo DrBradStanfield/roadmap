@@ -15,7 +15,7 @@ extension AppleHealthSync {
     /// One drain deadline for the whole erase (lead H34), so the Health delete starts within
     /// `drainBound`, never after a second drain.
     func erased(wasConnected: Bool) async -> Bool {
-        if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
+        if let source = store.recordSource, let data = store.myData { memory.eraseSeen = EraseSeen(epoch: data.eraseEpoch ?? 0, source: source) }
         disconnect()
         guard client.isAvailable, wasConnected || !memory.owed.ids.isEmpty || memory.owedUnreadable else { return true }
         let deadline = ContinuousClock.now + Self.drainBound
