@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-P8,plan view,Nothing says a send is running after a refused window,minor,not started,widget-src/src/components/PlanPdf.tsx:358 the capture box's PdfNote shows only with an email error (pdfBlocked && emailError); while the send runs after a refused window only the button's 'Sending...' (:352-354) shows,,no
+P8,plan view,Nothing says a send is running after a refused window,minor,done,"PlanPdf.tsx GuestEmailCapture's PdfNote shows while the send runs too (pdfBlocked && (emailError || state === 'sending')), with the existing PDF_WINDOW_BLOCKED words; the print flags become one PrintState (lib/plan-print-machine.ts). Pinned by PlanPdf.print.test.tsx (lead P8)",1740,no
