@@ -100,6 +100,59 @@ describe('an old answer outside the PSA range decides nothing, as an unusable ro
   });
 });
 
+describe('an out-of-range old answer newer than every row is not the PSA read (US-06 AC14, AC21 item 6)', () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(NOW); });
+  afterEach(() => { vi.useRealTimers(); });
+  const RAISED_THEN_VAGUE: Row[] = [{ value: 4.5, day: '2026-01-10' }, VAGUE];
+  const chatPlan = (file: RoadmapFile) => {
+    const payload = chatContextOf(
+      { sex: 'male', heightCm: 175, weightKg: 75, birthYear: 1966, birthMonth: 1 }, 'si', [],
+      fileScreeningRows(file.screenings), currentValueRows(file),
+    );
+    return (JSON.parse(buildChatContextJson(payload)!).currentSuggestions as Array<{ id: string; description: string }>)
+      .filter((s) => s.id.startsWith('screening-prostate'));
+  };
+
+  describe.each([['-1 (below 0)', '-1'], ['10001 (above 10000)', '10001']])('answer %s dated 2026-09: the rows stand', (_what, value) => {
+    const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-09' });
+    it('plan: "Repeat PSA test" with the carried sentence', () => {
+      expect(cards(file)).toEqual([
+        expect.objectContaining({ id: 'screening-prostate-repeat', description: expect.stringContaining(CARRIED) }),
+      ]);
+    });
+    it('reminders: 3 months after the vague row', () => {
+      expect(reminders(file)).toEqual(['2026-09-01']);
+    });
+    it('chat plan: "Repeat PSA test", never quoting the answer', () => {
+      expect(chatPlan(file).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
+      expect(JSON.stringify(chatPlan(file))).not.toContain(value);
+    });
+  });
+
+  it('an answer of 0 dated 2026-09 is in range: it is the PSA read and ends the rule', () => {
+    const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '0', prostateLastDate: '2026-09' });
+    expect(cards(file)).toEqual([]);
+    expect(reminders(file)).toEqual([]);
+    expect(chatPlan(file)).toEqual([]);
+  });
+
+  it('a valid answer newer than every row still wins: "Elevated PSA" reads 6.5, 3 months from it', () => {
+    const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '6.5', prostateLastDate: '2026-09' });
+    expect(cards(file)).toContainEqual(expect.objectContaining({ id: 'screening-prostate-elevated', description: expect.stringContaining('6.5') }));
+    expect(reminders(file)).toEqual(['2026-12-01']);
+    expect(chatPlan(file).map((s) => s.id)).toContain('screening-prostate-elevated');
+  });
+
+  // Open clinical question for Brad: a dated answer with no value, newer than a raised row, wins by
+  // date and ends the rule. Pinned as on main; this change must not move it.
+  it('UNCHANGED: a dated answer with no value, newer than the rows, wins by date; the rule ends', () => {
+    const file = fileWith(RAISED_THEN_VAGUE, { prostateLastDate: '2026-09' });
+    expect(cards(file)).toEqual([]);
+    expect(reminders(file)).toEqual([]);
+    expect(chatPlan(file)).toEqual([]);
+  });
+});
+
 describe('the old answer takes its place in the chronology (US-06 AC14, AC21 item 6)', () => {
   const holds = (file: RoadmapFile, dueAt: string) => {
     expect(reminders(file)).toEqual([dueAt]);

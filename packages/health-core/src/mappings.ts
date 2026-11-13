@@ -255,6 +255,12 @@ export function medicationsToInputs(
 // The screening read path lives in screening-inputs.ts (split for Change 2b); its importers keep this path.
 export { SCREENING_RANGES, screeningRange, screeningsToInputs, type ApiScreening } from './screening-inputs';
 
+/** In the PSA range (0 to 10,000 ng/mL), the one a row and an old answer must both meet. */
+export const inPsaRange = (value: number | undefined): value is number => {
+  const { min, max } = UNIT_DEFS.psa.validationRange.si;
+  return value !== undefined && value >= min && value <= max;
+};
+
 /**
  * US-06 AC14: the PSA the plan's prostate cards and PSA reminder read. PSA is
  * a measurement now (no client writes `prostate_psa_value` or
@@ -264,14 +270,16 @@ export { SCREENING_RANGES, screeningRange, screeningsToInputs, type ApiScreening
  * wins, since the answer gives no day. A PSA printed as a limit is graded
  * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
  * value, and its day still counts; `planPsa`'s `raisedBefore` rides on the
- * limit (US-06 AC21 item 6).
+ * limit (US-06 AC21 item 6). An old answer whose value fails `inPsaRange`
+ * never wins, whatever its date: the row stands.
  */
 export function withPsaMeasurement(
   screenings: import('./types').ScreeningInputs,
   psa: { value: number; recordedAt: string; comparator?: unknown; raisedBefore?: true } | undefined,
 ): import('./types').ScreeningInputs {
   const day = psa?.recordedAt.slice(0, 10);
-  if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
+  const unusable = screenings.prostatePsaValue !== undefined && !inPsaRange(screenings.prostatePsaValue);
+  if (!psa || !day || (!unusable && (screenings.prostateLastDate ?? '') > day)) return screenings;
   const { comparator } = comparatorOf(psa);
   if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
   const graded = limitRepresentative('psa', comparator, psa.value);
