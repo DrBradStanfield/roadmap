@@ -5,11 +5,19 @@ exports[`US-12 / US-13 pins (W2-6) — one upload saves the same store inputs > 
  "ldlShown": "120",
  "replaceBoxes": [
   "Replace the saved HDL Cholesterol value from 2 Sep 2025",
+  "Replace the saved Triglycerides value from 2 Sep 2025",
   "Replace the saved Ferritin value from 2 Sep 2025"
  ],
  "measurements": [
   [
    [
+    {
+     "metricType": "triglycerides",
+     "value": 1.1,
+     "recordedAt": "2025-09-02T00:00:00.000Z",
+     "source": "lab_import",
+     "correctsId": "T"
+    },
     {
      "metricType": "ldl",
      "value": 3.1031807602792862,
@@ -17,10 +25,11 @@ exports[`US-12 / US-13 pins (W2-6) — one upload saves the same store inputs > 
      "source": "lab_import_edited"
     },
     {
-     "metricType": "triglycerides",
-     "value": 1.1,
+     "metricType": "lpa",
+     "value": 5,
      "recordedAt": "2025-09-02T00:00:00.000Z",
-     "source": "lab_import"
+     "source": "lab_import",
+     "comparator": "<"
     }
    ]
   ]
@@ -37,6 +46,14 @@ exports[`US-12 / US-13 pins (W2-6) — one upload saves the same store inputs > 
      "recordedAt": "2025-09-02T00:00:00.000Z",
      "source": "lab_import",
      "correctsId": "F"
+    },
+    {
+     "metricName": "CRP",
+     "value": 5,
+     "unit": "mg/L",
+     "recordedAt": "2025-09-02T00:00:00.000Z",
+     "source": "lab_import",
+     "comparator": "<"
     }
    ]
   ]
