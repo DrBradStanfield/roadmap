@@ -114,6 +114,11 @@ enum Cover: Equatable {
         if erasedElsewhere { return offer == .idle ? .erase : .closeOffer }
         return uncounted ? .takeCount : nil
     }
+
+    /// The record shown is its source's own: the phone's when local-only, the opened cloud record
+    /// when connected. Only it sets the erase count; the phone's copy of a connected cloud never
+    /// does, so a finish before the cloud opens leaves the count for the opening to take (S43).
+    static func countable(source: String, open: Bool) -> Bool { source.isEmpty || open }
 }
 
 /// The backup offer after the person's third save (US-57 AC8; iPhone survey S16): idle, the
