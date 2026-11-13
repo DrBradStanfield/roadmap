@@ -6,7 +6,7 @@
 #   1. the sha is 40 hex (exit 3)
 #   2. the PR is open (5) and its head is that sha (6)
 #   3. gate files: a PR that changes tools/merge-gated.sh, tools/generated-files.json or .github/workflows/ci.yml
-#      must not be judged by the copy it changed. This script then runs `git fetch origin main`, writes main's
+#      must not be judged by the copy it changed. This script then fetches main (explicit refspec), writes main's
 #      tools/merge-gated.sh and tools/generated-files.json (when main has one) to a temp dir and runs that copy
 #      with the same arguments and MERGE_GATED_FROM_MAIN=1, exiting with its code. A failed fetch, or no or an
 #      empty copy on main, refuses (16): the owner merges that PR by hand. A copy run with the
@@ -26,13 +26,18 @@
 #      2026-11-13: it warns, it does not block) never refuses. Pending or not green, it gets one stderr note. The
 #      list is a literal in the jq filter below, so nothing at call time can widen it.
 #   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
-#      nothing but gh, git, jq and perl, never a command from the manifest or the PR. For each row of
-#      tools/generated-files.json (the copy beside this script; main's when the PR changes it, step 3) whose
-#      output or inputs a changed file matches (globs: * matches any run of characters, slash included, as in a
-#      git pathspec), it fetches main and the PR head and refuses (9) when `git log <merge-base>..origin/main -- <output> <inputs>` lists a
-#      commit: main changed the output or an input since the PR's base, so the PR's CI never saw them together.
-#      The refusal says to merge main first and let CI run, naming the generator. CI's freshness tests do the real
-#      check. A PR that touches no row makes no git call here. A failed fetch or no merge base refuses (4).
+#      nothing but gh, git, jq and perl, never a command from the manifest or the PR (a row's `script` is only a
+#      pathspec). It fetches main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
+#      head, takes their merge base, and lists the PR's paths with `git diff --name-only --no-renames`, so a rename
+#      shows its old path too (gh lists only the new one): every PR fetches, as moving an input away hides from gh.
+#      For each row of tools/generated-files.json (the copy beside this script; main's when the PR changes it,
+#      step 3) whose output or an input matches a PR path (globs: * matches any run of characters, slash included,
+#      as in a git pathspec), it refuses (9) when `git log <merge-base>..origin/main -- <output> <script>` lists a
+#      commit. Main side narrowed to output and script: main's CI keeps main fresh, so an input change on main
+#      that alters the output also changed the output there; one that leaves the output alone cannot make the
+#      merged output stale. Residual: a main input change that matters only beside the PR's input change; main's
+#      CI catches it right after the merge. The refusal says to merge main first and let CI run, naming the
+#      generator. CI's freshness tests do the real check. A failed fetch or diff, or no merge base, refuses (4).
 #   7. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
@@ -82,10 +87,8 @@ case "$head" in
 esac
 
 files=$(gh pr view "$pr" --json changedFiles,files --jq '[.files // [] | .[].path] as $p
-  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh" or . == "tools/generated-files.json")) \(any($p[]; . == ".github/workflows/ci.yml"))", $p[]') \
+  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh" or . == "tools/generated-files.json")) \(any($p[]; . == ".github/workflows/ci.yml"))"') \
   || die "gh pr view $pr --json files failed" 4
-paths=$(printf '%s\n' "$files" | sed 1d)
-files=$(printf '%s\n' "$files" | sed -n 1p)
 case "$files" in
   [0-9]*" "[0-9]*" "true" "*|[0-9]*" "[0-9]*" "false" "*) set -- $files ;;
   *) die "unparsable files answer" 4 ;;
@@ -93,7 +96,7 @@ esac
 if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]; }; then
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp dir" 16
   trap 'rm -rf "$tmp"' EXIT
-  bounded git fetch -q origin main >&2 || die "PR $pr changes a gate file and \`git fetch origin main\` failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
+  bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main >&2 || die "PR $pr changes a gate file and the fetch of main failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
   git show origin/main:tools/merge-gated.sh > "$tmp/merge-gated.sh" 2>/dev/null && [ -s "$tmp/merge-gated.sh" ] \
     || die "PR $pr changes a gate file and main has no copy of the gate yet: the owner merges this PR by hand" 16
   git show origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
@@ -142,27 +145,26 @@ if [ "$mode" = rollup ]; then
   esac
 fi
 
-# The rows whose output or an input matches a changed file, one index a line. A glob becomes an anchored regex:
+bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
+  || die "cannot fetch main and PR $pr's head $sha" 4
+base=$(git merge-base origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
+paths=$(git diff --name-only --no-renames "$base" "$sha") || die "git diff on PR $pr failed" 4
+# The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
 manifest=${0%/*}/generated-files.json
 hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])"; "\\\(.c)") + "$" | gsub("\\*"; ".*") | gsub("\\?"; ".");
   ($p | split("\n")) as $p | .rows | to_entries[]
   | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \
   || die "cannot read $manifest" 4
-if [ -n "$hits" ]; then
-  bounded git fetch -q origin main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
-    || die "cannot fetch main and PR $pr's head $sha" 4
-  base=$(git merge-base origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
-  for i in $hits; do
-    row=$(jq -r --argjson i "$i" '.rows[$i] | .output, .generator, .inputs[]' "$manifest") || die "cannot read $manifest" 4
-    # One field a line, unglobbed: the inputs go to git as pathspecs, which do their own globbing.
-    set -f; IFS='
+for i in $hits; do
+  row=$(jq -r --argjson i "$i" '.rows[$i] | .output, (.script // error("row \($i) has no script")), .generator' "$manifest") \
+    || die "cannot read $manifest" 4
+  # One field a line, unglobbed: output and script go to git as pathspecs.
+  set -f; IFS='
 '; set -- $row; unset IFS; set +f
-    output=$1 gen=$2; shift 2
-    moved=$(git log -1 --format=%H "$base..origin/main" -- "$output" "$@") || die "git log on $output failed" 4
-    [ -z "$moved" ] || die "$output: main has changed it or its inputs since this PR's base; merge main first, then let CI run (its generator: \`$gen\`)" 9
-  done
-fi
+  moved=$(git log -1 --format=%H "$base..origin/main" -- "$1" "$2") || die "git log on $1 failed" 4
+  [ -z "$moved" ] || die "$1: main has changed it or its generator script ($2) since this PR's base; merge main first, then let CI run (its generator: \`$3\`)" 9
+done
 
 # Refuses (12) if the runs `gh run list --workflow deploy.yml "$@"` lists hold one that is not completed.
 no_deploy() {

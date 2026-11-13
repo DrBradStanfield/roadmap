@@ -1,8 +1,9 @@
 {
-  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, for each row whose output or inputs the PR touches, the script refuses when main has changed that output or an input since the PR's merge base, naming the generator. Pure git: nothing here is ever run. Inputs are globs, as in a git pathspec (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
+  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, for each row whose output or inputs the PR touches (old and new paths of a rename both count), the script refuses when main has changed that output or its generator script since the PR's merge base, naming the generator. Pure git: nothing here is ever run; script is only a pathspec. Inputs are globs, as in a git pathspec (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
   "rows": [
     {
       "output": "instrument-scrub.mjs",
+      "script": "tools/generate-instrument-scrub.mjs",
       "inputs": [
         "tools/generate-instrument-scrub.mjs",
         "packages/health-core/src/sentry-scrub-server.ts",
@@ -29,6 +30,7 @@
     },
     {
       "output": "docs/blog/index.json",
+      "script": "scripts/rebuild-blog-index.ts",
       "inputs": [
         "docs/blog/*.md",
         "docs/guideline/*.md",

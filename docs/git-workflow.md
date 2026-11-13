@@ -64,9 +64,12 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
    was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
    `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
-   `tools/generated-files.json`, as an output or an input, and main has changed that output or any of its inputs
-   since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. This check is pure
-   git and runs nothing from the manifest or the PR; CI's freshness tests do the real check.
+   `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
+   script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
+   change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from
+   git with renames split, so moving an input away still counts; every PR therefore costs one fetch of main and
+   its head. This check is pure git and runs nothing from the manifest or the PR; CI's freshness tests do the
+   real check.
    A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
    `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
    judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
