@@ -1282,6 +1282,143 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
   });
 
+  // US-32 AC9a: the words a person writes for a value no catalogue name spells,
+  // and a number typed straight after a name, are values too.
+  it('refuses a value named the way a person writes it, or glued to its name', () => {
+    for (const detail of [
+      'My blood pressure 140/90 shows as high',
+      'my a1c 7.2 is missing from the plan',
+      'A1C of 6.4 percent shows twice',
+      'BMI 31 is shown wrong',
+      'bmi is 31 on the plan',
+      'height 178 was not saved',
+      'ldl140 is read as one word',
+      'my ldl3.2 went in the wrong row',
+      'igf1 200 is missing',
+      'a1c7.2 is wrong',
+      'my a1c7.2 shows',
+      'hba1c7.2 shows',
+      // "apo b" is a name of two words in the Sentry scrub's list, so the reach runs from its b.
+      'apo b is at 95',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+    // The same words with no number are what a bug report is made of; a name
+    // that ends in a digit keeps it.
+    for (const detail of [
+      'the blood pressure chart is missing',
+      'the plan page lost its height after the update',
+      'under pressure the save button gives up',
+      'the a1c and bmi rows are in the wrong order',
+      'the igf1 row is missing',
+      'the omega3 row is missing',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+  });
+
+  // US-32 AC9a, the glued split: a number at the end of a word that is not
+  // itself a name is its own word. AC9a's own examples, and the five forms Brad
+  // ruled should be refused too (ft415, b12300, blood pressure140/90, vitamin
+  // d50, ldl,140): a refused report is reworded in a turn, a filed one is public.
+  it('reads a number at the end of a word that is not itself a name as its own word', () => {
+    const outcome = (detail: string) => {
+      const result = reportFeedback({ ...GOOD, detail }, NOW);
+      return result.status === 'rejected' ? result.reason : result.status;
+    };
+    const refused = [
+      'igf1200 is missing',
+      'total cholesterol200 is wrong',
+      'the ldl2 tab is blank',
+      'the alpha2 build broke the plan',
+      'ft415 is missing',
+      'b12300 is missing',
+      'my blood pressure140/90 shows as high',
+      'my vitamin d50 is low',
+      'ldl,140 is wrong',
+      'ldl.140 is wrong',
+      'ft4,15 is missing',
+      // The cost: digits glued to a word that is no name are a number too, and
+      // a name that ends in a digit gives up the digits after it (t3 and 2).
+      'ldl in tab2 is blank',
+      'the t32 column is blank',
+    ];
+    expect(Object.fromEntries(refused.map((d) => [d, outcome(d)])))
+      .toEqual(Object.fromEntries(refused.map((d) => [d, 'health-value'])));
+    // The split comes after the longest name: b12 and 300, not b1 and 2300.
+    expect(reportFeedback({ ...GOOD, detail: 'b12300 is missing' }, NOW).text).toContain('“b12 300”');
+    // A word with no letter is a number already, and stays whole.
+    expect(reportFeedback({ ...GOOD, detail: 'My LDL is 3.2' }, NOW).text).toContain('“ldl 3.2”');
+    // A whole name keeps its digits; a number inside a longer name is that name;
+    // a glued number with no name near it files.
+    const filed = [
+      'the pyridoxal5 phosphate row is missing',
+      'the igf1 row is missing',
+      'the b12 row is blank',
+      'the ft4 row is missing',
+      'tab2 has 3 rows',
+      'on ios18 the plan is blank',
+      'I clicked save,2 times',
+      'the ldl,hdl rows are swapped',
+      // "pressure" is a name only as the end of "blood pressure".
+      'under pressure 2 saves failed',
+    ];
+    expect(Object.fromEntries(filed.map((d) => [d, outcome(d)])))
+      .toEqual(Object.fromEntries(filed.map((d) => [d, 'ok'])));
+  });
+
+  // US-32 AC9a: a refusal of a number that is no record value tells the
+  // assistant how to reword it; what is refused stays the same.
+  it('tells the assistant how to reword a number that is no record value', () => {
+    const refusal = reportFeedback({ ...GOOD, detail: 'the line-height 1.5 on the plan is too tight' }, NOW);
+    expect(refusal).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    expect(refusal.text).toContain('“height 1.5” reads as a health value, so nothing was prepared.');
+    expect(refusal.text).toContain('drop the number, or say it without the name or unit beside it.');
+    // The same hint on a number wearing a unit.
+    expect(reportFeedback({ ...GOOD, detail: 'My LDL of 4.2 mmol/L looks wrong' }, NOW).text)
+      .toContain('drop the number, or say it without the name or unit beside it.');
+    // Both rewordings the hint names file.
+    for (const detail of [
+      'the line-height on the plan is too tight',
+      'the spacing between lines on the plan is too tight, set to 1.5',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    // "Beside" reaches three words: one word off the name is still refused, four words off files.
+    expect(reportFeedback({ ...GOOD, detail: 'the line-height is 1.5' }, NOW).status).toBe('rejected');
+    expect(reportFeedback({ ...GOOD, detail: 'the line-height is set to 1.5' }, NOW).status).toBe('ok');
+  });
+
+  // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
+  // number typed onto the front of a name is one word. These still file; the
+  // Sentry scrub leaves most of them as written, and the two below with another
+  // name near them are redacted.
+  it('still files a number in non-ASCII digits, or a whole number glued in front of a name', () => {
+    for (const detail of [
+      'my ldl １４０ is wrong', // full-width digits
+      'my ldl is ３.２ mmol/L',
+      'my bmi ٣١ is wrong', // Arabic-Indic digits
+      'my 140ldl is wrong',
+      'my 31bmi is wrong',
+      'my .5ldl is wrong', // starts with its point: read as "5ldl"
+      'my 1.4.2ldl is wrong', // a second point: read as "1.4" and "2ldl"
+      'my ,5ldl is wrong', // starts with its comma: read as "5ldl"
+      'my 1,4,2ldl is wrong', // a second comma: read as "1,4" and "2ldl"
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+      expect(scrubText(detail), detail).toBe(detail);
+    }
+    // The scrub redacts some glued numbers (these two); the guard still files them.
+    expect(reportFeedback({ ...GOOD, detail: 'my ldl is 140ldl' }, NOW).status).toBe('ok');
+    expect(scrubText('my ldl is 140ldl')).toBe('my ldl is [value]ldl');
+    expect(reportFeedback({ ...GOOD, detail: 'my 140ldl reads like my bmi' }, NOW).status).toBe('ok');
+    expect(scrubText('my 140ldl reads like my bmi')).toBe('my [value]ldl reads like my bmi');
+    // One point or comma between digits, or a dot or comma right after a whole number, ends the word first.
+    for (const detail of ['my 3.2ldl is wrong', 'my 3,2ldl is wrong', 'my 140.ldl is wrong', 'my 140,ldl is wrong']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
+
   it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {
     for (const detail of [
       'I have HIV. Contact synthetic@example.invalid',
