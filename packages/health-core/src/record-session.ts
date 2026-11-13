@@ -483,7 +483,8 @@ export class RecordSession {
           const ctx = this.ctx();
           const held = changesOf(this.mode); // what this write holds: the device line needs it to land (US-09 AC30)
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
-          await saveRecordInto(mirror.adapter, this.current, ctx);
+          const write = () => saveRecordInto(mirror.adapter, this.current, ctx);
+          await write().catch(write); // one retry: a passing refusal (lead S54)
           this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {

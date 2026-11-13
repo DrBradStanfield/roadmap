@@ -130,7 +130,9 @@ interface Server {
 }
 
 async function phone(dropbox: Server, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
+  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[],
+    /** Phone writes that fail before one works (lead S54); `phoneRemoveFails`: removes that leave the file. */
+    phoneWriteFailures: 0, phoneRemoveFails: 0 };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
@@ -158,10 +160,12 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
     phoneRead: () => JSON.stringify({ text: state.phoneText }),
     phoneWrite: (text: string) => {
       if (state.phoneWriteError) return state.phoneWriteError;
+      if (state.phoneWriteFailures > 0 && state.phoneWriteFailures--) return 'The disk is full.';
       state.phoneText = text;
       return '';
     },
     phoneRemove: () => {
+      if (state.phoneRemoveFails > 0 && state.phoneRemoveFails--) return; // Swift's try? removeItem: a failure says nothing
       state.phoneText = null;
     },
     // The marker as Swift keeps it (PhoneFiles): a generation that rises at every set.
@@ -1114,6 +1118,55 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
     expect(drive.record.meta.eraseEpoch).toBe(1);
     expect(result).toMatchObject({ success: false, erased: true });
+  });
+
+  // Lead S54: the erase reached the cloud, so the session removed the phone's pre-erase
+  // file; the erased record then goes in its place. Each case counts the phone's failures.
+  async function erasedWithPhone(writeFailures: number, removeFailures: number) {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    await new Promise((resolve) => setTimeout(resolve, 20)); // the phone holds the pre-erase copy
+    const phoneBefore = state.phoneText;
+    expect(days(JSON.parse(phoneBefore!) as RoadmapFile)).toEqual(['2026-10-01']);
+    state.phoneWriteFailures = writeFailures;
+    state.phoneRemoveFails = removeFailures;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true });
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    return { state, phoneBefore };
+  }
+
+  it('lead S54: a phone write that fails once is retried, and the phone holds the erased record', async () => {
+    const { state } = await erasedWithPhone(1, 0);
+    const onPhone = JSON.parse(state.phoneText!) as RoadmapFile;
+    expect(onPhone.meta.eraseEpoch).toBe(1);
+    expect(days(onPhone)).toEqual([]);
+  });
+
+  it('lead S54: two failed writes remove the phone file again, so a pre-erase copy a first remove left is gone', async () => {
+    const { state } = await erasedWithPhone(2, 1);
+    expect(state.phoneText).toBeNull(); // a relaunch opens empty, never on the pre-erase copy
+  });
+
+  it('lead S54 residual (words: lead S61): two failed writes and two failed removes leave the pre-erase copy, as before', async () => {
+    const { state, phoneBefore } = await erasedWithPhone(2, 2);
+    expect(state.phoneText).toBe(phoneBefore);
+  });
+
+  it('lead S54: an erase the cloud refused is kept on the phone when the phone write fails once, then works', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    dropbox.full = true;
+    state.phoneWriteFailures = 1;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.pending).toBe(true);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
   });
 
   it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
