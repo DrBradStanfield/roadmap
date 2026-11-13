@@ -31,7 +31,7 @@ import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_RECEIPT_LENGTH, SERVER_VERSION } from '../../packages/health-core/src/mcp-tool-contract';
 import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import type { Extractor } from '../lib/mcp-import.server';
 import { MAX_CORRECTION_AGE_DAYS } from '../lib/mcp-corrections.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
@@ -62,7 +62,7 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
+  makeAdapter = () => new MemoryAdapter(cloud);
   // Dropbox's token endpoint is the only network call the server makes here.
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
@@ -72,7 +72,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   extractor = undefined;
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
@@ -176,6 +175,8 @@ async function redeem(form: Record<string, string>) {
 
 /** The model call an import case passes to the endpoint; undefined is the real one (this file's own state, reset after each case). */
 let extractor: Extractor | undefined;
+/** The folder every case's endpoint opens: the in-memory cloud, set before each case (this file's own state). */
+let makeAdapter: AdapterFactory;
 
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
   const res = await mcpEndpoint(
@@ -185,7 +186,7 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     }),
     now,
-    { extract: extractor },
+    { extract: extractor, makeAdapter },
   );
   expect(res.status).toBe(200);
   return (await res.json()) as {
@@ -549,6 +550,7 @@ describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () =
         body: JSON.stringify({ jsonrpc: '2.0', method, params }),
       }),
       NOW,
+      { makeAdapter },
     );
     return { status: res.status, body: await res.text() };
   }
@@ -1229,7 +1231,7 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
 describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
   /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
   function refuseReadsAfterUpload(status: 401 | 403): void {
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       const read = adapter.read.bind(adapter);
       const write = adapter.write.bind(adapter);
@@ -1244,7 +1246,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
         return read(...args);
       };
       return adapter;
-    });
+    };
   }
 
   for (const status of [401, 403] as const) {
@@ -1269,11 +1271,11 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
       seedRecord();
       const { access } = await connect();
-      setAdapterFactory(() => {
+      makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
         adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
         return adapter;
-      });
+      };
       const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
       expect(storedRecord().measurements).toEqual([]);
       expect(answer.isError).toBe(true);
@@ -1747,11 +1749,11 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     seedRecord();
     const { access } = await connect();
     stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
       return adapter;
-    });
+    };
     const answer = await callTool(access, 'import_documents', {});
     expect(answer.isError).toBe(true);
     expect(answer.text).toMatch(/refused this connection’s access to the record.*reconnect the connector/);
@@ -1855,7 +1857,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
     const broken = new MemoryAdapter(cloud);
     broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
-    setAdapterFactory(() => broken);
+    makeAdapter = () => broken;
     const { access } = await connect();
     const failed = await callTool(access, 'get_plan', {});
     expect(failed.isError).toBe(false);
@@ -1863,7 +1865,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
 
     const slow = new MemoryAdapter(cloud);
     slow.list = (_folder, signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(signal.reason)));
-    setAdapterFactory(() => slow);
+    makeAdapter = () => slow;
     const started = Date.now();
     const timedOut = await callTool(access, 'read_record', {});
     expect(Date.now() - started).toBeGreaterThanOrEqual(FOLDER_LIST_TIMEOUT_MS - 50);

@@ -16,7 +16,7 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
-import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, INSTRUCTIONS, mcpEndpoint } from '../lib/mcp.server';
 import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { routerView } from '../lib/router-view';
@@ -57,6 +57,9 @@ const B_VITAMINS = 'b-vitamins-benefits-forms-dosing-and-side-effects';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 let connections = 0;
+let cloud: MemoryCloud;
+/** The folder every call opens: this case's in-memory cloud. */
+const makeAdapter: AdapterFactory = () => new MemoryAdapter(cloud);
 
 beforeEach(() => {
   serveClientMetadata();
@@ -67,9 +70,8 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   delete process.env.MCP_KNOWLEDGE_TOOLS;
   resetMcpMemory();
-  const cloud = new MemoryCloud();
+  cloud = new MemoryCloud();
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' })), version: 1 });
-  setAdapterFactory(() => new MemoryAdapter(cloud));
   fetchMock = vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
     access_token: 'dropbox-access-token',
@@ -79,7 +81,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
   delete process.env.MCP_KNOWLEDGE_TOOLS;
@@ -138,7 +139,7 @@ async function rawRpc(access: string, method: string, params: unknown = {}): Pro
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), NOW);
+  }), NOW, { makeAdapter });
   expect(res.status).toBe(200);
   return res.text();
 }

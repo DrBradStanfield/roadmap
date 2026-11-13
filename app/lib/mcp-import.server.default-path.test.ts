@@ -13,6 +13,7 @@ vi.mock('./product-events.server', async (importOriginal) => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 import * as importModule from './mcp-import.server';
+import * as serverModule from './mcp.server';
 import { hostedImporter } from './mcp-import.server';
 import { connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, spendWrites, WRITES_PER_HOUR } from './mcp-grants.server';
 import { machineFiles } from './rate-limiter';
@@ -168,7 +169,7 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
   });
 });
 
-describe('T30 · the module holds no setter a test or a stray call could leave set', () => {
+describe('T29, T30 · the hosted modules hold no setter a test or a stray call could leave set', () => {
   it('exports exactly these names; the model call comes in only through HostedImporterOptions', () => {
     expect(Object.keys(importModule).sort()).toMatchInlineSnapshot(`
       [
@@ -182,6 +183,20 @@ describe('T30 · the module holds no setter a test or a stray call could leave s
         "sniff",
         "unzip",
         "zipRefusal",
+      ]
+    `);
+  });
+
+  it('mcp.server exports exactly these names; the adapter factory comes in only through the endpoint’s wiring', () => {
+    expect(Object.keys(serverModule).sort()).toMatchInlineSnapshot(`
+      [
+        "FOLDER_LIST_MAX_ENTRIES",
+        "FOLDER_LIST_TIMEOUT_MS",
+        "INSTRUCTIONS",
+        "mcpClientLabel",
+        "mcpEndpoint",
+        "originRejected",
+        "unauthorized",
       ]
     `);
   });

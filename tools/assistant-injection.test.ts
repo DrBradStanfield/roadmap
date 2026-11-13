@@ -25,7 +25,7 @@ import { createEmptyFile, type RoadmapFile } from '../packages/health-core/src/r
 import { EXTRACTION_MODEL, modelParams } from '../packages/health-core/src/models';
 import { MCP_TOOLS } from '../packages/health-core/src/mcp-tool-catalogue';
 import { resetMcpMemory } from '../app/lib/mcp-grants.server';
-import { mcpEndpoint, setAdapterFactory } from '../app/lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../app/lib/mcp.server';
 import { action, loader } from '../app/routes/mcp.$';
 
 const RUN = process.env.CONNECTOR_SMOKE === '1' && !!process.env.ANTHROPIC_API_KEY;
@@ -97,6 +97,8 @@ function pdf(lines: string[]): string {
 // ---------------------------------------------------------------------------
 
 let cloud: MemoryCloud;
+/** The folder every call opens: this case's in-memory cloud. */
+const makeAdapter: AdapterFactory = () => new MemoryAdapter(cloud);
 
 beforeEach(() => {
   // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
@@ -108,14 +110,12 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => (String(url).includes('api.anthropic.com')
     ? realFetch(url, init)
     : Response.json({ refresh_token: 'dropbox-refresh-token', access_token: 'dropbox-access-token', expires_in: 14400 }))));
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -198,7 +198,7 @@ async function converse(access: string, fixture: keyof typeof FIXTURES, system: 
         method: 'POST',
         headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: use.name, arguments: use.input } }),
-      }), new Date(clock).toISOString());
+      }), new Date(clock).toISOString(), { makeAdapter });
       const body = (await answer.json()) as { result?: { content: Array<{ text: string }>; isError?: boolean } };
       const isError = body.result?.isError === true;
       calls.push({ name: use.name!, input: use.input ?? {}, isError });

@@ -40,7 +40,7 @@ import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
 import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -61,6 +61,8 @@ const NINE_TOOLS = [
 
 let cloud: MemoryCloud;
 let connections = 0;
+/** The folder every call opens: this case's in-memory cloud. */
+const makeAdapter: AdapterFactory = () => new MemoryAdapter(cloud);
 
 beforeEach(() => {
   // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
@@ -74,7 +76,6 @@ beforeEach(() => {
   resetClaimsState(claims.state!);
   claims.noClient = false;
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
     access_token: 'dropbox-access-token',
@@ -83,7 +84,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -146,7 +146,7 @@ async function rpc(access: string, method: string, params: unknown = {}) {
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), NOW);
+  }), NOW, { makeAdapter });
   expect(res.status).toBe(200);
   return (await res.json()) as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
 }
@@ -285,7 +285,7 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
-  }), now);
+  }), now, { makeAdapter });
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
   return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };
@@ -305,7 +305,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
         method: 'POST',
         headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
         body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"correct_value","arguments":${args}}}`,
-      }), at(11));
+      }), at(11), { makeAdapter });
       const answer = (await res.json()) as { result?: { content: Array<{ text: string }>; isError?: boolean }; error?: unknown };
       expect(answer.error, confirm).toBeUndefined();
       expect(answer.result!.isError, confirm).toBe(true);
@@ -616,20 +616,15 @@ describe('US-36 AC9 — a confirm works once across restarts', () => {
     expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11))).isError).toBe(false);
     vi.resetModules();
     const second = await import('../lib/mcp.server');
-    second.setAdapterFactory(() => new MemoryAdapter(cloud));
-    try {
-      const res = await second.mcpEndpoint(new Request(`${ISSUER}/mcp`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'correct_value', arguments: { ...FIX, confirm: receipt, approval: APPROVED } } }),
-      }), at(12));
-      const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
-      expect(answer.result.isError).toBe(true);
-      expect(answer.result.content[0].text).toContain('already been used');
-      expect(storedRecord().labValues).toHaveLength(2);
-    } finally {
-      second.setAdapterFactory(null);
-    }
+    const res = await second.mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'correct_value', arguments: { ...FIX, confirm: receipt, approval: APPROVED } } }),
+    }), at(12), { makeAdapter });
+    const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
+    expect(answer.result.isError).toBe(true);
+    expect(answer.result.content[0].text).toContain('already been used');
+    expect(storedRecord().labValues).toHaveLength(2);
   });
 
   it('while the claim store cannot be reached a confirm is refused in words, writes nothing and charges nothing', async () => {
