@@ -30,20 +30,32 @@ describe('US-25 AC18c: the generated files match the contract (I-2 step 3)', () 
     expect(read('HealthRoadmap/Engine/Generated/EngineContract.swift')).toContain(`static let contractHash = "${hash}"`);
   });
 
+  // Review R2 of PR 1558: any quoted door name, not only a call on one line, so a call split over
+  // lines or a name held in a variable is caught too. Door names are rare words.
+  const named = new RegExp(`"(?:${Object.keys(DOORS).join('|')})"`);
+
   it('hand-written app code reaches a door only through its generated method', () => {
-    const names = Object.keys(DOORS).join('|');
-    const raw = new RegExp(`\\b(?:call|callAsync|optionalCall|settled)\\([^\\n]*"(?:${names})"`);
     const offenders = swiftFiles('HealthRoadmap')
       .filter((path) => !path.startsWith(join('HealthRoadmap', 'Engine', 'Generated')))
-      .flatMap((path) => read(path).split('\n').filter((line) => raw.test(line)).map((line) => `${relative(ios, join(ios, path))}: ${line.trim()}`));
+      .flatMap((path) => read(path).split('\n').filter((line) => named.test(line)).map((line) => `${relative(ios, join(ios, path))}: ${line.trim()}`));
     expect(offenders).toEqual([]);
   });
 
-  it('the raw-call check catches a door named outside its generated method', () => {
-    const raw = new RegExp(`\\b(?:call|callAsync|optionalCall|settled)\\([^\\n]*"(?:${Object.keys(DOORS).join('|')})"`);
-    expect(raw.test('let json = try call("planJson", [record])')).toBe(true);
-    expect(raw.test('try settled(String.self, "chatDeleteJson", [])')).toBe(true);
-    expect(raw.test('try doorPlanJson(recordJson: record, nowIso: now, deviceId: id, unitsJson: units)')).toBe(false);
+  it('the check catches a door named outside its generated method', () => {
+    expect(named.test('let json = try call("planJson", [record])')).toBe(true);
+    expect(named.test('let door = "chatDeleteJson"')).toBe(true);
+    expect(named.test('try doorPlanJson(recordJson: record, nowIso: now, deviceId: id, unitsJson: units)')).toBe(false);
+  });
+
+  // Review R1 of PR 1558: a Swift body of more than one statement needs `return`; the byte check
+  // alone passed a generator that left it out, and nothing here compiles Swift.
+  it('every generated door method with argument lines returns its answer', () => {
+    const methods = read('HealthRoadmap/Engine/Generated/EngineDoors.swift').split('\n    func ').slice(1);
+    expect(methods.length).toBeGreaterThan(Object.keys(DOORS).length - 1);
+    for (const method of methods) {
+      const body = method.slice(method.indexOf('{\n') + 2, method.indexOf('\n    }')).split('\n');
+      if (body.length > 1) expect(body.at(-1)!.trim().startsWith('return '), method.slice(0, 40)).toBe(true);
+    }
   });
 });
 

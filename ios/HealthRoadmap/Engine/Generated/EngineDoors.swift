@@ -136,7 +136,7 @@ extension HealthEngine {
     func doorHistoryJson(recordJson: String, metric: String, nowIso: String, deviceId: String, unitsJson: String, series: String? = nil) throws -> String {
         var arguments: [Any] = [recordJson, metric, nowIso, deviceId, unitsJson]
         if let series { arguments.append(series) }
-        try call("historyJson", arguments)
+        return try call("historyJson", arguments)
     }
 
     /// `labReviewJson`: answers at once.
@@ -178,14 +178,14 @@ extension HealthEngine {
     func doorRemindersJson(recordJson: String, nowIso: String, deviceId: String, firstSeenJson: String? = nil) throws -> String {
         var arguments: [Any] = [recordJson, nowIso, deviceId]
         if let firstSeenJson { arguments.append(firstSeenJson) }
-        try call("remindersJson", arguments)
+        return try call("remindersJson", arguments)
     }
 
     /// `screenJson`: answers at once.
     func doorScreenJson(recordJson: String, nowIso: String, deviceId: String, unitsJson: String, isUS: Bool? = nil) throws -> String {
         var arguments: [Any] = [recordJson, nowIso, deviceId, unitsJson]
         if let isUS { arguments.append(isUS) }
-        try call("screenJson", arguments)
+        return try call("screenJson", arguments)
     }
 
     /// `sectionsJson`: answers at once.

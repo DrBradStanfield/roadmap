@@ -195,6 +195,8 @@ function swiftDoor(name: string, door: DoorSchema): string[] {
     body.push(`        var arguments: [Any] = ${fixed}`, ...door.optionalArgs.map((a) => `        if let ${a.name} { arguments.append(${value({ ...a, nullable: undefined })}) }`));
     args = 'arguments';
   }
+  // One expression is its own answer; after the argument lines, Swift needs `return` (review R1).
+  const ret = body.length ? 'return ' : '';
   const call = door.optionalDoor ? 'optionalCall' : door.kind === 'promise' ? 'callAsync' : 'call';
   const answer = door.optionalDoor ? '?' : '';
   const doc = `    /// \`${name}\`: ${door.kind === 'settle' ? 'a settle door, read through settledJson' : door.kind === 'promise' ? 'answers a Promise' : 'answers at once'}${door.optionalDoor ? '; nil from an engine without it' : ''}.`;
@@ -202,17 +204,17 @@ function swiftDoor(name: string, door: DoorSchema): string[] {
     `    func ${method}${generic}(${[...(extra.startsWith('_') ? [extra] : []), ...params, ...(extra && !extra.startsWith('_') ? [extra] : [])].join(', ')}) ${effects} -> ${returns} {`;
   if (door.result && door.kind !== 'sync') throw new Error(`${name}: only a sync door's answer is typed yet`);
   if (door.kind === 'settle') {
-    return ['', doc, signature('<T: Decodable>', '_ type: T.Type', 'T', 'throws'), ...body, `        try settled(type, ${quote(name)}, ${args})`, '    }'];
+    return ['', doc, signature('<T: Decodable>', '_ type: T.Type', 'T', 'throws'), ...body, `        ${ret}try settled(type, ${quote(name)}, ${args})`, '    }'];
   }
   if (door.kind === 'promise') {
-    return ['', doc, signature('', '', `String${answer}`, 'async throws'), ...body, `        try await ${call}(${quote(name)}, ${args}${door.optionalDoor ? ', read: { $0.isUndefined ? "" : $0.toString() }' : ''})`, '    }',
+    return ['', doc, signature('', '', `String${answer}`, 'async throws'), ...body, `        ${ret}try await ${call}(${quote(name)}, ${args}${door.optionalDoor ? ', read: { $0.isUndefined ? "" : $0.toString() }' : ''})`, '    }',
       '', `    /// \`${name}\`, its settled value read by \`read\` on the engine's queue.`,
-      signature('<T: Sendable>', 'read: @escaping (JSValue) -> T', `T${answer}`, 'async throws'), ...body, `        try await ${call}(${quote(name)}, ${args}, read: read)`, '    }'];
+      signature('<T: Sendable>', 'read: @escaping (JSValue) -> T', `T${answer}`, 'async throws'), ...body, `        ${ret}try await ${call}(${quote(name)}, ${args}, read: read)`, '    }'];
   }
   // A typed answer is decoded here, so the app never reads that door's JSON by hand.
   if (door.result && !door.optionalDoor) {
     const type = swiftType(door.result);
-    return ['', doc, signature('', '', type, 'throws'), ...body, `        try JSONDecoder().decode(${type}.self, from: Data(call(${quote(name)}, ${args}).utf8))`, '    }'];
+    return ['', doc, signature('', '', type, 'throws'), ...body, `        ${ret}try JSONDecoder().decode(${type}.self, from: Data(call(${quote(name)}, ${args}).utf8))`, '    }'];
   }
-  return ['', doc, signature('', '', `String${answer}`, 'throws'), ...body, `        try ${call}(${quote(name)}, ${args})`, '    }'];
+  return ['', doc, signature('', '', `String${answer}`, 'throws'), ...body, `        ${ret}try ${call}(${quote(name)}, ${args})`, '    }'];
 }
