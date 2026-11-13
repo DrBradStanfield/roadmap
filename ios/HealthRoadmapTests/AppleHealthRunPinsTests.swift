@@ -85,6 +85,64 @@ final class AppleHealthRunPinsTests: XCTestCase {
         XCTAssertTrue(sync.waiting.isEmpty, "every caller was let go")
     }
 
+    /// H27 follow-up (US-72 AC10): a genuine reconnect while an erase drains a pass queues one pass
+    /// (`stopping` + `trigger(true)` → `running(queued: true)`), and that pass runs once the old one
+    /// ends, so Health resumes: working, then up to date, read again from the start.
+    ///
+    /// The old pass cannot end through `gateClosed` here. The gate is checked once, synchronously,
+    /// as a pass begins (`onePass`), and the old pass is already past it. It ends at its next check
+    /// with `.moved` (the erase moved the generation), which runs the queued pass. Nor can a later
+    /// gate close while the run is `running`: `memory.connected` turns false only in `disconnect()`,
+    /// which moves the run to `stopping` first. The table's `running` + `gateClosed` row would drop
+    /// the queued reconnect (asserted last), but nothing sends that event in that state today.
+    func testAReconnectDuringTheDrainRunsItsQueuedPass_H27() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let health = FakeHealthStore()
+        var reached = false, released = false
+        health.saveHold = { [weak health] in
+            health?.saveHold = nil
+            reached = true
+            while !released { await Task.yield() }
+        }
+        let memory = HealthSyncMemory(defaults: defaults)
+        let sync = AppleHealthSync(store: store, engine: engine, client: health, memory: memory)
+        // 1. Connected, and the connect pass is held at its save to Health.
+        let connecting = Task { await sync.connect() }
+        while !reached { await Task.yield() }
+        let readsBefore = health.sampleAnchors[.weight]?.count ?? 0
+
+        // 2. An erase disconnects Health during the pass: it drains.
+        let erase = Task { await sync.erased(wasConnected: true) }
+        while sync.run != .stopping { await Task.yield() }
+        XCTAssertFalse(memory.connected)
+
+        // 3. The person connects again: one pass queued behind the drain.
+        let reconnecting = Task { await sync.connect() }
+        while sync.run != .running(queued: true) { await Task.yield() }
+        XCTAssertTrue(memory.connected, "the reconnect took")
+        XCTAssertEqual(sync.status, .working)
+
+        // 4. The old pass ends; the reconnect's queued pass runs.
+        released = true
+        await connecting.value
+        await reconnecting.value
+        _ = await erase.value
+
+        guard case .idle(.upToDate) = sync.run else { return XCTFail("run \(sync.run)") }
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+        let reads = health.sampleAnchors[.weight] ?? []
+        XCTAssertEqual(reads.count, readsBefore + 1, "the reconnect's own pass read Health")
+        XCTAssertEqual(reads.last, .some(nil), "from the start, as after any erase")
+        XCTAssertTrue(sync.waiting.isEmpty, "every caller was let go")
+
+        // The row no caller reaches today: it would leave connected Health showing not connected.
+        let (run, effect) = AppleHealthSync.Run.transition(.running(queued: true), .gateClosed)
+        XCTAssertEqual(run, .disconnected)
+        XCTAssertEqual(effect, .release)
+    }
+
     /// The connect pass's one save to Health is held, an erase disconnects Health meanwhile, then
     /// the save throws `error`, ending the pass locked or failed.
     private func assertNotConnected(afterAPassThat error: Error) async throws {
