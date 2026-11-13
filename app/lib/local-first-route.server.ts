@@ -121,12 +121,14 @@ export function refuseAppProxyRequest(request: Request): void {
  *    Shopify's egress, so `Fly-Client-IP` names Shopify — every shopper
  *    collapses into one shared bucket. The shopper is the hop SHOPIFY added
  *    to `X-Forwarded-For`, which sits immediately to the left of the entry
- *    Fly saw. Anchor on `Fly-Client-IP` and step one left: that survives Fly
- *    also appending its app's own address ("the last address (rightmost) in
- *    this list will be a shared or dedicated IP address assigned to your
- *    app") and any number of forged leading hops. Fly is not documented to
- *    append its peer at all; when its address is absent from the list, the
- *    LAST hop is Shopify's own append — the shopper — so use that.
+ *    Fly saw. Anchor on `Fly-Client-IP` and step one left, but only where Fly
+ *    writes that entry: second to last, before the app's own address that Fly
+ *    appends ("the last address (rightmost) in this list will be a shared or
+ *    dedicated IP address assigned to your app"), or last. Anywhere else the
+ *    entry may have been written by the caller (US-52 AC4j). Fly does not
+ *    document appending its peer; when the entry is not in either place, no
+ *    hop can be told apart from one the caller wrote, so the fallback below
+ *    applies.
  * 3. Local dev — no proxy at all. No `Fly-Client-IP`, and a single-entry XFF
  *    is the caller. Forgeable, and that is fine off Fly: nothing of value sits
  *    behind these limiters there. Production always runs on Fly.
@@ -134,16 +136,16 @@ export function refuseAppProxyRequest(request: Request): void {
  * The FIRST `X-Forwarded-For` entry is never trusted in any model: a request
  * that arrives carrying its own XFF keeps it, so the left of the list is
  * whatever the caller typed. Only entries a proxy we trust appended count.
- * If XFF yields no hop at all (missing, blank, or holding only Fly's own
- * address), `'shopify'` falls back to `Fly-Client-IP` — one shared bucket
- * beats none.
+ * If XFF yields no such hop (missing, blank, holding only Fly's own address,
+ * or the Fly entry not in a place Fly writes it), `'shopify'` falls back to
+ * `Fly-Client-IP`: one shared bucket beats none, and beats one the caller chose.
  *
  * Residual (US-09 AC24): the HMAC check proves Shopify signed the QUERY, not
  * that the request came through Shopify. Anyone holding a valid signed query
  * can send it straight to *.fly.dev with an XFF they wrote. Fly's peer is then
  * the caller, and the hop read as the shopper (one left of the caller's own
- * address if Fly appended it, else the last) is one the caller typed, so a
- * direct hit can steer its bucket. `Fly-Client-IP` cannot be the key instead: behind the proxy it is
+ * address, where Fly appended it) is one the caller typed, so a direct hit can
+ * steer its bucket. `Fly-Client-IP` cannot be the key instead: behind the proxy it is
  * Shopify's egress, every shopper's (docs/reference.md, the Fly-Client-IP
  * gotcha). The mitigation is closing the leaks that hand out signed queries
  * (the index and admin routes refuse `signature`, `refuseAppProxyRequest`).
@@ -156,9 +158,11 @@ export function getClientIp(request: Request, trust: 'fly' | 'shopify'): string 
       .map((hop) => hop.trim())
       .filter(Boolean);
     if (flyIp) {
-      // Read from the RIGHT, the only end a forger cannot reach.
-      const anchor = hops.lastIndexOf(flyIp);
-      const shopper = anchor >= 0 ? hops[anchor - 1] : hops[hops.length - 1];
+      // Read from the RIGHT, the only end a forger cannot reach. The Fly hop
+      // counts only last or second to last, where Fly writes it (US-52 AC4j).
+      const n = hops.length;
+      const anchor = hops[n - 2] === flyIp ? n - 2 : hops[n - 1] === flyIp ? n - 1 : -1;
+      const shopper = anchor > 0 ? hops[anchor - 1] : undefined;
       if (shopper) return shopper;
     } else if (hops.length === 1) {
       return hops[0]; // local dev: nobody added a hop
