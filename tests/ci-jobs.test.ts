@@ -61,6 +61,22 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(config).toMatch(/setupFiles: \['\.\/tests\/setup-locale\.ts'\]/);
     expect(navigator.language).toBe('en-GB');
   });
+  it('zone-free tests run on the UTC leg only, and every run has a UTC leg (TA-W13)', () => {
+    const unit = ciYaml.jobs.unit as unknown as { env: Record<string, string>; strategy: { matrix: { tz: string } } };
+    const leg = (tz: string) => interpolate(unit.env.ZONE_FREE_TESTS, { matrix: { tz } });
+    expect(leg('UTC')).toBe('run');
+    expect(leg('America/Los_Angeles')).toBe('skip');
+    expect(leg('Pacific/Auckland')).toBe('skip');
+    // The skipped legs are safe only because every event's zone list still holds UTC.
+    for (const [event_name, schedule] of [['pull_request'], ['push'], ['workflow_dispatch'], ['schedule', '0 3 * * *'], ['schedule', '0 12 * * *']]) {
+      const zones = interpolate(unit.strategy.matrix.tz, { github: { event_name, event: schedule ? { schedule } : {} } });
+      expect(zones, `${event_name} ${schedule ?? ''}`).toContain('UTC');
+    }
+    // The test reads exactly that value, so an unset variable (a local run) still runs the build.
+    const bundles = readFileSync(join(ROOT, 'widget-src/us-products-bundles.test.ts'), 'utf8');
+    expect(bundles).toContain("it.skipIf(process.env.ZONE_FREE_TESTS === 'skip')('the Pages build carries none of them");
+  });
+
   it('`test` always runs and passes only when the checks and every shard succeeded', () => {
     const test = job('test');
     expect(test).toMatch(/if: always\(\)/);
@@ -109,6 +125,51 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     }
     expect(checks).toContain('BASE: ${{ github.event.pull_request.base.sha || github.event.before }}');
     expect(checks).not.toContain('test:all');
+  });
+});
+
+/**
+ * TA-X03 (Brad 2026-11-13): a nightly run of the whole suite in a shuffled order, with its seed printed. It lives
+ * in its own file so its failure cannot stop the line: tools/merge-gated.sh reads only ci.yml runs on main.
+ */
+describe('ci-shuffle.yml: the nightly shuffled run (TA-X03)', () => {
+  const text = readFileSync(join(ROOT, '.github/workflows/ci-shuffle.yml'), 'utf8');
+  const wf = yaml.load(text) as Workflow & { permissions: Record<string, string> };
+
+  it('runs nightly and by hand, never on a pull request or a push', () => {
+    expect(Object.keys(wf.on).sort()).toEqual(['schedule', 'workflow_dispatch']);
+    expect((wf.on.schedule as { cron: string }[]).length).toBe(1);
+  });
+
+  it('has no job named `test` and only read permission, so it gates no merge, ship or deploy', () => {
+    expect(Object.keys(wf.jobs)).toEqual(['shuffled']);
+    expect(wf.permissions).toEqual({ contents: 'read' });
+    expect(wf.jobs.shuffled['timeout-minutes']).toBeGreaterThan(0);
+    // merge-gated's stop-the-line check reads ci.yml runs only, so this file's red run cannot stop the line.
+    const gate = readFileSync(join(ROOT, 'tools/merge-gated.sh'), 'utf8');
+    expect(gate).toContain('gh run list --workflow ci.yml --branch main');
+    expect(gate).not.toContain('ci-shuffle');
+  });
+
+  it('runs every test file unsharded, shuffled, with a printed seed that a manual run can repeat', () => {
+    const steps = (wf.jobs.shuffled as unknown as { steps: { run?: string; env?: Record<string, string> }[] }).steps;
+    const step = steps.find((s) => s.run?.includes('test:all'))!;
+    expect(step.run).toContain('npm run test:all -- --sequence.shuffle --sequence.seed="${SEED}"');
+    expect(step.run).not.toContain('--shard');
+    expect(step.run).toMatch(/echo "Shuffle seed: \$\{SEED\}/);
+    // The input reaches the shell through env and is checked to be digits, never interpolated into the script.
+    expect(step.env).toEqual({ SEED_INPUT: '${{ inputs.seed }}' });
+    expect(step.run).not.toContain('${{');
+    const seed = (input: string) =>
+      spawnSync('bash', ['-c', step.run!.split('\n').slice(0, 6).join('\n') + '\necho "SEED=${SEED}"'], {
+        env: { PATH: process.env.PATH, SEED_INPUT: input, GITHUB_STEP_SUMMARY: '/dev/null' },
+        encoding: 'utf8',
+      });
+    expect(seed('12345').stdout).toContain('SEED=12345');
+    expect(seed('').stdout).toMatch(/SEED=\d{10}/);
+    const bad = seed('1; touch pwned');
+    expect(bad.status).toBe(2);
+    expect(bad.stdout).toContain('seed must be digits only');
   });
 });
 
