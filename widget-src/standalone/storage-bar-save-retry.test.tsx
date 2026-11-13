@@ -11,7 +11,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { PERSIST_DEBOUNCE_MS } from '@roadmap/health-core/record-session';
-import { StorageError } from '@roadmap/health-core/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', async (original) => ({
@@ -37,6 +37,7 @@ vi.mock('./connect', () => ({
 import { StorageBar, SyncControl } from './sync-control';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
+import { GitHubAdapter } from '../src/storage/github';
 
 /** A cloud whose writes can fail with a chosen error, counting each one tried. */
 class TestCloud extends MemoryAdapter {
@@ -90,12 +91,30 @@ async function failedSave(error: Error) {
   return cloud;
 }
 
+/** The live refresh's window and document listeners each page adds. The data layer never
+ *  tears a page down, so afterEach removes them: no earlier page answers a later test's events. */
+const pageListeners: Array<[EventTarget, string, EventListenerOrEventListenerObject]> = [];
+function recordListeners(target: Window | Document) {
+  const add = target.addEventListener.bind(target);
+  vi.spyOn(target, 'addEventListener').mockImplementation((type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) => {
+    if (!listener) return;
+    pageListeners.push([target, type, listener]);
+    add(type, listener, options);
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it
   vi.mocked(trackProductEvent).mockClear();
+  recordListeners(window);
+  recordListeners(document);
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear(); });
+afterEach(() => {
+  cleanup();
+  for (const [target, type, listener] of pageListeners.splice(0)) target.removeEventListener(type, listener);
+  vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear();
+});
 
 describe('US-09 AC30: a failed cloud save is retried when the browser comes back online (lead A1 step e)', () => {
   it('the online event lands the save: the line says Synced again, and one save_retry says landed', async () => {
@@ -113,6 +132,21 @@ describe('US-09 AC30: a failed cloud save is retried when the browser comes back
     await online();
     expect(cloud.writes).toBe(1);
     expect(saveRetries()).toEqual([]);
+  });
+
+  // PR 1458 N1: a revoked GitHub token, as the real adapter throws it, is a refused sign-in.
+  it('a GitHub save refused 401: the online event tries nothing, and the waiting line never promises an upload', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 }));
+    const refused = await new GitHubAdapter({ token: 'test-token-good', owner: 'synthetic', repo: 'health' })
+      .read(ROADMAP_FILE_NAME).then(() => null, (e: unknown) => e as Error).finally(() => { globalThis.fetch = realFetch; });
+    expect(refused).toBeInstanceOf(StorageError);
+    const cloud = await failedSave(refused!);
+    cloud.fail = null;
+    await online();
+    expect(cloud.writes).toBe(1);
+    expect(saveRetries()).toEqual([]);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
   });
 });
 

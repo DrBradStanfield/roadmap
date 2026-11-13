@@ -72,10 +72,10 @@ export class WebDavAdapter implements StorageAdapter {
       method: 'PROPFIND',
       headers: { ...this.authHeaders(), Depth: '0' },
     });
-    if (res.status === 401) throw new StorageError('Self-host rejected the credentials.');
+    if (res.status === 401) throw new StorageError('Self-host rejected the credentials.', undefined, undefined, res.status);
     // 207 Multi-Status is the WebDAV success for PROPFIND.
     if (!res.ok && res.status !== 207) {
-      throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`);
+      throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`, undefined, undefined, res.status);
     }
     return setSignIn(CONFIG_KEY, this.config, this.gen);
   }
@@ -90,7 +90,7 @@ export class WebDavAdapter implements StorageAdapter {
   async read(fileName: string): Promise<ReadResult> {
     const res = await fetchOrFail('Self-host', this.urlFor(fileName), { headers: this.authHeaders() });
     if (res.status === 404) return { body: null, version: null };
-    if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const etag = res.headers.get('etag');
     const text = await res.text();
     let body: unknown;
@@ -112,7 +112,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (res.status === 412) {
       throw new ConflictError('Self-host write conflict: the file changed since last read.');
     }
-    if (!res.ok) throw new StorageError(`Self-host write failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`Self-host write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     // Prefer the ETag from the PUT response; fall back to a HEAD if the server
     // didn't include it. '' = the server exposes no ETag → next write is LWW.
     let etag = res.headers.get('etag');
@@ -132,7 +132,7 @@ export class WebDavAdapter implements StorageAdapter {
     let res = await fetchOrFail('Self-host', url, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.urlFor(''), ref) : null;
     if (legacy) res = await fetchOrFail('Self-host', legacy, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
-    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`, undefined, undefined, res.status);
     return res.blob();
   }
 
@@ -145,7 +145,7 @@ export class WebDavAdapter implements StorageAdapter {
       await this.ensureCollection(ref);
       res = await put();
     }
-    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}).`, undefined, undefined, res.status);
   }
 
   // --- helpers --------------------------------------------------------------
