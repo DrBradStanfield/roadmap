@@ -12,6 +12,7 @@ import {
   DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { uncertainWrite } from '@roadmap/health-core/write-refusal';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
@@ -171,7 +172,9 @@ export class LocalStorageAdapter implements StorageAdapter {
       const restored = safeGetItem(fileKey(fileName)) === written && restoreItem(fileKey(fileName), previous);
       if (!restored) safeRemoveItem(versionKey(fileName));
       noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
-      throw new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
+      // Not put back, the record may have stored: never a definite refusal (S69).
+      const full = new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
+      throw restored ? full : uncertainWrite(full);
     }
     noteRecordSave(fileName, true);
     return { version: next };
