@@ -25,6 +25,7 @@ import { platformChatCompletion } from './platform-chat.server';
 import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
+import { CHAT_PROMPT } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
@@ -98,6 +99,11 @@ export function startDiscordBot(): void {
 
   if (!DISCORD_BOT_TOKEN) {
     console.log('Discord bot: DISCORD_BOT_TOKEN not set — bot disabled');
+    return;
+  }
+
+  if (CHAT_PROMPT.kind === 'missing') {
+    console.warn('Discord bot: chat system prompt missing — bot disabled');
     return;
   }
 

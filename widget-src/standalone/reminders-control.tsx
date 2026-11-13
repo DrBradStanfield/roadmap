@@ -23,8 +23,7 @@ import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeede
 import type { Backend } from './connect';
 
 export function RemindersControl({ backend }: { backend: Backend }) {
-  // Not useBusyRun: that scaffold leaves busy=true on success (its flows end
-  // in a reload). This toggle stays on the page, so busy must reset.
+  // This toggle stays on the page (no reload ends it), so busy must reset.
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);

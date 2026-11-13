@@ -339,6 +339,22 @@ describe('departure puts the save on disk before the page goes (US-06 AC15, Brad
     view.unmount();
   });
 
+  // Lead A5-n1 (US-06 AC15): once the timer has fired, a departure no longer
+  // stages the save. This guards the timer-to-write path only:
+  // flushPendingProfileSave, then fromForm, then the write, all in microtasks,
+  // so the write lands before a departure in the next task. It does not cover
+  // a slow earlier save on the chain: a real save cannot be held open here.
+  it("the weight's timer fired and the tab closed in the next task: the weight is on disk", async () => {
+    const { view } = await page();
+    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
+    type(weight, '82');
+    act(() => weight.blur()); // its 500 ms timer starts
+    // Set after the save's timer, for the same 500 ms: it runs in the task right after the timer fires.
+    await act(async () => { await new Promise<void>(r => setTimeout(() => { window.dispatchEvent(new Event('pagehide')); r(); }, 500)); });
+    expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
+    view.unmount();
+  });
+
   it('control: departure with nothing left or committed writes nothing', async () => {
     const { view } = await page();
     const before = new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME);

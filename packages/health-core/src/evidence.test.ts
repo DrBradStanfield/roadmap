@@ -41,6 +41,18 @@ describe('ApoB target attribution (US-07 AC1)', () => {
   });
 });
 
+// US-25 AC28 (App Review 1.4.1): a reason that states a treatment recommendation names the doctor.
+describe('treatment reasons carry the doctor line (US-25 AC28)', () => {
+  it.each([
+    ['apob-very-high', 'A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended. Discuss it with your doctor.\n\n'],
+    ['bp-stage2', 'At this level, medication is typically recommended alongside lifestyle measures. Discuss it with your doctor.\n\n'],
+    ['ldl-very-high', 'The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. Discuss it with your doctor. A causal'],
+    ['non-hdl-very-high', 'Treatment with statins and lifestyle modification is typically recommended. Discuss it with your doctor.\n\n'],
+  ])('%s follows its treatment sentence with "Discuss it with your doctor."', (id, sentence) => {
+    expect(SUGGESTION_EVIDENCE[id].reason).toContain(sentence);
+  });
+});
+
 // US-56 AC8: the VO2 max bands' reason and source, the FRIEND 2022 update (Crossref-checked
 // 2026-10-26: Kaminsky et al., Mayo Clin Proc 97(2):285-293).
 describe('VO2 max bands evidence (US-56 AC8)', () => {

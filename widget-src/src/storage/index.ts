@@ -19,4 +19,5 @@ export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { GitHubAdapter, type GitHubConfig } from './github';
 export { WebDavAdapter, type WebDavConfig } from './webdav';
 export { GoogleDriveAdapter, DriveGrantRefusedError, DRIVE_FILE_SCOPE, gisReady, preloadGis, type GoogleDriveConfig } from './drive';
+export { savePopupGrant } from './drive-popup-grant';
 export { getDeviceId } from './device-id';

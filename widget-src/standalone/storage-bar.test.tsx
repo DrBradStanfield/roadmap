@@ -13,7 +13,8 @@ const sync = vi.hoisted(() => ({ pending: false, status: 'saved' as 'saved' | 's
 // No retry due: these rows pin the line without the retry clause (storage-bar-save-retry.test.tsx pins it, US-09 AC30).
 vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status, currentRetryDue: () => false }));
 vi.mock('../src/storage', () => ({
-  GoogleDriveAdapter: class { connectViaPopup = sync.popup; },
+  GoogleDriveAdapter: class { acquireViaPopup = sync.popup; },
+  savePopupGrant: () => true,
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,
@@ -38,20 +39,19 @@ vi.mock('./connect', () => ({
   connectRefusal: () => null,
   rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
-  // Runs the action at once, inside the click, as the real one does up to its first await.
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
 import { PICKER_GUEST_LEAD } from './backend-picker';
 import { openBackendPicker } from '../src/lib/storage-notice';
+import { resetSwitchFlow } from './switch-flow';
 import type { Backend } from './connect';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
   HTMLDialogElement.prototype.close = vi.fn();
 });
-afterEach(() => { cleanup(); sync.pending = false; sync.status = 'saved'; sync.popup.mockClear(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); resetSwitchFlow(); sync.pending = false; sync.status = 'saved'; sync.popup.mockClear(); vi.unstubAllGlobals(); });
 
 type Cloud = Exclude<Backend, 'local'>;
 /** The bar as app.tsx mounts it, beside the plan's SyncControl, which hosts the picker. */
@@ -263,7 +263,8 @@ describe('US-09 AC30 — a reconnect label runs the reconnect, never the picker'
     sync.popup.mockImplementationOnce(() => new Promise(() => {})); // the popup stays open
     mount('local', 'google-drive');
     fireEvent.click(bar());
-    const panelButton = [...document.querySelectorAll('.hr-sync-btn')].find((b) => b.textContent === 'Reconnect Google Drive') as HTMLButtonElement;
+    const panelButton = document.querySelector('.hr-sync-btn') as HTMLButtonElement;
+    expect(panelButton.textContent).toBe('Reconnecting…'); // one reconnect, shown in both
     fireEvent.click(panelButton);
     expect(sync.popup).toHaveBeenCalledTimes(1);
   });
