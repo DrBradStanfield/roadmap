@@ -16,7 +16,7 @@
  * values with latestFromHistory().
  */
 import { METRIC_TO_FIELD } from './mappings';
-import type { HealthInputs } from './types';
+import type { HealthInputs, ScreeningInputs } from './types';
 import { comparatorOf, limitRepresentative, type Comparator } from './lab-limits';
 import { cmpStr, stampInstant } from './merge';
 import { PSA_THRESHOLDS, UNIT_DEFS } from './units';
@@ -69,6 +69,7 @@ export function buildMeasurementHistory(
   records: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
   cap = HISTORY_CAP_PER_METRIC,
   now = new Date(),
+  answers?: PsaAnswers,
 ): MeasurementHistoryMap {
   const out: MeasurementHistoryMap = {};
   // A PSA the plan cannot use never takes a place under the cap, so newer
@@ -87,7 +88,7 @@ export function buildMeasurementHistory(
   }
   // US-06 AC21 item 6: the flag from every usable PSA, before the cap trims the series. A row
   // that carries it (the chat mirror's, planPsa's over the full record) keeps it.
-  if (newestPsa && raisedBeforeOf(newestPsa, anchor, newestPsa.raisedBefore === true)) out.psa.at(-1)!.raisedBefore = true;
+  if (newestPsa && raisedBeforeOf(newestPsa, anchor, answers, newestPsa.raisedBefore === true)) out.psa.at(-1)!.raisedBefore = true;
   for (const k of Object.keys(out)) {
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
@@ -126,26 +127,39 @@ const psaGrade = (r: { value: number; comparator?: unknown }): number | null => 
   return comparator ? limitRepresentative('psa', comparator, r.value) : r.value;
 };
 
+/** The old screening answers' PSA (US-06 AC14), as `screeningsToInputs` reads them. */
+export type PsaAnswers = Pick<ScreeningInputs, 'prostatePsaValue' | 'prostateLastDate'>;
+
 /**
  * US-06 AC21 item 6, the one rule for `raisedBefore`: `newest`, the newest usable PSA, is a
- * limit that does not decide against 4.0 ("< 5", "<= 4.0"), and `anchor`, the newest usable
- * PSA that does decide, is 4.0 or above (or the flag was `carried` from the full record).
+ * limit that does not decide against 4.0 ("< 5", "<= 4.0"), and the newest PSA that does
+ * decide is 4.0 or above (or the flag was `carried` from the full record). That is `anchor`,
+ * the newest usable deciding row, or the old answer when it is newer by date, by
+ * `withPsaMeasurement`'s rule (US-06 AC14): an answer with no date is never newer.
  */
-const raisedBeforeOf = (newest: { value: number; comparator?: unknown }, anchor?: { value: number; comparator?: unknown }, carried = false) =>
-  psaGrade(newest) === null && (carried || (!!anchor && psaGrade(anchor)! >= PSA_THRESHOLDS.normal));
+const raisedBeforeOf = (
+  newest: { value: number; comparator?: unknown },
+  anchor?: { value: number; comparator?: unknown; recordedAt?: string | null },
+  answers?: PsaAnswers,
+  carried = false,
+) => {
+  const { prostatePsaValue: value, prostateLastDate: day } = answers ?? {};
+  const decider = value !== undefined && day && day > (anchor?.recordedAt ?? '').slice(0, 10) ? { value } : anchor;
+  return psaGrade(newest) === null && (carried || (!!decider && psaGrade(decider)! >= PSA_THRESHOLDS.normal));
+};
 
 /**
  * The PSA the plan reads (US-06 AC21 item 6, Brad 2026-11-13): `newestUsablePsa`, marked
- * `raisedBefore` by `raisedBeforeOf`. A vague result never ends the 3-month rule. Derived on
- * every read, never stored in the record.
+ * `raisedBefore` by `raisedBeforeOf` over the rows and the old `answers`. A vague result
+ * never ends the 3-month rule. Derived on every read, never stored in the record.
  */
 export function planPsa<
   T extends { id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; status?: string; comparator?: unknown },
->(rows: readonly T[], now: Date): (T & { raisedBefore?: true }) | undefined {
+>(rows: readonly T[], now: Date, answers?: PsaAnswers): (T & { raisedBefore?: true }) | undefined {
   const newest = newestUsablePsa(rows, now);
   if (!newest || psaGrade(newest) !== null) return newest;
   const anchor = newestUsablePsa(rows.filter((r) => psaGrade(r) !== null), now);
-  return raisedBeforeOf(newest, anchor) ? { ...newest, raisedBefore: true } : newest;
+  return raisedBeforeOf(newest, anchor, answers) ? { ...newest, raisedBefore: true } : newest;
 }
 
 /**

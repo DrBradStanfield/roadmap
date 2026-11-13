@@ -109,7 +109,10 @@ export function chatContextOf(
   screenings: ApiScreening[],
   dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
 ): ChatContextPayload {
-  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated), inputs);
+  // A mirror row may be anything (see below); the old PSA answers take their place in `raisedBefore`, as in the plan (US-06 AC21 item 6).
+  const screeningRowsSent = screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : []));
+  const measurementHistory = withCreatinineDraft(
+    buildMeasurementHistory(dated, HISTORY_CAP_PER_METRIC, new Date(), screeningsToInputs(screeningRowsSent)), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
   // stays home, so a client allow-list that strips `limits` (an older phone)
   // cannot pass it off as an exact value. The builder grades `limits` again.
@@ -126,7 +129,7 @@ export function chatContextOf(
     // an object, and the builder drops the rest.
     medications: medications.flatMap(m => (m && typeof m === 'object'
       ? [{ medicationKey: m.medicationKey, drugName: m.drugName, doseValue: m.doseValue }] : [])),
-    screenings: screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : [])),
+    screenings: screeningRowsSent,
     ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
   };
 }

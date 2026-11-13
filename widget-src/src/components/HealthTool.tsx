@@ -374,12 +374,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
+    const screeningAnswers = screeningsToInputs(screenings);
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date())),
+      withPsaMeasurement(screeningAnswers, planPsa(history, new Date(), screeningAnswers)),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
