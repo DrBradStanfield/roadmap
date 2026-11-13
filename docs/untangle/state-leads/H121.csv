@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H121,iPhone sync,"When the cloud definitely refuses the unsent erase, Disconnect stays possible with a confirm",bug,not started,"S50b Part 2: when the cloud definitely refuses the unsent erase (sign-in ended, revoked, 403/404, storage full), Disconnect stays possible with a confirm saying the copy in <cloud> was not erased; waits for Brad's words (draft on his page).",,yes

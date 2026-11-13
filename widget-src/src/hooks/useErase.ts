@@ -61,6 +61,8 @@ export interface Erase {
   shownErase: string;
   /** The page has shown its first read: the saves' gate (the machine's `read`, ledger H37). */
   loaded: boolean;
+  /** The page's first read failed (L2): Delete all my data stays in Settings (US-11 AC10, H114). */
+  firstReadFailed: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
   /** Another writer's erase is heard and its latest read failed, the first read shown (H39). Never after a failed first read (L2). */
@@ -139,5 +141,5 @@ export function useErase(props: EraseDoorProps): Erase {
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', firstReadFailed: state.read === 'failed', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), writeRefused, eraseAll };
 }
