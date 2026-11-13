@@ -27,22 +27,22 @@ vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, capture
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: edge.fallback, generateTitle: () => 'Synthetic', CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
-// The turn claim (US-15 AC63) takes and frees its row in an in-memory store.
+const chatTables = vi.hoisted(() => (table: string) => {
+  const query = { select: () => query, eq: () => query, gte: () => query, order: () => query, limit: () => query,
+    update: () => { edge.updates.push(table); return query; },
+    insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
+    maybeSingle: async () => ({ data: table === 'chat_conversations' ? edge.recent : null, error: null }),
+    single: async () => ({ data: { id: 'conv-new' }, error: null }),
+    then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk) };
+  return query;
+});
+// The turn claim (US-15 AC63) takes and frees its row in an in-memory store;
+// every other table goes to the chat tables above.
 vi.mock('./supabase-client.server', async () => {
   const helpers = await import('./single-use-claims.test-helpers');
-  return { supabaseAdmin: helpers.claimsAdmin(helpers.newClaimsState()) };
+  const claimStore = helpers.claimsAdmin(helpers.newClaimsState());
+  return { supabaseAdmin: { from: (table: string) => (table === 'single_use_claims' ? claimStore.from(table) : chatTables(table)) } };
 });
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
-  from: (table: string) => {
-    const query = { select: () => query, eq: () => query, gte: () => query, order: () => query, limit: () => query,
-      update: () => { edge.updates.push(table); return query; },
-      insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
-      maybeSingle: async () => ({ data: table === 'chat_conversations' ? edge.recent : null, error: null }),
-      single: async () => ({ data: { id: 'conv-new' }, error: null }),
-      then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk) };
-    return query;
-  },
-} }));
 
 const usage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
 function spamMessage() {

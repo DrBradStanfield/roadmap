@@ -5,7 +5,7 @@
  * youtube-bot.server.ts (issue #429), which re-exports its public names.
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
 import { generateTitle } from './chat.server';
 import { COMMENT_MAX_AGE_DAYS, PLATFORM_YOUTUBE, BOT_PROFILE_ID } from './youtube-bot-config.server';

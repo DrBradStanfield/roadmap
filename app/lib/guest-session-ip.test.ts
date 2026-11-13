@@ -42,8 +42,8 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
-let hashClientIp: typeof import('./supabase.server').hashClientIp;
-let getOrCreateGuestSession: typeof import('./supabase.server').getOrCreateGuestSession;
+let hashClientIp: typeof import('./supabase-guest.server').hashClientIp;
+let getOrCreateGuestSession: typeof import('./supabase-guest.server').getOrCreateGuestSession;
 
 const IP = '203.0.113.7';
 
@@ -55,7 +55,7 @@ describe('guest session IP hashing (US-15 AC7)', () => {
     vi.stubEnv('SUPABASE_JWT_SECRET', 'stub-jwt-secret');
     vi.stubEnv('SHOPIFY_API_SECRET', 'stub-shopify-secret');
     vi.resetModules();
-    ({ hashClientIp, getOrCreateGuestSession } = await import('./supabase.server'));
+    ({ hashClientIp, getOrCreateGuestSession } = await import('./supabase-guest.server'));
   });
 
   afterAll(() => vi.unstubAllEnvs());

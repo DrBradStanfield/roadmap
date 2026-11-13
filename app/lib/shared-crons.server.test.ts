@@ -5,7 +5,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // exactly 'true' (fly.toml, health-tool-app). Trending runs per store, so it
 // starts either way. Each machine says once, at boot, which way it went.
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), supabaseAdmin: null }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(),

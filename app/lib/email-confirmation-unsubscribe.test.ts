@@ -19,7 +19,8 @@ vi.mock('resend', () => ({ Resend: class {
   } };
 } }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: fixture.db, hashClientIp: () => 'synthetic-ip' }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: fixture.db }));
+vi.mock('./supabase-guest.server', () => ({ hashClientIp: () => 'synthetic-ip' }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn(async () => {}) }));
 vi.mock('./klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
 import { buildPlanReadyEmailHtml } from './email.server';

@@ -10,7 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 import { assessThreadFollowUp, filterThread } from './youtube-bot-pipeline.server';
 import { buildYouTubePlatformContext } from './youtube-context';

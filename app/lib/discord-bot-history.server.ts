@@ -3,7 +3,7 @@
  * recent-conversation continuity) and thread history from the Discord API.
  * Split out of discord-bot.server.ts (issue #429).
  */
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { HISTORY_MSG_LIMIT, RECENT_CONVERSATION_WINDOW_MS, PLATFORM_DISCORD } from './discord-bot-config.server';
 import type { GuildMessage } from './discord-bot-messages.server';
 

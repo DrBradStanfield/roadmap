@@ -20,8 +20,8 @@ vi.mock('../lib/supabase.server', () => ({
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guestSession,
   GuestRateLimitError: class extends Error {},
-  supabaseAdmin: null,
 }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],

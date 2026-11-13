@@ -25,7 +25,7 @@ const db = vi.hoisted(() => ({
   failGetNo: 0, // 1-based GET (row read) that answers 503; 0 = none
 }));
 
-vi.mock('./supabase.server', async () => {
+vi.mock('./supabase-client.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
 
   type Pred = (r: Record<string, unknown>) => boolean;
@@ -86,7 +86,8 @@ vi.mock('./supabase.server', async () => {
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import * as Sentry from '@sentry/react-router';
-import { readPostingCaps, PER_VIDEO_REPLY_CAP } from './youtube-bot.server';
+import { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
+import { readPostingCaps } from './youtube-bot-store.server';
 
 const POSTED_AT = '2026-08-01T00:00:00.000Z';
 let nextId = 1;

@@ -21,7 +21,8 @@ const cancelByToken = vi.fn(async () => {});
 const sendPlanReadyEmail = vi.fn(async () => true);
 const recordServerEvent = vi.fn(async () => {});
 
-vi.mock('../lib/supabase.server', () => ({ hashClientIp: (ip: string) => `h:${ip}`, supabaseAdmin: null }));
+vi.mock('../lib/supabase-guest.server', () => ({ hashClientIp: (ip: string) => `h:${ip}` }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
 vi.mock('../lib/email.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),

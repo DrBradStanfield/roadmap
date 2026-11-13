@@ -9,7 +9,7 @@ process.env.TZ = 'Pacific/Auckland';
 
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn() }));
 vi.mock('./email.server', () => ({ buildReminderV2EmailHtml: vi.fn(), sendReminderEmail: vi.fn() }));
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(), getOptinsBatch: vi.fn(), inQuietPeriod: vi.fn(),
