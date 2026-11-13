@@ -263,6 +263,8 @@ export const DOORS = {
     kind: 'promise',
     args: [['provider', provider], ['deviceId', text], ['firstConnect', flag], ['mergePhone', flag]],
     returns: "Promise of JSON",
+    optionalAt: 4,
+    optionalReturns: "eraseEpoch (lead H200, US-25 AC16j): the record's own meta.eraseEpoch (0 when unset), beside record, erase and session in the view. The same view is the 'changed' news's payload and cloudErase's view, so both carry it too. The app holds a new session's first record undrawn when its eraseEpoch differs from the one the record shown was drawn at, even when it cannot draw it, so the pre-erase copy is never shown over another device's erase. An engine before it sends none, and the app holds only on its other evidence, as before; an app before it ignores the key.",
   },
   cloudRefresh: {
     kind: 'promise',

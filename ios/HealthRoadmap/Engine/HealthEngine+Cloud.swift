@@ -13,6 +13,8 @@ extension HealthEngine {
         let session: Int
         /// The engine's stamp, set in Swift (`stamp`): one stamped earlier is older.
         var order: Int? = nil
+        /// The record's own meta.eraseEpoch (lead H200); nil from an engine before it: no evidence, no hold.
+        var eraseEpoch: Int? = nil
     }
 
     /// What a cloud session reports through the `notify` native (declared in

@@ -169,6 +169,144 @@ final class RemoteEraseTakenInTests: XCTestCase {
         XCTAssertTrue(scheduler.optedIn, "a failed draw ends no reminders")
     }
 
+    // MARK: H200: a relaunch or connect (handOver) onto a remote erase
+
+    /// The engine's own erase identity of `record` (erase-identity.ts eraseIdentityOf, "[epoch, erasedAt]")
+    /// and its eraseEpoch, as cloud.ts view() sends them.
+    private func identity(_ record: String) throws -> (erase: String, epoch: Int) {
+        let file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(record.utf8)) as? [String: Any])
+        let meta = try XCTUnwrap(file["meta"] as? [String: Any])
+        let epoch = meta["eraseEpoch"] as? Int ?? 0
+        let at = (meta["erasedAt"] as? String).map { "\"\($0)\"" } ?? "null"
+        return ("[\(epoch),\(at)]", epoch)
+    }
+
+    /// The view the engine sends for `record`, with its real identity and eraseEpoch (nil: an older engine).
+    private func view(_ record: String, session: Int, order: Int, epoch known: Bool = true) throws -> HealthEngine.CloudView {
+        let (erase, epoch) = try identity(record)
+        return HealthEngine.CloudView(record: record, erase: erase, session: session, order: order, eraseEpoch: known ? epoch : nil)
+    }
+
+    /// The phone's own file with a weight, drawn at eraseEpoch 0 (or left undrawn), its chart kept.
+    private func phoneShown(_ engine: HealthEngine, drawn: Bool = true) async throws -> (RecordStore, String) {
+        let before = try weighed(engine)
+        try Data(before.utf8).write(to: folder.appending(path: "health-roadmap.json"))
+        try screenFails(!drawn, engine)
+        let store = try store(engine)
+        try screenFails(false, engine)
+        XCTAssertNil(store.source.session, "the phone's file is shown, as at a relaunch before the open")
+        if drawn {
+            XCTAssertEqual(store.mark.epoch, 0)
+            _ = await store.chart(for: "weight")
+            XCTAssertNotNil(store.shownChart(for: "weight"), "the pre-erase chart is kept")
+        }
+        return (store, before)
+    }
+
+    /// H200 (S63 shape a through a new session): a relaunch opens a session whose first record is
+    /// another device's erase, which the engine cannot draw. It is held undrawn and counted once,
+    /// never the phone's pre-erase copy left shown.
+    func testARelaunchOnARemoteEraseTheEngineCannotDrawIsHeld_H200() async throws {
+        let engine = try engine()
+        let (store, before) = try await phoneShown(engine)
+        let erased = try erased(before, engine)
+        try screenFails(true, engine)
+
+        let shown = await store.handOver(to: try view(erased, session: 1, order: 1)) { true }
+
+        XCTAssertTrue(shown)
+        XCTAssertEqual(store.recordJSON, erased, "the erased record is the one held")
+        XCTAssertEqual(store.hold, .heldUndrawn)
+        XCTAssertNil(store.myData, "My data says the record did not load")
+        XCTAssertNil(store.shownChart(for: "weight"))
+        XCTAssertEqual(store.source.session, 1)
+        XCTAssertEqual(store.erasures, 1, "counted once")
+        XCTAssertFalse(store.predatesErase)
+    }
+
+    /// H200: the same relaunch, with a reminders read that fails: the opt-in and first-seen days go.
+    func testARelaunchOnARemoteEraseEndsRemindersWhenTheReadFails_H200() async throws {
+        let engine = try engine()
+        let (store, before) = try await phoneShown(engine)
+        let center = FakeNotificationCenter()
+        center.status = .allowed
+        center.pending = [UNNotificationRequest(identifier: "reminder.2027-01-15", content: UNMutableNotificationContent(), trigger: nil)]
+        let optIn = folder.appending(path: "reminders-opt-in"), firstSeen = folder.appending(path: "reminders-first-seen")
+        try Data("0".utf8).write(to: optIn)
+        try Data(#"{"blood_test_lipids":"2026-10-01"}"#.utf8).write(to: firstSeen)
+        let scheduler = ReminderScheduler(center: center, folder: folder, erasures: { store.erasures }) { _ in
+            throw HealthEngine.EngineError.callFailed("unreadable")
+        }
+        XCTAssertTrue(scheduler.optedIn)
+
+        let erased = try erased(before, engine)
+        try screenFails(true, engine)
+        _ = await store.handOver(to: try view(erased, session: 1, order: 1)) { true }
+        await scheduler.refresh()
+
+        XCTAssertFalse(scheduler.optedIn, "the erase ends the opt-in")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: optIn.path(percentEncoded: false)), "the opt-in file goes")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: firstSeen.path(percentEncoded: false)), "the first-seen days go")
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// The guard on H200: an undrawable first record at the same eraseEpoch, one from an older engine
+    /// (no eraseEpoch), and one over an undrawn phone copy (no epoch drawn) are no evidence: not held.
+    func testAnUndrawableHandOverWithNoEpochEvidenceIsNotHeld_H200() async throws {
+        let cases: [(why: String, phoneDrawn: Bool, erase: Bool, known: Bool)] = [
+            ("the same eraseEpoch", true, false, true),
+            ("an older engine: no eraseEpoch", true, true, false),
+            ("an undrawn phone copy", false, true, true),
+        ]
+        for c in cases {
+            let engine = try engine()
+            let (store, before) = try await phoneShown(engine, drawn: c.phoneDrawn)
+            let record = c.erase ? try erased(before, engine) : try weighed(engine, days: ["2026-10-01", "2026-10-02"])
+            try screenFails(true, engine)
+
+            let result = await store.draw(try view(record, session: 1, order: 1, epoch: c.known))
+
+            XCTAssertEqual(result, .failed, c.why)
+            XCTAssertEqual(store.recordJSON, before, "the phone's copy stays: \(c.why)")
+            XCTAssertNil(store.source.session, "the phone's file is still the source: \(c.why)")
+            XCTAssertEqual(store.erasures, 0, c.why)
+        }
+    }
+
+    /// PR 1599's rule for H200: a relaunch's held erase E (session 2, order 3) and the same session's
+    /// older pre-erase answer P (order 2), each as the handover or the news after it, in both orders and
+    /// with E drawable or not. P never lands over E, and the erase is counted once.
+    func testAnOlderPreEraseAnswerNeverLandsOverAHandedOverErase_EveryOrder_H200() async throws {
+        for drawable in [true, false] {
+            for eFirst in [true, false] {
+                let why = "E \(drawable ? "drawn" : "held undrawn"), \(eFirst ? "E then P" : "P then E")"
+                let engine = try engine()
+                let (store, before) = try await phoneShown(engine)
+                let older = try weighed(engine, days: ["2026-10-01", "2026-10-02"])
+                let e = try view(try erased(before, engine), session: 2, order: 3)
+                let p = try view(older, session: 2, order: 2)
+                if eFirst {
+                    try screenFails(!drawable, engine)
+                    _ = await store.handOver(to: e) { true }
+                    try screenFails(false, engine)
+                    await store.showCloud(p).value
+                } else {
+                    _ = await store.handOver(to: p) { true }
+                    XCTAssertEqual(store.recordJSON, older, why)
+                    try screenFails(!drawable, engine)
+                    await store.showCloud(e).value
+                    try screenFails(false, engine)
+                }
+
+                XCTAssertEqual(store.recordJSON, e.record, "the erase is the record held: \(why)")
+                XCTAssertEqual(store.hold, drawable ? .readable : .heldUndrawn, why)
+                XCTAssertEqual(store.cloudErase, e.erase, why)
+                XCTAssertEqual(store.erasures, 1, "counted once: \(why)")
+                XCTAssertFalse(store.predatesErase, why)
+            }
+        }
+    }
+
     // MARK: Mark.erased(by:)
 
     func testMarkErasedByTable() {
