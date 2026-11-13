@@ -50,22 +50,23 @@ name: Claude Review
 
 on:
   pull_request:
-    # labeled: adding 'hold' cancels a review already running (the lane below).
-    # Removing 'hold' starts nothing, as before.
-    types: [opened, synchronize, labeled]
+    # No label events. Adding 'hold' used to cancel a running review; `gh pr
+    # create --label hold` adds the label a second after 'opened', so the
+    # review on the head sha ended CANCELLED, and merge-gated refused it (exit
+    # 9) until someone re-ran the job. A review already running on a held PR
+    # now finishes; auto-ship still never ships a PR that carries 'hold'.
+    types: [opened, synchronize]
 
-# A newer push to the same PR, or adding 'hold', cancels the older review. Auto
-# Ship runs only on a review that ended in success, so a cancelled review ships
-# nothing. Adding any other label gets a lane of its own, so it never cancels a
-# review.
+# A newer push to the same PR cancels the older review. Auto Ship runs only on a
+# review that ended in success, so a cancelled review ships nothing.
 concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && github.event.label.name != 'hold' && github.run_id || 'pr' }}
+  group: claude-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   review:
-    # Only pushes run a review, never a label event. Skipped while the PR
-    # carries 'hold': its owner merges it by hand after a fresh adversary
+    # Only pushes run a review. Skipped when the push's PR already carries
+    # 'hold': its owner merges it by hand after a fresh adversary
     # (and Codex where required), and auto-ship never ships it.
     if: >
       startsWith(github.event.pull_request.head.ref, 'claude/') &&

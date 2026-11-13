@@ -111,10 +111,10 @@ describe('ci.yml jobs (US-64 AC12)', () => {
 });
 
 /**
- * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review while a PR carries `hold`.
- * Adding `hold` cancels a running review through the shared lane; a label
- * event never runs one; any other label gets its own lane, so it cancels
- * nothing. Removing `hold` does nothing, as before (no `unlabeled` trigger).
+ * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review on a push to a PR that carries `hold`.
+ * Label events start nothing and cancel nothing: adding `hold` one second after
+ * `opened` (gh pr create --label hold) used to cancel that review, leaving a
+ * CANCELLED `review` that merge-gated refuses (exit 9) until a re-run.
  */
 describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const review = yaml.load(readFileSync(join(ROOT, '.github/workflows/claude-review.yml'), 'utf8')) as Workflow;
@@ -132,8 +132,8 @@ describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const runs = (c: ReturnType<typeof ctx>) => Boolean(evalExpr(review.jobs.review.if!, c));
   const lane = (c: ReturnType<typeof ctx>) => interpolate(review.concurrency!.group, c);
 
-  it('fires on opened, synchronize and labeled only', () => {
-    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize', 'labeled']);
+  it('fires on opened and synchronize only, never a label event', () => {
+    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize']);
   });
 
   it('reviews opened and synchronize, never a held PR, never a label event', () => {
@@ -152,13 +152,10 @@ describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
     expect(runs(human)).toBe(false);
   });
 
-  it('pushes and adding hold share the PR lane (and cancel); any other label gets the run id', () => {
+  it('a newer push cancels the older review in the PR lane', () => {
     expect(review.concurrency!['cancel-in-progress']).toBe(true);
     const pr = lane(ctx('opened'));
     expect(lane(ctx('synchronize'))).toBe(pr);
-    expect(lane(ctx('labeled', ['hold'], 'hold'))).toBe(pr);
-    expect(lane(ctx('labeled', ['docs'], 'docs'))).not.toBe(pr);
-    expect(lane(ctx('labeled', ['docs'], 'docs'))).toContain('777');
-    expect(pr).toContain('42');
+    expect(pr).toBe('claude-review-42');
   });
 });
