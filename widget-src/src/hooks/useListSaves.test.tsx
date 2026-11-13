@@ -150,10 +150,10 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read flushes only the saves whose er
     expect(writeRefused).not.toHaveBeenCalled();
   });
 
-  it('a skipped entry is still dropped by the erase\'s forget, unsaved', async () => {
+  it('a skipped entry is still dropped by this tab\'s erase (forget), unsaved', async () => {
     const { view } = setup();
     act(() => view.result.current.handleMedicationChange('statin', 'Atorvastatin', 40, 'mg'));
-    store.erase = 'e2'; // another device's erase is shown before its forget runs
+    store.erase = 'e2'; // this tab's erase is shown before its forget runs
     act(() => view.result.current.flushListSaves());
     expect(view.result.current.medicationWaiting('statin')).toBe(true);
     act(() => view.result.current.dropListSaves());
