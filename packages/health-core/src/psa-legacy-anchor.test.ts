@@ -161,13 +161,65 @@ describe('an out-of-range old answer keeps its date and loses its value: a date-
     expect(chatPlan(file).map((s) => s.id)).toContain('screening-prostate-elevated');
   });
 
-  // A separate decided change (US-06 AC21) stops a dated answer with no value from ending the rule;
-  // until it lands, this pins main's behaviour.
-  it('UNCHANGED: a dated answer with no value, newer than the rows, wins by date; the rule ends', () => {
-    const file = fileWith(RAISED_THEN_VAGUE, { prostateLastDate: '2026-09' });
-    expect(cards(file)).toEqual([]);
-    expect(reminders(file)).toEqual([]);
-    expect(chatPlan(file)).toEqual([]);
+  // US-06 AC21 (Brad 2026-11-13): a dated answer with no usable value does not show the PSA is below 4.0,
+  // so it never ends the 3-month rule. Only a real value, in range and below 4.0, ends it.
+  describe('a dated answer with no usable value, newer than a raised PSA, keeps the 3-month rule (US-06 AC21)', () => {
+    const RAISED_ROW: Row[] = [{ value: 4.5, day: '2026-04-10' }];
+
+    it.each([['no value', {}], ['10001 (out of range)', { prostatePsaValue: '10001' }]])(
+      'declined, raised then vague, an answer with %s dated 2026-07: "Repeat PSA test", 3 months from the answer', (_what, extra) => {
+        const file = fileWith(RAISED_THEN_VAGUE, { ...extra, prostateLastDate: '2026-07' });
+        expect(cards(file)).toEqual([
+          expect.objectContaining({ id: 'screening-prostate-repeat', description: expect.stringContaining(CARRIED) }),
+        ]);
+        expect(reminders(file)).toEqual(['2026-10-01']);
+        expect(chatPlan(file).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
+      });
+
+    it('declined, a raised row alone, then an answer with no value dated 2026-07: the rule holds, no "Elevated PSA"', () => {
+      const file = fileWith(RAISED_ROW, { prostateLastDate: '2026-07' });
+      expect(cards(file)).toEqual([
+        expect.objectContaining({ id: 'screening-prostate-repeat', description: expect.stringContaining(CARRIED) }),
+      ]);
+      expect(reminders(file)).toEqual(['2026-10-01']);
+      expect(chatPlan(file).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
+    });
+
+    it('before the 3 months from the answer are up: no card yet, the reminder 3 months on', () => {
+      const file = fileWith(RAISED_THEN_VAGUE, { prostateLastDate: '2026-09' });
+      expect(cards(file)).toEqual([]);
+      expect(reminders(file)).toEqual(['2026-12-01']);
+      expect(chatPlan(file)).toEqual([]);
+    });
+
+    it('a man who will screen: 3 months from the answer, never "PSA test up to date"', () => {
+      const upcoming = fileWith(RAISED_ROW, { prostateDiscussion: 'will_screen', prostateLastDate: '2026-09' });
+      expect(cards(upcoming)).toEqual([]);
+      expect(reminders(upcoming)).toEqual(['2026-12-01']);
+      const overdue = fileWith(RAISED_ROW, { prostateDiscussion: 'will_screen', prostateLastDate: '2026-07' });
+      expect(cards(overdue).map((c) => c.id)).toEqual(['screening-prostate-overdue']);
+      expect(reminders(overdue)).toEqual(['2026-10-01']);
+    });
+
+    it('"not yet": the discussion card, then "Repeat PSA test" with no first sentence', () => {
+      const file = fileWith(RAISED_ROW, { prostateDiscussion: 'not_yet', prostateLastDate: '2026-07' });
+      expect(cards(file).map((c) => c.id)).toEqual(['screening-prostate', 'screening-prostate-repeat']);
+      expect(cards(file)[1].description.startsWith(CARRIED)).toBe(true);
+    });
+
+    it('a PSA below 4.0 before the answer: no rule to keep', () => {
+      const file = fileWith([{ value: 3.0, day: '2026-04-10' }], { prostateLastDate: '2026-07' });
+      expect(cards(file)).toEqual([]);
+      expect(reminders(file)).toEqual([]);
+      expect(chatPlan(file)).toEqual([]);
+    });
+
+    it('a real answer of 3.0 dated 2026-07, in range and below 4.0: it ends the rule', () => {
+      const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '3.0', prostateLastDate: '2026-07' });
+      expect(cards(file)).toEqual([]);
+      expect(reminders(file)).toEqual([]);
+      expect(chatPlan(file)).toEqual([]);
+    });
   });
 });
 

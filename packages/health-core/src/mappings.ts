@@ -9,7 +9,7 @@
  */
 import type { AlcoholAnswer, HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem, isAlcoholAnswer, isSex } from './types';
-import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
+import { CANONICAL_UNITS, PSA_THRESHOLDS, rangeFault, UNIT_DEFS, type MetricType, type ValidationRange } from './units';
 import type { ApiScreening } from './screening-inputs';
 import { birthKept } from './validation';
 import { comparatorOf, limitOf, limitRepresentative, withRowValue } from './lab-limits';
@@ -269,10 +269,13 @@ export const inPsaRange = (value: number | undefined): value is number => {
  * The newer by date wins over the old answers; in the same month the row
  * wins, since the answer gives no day. A PSA printed as a limit is graded
  * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
- * value, and its day still counts; `planPsa`'s `raisedBefore` rides on the
- * limit (US-06 AC21 item 6). An old answer whose value fails `inPsaRange`
- * keeps its date and loses its value: it reads as a date-only answer, as the
- * chat's row sanitiser reads it (Brad 2026-11-13).
+ * value, and its day still counts; `planPsa`'s `raisedBefore` becomes
+ * `prostatePsaRaisedBefore` (US-06 AC21 item 6). An old answer whose value
+ * fails `inPsaRange` keeps its date and loses its value: it reads as a
+ * date-only answer, as the chat's row sanitiser reads it (Brad 2026-11-13).
+ * A newer date-only answer does not show the PSA is below 4.0, so when the
+ * row holds the 3-month rule, the rule holds from the answer's date (US-06
+ * AC21, Brad 2026-11-13); only a value in range and below 4.0 ends it.
  */
 export function withPsaMeasurement(
   answers: import('./types').ScreeningInputs,
@@ -281,12 +284,18 @@ export function withPsaMeasurement(
   const unusable = answers.prostatePsaValue !== undefined && !inPsaRange(answers.prostatePsaValue);
   const screenings = unusable ? { ...answers, prostatePsaValue: undefined } : answers;
   const day = psa?.recordedAt.slice(0, 10);
-  if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
+  if (!psa || !day) return screenings;
   const { comparator } = comparatorOf(psa);
-  if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
-  const graded = limitRepresentative('psa', comparator, psa.value);
-  const limit = { comparator, bound: psa.value, ...(psa.raisedBefore && graded === null && { raisedBefore: true as const }) };
-  return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: limit, prostateLastDate: day };
+  const graded = comparator ? limitRepresentative('psa', comparator, psa.value) : psa.value;
+  const holds = graded === null ? psa.raisedBefore === true : graded >= PSA_THRESHOLDS.normal;
+  if ((screenings.prostateLastDate ?? '') > day) {
+    return holds && screenings.prostatePsaValue === undefined ? { ...screenings, prostatePsaRaisedBefore: true } : screenings;
+  }
+  const limit = comparator ? { comparator, bound: psa.value } : undefined;
+  return {
+    ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: limit, prostateLastDate: day,
+    ...(graded === null && holds && { prostatePsaRaisedBefore: true as const }),
+  };
 }
 
 /** API profile shape (camelCase, as returned by API endpoints). */

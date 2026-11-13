@@ -397,8 +397,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
-  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. `raisedBefore`: it does not decide and an earlier PSA was 4.0 or above (`planPsa`, US-06 AC21 item 6). Derived, never stored. */
-  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number; raisedBefore?: true };
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */ prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
+  /** The newest PSA (a limit that does not decide, or an old answer with a date and no usable value) does not show it is below 4.0, and an earlier PSA was 4.0 or above: the 3-month rule holds (US-06 AC21). Derived, never stored. */ prostatePsaRaisedBefore?: true;
   prostateLastDate?: string;
 
   // Endometrial
