@@ -89,11 +89,8 @@ export type AdapterFactory = (provider: McpProvider, accessToken: string) => Sto
 const REAL_ADAPTER: AdapterFactory = (provider, token) =>
   provider === 'google' ? new DriveAdapter(token) : new DropboxAdapter(token);
 
-let makeAdapter: AdapterFactory = REAL_ADAPTER;
-
-export function setAdapterFactory(factory: AdapterFactory | null): void {
-  makeAdapter = factory ?? REAL_ADAPTER;
-}
+/** What the endpoint takes from tests: their own folder and model call. The routes pass none. */
+type EndpointWiring = HostedWiring & { makeAdapter?: AdapterFactory };
 
 // ---------------------------------------------------------------------------
 // One tool call
@@ -155,7 +152,7 @@ function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
  * resurrecting a record the user erased (design §7).
  */
 async function callHostedTool(
-  token: AccessPayload, name: string, args: unknown, now: string, wiring: HostedWiring,
+  token: AccessPayload, name: string, args: unknown, now: string, wiring: EndpointWiring,
 ): Promise<ToolAnswer & { confirmReason?: McpConfirmReason }> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
@@ -194,7 +191,7 @@ async function callHostedTool(
     accessToken = minted;
   }
 
-  const adapter = makeAdapter(token.provider, accessToken);
+  const adapter = (wiring.makeAdapter ?? REAL_ADAPTER)(token.provider, accessToken);
   // The folder listing for the nudge (US-37) starts now and overlaps the record
   // read: it depends on nothing the tool produces. Only on Dropbox — Drive's
   // `drive.file` scope cannot see files the user dropped in (US-35 AC3).
@@ -425,7 +422,7 @@ function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined 
  * switch, the envelopes, the error codes — is the same code the stdio server
  * runs, so the two cannot answer differently.
  */
-function hostedSurface(token: AccessPayload, now: string, wiring: HostedWiring) {
+function hostedSurface(token: AccessPayload, now: string, wiring: EndpointWiring) {
   // Off, the surface is exactly what it was before the knowledge tools (US-41 AC6).
   const knowledge = knowledgeToolsEnabled();
   return {
@@ -502,7 +499,7 @@ function bearer(request: Request): string | null {
  * and no session to delete — and `Mcp-Session-Id` is never minted; an incoming
  * one, like `Last-Event-ID`, is ignored. `wiring` is for tests: the routes pass none.
  */
-export async function mcpEndpoint(request: Request, now = new Date().toISOString(), wiring: HostedWiring = {}): Promise<Response> {
+export async function mcpEndpoint(request: Request, now = new Date().toISOString(), wiring: EndpointWiring = {}): Promise<Response> {
   if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
   if (originRejected(request)) return new Response('Forbidden', { status: 403 });
   if (request.method !== 'POST') {
