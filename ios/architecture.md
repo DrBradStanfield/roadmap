@@ -1219,7 +1219,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   ask iOS, or refresh. `erased` (S52) ends the opt-in from any mode: the scheduler sends it when
   the store's erase count moved since it last looked (at a refresh or a tap made while off), so an erase held
   with no record to read still ends reminders. A kill before that refresh resets the count; the
-  next good read's moved epoch ends them then. Since lead S63 an erase taken in from another device moves the count too: `land` counts one it lands on evidence (`Mark.erased(by:)`), drawn or held undrawn; one this phone cannot read at all does not (lead H129). Each tap mints an attempt (a counter, a token, not a mode). A tap while
+  next good read's moved epoch ends them then. Since lead S63 an erase taken in from another device moves the count too: `land` counts one it lands on evidence (`Mark.erased(by:)`), drawn or held undrawn; one this phone cannot read at all does not (lead H131). Each tap mints an attempt (a counter, a token, not a mode). A tap while
   asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
   before, a double tap asked iOS twice, and the second grant could turn reminders back on
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
