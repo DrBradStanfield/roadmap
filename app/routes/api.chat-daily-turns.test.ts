@@ -29,7 +29,6 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: mocks.guestSession,
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
 vi.mock('../lib/chat.server', async (original) => ({

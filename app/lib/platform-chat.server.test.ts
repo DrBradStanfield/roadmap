@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const usage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
 const edge = vi.hoisted(() => ({ classify: vi.fn(), route: vi.fn(), complete: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./chat-classifier.server', async (orig) => ({
   ...(await orig<typeof import('./chat-classifier.server')>()),
   classifyMessage: edge.classify,

@@ -33,7 +33,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 // The module builds its admin client once at load; the mocked client reads
 // the shared `db` state live on every call, so one import serves every test.
-let tryAcquireCronLock: typeof import('./supabase.server').tryAcquireCronLock;
+let tryAcquireCronLock: typeof import('./supabase-cron-lock.server').tryAcquireCronLock;
 const CLOCK = { now: new Date('2026-08-28T08:00:00.000Z'), stuckCutoff: new Date('2026-08-28T02:00:00.000Z') };
 
 describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results stay answers', () => {
@@ -43,7 +43,7 @@ describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results
     vi.stubEnv('SUPABASE_ANON_KEY', 'stub-anon-key');
     vi.stubEnv('SUPABASE_JWT_SECRET', 'stub-jwt-secret');
     vi.resetModules();
-    ({ tryAcquireCronLock } = await import('./supabase.server'));
+    ({ tryAcquireCronLock } = await import('./supabase-cron-lock.server'));
   });
 
   afterAll(() => {

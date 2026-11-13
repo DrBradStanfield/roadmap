@@ -27,7 +27,7 @@
  * youtube-bot-pipeline.server.ts (filters, follow-up gates, chat pipeline) and
  * youtube-bot-post.server.ts (mark, post, record: US-27 AC5).
  * This file keeps the start/stop, the cron tick and the follow-up scan, and
- * re-exports every name it exported before the split.
+ * re-exports the pipeline names it exported before the split.
  *
  * See:
  *   claude_business docs/chat-architecture.md § YouTube comment replier

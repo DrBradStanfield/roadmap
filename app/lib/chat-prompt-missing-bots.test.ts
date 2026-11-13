@@ -21,7 +21,7 @@ const state = vi.hoisted(() => {
 
 vi.mock('./chat-system-prompt.server', () => ({ get CHAT_PROMPT() { return state.prompt; } }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 vi.mock('discord.js', () => ({
   Client: class {
     constructor() { state.clients++; }

@@ -257,10 +257,10 @@ async function scripted<T>(callers: Callers<T>, order: string[]): Promise<Promis
 const sendPlanReadyEmail = vi.fn(async () => true);
 const recordServerEvent = vi.fn(async (_name: string, _meta?: unknown) => {});
 
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   get supabaseAdmin() { return db; },
-  hashClientIp: (ip: string) => `h:${ip}`,
 }));
+vi.mock('./supabase-guest.server', () => ({ hashClientIp: (ip: string) => `h:${ip}` }));
 vi.mock('./klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
 vi.mock('./email.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
