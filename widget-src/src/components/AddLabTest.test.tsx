@@ -473,3 +473,64 @@ describe('US-66 AC5: a value page for a kept-apart core-named row', () => {
     expect(addLabValue).not.toHaveBeenCalled();
   });
 });
+
+// US-21 AC27 (A7): the form's mode is one named state. A Replace whose correction throws gives the
+// button back, and a save's answer that lands after Cancel, or in a form opened since, changes nothing.
+describe('US-21 AC27: a save never leaves the form stuck, and a late answer changes nothing', () => {
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => { resolve = r; });
+    return { promise, resolve };
+  };
+  const typeGgt = (utils: ReturnType<typeof openForm>, value = '30') => {
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+  };
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('a Replace whose correction throws says to try again and gives the button back', async () => {
+    const there = {
+      id: 'held1', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso()}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z`,
+    };
+    holding(there);
+    const onCorrect = vi.fn().mockRejectedValue(new Error('read failed'));
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[there]} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'ferritin' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+    expect(await utils.findByText('Could not save — please try again.')).toBeTruthy();
+    expect((utils.getByRole('button', { name: /^(Replace|Save)/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('a save that fails after Cancel puts no notice under the closed form', async () => {
+    const answer = deferred<null>();
+    addLabValue.mockReturnValue(answer.promise);
+    const utils = openForm();
+    typeGgt(utils);
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(utils.getByRole('button', { name: 'Cancel' }));
+    answer.resolve(null);
+    await settle();
+    expect(utils.queryByText('Could not save — please try again.')).toBeNull();
+    expect(utils.container.querySelector('.alr-add-notice')).toBeNull();
+  });
+
+  it('a save that lands after Cancel and a reopen leaves the reopened form and its typing alone', async () => {
+    const answer = deferred<ReturnType<typeof realAdd>>();
+    addLabValue.mockReturnValueOnce(answer.promise);
+    const utils = openForm();
+    typeGgt(utils);
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(utils.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    typeGgt(utils, '31');
+    answer.resolve(realAdd({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso() }));
+    await waitFor(() => expect(utils.onAdded).toHaveBeenCalledTimes(1)); // the first value did save: the page re-reads
+    await settle();
+    expect((utils.getByLabelText('Value') as HTMLInputElement).value).toBe('31');
+    expect((utils.getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
