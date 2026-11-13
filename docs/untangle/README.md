@@ -4,6 +4,7 @@ Two ledgers track the untangle work (method: `.claude/skills/untangle`).
 
 - `leads/`: where each item of the November 2026 structural audit stands on `main`.
 - `state-leads/`: the leads from our own surveys of implicit state in the web widget.
+- `test-audit/`: the test-suite audit of 2026-11-13 (ledger row `leads/TA-1.csv`); its many rows live here, outside the one-row-per-file ledgers.
 
 ## One file per lead
 

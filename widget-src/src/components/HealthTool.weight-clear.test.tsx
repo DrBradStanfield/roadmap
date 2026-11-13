@@ -9,10 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay } from '@roadmap/health-core/merge';
-import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
@@ -30,8 +27,8 @@ vi.mock('../lib/chat-api', async original => ({
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   localStorage.clear(); sessionStorage.clear();
@@ -41,23 +38,16 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 const weightRows = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight').map((m) => [m.value, m.recordedAt.slice(0, 10), m.status]);
 

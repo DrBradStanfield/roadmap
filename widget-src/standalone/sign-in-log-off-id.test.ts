@@ -120,7 +120,7 @@ describe.each(['dropbox', 'google-drive'] as const)('US-09 AC45: a %s sign-in ac
 
     const booted = await returningTab(cloud);
     expect(booted.backend).toBe('local');
-    expect(booted.reconnect).toBeUndefined();
+    expect((await import('../src/storage/sign-in-state')).currentSignIn()).toEqual({ kind: 'none' }); // a guest (US-09 AC48)
     expect(booted.refused).toBeUndefined();
     expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
     expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(false);

@@ -9,7 +9,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveMedication } from '../lib/roadmap-data';
 
@@ -22,10 +21,10 @@ vi.mock('chart.js', async (importOriginal) => ({
 import { HistoryLightboxHost } from '../../standalone/history-lightbox';
 // Loaded up front, so the lightbox's lazy import resolves without a bundler.
 import './HistoryPanel';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 let sent: Array<{ eventName: string; metadata?: unknown }> = [];
 const viewed = () => sent.filter((e) => e.eventName === 'medication_history_viewed');
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   sent = [];
@@ -38,15 +37,12 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   HTMLDialogElement.prototype.showModal ??= function(this: HTMLDialogElement) { this.open = true; };
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

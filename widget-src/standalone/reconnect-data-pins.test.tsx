@@ -148,7 +148,7 @@ interface Page {
   notice: typeof import('../src/lib/storage-notice');
   switchFlow: typeof import('./switch-flow');
   backend: import('./connect').Backend;
-  reconnect?: Cloud | 'github' | 'self-host';
+  reconnect?: import('./connect').ResolvedBackend['reconnect'];
   leave: () => void;
 }
 
@@ -166,6 +166,7 @@ async function loadPage(): Promise<Page> {
   const data = await import('../src/lib/roadmap-data');
   const { registerPageDeparture } = await import('./page-departure');
   const resolved = await connect.startOnBackend(await connect.resolveRemembered(), data.initRoadmapStore);
+  (await import('../src/storage/sign-in-state')).bootSignIn(connect.signInAtBoot(resolved)); // as boot seeds it (US-09 AC48)
   const leave = registerPageDeparture(() => undefined);
   page = {
     data,
@@ -180,8 +181,11 @@ async function loadPage(): Promise<Page> {
 }
 
 /** Real macrotask turns (fetch bodies, the departure), with the fake clock held still. */
+/** Waits by the real clock, not a count of turns: off-main-thread work (crypto.subtle) can take
+ *  more turns than any count on a busy CI runner. */
+const UNTIL_MS = 10_000;
 async function until(done: () => boolean, what: string): Promise<void> {
-  for (let i = 0; i < 400; i++) {
+  for (const deadline = performance.now() + UNTIL_MS; performance.now() < deadline;) {
     if (done()) return;
     await act(async () => { await new Promise<void>((r) => setImmediate(r)); });
   }
@@ -243,8 +247,8 @@ async function openReconnectPanel(cloud: Cloud): Promise<Page> {
   }
   const p = await loadPage();
   expect(p.backend).toBe('local');
-  expect(p.reconnect).toBe(cloud);
-  render(<p.sync.SyncControl backend={p.backend} reconnect={cloud} hasData />);
+  expect(p.reconnect?.provider).toBe(cloud);
+  render(<p.sync.SyncControl backend={p.backend} hasData />);
   expect(document.querySelector('.hr-sync-status')?.textContent).toMatch(cloud === 'dropbox' ? /could not be reached/ : /signed out/);
   return p;
 }
@@ -282,6 +286,7 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 /** The page left by a reload, and its departure ran. */
@@ -315,6 +320,42 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (a) "Use this browser only" keeps 
     await openReconnectPanel(cloud);
     await panelEdit();
     expect(await useThisBrowserOnly(cloud)).toEqual(PANEL_ONLY);
+  });
+});
+
+describe('US-09 AC48 (Codex re-check R1, owner): exit (a) from a load-time fallback needs its save to land', () => {
+  const pageWeights = () => Object.fromEntries(page!.data.loadAllHistorySync()
+    .filter((m) => m.metricType === 'weight').map((m) => [m.recordedAt.slice(0, 10), m.value]));
+
+  it('google-drive: an edit this browser refuses to store stops "Use this browser only"; the edit stays in the page', async () => {
+    await openReconnectPanel('google-drive');
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'health_roadmap_file_v2') throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    await edit(PANEL_EDIT);
+    fireEvent.click(button('Use this browser only')!);
+    await until(() => reload.mock.calls.length > 0 || page!.switchFlow.getSwitchFlow().kind === 'idle', 'the move to end');
+    await turns();
+    expect(reload).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expect(localStorage.getItem(DRIVE_CONFIG)).not.toBeNull(); // not disconnected
+    expect(pageWeights()).toMatchObject({ [PANEL_EDIT.day]: PANEL_EDIT.value });
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Could not save on this device (local storage may be full).');
+  });
+
+  it('google-drive: after another tab logs off, the refused save is nothing to copy and the exit finishes', async () => {
+    await openReconnectPanel('google-drive');
+    await edit(PANEL_EDIT);
+    localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
+    const { healthWritesAllowed } = await import('../src/lib/storage');
+    expect(healthWritesAllowed()).toBe(false);
+    fireEvent.click(button('Use this browser only')!);
+    await reloaded();
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(await deviceWeights()).toEqual({}); // nothing written after the log-off
   });
 });
 
@@ -438,4 +479,60 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (c) the reconnect puts every edit 
     await panelEdit();
     expect(await retryDropbox()).toEqual(PANEL_ONLY);
   });
+});
+
+// ---------------------------------------------------------------- (a) with nothing to copy
+
+describe('US-09 AC48 (owner question): exit (a) at load time when this browser holds no copy', () => {
+  const SAVED = { '2026-05-01': 80, '2026-05-02': 79 };
+  const cloudWeights = (cloud: Cloud) => (cloud === 'dropbox' ? weightsIn(dropboxFile?.body) : driveWeights());
+
+  /** A real healthy cloud session saves two weights and the page leaves; then
+   *  this browser's copy is gone (health_roadmap_file_v2 absent). */
+  async function seedFullySavedCloud(cloud: Cloud): Promise<void> {
+    localStorage.setItem(BACKEND_KEY, cloud);
+    if (cloud === 'dropbox') {
+      localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: GOOD_TOKEN, refreshToken: 'test-refresh-good', expiresAt: Date.now() + 3_600_000 }));
+    } else {
+      localStorage.setItem(DRIVE_CONFIG, JSON.stringify({}));
+      localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: GOOD_TOKEN, refreshToken: 'test-refresh-good', expiresAt: Date.now() + 3_600_000 }));
+    }
+    const healthy = await loadPage();
+    expect(healthy.backend).toBe(cloud);
+    for (const [day, value] of Object.entries(SAVED)) await edit({ day, value });
+    await advance(PERSIST_DEBOUNCE_MS);
+    await act(async () => { await healthy.data.flushRoadmapStore(); });
+    window.dispatchEvent(new Event('beforeunload'));
+    await turns();
+    expect(cloudWeights(cloud)).toEqual(SAVED);
+    localStorage.removeItem('health_roadmap_file_v2');
+  }
+
+  it.each(['google-drive', 'dropbox'] as const)(
+    '%s: TODAY (lead for Brad: load-time exit with nothing to copy) the exit leaves this browser empty and forgets the cloud; the record is only in the cloud file',
+    async (cloud) => {
+      await seedFullySavedCloud(cloud);
+      // The sign-in dies: Drive's token expired and its exchange is unreachable; Dropbox's content API refuses.
+      if (cloud === 'dropbox') dropboxDown = true;
+      else localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() - 1_000 }));
+      const p = await loadPage();
+      expect(p.backend).toBe('local');
+      expect(p.reconnect?.provider).toBe(cloud);
+      expect(p.data.loadAllHistorySync()).toEqual([]); // the cloud was never read: the tool is empty
+      render(<p.sync.SyncControl backend={p.backend} hasData={false} />);
+      fireEvent.click(button('Use this browser only')!);
+      await reloaded();
+      expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+      expect(localStorage.getItem('health_roadmap_file_v2')).toBeNull(); // the exit wrote no device copy
+      dropboxDown = false;
+      const next = await loadPage();
+      expect(next.backend).toBe('local');
+      expect(next.reconnect).toBeUndefined();
+      expect(localStorage.getItem(cloud === 'dropbox' ? DROPBOX_TOKENS : DRIVE_TOKENS)).toBeNull();
+      expect(next.data.loadAllHistorySync()).toEqual([]);
+      expect(await next.data.loadAllHistory()).toEqual([]);
+      expect(await deviceWeights()).toEqual({});
+      expect(cloudWeights(cloud)).toEqual(SAVED); // the record sits only in the cloud
+    },
+  );
 });

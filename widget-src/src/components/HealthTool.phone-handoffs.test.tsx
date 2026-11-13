@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -29,8 +29,8 @@ vi.mock('./ChatEmbed', () => ({
 }));
 import { HealthTool } from './HealthTool';
 import { settingsShown } from '../testing/settings';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 let scrolledIntoView: Element[] = [];
 
 beforeEach(async () => {
@@ -43,15 +43,12 @@ beforeEach(async () => {
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   vi.stubGlobal('scrollTo', vi.fn());
   Element.prototype.scrollIntoView = function (this: Element) { scrolledIntoView.push(this); };
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

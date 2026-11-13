@@ -100,7 +100,7 @@ export type ChatContextPayload = Partial<HealthInputs> & {
 /**
  * The context every widget-side chat sends: the inputs the plan reads, the
  * unit system, the medications and screenings on record, and the dated
- * history built from `dated` (any rows with a `recordedAt`).
+ * history built from `dated` (any rows with a `recordedAt`; the old PSA answers count in its `raisedBefore`, US-06 AC21 item 6).
  */
 export function chatContextOf(
   inputs: Partial<HealthInputs> & CreatinineDay,
@@ -109,7 +109,8 @@ export function chatContextOf(
   screenings: ApiScreening[],
   dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
 ): ChatContextPayload {
-  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated), inputs);
+  const screeningRowsSent = screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : []));
+  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated, HISTORY_CAP_PER_METRIC, new Date(), screeningsToInputs(screeningRows(screeningRowsSent))), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
   // stays home, so a client allow-list that strips `limits` (an older phone)
   // cannot pass it off as an exact value. The builder grades `limits` again.
@@ -126,7 +127,7 @@ export function chatContextOf(
     // an object, and the builder drops the rest.
     medications: medications.flatMap(m => (m && typeof m === 'object'
       ? [{ medicationKey: m.medicationKey, drugName: m.drugName, doseValue: m.doseValue }] : [])),
-    screenings: screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : [])),
+    screenings: screeningRowsSent,
     ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
   };
 }

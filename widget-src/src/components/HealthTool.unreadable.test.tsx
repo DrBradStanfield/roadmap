@@ -7,7 +7,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { createEmptyFile, createMeasurement } from '@roadmap/health-core/roadmap-file';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, getUnreadableCount, initRoadmapStore, loadLatestMeasurementsSync, saveChangedMeasurements } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -22,20 +21,17 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 const DAY = '2026-09-01T00:00:00.000Z';
 const FUTURE = { ...createMeasurement({ id: 'f1', metricType: 'weight', value: 5, recordedAt: DAY, createdAt: DAY }), metricType: 'synthetic_future_metric' };
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   localStorage.clear(); sessionStorage.clear();
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   const file = createEmptyFile({ deviceId: 'dev_writer', now: DAY });
   const record = {
     ...file,
@@ -48,7 +44,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

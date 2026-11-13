@@ -395,7 +395,8 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     }) } } } });
     try {
       const { StorageBar } = await import('./sync-control');
-      const bar = StorageBar({ backend: 'local', reconnect: 'google-drive' }) as { props: { children: Array<{ props: { onClick: () => void } }> } };
+      (await import('../src/storage/sign-in-state')).bootSignIn({ kind: 'signedOut', provider: 'google-drive' }); // the load's answer (US-09 AC48)
+      const bar = StorageBar({ backend: 'local' }) as { props: { children: Array<{ props: { onClick: () => void } }> } };
       if (drop) dropped.add(drop);
       bar.props.children[0].props.onClick();
       await vi.waitFor(() => expect(location.reload).toHaveBeenCalled());
