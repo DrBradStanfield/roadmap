@@ -218,8 +218,9 @@ final class RecordStoreTests: XCTestCase {
     }
 
     /// Owner's ruling (b) on PR 1595: an erase view refused only because a newer record from the
-    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. A draw
-    /// refused for any other reason (the engine threw, or the newer record's own draw failed) does.
+    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. An erase
+    /// the engine cannot draw is held undrawn, and a newer record whose own draw failed never makes
+    /// it stale (US-25 AC16f): neither leaves anything predating it either.
     func testOnlyAStaleEraseViewUnderANewerDrawnRecordCatchesTheScreenUp_US58() async throws {
         let engine = try HealthEngine()
         let cloud = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
@@ -230,18 +231,22 @@ final class RecordStoreTests: XCTestCase {
         await stale.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 1)).value
         XCTAssertFalse(stale.predatesErase, "the record shown was stamped after the erase")
 
-        // The engine cannot draw the erase view.
+        // The engine cannot draw the erase view: it is held all the same, with no drawing (AC16f).
         let threw = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await threw.showErased(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 3)).value
-        XCTAssertTrue(threw.predatesErase, "nothing drew the erase")
+        XCTAssertEqual(threw.recordJSON, "not a record", "the erase view is the record held")
+        XCTAssertNil(threw.myData)
+        XCTAssertFalse(threw.predatesErase, "nothing from before the erase is shown")
 
-        // An older cloud record is drawn; a newer one was handed over but never drawn: the screen still
-        // shows the older one, which predates the erase view between them.
+        // An older cloud record is drawn; a newer one was handed over but never drawn: it never moved the
+        // stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
         let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
         await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
-        await undrawn.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 4)).value
-        XCTAssertTrue(undrawn.predatesErase, "stale only against the record drawn, never one only handed over")
+        let erased = try engine.blocking { try $0.eraseOnPhone(recordJSON: cloud, historyJSON: nil, now: .now, deviceId: "test") }.record
+        await undrawn.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
+        XCTAssertEqual(undrawn.recordJSON, erased, "the erase landed")
+        XCTAssertFalse(undrawn.predatesErase, "a record only handed over never makes an erase stale")
 
         // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
         let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")

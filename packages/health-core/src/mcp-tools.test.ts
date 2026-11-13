@@ -21,8 +21,8 @@ import {
   OUTPUTS,
   readRecord,
   redactRecord,
-  updateProfile,
 } from './mcp-tools';
+import { updateProfile } from './profile-edits';
 import {
   addLabValuesInput,
   importDocumentsInput,
