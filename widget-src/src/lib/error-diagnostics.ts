@@ -31,8 +31,9 @@ type RecordFailure =
   | 'Chat list failed';
 
 /** The device refusing a health write after a log-off (US-09 AC2c): a
- *  refusal the page asked for, not a failure. The record save and the document
- *  write do not report it; a chat save on such a page is never attempted (A15). */
+ *  refusal the page asked for, not a failure. The record save, the document
+ *  write, the erase and the upload save do not report it; a chat save on such
+ *  a page is never attempted (A15, A19). */
 export class WritesStoppedError extends StorageError {
   constructor() {
     super('On-device roadmap persistence stopped for logout.');
@@ -87,12 +88,12 @@ export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx'
  *  error's class and the provider's HTTP status class, each from a closed
  *  list, so a refused token (401/403) reads apart from a rate limit (429) or
  *  an outage (5xx). Literal names, since a minified bundle renames classes.
- *  The status is the one a StorageError carries: the Drive and Dropbox
- *  adapters set it wherever they throw beside a response, the OAuth exchange
+ *  The status is the one a StorageError carries: the Drive, Dropbox, GitHub
+ *  and WebDAV adapters set it wherever they throw beside a response, the OAuth exchange
  *  and Dropbox's token refresh included. Drive's refresh-path errors ("retry
  *  later", "needs to be reconnected") read `none`: their status is not kept
- *  across the refresh, since overlapping refreshes would race. GitHub, WebDAV,
- *  a network failure and a check that made no request also read `none`.
+ *  across the refresh, since overlapping refreshes would race. A network
+ *  failure and a check that made no request also read `none`.
  *  Never the message or the body. */
 export function failureTags(error: unknown): { errorClass: string; httpStatus: string } {
   const errorClass = error instanceof StorageError ? 'StorageError'

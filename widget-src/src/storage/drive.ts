@@ -24,11 +24,12 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
 import { refreshOnce } from './token-flight';
+import { driveWatchLoop } from './drive-watch';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
@@ -45,25 +46,10 @@ export const CONFIG_KEY = 'health_roadmap_gdrive';
 export const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-/** Drive has no long-poll for a browser (its push channels need a public
- *  webhook), so the change signal is its changes feed, read on a short beat
- *  while the tab is visible. Three seconds is a page that keeps up without
- *  spending a request a second. */
-const CHANGES_POLL_MS = 3_000;
-/** First retry after a failed changes read, doubling to this ceiling. */
-const RETRY_MIN_MS = 3_000;
-const RETRY_MAX_MS = 60_000;
 /** Folder names, file lookup and the upload requests are shared with the hosted
  *  MCP server (`packages/health-core/src/drive-rest.ts`): both must find the
  *  SAME file or the server writes a second record beside the user's. */
 const FOLDER_NAME = DRIVE_FOLDER_NAME;
-
-/** One page of Drive's changes feed — the fields the watch asks for. */
-interface DriveChangesPage {
-  newStartPageToken?: string;
-  nextPageToken?: string;
-  changes?: { fileId?: string }[];
-}
 
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
@@ -478,52 +464,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * been created yet, and then any change is worth a look.
    */
   watch(fileName: string, onChange: () => void, signal: AbortSignal): void {
-    void this.watchLoop(fileName, onChange, signal);
-  }
-
-  private async watchLoop(fileName: string, onChange: () => void, signal: AbortSignal): Promise<void> {
-    let retryMs = 0;
-    // The outer loop owns the page token: a failure drops it, and the next
-    // turn asks Drive for a fresh one.
-    while (!signal.aborted) {
-      try {
-        let token = await this.startPageToken(signal);
-        catchUpAfterFailure(retryMs, signal, onChange);
-        while (!signal.aborted) {
-          const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
-            + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
-          const page: DriveChangesPage = await jsonBody(await this.changesRequest(url, signal));
-          // The record's copies as the last read or write found them, never
-          // only a cached id, which may name a losing copy (US-10 AC4a).
-          const ours = [...(fileName === ROADMAP_FILE_NAME ? this.recordIds : []), this.cachedFileId(fileName)].filter(Boolean);
-          if (page.changes?.some((c) => !ours.length || ours.includes(c.fileId)) && !signal.aborted) onChange();
-          // `nextPageToken` means more pages of the SAME batch: take it and
-          // read again on the next beat rather than looping the pages here,
-          // because the answer is already "something changed".
-          token = page.nextPageToken ?? page.newStartPageToken ?? token;
-          retryMs = 0;
-          await sleepUntilAborted(CHANGES_POLL_MS, signal);
-        }
-      } catch {
-        // An expired token, a 401 the refresh could not fix, a dead network:
-        // wait longer each time, then start over from a fresh page token.
-        retryMs = Math.min(retryMs ? retryMs * 2 : RETRY_MIN_MS, RETRY_MAX_MS);
-        await sleepUntilAborted(retryMs, signal);
-      }
-    }
-  }
-
-  private async startPageToken(signal: AbortSignal): Promise<string> {
-    const res = await this.changesRequest(`${DRIVE_API}/changes/startPageToken`, signal);
-    const json = await jsonBody<{ startPageToken?: string }>(res);
-    if (!json.startPageToken) throw new StorageError('Google Drive returned no start page token.');
-    return json.startPageToken;
-  }
-
-  private async changesRequest(url: string, signal: AbortSignal): Promise<Response> {
-    const res = await fetch(url, { headers: await this.authHeaders(), signal });
-    if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status);
-    return res;
+    void driveWatchLoop({
+      recordIds: this.recordIds,
+      cachedFileId: (name) => this.cachedFileId(name),
+      authHeaders: () => this.authHeaders(),
+    }, fileName, onChange, signal);
   }
 
   // --- helpers --------------------------------------------------------------
@@ -684,9 +629,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /** Valid cached token → server refresh → otherwise interaction is needed. */
   private async getToken(): Promise<string> {
-    if (this.hasValidToken()) return this.tokens!.accessToken;
-    if (await this.tryServerRefresh()) return this.tokens!.accessToken;
-    throw new StorageError('Google Drive needs to be reconnected.');
+    const refreshed = this.hasValidToken() ? 'ok' : await this.refresh(); // 'none': no grant to refresh with; 'transient' may pass
+    if (refreshed === 'ok') return this.tokens!.accessToken;
+    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined); // US-09 AC30
   }
 
   /** FALLBACK reconnect: a GIS popup grant (~1 h token, no refresh token), which

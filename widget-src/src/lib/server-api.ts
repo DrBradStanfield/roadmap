@@ -7,6 +7,7 @@ import { safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import { randomId } from './random-id';
+import type { SaveRetry } from '@roadmap/health-core/save-retry-words';
 
 export const PROXY_PATH = '/apps/health-tool-1';
 
@@ -137,6 +138,9 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   /** `onboarding_step` (US-62 AC1): the question's name, never its answer. */
   step?: (typeof ONBOARDING_STEPS)[number];
   backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
+  /** `save_retry` (US-09 AC30): what started a retry of a failed save, and how it ended. */
+  trigger?: SaveRetry['trigger'];
+  outcome?: SaveRetry['outcome'];
   /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
    *  unit spelling the record would not take. Never a value. */
   key?: string;

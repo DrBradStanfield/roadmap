@@ -152,6 +152,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
   // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
   'measurement_added',
+  'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
 ] as const;
 
 /** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
@@ -175,7 +176,6 @@ export const MEASUREMENT_REFUSALS_WITH_METRIC: readonly (typeof MEASUREMENT_REFU
  *  wrote a correction, or `keep`: the report matches neither number, or its
  *  correction would save the value already stored. */
 export const LPA_CHECK_ANSWERS = ['mg/dL', 'nmol/L', 'mg/L', 'keep'] as const;
-
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
 
 /**
@@ -209,7 +209,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome'] as const satisfies readonly ProductEventName[];
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'save_retry'] as const satisfies readonly ProductEventName[];
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in

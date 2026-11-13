@@ -96,6 +96,9 @@ interface Engine {
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
   chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
   cloudVisible(): string;
+  cloudHidden(): string;
+  /** US-09 AC30 (lead A1 step e): Swift calls it when NWPathMonitor says the path is satisfied. */
+  cloudOnline(): string;
   cloudFlush(): Promise<string>;
   cloudRefresh(): Promise<string>;
   cloudClose(copyDown: boolean): Promise<string>;
@@ -1351,4 +1354,96 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     expect(JSON.parse(await engine.documentSave(record, labs, choice(), null, '', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-found' });
     expect(JSON.parse(await engine.documentSave('', letter, choice(), null, '{}', NOW, 'ios-1'))).toMatchObject({ ok: false, reason: 'not-open' });
   });
+});
+
+// US-09 AC30 (lead A1 step e): the engine retries a failed save when the app
+// comes back to the foreground or the network comes back, through
+// health-core's LiveRefresh, and never after a refused grant.
+describe('a failed save is retried on return and on online (US-09 AC30, lead A1 step e)', () => {
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
+  // The rig's timer ids are not numbers, so the shim's clearTimeout leaves the edit's debounce
+  // armed: it fires once more after the flush. Each test lets it fail too before the network comes back.
+
+  async function failedOffline() {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    dropbox.online = false;
+    engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    await settle();
+    dropbox.online = true;
+    return { dropbox, engine, state };
+  }
+
+  it('the foreground after an unreachable save retries it, and it lands', async () => {
+    const { dropbox, engine } = await failedOffline();
+    expect(dropbox.uploads).toBe(0);
+    engine.cloudVisible();
+    await settle();
+    expect(dropbox.uploads).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
+  it('the network coming back retries it, and it lands', async () => {
+    const { dropbox, engine } = await failedOffline();
+    engine.cloudOnline();
+    await settle();
+    expect(dropbox.uploads).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
+  it('a foreground and the network coming back together retry once', async () => {
+    const { dropbox, engine } = await failedOffline();
+    dropbox.uploadsWork = false; // the retry fails again, so a second attempt would show
+    let attempts = 0;
+    const answer = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => {
+      if (url.endsWith('/files/upload')) attempts += 1;
+      return answer(url, headers, body);
+    };
+    engine.cloudOnline();
+    engine.cloudVisible();
+    await settle();
+    expect(attempts).toBe(1);
+  });
+
+  // Owner F1 (a): a 403 is retried, yet the iPhone still tells the person to sign in again,
+  // as before: the retry's classification changes, the words do not (failureKind, cloud-adapters.ts).
+  it('a save refused with 403 still says sign-in, and the network coming back retries it', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const answer = dropbox.answer.bind(dropbox);
+    let refusing = true;
+    let attempts = 0;
+    dropbox.answer = (url, headers, body) => {
+      if (!refusing) return answer(url, headers, body);
+      attempts += 1;
+      return { status: 403, headers: {}, body: '{"error":{"errors":[{"reason":"insufficientPermissions"}]}}' };
+    };
+    engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    const failed = state.events.filter(([event]) => event === 'failed').at(-1)!;
+    expect(JSON.parse(failed[1])).toMatchObject({ kind: 'sign-in' });
+    expect(JSON.parse(failed[1]).detail).toContain('refused this connection');
+    await settle();
+    refusing = false;
+    const before = attempts;
+    // Off screen, the network's return only retries: no catch-up re-read, whose flushSync
+    // would land the save even with no retry owed (lead A25). So the upload is the retry's.
+    engine.cloudHidden();
+    engine.cloudOnline();
+    await settle();
+    expect(attempts).toBe(before); // nothing refused after the network came back
+    expect(dropbox.uploads).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-07']);
+  });
+
+  // No iPhone test of "never after a refused grant": on the iPhone the network's catch-up is a
+  // re-read, and the engine's re-read retries a failed save first (cloud.ts reread's flushSync),
+  // one of the older save paths the owner left as they are (D2, lead A25). The web pins the rule:
+  // widget-src/standalone/storage-bar-save-retry.test.tsx.
 });

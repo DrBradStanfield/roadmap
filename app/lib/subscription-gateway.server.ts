@@ -24,6 +24,7 @@
  */
 import crypto from 'crypto';
 import * as Sentry from '@sentry/react-router';
+import { sweepExpired } from './rate-limiter';
 
 export const SUBSCRIPTION_ACTIONS = ['pause', 'skip', 'cancel'] as const;
 export type SubscriptionActionName = (typeof SUBSCRIPTION_ACTIONS)[number];
@@ -122,10 +123,7 @@ function reportGatewayError(message: string): void {
 // on another one; the gateway's own checks (live Appstle read, token bound to the state) catch any change.
 const SUMMARY_TTL = 60_000;
 const summaryCache = new Map<string, { summary: SubscriptionSummary; expiresAt: number }>();
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of summaryCache) if (now > entry.expiresAt) summaryCache.delete(key);
-}, 5 * 60_000).unref?.();
+sweepExpired(summaryCache, (entry) => entry.expiresAt, 5 * 60_000);
 
 /** The logged-in customer's subscription summary, or null (off, logged out, or the gateway failed). Never throws. */
 export async function getCachedSubscriptions(request: Request, customerId: string): Promise<SubscriptionSummary | null> {
