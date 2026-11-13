@@ -160,7 +160,7 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
       import fs from 'node:fs';
       globalThis.fetch = async () => { fs.appendFileSync(${JSON.stringify(log)}, '{}\\n'); throw new Error('fetch called'); };
     `, ['--category', q.category, '--source', q.source!, '--runs', '1', '--fixed-handles-only', '--estimate'], false);
-    expect(out, stderr).toMatch(/ESTIMATE router calls=0 \$0\.00; answer calls=1 up to \$0\.\d\d; .*No API call made\./);
+    expect(out, stderr).toMatch(/ESTIMATE router calls=0 expected \$0\.00 with prompt caching, up to \$0\.00 if the cache never hits; answer calls=1 expected \$(\d+\.\d\d) with prompt caching, up to \$\1 if the cache never hits; .*No API call made\./);
     expect(out).not.toContain('=== Results');
     expect(calls).toEqual([]);
     expect(status).toBe(0);
@@ -1066,13 +1066,16 @@ describe('test-chatbot-matching answer system is buildSystemBlocks (US-15 AC24a,
     const estimate = async (queries: string[]) => {
       const res = await runHarness(['--category', 't5', '--fixed-handles-only', '--answer-check-runs', '1', '--estimate'],
         { key: false, fixtures: queries.map(q => fixture(q, {})) });
-      const m = noColour(res.out).match(/answer calls=2 up to \$(\d+\.\d\d);/);
+      const m = noColour(res.out).match(/answer calls=2 expected \$(\d+\.\d\d) with prompt caching, up to \$(\d+\.\d\d) if the cache never hits;/);
       expect(m, res.out + res.err).not.toBeNull();
-      return Number(m![1]);
+      return { expected: Number(m![1]), upper: Number(m![2]) };
     };
     const one = await estimate(['what helps sleep?', 'what helps mood?']);
     const both = await estimate(['what helps sleep?', 'is an LDL of 4 high?']);
-    expect(both).toBeGreaterThan(one + 0.05);
+    expect(both.expected).toBeGreaterThan(one.expected + 0.05);
+    // Two calls of one shape: the second reads the cache, unless it never hits. One call per shape: no read to assume.
+    expect(one.upper).toBeGreaterThan(one.expected + 0.05);
+    expect(both.upper).toBe(both.expected);
   }, 60_000);
 
   // Codex R2 on PR 1652: production answers without a block it cannot read; a paid run must exit instead.

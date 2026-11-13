@@ -118,22 +118,31 @@ export interface RunPlan {
 }
 export interface AnswerCallPlan { cacheKey: string; cachedChars: number; chars: number }
 
+export interface RunCost { router: number; answer: number; total: number }
+
 /**
- * What a run would cost, in dollars, on Sonnet 5.5 prices (US-15 AC24b). The router prompt is written
- * to the cache once and read on every later call. The answer calls' cached prefix is written per tool
- * shape, from a cold cache, by as many calls as run at once, then read. The rest of each answer's input
- * is priced uncached, so the answer figure is an upper bound; a repeat of the same articles reads from
- * the cache for less.
+ * What a run would cost, in dollars, on Sonnet 5.5 prices (US-15 AC24b), as two figures.
+ * `expected` assumes prompt caching works: the router prompt is written once and read on every later
+ * call, and the answer calls' cached prefix is written per tool shape, by as many calls as run at once,
+ * then read. `upper` assumes the cache never hits: every call writes its whole cached prefix. Brad
+ * approves paid runs on `upper`. In both, the rest of each answer's input is priced uncached and each
+ * call at its full assumed output.
+ * The write rate is PRICES' cacheWrite, the 1-hour rate (2x input), because every cache marker the
+ * harness and production send is PROMPT_CACHE, ttl '1h' (packages/health-core/src/models.ts).
  */
-export function estimateRunCost(plan: RunPlan) {
+export function estimateRunCost(plan: RunPlan): { expected: RunCost; upper: RunCost } {
   const p = PRICES.sonnet55;
-  // `writes` cache writes, then a read on each later call.
-  const cached = (calls: number, chars: number, writes = 1) => calls === 0 ? 0
-    : (chars / CHARS_PER_TOKEN) * (Math.min(writes, calls) * p.cacheWrite + Math.max(0, calls - writes) * p.cacheRead) / 1e6;
-  const router = cached(plan.routerCalls, plan.routerPromptChars) + plan.routerCalls * ROUTER_OUT_TOKENS * p.output / 1e6;
-  const shapes = Map.groupBy(plan.answerCalls, c => c.cacheKey);
-  const answer = [...shapes.values()].reduce((t, calls) =>
-    t + cached(calls.length, Math.max(...calls.map(c => c.cachedChars)), plan.concurrency ?? 1), 0)
-    + plan.answerCalls.reduce((t, c) => t + ((c.chars / CHARS_PER_TOKEN) * p.input + ANSWER_OUT_TOKENS * p.output) / 1e6, 0);
-  return { router, answer, total: router + answer };
+  const tokens = (chars: number) => chars / CHARS_PER_TOKEN / 1e6;
+  // `writes` cache writes (all of them when the cache never hits), then a read on each later call.
+  const cached = (calls: number, chars: number, writes: number) =>
+    tokens(chars) * (Math.min(writes, calls) * p.cacheWrite + Math.max(0, calls - writes) * p.cacheRead);
+  const routerOut = plan.routerCalls * ROUTER_OUT_TOKENS * p.output / 1e6;
+  const answerRest = plan.answerCalls.reduce((t, c) => t + tokens(c.chars) * p.input + ANSWER_OUT_TOKENS * p.output / 1e6, 0);
+  const shapes = [...Map.groupBy(plan.answerCalls, c => c.cacheKey).values()].map(calls => ({ n: calls.length, chars: Math.max(...calls.map(c => c.cachedChars)) }));
+  const cost = (routerWrites: number, answerWrites: (n: number) => number): RunCost => {
+    const router = cached(plan.routerCalls, plan.routerPromptChars, routerWrites) + routerOut;
+    const answer = shapes.reduce((t, s) => t + cached(s.n, s.chars, answerWrites(s.n)), 0) + answerRest;
+    return { router, answer, total: router + answer };
+  };
+  return { expected: cost(1, () => plan.concurrency ?? 1), upper: cost(plan.routerCalls, n => n) };
 }

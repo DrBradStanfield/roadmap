@@ -295,6 +295,9 @@ if (estimateOnly) {
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
   const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCalls, concurrency });
-  console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCalls.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
+  // Brad approves a paid run on the "up to" figure (US-15 AC24b).
+  const both = (k: keyof typeof cost.upper) =>
+    `expected $${cost.expected[k].toFixed(2)} with prompt caching, up to $${cost.upper[k].toFixed(2)} if the cache never hits`;
+  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length} ${both('answer')}; total ${both('total')}. No API call made.`);
   process.exit(0);
 }

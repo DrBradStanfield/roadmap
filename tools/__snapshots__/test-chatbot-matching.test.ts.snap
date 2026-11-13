@@ -6,7 +6,7 @@ exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > 
   "err": "",
   "out": "Pending (skipped; --include-pending runs them): 1
   [pin] "q-pending": waits on content
-ESTIMATE router calls=37 $<N>; answer calls=24 up to $<N>; total up to $<N>. No API call made.
+ESTIMATE router calls=37 expected $<N> with prompt caching, up to $<N> if the cache never hits; answer calls=24 expected $<N> with prompt caching, up to $<N> if the cache never hits; total expected $<N> with prompt caching, up to $<N> if the cache never hits. No API call made.
 ",
   "status": 0,
 }

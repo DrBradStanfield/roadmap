@@ -98,7 +98,8 @@
  *   npx tsx tools/test-chatbot-matching.ts <any flags above> --estimate   # price the run, make no API call
  *
  * Every live run costs money from the same credits as production. Brad 2026-11-10: no run without
- * his yes, and give him the --estimate figure first. A run prints SUMMARY lines with the actual
+ * his yes, and give him the --estimate figures first, the "up to ... if the cache never hits" one as
+ * the price he approves (US-15 AC24b). A run prints SUMMARY lines with the actual
  * cost: one for the router, one for the answer calls.
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
