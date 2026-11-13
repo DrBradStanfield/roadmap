@@ -7,6 +7,10 @@
  * `process.exit` into a thrown signal so the run stops where the CLI would. Every global it
  * touches is restored afterwards. A handful of real CLI spawns stay in the tests to prove the
  * boundary (argv, exit code, stdout).
+ *
+ * One run at a time: if vitest abandons a case on timeout, its run keeps going and would later put
+ * the real fetch and process.exit back under the next case. So a run claims the globals on entry
+ * and runHarness refuses to start while an earlier run still holds them.
  */
 import fs from 'node:fs';
 import { format } from 'node:util';
@@ -18,39 +22,49 @@ const HARNESS = join(REPO_ROOT, 'tools/test-chatbot-matching.ts');
 
 class Exit { constructor(readonly code: number) {} }
 
+/** True from a run's first line until its globals are restored. */
+let claimed = false;
+
 export interface HarnessRun { status: number | null; out: string; err: string }
 
 /** Strip ANSI colour codes, as the CLI tests read stdout. */
 export const noColour = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
 export interface HarnessOptions {
-  /** The fetch the harness calls. Default: one that throws, so an unexpected call fails loudly. */
+  /**
+   * The fetch the harness calls. Default: none expected. The CLI counts a fetch error as an API
+   * error and carries on, so the default records the call and runHarness throws after the run.
+   */
   fetch?: (url: string, init: RequestInit) => Promise<Response>;
   /** Replaces tools/test-queries.json. */
   fixtures?: unknown[];
   /** false: no API key at all (the CLI's no-key path). Default: the stub key. */
   key?: boolean;
-  /** What process.cwd() reports (the CLI's wrong-folder check). */
+  /** What process.cwd() reports (the CLI's wrong-folder check). Default: the repo root, as the old spawns. */
   cwd?: string;
 }
 
 /** One harness run; `out` and `err` are raw (colours kept), as a subprocess's stdout and stderr. */
 export async function runHarness(argv: string[], opts: HarnessOptions = {}): Promise<HarnessRun> {
+  if (claimed) throw new Error('runHarness: an earlier run has not restored its globals yet (a case abandoned on timeout?); runs must not overlap');
+  claimed = true;
   let out = '', err = '', status: number | null = null;
+  const unexpected: string[] = [];
   const saved = {
     argv: process.argv, fetch: globalThis.fetch, read: fs.readFileSync, exit: process.exit,
     log: console.log, error: console.error, warn: console.warn,
     stdout: process.stdout.write, stderr: process.stderr.write,
     env: { ...process.env },
   };
-  const cwd = opts.cwd ? vi.spyOn(process, 'cwd').mockReturnValue(opts.cwd) : null;
+  let cwd: ReturnType<typeof vi.spyOn> | null = null;
   try {
+    cwd = vi.spyOn(process, 'cwd').mockReturnValue(opts.cwd ?? REPO_ROOT);
     process.argv = [process.execPath, HARNESS, ...argv];
     delete process.env.ANTHROPIC_API_KEY; // never a real key: no call leaves the machine
     delete process.env.ANTHROPIC_TEST_API_KEY;
     delete process.env.TOPIC_MASTER_HIDE;
     if (opts.key !== false) process.env.ANTHROPIC_TEST_API_KEY = 'stub';
-    globalThis.fetch = (opts.fetch ?? (async (url: string) => { throw new Error(`unexpected fetch ${url}`); })) as typeof fetch;
+    globalThis.fetch = (opts.fetch ?? (async (url: string) => { unexpected.push(String(url)); throw new Error(`unexpected fetch ${url}`); })) as typeof fetch;
     if (opts.fixtures) {
       const text = JSON.stringify(opts.fixtures);
       fs.readFileSync = ((p: fs.PathOrFileDescriptor, ...rest: unknown[]) =>
@@ -83,7 +97,9 @@ export async function runHarness(argv: string[], opts: HarnessOptions = {}): Pro
     for (const k of Object.keys(process.env)) if (!(k in saved.env)) delete process.env[k];
     Object.assign(process.env, saved.env);
     cwd?.mockRestore();
+    claimed = false;
   }
+  if (unexpected.length) throw new Error(`runHarness: unexpected fetch with no stub given: ${unexpected.join(', ')}`);
   return { status, out, err };
 }
 
