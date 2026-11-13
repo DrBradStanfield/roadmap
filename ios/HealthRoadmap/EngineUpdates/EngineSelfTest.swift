@@ -52,7 +52,7 @@ enum EngineSelfTest {
 
         let ids = Set(((rows(a, "measurements") ?? []) + (rows(b, "measurements") ?? [])).compactMap { $0["id"] as? String })
         for (local, remote) in [(a, b), (b, a)] {
-            let merged = try engine.call("mergeJson", [local, remote, now.formatted(HealthEngine.iso), device])
+            let merged = try engine.doorMergeJson(localJson: local, remoteJson: remote, nowIso: now.formatted(HealthEngine.iso), deviceId: device)
             let out = rows(merged, "measurements") ?? []
             try check(Set(out.compactMap { $0["id"] as? String }) == ids && out.count == ids.count, "merge rows")
             try check(out.first { $0["id"] as? String == firstId }?["status"] as? String == "entered-in-error", "merge entered-in-error")
@@ -66,7 +66,7 @@ enum EngineSelfTest {
         erased["meta"] = meta
         let e = String(decoding: try JSONSerialization.data(withJSONObject: erased), as: UTF8.self)
         for (local, remote) in [(b, e), (e, b)] {
-            let merged = try engine.call("mergeJson", [local, remote, now.formatted(HealthEngine.iso), device])
+            let merged = try engine.doorMergeJson(localJson: local, remoteJson: remote, nowIso: now.formatted(HealthEngine.iso), deviceId: device)
             let epoch = (try JSONSerialization.jsonObject(with: Data(merged.utf8)) as? [String: Any])?["meta"] as? [String: Any]
             try check(epoch?["eraseEpoch"] as? Int == 1, "merge eraseEpoch")
         }

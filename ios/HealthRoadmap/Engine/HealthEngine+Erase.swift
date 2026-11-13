@@ -17,7 +17,7 @@ extension HealthEngine {
     /// Erases the phone's record. Throws, and nothing is erased, when the record
     /// cannot be read: an erase lists the rows it removes.
     func eraseOnPhone(recordJSON: String, historyJSON: String?, now: Date, deviceId: String) throws -> PhoneErase {
-        try settled(PhoneErase.self, "erasePhoneJson", [recordJSON, historyJSON ?? NSNull(), now.formatted(Self.iso), deviceId])
+        try doorErasePhoneJson(PhoneErase.self, recordText: recordJSON, historyText: historyJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId)
     }
 
     /// What `cloudErase` answers.
@@ -55,7 +55,7 @@ extension HealthEngine {
         let block: @convention(block) (String) -> String = { text in
             keepChat(text) ? "" : "The chat history could not be written."
         }
-        let (json, order) = try await callAsync("cloudErase", [historyJSON ?? NSNull(), now.formatted(Self.iso), unsafeBitCast(block, to: AnyObject.self)], read: stamped)
+        let (json, order) = try await doorCloudErase(historyText: historyJSON, nowIso: now.formatted(Self.iso), keepChat: unsafeBitCast(block, to: AnyObject.self), read: stamped)
         var answer = try JSONDecoder().decode(CloudErase.self, from: Data(json.utf8))
         answer.view?.order = order
         return answer

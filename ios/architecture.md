@@ -1712,7 +1712,13 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
   Both are generated from `engine/contract.ts`, the one source (I-2, 2026-11-13):
   edit it, then `npx tsx ios/scripts/gen-contract.ts`; `engine/contract.test.ts` fails
-  when either file differs from what it generates.
+  when either file differs from what it generates. The same script writes
+  `engine/contract.schema.json` (the bridge, neutral, for any platform's generator) and the
+  app's Swift, checked in: `HealthRoadmap/Engine/Generated/EngineContract.swift` (the bridge
+  id, the doors list, the wire types: EngineEdit, EditOutcome, UnitConversion and the shapes
+  they hold) and `EngineDoors.swift` (one typed `door…` method per door on HealthEngine, the
+  app's only way to a door). `engine/contract-drift.test.ts` fails in CI on any difference, and
+  on hand-written Swift that names a door in a raw `call`.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
