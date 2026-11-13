@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { BLOOD_TABLE, assertDesktopLayout,assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { BLOOD_TABLE, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -194,6 +194,22 @@ describe('US-62 AC29 (design re-check 2026-11-06): WebKit value page gate', () =
     ] as const) {
       expect(() => assertValuePage({ ...valid, ...change })).toThrow(message);
     }
+  });
+});
+
+describe('US-62 AC10b (H78): WebKit focus ring gate', () => {
+  const teal = { active: true, outlineStyle: 'solid', outlineWidth: '2px', outlineColor: 'rgb(0, 124, 106)', outlineOffset: '-2px', boxShadow: 'none' };
+  it('passes when the date box draws the Value box ring', () => {
+    expect(() => assertFocusRing({ date: teal, value: teal })).not.toThrow();
+  });
+  it('fails on the live WebKit read before the fix: the theme\'s outline, style none', () => {
+    const date = { ...teal, outlineStyle: 'none', outlineWidth: '3px', outlineColor: 'rgb(26, 26, 26)', outlineOffset: '0px' };
+    expect(() => assertFocusRing({ date, value: teal })).toThrow('the date box shows no focus ring');
+  });
+  it('fails when focus never reached the date box, or its ring differs from the Value box', () => {
+    expect(() => assertFocusRing({ date: { ...teal, active: false }, value: teal })).toThrow('did not reach the date box');
+    expect(() => assertFocusRing({ date: { ...teal, outlineColor: 'rgb(26, 26, 26)' }, value: teal })).toThrow('differs from the Value box');
+    expect(() => assertFocusRing({ date: teal, value: { ...teal, outlineStyle: 'none' } })).toThrow('the Value box shows no focus ring');
   });
 });
 

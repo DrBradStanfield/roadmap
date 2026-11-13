@@ -127,3 +127,13 @@ describe('US-62 AC36: one card inset on every phone tab', () => {
     expect(sides(embed, 'margin', PHONE)).toEqual(['10px', '10px']);
   });
 });
+
+describe('US-62 AC10b (H78): the value page focus ring', () => {
+  it('the date box draws the Value box\'s inset teal ring on :focus-within, which WebKit matches', () => {
+    const ring = blocks(/\.md-add input\[type="date"\]:focus-within/);
+    expect(ring).toHaveLength(1);
+    expect(ring[0]).toMatch(/outline:\s*2px solid var\(--color-brand-text\)/);
+    expect(ring[0]).toMatch(/outline-offset:\s*-2px/);
+    expect(blocks(/\.md-add input:focus-visible/)).toEqual(ring);
+  });
+});
