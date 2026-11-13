@@ -55,7 +55,7 @@ final class FirstRunTests: XCTestCase {
         }
     }
 
-    /// Launch's four branches, decided once: a second launched event changes nothing.
+    /// Launch's five branches, decided once: a second launched event changes nothing.
     func testLaunchDecidesOnce_US54_AC7() {
         func launch(_ l: Cover.Launch) -> (Cover, Cover.Effect?) { Cover.transition(.deciding, .launched(l)) }
         check(launch(.init(welcomed: false, needsQuestions: true)), .welcome, nil, "a first launch welcomes")
