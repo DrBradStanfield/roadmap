@@ -162,13 +162,13 @@ extension RecordStore {
     }
 
     /// What the session made of a cloud edit, onto the screen.
-    func shown(_ outcome: EditOutcome, of edit: RecordEdit) async -> ApplyResult {
+    func shown(_ outcome: EditOutcome, order: Int, of edit: RecordEdit) async -> ApplyResult {
         guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved() }
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
-        await draw(next, order: outcome.order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil)
+        await draw(next, order: order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil)
         onEdit?()
         return .saved(healthRecords: outcome.healthRecords)
     }

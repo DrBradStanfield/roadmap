@@ -30,7 +30,7 @@ extension RecordStore {
             if let erase = seen.erase {
                 let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
                                                              units: seen.units, now: .now, choices: seen.choices)
-                result = await shown(answer.outcome, of: edit)
+                result = await shown(answer.outcome, order: answer.order, of: edit)
                 summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
                 if let problem { return .failure(LabRefusal(message: problem.words)) }

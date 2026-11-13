@@ -107,7 +107,7 @@ extension HealthEngine {
     func uploadRules(files: [LabFileReader.UploadFile], members: [String]) -> LabFileReader.Rules {
         struct Request: Encodable { let files: [LabFileReader.UploadFile]; let zipMembers: [String] }
         let request = (try? JSONEncoder().encode(Request(files: files, zipMembers: members))).map { String(decoding: $0, as: UTF8.self) }
-        let answer = request.flatMap { try? optionalCall("uploadVerdictsJson", [$0]) }
+        let answer = request.flatMap { try? doorUploadVerdictsJson(request: $0) }
         return LabFileReader.Rules(answer: answer, files: files, members: members)
     }
 }

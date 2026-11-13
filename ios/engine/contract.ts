@@ -20,7 +20,7 @@ export interface Door {
   args: readonly Arg[];
   /** What the door answers, in words: hashed for a contract door. */
   returns: string;
-  /** The answer's wire type; left out (opaque) until the door's answer is typed. */
+  /** The answer's wire type, for the generated Swift; left out (opaque text) until it is typed. */
   result?: z.ZodType;
   /** A whole door outside the hashed file (bridge-optional.json optionalDoors). */
   optionalDoor?: true;
@@ -37,16 +37,17 @@ const number = z.number();
 const flag = z.boolean();
 const provider = z.enum(['dropbox', 'google-drive']);
 // An ArrayBuffer from any context: JavaScriptCore's own, or Node's vm in the tests.
-const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').nullable();
+const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').meta({ wire: 'bytes' }).nullable();
 // An argument entry.ts declares optional (`unitsJson?`): the app sends it, the engine's own
 // callers and tests may leave it out, and the door answers as before without it.
 const maybeText = text.optional();
 const maybeFlag = flag.optional();
-const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').optional();
+const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
 
 // --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
-// Wire shapes only. A field the engine checks with words of its own (units, alcohol, Lp(a)'s
-// unit, a supplement's status, the chat part) is plain text here, so those words stay the answer.
+// Wire shapes only; `.meta({ id })` names one for the generated Swift (contract-swift.ts). A field
+// the engine checks with words of its own (units, alcohol, Lp(a)'s unit, a supplement's status,
+// the chat part) is plain text here, so those words stay the answer.
 
 /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
 export const PRESSURE_EDIT = z.object({
@@ -72,7 +73,8 @@ export const FORM_EDIT = z.discriminatedUnion('kind', [
 ]);
 
 /** A medication row as the chat's change and its Undo read it (health-core ChatMedicationRow). */
-const chatMedicationRow = z.object({ medicationKey: z.string(), drugName: z.string(), doseValue: z.number().nullable().default(null), doseUnit: z.string().nullable().default(null) });
+const chatMedicationRow = z.object({ medicationKey: z.string(), drugName: z.string(), doseValue: z.number().nullable().default(null), doseUnit: z.string().nullable().default(null) })
+  .meta({ id: 'ChatMedicationRow' });
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson (chat-edits.ts). */
 export const CHAT_EDIT = z.discriminatedUnion('kind', [
@@ -83,6 +85,13 @@ export const CHAT_EDIT = z.discriminatedUnion('kind', [
   /** The medications part's Undo: each row as it was, written in order (chatEditsPreview's `undo`). */
   z.object({ kind: z.literal('chatUndo'), medications: z.array(chatMedicationRow) }),
 ]);
+
+/** One reading from Apple Health (health-core DeviceSample): in SI, at an instant with its zone's offset.
+ *  `pairId`: shared by the two halves of one blood pressure, which land together or not at all. */
+const healthSample = z.object({ externalId: z.string(), metricType: z.string(), value: z.number(), measuredAt: z.string(), pairId: z.string().optional() })
+  .meta({ id: 'HealthSample' });
+/** One Health Records resource as HealthKit gave it (health-core ClinicalRecordInput). */
+const healthRecord = z.object({ sourceId: z.string(), resourceType: z.string(), fhirVersion: z.string(), json: z.string() }).meta({ id: 'HealthRecord' });
 
 const dose = { doseValue: z.number().nullable().optional(), doseUnit: z.string().nullable().optional() };
 
@@ -109,10 +118,10 @@ export const EDIT = z.discriminatedUnion('kind', [
    *  health-core's device-import decides what lands. */
   z.object({
     kind: z.literal('appleHealth'),
-    samples: z.array(z.object({ externalId: z.string(), metricType: z.string(), value: z.number(), measuredAt: z.string(), pairId: z.string().optional() })),
+    samples: z.array(healthSample),
   }),
   /** Lab results from Health Records (US-72): health-core's health-records-import decides what lands. */
-  z.object({ kind: z.literal('healthRecords'), records: z.array(z.object({ sourceId: z.string(), resourceType: z.string(), fhirVersion: z.string(), json: z.string() })) }),
+  z.object({ kind: z.literal('healthRecords'), records: z.array(healthRecord) }),
   ...FORM_EDIT.options,
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   z.object({ kind: z.literal('labImport'), extractionJson: z.string(), refs: z.array(z.string()), reportDay: z.string() }),
@@ -123,7 +132,27 @@ export const EDIT = z.discriminatedUnion('kind', [
    *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
   z.object({ kind: z.literal('labAddName'), name: z.string(), value: z.number(), unit: z.string(), day: z.string().optional() }),
   ...CHAT_EDIT.options,
-]);
+]).meta({ id: 'EngineEdit' });
+
+// --- Answers the app decodes (typed; every other door's answer is still opaque) -------------
+
+/** What a Health Records batch did (US-72), counts only. */
+const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int() })
+  .meta({ id: 'HealthRecordCounts' });
+
+/** applyEditJson's and cloudEdit's answer: the new record, or why it refused. `reason`: the engine's
+ *  code ("out-of-range", "slot-occupied", "invalid-edit"); `message`: its words for the person;
+ *  `existingId`: the row holding the day; `erase`: in the cloud, the erase the new record is at. */
+export const EDIT_OUTCOME = z.object({
+  ok: z.boolean(), record: z.string().optional(), reason: z.string().optional(), message: z.string().optional(),
+  existingId: z.string().optional(), erase: z.string().optional(), healthRecords: healthRecordCounts.optional(),
+}).meta({ id: 'EditOutcome' });
+
+/** convertJson's answer: `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height. */
+export const CONVERSION = z.object({
+  value: z.number(), text: z.string(),
+  feetInches: z.object({ feet: z.int(), inches: z.int() }).meta({ id: 'HeightFeetInches' }).nullable(),
+}).meta({ id: 'UnitConversion' });
 
 export type Edit = z.infer<typeof EDIT>;
 export type PressureEdit = z.infer<typeof PRESSURE_EDIT>;
@@ -163,6 +192,7 @@ export const VALUES: Record<string, string> = {
 export const DOORS = {
   applyEditJson: {
     kind: 'sync',
+    result: EDIT_OUTCOME,
     args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-72), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it",
   },
@@ -205,6 +235,7 @@ export const DOORS = {
   },
   cloudEdit: {
     kind: 'sync',
+    result: EDIT_OUTCOME,
     args: [['editJson', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', maybeText], ['shownLpaUnit', maybeText]],
     returns: "JSON outcome; for a healthRecords edit it adds healthRecords, as applyEditJson's",
   },
@@ -293,6 +324,7 @@ export const DOORS = {
   },
   convertJson: {
     kind: 'sync',
+    result: CONVERSION,
     args: [['metric', text], ['value', number], ['from', text], ['to', text]],
     returns: "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)",
   },
