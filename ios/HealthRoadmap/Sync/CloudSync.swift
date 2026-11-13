@@ -152,7 +152,7 @@ final class CloudSync: CloudPort {
 
     /// The network came back (US-09 AC30): the engine retries a failed save, at most once a
     /// minute and, on this trigger, never after a refused sign-in, then catches up. The
-    /// catch-up's re-read still retries a failed save first, a refused one too (lead A21).
+    /// catch-up's re-read still retries a failed save first, a refused one too (lead A25).
     func online() async {
         guard recordOpen else { return }
         _ = try? await engine.cloudOnline()

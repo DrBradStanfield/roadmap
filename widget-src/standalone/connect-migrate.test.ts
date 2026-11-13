@@ -162,6 +162,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
 
+    localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-09 AC2c)
     const cloud = await erasedCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     await store.flush();

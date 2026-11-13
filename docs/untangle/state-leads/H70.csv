@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H70,feedback guard,report_feedback's health-value check is narrower than the Sentry scrub for one input form; align the two,lead,open,"Found 2026-11-13 by the adversary review of PR 954 (US-32 AC9a). Behaviour already on main before that PR; not introduced by it. The check lives in packages/health-core/src/mcp-feedback.ts. Details are held privately until a fix lands, because this is a privacy guard in a public repo. (H70)",,no

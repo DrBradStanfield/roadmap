@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H61,lab upload,"A re-pick of a small upload (under 20 files) charges quota and the provider again for every file",lead,not started,"Under BATCH_THRESHOLD (widget-src/src/lib/upload-pipeline.ts) the web sends one request per file; the route charges each (app/routes/api.lab-import-v2.ts single-file mode, consumeQuota then extractOneFile). A re-pick after a failure or Cancel reads every file again and pays again. US-12 AC25 joins only batches of 20 or more. Raised as owner Q6 on the H44 design",,no

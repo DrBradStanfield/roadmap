@@ -209,7 +209,7 @@ export function uploadVerdictsJson(request: string): string {
 
 /** The network came back (the app's NWPathMonitor, US-09 AC30): retry a failed save, at most once a
  *  minute and, on this trigger, never after a refused sign-in (LiveRefresh), then catch up. The
- *  catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A21).
+ *  catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25).
  *  Optional, like labSearchJson: an app before it never calls it. Answers '{}', nothing to read. */
 export function cloudOnline(): string {
   open?.live.online();

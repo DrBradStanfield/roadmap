@@ -127,14 +127,16 @@ export const batchPollAnswer = z.union([
  *  `error` and the caller polls on. One that cannot (404, 401, 403, an answer that is not a poll)
  *  ends the watch (US-12 AC24). */
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
+  const token = pollTokens.get(batchId) ?? '';
+  // A late answer to an old token never drops the newer one a join stored since (US-12 AC25).
+  const drop = () => { if (pollTokens.get(batchId) === token) pollTokens.delete(batchId); };
   const ended = (error: string, errorCode: UploadErrorCode): BatchPollResponse => {
-    pollTokens.delete(batchId);
+    drop();
     return { status: 'ended', completed: 0, total: 0, error, errorCode };
   };
   let response: Response;
   let text = '';
   try {
-    const token = pollTokens.get(batchId) ?? '';
     // A POST so the token travels in the body: the server logs request URLs
     // (morgan) and a logged token reads the extracted lab text back.
     response = await fetch(LAB_IMPORT_V2_URL, {
@@ -155,7 +157,7 @@ export async function pollBatchStatus(batchId: string): Promise<BatchPollRespons
   } catch { /* malformed: refused below */ }
   const poll = batchPollAnswer.safeParse(body);
   if (!poll.success) return ended('Batch poll answer unreadable', 'server_error');
-  if (poll.data.status === 'ended') pollTokens.delete(batchId);
+  if (poll.data.status === 'ended') drop();
   // The schema checks what the loop reads; each result's own shape is the review's to read.
   return poll.data as BatchPollResponse;
 }

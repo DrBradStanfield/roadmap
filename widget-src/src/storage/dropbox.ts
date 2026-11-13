@@ -21,6 +21,7 @@ import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument,
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
+import { refreshOnce } from './token-flight';
 
 export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
@@ -309,12 +310,13 @@ export class DropboxAdapter implements StorageAdapter {
       client_id: this.config.clientId,
     });
     // Bounded like Drive's refresh (US-09 AC13h): every read and save waits on it.
-    const res = await fetchOrFail('Dropbox', TOKEN_URL, {
+    // One flight per page and grant (US-09 AC47); each caller reads its own copy of the answer.
+    const res = await refreshOnce('dropbox', startedFrom, () => fetchOrFail('Dropbox', TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
       timeoutMs: 5000,
-    }).catch((error: unknown) => {
+    })).then((shared) => shared.clone(), (error: unknown) => {
       this.dropIfGrantMoved(startedFrom);
       throw error;
     });

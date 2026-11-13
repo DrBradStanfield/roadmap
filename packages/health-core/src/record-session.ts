@@ -180,8 +180,8 @@ export class RecordSession {
     }
     // A previous cloud session failed to save and mirrored its changes on-device
     // (saveLoop()'s catch), or a write missed the connect's lift: merge them in and
-    // schedule a save to lift them up; the marker clears once a cloud save does.
-    if (mirror && (liftMissed(mirror, session.deviceCopySeen) || mirror.pending.get())) {
+    // schedule a save to lift them up; the marker clears once a cloud save does. Only while the copy is this page's.
+    if (mirror && session.mirrorOurs(mirror) && (liftMissed(mirror, session.deviceCopySeen) || mirror.pending.get())) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below). A plain
@@ -191,10 +191,10 @@ export class RecordSession {
       try {
         const ctx = session.ctx();
         const { body } = await mirror.adapter.read(ROADMAP_FILE_NAME);
-        if (body != null) {
+        if (body != null && session.mirrorOurs(mirror)) { // again: a log-off may land during the read (US-09 AC2c)
           session.current = ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), session.current, ctx);
           session.dispatch({ type: 'edited' });
-        } else {
+        } else if (session.mirrorOurs(mirror)) {
           mirror.pending.clear(); // stale marker, nothing mirrored
         }
       } catch (error) {
@@ -202,7 +202,7 @@ export class RecordSession {
           // Written by a newer bundle — readable once assets update. Keep the
           // marker (mirrorSkipped stops persist-success from clearing it).
           session.mirrorSkipped = true;
-        } else {
+        } else if (session.mirrorOurs(mirror)) {
           // Unparseable local data can never be read OR replaced (the mirror
           // write reads before merging, so it throws on the same bytes). A
           // sticky marker would show "waiting to sync" forever for data
@@ -508,13 +508,11 @@ export class RecordSession {
    * unsaved changes go to the device copy now, merged and marked pending as
    * a failed save's are, and the next session lifts them up (US-06 AC13,
    * US-09 AC4). The merge keeps a row only the device copy holds and drops
-   * one an erase listed. Nothing after log-off (US-09 AC2c), and nothing once
-   * another tab has moved this browser off this cloud: the device file is
-   * then that tab's record (US-09 AC2). Best-effort: an unreadable or full
-   * device copy leaves only the async save.
+   * one an erase listed. Only while the copy is this page's (mirrorOurs).
+   * Best-effort: an unreadable or full device copy leaves only the async save.
    */
   private mirrorNow(mirror: DeviceMirror): void {
-    if (!mirror.sync || mirror.writesStopped() || mirror.stillChosen?.() === false) return;
+    if (!mirror.sync || !this.mirrorOurs(mirror)) return;
     try {
       // The device tier's merge above: the merge moves the clock, so no edit is rewound.
       const ctx = this.ctx();
@@ -548,6 +546,8 @@ export class RecordSession {
   }
   /** A device page that may not read or write this device's health files: it reads none and saves none (US-09 AC2c). */
   private deviceClosed(): boolean { return this.host.tier === 'device' && this.host.deviceFilesOpen?.() === false; }
+  /** The device copy is still this cloud page's mirror: no log-off (US-09 AC2c), and no other tab moved this browser off this cloud, whose device file is then that tab's record (AC2). Read live. */
+  private mirrorOurs(mirror: DeviceMirror): boolean { return !mirror.writesStopped() && mirror.stillChosen?.() !== false; }
 
   /** Device tier: write the erased record over bytes no record reads, at the
    *  revision they were read at. Another tab that wrote since wins the race:
@@ -736,7 +736,7 @@ export class RecordSession {
       // callers (flush) check the result. Not once another tab moved this browser off this cloud: the
       // device file is then that tab's record (US-06 AC13, Brad R1).
       const mirror = this.host.tier === 'cloud' ? this.host.mirror : null;
-      if (mirror && !mirror.writesStopped() && mirror.stillChosen?.() !== false) {
+      if (mirror && this.mirrorOurs(mirror)) {
         mirror.pending.set();
         // Deliberately the merged transfer primitive, NOT a plain overwrite: the
         // device file may hold guest-era data this session never loaded (no

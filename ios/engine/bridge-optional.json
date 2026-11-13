@@ -44,7 +44,7 @@
     },
     "cloudOnline": {
       "args": [],
-      "returns": "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A21); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash."
+      "returns": "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash."
     }
   }
 }

@@ -37,7 +37,6 @@ vi.mock('./connect', () => ({
   adapterFor: () => null,
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: vi.fn() }),
 }));
 
 import { SyncControl } from './sync-control';
