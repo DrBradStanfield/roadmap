@@ -1239,11 +1239,13 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   neither of which drew (the key's epoch stays nil while the text the scheduler reads changes); it
   also needs the new record's epoch to be lower, with no known path. The key is built by
   `ShownRecord(source:shownSession:store:)` (Reminders/ReminderScheduler.swift); tests pin that it
-  carries the drawn record's epoch (nil when none is drawn), the source, and an open that turns
-  true only at the shown session's draw (`ShownRecord.open(shown:drawn:)`, nil-guarded). It is
+  carries the drawn record's epoch (nil when none is drawn), the source, and an open that is the
+  source's own record drawn (`ShownRecord.open(source:shown:drawn:phoneDrawn:)`): connected, true
+  only at the shown session's draw (nil-guarded, S72); local, true once the phone's own record is
+  drawn (`store.source.erase == nil`), not while a Disconnect still draws the cloud's (S73). It is
   ShownRecord's only init, so no caller can leave the epoch out; only RootView's onChange, the
-  source and session it passes, and its countable reading `shownRecord.open` (S43/S72: the
-  erase count is taken only from a drawn cloud record) are checked by reading. Known lead (S39):
+  source and session it passes, and its countable reading `shownRecord.open` (S43/S72/S73: the
+  erase count is taken only from the source's own drawn record) are checked by reading. Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:
