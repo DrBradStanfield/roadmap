@@ -10,7 +10,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
-import { saveFailureCause } from '@roadmap/health-core/save-state';
 import { GoogleDriveAdapter } from './drive';
 import { DropboxAdapter } from './dropbox';
 import { bootSignIn, currentSignIn, resetSignIn, subscribeSignIn } from './sign-in-state';
@@ -136,8 +135,8 @@ describe('US-09 AC48 (AC47): a save, a document write and the watch at once meet
     stop.abort();
     expect(posts(tokenUrl)).toBe(1);
     expect(raises).toBe(1);
-    expect(saveFailureCause(saveError)).toBe('auth');
-    expect(saveFailureCause(documentError)).toBe('auth');
+    // A sign-in only a new one mends: the save state names it 'auth' (lead A1 keeps that reader inside health-core).
+    expect([saveError?.reason, documentError?.reason]).toEqual(['reconnect', 'reconnect']);
   });
 });
 
@@ -247,10 +246,9 @@ describe('US-09 AC48 (test 7): after a Dropbox raise, every save fails as a sign
     await failure(adapter.read(ROADMAP_FILE_NAME));
     calls = [];
     const error = await failure(adapter.write(ROADMAP_FILE_NAME, {}, null));
-    expect(error?.reason).toBe('reconnect');
-    expect(saveFailureCause(error)).toBe('auth');
+    expect(error?.reason).toBe('reconnect'); // the save's cause: 'auth'
     // A fresh adapter, as a reminder or the next session builds, is refused the same way.
-    expect(saveFailureCause(await failure(new DropboxAdapter(DROPBOX).write(ROADMAP_FILE_NAME, {}, null)))).toBe('auth');
+    expect((await failure(new DropboxAdapter(DROPBOX).write(ROADMAP_FILE_NAME, {}, null)))?.reason).toBe('reconnect');
     expect(calls).toEqual([]);
   });
 });

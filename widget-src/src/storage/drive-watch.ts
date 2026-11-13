@@ -42,7 +42,7 @@ export async function driveWatchLoop(host: DriveWatchHost, fileName: string, onC
     try {
       let token = await startPageToken(host, signal);
       catchUpAfterFailure(retryMs, signal, onChange);
-      while (!signal.aborted) {
+      while (!signal.aborted && !isSignedOut('google-drive')) { // the raise stops an established watch too (Codex R2)
         const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
           + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
         const page: DriveChangesPage = await jsonBody(await changesRequest(host, url, signal));

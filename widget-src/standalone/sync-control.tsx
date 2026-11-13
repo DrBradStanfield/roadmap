@@ -17,7 +17,7 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, flushBeforeExit, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
 import { currentSignIn, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { PROVIDERS } from './providers';
@@ -255,11 +255,12 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
 
   const facts = useSaveFacts(backend);
 
-  // Forget the unreachable connection (no copy-down needed — the session is
-  // saved onto the device copy first, US-09 AC48; the cloud file stays put). A move (AC45).
+  // Forget the unreachable connection: the session is saved, then this page's record is
+  // copied onto the device copy (US-09 AC48, Codex R1); the cloud file stays put. A move (AC45).
   const forgetProvider = (provider: LostSignIn['provider']): void =>
     move({ type: 'start', to: 'local', step: 'list' }, async () => {
       await flushBeforeExit();
+      await copySessionToDevice(provider);
       await adapterFor(provider)?.disconnect();
       forgetBackend();
       location.reload();

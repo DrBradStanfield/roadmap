@@ -379,6 +379,7 @@ describe('US-09 AC48 (R1, R3): exit (c) the reconnect lifts the saved session in
     const { state } = JSON.parse(sessionStorage.getItem('health_roadmap_dropbox_pkce') ?? '{}') as { state?: string };
     window.location.search = `?code=test-code&state=${state}`;
     revoked.dropbox = false;
+    vi.resetModules(); // the return is a fresh page: the page that signed out is gone
     const { resolveBackend } = await import('./resolve-backend');
     const { resolved } = await resolveBackend();
     expect(resolved.backend).toBe('dropbox');
@@ -496,6 +497,7 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     const { state } = JSON.parse(sessionStorage.getItem('health_roadmap_dropbox_pkce') ?? '{}') as { state?: string };
     window.location.search = `?code=test-code&state=${state}`;
     revoked.dropbox = false;
+    vi.resetModules(); // the return is a fresh page
     const { resolveBackend } = await import('./resolve-backend');
     expect((await resolveBackend()).resolved.backend).toBe('dropbox');
     expect(weightsIn(dropboxFile?.body)).toMatchObject({ [SEEDED.day]: SEEDED.value });

@@ -7,13 +7,13 @@
  */
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
-import { saveFailureCause } from '@roadmap/health-core/save-state';
 import {
   DriveGrantRefusedError,
   GoogleDriveAdapter,
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
+  StorageError,
   type GitHubAdapter,
   type StorageAdapter,
   type WebDavAdapter,
@@ -53,10 +53,12 @@ export function signInAtBoot({ backend, reconnect }: ResolvedBackend): SignIn {
 }
 
 /** Why the remembered cloud is unusable at load (US-09 AC48). Google Drive's panel always offers its
- *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token (a save's 'auth'
- *  cause). Any other failure, and every GitHub and WebDAV one, is retried by a reload (AC13). */
+ *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token, named by the error
+ *  itself (a 401, or a sign-in only a new one mends). Any other failure, and every GitHub and WebDAV one,
+ *  is retried by a reload (AC13). */
 function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
-  if (provider === 'google-drive' || (provider === 'dropbox' && saveFailureCause(error) === 'auth')) return { kind: 'signedOut', provider };
+  const refused = error instanceof StorageError && (error.status === 401 || error.reason === 'reconnect');
+  if (provider === 'google-drive' || (provider === 'dropbox' && refused)) return { kind: 'signedOut', provider };
   return { kind: 'unreachable', provider };
 }
 
@@ -299,10 +301,10 @@ export async function logOff(backend: Backend): Promise<void> {
  * cloud file itself is never touched.
  */
 export async function prepareSwitch(current: Backend): Promise<void> {
+  await flushBeforeExit(); // a guest's too: its connect lifts the device copy (US-09 AC48, owner order 1)
   if (current === 'local') return;
   const adapter = adapterFor(current);
   if (!adapter) return;
-  await flushBeforeExit();
   try {
     await copyDownOnce(adapter, current);
     // The page's live adapter keeps its token in memory, so after a failed
@@ -326,6 +328,19 @@ export async function prepareSwitch(current: Backend): Promise<void> {
  *  copy (US-09 AC4), so its failure does not stop the exit. */
 export async function flushBeforeExit(): Promise<void> {
   await flushRoadmapStore().catch(() => undefined);
+}
+
+/** "Use this browser only" from a cloud page copies its record to this device before it signs out, a clean
+ *  session's too: a cloud session keeps no device copy until a save fails (US-09 AC48, Codex R1). A copy this
+ *  browser refuses is reported and stops the exit with a wordless error, so the panel stays as it was. */
+export async function copySessionToDevice(provider: CloudBackend): Promise<void> {
+  try {
+    await copyRecordToDevice();
+  } catch (error) {
+    console.warn('Copy to this browser before leaving the cloud failed');
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-to-device', backend: provider } });
+    throw new Error('');
+  }
 }
 
 /** The cloud this page has already copied down and signed out of. A switch

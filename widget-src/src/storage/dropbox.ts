@@ -88,6 +88,9 @@ export class DropboxAdapter implements StorageAdapter {
   /** `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
   constructor(private readonly config: DropboxConfig, readonly gen: LogOffId = logOffId()) {
     this.tokens = loadTokens();
+    // A sign-in from before the config key gets one now, under this adapter's log-off id (tokens under an older
+    // id read as none), so a refresh that forgets the tokens still leaves the panel (US-09 AC48, Codex R3).
+    if (this.tokens && getSignIn(CONFIG_KEY) === null) setSignIn(CONFIG_KEY, {}, this.gen);
   }
 
   isConnected(): boolean {
@@ -313,8 +316,9 @@ export class DropboxAdapter implements StorageAdapter {
 
   private async accessToken(): Promise<string> {
     if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect'); // a forgotten sign-in
-    // Refresh a minute before expiry.
-    if (Date.now() >= this.tokens.expiresAt - 60_000) await this.refresh();
+    // Refresh a minute before expiry. A page signed out sends a cached token to the refresh too, which
+    // refuses it: no adapter goes on using a sign-in this page knows has ended (US-09 AC48, Codex R2).
+    if (Date.now() >= this.tokens.expiresAt - 60_000 || isSignedOut(this.id)) await this.refresh();
     return this.tokens.accessToken;
   }
 

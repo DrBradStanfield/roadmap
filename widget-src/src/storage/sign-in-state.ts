@@ -18,6 +18,8 @@ import type { TokenProvider } from './token-flight';
 /** The clouds a page can open on; the standalone build's names (standalone/providers.ts). */
 export type SignInProvider = TokenProvider | 'github' | 'self-host';
 
+/** A signed-out GitHub or WebDAV is unrepresentable on purpose: only Drive and Dropbox can end a sign-in
+ *  mid-session (owner D1). Their failures leave the page unreachable at load, and a reload tries again. */
 export type SignIn =
   | { kind: 'none' }
   | { kind: 'signedIn'; provider: SignInProvider }

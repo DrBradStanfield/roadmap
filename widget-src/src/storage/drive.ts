@@ -592,9 +592,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { Authorization: `Bearer ${await this.getToken()}` };
   }
 
-  /** Valid cached token → server refresh → otherwise interaction is needed. */
+  /** Valid cached token → server refresh → otherwise interaction is needed. Signed out, only a valid popup grant passes: a raise names one only once expired, so it is the reconnect's (US-09 AC48, Codex R2). */
   private async getToken(): Promise<string> {
-    const refreshed = this.hasValidToken() ? 'ok' : await this.refresh(); // 'none': no grant to refresh with; 'transient' may pass
+    const refreshed = this.hasValidToken() && !(isSignedOut(this.id) && this.tokens!.refreshToken) ? 'ok' : await this.refresh();
     if (refreshed === 'ok') return this.tokens!.accessToken;
     throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined); // US-09 AC30
   }
