@@ -93,6 +93,9 @@ it('US-67 AC2: one message, tagged with the invalid kinds, carrying no value or 
   expect(result?.editRefusals?.map((r) => r.part)).toEqual(['medications', 'review']);
   await Sentry.flush(1000);
 
+  // Every item sent is this one event (S-16): a session, client_report or transaction item would
+  // carry SDK clock fields the blanking below does not cover, so a new item type fails here first.
+  expect(envelopes.flatMap(([, items]) => items.map(([h]) => h.type))).toEqual(['event']);
   const events = envelopes.flatMap(([, items]) => items).filter(([h]) => h.type === 'event').map(([, body]) => body);
   expect(events).toHaveLength(1);
   const [event] = events;
