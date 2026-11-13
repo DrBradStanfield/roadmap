@@ -1,5 +1,5 @@
 /** US-71: one local `test:all` at a time, shared across worktrees. */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -282,7 +282,8 @@ syncBuiltinESMExports();`);
     fakeVitest("note('begin'); setTimeout(() => { note('finish'); process.exit(0); }, 500);");
     const a = run();
     await waitFor("the first run's 'begin' line", () => logText().includes('begin'));
-    const b = run();
+    // The script's own 3 s poll, shortened here: the order, not the interval, is under test.
+    const b = run([], { TEST_ALL_LOCK_POLL_MS: '50' });
     await Promise.all([exited(a), exited(b)]);
     const ev = logText().split('\n').filter((l) => l === 'begin' || l === 'finish');
     expect(ev).toEqual(['begin', 'finish', 'begin', 'finish']);
@@ -319,19 +320,21 @@ syncBuiltinESMExports();`);
 
 describe('every local vitest run is capped, targeted ones too (US-71 AC5)', () => {
   const repo = path.resolve(__dirname, '..');
-  const readCap = (config: string, env: Record<string, string>) => {
-    const code = `const m = await import(${JSON.stringify(path.join(repo, config))}); const c = m.default.test ? m.default : m.default.default; console.log(JSON.stringify(c.test.maxWorkers ?? null));`;
-    const r = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
-      cwd: repo, encoding: 'utf8', env: { ...process.env, CI: '', TEST_ALL_MAX_WORKERS: '', ...env },
-    });
-    expect(r.status, r.stderr).toBe(0);
-    return JSON.parse(r.stdout.trim().split('\n').pop()!);
+  // In-process: a fresh import (cache-busted) evaluates the config under the stubbed env.
+  let fresh = 0;
+  const readCap = async (config: string, env: Record<string, string>) => {
+    for (const [k, v] of Object.entries({ CI: '', TEST_ALL_MAX_WORKERS: '', ...env })) vi.stubEnv(k, v);
+    try {
+      const m = await import(`${path.join(repo, config)}?fresh=${fresh++}`);
+      const c = m.default.test ? m.default : m.default.default;
+      return c.test.maxWorkers ?? null;
+    } finally { vi.unstubAllEnvs(); }
   };
   for (const config of ['vitest.config.ts', 'packages/health-core/vitest.config.ts']) {
-    it(`${config}: test:all's cap locally, the override honoured, none in CI`, () => {
-      expect(readCap(config, {})).toBe(Math.max(2, Math.floor(os.cpus().length / 4)));
-      expect(readCap(config, { TEST_ALL_MAX_WORKERS: '3' })).toBe(3);
-      expect(readCap(config, { CI: 'true' })).toBeNull();
-    }, 60_000);
+    it(`${config}: test:all's cap locally, the override honoured, none in CI`, async () => {
+      expect(await readCap(config, {})).toBe(Math.max(2, Math.floor(os.cpus().length / 4)));
+      expect(await readCap(config, { TEST_ALL_MAX_WORKERS: '3' })).toBe(3);
+      expect(await readCap(config, { CI: 'true' })).toBeNull();
+    });
   }
 });
