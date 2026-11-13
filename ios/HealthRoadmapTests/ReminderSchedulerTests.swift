@@ -546,6 +546,33 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 0)
     }
 
+    /// US-25 AC12b, US-11 (lead S41, checkpoint review): the cloud's open lands before its record is
+    /// drawn (CloudSync.open sets the session, then RecordStore.draw awaits the engine). A refresh in
+    /// that gap reads the phone's copy under the open's token. The draw moves ShownRecord's epoch,
+    /// and RootView treats that as a switch too, so the phone's epoch never vouches for the cloud
+    /// record's erase during the ask. On main RootView's key left the epoch out: no call at the draw.
+    func testARefreshBetweenTheOpenAndTheDrawNeverVouchesForTheCloudRecord_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // the phone's record at epoch 5
+        scheduler.recordSourceChanged() // signed in: the provider is set, the phone's copy still shows
+        scheduler.recordSourceChanged() // the cloud's session opens; its record is not drawn yet
+        await scheduler.refresh() // a refresh in the gap reads the phone's copy at 5, under the open's token
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        scheduler.recordSourceChanged() // the cloud record is drawn at epoch 1: ShownRecord's epoch moves 5 to 1
+        center.holdsAnswers = true
+        engineFails = true // the tap's read before the ask fails
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // the cloud record erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "the phone's epoch 5 never vouches for the cloud's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch
     /// to record B. Its epoch is A's, so it never becomes B's fallback.
     func testARefreshInFlightAcrossASwitchNeverBecomesTheFallback_US25_AC12b() async {

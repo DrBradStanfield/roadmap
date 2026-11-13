@@ -98,8 +98,9 @@ final class ReminderScheduler {
         await run(send(.tappedOff))
     }
 
-    /// The record on screen became another one (phone or cloud): the last good read was the old
-    /// record's, so an ask whose own read fails has nothing to fall back to until the next good read (S41).
+    /// The record on screen became another one (phone or cloud, opened or drawn) or its erase epoch
+    /// moved: the last good read was the old record's, so an ask whose own read fails has nothing
+    /// to fall back to until the next good read (S41).
     func recordSourceChanged() {
         generation += 1
         lastEpoch = nil
