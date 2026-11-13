@@ -19,6 +19,8 @@ final class FirstRunTests: XCTestCase {
         ("started full", .started(needs: false)),
         ("connected needs", .connected(needs: true)),
         ("connected full", .connected(needs: false)),
+        ("started unread", .started(needs: nil)),
+        ("connected unread", .connected(needs: nil)),
         ("finished", .finished),
         ("erased", .erased),
     ]
@@ -34,6 +36,9 @@ final class FirstRunTests: XCTestCase {
                 "started full": (.none, .finish),
                 "connected needs": (.questions(.onlyMissing), nil),
                 "connected full": (.none, .finish),
+                // S42: an unread record closes the cover unfinished, so the next launch decides.
+                "started unread": (.none, nil),
+                "connected unread": (.none, nil),
             ]),
             (.questions(.fresh), ["finished": (.none, .finish)]),
             (.questions(.onlyMissing), ["finished": (.none, .finish)]),
@@ -169,6 +174,26 @@ final class FirstRunTests: XCTestCase {
         XCTAssertEqual(effect, .finish)
         XCTAssertTrue(keys.onboarded, "saves now count")
         check(decide(keys, needsFlow: false), .none, nil, "a relaunch opens on the tabs")
+    }
+
+    /// S42: Start while the record is unread is past the welcome screen but not a finish.
+    func testWelcomeStartWithAnUnreadRecordLeavesOnboardedFalse_US57_AC9() {
+        let keys = Self.keys()
+        let (cover, effect) = Cover.transition(.welcome, .started(needs: nil))
+        keys.persist(cover, effect)
+        XCTAssertTrue(keys.welcomed)
+        XCTAssertFalse(keys.onboarded, "not finished: the next launch decides again")
+    }
+
+    /// S42: Start while the record is unread, then a relaunch with a readable record that lacks
+    /// height: the questions come, where a finish at Start would have skipped them for good.
+    func testAnUnreadStartThenARecordLackingHeightBringsTheQuestions_US57_AC9() {
+        let keys = Self.keys()
+        let (cover, effect) = Cover.transition(.welcome, .started(needs: nil))
+        keys.persist(cover, effect)
+        let profile = MyData.Profile(sex: "female", birthYear: 1980, birthMonth: 6, height: nil, heightUnit: "cm", feetInches: nil)
+        XCTAssertTrue(OnboardingSteps.needsFlow(profile), "a record without height needs the questions")
+        check(decide(keys, needsFlow: OnboardingSteps.needsFlow(profile)), .questions(.fresh), nil)
     }
 
     /// Entering a run writes why it runs, and the welcome screen is done.

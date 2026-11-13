@@ -1218,7 +1218,9 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
   an erase moved it in between, the grant is refused and reminders stay off (US-11). If the
   first read fails, the last good read's epoch stands in; with none ever, the grant is refused
-  (fail safe; the next tap, with the record read, turns them on). Known lead (S39):
+  (fail safe; the next tap, with the record read, turns them on). A switch to another record
+  (phone or cloud, RootView's `.onChange(of: source)`) clears the last good read, so the old
+  record's epoch never stands in for the new one's (S41). Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:
@@ -1938,7 +1940,9 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   `decided` and three `@AppStorage` aliases. Why: finish ran from three places, so it could
   run twice; now a second finish does nothing. The eight keys keep their names, so no
   migration: `FirstRunKeys.persist` writes them, and finishing now clears the run's flags.
-  Welcome's Start on a full record finishes too (S34), so its saves count. `Offer` is idle,
+  Welcome's Start on a full record finishes too (S34), so its saves count. An unread record
+  (`store.myData == nil`) sends `needs: nil`: the cover closes without finishing, so
+  `onboarded` stays false and the next launch decides again (S42). `Offer` is idle,
   `offering(backUp:)` or sync, replacing three Bools; Back up leaves `prompting`, which closes
   the prompt, and Sync opens in its onDismiss, so two sheets never overlap. One
   `.task(id: offerAsks)` holds the 1 s wait, so a newer ask restarts it. `FirstRunTests` holds

@@ -30,10 +30,10 @@ enum Cover: Equatable {
 
     enum Event: Equatable {
         case launched(Launch)
-        /// The welcome screen's Start; `needs`: the record needs the questions.
-        case started(needs: Bool)
+        /// The welcome screen's Start; `needs`: the record needs the questions, nil while it is unread.
+        case started(needs: Bool?)
         /// The welcome screen connected a cloud that holds the person's record.
-        case connected(needs: Bool)
+        case connected(needs: Bool?)
         /// The questions ended, or there was nothing to ask them with.
         case finished
         /// "Delete all my data", here or on another device.
@@ -68,9 +68,12 @@ enum Cover: Equatable {
             }
         case .welcome:
             switch event {
+            // An unread record is not a full one: the cover closes unfinished, so `onboarded` stays
+            // false and the next launch decides again (S42). The questions would finish at once.
+            case .started(nil), .connected(nil): return (.none, nil)
             // A record that needs nothing finishes here, so its saves count toward the backup offer (S34).
-            case .started(let needs): return needs ? (.questions(.fresh), nil) : (.none, .finish)
-            case .connected(let needs): return needs ? (.questions(.onlyMissing), nil) : (.none, .finish)
+            case .started(let needs?): return needs ? (.questions(.fresh), nil) : (.none, .finish)
+            case .connected(let needs?): return needs ? (.questions(.onlyMissing), nil) : (.none, .finish)
             case .launched, .finished, .erased: return (cover, nil)
             }
         case .questions:

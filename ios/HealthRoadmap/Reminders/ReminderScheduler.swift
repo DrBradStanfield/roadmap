@@ -96,6 +96,10 @@ final class ReminderScheduler {
         await run(send(.tappedOff))
     }
 
+    /// The record on screen became another one (phone or cloud): the last good read was the old
+    /// record's, so an ask whose own read fails has nothing to fall back to until the next good read (S41).
+    func recordSourceChanged() { lastEpoch = nil }
+
     private func send(_ event: ReminderEvent) -> ReminderEffect? {
         let (next, effect) = ReminderMode.transition(mode, event)
         if next != mode { mode = next }

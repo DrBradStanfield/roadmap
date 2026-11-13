@@ -438,6 +438,70 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 2)
     }
 
+    /// US-25 AC12b, US-11 (lead S41): record A was read at a high epoch; the person switches to
+    /// record B, B's read before the ask fails, and B is erased while iOS answers. A's epoch must
+    /// not stand in for B's, so the grant does not count and reminders stay off.
+    func testASwitchDownThenAnEraseDuringTheAskLeavesRemindersOff_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // record A, a good read at epoch 5
+        scheduler.recordSourceChanged() // now record B, at epoch 1
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // B erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "A's epoch 5 never vouches for B's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
+    /// US-25 AC12b (lead S41): a switch to a record at a higher epoch whose read before the ask
+    /// fails: the grant ends off. The next tap, after a good read of the new record, turns them on.
+    func testASwitchUpWithAFailedReadEndsOffThenTheNextTapTurnsOn_US25_AC12b() async {
+        let scheduler = scheduler()
+        await scheduler.refresh() // record A, a good read at epoch 0
+        scheduler.recordSourceChanged() // now record B, at epoch 3
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 3, days: ["2027-01-15"])
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "no good read of B before the ask: fail safe")
+        XCTAssertEqual(center.pending.count, 0)
+        center.holdsAnswers = false
+        await scheduler.refresh() // a good read of B
+        let again = await scheduler.optIn()
+        XCTAssertTrue(again, "the next tap, with B read, turns reminders on")
+        XCTAssertEqual(center.pending.count, 1)
+    }
+
+    /// US-25 AC12b (lead S41): a good read after the switch is the new record's own, so it stands
+    /// in again for a failed read before the ask, and the grant is accepted.
+    func testAGoodReadAfterASwitchRestoresTheFallback_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // record A at epoch 5
+        scheduler.recordSourceChanged()
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15", "2027-03-01"])
+        await scheduler.refresh() // record B, a good read at epoch 1
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertTrue(on, "B's own last good read matches B after the grant")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
     /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.
     private func until(_ done: () -> Bool) async {
         for _ in 0..<200 where !done() { await Task.yield() }
