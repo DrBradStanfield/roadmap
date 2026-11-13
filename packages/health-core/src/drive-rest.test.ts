@@ -104,7 +104,7 @@ class FakeDrive {
       const file = this.files.get(fileMatch[1]);
       if (!file) return new Response('not found', { status: 404 });
       if (url.searchParams.get('alt') === 'media') {
-        const answer = new Response(file.content);
+        const answer = new Response(file.content, { headers: { 'Content-Type': file.mimeType } });
         this.onDownload?.();
         return answer;
       }
@@ -118,8 +118,10 @@ class FakeDrive {
       const text = await new Response(init!.body as BodyInit).text();
       const parts = text.split(/--rm_boundary_health_roadmap-*\r?\n?/).filter((p) => p.trim());
       const metadata = JSON.parse(parts[0].split('\r\n\r\n')[1].trim()) as { name: string; parents: string[] };
-      const content = parts[1].split('\r\n\r\n')[1].replace(/\r\n$/, '');
-      const made = this.create(metadata.name, content, 'application/json', metadata.parents);
+      const [head, rest] = parts[1].split('\r\n\r\n');
+      const content = rest.replace(/\r\n$/, '');
+      // Drive keeps the media part's Content-Type as the file's mimeType.
+      const made = this.create(metadata.name, content, /Content-Type: (.*)/.exec(head)![1].trim(), metadata.parents);
       return Response.json({ id: made.id, version: String(made.version) });
     }
 
@@ -457,7 +459,9 @@ describe('documents: refused by default, written only on opt-in', () => {
     const labs = drive.find('Lab results', FOLDER_MIME, app.id)!;
     expect([...drive.files.values()].filter((f) => f.mimeType === FOLDER_MIME)).toHaveLength(2); // one app folder, one subfolder
     expect(drive.find('2026-01-01 Blood test results.pdf', undefined, labs.id)?.content).toBe('pdf bytes');
-    expect(await (await adapter.readDocument('Lab results/2026-01-01 Blood test results.pdf')).text()).toBe('pdf bytes');
+    const back = await adapter.readDocument('Lab results/2026-01-01 Blood test results.pdf');
+    expect(await back.text()).toBe('pdf bytes');
+    expect(back.type).toBe('application/pdf'); // the web viewer picks how to show it by this (DocumentLightbox)
   });
 
   it('US-73 AC12 (#979): a document missing from Drive is a StorageError whose reason is not-found', async () => {

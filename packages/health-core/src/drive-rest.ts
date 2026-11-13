@@ -220,7 +220,8 @@ export async function driveDownloadDocument(accessToken: string, name: string, p
   if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
   const res = await request(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken), signal, timeoutMs: TRANSFER_DEADLINE_MS.document });
   if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
-  return res.blob();
+  // Not res.blob(): the iPhone engine's Response shim has none (US-73 AC12).
+  return new Blob([await res.arrayBuffer()], { type: res.headers.get('content-type') ?? '' });
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
