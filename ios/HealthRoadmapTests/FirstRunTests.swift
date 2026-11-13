@@ -1,0 +1,185 @@
+import XCTest
+@testable import HealthRoadmap
+
+/// US-25 AC10, US-54, US-57 AC8 (iPhone survey S9, S16): the first-run cover and the backup
+/// offer are each one named state, changed only by their `transition`. Every state x every
+/// event names what follows; finishing runs once; the keys decide a launch as they always did.
+final class FirstRunTests: XCTestCase {
+    private typealias Event = Cover.Event
+
+    private func check(_ got: (Cover, Cover.Effect?), _ cover: Cover, _ effect: Cover.Effect?, _ message: String = "",
+                       file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(got.0, cover, message, file: file, line: line)
+        XCTAssertEqual(got.1, effect, "\(message): effect", file: file, line: line)
+    }
+
+    private let events: [(String, Event)] = [
+        ("launched", .launched(.init(welcomed: true, onboarded: true))),
+        ("started needs", .started(needs: true)),
+        ("started full", .started(needs: false)),
+        ("connected needs", .connected(needs: true)),
+        ("connected full", .connected(needs: false)),
+        ("finished", .finished),
+        ("erased", .erased),
+    ]
+
+    /// Every cover x every event. Unlisted pairs keep the cover and run nothing.
+    func testEveryCoverAndEvent_US54() {
+        let erased: (Cover, Cover.Effect?) = (.questions(.afterErase), .startOver)
+        let table: [(Cover, [String: (Cover, Cover.Effect?)])] = [
+            (.deciding, ["launched": (.none, nil)]),
+            (.welcome, [
+                "started needs": (.questions(.fresh), nil),
+                // S34: a full record finishes at Start, as it does at connected.
+                "started full": (.none, .finish),
+                "connected needs": (.questions(.onlyMissing), nil),
+                "connected full": (.none, .finish),
+            ]),
+            (.questions(.fresh), ["finished": (.none, .finish)]),
+            (.questions(.onlyMissing), ["finished": (.none, .finish)]),
+            (.questions(.afterErase), ["finished": (.none, .finish)]),
+            (.none, ["erased": erased]),
+        ]
+        for (cover, listed) in table {
+            for (name, event) in events {
+                let (next, effect) = Cover.transition(cover, event)
+                let want = listed[name] ?? (cover, nil)
+                XCTAssertEqual(next, want.0, "\(cover) x \(name)")
+                XCTAssertEqual(effect, want.1, "\(cover) x \(name): effect")
+            }
+        }
+    }
+
+    /// Launch's four branches, decided once: a second launched event changes nothing.
+    func testLaunchDecidesOnce_US54_AC7() {
+        func launch(_ l: Cover.Launch) -> (Cover, Cover.Effect?) { Cover.transition(.deciding, .launched(l)) }
+        check(launch(.init(welcomed: false, needsQuestions: true)), .welcome, nil, "a first launch welcomes")
+        check(launch(.init(welcomed: true, onboarded: true, erasedElsewhere: true)), .questions(.afterErase), .startOver, "an erase on another device brings the questions back")
+        check(launch(.init(welcomed: true, needsQuestions: true, run: .onlyMissing)), .questions(.onlyMissing), nil, "a relaunch mid-run resumes it the same way")
+        check(launch(.init(welcomed: true, onboarded: true)), .none, nil, "a finished phone opens on the tabs")
+        // Not onboarded and not erased elsewhere counts: only a finished phone starts over.
+        check(launch(.init(welcomed: true, erasedElsewhere: true)), .none, nil)
+        for cover in [Cover.welcome, .questions(.fresh), .none] {
+            check(Cover.transition(cover, .launched(.init())), cover, nil, "\(cover): launch decides once")
+        }
+    }
+
+    /// S9's reason: two finishes (the questions' end and a late no-Health arm, say) run
+    /// RootView's finish effects (takeCount, ignoreSaves, the tour start) once.
+    func testTwoFinishesFinishOnce_US54() {
+        for start in [Cover.questions(.fresh), .welcome] {
+            var cover = start
+            var effects: [Cover.Effect?] = []
+            for event in [start == .welcome ? Event.connected(needs: false) : .finished, .finished, .connected(needs: false), .started(needs: false)] {
+                let (next, effect) = Cover.transition(cover, event)
+                cover = next
+                effects.append(effect)
+            }
+            XCTAssertEqual(cover, .none)
+            XCTAssertEqual(effects.compactMap { $0 }, [.finish], "\(start): finished once")
+        }
+    }
+
+    // MARK: Offer (US-57 AC8)
+
+    /// Every offer x every event: 12 rows. Back up opens Sync only once the prompt has closed.
+    func testEveryOfferAndEvent_US57_AC8() {
+        let all: [Offer] = [.idle, .offering(backUp: false), .offering(backUp: true), .sync]
+        let listed: [Offer: [Offer.Event: Offer]] = [
+            .idle: [.due: .offering(backUp: false)],
+            .offering(backUp: false): [.backUpTapped: .offering(backUp: true), .promptClosed: .idle],
+            .offering(backUp: true): [.promptClosed: .sync],
+            .sync: [.syncClosed: .idle],
+        ]
+        for offer in all {
+            for event in [Offer.Event.due, .backUpTapped, .promptClosed, .syncClosed] {
+                XCTAssertEqual(Offer.transition(offer, event), listed[offer]?[event] ?? offer, "\(offer) x \(event)")
+            }
+        }
+        XCTAssertTrue(Offer.offering(backUp: false).prompting)
+        XCTAssertFalse(Offer.offering(backUp: true).prompting, "Back up closes the prompt")
+    }
+
+    /// Not now: the binding's close, then onDismiss's, land idle once; Back up: Sync after the prompt.
+    func testPromptClosesOnceEitherWay_US57_AC8() {
+        let notNow = [Offer.Event.due, .promptClosed, .promptClosed].reduce(Offer.idle, Offer.transition)
+        XCTAssertEqual(notNow, .idle)
+        let backUp = [Offer.Event.due, .backUpTapped, .promptClosed].reduce(Offer.idle, Offer.transition)
+        XCTAssertEqual(backUp, .sync)
+        XCTAssertEqual(Offer.transition(backUp, .syncClosed), .idle)
+    }
+
+    // MARK: Keys
+
+    private static func keys(_ seed: [String: Any] = [:]) -> FirstRunKeys {
+        let defaults = UserDefaults(suiteName: "FirstRunTests-\(UUID().uuidString)")!
+        seed.forEach { defaults.set($1, forKey: $0) }
+        return FirstRunKeys(defaults: defaults)
+    }
+
+    private func decide(_ keys: FirstRunKeys, needsFlow: Bool, erasedElsewhere: Bool = false) -> (Cover, Cover.Effect?) {
+        Cover.transition(.deciding, .launched(keys.launch(needsFlow: needsFlow, erasedElsewhere: erasedElsewhere)))
+    }
+
+    /// Six seeded installs decide the same cover as before the union: no key changed name or meaning.
+    func testSeededInstallsDecideAsBefore_US54_AC7() {
+        check(decide(Self.keys(), needsFlow: true), .welcome, nil, "fresh install")
+        check(decide(Self.keys(["welcomed": true, "onboardingHealthAsked": true]), needsFlow: false), .questions(.fresh), nil, "mid-run, quit at weight with sex, birth and height saved")
+        check(decide(Self.keys(["welcomed": true, "onboardingOnlyMissing": true]), needsFlow: true), .questions(.onlyMissing), nil, "mid-run after I already use Health Roadmap")
+        check(decide(Self.keys(["welcomed": true, "onboardingAfterErase": true]), needsFlow: true), .questions(.afterErase), nil, "mid-run after Delete all my data")
+        check(decide(Self.keys(["welcomed": true, "onboarded": true, "onboardingHealthAsked": true]), needsFlow: true), .none, nil, "onboarded: never asked again")
+        check(decide(Self.keys(["welcomed": true, "onboarded": true]), needsFlow: true, erasedElsewhere: true), .questions(.afterErase), .startOver, "onboarded, erased on another device")
+    }
+
+    /// S9 fault 2: finishing forgets the run, so `onboarded` never sits beside a run begun.
+    func testFinishClearsTheRunFlags_US54() {
+        let keys = Self.keys(["welcomed": true, "onboardingHealthAsked": true, "onboardingOnlyMissing": true,
+                              "onboardingFromHealth": "sex", "onboardingAfterErase": true])
+        keys.persist(.none, .finish)
+        XCTAssertTrue(keys.onboarded)
+        XCTAssertTrue(keys.welcomed)
+        for key in ["onboardingHealthAsked", "onboardingOnlyMissing", "onboardingAfterErase"] {
+            XCTAssertFalse(keys.defaults.bool(forKey: key), key)
+        }
+        XCTAssertEqual(keys.defaults.string(forKey: "onboardingFromHealth"), "")
+    }
+
+    /// "Delete all my data": the questions again, after an erase, with nothing of the old run.
+    func testStartOverWritesTheErasedRun_US54_AC7() {
+        let keys = Self.keys(["welcomed": true, "onboarded": true, "onboardingHealthAsked": true, "onboardingOnlyMissing": true,
+                              "onboardingFromHealth": "sex"])
+        let (cover, effect) = Cover.transition(.none, .erased)
+        keys.persist(cover, effect)
+        XCTAssertFalse(keys.onboarded)
+        XCTAssertTrue(keys.welcomed, "not the welcome screen")
+        XCTAssertFalse(keys.defaults.bool(forKey: "onboardingHealthAsked"))
+        XCTAssertFalse(keys.defaults.bool(forKey: "onboardingOnlyMissing"))
+        XCTAssertTrue(keys.defaults.bool(forKey: "onboardingAfterErase"))
+        XCTAssertEqual(keys.defaults.string(forKey: "onboardingFromHealth"), "")
+        check(decide(keys, needsFlow: true), .questions(.afterErase), nil, "a relaunch resumes the erased run")
+    }
+
+    /// S34: Welcome's Start on a full phone record finishes, so `onboarded` is set and the
+    /// person's saves count toward the backup offer (RootView's ownSaves guard).
+    func testWelcomeStartWithAFullRecordFinishes_US57_AC9() {
+        let keys = Self.keys()
+        XCTAssertFalse(keys.needsQuestions(needsFlow: false))
+        let (cover, effect) = Cover.transition(.welcome, .started(needs: keys.needsQuestions(needsFlow: false)))
+        keys.persist(cover, effect)
+        XCTAssertEqual(effect, .finish)
+        XCTAssertTrue(keys.onboarded, "saves now count")
+        check(decide(keys, needsFlow: false), .none, nil, "a relaunch opens on the tabs")
+    }
+
+    /// Entering a run writes why it runs, and the welcome screen is done.
+    func testEnteringARunWritesItsPair_US54() {
+        let keys = Self.keys()
+        keys.persist(.questions(.onlyMissing), nil)
+        XCTAssertTrue(keys.welcomed)
+        XCTAssertTrue(keys.defaults.bool(forKey: "onboardingOnlyMissing"))
+        XCTAssertFalse(keys.defaults.bool(forKey: "onboardingAfterErase"))
+        XCTAssertFalse(keys.onboarded, "a run is not a finish")
+        keys.persist(.welcome, nil)
+        XCTAssertTrue(keys.defaults.bool(forKey: "onboardingOnlyMissing"), "the welcome screen writes nothing")
+    }
+}
