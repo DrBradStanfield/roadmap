@@ -1,9 +1,9 @@
 // Medication, screening and supplement saves: one per key, debounced, each
 // carrying the erase the page showed when its change was made.
-import { getShownErase } from './roadmap-data';
+import { getShownErase, stillShown } from './roadmap-data';
 
-/** Each key's waiting save: its timer and the save itself. */
-export type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void }>;
+/** Each key's waiting save: its timer, the save itself and the erase it carries. */
+export type ListSaves = Map<string, { timer: ReturnType<typeof setTimeout>; fire: () => void; erase: string }>;
 
 /** One save per key, 300 ms after its last change: rapid dropdown changes
  *  would otherwise race. The save carries the erase the page showed when the
@@ -14,7 +14,7 @@ export function debounceSave(timers: ListSaves, key: string, save: (erase: strin
     timers.delete(key);
     save(erase);
   };
-  timers.set(key, { timer: setTimeout(fire, 300), fire });
+  timers.set(key, { timer: setTimeout(fire, 300), fire, erase });
 }
 
 /** Drop one key's waiting save without running it. */
@@ -31,10 +31,14 @@ export function dropListSaves(all: ListSaves[]): void {
   }
 }
 
-/** Run every waiting list save now, as the page goes away (US-06 AC13). */
-export function flushListSaves(all: ListSaves[]): void {
+/** Run now every waiting list save whose erase the page still shows: as the
+ *  page goes away (US-06 AC13), and before a whole re-read replaces the lists
+ *  (H52). One from an erase no longer shown would be refused; it waits on, as
+ *  before, for its timer or the erase's forget. */
+export function flushShown(all: ListSaves[]): void {
   for (const timers of all) {
-    for (const { timer, fire } of [...timers.values()]) {
+    for (const { timer, fire, erase } of [...timers.values()]) {
+      if (!stillShown(erase)) continue;
       clearTimeout(timer);
       fire();
     }

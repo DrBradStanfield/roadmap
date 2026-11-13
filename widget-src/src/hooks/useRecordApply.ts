@@ -32,13 +32,16 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
  * mark and counts nothing here; the machine counts the erase. One carrying the
  * erase shown is a remote change that counts nothing (its erase counted once).
  *
- * | reason   | read   | flushes the waiting save | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
+ * | reason   | read   | flushes waiting saves    | form        | ends a hold (*)                                                                     | clears the answer mark | units       | counts remote_change_applied | erase       |
  * |----------|--------|--------------------------|-------------|-------------------------------------------------------------------------------------|------------------------|-------------|------------------------------|-------------|
  * | upload   | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold (**)       | yes         |
  * | remote   | record | unless held              | unless held | a clean arrival ends it; a dirty one starts or keeps it                             | unless held            | unless held | unless held (**)             | unless held |
  * | refused  | record | yes                      | yes         | yes                                                                                 | yes (spent)            | yes         | if it ends a hold (**)       | yes         |
  * | left     | record | yes                      | yes         | yes                                                                                 | if it ends a hold      | yes         | if it ends a hold (**)       | yes         |
  * | own-save | values | no                       | no          | no                                                                                  | no                     | no          | no                           | no          |
+ *
+ * The waiting saves flushed: the fields' (500 ms) and the medication,
+ * screening and supplement ones (300 ms) whose erase the page still shows (H52).
  *
  * (**) Never for the late echo of the erase the screen shows: its hold ends and
  * clears the answer mark like any other, and counts nothing (fix 4 2b-3 R1, F1).
@@ -62,6 +65,7 @@ export const READ_POLICY: Record<ReadReason, ReadPolicy> = {
 interface Later {
   markSaved: (inputs: Partial<HealthInputs>) => void;
   flushPendingSave: () => void;
+  flushListSaves: () => void;
   profileDirty: () => boolean;
   clearAnswered: (spend?: boolean) => void;
 }
@@ -119,7 +123,9 @@ export function useRecordApply(args: {
   const apply = useCallback(async () => {
     const { reloadValues, erase: machine, units, later } = latest.current;
     // A field the user left has its save waiting (500 ms): it starts now; its own re-read follows.
+    // So do the medication, screening and supplement saves (300 ms), or the lists shown below would lose them (H52).
     later().flushPendingSave();
+    later().flushListSaves();
     const erase = getEraseIdentity(); // read with the record, in one turn
     const result = await reloadValues();
     // The store moved during the read: it shows nothing, neither record nor erase. The change that moved it brings its own read.
