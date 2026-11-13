@@ -108,6 +108,27 @@ describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
     expect(existsSync(join(dir, 'ios', 'build', 'test-output-UTC.txt'))).toBe(false);
   });
 
+  // A caller that retries on 75 or 76 must not lose a real failure from an earlier zone.
+  it.each([
+    [75, 'NOT RUN in Pacific/Auckland'],
+    [76, 'STOPPED in Pacific/Auckland'],
+  ])('a UTC failure outranks a later Auckland %i: it reports the failure and exits 1', (code, line) => {
+    const r = run(code, 65);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+    expect(r.out).toContain(line);
+    expect(r.out).toContain('iOS tests FAILED in: UTC (logs: ios/build/test-output-UTC.txt)');
+    expect(readFileSync(join(dir, 'ios', 'build', 'test-output-UTC.txt'), 'utf8')).toContain('** TEST FAILED **');
+    expect(r.status).toBe(1);
+  });
+
+  it('a UTC pass then an Auckland 75 still exits 75', () => {
+    const r = run(75, 0);
+    expect(r.out).toContain('passed in UTC');
+    expect(r.out).toContain('NOT RUN in Pacific/Auckland');
+    expect(r.out).not.toContain('FAILED in');
+    expect(r.status).toBe(75);
+  });
+
   it('a pass runs both zones and exits 0', () => {
     const r = run(0);
     expect(r.out).toContain('All iOS tests passed in UTC and Pacific/Auckland.');

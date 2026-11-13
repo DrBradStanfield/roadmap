@@ -4,6 +4,7 @@
 # A skipped parity test fails the run: a skip would mean the zone pin was lost.
 # Each zone's run takes the shared simulator's lock (sim-run.sh, US-71 AC7).
 # A failed zone does not stop the other: both run, and the script fails if either did.
+# A failed zone outranks a later zone's 75 or 76: the script then reports the failure and exits 1.
 #   ios/scripts/test.sh
 set -eu
 cd "$(dirname "$0")/.."
@@ -16,6 +17,8 @@ DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -
 mkdir -p build
 trap scripts/clean-test-clones.sh EXIT
 FAILED=""
+LOGS=""
+report_failed() { [ -z "$FAILED" ] || { echo "iOS tests FAILED in:$FAILED (logs:$LOGS)"; exit 1; }; }
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
   # A failed zone's log is copied here, since the next zone's run overwrites $LOG.
@@ -29,17 +32,17 @@ for ZONE in UTC Pacific/Auckland; do
     -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 || echo $? > "$STATUS"; } | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)|sim-run:" || true
   case "$(cat "$STATUS" 2>/dev/null)" in
-    75) echo "NOT RUN in $ZONE: sim-run refused or gave up; see its line above (not a test failure)"; exit 75;;
-    76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; exit 76;;
+    75) echo "NOT RUN in $ZONE: sim-run refused or gave up; see its line above (not a test failure)"; report_failed; exit 75;;
+    76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; report_failed; exit 76;;
   esac
   if ! grep -q "TEST SUCCEEDED" "$LOG"; then
-    cp "$LOG" "$ZLOG"; echo "FAILED in $ZONE (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
+    cp "$LOG" "$ZLOG"; echo "FAILED in $ZONE (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"; LOGS="$LOGS ios/$ZLOG"
   elif grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
     cp "$LOG" "$ZLOG"
-    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
+    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"; LOGS="$LOGS ios/$ZLOG"
   else
     echo "passed in $ZONE"
   fi
 done
-[ -z "$FAILED" ] || { echo "iOS tests FAILED in:$FAILED"; exit 1; }
+report_failed
 echo "All iOS tests passed in UTC and Pacific/Auckland."
