@@ -1216,7 +1216,9 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
   before, a double tap asked iOS twice, and the second grant could turn reminders back on
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
-  an erase moved it in between, the grant is refused and reminders stay off (US-11). Known lead:
+  an erase moved it in between, the grant is refused and reminders stay off (US-11). If the
+  first read fails, the last good read's epoch stands in; with none ever, the grant is refused
+  (fail safe; the next tap, with the record read, turns them on). Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:
