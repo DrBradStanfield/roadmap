@@ -1,0 +1,43 @@
+{
+  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, any row whose output or inputs the PR touches runs its check in a temp merge of the PR head into current main; a failing check refuses and prints the generator. Inputs are sh case patterns (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
+  "rows": [
+    {
+      "output": "instrument-scrub.mjs",
+      "inputs": [
+        "tools/generate-instrument-scrub.mjs",
+        "packages/health-core/src/sentry-scrub-server.ts",
+        "packages/health-core/src/sentry-scrub.ts",
+        "packages/health-core/src/scrub-vocabulary.ts",
+        "packages/health-core/src/lab-catalog.ts",
+        "packages/health-core/src/colonoscopy-schedule.ts",
+        "packages/health-core/src/core-rows.ts",
+        "packages/health-core/src/import-hints.ts",
+        "packages/health-core/src/lab-limits.ts",
+        "packages/health-core/src/mappings.ts",
+        "packages/health-core/src/merge.ts",
+        "packages/health-core/src/parseNumber.ts",
+        "packages/health-core/src/roadmap-file.ts",
+        "packages/health-core/src/screening-inputs.ts",
+        "packages/health-core/src/screening-rules.ts",
+        "packages/health-core/src/types.ts",
+        "packages/health-core/src/units.ts",
+        "packages/health-core/src/validation.ts",
+        "packages/health-core/src/zod.ts",
+        "package-lock.json"
+      ],
+      "check": "node tools/generate-instrument-scrub.mjs --check",
+      "generator": "node tools/generate-instrument-scrub.mjs"
+    },
+    {
+      "output": "docs/blog/index.json",
+      "inputs": [
+        "docs/blog/*.md",
+        "docs/guideline/*.md",
+        "scripts/rebuild-blog-index.ts",
+        "app/lib/frontmatter.ts"
+      ],
+      "check": "npx tsx scripts/rebuild-blog-index.ts >/dev/null && git diff --quiet -- docs/blog/index.json",
+      "generator": "npm run rebuild-index"
+    }
+  ]
+}

@@ -46,12 +46,14 @@ case "$*" in
 esac
 `);
   chmodSync(join(S, 'gh'), 0o755);
-  // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none.
+  // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none,
+  // and prints the real tools/generated-files.json (US-64 AC34).
   writeFileSync(join(S, 'git'), `#!/bin/sh
 printf 'git\\t%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 case "$1" in
   fetch) [ -z "\${GIT_FETCH_FAIL:-}" ] || { echo "fatal: unable to access origin" >&2; exit 128; } ;;
-  show) [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
+  show) [ "$2" = origin/main:tools/generated-files.json ] && { cat "${join(dirname(SCRIPT), 'generated-files.json')}"; exit; }
+    [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
     cat "$MAIN_COPY" ;;
   *) echo "unexpected git call: $*" >&2; exit 1 ;;
 esac
@@ -146,7 +148,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
         const r = gate(['123', SHA, '--commit-checks'], { files: self }, { MAIN_COPY: fakeMain(code) });
         expect(r.status).toBe(code);
         expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA} --commit-checks`);
-        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show']);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
         expect(r.merges).toEqual([]);
       }
     });
@@ -174,6 +176,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.stderr.match(NOTE)).toHaveLength(1);
       expect(r.merges).toEqual([MERGE_ARGV]);
       expect(gate(['123', SHA], { files: ciPr }).status).toBe(16);
+      expect(gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: 'tools/generated-files.json' }] } }).status).toBe(16);
       expect(gate(['123', SHA]).stderr).not.toMatch(NOTE);
     });
     it('refuses a PR whose file list gh truncated at 100 (17), or 16 if the part it sees holds the script', () => {

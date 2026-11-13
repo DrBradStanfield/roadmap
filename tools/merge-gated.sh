@@ -5,10 +5,11 @@
 # In order, refusing at the first that fails:
 #   1. the sha is 40 hex (exit 3)
 #   2. the PR is open (5) and its head is that sha (6)
-#   3. gate files: a PR that changes tools/merge-gated.sh or .github/workflows/ci.yml must not be judged by the copy
-#      it changed. This script then runs `git fetch origin main`, writes main's tools/merge-gated.sh to a temp file
-#      and runs that copy with the same arguments and MERGE_GATED_FROM_MAIN=1, exiting with its code. A failed
-#      fetch, or no or an empty copy on main, refuses (16): the owner merges that PR by hand. A copy run with the
+#   3. gate files: a PR that changes tools/merge-gated.sh, tools/generated-files.json or .github/workflows/ci.yml
+#      must not be judged by the copy it changed. This script then runs `git fetch origin main`, writes main's
+#      tools/merge-gated.sh and tools/generated-files.json (when main has one) to a temp dir and runs that copy
+#      with the same arguments and MERGE_GATED_FROM_MAIN=1, exiting with its code. A failed fetch, or no or an
+#      empty copy on main, refuses (16): the owner merges that PR by hand. A copy run with the
 #      marker skips this step. The marker guards against accidents, not against someone who sets it on purpose:
 #      review of the diff is the real control. A PR that changes ci.yml also gets one stderr note: its own CI
 #      result came from the PR's workflow, so the reviewer must have read that diff (a note, not a refusal:
@@ -21,13 +22,19 @@
 #      SKIPPED (9), and a check named exactly `test` is SUCCESS (10). Every entry counts, even two of one name:
 #      any red one refuses, whichever is newer (re-run the job to replace it). --commit-checks skips this step:
 #      it is for CI started by workflow_dispatch, whose runs do not reach the PR's rollup; step 4 is its gate.
-#   6. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
+#   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red): when a changed
+#      file matches a row of tools/generated-files.json (the copy beside this script), `git fetch origin main`,
+#      a temp detached worktree at origin/main, the PR head fetched into it and merged with --no-commit --no-ff.
+#      A merge that fails refuses (9, "merge main first"); so does a matching row's check that fails there, naming
+#      the output and its generator. The worktree is removed on every exit; no branch is made. Fetch or worktree
+#      errors, and a check that times out, refuse (4).
+#   7. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
 #      progress cannot dodge that order, and the second pass catches a run that went in_progress -> waiting (an
 #      environment review) and back. Unguarded: a run older than 100 newer runs that also flips status in step
 #      with both passes. --match-head-commit and Deploy's own concurrency group are the backstop.
-#   7. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
+#   8. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
 # A gh error, timeout or an answer it cannot parse refuses with exit 4; usage errors exit 2. Every gh call,
 # the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). A
 # merge that times out exits 13 with its outcome unknown: check the PR.
@@ -70,20 +77,23 @@ case "$head" in
 esac
 
 files=$(gh pr view "$pr" --json changedFiles,files --jq '[.files // [] | .[].path] as $p
-  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh")) \(any($p[]; . == ".github/workflows/ci.yml"))"') \
+  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh" or . == "tools/generated-files.json")) \(any($p[]; . == ".github/workflows/ci.yml"))", $p[]') \
   || die "gh pr view $pr --json files failed" 4
+paths=$(printf '%s\n' "$files" | sed 1d)
+files=$(printf '%s\n' "$files" | sed -n 1p)
 case "$files" in
   [0-9]*" "[0-9]*" "true" "*|[0-9]*" "[0-9]*" "false" "*) set -- $files ;;
   *) die "unparsable files answer" 4 ;;
 esac
 if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]; }; then
-  tmp=$(mktemp "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp file" 16
-  trap 'rm -f "$tmp"' EXIT
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp dir" 16
+  trap 'rm -rf "$tmp"' EXIT
   bounded git fetch -q origin main >&2 || die "PR $pr changes a gate file and \`git fetch origin main\` failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
-  git show origin/main:tools/merge-gated.sh > "$tmp" 2>/dev/null && [ -s "$tmp" ] \
+  git show origin/main:tools/merge-gated.sh > "$tmp/merge-gated.sh" 2>/dev/null && [ -s "$tmp/merge-gated.sh" ] \
     || die "PR $pr changes a gate file and main has no copy of the gate yet: the owner merges this PR by hand" 16
+  git show origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
   echo "merge-gated: PR $pr changes a gate file; main's copy judges it" >&2
-  MERGE_GATED_FROM_MAIN=1 sh "$tmp" $args; exit $?
+  MERGE_GATED_FROM_MAIN=1 sh "$tmp/merge-gated.sh" $args; exit $?
 fi
 [ "$4" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
 [ "$1" = "$2" ] || die "PR $pr changes $1 files and gh lists $2; cannot check them for gate files" 17
@@ -116,6 +126,38 @@ if [ "$mode" = rollup ]; then
     7" "*|8" "*|9" "*|10" "*) die "${verdict#* }" "${verdict%% *}" ;;
     *) die "unparsable checks answer" 4 ;;
   esac
+fi
+
+manifest=${0%/*}/generated-files.json
+pairs=$(jq -r '.rows | to_entries[] | .key as $i | .value | (.output, .inputs[]) | "\($i) \(.)"' "$manifest") \
+  || die "cannot read $manifest" 4
+# (pattern) with its leading paren: bash 3.2, macOS's sh, misparses a bare `pattern)` inside $( ).
+hits=$(printf '%s\n' "$pairs" | while IFS= read -r l; do g=${l#* }
+  printf '%s\n' "$paths" | while IFS= read -r p; do case "$p" in ($g) echo "${l%% *}"; break ;; esac; done
+done | sort -un)
+if [ -n "$hits" ]; then
+  top=$(git rev-parse --show-toplevel) || die "not in a git checkout" 4
+  bounded git fetch -q origin main >&2 || die "\`git fetch origin main\` failed" 4
+  wtd=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated-tree.XXXXXX") || die "cannot make a temp dir" 4
+  wt=$wtd/tree
+  cleanup() { git worktree remove --force "$wt" >/dev/null 2>&1; git worktree prune; rm -rf "$wtd"; }
+  trap cleanup EXIT; trap 'exit 130' INT TERM HUP
+  git -c core.hooksPath=/dev/null worktree add -q --detach "$wt" origin/main >&2 || die "cannot make a temp worktree at origin/main" 4
+  bounded git -C "$wt" fetch -q origin "refs/pull/$pr/head" >&2 && git -C "$wt" cat-file -e "$sha^{commit}" \
+    || die "cannot fetch PR $pr's head $sha" 4
+  out=$(git -C "$wt" -c core.hooksPath=/dev/null merge --no-commit --no-ff "$sha" 2>&1) || { printf '%s\n' "$out" | tail -20 >&2
+    die "PR $pr does not merge cleanly into current main, so its generated files cannot be checked: merge main first" 9; }
+  [ -e "$top/node_modules" ] && ln -s "$top/node_modules" "$wt/node_modules"
+  for i in $hits; do
+    row=$(jq -r --argjson i "$i" '.rows[$i] | .output, .check, .generator' "$manifest") || die "cannot read $manifest" 4
+    output=$(printf '%s\n' "$row" | sed -n 1p); gen=$(printf '%s\n' "$row" | sed -n 3p)
+    out=$(cd "$wt" && bounded sh -c "$(printf '%s\n' "$row" | sed -n 2p)" 2>&1); rc=$?
+    [ "$rc" = 0 ] && continue
+    printf '%s\n' "$out" | tail -20 >&2
+    [ "$rc" = 124 ] && die "the check of $output timed out after ${T}s" 4
+    die "$output is stale once PR $pr merges into current main: run \`$gen\` on the PR branch and commit" 9
+  done
+  cleanup; trap - EXIT INT TERM HUP
 fi
 
 # Refuses (12) if the runs `gh run list --workflow deploy.yml "$@"` lists hold one that is not completed.
