@@ -36,6 +36,13 @@
  * read never feeds `heard`: a read during this tab's erase can report this
  * tab's own new identity (record-session.ts sets it before the flush).
  *
+ * `heard.reach` (H39): 'reading' once anything asks for its read (an arrival,
+ * or any step that emits `read`), 'failed' when that read failed
+ * (`read-failed`, for the heard identity only, outside erasing: a late
+ * failure of an older erase's read never marks a newer one). `retry` reads a
+ * failed one again, only while settled. `unreachable` (settled, and the heard
+ * erase's last read failed) is what the page tells the person (H39 PR 2).
+ *
  * Order: by epoch only, the one order the merge keeps (merge.ts: a higher
  * eraseEpoch wins). Within an epoch the merge's choice is no order on the
  * identity strings (a listing erase takes the unlisted one's erasedAt, which
@@ -59,7 +66,10 @@
  * (`reread-refused`), so the screen shows what is stored (A6 R1). An
  * own-failed with nothing refused reads nothing: a list save still waiting
  * then lands on the screen it was made on (A6 Codex R1). A failed read
- * dispatches no event, so nothing repeats until the next refused save.
+ * dispatches `read-failed`, which emits nothing, so nothing repeats until the
+ * next refused save, arrival or `retry`. Q4: a refusal under an erase already
+ * said, while reads keep failing, still re-reads and adds no alert; the page
+ * holds `unreachable` meanwhile (H39).
  *
  * What the events carry (the hook's contract, PR 2b):
  * - read: the store's identity taken before the read's first await, and
@@ -89,6 +99,9 @@
  * - committed: the tree showing `identity` committed; dispatched by the same
  *   layout effect that moves the store's mark (useErase.ts, US-16 AC2d), so
  *   "the page now shows this" is one moment.
+ * - read-failed: the machine's read (useRecordApply `shows`) failed; it carries
+ *   the heard identity as that read began.
+ * - retry: the person asked to read the heard erase again (useErase `retry`).
  *
  * Known cost: own-end is read as another writer's when it ends at the heard
  * erase. That stands on this tab's own erase never arriving: the session
@@ -103,11 +116,10 @@
  *   whole; the store is at the new erase, so every save from the screen is
  *   refused. The first refusal under each erase says WRITE_REFUSED, and
  *   every refused save while the erase is heard re-reads (Q3). Ends with: that re-read, the next arrival, own-start, any
- *   whole re-read (upload, refused, left), or a reload. Residual: while reads
- *   keep failing, a second refused save under the same erase loses its typed
- *   value with no words. The fix is a visible "cannot reach your record"
- *   state while a heard erase is unread, a separate design after this series
- *   (ledger H39).
+ *   whole re-read (upload, refused, left), `retry`, or a reload. While reads
+ *   keep failing the machine holds `unreachable` (H39). Residual until H39
+ *   PR 2 shows it: a second refused save under the same erase loses its typed
+ *   value with no words.
  * - L2, a first read that fails. The page stays as it was mounted, its saves
  *   off (`read` failed), as before the machine. A held erase IS read then:
  *   firstReadFailed dispatches `loaded` (shown false), as it calls the
@@ -131,7 +143,8 @@ interface EraseCommon {
   /** Who moved `shown` there: a read (another writer's) or this tab's erase ending (own, unless another's overtook it).
    *  Its own field, set wherever `shown` moves; never read off `pending`, which a counted erase leaves null (PR 1359 R5). */
   shownBy: 'own' | 'remote';
-  heard: EraseIdentity | null;
+  /** Another writer's erase not yet shown, and whether its last read failed (H39). */
+  heard: null | { identity: EraseIdentity; reach: 'reading' | 'failed' };
   said: ReadonlySet<EraseIdentity>;
   counted: ReadonlySet<EraseIdentity>;
   /** Another writer's erase now `shown`, counted when the tree showing it commits. */
@@ -155,7 +168,11 @@ export type EraseEvent =
   /** The page's first read: shown, or failed part-way. */
   | { type: 'loaded'; shown: boolean }
   /** The tree showing `identity` committed (useErase's mark effect). */
-  | { type: 'committed'; identity: EraseIdentity };
+  | { type: 'committed'; identity: EraseIdentity }
+  /** The machine's read, begun for the heard erase `identity`, failed. */
+  | { type: 'read-failed'; identity: EraseIdentity }
+  /** Read the heard erase again, its last read failed. */
+  | { type: 'retry' };
 
 export type EraseEffect =
   /** The chat's banners and every draft made under the old erase go. */
@@ -190,15 +207,19 @@ const say = (message: string): EraseEffect => ({ type: 'say-outcome', message })
 const ended = ({ refused: _refused, ...common }: Erasing): EraseState => ({ ...common, phase: 'idle' });
 /** Idle, the first read out of pending: an arrival reads at once. */
 const settled = (state: EraseState): boolean => state.phase === 'idle' && state.read !== 'pending';
+/** Settled, another writer's erase heard, and its last read failed (H39). */
+export const unreachable = (state: EraseState): boolean => settled(state) && state.heard?.reach === 'failed';
+/** The heard erase, its read asked for (a step that emits `read`). */
+const reading = (heard: EraseState['heard']): EraseState['heard'] => (heard === null ? null : { identity: heard.identity, reach: 'reading' });
 
 /** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it.
  *  The evidence this rests on: packages/health-core/src/erase-overtaken.test.ts
  *  (an erase overtaken in its flush is announced before erase() resolves, at
  *  the identity the session then reports). */
 function ownEnd(state: Erasing, identity: EraseIdentity, message: string): Step {
-  const theirs = state.heard === identity;
+  const theirs = state.heard?.identity === identity;
   // A heard erase above the end outranks it (a late reader): kept, and read; that read counts it.
-  const above = state.heard !== null && epochOf(state.heard) > epochOf(identity);
+  const above = state.heard !== null && epochOf(state.heard.identity) > epochOf(identity);
   const shows = replaces(identity, state.shown);
   const counts = theirs && shows && !state.counted.has(identity);
   return {
@@ -206,7 +227,7 @@ function ownEnd(state: Erasing, identity: EraseIdentity, message: string): Step 
       ...ended(state),
       shown: shows ? identity : state.shown,
       shownBy: shows ? (theirs ? 'remote' : 'own') : state.shownBy,
-      heard: above ? state.heard : null,
+      heard: above ? reading(state.heard) : null,
       // A refusal of a save asked before the erase is not news (adversary R3).
       said: add(state.said, state.shown),
       pending: counts ? identity : shows ? null : state.pending,
@@ -227,7 +248,7 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       // A read inside this tab's erase loses to it, and leaves `heard` alone.
       if (state.phase === 'erasing') return same;
       // Settled, a read shows the heard erase when it is that erase or outranks it; a same-epoch other identity does not.
-      const clears = state.heard !== null && (event.identity === state.heard || epochOf(event.identity) > epochOf(state.heard));
+      const clears = state.heard !== null && (event.identity === state.heard.identity || epochOf(event.identity) > epochOf(state.heard.identity));
       const seen = settled(state) && clears ? { ...state, heard: null } : state;
       // The erase shown, or a lower epoch, shows nothing new.
       if (!replaces(event.identity, state.shown)) return seen === state ? same : { state: seen, effects: [] };
@@ -243,12 +264,13 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       return { state: { ...state, pending: null, counted: add(state.counted, event.identity) }, effects: [COUNT] };
     case 'arrived':
       // Heard until something shows it. Settled, read at once, even when shown: the change can carry another writer's rows.
-      return { state: { ...state, heard: keep(state.heard, event.identity) }, effects: settled(state) ? [READ] : [] };
+      return { state: { ...state, heard: { identity: keep(state.heard?.identity ?? null, event.identity), reach: 'reading' } }, effects: settled(state) ? [READ] : [] };
     case 'loaded': {
       // Once: shown or failed. During this tab's erase the heard erase waits for the erase's end.
       if (state.read !== 'pending') return same;
-      const next: EraseState = { ...state, read: event.shown ? 'shown' : 'failed' };
-      return { state: next, effects: state.phase === 'idle' && state.heard !== null ? [READ] : [] };
+      const reads = state.phase === 'idle' && state.heard !== null;
+      const next: EraseState = { ...state, read: event.shown ? 'shown' : 'failed', heard: reads ? reading(state.heard) : state.heard };
+      return { state: next, effects: reads ? [READ] : [] };
     }
     case 'own-start':
       return state.phase === 'erasing' ? same : { state: { ...state, phase: 'erasing', refused: null }, effects: [] };
@@ -259,18 +281,28 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       // refused during the erase was never saved, so the record is re-read as any refused save is (A6 R1).
       if (state.phase !== 'erasing') return same;
       const read = state.heard !== null ? [READ] : state.refused !== null ? [{ type: 'reread-refused' } as const] : [];
-      return { state: ended(state), effects: [...read, say(event.message)] };
+      return { state: { ...ended(state), heard: reading(state.heard) }, effects: [...read, say(event.message)] };
     }
     case 'refused': {
       // Inside this tab's erase a refusal is no news, and is kept: an erase that lands throws the change away,
       // one that stops short re-reads (own-failed). The first one's erase is kept.
       if (state.phase === 'erasing') return state.refused !== null ? same : { state: { ...state, refused: event.askedUnder }, effects: [] };
       // A heard erase not yet shown (L1): every refused save asks for its read once, news or not (Q3).
-      // No loop: a failed read dispatches nothing, and only the next refused save reads again.
-      const retry = state.heard === null ? [] : [READ];
-      if (state.said.has(event.askedUnder)) return { state, effects: retry };
-      return { state: { ...state, said: add(state.said, event.askedUnder) }, effects: [{ type: 'alert-refused' }, ...retry] };
+      // No loop: a failed read's read-failed emits nothing; only the next refused save, arrival or retry reads again.
+      const reread = state.heard === null ? [] : [READ];
+      const asked = state.heard?.reach === 'failed' ? { ...state, heard: reading(state.heard) } : state;
+      if (state.said.has(event.askedUnder)) return { state: asked, effects: reread };
+      return { state: { ...asked, said: add(state.said, event.askedUnder) }, effects: [{ type: 'alert-refused' }, ...reread] };
     }
+    case 'read-failed':
+      // Only the read of the heard erase, in flight: a late failure of an older erase's read marks nothing.
+      // No-op with nothing heard, and while erasing (own-end or own-failed then reads or drops it).
+      if (state.phase === 'erasing' || state.heard?.identity !== event.identity || state.heard.reach !== 'reading') return same;
+      return { state: { ...state, heard: { identity: event.identity, reach: 'failed' } }, effects: [] };
+    case 'retry':
+      // Only when unreachable: never while erasing, loading, with nothing heard, or while its read is in flight.
+      if (!unreachable(state)) return same;
+      return { state: { ...state, heard: reading(state.heard) }, effects: [READ] };
   }
 }
 

@@ -265,15 +265,44 @@ describe('fix 4 (2b-3), Fable: L1, a heard erase whose read fails, is never left
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(alerts()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true); // H39: B's reads failed
     await announced(C);
     const before = page.reads();
     expect(before).toBe(3); // B's read, the refusal's, C's: each failed
+    expect(page.now().erase.unreachable).toBe(true); // C's read failed too
     page.fx.fail = false;
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(page.reads()).toBe(before + 1); // the re-read
     expect(page.now().erase.shownErase).toBe(C); // and it showed C
+    expect(page.now().erase.unreachable).toBe(false); // the read landed
     // Q4: one alert per erase a save was asked under; A was said already.
     expect(alerts()).toBe(1);
+  });
+});
+
+describe('US-16 AC2g (H39): the machine holds a heard erase whose read failed', () => {
+  it('US-16 AC2g (H39): another writer\'s erase whose read fails: unreachable holds until a read lands; retry re-reads', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B);
+    expect(page.reads()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true);
+    // A refusal under the old erase: said once, re-read (Q3, Q4); that read fails too, so it still holds.
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(alerts()).toBe(1);
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(alerts()).toBe(1); // no new alert (Q4)
+    expect(page.reads()).toBe(3);
+    expect(page.now().erase.unreachable).toBe(true);
+    // Try again, the read now lands: one read, B shown, no longer unreachable.
+    page.fx.fail = false;
+    act(() => { page.now().erase.retry(); });
+    await settle();
+    expect(page.reads()).toBe(4);
+    expect(page.now().erase.shownErase).toBe(B);
+    expect(page.now().erase.unreachable).toBe(false);
   });
 });

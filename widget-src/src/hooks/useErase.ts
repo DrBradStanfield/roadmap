@@ -4,7 +4,7 @@ import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
+import { createEraseStore, refusal, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
 import { tellChats } from './chatStore';
 
 /**
@@ -25,6 +25,9 @@ import { tellChats } from './chatStore';
  * - countRemoteChange: remote_change_applied, the one count of another
  *   writer's erase (the relay counts other changes only);
  * - alertRefused, sayOutcome: alerts.
+ *
+ * `unreachable` (H39): another writer's erase is heard and its last read
+ * failed; `retry` reads it again.
  *
  * `eraseUnshown` stays a store query: true while the store holds an erase the
  * screen does not show yet (this tab's erase writing or failed to write, or
@@ -62,6 +65,10 @@ export interface Erase {
   loaded: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
+  /** Another writer's erase is heard and its last read failed (H39): saves are refused until a read lands. */
+  unreachable: boolean;
+  /** Read that erase again; nothing unless `unreachable`. */
+  retry: () => void;
   /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
   writeRefused: (erase?: string) => void;
   /** Ask, erase, and say how it went; true on success. */
@@ -113,6 +120,8 @@ export function useErase(props: EraseDoorProps): Erase {
     if (news) doors.current.reread(spends ? 'refused' : 'left');
   }, [store]);
 
+  const retry = useCallback(() => { store.dispatch({ type: 'retry' }); }, [store]);
+
   const eraseAll = useCallback(async () => {
     // One erase at a time: the machine answers synchronously, so a second asked in the same turn is refused unasked (US-16 AC2f).
     if (store.getSnapshot().phase === 'erasing' || !window.confirm(ERASE_CONFIRM)) return false;
@@ -136,5 +145,5 @@ export function useErase(props: EraseDoorProps): Erase {
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), retry, writeRefused, eraseAll };
 }

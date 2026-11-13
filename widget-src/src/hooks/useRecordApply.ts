@@ -198,7 +198,15 @@ export function useRecordApply(args: {
   const ownSave = useCallback(async () => { await signal('own-save'); }, [signal]);
 
   // The erase machine's read door: another writer's erase, never held. It is no answer given here (US-62 AC13).
-  const shows = useCallback(() => { latest.current.later().clearAnswered(); relay.shows().catch(reportReadFailure); }, [relay]);
+  // A failed read tells the machine which heard erase it was for (H39), so a late failure marks no newer one.
+  const shows = useCallback(() => {
+    latest.current.later().clearAnswered();
+    const heard = latest.current.erase.getSnapshot().heard?.identity;
+    relay.shows().catch((error: unknown) => {
+      reportReadFailure(error);
+      if (heard !== undefined) latest.current.erase.dispatch({ type: 'read-failed', identity: heard });
+    });
+  }, [relay]);
 
   // The page has shown its first read: called in the turn of the load's last write, after showRecord queued the form,
   // so the saves it opens (the machine's `read`, useErase `loaded`) commit with that form or after it, never before.
