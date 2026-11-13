@@ -1,6 +1,7 @@
-// The longitudinal save (US-03, US-06 AC15): what the first-time vitals
-// fields and the PSA hold, and what a matrix passes, saved by the one routing
-// rule (matrix-save.ts), one save after another, then the record re-read.
+// The longitudinal save (US-03, US-06 AC15): what the form's vitals (the
+// onboarding's weight box, a chat edit with no grid on screen) and the PSA
+// hold, and what a matrix passes, saved by the one routing rule
+// (matrix-save.ts), one save after another, then the record re-read.
 // The fields save 500 ms after they are left (scheduleLongitudinalSave), or at
 // once (flushLongitudinalSave); a departure stages the waiting save at once
 // (stagePendingSave). HealthTool owns the form; this owns the queue.
@@ -50,9 +51,6 @@ export function useLongitudinalSave({
   const isSavingLongitudinal = savesRunning > 0;
   // The saves in order, each after the last (see handleSaveLongitudinal).
   const savesRef = useRef<Promise<unknown>>(Promise.resolve());
-  // Counts the first-time vitals fields' saves, so InputPanel closes the
-  // fields a save emptied.
-  const [fieldsSaved, setFieldsSaved] = useState(0);
   // The prostate section's PSA day (YYYY-MM-DD); null until one is picked, so today (US-06 AC15).
   const [psaDate, setPsaDate] = useState<string | null>(null);
   // The PSA row was committed since its last save (US-06 AC15).
@@ -60,7 +58,7 @@ export function useLongitudinalSave({
 
   // Save typed values by the one routing rule (matrix-save.ts), against the
   // store's own rows, then re-read the record. The matrices pass their cells;
-  // with none, it saves the first-time vitals fields under today. Saves run
+  // with none, it saves the form's vitals under today. Saves run
   // one after another, so two asked for at once (a press on Save as PDF
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
@@ -69,7 +67,7 @@ export function useLongitudinalSave({
   // returns, ahead of the caller's synchronous flush; the re-read follows if
   // the page stays (US-06 AC15).
   const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase(), now = false): Promise<Refused> => {
-    // The first-time vitals fields: a weight, a waist, a blood pressure, each
+    // The form's vitals: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
     // it was typed in (mmHg either way). What a matrix's draft lends the plan
     // is kept apart (`lent`), and only that matrix saves it, on the day the
@@ -143,7 +141,6 @@ export function useLongitudinalSave({
           });
           // A saved PSA puts its date box back to today, so it never reads "Replaces" the value just saved.
           if (toSave.some(t => t.values.psa !== undefined && !refused.has(slotOf(t.date, 'psa')))) setPsaDate(null);
-          setFieldsSaved(n => n + 1);
         }
 
         // Track A/B conversion on the first measurement save.
@@ -210,6 +207,6 @@ export function useLongitudinalSave({
 
   return {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
+    cancelPendingSave, flushPendingSave, isSavingLongitudinal, psaDate, setPsaDate,
   };
 }
