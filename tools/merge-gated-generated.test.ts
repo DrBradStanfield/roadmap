@@ -1,15 +1,18 @@
 /**
- * US-64 AC34: merge-gated.sh checks every generated file whose inputs a PR touches, against the merge of the PR
- * head into CURRENT main, before it merges. Why: PR 954 changed scrub-vocabulary.ts and ran green against a main
- * that did not yet have the instrument-scrub generator; after the merge main went red with a stale output.
+ * US-64 AC34: before it merges, merge-gated.sh refuses a PR that touches a generated file or its inputs when main
+ * has changed that file or its inputs since the PR's base, so the PR's CI never saw them together. Why: PR 954
+ * changed scrub-vocabulary.ts and ran green against a main that did not yet have the instrument-scrub generator;
+ * after the merge main went red with a stale output. The rule is pure git: step 6 runs nothing but gh, git, jq
+ * and perl (owner's ruling, 2026-11-13: running a check there ran PR-controlled code on Brad's Mac).
  *
- * The pins read the real manifest, tools/generated-files.json. The behaviour tests run a byte copy of the script
- * beside a test manifest, in throwaway git repos (a bare origin, a caller's clone), with a stub `gh` that answers
- * from fixture JSON through the script's own --jq filters and logs every call.
+ * The pins read the real manifest, tools/generated-files.json. The behaviour tests run the real script from a
+ * caller's clone of a throwaway origin whose main holds a byte copy of it and a test manifest. PATH holds only a
+ * stub `gh` (answers from fixture JSON through the script's own --jq filters) and logging wrappers for the few
+ * binaries the script may run, so any other binary (node, npx, cmp) is not found, and every call is recorded.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,9 +21,9 @@ import { COMMAND, generate, realVocabulary } from './generate-instrument-scrub.m
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(TOOLS, '..');
-type Row = { output: string; inputs: string[]; check: string; generator: string };
+type Row = { output: string; inputs: string[]; generator: string };
 const MANIFEST: { rows: Row[] } = JSON.parse(readFileSync(join(TOOLS, 'generated-files.json'), 'utf8'));
-// The script matches with sh `case`, where * also matches a slash.
+// The script matches as a git pathspec does: * also matches a slash.
 const globRe = (g: string) => new RegExp(`^${g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
 const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).trim().split('\n');
 
@@ -33,17 +36,16 @@ describe('US-64 AC34 tools/generated-files.json', () => {
     }
   });
 
-  it('each row names a tracked output, a check and a generator, and every input matches a tracked file', () => {
+  it('each row names a tracked output and a generator, and every input matches a tracked file', () => {
     for (const r of MANIFEST.rows) {
       expect(tracked, `${r.output} is not a tracked file`).toContain(r.output);
-      expect(r.check.length && r.generator.length, `${r.output}: check and generator`).toBeTruthy();
+      expect(r.generator.length, `${r.output}: generator`).toBeTruthy();
       for (const g of r.inputs) expect(tracked.some((f) => globRe(g).test(f)), `${r.output}: input ${g} matches no tracked file`).toBe(true);
     }
   });
 
   it("the instrument-scrub row covers every file the generator reads (the scrub, the catalogue's graph, esbuild and zod)", async () => {
     const row = MANIFEST.rows.find((r) => r.output === 'instrument-scrub.mjs')!;
-    expect(row.check).toBe(`${COMMAND} --check`);
     expect(row.generator).toBe(COMMAND);
     const read: string[] = [...(await generate()).inputs, ...(await realVocabulary()).catalogInputs];
     const local = read.filter((f) => !f.includes('node_modules/') && !f.includes(':') && !f.endsWith('-entry.js'));
@@ -54,8 +56,11 @@ describe('US-64 AC34 tools/generated-files.json', () => {
 });
 
 // ---- behaviour ----
-const SHA_RE = /^[0-9a-f]{40}$/;
-const REFUSED = 9; // merge-gated's "not green" refusal: a check on what would land is red.
+const REFUSED = 9;
+const GENERATOR = 'node gen.mjs';
+const TEST_MANIFEST = JSON.stringify({ rows: [{ output: 'out.txt', inputs: ['in.txt', 'src/*.txt'], generator: GENERATOR }] });
+// Every binary the script may run, each a logging wrapper around the real one. Step 6 may add only git, jq and perl (the fetch's timeout).
+const WRAPPED = ['git', 'jq', 'perl', 'sed', 'grep', 'paste', 'mktemp', 'rm', 'sh'];
 let S: string;
 const GIT_ENV = {
   GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@example.invalid', GIT_COMMITTER_NAME: 'Test',
@@ -65,20 +70,30 @@ const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', ['-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false', ...args],
     { cwd, encoding: 'utf8', env: { ...process.env, ...GIT_ENV } }).trim();
 const commit = (cwd: string, files: Record<string, string>, msg: string) => {
-  for (const [f, text] of Object.entries(files)) writeFileSync(join(cwd, f), text);
+  for (const [f, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(cwd, f)), { recursive: true });
+    writeFileSync(join(cwd, f), text);
+  }
   git(cwd, 'add', '-A');
   git(cwd, 'commit', '-q', '-m', msg);
   return git(cwd, 'rev-parse', 'HEAD');
 };
+const real = (name: string) => execFileSync('/bin/sh', ['-c', 'command -v "$0"', name], { encoding: 'utf8', env: { PATH: process.env.PATH } }).trim();
 
 beforeAll(() => {
   S = mkdtempSync(join(tmpdir(), 'merge-gated-gen-'));
-  mkdirSync(join(S, 'bin'));
-  writeFileSync(join(S, 'bin', 'gh'), `#!/bin/sh
-printf '%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
+  const bin = join(S, 'bin');
+  mkdirSync(bin);
+  for (const name of WRAPPED) {
+    // One line per call: the name and its first argument (a jq or perl program spans lines).
+    writeFileSync(join(bin, name), `#!/bin/sh\nprintf '%s\\t%s\\n' ${name} "$(printf '%s' "\${1:-}" | ${real('tr')} '\\n\\t' '  ')" >> "$CMDLOG"\nexec ${real(name)} "$@"\n`);
+    chmodSync(join(bin, name), 0o755);
+  }
+  writeFileSync(join(bin, 'gh'), `#!/bin/sh
+printf 'gh\\t%s\\t%s\\n' "$1" "$2" >> "$CMDLOG"
 jqf=; prev=
 for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; prev=$a; done
-json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
+json() { printf '%s\\n' "$1" | ${real('jq')} -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "{\\"state\\":\\"OPEN\\",\\"headRefOid\\":\\"$HEAD_SHA\\"}" ;;
   *"pr view"*changedFiles*) json "$FILES" ;;
@@ -89,117 +104,144 @@ case "$*" in
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
 esac
 `);
-  chmodSync(join(S, 'bin', 'gh'), 0o755);
-  // The script under test, byte for byte, beside a test manifest: out.txt is in.txt, copied.
-  mkdirSync(join(S, 'tools'));
-  copyFileSync(join(TOOLS, 'merge-gated.sh'), join(S, 'tools', 'merge-gated.sh'));
-  writeFileSync(join(S, 'tools', 'generated-files.json'), JSON.stringify({
-    rows: [{ output: 'out.txt', inputs: ['in.txt'], check: 'cmp -s in.txt out.txt', generator: 'cp in.txt out.txt' }],
-  }));
+  chmodSync(join(bin, 'gh'), 0o755);
 });
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-/** A bare origin whose main holds `base`, a caller's clone of it, and a work clone to build commits in. */
+/** A bare origin whose main holds the script, the test manifest and the inputs; a caller's clone; a work clone. */
 function repos() {
   const d = mkdtempSync(join(S, 'case-'));
   const origin = join(d, 'origin.git');
   git(d, 'init', '-q', '--bare', origin);
   const work = join(d, 'work');
   git(d, 'clone', '-q', origin, work);
-  commit(work, { 'in.txt': 'a\n', 'README': 'r\n' }, 'base');
-  git(work, 'push', '-q', 'origin', 'HEAD:main');
+  mkdirSync(join(work, 'tools'));
+  copyFileSync(join(TOOLS, 'merge-gated.sh'), join(work, 'tools', 'merge-gated.sh'));
+  commit(work, { 'tools/generated-files.json': TEST_MANIFEST, 'in.txt': 'a\n', 'src/x.txt': 'x\n', 'src/y.txt': 'y\n', README: 'r\n' }, 'base');
+  pushMain(work);
   const caller = join(d, 'caller');
   git(d, 'clone', '-q', origin, caller);
   const tmp = join(d, 'tmp');
   mkdirSync(tmp);
-  return { d, origin, work, caller, tmp };
+  return { d, work, caller, tmp };
 }
 const pushPr = (work: string, sha: string) => git(work, 'push', '-q', '-f', 'origin', `${sha}:refs/pull/123/head`);
-const pushMain = (work: string) => git(work, 'push', '-q', 'origin', 'HEAD:main');
+function pushMain(work: string) { git(work, 'push', '-q', 'origin', 'HEAD:main'); }
+/** On a pr branch from main's current tip: commit `files`, push as PR 123's head. */
+function openPr(r: ReturnType<typeof repos>, files: Record<string, string>) {
+  git(r.work, 'checkout', '-q', '-b', 'pr');
+  const sha = commit(r.work, files, 'pr');
+  pushPr(r.work, sha);
+  git(r.work, 'checkout', '-q', 'main');
+  return sha;
+}
+function moveMain(r: ReturnType<typeof repos>, files: Record<string, string>) {
+  commit(r.work, files, 'main moves');
+  pushMain(r.work);
+}
 
 function gate(r: ReturnType<typeof repos>, sha: string, files: string[]) {
   const log = join(r.d, `log-${Math.random()}`);
-  const before = { refs: git(r.caller, 'for-each-ref', '--format=%(refname)', 'refs/heads'), head: git(r.caller, 'rev-parse', 'HEAD') };
-  const res = spawnSync('sh', [join(S, 'tools', 'merge-gated.sh'), '123', sha], {
+  const before = { refs: git(r.caller, 'for-each-ref', '--format=%(refname)', 'refs/heads'), head: git(r.caller, 'rev-parse', 'HEAD'), status: git(r.caller, 'status', '--porcelain') };
+  const res = spawnSync('/bin/sh', [join(r.caller, 'tools', 'merge-gated.sh'), '123', sha], {
     cwd: r.caller, encoding: 'utf8',
     env: {
-      ...process.env, ...GIT_ENV, PATH: `${join(S, 'bin')}:${process.env.PATH}`, LOG: log, TMPDIR: r.tmp, HEAD_SHA: sha,
+      HOME: process.env.HOME, ...GIT_ENV, PATH: join(S, 'bin'), CMDLOG: log, TMPDIR: r.tmp, HEAD_SHA: sha,
       FILES: JSON.stringify({ changedFiles: files.length, files: files.map((path) => ({ path })) }),
     },
   });
-  const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').filter(Boolean) : [];
+  const calls = existsSync(log) ? readFileSync(log, 'utf8').split('\n').filter(Boolean).map((l) => l.split('\t')) : [];
   return {
-    ...res, merges: calls.filter((c) => c.startsWith('pr\tmerge')),
-    worktrees: git(r.caller, 'worktree', 'list', '--porcelain').split('\n').filter((l) => l.startsWith('worktree ')),
-    refsSame: git(r.caller, 'for-each-ref', '--format=%(refname)', 'refs/heads') === before.refs,
-    headSame: git(r.caller, 'rev-parse', 'HEAD') === before.head,
-    status: res.status, clean: git(r.caller, 'status', '--porcelain') === '', tmpLeft: readdirSync(r.tmp),
+    status: res.status, stderr: res.stderr, calls, names: calls.map((c) => c[0]),
+    gits: calls.filter((c) => c[0] === 'git').map((c) => c[1]),
+    merges: calls.filter((c) => c[0] === 'gh' && c[1] === 'pr' && c[2] === 'merge'),
+    untouched: git(r.caller, 'for-each-ref', '--format=%(refname)', 'refs/heads') === before.refs
+      && git(r.caller, 'rev-parse', 'HEAD') === before.head && git(r.caller, 'status', '--porcelain') === before.status
+      && readdirSync(r.tmp).length === 0,
   };
 }
-const leftNothing = (g: ReturnType<typeof gate>) => {
-  expect(g.worktrees).toHaveLength(1);
-  expect(g.refsSame && g.headSame && g.clean).toBe(true);
-  expect(g.tmpLeft).toEqual([]);
-};
 
-describe('US-64 AC34 merge-gated.sh checks generated files against the merge into current main', () => {
-  it("refuses PR 954's case: a PR touching an input, fresh on its base, leaves the output stale once merged into current main", () => {
+describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has moved since its base (pure git)', () => {
+  it("refuses PR 954's shape: the PR touches an input; main added the output after the PR branched", () => {
     const r = repos();
-    git(r.work, 'checkout', '-q', '-b', 'pr');
-    const sha = commit(r.work, { 'in.txt': 'b\n' }, 'pr: change the input');
-    pushPr(r.work, sha);
-    git(r.work, 'checkout', '-q', 'main');
-    commit(r.work, { 'out.txt': 'a\n' }, 'main: add the generated output'); // main gains the generator after the PR's CI
-    pushMain(r.work);
+    const sha = openPr(r, { 'in.txt': 'b\n' });
+    moveMain(r, { 'out.txt': 'a\n' });
     const g = gate(r, sha, ['in.txt']);
-    expect(SHA_RE.test(sha)).toBe(true);
     expect(g.status).toBe(REFUSED);
-    expect(g.stderr).toMatch(/out\.txt/);
-    expect(g.stderr).toContain('cp in.txt out.txt');
+    expect(g.stderr).toContain("out.txt: main has changed it or its inputs since this PR's base; merge main first, then let CI run");
+    expect(g.stderr).toContain(GENERATOR);
     expect(g.merges).toEqual([]);
-    leftNothing(g);
+    expect(g.untouched).toBe(true);
   });
 
-  it('passes a PR that regenerated its output, and merges it', () => {
+  it('refuses when main changed another input, matched through a glob, and the PR touches a glob input', () => {
     const r = repos();
-    commit(r.work, { 'out.txt': 'a\n' }, 'main: add the generated output');
-    pushMain(r.work);
-    git(r.work, 'checkout', '-q', '-b', 'pr');
-    const sha = commit(r.work, { 'in.txt': 'b\n', 'out.txt': 'b\n' }, 'pr: input and output');
+    const sha = openPr(r, { 'src/x.txt': 'x2\n' });
+    moveMain(r, { 'src/y.txt': 'y2\n' });
+    const g = gate(r, sha, ['src/x.txt']);
+    expect(g.status).toBe(REFUSED);
+    expect(g.merges).toEqual([]);
+  });
+
+  it('passes the same PR once main is merged into it, and merges it', () => {
+    const r = repos();
+    const first = openPr(r, { 'in.txt': 'b\n' });
+    moveMain(r, { 'out.txt': 'a\n' });
+    git(r.work, 'checkout', '-q', 'pr');
+    git(r.work, 'merge', '-q', '--no-edit', 'main');
+    const sha = git(r.work, 'rev-parse', 'HEAD');
+    expect(sha).not.toBe(first);
     pushPr(r.work, sha);
-    const g = gate(r, sha, ['in.txt', 'out.txt']);
+    const g = gate(r, sha, ['in.txt']);
     expect(g.stderr).toBe('');
     expect(g.status).toBe(0);
     expect(g.merges).toHaveLength(1);
-    leftNothing(g);
+    expect(g.untouched).toBe(true);
   });
 
-  it('refuses with "merge main first" when the PR does not merge cleanly into current main', () => {
+  it('passes a PR touching an input when main moved only other files', () => {
     const r = repos();
-    commit(r.work, { 'out.txt': 'a\n' }, 'main: add the generated output');
-    pushMain(r.work);
-    git(r.work, 'checkout', '-q', '-b', 'pr');
-    const sha = commit(r.work, { 'in.txt': 'b\n', 'out.txt': 'b\n' }, 'pr');
-    pushPr(r.work, sha);
-    git(r.work, 'checkout', '-q', 'main');
-    commit(r.work, { 'in.txt': 'c\n', 'out.txt': 'c\n' }, 'main moves the same lines');
-    pushMain(r.work);
-    const g = gate(r, sha, ['in.txt', 'out.txt']);
-    expect(g.status).toBe(REFUSED);
-    expect(g.stderr).toMatch(/merge main first/);
-    expect(g.merges).toEqual([]);
-    leftNothing(g);
+    const sha = openPr(r, { 'in.txt': 'b\n' });
+    moveMain(r, { README: 'r2\n' });
+    const g = gate(r, sha, ['in.txt']);
+    expect(g.status).toBe(0);
+    expect(g.merges).toHaveLength(1);
   });
 
-  it('does not build a temp tree for a PR that touches no listed input', () => {
+  it('never affects a PR touching no row, and makes no git call', () => {
     const r = repos();
-    git(r.work, 'checkout', '-q', '-b', 'pr');
-    const sha = commit(r.work, { README: 'changed\n' }, 'pr');
-    pushPr(r.work, sha);
+    const sha = openPr(r, { README: 'changed\n' });
+    moveMain(r, { 'in.txt': 'c\n', 'out.txt': 'c\n' });
     const g = gate(r, sha, ['README']);
     expect(g.status).toBe(0);
     expect(g.merges).toHaveLength(1);
-    expect(existsSync(join(r.caller, '.git', 'FETCH_HEAD'))).toBe(false); // no fetch ran
-    leftNothing(g);
+    expect(g.gits).toEqual([]);
+    expect(g.untouched).toBe(true);
+  });
+
+  it("judges a PR that edits the manifest by main's rows (gate-file rule)", () => {
+    const r = repos();
+    const sha = openPr(r, { 'in.txt': 'b\n', 'tools/generated-files.json': '{"rows":[]}' });
+    moveMain(r, { 'out.txt': 'a\n' });
+    // The caller runs the PR's copy: its manifest has no rows, so only main's copy can refuse.
+    writeFileSync(join(r.caller, 'tools', 'generated-files.json'), '{"rows":[]}');
+    const g = gate(r, sha, ['in.txt', 'tools/generated-files.json']);
+    expect(g.stderr).toContain("main's copy judges it");
+    expect(g.status).toBe(REFUSED);
+    expect(g.stderr).toContain('out.txt: main has changed it');
+    expect(g.merges).toEqual([]);
+  });
+
+  it('runs nothing in step 6 but gh, git, jq and perl: no node, npx, sh -c or manifest command', () => {
+    const r = repos();
+    const sha = openPr(r, { 'in.txt': 'b\n' });
+    const plain = gate(r, sha, ['README']); // a PR touching no row: steps 1-5 and 7-8, and step 6's jq
+    const hit = gate(r, sha, ['in.txt']);
+    expect(hit.status).toBe(0);
+    expect(hit.merges).toHaveLength(1);
+    expect(new Set(hit.names)).toEqual(new Set(['gh', 'perl', 'git', 'jq', 'sed', 'grep']));
+    const count = (names: string[]) => names.filter((n) => !['git', 'jq', 'perl'].includes(n)).sort();
+    expect(count(hit.names)).toEqual(count(plain.names)); // step 6 added only git, jq and perl calls
+    expect(hit.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'log']);
   });
 });

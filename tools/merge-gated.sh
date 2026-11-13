@@ -25,12 +25,14 @@
 #      Advisory checks are the exception: an entry named exactly `ios-compile` (iOS compile workflow; Brad
 #      2026-11-13: it warns, it does not block) never refuses. Pending or not green, it gets one stderr note. The
 #      list is a literal in the jq filter below, so nothing at call time can widen it.
-#   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red): when a changed
-#      file matches a row of tools/generated-files.json (the copy beside this script), `git fetch origin main`,
-#      a temp detached worktree at origin/main, the PR head fetched into it and merged with --no-commit --no-ff.
-#      A merge that fails refuses (9, "merge main first"); so does a matching row's check that fails there, naming
-#      the output and its generator. The worktree is removed on every exit; no branch is made. Fetch or worktree
-#      errors, and a check that times out, refuse (4).
+#   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
+#      nothing but gh, git, jq and perl, never a command from the manifest or the PR. For each row of
+#      tools/generated-files.json (the copy beside this script; main's when the PR changes it, step 3) whose
+#      output or inputs a changed file matches (globs: * matches any run of characters, slash included, as in a
+#      git pathspec), it fetches main and the PR head and refuses (9) when `git log <merge-base>..origin/main -- <output> <inputs>` lists a
+#      commit: main changed the output or an input since the PR's base, so the PR's CI never saw them together.
+#      The refusal says to merge main first and let CI run, naming the generator. CI's freshness tests do the real
+#      check. A PR that touches no row makes no git call here. A failed fetch or no merge base refuses (4).
 #   7. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
@@ -140,36 +142,26 @@ if [ "$mode" = rollup ]; then
   esac
 fi
 
+# The rows whose output or an input matches a changed file, one index a line. A glob becomes an anchored regex:
+# * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
 manifest=${0%/*}/generated-files.json
-pairs=$(jq -r '.rows | to_entries[] | .key as $i | .value | (.output, .inputs[]) | "\($i) \(.)"' "$manifest") \
+hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])"; "\\\(.c)") + "$" | gsub("\\*"; ".*") | gsub("\\?"; ".");
+  ($p | split("\n")) as $p | .rows | to_entries[]
+  | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \
   || die "cannot read $manifest" 4
-# (pattern) with its leading paren: bash 3.2, macOS's sh, misparses a bare `pattern)` inside $( ).
-hits=$(printf '%s\n' "$pairs" | while IFS= read -r l; do g=${l#* }
-  printf '%s\n' "$paths" | while IFS= read -r p; do case "$p" in ($g) echo "${l%% *}"; break ;; esac; done
-done | sort -un)
 if [ -n "$hits" ]; then
-  top=$(git rev-parse --show-toplevel) || die "not in a git checkout" 4
-  bounded git fetch -q origin main >&2 || die "\`git fetch origin main\` failed" 4
-  wtd=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated-tree.XXXXXX") || die "cannot make a temp dir" 4
-  wt=$wtd/tree
-  cleanup() { git worktree remove --force "$wt" >/dev/null 2>&1; git worktree prune; rm -rf "$wtd"; }
-  trap cleanup EXIT; trap 'exit 130' INT TERM HUP
-  git -c core.hooksPath=/dev/null worktree add -q --detach "$wt" origin/main >&2 || die "cannot make a temp worktree at origin/main" 4
-  bounded git -C "$wt" fetch -q origin "refs/pull/$pr/head" >&2 && git -C "$wt" cat-file -e "$sha^{commit}" \
-    || die "cannot fetch PR $pr's head $sha" 4
-  out=$(git -C "$wt" -c core.hooksPath=/dev/null merge --no-commit --no-ff "$sha" 2>&1) || { printf '%s\n' "$out" | tail -20 >&2
-    die "PR $pr does not merge cleanly into current main, so its generated files cannot be checked: merge main first" 9; }
-  [ -e "$top/node_modules" ] && ln -s "$top/node_modules" "$wt/node_modules"
+  bounded git fetch -q origin main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
+    || die "cannot fetch main and PR $pr's head $sha" 4
+  base=$(git merge-base origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
   for i in $hits; do
-    row=$(jq -r --argjson i "$i" '.rows[$i] | .output, .check, .generator' "$manifest") || die "cannot read $manifest" 4
-    output=$(printf '%s\n' "$row" | sed -n 1p); gen=$(printf '%s\n' "$row" | sed -n 3p)
-    out=$(cd "$wt" && bounded sh -c "$(printf '%s\n' "$row" | sed -n 2p)" 2>&1); rc=$?
-    [ "$rc" = 0 ] && continue
-    printf '%s\n' "$out" | tail -20 >&2
-    [ "$rc" = 124 ] && die "the check of $output timed out after ${T}s" 4
-    die "$output is stale once PR $pr merges into current main: run \`$gen\` on the PR branch and commit" 9
+    row=$(jq -r --argjson i "$i" '.rows[$i] | .output, .generator, .inputs[]' "$manifest") || die "cannot read $manifest" 4
+    # One field a line, unglobbed: the inputs go to git as pathspecs, which do their own globbing.
+    set -f; IFS='
+'; set -- $row; unset IFS; set +f
+    output=$1 gen=$2; shift 2
+    moved=$(git log -1 --format=%H "$base..origin/main" -- "$output" "$@") || die "git log on $output failed" 4
+    [ -z "$moved" ] || die "$output: main has changed it or its inputs since this PR's base; merge main first, then let CI run (its generator: \`$gen\`)" 9
   done
-  cleanup; trap - EXIT INT TERM HUP
 fi
 
 # Refuses (12) if the runs `gh run list --workflow deploy.yml "$@"` lists hold one that is not completed.

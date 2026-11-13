@@ -1,5 +1,5 @@
 {
-  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, any row whose output or inputs the PR touches runs its check in a temp merge of the PR head into current main; a failing check refuses and prints the generator. Inputs are sh case patterns (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
+  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, for each row whose output or inputs the PR touches, the script refuses when main has changed that output or an input since the PR's merge base, naming the generator. Pure git: nothing here is ever run. Inputs are globs, as in a git pathspec (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
   "rows": [
     {
       "output": "instrument-scrub.mjs",
@@ -25,7 +25,6 @@
         "packages/health-core/src/zod.ts",
         "package-lock.json"
       ],
-      "check": "node tools/generate-instrument-scrub.mjs --check",
       "generator": "node tools/generate-instrument-scrub.mjs"
     },
     {
@@ -36,7 +35,6 @@
         "scripts/rebuild-blog-index.ts",
         "app/lib/frontmatter.ts"
       ],
-      "check": "npx tsx scripts/rebuild-blog-index.ts >/dev/null && git diff --quiet -- docs/blog/index.json",
       "generator": "npm run rebuild-index"
     }
   ]
