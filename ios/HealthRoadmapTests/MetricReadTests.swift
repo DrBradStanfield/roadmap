@@ -123,6 +123,33 @@ final class MetricReadTests: XCTestCase {
         XCTAssertEqual(MetricRead.couldNotRead("LDL", stillInRecord: false), "Your LDL values could not be read.")
     }
 
+    /// Lead S31 (US-58 AC4c): a worked-out series reads the plan for the screen drawn, so a read
+    /// that a redraw overtakes (a return past midnight) is for a day no longer shown. The page asks
+    /// once per revision and a redraw moves none, so what it lands must be read for the screen now.
+    @MainActor
+    func testAReadWhoseScreenWasRedrawnMidReadDoesNotLand_S31_US58_AC4c() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Metric Read \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let sample = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "sample.record", withExtension: "json"))
+        try Data(contentsOf: sample).write(to: folder.appending(path: "health-roadmap.json"))
+        let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "waist", value: 88, day: "2026-10-20")))
+        let (revision, draws) = (store.revision, store.draws)
+
+        let asked = Task { await store.chart(for: "whtr", series: "whtr") }
+        while store.reading[RecordStore.historyKey("whtr", "whtr")] == nil { await Task.yield() }
+        store.display(store.drawn) // the screen drawn again while the engine reads
+        let read = MetricRead.transition(.reading(revision: revision), .landed(revision: revision, await asked.value))
+
+        XCTAssertEqual(store.revision, revision, "a redraw moves no revision, so the page asks nothing more")
+        XCTAssertGreaterThan(store.draws, draws)
+        XCTAssertNotNil(store.shownHistory(for: "whtr", series: "whtr"), "what landed was read for the screen drawn now")
+        let page = MetricRead.page(read, revision: store.revision, problem: nil, kept: store.shownChart(for: "whtr", series: "whtr"),
+                                   hasReadings: true, screenHasReading: true)
+        XCTAssertTrue(Self.named(page).hasPrefix("chart "), "the page draws the ratio, not \(Self.named(page))")
+    }
+
     static func named(_ page: MetricRead.Page) -> String {
         switch page {
         case .chart(let chart): "chart \(chart.history.rows.map(\.value).joined(separator: " "))"
