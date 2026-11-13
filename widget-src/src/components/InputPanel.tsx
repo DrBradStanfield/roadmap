@@ -46,10 +46,6 @@ import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightP
 interface FieldConfig {
   field: keyof HealthInputs;
   name: string;
-  step?: { si: string; conv: string };
-  hint?: { si: string; conv: string };
-  hintMale?: { si: string; conv: string };
-  hintFemale?: { si: string; conv: string };
 }
 
 const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
@@ -376,19 +372,11 @@ export function InputPanel({
     );
   };
 
-  /** Resolve sex-specific hint for a field config. */
-  const resolveHint = (config: FieldConfig) => {
-    const { hint, hintMale, hintFemale } = config;
-    return (inputs.sex === 'male' && hintMale) ? hintMale
-      : (inputs.sex === 'female' && hintFemale) ? hintFemale : hint;
-  };
-
   /** The onboarding's weight (US-62 AC13), a plain box like the height's
    *  beside it, holding the saved value; a number typed over it saves through
    *  the same path (one active row per day, US-03 AC3). */
   const renderLongitudinalField = (config: FieldConfig) => {
-    const { field, name, step } = config;
-    const effectiveHint = resolveHint(config);
+    const { field, name } = config;
     const r = range(field);
     const { previous, shown } = savedOf(field);
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
@@ -440,7 +428,6 @@ export function InputPanel({
             }}
             onKeyDown={onNumericEnter}
             placeholder=""
-            step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
             className={errors[field] ? 'error' : ''}
@@ -458,13 +445,6 @@ export function InputPanel({
         )}
         {(unreadable[field] || errors[field]) && (
           <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
-        )}
-        {effectiveHint && (
-          <div className="field-meta">
-            <span className="field-hint">
-              {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
-            </span>
-          </div>
         )}
       </div>
     );
