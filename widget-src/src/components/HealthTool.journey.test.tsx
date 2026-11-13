@@ -799,21 +799,38 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
 // copy of the form, so a reply carrying two edits for the form's own fields kept only
 // the last.
 describe('US-16 AC1: before the whole form, one chat reply\'s edits all wait in the form', () => {
-  it.each([
-    ['a blood pressure ("120/80")', { systolicBp: 120, diastolicBp: 80 }, { systolic_bp: 120, diastolic_bp: 80 }],
-    ['a weight and a waist', { weightKg: 84, waistCm: 90 }, { weight: 84, waist: 90 }],
-  ])('one reply carrying %s leaves both in the form, and a save saves both', async (_what, fields, saved) => {
-    await guest(); // stage 2: no grid yet, so the edits wait in the form
+  const propose = (fields: Record<string, number>) => act(() => chat.proposeEdit!(Object.entries(fields).map(([field, displayValue]) =>
+    ({ kind: 'field', field, displayValue, unitSystem: 'si', date: null }) as ProposedEdit)));
+
+  it('one reply carrying a blood pressure ("120/80") leaves both in the form, and a save saves both', async () => {
+    await guest(); // stage 1, the weight missing: no grid yet, so the edits wait in the form
     const view = render(<HealthTool />);
     await shown(view.container, '#weightKg');
-    act(() => chat.proposeEdit!(Object.entries(fields).map(([field, displayValue]) =>
-      ({ kind: 'field', field, displayValue, unitSystem: 'si', date: null }) as ProposedEdit)));
-    await waitFor(() => expect(Object.keys(fields).map((f) => chat.context?.[f])).toEqual(Object.values(fields)));
+    propose({ systolicBp: 120, diastolicBp: 80 });
+    await waitFor(() => expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([120, 80]));
 
     savePdf(view); // saves what the fields hold
     await waitFor(async () => {
-      for (const [metric, value] of Object.entries(saved)) expect(await activeOn(metric)).toEqual([[value, localToday()]]);
+      expect(await activeOn('systolic_bp')).toEqual([[120, localToday()]]);
+      expect(await activeOn('diastolic_bp')).toEqual([[80, localToday()]]);
     });
+  });
+
+  // R1 (owner's ruling, 2026-11-13): the reply's weight is the last answer, so the whole form opens and the
+  // waist moves into the grid, unsaved; the save saves the weight alone.
+  it('one reply carrying a weight and a waist: both land; the weight that opens the form saves, the waist waits in the grid', async () => {
+    await guest();
+    const view = render(<HealthTool />);
+    await shown(view.container, '#weightKg');
+    propose({ weightKg: 84, waistCm: 90 });
+    await waitFor(() => expect(draftInput(vitalsMatrix(view.container), 'Waist Circumference').value).toBe('90'));
+    expect(chat.context?.weightKg).toBe(84);
+
+    savePdf(view);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, localToday()]]));
+    await wait(300);
+    expect(await activeOn('waist')).toEqual([]);
+    expect(draftInput(vitalsMatrix(view.container), 'Waist Circumference').value).toBe('90');
   });
 });
 
