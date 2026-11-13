@@ -12,7 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
-import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { localDay } from '@roadmap/health-core/merge';
@@ -674,6 +674,20 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     expect(calls('onboarding_done')).toHaveLength(1);
     await settle(300);
     expect(landed()).toBe(false);
+  });
+
+  // Codex R1 (H71): the removed weight field was the only caller of the onboarding's answer for this record.
+  it('US-62 AC13, AC31 (Codex R1): the weight added on the Weight value page, the last answer, sends the completion and shows the card', async () => {
+    const view = await matrixWeightLast();
+    fireEvent.click(Array.from(view.container.querySelectorAll<HTMLElement>('.md-row')).find((r) => r.querySelector('.md-row-label')?.textContent === 'Weight')!);
+    const page = await waitFor(() => { const p = q(view, '.mh-page-host .md-page'); expect(p).not.toBeNull(); return p as HTMLElement; });
+    fireEvent.change(within(page).getByLabelText(/^Value/), { target: { value: '80' } });
+    fireEvent.click(within(page).getByRole('button', { name: 'Add' }));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]));
+    await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+    expect(calls('onboarding_done')).toHaveLength(1);
+    fireEvent.click(within(page).getByRole('button', { name: /Back/ }));
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
   });
 
   it('US-62 AC25b (R5): the matrix weight\'s rest heard before the commit that ends the onboarding still lands', async () => {

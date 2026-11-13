@@ -55,6 +55,8 @@ interface ValuePageProps {
   onOpen: (subject: ValueSubject) => void;
   /** Set while the Add form holds unsaved typing, so leaving can ask first. */
   dirtyRef: MutableRefObject<boolean>;
+  /** A weight about to be added: the onboarding's answer, as the weight box gives it (US-62 AC13). */
+  onWeightAnswered?: () => void;
 }
 
 /** Each tile's explainer on its row's page, by the page's subject (US-62 AC26; TopicPlan.swift
@@ -64,7 +66,7 @@ const TILE_PAGES: Record<string, string[]> = {
   apob: ['apoB'], ldl: ['ldl'], total_cholesterol: ['nonHdl'], lpa: ['lpa'],
 };
 
-export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onCorrect, onLabAdded, onClose, onOpen, dirtyRef }: ValuePageProps) {
+export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onCorrect, onLabAdded, onClose, onOpen, dirtyRef, onWeightAnswered }: ValuePageProps) {
   const titleId = useId();
   const titleRef = useRef<HTMLHeadingElement>(null);
   // The page opens at its own top (Back), clear of the theme's sticky header, with its title
@@ -163,7 +165,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
         ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} coreValues={history} onCorrect={onCorrect}
                                    preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
-                    onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef}/>}
+                    onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
 
       <h4 className="md-page-subtitle">History</h4>
       {readings.length === 0 ? <p className="md-page-empty">No values yet.</p> : (
@@ -219,11 +221,12 @@ function PressureValue({ reading, ctx }: { reading: DayReading; ctx: RowContext 
  *  a day that holds one already is corrected, never given a second (US-03
  *  AC2), through the `expected` row as the grids' cells name theirs; a day
  *  changed meanwhile on another device is refused (`changed`). */
-function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef }: {
+function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef, onWeightAnswered }: {
   metric: MetricType | null; history: ApiMeasurement[]; unit: ReturnType<RowContext['unitOf']>; start: DayReading | null;
   onSave: (tasks: SaveTask[], erase?: string) => Promise<Refused>; say: (message: string) => void; onDone: () => void;
   /** True while the form holds text the person typed and has not saved. */
   dirtyRef: MutableRefObject<boolean>;
+  onWeightAnswered?: () => void;
 }) {
   const today = localDay(new Date());
   const [date, setDate] = useState(start?.day ?? today);
@@ -292,6 +295,9 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef 
       return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
         : Math.round(row.value) === values[m];
     });
+    // Before the save, as the weight box answers as it is typed: the step is counted when the save's
+    // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
+    if (metric === 'weight') onWeightAnswered?.();
     const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     setSaving(false);
     const [why] = refused.values();

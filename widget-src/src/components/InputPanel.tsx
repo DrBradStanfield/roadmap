@@ -648,7 +648,7 @@ export function InputPanel({
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>
     ),
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, withoutWeight: weightInProfile },
     vitalsCue: unsavedCue(draftedVitals),
