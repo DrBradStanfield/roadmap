@@ -9,7 +9,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { flushRoadmapStore, initRoadmapStore, saveSupplement } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
@@ -23,7 +23,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
 
-useHealthToolLifecycle();
+// Fake timers that move with the clock: settle() jumps the 400 ms at once.
+useHealthToolLifecycle({ fakeTimers: true });
 
 async function page() {
   const view = render(<HealthTool />);
@@ -56,10 +57,8 @@ function dose(container: HTMLElement, name: string, value: number, unit: string)
 }
 
 async function settle(): Promise<void> {
-  await act(async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    await flushRoadmapStore();
-  });
+  await wait(400);
+  await act(async () => { await flushRoadmapStore(); });
 }
 
 async function persisted(): Promise<RoadmapFile> {
