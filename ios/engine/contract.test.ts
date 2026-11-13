@@ -12,7 +12,7 @@ import { bridgeContractJson, bridgeOptionalJson } from './contract-json';
 
 const file = (name: string) => readFileSync(join(__dirname, name), 'utf8');
 
-describe('bridge contract source (I-2, US-25 AC18)', () => {
+describe('bridge contract source (I-2, US-25 AC18, AC18c)', () => {
   it('generates bridge-contract.json byte for byte, so the bridge id is unchanged', () => {
     expect(bridgeContractJson()).toBe(file('bridge-contract.json'));
     expect(createHash('sha256').update(bridgeContractJson()).digest('hex').slice(0, 16)).toBe('40fc97db4ca12547');
@@ -60,7 +60,7 @@ describe('bridge contract source (I-2, US-25 AC18)', () => {
 });
 
 // I-2 step 2: every door reads its arguments with the contract's types where they enter.
-describe('doors parse their arguments (I-2 step 2)', () => {
+describe('US-25 AC18c: doors parse their arguments (I-2 step 2)', () => {
   it('every door\'s first line checks its arguments against the contract', () => {
     const source = ['entry.ts', 'cloud.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
     for (const name of Object.keys(DOORS)) {
@@ -119,7 +119,7 @@ const SWIFT_EDITS: unknown[] = [
   { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
 ];
 
-describe('the Edit the app sends (I-2 step 2)', () => {
+describe('US-25 AC18c: the Edit the app sends (I-2 step 2)', () => {
   it('reads every kind the app and the engine write, unchanged', () => {
     for (const edit of SWIFT_EDITS) expect(parseEdit(JSON.stringify(edit)), JSON.stringify(edit)).toEqual({ ok: true, edit });
   });

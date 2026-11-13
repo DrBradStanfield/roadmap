@@ -132,8 +132,7 @@ function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: strin
   return { ok: true, file: next, lines, undo: undoable ? undo : null };
 }
 
-function undoMedications(file: RoadmapFile, rows: unknown, now: string): Outcome {
-  if (!Array.isArray(rows)) return { ok: false, reason: 'invalid-value', message: 'This undo could not be read, so nothing changed.' };
+function undoMedications(file: RoadmapFile, rows: ChatMedicationRow[], now: string): Outcome {
   let next = file;
   for (const row of rows) {
     const checked = medicationSchema.safeParse(row);
