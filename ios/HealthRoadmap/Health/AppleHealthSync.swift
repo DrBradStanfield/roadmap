@@ -15,7 +15,8 @@ import UIKit
 /// Its state is on the main actor; HealthKit and the engine are awaited. An import
 /// goes through `RecordStore.applyNow`, in the store's one ordered line, so an import
 /// and a typed save never overlap: each edit reads the record as it is at its turn.
-/// A run asked for while one is going sets `again`, and the running one loops.
+/// Its run state is one mode, `Run` (lead H27, AppleHealthRun.swift): a run asked for while one
+/// is going queues one more, and the running one loops.
 ///
 /// An erase disconnects Apple Health (US-72 AC10): every anchor resets and nothing is read
 /// until the person connects again, which reads everything from the start. Each pass first
@@ -42,7 +43,9 @@ final class AppleHealthSync {
         case notAllowed
     }
 
-    private(set) var status: Status
+    /// The one run state (lead H27), changed only by `send`.
+    private(set) var run: Run
+    var status: Status { run.status }
     /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
     /// A cache of `memory.owed`, so every writer of owed that can change it must refresh it: init,
     /// `pay` and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
@@ -55,10 +58,8 @@ final class AppleHealthSync {
     let memory: HealthSyncMemory // internal only for AppleHealthSync+Owed.swift
     /// US-56's cards, read as soon as the sheet is answered (`connect`).
     private let live: LiveHealth?
-    var running = false // internal only for AppleHealthSync+Owed.swift
     /// The connection generation of the one rule above: moves on every erase disconnect.
     private var generation = 0
-    private var again = false
     /// Who waits for the running pass to end: a refresh asked for during it, an erase's `drained`.
     var waiting: [UUID: CheckedContinuation<Void, Never>] = [:] // internal only for AppleHealthSync+Owed.swift
     private var started = false
@@ -81,7 +82,7 @@ final class AppleHealthSync {
         self.memory = memory
         self.live = live
         self.reread = reread
-        status = !client.isAvailable ? .unavailable : memory.connected ? .working : .notConnected
+        run = !client.isAvailable ? .unavailable : memory.connected ? .idle(.notYet) : .disconnected
         refreshOwedFooter()
         // After an erase disconnected Health, the cards read nothing until Connect (US-72 AC10).
         live?.connection = { [weak self] in self?.connection }
@@ -126,7 +127,7 @@ final class AppleHealthSync {
                 analytics?.event(.healthRecordsAsked)
             }
         } catch {
-            status = .failed(error.localizedDescription)
+            send(.connectFailed(error.localizedDescription))
             return
         }
         // What an erase left owed goes first. A delete that fails (locked) still connects: those
@@ -209,42 +210,44 @@ final class AppleHealthSync {
     /// asks it to go round once more and returns when it has finished, so an observer
     /// query tells iOS its background work is done only after the import saved.
     func refresh() async {
-        guard client.isAvailable else { return }
-        guard memory.connected else { status = .notConnected; return }
-        if running {
-            again = true
-            await withCheckedContinuation { waiting[UUID()] = $0 }
-            return
-        }
-        running = true
+        var effect = send(.trigger(connected: memory.connected))
+        if effect == .wait { await withCheckedContinuation { waiting[UUID()] = $0 } }
+        guard effect == .pass else { return }
+        // Whoever runs the passes lets every waiter go once they end, however they ended.
         defer {
-            running = false
             waiting.values.forEach { $0.resume() }
             waiting = [:]
         }
-        repeat {
-            again = false
-            guard followErase(), memory.connected else { status = .notConnected; return }
-            status = .working
-            // Taken before anything is read: an erase from here on refuses this pass's saves.
-            let pass = Pass(mark: store.mark, generation: generation)
-            do {
-                try await importNew(on: pass)
-                try still(pass)
-                try await writeTyped(on: pass)
-                try still(pass)
-                status = noAccess ? .notAllowed : .upToDate(.now)
-            } catch is RecordMoved {
-                // An erase landed meanwhile: the next pass meets it at the gate.
-                again = true
-            } catch HealthStoreError.locked {
-                status = .waitingForUnlock
-                return
-            } catch {
-                status = .failed(error.localizedDescription)
-                return
-            }
-        } while again
+        while effect == .pass { effect = send(await onePass()) }
+    }
+
+    /// Moves the run state on (`Run.transition`) and returns the effect it asks for.
+    @discardableResult
+    private func send(_ event: RunEvent) -> RunEffect? {
+        let effect: RunEffect?
+        (run, effect) = Run.transition(run, event)
+        return effect
+    }
+
+    /// One pass: the erase gate, then what is new in, then what is typed out. Its end is the event.
+    private func onePass() async -> RunEvent {
+        guard followErase(), memory.connected else { return .gateClosed }
+        // Taken before anything is read: an erase from here on refuses this pass's saves.
+        let pass = Pass(mark: store.mark, generation: generation)
+        do {
+            try await importNew(on: pass)
+            try still(pass)
+            try await writeTyped(on: pass)
+            try still(pass)
+            return .passEnded(.done(noAccess ? .notAllowed : .upToDate(.now)))
+        } catch is RecordMoved {
+            // An erase landed meanwhile: the next pass meets it at the gate.
+            return .passEnded(.moved)
+        } catch HealthStoreError.locked {
+            return .passEnded(.locked)
+        } catch {
+            return .passEnded(.failed(error.localizedDescription))
+        }
     }
 
     /// The gate (US-72 AC10) on the record shown now: a newer erase on the record seen before
@@ -278,12 +281,12 @@ final class AppleHealthSync {
         generation += 1
         memory.oweWritten()
         refreshOwedFooter()
+        send(.disconnect(wasConnected: memory.connected))
         guard memory.connected else { return }
         memory.connected = false
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
         memory.labResultsAnchor = nil
         client.stopObserving()
-        status = .notConnected
     }
 
     /// What a pass began under: the record's mark and the connection generation.
