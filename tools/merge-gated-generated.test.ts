@@ -61,7 +61,7 @@ describe('US-64 AC34 tools/generated-files.json', () => {
 // ---- behaviour ----
 const REFUSED = 9;
 const GENERATOR = 'node gen.mjs';
-const TEST_MANIFEST = JSON.stringify({ rows: [{ output: 'out.txt', script: 'gen.mjs', inputs: ['in.txt', 'src/*.txt', 'gen.mjs'], generator: GENERATOR }] });
+const TEST_MANIFEST = JSON.stringify({ rows: [{ output: 'out.txt', script: 'gen.mjs', inputs: ['in.txt', 'src/*.txt', 'gen.mjs', 'blog/*.md'], generator: GENERATOR }] });
 // Every binary the script may run, each a logging wrapper around the real one. Step 6 may add only git, jq and perl (the fetch's timeout).
 const WRAPPED = ['git', 'jq', 'perl', 'sed', 'grep', 'paste', 'mktemp', 'rm', 'sh'];
 let S: string;
@@ -112,7 +112,7 @@ esac
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
 /** A bare origin whose main holds the script, the test manifest and the inputs; a caller's clone; a work clone. */
-function repos(withOutput = true) {
+function repos(withOutput = true, manifest = TEST_MANIFEST) {
   const d = mkdtempSync(join(S, 'case-'));
   const origin = join(d, 'origin.git');
   git(d, 'init', '-q', '--bare', origin);
@@ -121,7 +121,7 @@ function repos(withOutput = true) {
   mkdirSync(join(work, 'tools'));
   copyFileSync(join(TOOLS, 'merge-gated.sh'), join(work, 'tools', 'merge-gated.sh'));
   const generated = withOutput ? { 'out.txt': 'o\n', 'gen.mjs': 'g\n' } : {};
-  commit(work, { 'tools/generated-files.json': TEST_MANIFEST, 'in.txt': 'a\n', 'src/x.txt': 'x\n', 'src/y.txt': 'y\n', README: 'r\n', ...generated }, 'base');
+  commit(work, { 'tools/generated-files.json': manifest, 'in.txt': 'a\n', 'src/x.txt': 'x\n', 'src/y.txt': 'y\n', README: 'r\n', ...generated }, 'base');
   pushMain(work);
   const caller = join(d, 'caller');
   git(d, 'clone', '-q', origin, caller);
@@ -202,7 +202,8 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     const sha = openPr(r, { 'in.txt': 'b\n' });
     moveMain(r, { 'src/y.txt': 'y2\n' });
     const g = gate(r, sha, ['in.txt']);
-    expect(g.stderr).toBe('');
+    // AC35: main moved one commit past the PR's base, so a staleness note (never a refusal).
+    expect(g.stderr).toBe("merge-gated: note: main has moved 1 commit since this PR's merge base; CI may have tested an older main\n");
     expect(g.status).toBe(0);
     expect(g.merges).toHaveLength(1);
   });
@@ -263,8 +264,40 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     const g = gate(r, sha, ['README']);
     expect(g.status).toBe(0);
     expect(g.merges).toHaveLength(1);
-    expect(g.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'diff']);
+    expect(g.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'rev-list', '-c']); // -c: `git -c core.quotepath=false diff`
     expect(g.untouched).toBe(true);
+  });
+
+  it('matches a non-ASCII path: the diff is not quoted (core.quotepath)', () => {
+    const r = repos();
+    const sha = openPr(r, { 'blog/café.md': 'c\n' });
+    moveMain(r, { 'out.txt': 'o2\n' });
+    const g = gate(r, sha, ['blog/café.md']);
+    expect(g.status).toBe(REFUSED);
+    expect(g.merges).toEqual([]);
+  });
+
+  it('a local branch named origin/main cannot shadow the fetched main', () => {
+    const r = repos();
+    git(r.caller, 'branch', 'origin/main'); // the caller's old main, before main moves
+    const sha = openPr(r, { 'in.txt': 'b\n' });
+    moveMain(r, { 'out.txt': 'o2\n' });
+    const g = gate(r, sha, ['in.txt']);
+    expect(g.status).toBe(REFUSED);
+    expect(g.merges).toEqual([]);
+  });
+
+  it('refuses (4) a matched manifest row with no script, or an empty output, script or generator', () => {
+    const row = { output: 'out.txt', script: 'gen.mjs', inputs: ['in.txt'], generator: GENERATOR };
+    const noScript = { output: 'out.txt', inputs: ['in.txt'], generator: GENERATOR };
+    for (const bad of [noScript, { ...row, script: '' }, { ...row, output: '' }, { ...row, generator: '' }]) {
+      const r = repos(true, JSON.stringify({ rows: [bad] }));
+      const sha = openPr(r, { 'in.txt': 'b\n' });
+      const g = gate(r, sha, ['in.txt']);
+      expect(g.status, JSON.stringify(bad)).toBe(4);
+      expect(g.stderr).toContain('generated-files.json');
+      expect(g.merges).toEqual([]);
+    }
   });
 
   it("judges a PR that edits the manifest by main's rows (gate-file rule)", () => {
@@ -290,6 +323,6 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     expect(new Set(hit.names)).toEqual(new Set(['gh', 'perl', 'git', 'jq', 'sed', 'grep']));
     const count = (names: string[]) => names.filter((n) => !['git', 'jq', 'perl'].includes(n)).sort();
     expect(count(hit.names)).toEqual(count(plain.names)); // a matched row adds only git and jq calls
-    expect(hit.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'diff', 'log']);
+    expect(hit.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'rev-list', '-c', 'log']);
   });
 });

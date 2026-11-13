@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-13,"S1 tools, scripts, CI",merge-gated step 3 judges gate files by git's path list,not started,"tools/merge-gated.sh step 3 reads gh's file list (gh pr view --json files), which shows only a rename's new path, so a PR that renames a gate file away is not sent to main's copy. It fails closed in practice (the PR's tree has no tools/merge-gated.sh to run, and a missing tools/generated-files.json refuses 4), but step 3 should use step 6's git path list (git diff --name-only --no-renames from the merge base)",,,no
