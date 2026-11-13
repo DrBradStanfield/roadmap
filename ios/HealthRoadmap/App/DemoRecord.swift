@@ -19,7 +19,15 @@ enum DemoRecord {
 
     /// Application Support/Demo in demo mode, else the record's own folder.
     nonisolated static func recordFolder(in base: URL = .applicationSupportDirectory) throws -> URL {
-        try RecordStore.appFolder(in: base, named: isOn ? "Demo" : "Record")
+        try RecordStore.appFolder(in: base, named: isOn ? (unreadable ? "Demo Unreadable" : "Demo") : "Record")
+    }
+
+    /// With `--unreadable-record` too, the record is a newer app's file, written at each launch in its
+    /// own folder so the demo record stays as it was: My health cannot open it (UI test, US-11 H114).
+    nonisolated static var unreadable: Bool { ProcessInfo.processInfo.arguments.contains("--unreadable-record") }
+    nonisolated static func writeUnreadable(in folder: URL) throws {
+        guard isOn, unreadable else { return }
+        try Data(#"{"schemaVersion": 999, "measurements": []}"#.utf8).write(to: RecordStore.file(in: folder))
     }
 
     static let suite = "demo-record"
