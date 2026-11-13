@@ -730,22 +730,22 @@ describe('US-06 AC14: the chat plan reads the saved PSA, as the plan does', () =
   it('a saved PSA of 6.5 puts "Elevated PSA" and the PSA-due card in the chat plan', () => {
     const context = contextWithPsa([psa(2.1, '2024-03-01T08:00:00Z'), psa(6.5, '2025-09-03T08:00:00Z')]);
     const elevated = context.currentSuggestions.find((s: { id: string }) => s.id === 'screening-prostate-elevated');
-    expect(elevated?.description).toBe('Your PSA of 6.5 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.');
-    // Due Sep 2026, so overdue from then on, whatever today is.
+    expect(elevated?.description).toBe('Your PSA of 6.5 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Dr Brad suggests repeating the test every 3 months while it stays at 4.0 or higher. Discuss with your doctor.');
+    // Due Dec 2025 (3 months at 4.0 or above, US-06 AC21), so overdue from then on, whatever today is.
     expect(ids(context)).toContain('screening-prostate-overdue');
     // `screenings` stays the record's own answers, as the plan's does.
     expect(context.screenings).toEqual({ prostateDiscussion: 'will_screen' });
   });
 
-  it('chose not to screen (Brad 2026-11-03): the chat plan still shows "Elevated PSA"', () => {
+  it('chose not to screen (Brad 2026-11-03): the chat plan still shows "Elevated PSA", and "Repeat PSA test" 3 months on (US-06 AC21)', () => {
     const context = contextWithPsa([psa(6.5, '2025-09-03T08:00:00Z')], [scr('prostate_discussion', 'elected_not_to')]);
-    expect(ids(context).filter((id: string) => id.startsWith('screening-prostate'))).toEqual(['screening-prostate-elevated']);
+    expect(ids(context).filter((id: string) => id.startsWith('screening-prostate'))).toEqual(['screening-prostate-repeat', 'screening-prostate-elevated']);
   });
 
   it('a PSA printed "> 100" shows the limit as printed in the chat plan, as in the plan', () => {
     const context = contextWithPsa([psa(100, '2025-09-03T00:00:00Z', { comparator: '>' })]);
     const elevated = context.currentSuggestions.find((s: { id: string }) => s.id === 'screening-prostate-elevated');
-    expect(elevated?.description).toBe('Your PSA of > 100.0 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.');
+    expect(elevated?.description).toBe('Your PSA of > 100.0 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Dr Brad suggests repeating the test every 3 months while it stays at 4.0 or higher. Discuss with your doctor.');
   });
 
   it('a newer "< 5" means no "Elevated PSA" from an older 6.5', () => {

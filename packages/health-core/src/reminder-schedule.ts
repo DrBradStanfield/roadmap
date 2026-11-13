@@ -33,12 +33,13 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE, isCalendarDay, newestUsablePsa } from './measurement-history';
+import { ISO_DATE, isCalendarDay, planPsa } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 import { currentValueRows } from './blood-tests';
 import { screeningsToInputs, withPsaMeasurement } from './mappings';
 import { fileScreeningRows } from './file-inputs';
 import { nextColonoscopyDue, onColonoscopySchedule } from './colonoscopy-schedule';
+import { PSA_REPEAT_NAME, psaNextDue, psaRaised, psaRuleHolds } from './psa-schedule';
 
 // ===== Types =====
 
@@ -104,8 +105,8 @@ function earliest(...dates: Array<Date | null>): Date | null {
 /** US-17 AC15: a scheduled follow-up's check-in, months after the last screening. */
 const FOLLOWUP_CHECKIN_MONTHS = 3;
 
-/** Which follow-up card a result that opens one shows: to organize, or scheduled (a check-in). */
-export type FollowupKind = 'organize' | 'checkin';
+/** Which follow-up card a result that opens one shows: to organize, or scheduled (a check-in); or a raised PSA's repeat (US-06 AC21). */
+export type FollowupKind = 'organize' | 'checkin' | 'repeat';
 
 function followupKindOf(r: ScreeningRule, result: string | undefined, status: string | undefined, lastDate: string | undefined): FollowupKind | null {
   if (!opensFollowup(r, result) || !lastDate) return null;
@@ -192,10 +193,8 @@ function screeningSchedule(
     ));
   }
 
-  // Prostate (elected to screen)
-  if (takes(PROSTATE) && s.prostateDiscussion === 'will_screen' && s.prostateLastDate) {
-    push(PROSTATE, s.prostateDiscussion, getScreeningNextDueDate(s.prostateLastDate, 'will_screen'));
-  }
+  // Prostate: the next PSA by level (US-06 AC21); a man who does not screen only while the 3-month rule holds (psaRuleHolds).
+  if (takes(PROSTATE)) push(PROSTATE, s.prostateDiscussion, psaNextDue(s));
 
   // DEXA bone density; result-based interval
   if (
@@ -314,13 +313,21 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
   return valid;
 }
 
-function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+/** The age and sex the reminder gates read; none without a birth year. */
+function ageSexOf(file: RoadmapFile, now: Date): { age: number; sex: 'male' | 'female' | undefined } | null {
   const { birthYear, birthMonth } = file.profile;
-  if (!birthYear) return []; // no age → no eligibility rules can run
+  if (!birthYear) return null; // no age → no eligibility rules can run
   // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
   const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
+  return { age, sex };
+}
+
+function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+  const person = ageSexOf(file, now);
+  if (!person) return [];
+  const { age, sex } = person;
 
   const measurementDates: MeasurementDates = {};
   // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
@@ -350,12 +357,12 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
   return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings), now),
-    newestUsablePsa(currentValueRows(file), now));
+    planPsa(currentValueRows(file), now));
 }
 
 /**
- * Which screening reminders are a follow-up (US-17 AC15), and the card's name for
- * it (SCREENING_FOLLOWUP_INFO, keyed as the card keys it), for the iPhone's own
+ * Which screening reminders are a follow-up (US-17 AC15) or a raised PSA's repeat (US-06 AC21), and
+ * the name for it (SCREENING_FOLLOWUP_INFO, keyed as the card keys it), for the iPhone's own
  * list and notification days only (US-25 AC12): the phone holds the record, so
  * it may say so. Never part of the pushed schedule, whose label + date is all
  * the server learns.
@@ -376,6 +383,11 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
     const info = SCREENING_FOLLOWUP_INFO[method ? `${type}_${method}` : `${type}_other`];
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
   }
+  // A repeat while the rule holds (first-seen); its name only for a newest PSA of 4.0 or above, else plain (AC21 item 6, F4).
+  // Only where the schedule takes the prostate row (its cardAges), so the name never outruns the item.
+  const person = ageSexOf(file, now);
+  const prostate = ruleOf('prostate');
+  if (person && ruleTakes(prostate, prostate.cardAges, person.age, person.sex) && psaRuleHolds(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: psaRaised(s) ? PSA_REPEAT_NAME : prostate.reminder!.label };
   return kinds;
 }
 

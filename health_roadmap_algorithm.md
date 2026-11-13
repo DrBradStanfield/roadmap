@@ -1136,7 +1136,9 @@ Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up stays in
 | `hpv_every_5yr` | 60 |
 | `pap_every_3yr` | 36 |
 | `annual_ldct` | 12 |
-| `will_screen` (prostate PSA) | 12 |
+| `will_screen`, PSA < 2.5 | 24 |
+| `will_screen`, PSA 2.5 to < 4.0, or no PSA value | 12 |
+| any answer, PSA >= 4.0 | 3 |
 | `other` (fallback) | 12 |
 | `dexa_normal` | 60 (5 years) |
 | `dexa_osteopenia` | 24 (2 years) |
@@ -1177,9 +1179,12 @@ overdue = now > nextDue
 ### Prostate-Specific
 
 - PSA >= 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer. While it shows, `screening-prostate` (the discussion card) does not (Brad 2026-11-12).
-- `elected_not_to` -> no screening card and no PSA reminder; a saved PSA of 4.0 or above still shows `screening-prostate-elevated` (Brad 2026-11-03)
+- `elected_not_to` -> no screening card; no PSA reminder while the newest PSA is below 4.0. A saved PSA of 4.0 or above still shows `screening-prostate-elevated` (Brad 2026-11-03), and from 3 months on `screening-prostate-repeat` and the `screening_prostate` reminder (Brad 2026-11-12); so does the 3-month rule held through a vague newer PSA (US-06 AC21 item 6, below).
+- The next PSA follows the newest usable PSA (Brad 2026-11-12): 24 months below 2.5 ng/mL and 12 months from 2.5 for men who will screen (ACS); 3 months at 4.0 or above for every man, whatever his answer, until a newer PSA below 4.0 is saved (Dr Brad's suggestion). A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card.
+- A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test. `screening-prostate-elevated` does not show, and `screening-prostate` (the discussion card) still shows for a man with no answer or `not_yet`, and `screening-prostate-upcoming` does not; `screening-prostate-repeat` reads "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening." in place of its "Your last PSA" sentence.
+- Every surface takes that one fact, never its own slice of the record (Brad 2026-11-13): `raisedBefore`, "an earlier PSA was 4.0 or above", is worked out once in health-core from the full record (`planPsa`; for a chat, `buildMeasurementHistory` before its 24-point cap, and the chat mirror when it is written) and rides on the newest PSA point a chat sends. The chat's plan takes it as sent; no earlier PSA value or date is sent for it.
 - Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. On one day the later time wins, then the later `createdAt`, then the id (US-07 AC4). A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" and ">= 4.0" are elevated (">= 4.0" since Brad 2026-11-12), and the card shows the limit as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5" and "<= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
-- While `screening-prostate-elevated` shows, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder are unchanged (US-06 AC17, Brad 2026-11-03).
+- While `screening-prostate-elevated` shows, or the 3-month rule holds through a vague newer PSA, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder follow the PSA rows of the intervals table (US-06 AC17, Brad 2026-11-03).
 - A PSA below 4.0 never prints as 4.0 (US-06 AC18, turned round with the 4.0 line, Brad 2026-11-12): where one decimal would print 4.0, a PSA below 4.0 prints two, rounded down (3.96 reads 3.96, not 4.0), on `get_plan` and the PSA field's line on the web and the iPhone (`formatGradedReading`). Any other PSA prints to one decimal, so 4.04 reads 4.0, which is raised. A limit prints as printed.
 - A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
@@ -1307,7 +1312,7 @@ Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_
 
 ### Screening Reminders
 
-Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`).
+Same eligibility criteria as the suggestion algorithm (section 8). Checks both initial screening overdue and post-follow-up overdue. Only triggers for screenings the user has started (not `'not_yet_started'`), except prostate: a PSA of 4.0 or above, or the 3-month rule held through a vague newer PSA (US-06 AC21 item 6), gives the `screening_prostate` reminder whatever the answer (Brad 2026-11-12).
 
 **Follow-up reminders (US-17 AC15, Brad 2026-11-05).** After an abnormal result (osteoporosis for bone density) with a last screening date, the reminder follows the follow-up card and is never later than the routine date:
 - Follow-up to organize (no status, or `not_organized`): due at the last screening's month, which has passed, so the next daily email carries it.
@@ -1316,7 +1321,7 @@ Same eligibility criteria as the suggestion algorithm (section 8). Checks both i
 
 Neither date depends on today's date, so it never moves. Organize and check-in reminders repeat every 90 days (the screening cooldown) until the status changes. The cooldown is per category and spans follow-up states, so the first organize email can wait up to 90 days after a routine send for the same screening, and a check-in can arrive up to 90 days after the organize email. This covers colorectal, breast, cervical, lung (with the AC1f and AC1g follow-up exception) and bone density. Prostate and endometrial have no follow-up states.
 
-Only the label and date reach the server, and the labels stay plain, but the date reflects the follow-up state over time, as a completed follow-up's post-follow-up date already did. Every reminder email carries one line for all items: "If you have a follow-up to arrange or a result to record, open the Health Roadmap." The iPhone works its reminders out on the phone and never calls the reminder server: its in-app list names the card's follow-up ("Follow-up to organize: repeat colonoscopy", "Follow-up check-in: colposcopy"), and a follow-up notifies on the first morning the phone sees it, or on its due day if later, then every 90 days from that day.
+Only the label and date reach the server, and the labels stay plain, but the date reflects the follow-up state over time, as a completed follow-up's post-follow-up date already did, and the PSA reminder's interval (24, 12 or 3 months) reflects the PSA band. Every reminder email carries one line for all items: "If you have a follow-up to arrange or a result to record, open the Health Roadmap." The iPhone works its reminders out on the phone and never calls the reminder server: its in-app list names the card's follow-up ("Follow-up to organize: repeat colonoscopy", "Follow-up check-in: colposcopy"), and a follow-up notifies on the first morning the phone sees it, or on its due day if later, then every 90 days from that day.
 
 ### Missing Profile Fields
 

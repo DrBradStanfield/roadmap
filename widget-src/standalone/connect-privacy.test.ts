@@ -55,8 +55,8 @@ describe('US-09 AC6b: the connect-time lift has the storage privacy boundary', (
     const { error, tags } = lastCapture();
     expect(error.message).toBe('Cloud sync failed');
     expect('cause' in error).toBe(false);
-    // WebDAV names no status on its error, so the status class is `none` (US-09 AC6c).
-    const expected = { area: 'cloud-sync', op: 'migrate-up', backend: 'self-host', errorClass: 'StorageError', httpStatus: 'none' };
+    // WebDAV carries the HTTP status on its error, so a 500 reads `5xx` (US-09 AC6c, PR 1467).
+    const expected = { area: 'cloud-sync', op: 'migrate-up', backend: 'self-host', errorClass: 'StorageError', httpStatus: '5xx' };
     expect(tags).toEqual(expected);
     expect(warn.mock.calls).toEqual([['Guest-data lift on connect failed']]);
     expect(localStorage.getItem('health_roadmap_pending_cloud_sync')).not.toBeNull();

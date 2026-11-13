@@ -8,6 +8,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parityFixtures } from './fixtures.mjs';
 import { chatContextJson } from './app-doors';
+import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
+import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 const swift = readFileSync(join(__dirname, '../HealthRoadmap/Chat/ChatClient.swift'), 'utf8');
 const block = swift.slice(swift.indexOf('static let contextKeys'), swift.indexOf(']', swift.indexOf('static let contextKeys')));
@@ -69,5 +71,32 @@ describe('an older binary never takes an engine whose chat context it would stri
     expect(contract.doors.chatContextJson.returns).toContain('must not run this engine');
     const release = readFileSync(join(__dirname, '../HealthRoadmap/EngineUpdates/EngineRelease.swift'), 'utf8');
     expect(release).toContain(`static let bridge = "${bridge}"`);
+  });
+});
+
+// US-06 AC21 item 6 (Brad 2026-11-13): `raisedBefore` rides on the newest point inside
+// measurementHistory, never as a top-level key, so the allow-list above (top-level keys
+// only) forwards it whole, and an older binary does too: the bridge need not move.
+describe('the PSA point\'s raisedBefore leaves the phone inside measurementHistory', () => {
+  it('raised, then 25 vague results: the engine sets it, the allow-list keeps it, the server gives "Repeat PSA test"', () => {
+    const at = '2026-10-21T12:30:00.000Z';
+    const f = createEmptyFile({ deviceId: 'ios-test', now: at });
+    const days = ['2024-06-01', ...Array.from({ length: 25 }, (_, i) => new Date(Date.UTC(2025, 0, 1 + 7 * i)).toISOString().slice(0, 10))];
+    const file: RoadmapFile = {
+      ...f,
+      profile: { ...f.profile, sex: 'male', heightCm: 178, weightKg: 80, birthYear: 1962, birthMonth: 1 } as RoadmapFile['profile'],
+      screenings: { ...f.screenings, prostateDiscussion: 'elected_not_to' } as RoadmapFile['screenings'],
+      measurements: days.map((day, i) => createMeasurement({
+        id: `p${i}`, metricType: 'psa', value: i === 0 ? 4.5 : 5, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z`,
+        ...(i > 0 && { comparator: '<' as const }),
+      })),
+    };
+    const context = JSON.parse(chatContextJson(JSON.stringify(file), at, 'ios-test'));
+    const sent = Object.fromEntries(Object.entries(context).filter(([key]) => allowed.has(key)));
+    const series = (sent.measurementHistory as { psa: Array<Record<string, unknown>> }).psa;
+    expect(series.at(-1)).toEqual({ date: days.at(-1), value: 5, comparator: '<', raisedBefore: true });
+    expect(JSON.stringify(sent)).not.toContain('2024-06-01');
+    const ids = (JSON.parse(buildChatContextJson(sent)!).currentSuggestions as Array<{ id: string }>).map((s) => s.id);
+    expect(ids.filter((id) => id.startsWith('screening-prostate'))).toEqual(['screening-prostate-repeat']);
   });
 });
