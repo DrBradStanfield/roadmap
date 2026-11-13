@@ -152,6 +152,23 @@ describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
     expect(runs(human)).toBe(false);
   });
 
+  it('first re-reads the live labels, and a held PR runs no review step', () => {
+    const steps = (review.jobs.review as unknown as { steps: { id?: string; if?: string; uses?: string; run?: string }[] }).steps;
+    expect(steps[0].id).toBe('hold');
+    expect(steps[0].uses).toBeUndefined();
+    expect(steps[0].run).toContain('sleep 5');
+    expect(steps[0].run).toContain('issues/$PR/labels');
+    expect(steps[0].run).toContain('held=true');
+    // Every later step, the checkout and the paid review included, is gated on it.
+    expect(steps.length).toBeGreaterThan(1);
+    for (const s of steps.slice(1)) {
+      const run = (held: string) => Boolean(evalExpr(s.if!, { steps: { hold: { outputs: { held } } } }));
+      expect(run('true')).toBe(false);
+      expect(run('')).toBe(true);
+    }
+    expect(steps.some((s) => s.uses?.startsWith('anthropics/claude-code-action@'))).toBe(true);
+  });
+
   it('a newer push cancels the older review in the PR lane', () => {
     expect(review.concurrency!['cancel-in-progress']).toBe(true);
     const pr = lane(ctx('opened'));
