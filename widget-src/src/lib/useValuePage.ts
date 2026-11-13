@@ -83,9 +83,13 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   };
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
+  // The vitals grid scrolls whole date columns, so no clipped sliver shows beside its names (H79).
   useEffect(() => {
     if (!tableShown) return;
-    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
+    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => {
+      const colW = el.closest('.bt-vitals-card') ? el.querySelector<HTMLElement>('.bt-header-row .bt-cell-date')?.offsetWidth : 0;
+      el.scrollLeft = colW ? Math.floor((el.scrollWidth - el.clientWidth) / colW) * colW : el.scrollWidth;
+    });
   }, [tableShown]);
 
   // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.

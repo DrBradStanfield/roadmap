@@ -355,6 +355,30 @@ describe('US-62 AC11: All results as a table', () => {
     expect(tables()[0].hidden).toBe(true);
     expect(row(view, 'LDL Cholesterol')).toBeTruthy();
   });
+
+  // H79: at 390 px each grid is 397 inner against 334 visible, its date columns 91.
+  // Scrolled to the right edge (63), the vitals grid hid most of its first date
+  // column under the name column and showed a clipped sliver of it. It snaps to
+  // whole columns (0); the blood grid still opens at its right edge.
+  it('H79: opening the table puts the vitals grid on whole columns (0) and the blood grid at its right edge (63)', async () => {
+    await seed();
+    const view = await renderTool();
+    await new Promise(r => setTimeout(r, 600)); // the hidden grids' mount scroll has given up
+    const scrollers = new Map<string, HTMLElement>();
+    for (const sel of ['.bt-vitals-card .bt-timeline-scroll', '.bt-timeline:not(.bt-vitals-card) .bt-timeline-scroll']) {
+      const el = view.container.querySelector<HTMLElement>(`.md-table ${sel}`)!;
+      let left = 0;
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, get: () => 397 });
+      Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => 334 });
+      Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left, set: (v: number) => { left = Math.min(Math.max(v, 0), 63); } });
+      el.querySelectorAll<HTMLElement>('.bt-header-row .bt-cell-date').forEach(cell =>
+        Object.defineProperty(cell, 'offsetWidth', { configurable: true, get: () => 91 }));
+      scrollers.set(sel.startsWith('.bt-vitals') ? 'vitals' : 'blood', el);
+    }
+    fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
+    expect(scrollers.get('vitals')!.scrollLeft).toBe(0);
+    expect(scrollers.get('blood')!.scrollLeft).toBe(63);
+  });
 });
 
 describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
