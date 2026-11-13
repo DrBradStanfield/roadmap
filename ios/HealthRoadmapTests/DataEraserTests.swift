@@ -16,8 +16,9 @@ final class DataEraserTests: XCTestCase {
     private var health: FakeHealthStore!
     private var healthDefaults: UserDefaults!
     private let question = "Is my LDL of 4.2 high?"
-    /// How many times the reminders read the record (the erase's reminders step).
+    /// How many times the reminders asked for the record (the erase's reminders step).
     private var reminderReads = 0
+    private struct NoRecord: Error {}
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "Data Eraser \(UUID().uuidString)")
@@ -54,9 +55,11 @@ final class DataEraserTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
+        // HealthRoadmapApp's reminders read, counted.
         let reminders = ReminderScheduler(center: center, folder: folder) { [weak self] firstSeen in
             self?.reminderReads += 1
-            return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
+            guard let json = store.readable?.json else { throw NoRecord() }
+            return try await engine.reminders(recordJSON: json, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
@@ -373,11 +376,15 @@ final class DataEraserTests: XCTestCase {
 
     /// On main the reply's decode threw after the engine had erased: the person heard the
     /// erase was refused, the store kept the pre-erase record, and Health and the reminders
-    /// were skipped. Now the erase is held with no record, and the steps after it run.
+    /// were skipped. Now the erase is held with no record, the steps after it run, and nothing
+    /// outside the store can read the record it replaced (S52), so the "erased" words are true.
     func testAnEraseWhoseRecordDoesNotReadIsHeldAndTheStepsAfterItRun_US25_AC16h() async throws {
         let app = try await connectedApp(rewrite: "a => ({ ...a, view: 'not a view' })")
         await seedChat(app.chat)
         await app.health.connect()
+        let optedIn = await app.reminders.optIn()
+        XCTAssertTrue(optedIn)
+        XCTAssertNotNil(app.reminders.reminders, "the reminders read the record before the erase")
         let (erasures, reads) = (app.store.erasures, reminderReads)
 
         guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
@@ -389,6 +396,13 @@ final class DataEraserTests: XCTestCase {
         XCTAssertTrue(words.contains("Apple Health is disconnected"), words)
         XCTAssertGreaterThan(reminderReads, reads, "the reminders step ran")
         XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        // Nothing reads the record the erase replaced (S52).
+        XCTAssertNil(app.store.readable, "no reader gets the pre-erase record")
+        XCTAssertNil(app.store.myData, "My data shows no pre-erase rows")
+        // ChatView's read: no record, so it throws ContextRefused and sends nothing.
+        XCTAssertNil(app.store.readable?.json, "the chat is given no context")
+        XCTAssertNil(app.reminders.reminders, "the reminders read nothing")
+        XCTAssertEqual(center.pending, [], "no reminder is pending")
     }
 
     /// The chat flag does not read, but the phone's chat was deleted: the words say so. On main
