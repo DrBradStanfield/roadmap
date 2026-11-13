@@ -198,7 +198,7 @@ function inkOf(text: Element): { capTop: number; baseline: number } | null {
 
 /** One row. Screen readers hear "81, previous 74": brackets alone say nothing out loud. */
 const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOpen: (subject: ValueSubject, from?: Element) => void }) {
-  const meta = [row.target, row.day && monthYear(row.day)].filter(Boolean).join(' · ');
+  const date = row.day && monthYear(row.day);
   // The trend is as tall as the name block and drawn over its ink, the title's cap height to the
   // date line's baseline, as the iPhone's row (US-62 AC8a).
   const name = useRef<HTMLSpanElement>(null);
@@ -232,7 +232,10 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
       <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
         <span className="md-row-name" ref={name}>
           <span className="md-row-label">{row.label}</span>
-          {meta && <span className="md-row-meta">{meta}</span>}
+          {(row.target || date) && (
+            // The date is one unit, so a wrap falls only at the "·" (H104, US-62 AC8a).
+            <span className="md-row-meta">{row.target && date ? `${row.target} · ` : row.target}{date && <span className="md-row-date">{date}</span>}</span>
+          )}
         </span>
         <RowTrend points={row.trend} limits={row.trendLimits} tint={row.tint} width={fit?.width} height={fit?.height} band={fit?.band}/>
         <span className="md-row-reading">
