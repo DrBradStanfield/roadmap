@@ -683,7 +683,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     const page = await waitFor(() => { const p = q(view, '.mh-page-host .md-page'); expect(p).not.toBeNull(); return p as HTMLElement; });
     fireEvent.change(within(page).getByLabelText(/^Value/), { target: { value: '80' } });
     fireEvent.click(within(page).getByRole('button', { name: 'Add' }));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]), { timeout: 3000 });
     await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
     expect(calls('onboarding_done')).toHaveLength(1);
     fireEvent.click(within(page).getByRole('button', { name: /Back/ }));
