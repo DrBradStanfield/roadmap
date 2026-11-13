@@ -34,7 +34,7 @@ describe('US-20: WebKit deployment gate', () => {
 describe('US-20 AC6: WebKit tab bar gate', () => {
   const valid = {
     insideWidget: true, position: 'sticky', background: 'rgb(248, 248, 250)', backdropFilter: 'none', visible: true, top: 761, bottom: 812, viewportHeight: 812,
-    oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761,
+    oldPlanButton: false, tabs: ['My health', 'Chat', 'Account'], shownAfterChatTap: ['Chat'], chatCardBottom: 749, barTopOnChat: 761, chatViewportWidth: 390,
     shownAfterAccountTap: ['Account'], accountTitle: 'Account', accountTitleButtons: 0, accountSignInHeight: 44, accountSignInBackground: 'rgb(0, 109, 91)',
     accountSignInLabel: 'Keep my record in Dropbox or Google Drive', accountFirstPart: 'storage',
   };
@@ -55,6 +55,12 @@ describe('US-20 AC6: WebKit tab bar gate', () => {
     ]) {
       expect(() => assertTabBar({ ...valid, ...change })).toThrow();
     }
+  });
+  // US-62 AC29: at 390 wide the phone chat card ends 12px above the tab bar (styles.css, ceb48e70b).
+  it('passes a 12px gap above the bar at 390, and fails a gap of 0 or 20', () => {
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 749, barTopOnChat: 761 })).not.toThrow();
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 761, barTopOnChat: 761 })).toThrow('12px');
+    expect(() => assertTabBar({ ...valid, chatCardBottom: 741, barTopOnChat: 761 })).toThrow('12px');
   });
 });
 

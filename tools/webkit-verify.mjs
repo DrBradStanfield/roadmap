@@ -94,6 +94,9 @@ export function assertTabBar(data) {
   assert.equal(data.accountFirstPart, 'storage', `a guest's Account does not open with the storage card (${data.accountFirstPart})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
+  // US-62 AC29 (Fable 2026-11-13): at 390 wide the card ends 12px above the bar, on purpose.
+  const chatGap = data.barTopOnChat - data.chatCardBottom;
+  assert(data.chatViewportWidth !== 390 || (chatGap >= 11 && chatGap <= 13), `chat card does not end 12px above the tab bar (gap ${chatGap})`);
 }
 
 // Design re-check 2026-11-06: a value page's top clears the theme's header, its tile words are
@@ -398,6 +401,7 @@ async function inspect(browser, deviceName, viewport) {
       Object.assign(tabBar, await page.evaluate(() => ({
         chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
         barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
+        chatViewportWidth: window.innerWidth,
       })));
       await bar.getByRole('tab', { name: 'Account' }).tap();
       tabBar.shownAfterAccountTap = await bar.evaluate(shownPanels);
