@@ -21,7 +21,7 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh, drain, settle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -37,8 +37,6 @@ import { HealthTool } from './HealthTool';
 const FILE_KEY = 'health_roadmap_file_v2';
 const PROFILE = { sex: 'male' as const, heightCm: 180, birthYear: 1974, birthMonth: 1 };
 
-const drain = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0)); };
-const settle = async (ms = 0) => { await act(async () => { await new Promise(r => setTimeout(r, ms)); await drain(); }); };
 
 type File = ReturnType<typeof migrateFile>;
 /** Another tab writes the record, as its own store would, and this tab hears the storage event. */
@@ -63,19 +61,15 @@ function erased(prior: File, now: string): File {
 let alerts: string[];
 /** Every write the page asked of the store: each write method asks `refuses` first (roadmap-store.ts). */
 let asks: ReturnType<typeof vi.spyOn>;
-const stops: Array<() => void> = [];
 useHealthToolLifecycle();
 beforeEach(() => {
   alerts = [];
   vi.stubGlobal('alert', (m: string) => { alerts.push(m); });
   vi.stubGlobal('confirm', () => true);
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   asks = vi.spyOn(RoadmapStore.prototype as unknown as { refuses: (erase?: string) => boolean }, 'refuses');
 });
-afterEach(() => { for (const stop of stops.splice(0)) stop(); });
+afterEach(() => { stopLiveRefresh(); });
 
 async function openPage() {
   await seedGuest(PROFILE, [['weight', 82]]);

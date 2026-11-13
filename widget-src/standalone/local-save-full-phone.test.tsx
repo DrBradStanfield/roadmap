@@ -30,9 +30,9 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 import { HealthTool } from '../src/components/HealthTool';
 import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
 import { bootSignIn } from '../src/storage/sign-in-state';
-import { RoadmapStore } from '../src/storage/roadmap-store';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
+import { trackLiveRefresh, stopLiveRefresh } from '../src/testing/health-tool-harness';
 
 const FULL_LINE = 'Could not save on this device (local storage may be full).';
 
@@ -55,7 +55,6 @@ class ByteBudgetStorage implements Storage {
 }
 
 const PROFILE = { sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 } as const;
-const stops: Array<() => void> = [];
 let storage: ByteBudgetStorage;
 
 beforeEach(async () => {
@@ -68,17 +67,14 @@ beforeEach(async () => {
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements(PROFILE, {});
   await flushRoadmapStore();
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   storage.limit = Number.POSITIVE_INFINITY;
   await flushRoadmapStore(); // a save that lands clears the refusal for the next file
   vi.restoreAllMocks(); vi.unstubAllGlobals();

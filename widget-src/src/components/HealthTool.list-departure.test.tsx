@@ -150,6 +150,7 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
     expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 300 ms list save must fire on its own.
   it('a page that stays visible keeps the 300 ms wait', async () => {
     const view = await page('#glp1-dose');
     fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });

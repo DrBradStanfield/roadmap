@@ -12,14 +12,11 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
-import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
-import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, deleteUserData, loadAllHistorySync, flushRoadmapStore } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, loadAllHistorySync } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { deleteButton } from '../testing/settings';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, recordOnDisk } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -38,11 +35,6 @@ import { HealthTool } from './HealthTool';
 /** A synthetic report: one LDL, a value the record does not hold. */
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
-  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
-}
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 /** LDL rows in the record: the store's copy, which the next write saves, and the copy on disk. */
 const ldlRows = async () => [...loadAllHistorySync(), ...(await recordOnDisk()).measurements].filter(m => m.metricType === 'ldl');

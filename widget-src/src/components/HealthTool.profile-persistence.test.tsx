@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 // Real form, data layer, session and device storage; no off-device requests.
@@ -37,10 +37,7 @@ beforeEach(async () => {
   data = await import('../lib/roadmap-data');
   ({ LocalStorageAdapter } = await import('../storage/local-storage-adapter'));
   const { RoadmapStore } = await import('../storage/roadmap-store');
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: typeof RoadmapStore.prototype) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh(RoadmapStore);
   const { registerPageDeparture } = await import('../../standalone/page-departure');
   stops.push(registerPageDeparture(vi.fn()));
   ({ HealthTool } = await import('./HealthTool'));
@@ -52,6 +49,7 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 

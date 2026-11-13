@@ -24,14 +24,13 @@ import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/r
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addLabValue, addMeasurement, flushRoadmapStore, getEraseIdentity, getShownErase, saveSupplement, sendGuestReport } from '../lib/roadmap-data';
 import { localDay } from '@roadmap/health-core/merge';
 import { RECORD_CHANGED } from './AddLabTest';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh, drain } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -84,8 +83,6 @@ async function anotherDeviceErases(restart: false | 'answers' | 'weight' = false
   window.dispatchEvent(new StorageEvent('storage', { key: null }));
 }
 
-/** Settle microtasks and short timers without leaving the act scope (so React renders nothing). */
-const drain = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0)); };
 
 /**
  * Another device's erase reaches this page, which re-reads and shows it, and
@@ -111,17 +108,13 @@ const leave = () => {
 };
 
 let alerts: string[];
-const stops: Array<() => void> = [];
 useHealthToolLifecycle();
 beforeEach(() => {
   alerts = [];
   vi.stubGlobal('alert', (m: string) => { alerts.push(m); });
   vi.stubGlobal('confirm', () => true);
   // The real live refresh: a storage event from another writer re-reads the record.
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(sendGuestReport).mockResolvedValue({ success: true });
@@ -133,7 +126,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   Reflect.deleteProperty(document, 'visibilityState');
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
 });
 
 interface Writer {
