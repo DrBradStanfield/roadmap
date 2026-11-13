@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H119,iPhone sync,"After a relaunch whose lift failed, Disconnect proceeds with the erase unsent",bug,not started,"S50b residual: after a relaunch whose lift failed, cloudEraseHeld reads 'none' because no session holds the unsent erase, so Disconnect proceeds with the erase unsent (S50b design note).",,no

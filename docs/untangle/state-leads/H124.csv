@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H124,iPhone,"When the app could not start, Delete and Disconnect cannot be reached",bug,not started,"When the app could not start (ios/HealthRoadmap/App/HealthRoadmapApp.swift ~:26), no store or CloudSync exists, so Delete and Disconnect cannot be reached.",,no

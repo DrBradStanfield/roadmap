@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H120,iPhone sync,Offline or 5xx for days refuses Disconnect for days,bug,not started,S50b: offline or 5xx for days means Disconnect is refused for days; design with Part 2 (e.g. the refusal lifts after N failed tries over a stated time into Part 2's confirm). Accepted for Part 1 by the owner.,,no

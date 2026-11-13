@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H123,web,"A page crash replaces the whole tool, so Delete all my data and Log off cannot be reached",bug,not started,"A page crash (ErrorBoundary, widget-src/standalone/app.tsx ~:56) replaces the whole tool, so Delete all my data and Log off cannot be reached; ErrorBoundary has a `fallback` prop to reuse (widget-src/src/components/ErrorBoundary.tsx ~:7, :33; new words).",,no
