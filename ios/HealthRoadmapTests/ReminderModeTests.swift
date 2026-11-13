@@ -27,7 +27,8 @@ final class ReminderModeTests: XCTestCase {
 
     private static let table: [(ReminderMode, [Row])] = [
         (.off, [
-            ("tappedOn", .asking(attempt: 2), .askPermission(attempt: 2)),
+            // A tap from off takes the erase count afresh: an erase before it does not end the opt-in.
+            ("tappedOn", .asking(attempt: 2), .resnapshotAndAsk(attempt: 2)),
             ("tappedOff", .off, nil),
             // A late answer after the user turned reminders off is dropped.
             ("asked granted", .off, nil),
@@ -67,6 +68,7 @@ final class ReminderModeTests: XCTestCase {
         ]),
         (.on(epoch: 5), [
             // "Allow notifications" asks again; reminders stay on whatever iOS says.
+            // An unseen erase must still end it, no resnapshot.
             ("tappedOn", .on(epoch: 5), .askPermission(attempt: 2)),
             ("tappedOff", .off, .refresh),
             ("asked granted", .on(epoch: 5), .refresh),
