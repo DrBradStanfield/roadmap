@@ -22,6 +22,16 @@ function created(number: number): Response {
   return new Response(JSON.stringify({ html_url: `https://github.com/x/issues/${number}`, number }));
 }
 
+/** Stands in for the 8 s timer: the signal fires on the next tick, as the
+ *  real one would after 8 s. Fake timers do not move `AbortSignal.timeout`. */
+function fastTimeout() {
+  return vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(new DOMException('signal timed out', 'TimeoutError')));
+    return controller.signal;
+  });
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });
@@ -63,13 +73,14 @@ describe('concurrent reservations', () => {
   });
 
   // US-32 AC23/AC31: a timeout may follow an accepted POST.
-  it('keeps both reservations and dedupe after timeout', { timeout: 15_000 }, async () => {
+  it('keeps both reservations and dedupe after timeout', async () => {
     const fetcher = vi.fn(async () => created(1));
     vi.stubGlobal('fetch', fetcher);
     const filer = githubFiler('dropbox', 'ambiguous')!;
     for (let i = 0; i < ISSUES_PER_HOUR - 1; i++) {
       await githubFiler('dropbox', i < 2 ? 'ambiguous' : `seed-${i}`)!({ ...ISSUE, title: `Seed ${i}` });
     }
+    fastTimeout();
     fetcher.mockImplementation((_url, init: RequestInit) => new Promise((_resolve, reject) => {
       init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
     }));
@@ -242,21 +253,25 @@ describe('concurrent reservations', () => {
 });
 
 describe('the GitHub call is bounded in time', () => {
-  // Real timers: `AbortSignal.timeout` is Node's own clock and fake timers do
-  // not move it, so the only honest test of the bound is to wait for it.
-  it('refuses when GitHub never answers, without throwing', { timeout: 15_000 }, async () => {
+  // `AbortSignal.timeout` is Node's own clock and fake timers do not move it,
+  // so the test checks the request carries an 8 s timeout signal and that
+  // firing it ends the call, without waiting the 8 s.
+  it('refuses when GitHub never answers, without throwing', async () => {
+    const timeouts = fastTimeout();
     // A fetch that only ever settles when its signal aborts — what a hung
     // GitHub looks like from here.
-    vi.stubGlobal('fetch', (_url: string, init: RequestInit) =>
+    const fetcher = vi.fn((_url: string, init: RequestInit) =>
       new Promise((_resolve, reject) => {
         init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
       }));
+    vi.stubGlobal('fetch', fetcher);
 
-    const started = Date.now();
     const answer = await githubFiler('dropbox', 'connection-a')!(ISSUE);
 
     expect(answer).toEqual({ ok: false, refusal: 'We could not confirm whether GitHub filed the report. It may already be posted; do not submit it again right now.' });
-    expect(Date.now() - started).toBeLessThan(12_000);
+    expect(timeouts).toHaveBeenCalledTimes(1);
+    expect(timeouts).toHaveBeenCalledWith(8000);
+    expect(fetcher.mock.calls[0][1].signal).toBe(timeouts.mock.results[0].value);
   });
 });
 
