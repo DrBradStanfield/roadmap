@@ -44,7 +44,7 @@ import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
 import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh, drain, settle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 const chat = vi.hoisted(() => ({
@@ -148,7 +148,13 @@ const draftGone = (view: RenderResult) => {
 };
 
 let alerts: string[];
-useHealthToolLifecycle();
+// Fake timers that move with the clock: settle(ms) jumps the saves and writes
+// at once, with the same durations, and a waitFor still gets there.
+useHealthToolLifecycle({ fakeTimers: true });
+/** The harness's drain and settle on the fake clock: twenty macrotask hops,
+ *  each running the timers due now, and `ms` jumped at once. */
+const drain = async () => { for (let i = 0; i < 20; i++) await vi.advanceTimersByTimeAsync(0); };
+const settle = async (ms = 0) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); await drain(); }); };
 beforeEach(() => {
   alerts = [];
   marks.shown = [];

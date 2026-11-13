@@ -551,3 +551,20 @@ Merge-class changes: 8 (the "Stopped" answer), 10B (report date), 11 (two method
 
 1. **Follow-up card wording.** The follow-up template says "a" before every result, so the DEXA card reads "Your screening showed a osteoporosis diagnosed — treatment and monitoring required." Titles read "Dexa follow-up scheduled" and "Dexa screening up to date". New words need Dr Brad's yes.
 2. **An upload with no screening type** (the extraction found no clear match) offers no box at all. That is unchanged.
+
+## Amendment, Brad 2026-11-14: Change 4, the PSA retest attribution
+
+The American Cancer Society revised its prostate guideline on 2026-11-12; these sentences replace the ones above. Approved by Brad on 2026-11-14 (NZDT): "yes" to the wording as drafted (PR 1591). Only these sentences change; every other line above stands. The intervals are unchanged.
+
+**evidence.ts**
+- `screening-prostate`, replace: "If you choose to be tested, Dr Brad suggests retesting every 2 years if your PSA is below 2.5 ng/mL, and every year if it is 2.5 or higher. These intervals are his suggestion, based on earlier American Cancer Society guidance. The Society's November 2026 guideline sets the interval by age and risk instead."
+- `screening-prostate-elevated`, replace: "Dr Brad suggests repeating the PSA every 3 months while it stays at 4.0 or higher, whether or not you chose routine screening. This is his suggestion; the American Cancer Society advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later."
+- Checked: ACS recommendations (Last Revised: November 12, 2026): a high PSA "should be repeated to confirm this, preferably 2 weeks to 3 months later". The page sets no interval by PSA level and does not mention 2.5.
+
+**Algorithm doc**
+And under Prostate-Specific: "The next PSA follows the newest usable PSA (Brad 2026-11-12): 24 months below 2.5 ng/mL and 12 months from 2.5 for men who will screen (Dr Brad's suggestion, after earlier ACS guidance; the ACS guideline revised 2026-11-12 sets the interval by age and risk, not by PSA level); 3 months at 4.0 or above for every man, whatever his answer, until a newer PSA below 4.0 is saved (Dr Brad's suggestion; the ACS advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later). A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card."
+
+**Page**
+- After: "If you decide to be tested, you should get a PSA blood test with or without a rectal exam. How often you're tested depends on your PSA level. Dr Brad suggests every 2 years if your PSA is below 2.5 ng/mL, and every year at 2.5 or higher. This is his suggestion, based on earlier American Cancer Society guidance; the Society's November 2026 guideline sets the interval by age and risk instead. If your PSA is 4.0 or higher, Dr Brad suggests repeating it every 3 months while you and your doctor look for the cause, even if you chose not to have routine screening. The American Cancer Society advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later."
+- Changelog: "Prostate screening: the next PSA test now depends on your last PSA: every 2 years below 2.5 ng/mL, every year from 2.5, and every 3 months at 4.0 or higher, also for men who chose not to screen. All three intervals are Dr Stanfield's suggestion; the first two follow earlier American Cancer Society guidance."
+- New changelog entry, 13th November 2026: "Prostate screening: the American Cancer Society revised its prostate guideline on 12 November 2026, and it no longer sets the retest interval by PSA level. The page and the tool now say that every 2 years below 2.5 ng/mL and every year from 2.5 is Dr Stanfield's suggestion, based on the Society's earlier guidance. The intervals are unchanged."

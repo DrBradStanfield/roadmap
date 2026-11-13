@@ -9,7 +9,7 @@
  * Real SyncControl, StorageBar, switch-flow, connect.ts, sign-in state and
  * adapters; the data layer's save facts are stubbed as saved.
  */
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterAll, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
 const flush = vi.hoisted(() => vi.fn(async () => undefined));
@@ -21,6 +21,13 @@ vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
+// The Drive reconnect panel preloads Google sign-in on mount. The real loader
+// polls for 10 s with a live interval that outlives this file's jsdom and then
+// throws "window is not defined" into a later file's run (CI unit shard).
+const preloadGis = vi.hoisted(() => vi.fn());
+vi.mock('../src/storage/drive-gis', async (original) => ({
+  ...(await original<typeof import('../src/storage/drive-gis')>()), preloadGis,
+}));
 
 import { StorageBar, SyncControl } from './sync-control';
 import { resetSwitchFlow } from './switch-flow';
@@ -38,7 +45,9 @@ beforeEach(() => {
   assign = vi.fn();
   Object.defineProperty(window, 'location', { value: { ...window.location, reload, assign }, writable: true, configurable: true });
 });
-afterEach(() => { cleanup(); resetSwitchFlow(); flush.mockClear(); });
+afterEach(() => { cleanup(); resetSwitchFlow(); flush.mockClear(); preloadGis.mockClear(); });
+// The real loader injects this script before it starts its poll: none means no poll ran.
+afterAll(() => expect(document.querySelector('script[src*="gsi/client"]')).toBeNull());
 
 const mount = (backend: 'google-drive' | 'dropbox' | 'local') => render(
   <>
@@ -63,6 +72,7 @@ describe('US-09 AC48: the bar and the panel change in place when the sign-in end
     expect(bar()).toBe('Sign in to Google again');
     expect(status()).toBe('Google Drive is signed out');
     expect(panelButton()?.textContent).toBe('Reconnect Google Drive');
+    expect(preloadGis).toHaveBeenCalled(); // the signed-out panel's preload, stubbed
     expect(reload).not.toHaveBeenCalled();
   });
 
