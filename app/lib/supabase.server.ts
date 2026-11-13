@@ -8,13 +8,8 @@
  * (profile, credits, plan), supabase-cron-lock.server.ts,
  * supabase-dashboard.server.ts and supabase-ab.server.ts. Import client,
  * identity, guest, account and cron-lock names from their own module (S-14).
- * The first four re-exports serve only api.chat.ts: repointing it would grow
- * a file over the 500-line ratchet. The dashboard and A/B names stay here.
+ * Only the dashboard and A/B names are re-exported here.
  */
-export { createUserClient } from './supabase-client.server';
-export { logAudit } from './supabase-identity.server';
-export { getOrCreateGuestSession, GuestRateLimitError } from './supabase-guest.server';
-export { getProfile, updateSubscriptionPlan, type DbProfile } from './supabase-account.server';
 export {
   DASHBOARD_WINDOW_DAYS,
   chatTurnStats,
