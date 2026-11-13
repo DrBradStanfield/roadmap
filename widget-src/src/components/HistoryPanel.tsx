@@ -277,12 +277,11 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
     // A failed read ends the wait and claims nothing (US-21 AC3b); reported as the main form's first read is.
-    loadAllHistory().then(rows => { setMeasurements(rows); setRead('ready'); }, error => {
-      setRead('failed');
-      Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } });
-    });
-    loadLabValues().then(rows => { if (rows) setLabVals(rows); });
-    loadMedicationHistory().then(setMedHistory);
+    // A failed lab or medication read leaves its rows empty.
+    const report = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
+    loadAllHistory().then(rows => { setMeasurements(rows); setRead('ready'); }, error => { setRead('failed'); report(error); });
+    loadLabValues().then(rows => { if (rows) setLabVals(rows); }, report);
+    loadMedicationHistory().then(setMedHistory, report);
   }, []);
 
   // Initialize selected metrics from URL param or default to all

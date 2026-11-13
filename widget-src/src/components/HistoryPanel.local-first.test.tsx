@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 
-const mocks = vi.hoisted(() => ({ loadAllHistory: vi.fn(), chart: vi.fn(), captureException: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  loadAllHistory: vi.fn(), loadLabValues: vi.fn(), loadMedicationHistory: vi.fn(), chart: vi.fn(), captureException: vi.fn(),
+}));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: mocks.captureException } }));
 vi.mock('../lib/roadmap-data', () => ({
   loadAllHistory: mocks.loadAllHistory,
-  loadLabValues: async () => [],
-  loadMedicationHistory: async () => [],
+  loadLabValues: mocks.loadLabValues,
+  loadMedicationHistory: mocks.loadMedicationHistory,
 }));
 vi.mock('chart.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('chart.js')>();
@@ -19,6 +21,10 @@ vi.mock('chart.js', async (importOriginal) => {
   } };
 });
 import { HistoryPanel } from './HistoryPanel';
+beforeEach(() => {
+  mocks.loadLabValues.mockResolvedValue([]);
+  mocks.loadMedicationHistory.mockResolvedValue([]);
+});
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 // US-07: local-first history is one complete result, not a server page. Fifty
@@ -51,5 +57,31 @@ describe('US-21 AC3b — a failed history read', () => {
     expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health History');
     expect(mocks.captureException).toHaveBeenCalledOnce();
     expect(mocks.captureException).toHaveBeenCalledWith(error, { tags: { area: 'cloud-sync', op: 'load' } });
+  });
+
+  it('shows the empty state when the read succeeds with no rows', async () => {
+    mocks.loadAllHistory.mockResolvedValue([]);
+    const view = render(<HistoryPanel />);
+    await waitFor(() => expect(view.getByText('No measurements recorded yet.')).toBeTruthy());
+    expect(view.queryByText('Loading history...')).toBeNull();
+    expect(mocks.captureException).not.toHaveBeenCalled();
+  });
+
+  it.each(['loadLabValues', 'loadMedicationHistory'] as const)('a failed %s is reported once with tags only and leaves its rows empty', async (loader) => {
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      const error = new Error('read failed');
+      mocks.loadAllHistory.mockResolvedValue([]);
+      mocks[loader].mockRejectedValue(error);
+      const view = render(<HistoryPanel />);
+      await waitFor(() => expect(mocks.captureException).toHaveBeenCalledOnce());
+      expect(mocks.captureException).toHaveBeenCalledWith(error, { tags: { area: 'cloud-sync', op: 'load' } });
+      expect(view.getByText('No measurements recorded yet.')).toBeTruthy();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
   });
 });
