@@ -68,7 +68,11 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(leg('America/Los_Angeles')).toBe('skip');
     expect(leg('Pacific/Auckland')).toBe('skip');
     // The skipped legs are safe only because every event's zone list still holds UTC.
-    for (const [event_name, schedule] of [['pull_request'], ['push'], ['workflow_dispatch'], ['schedule', '0 3 * * *'], ['schedule', '0 12 * * *']]) {
+    // Every real trigger, and every cron of the schedule, so a new one cannot drop UTC unseen.
+    const events = Object.keys(ciYaml.on).flatMap((e) =>
+      e === 'schedule' ? (ciYaml.on.schedule as { cron: string }[]).map((s) => [e, s.cron]) : [[e]]);
+    expect(events.length).toBeGreaterThanOrEqual(5);
+    for (const [event_name, schedule] of events) {
       const zones = interpolate(unit.strategy.matrix.tz, { github: { event_name, event: schedule ? { schedule } : {} } });
       expect(zones, `${event_name} ${schedule ?? ''}`).toContain('UTC');
     }
@@ -139,6 +143,8 @@ describe('ci-shuffle.yml: the nightly shuffled run (TA-X03)', () => {
   it('runs nightly and by hand, never on a pull request or a push', () => {
     expect(Object.keys(wf.on).sort()).toEqual(['schedule', 'workflow_dispatch']);
     expect((wf.on.schedule as { cron: string }[]).length).toBe(1);
+    // One fixed lane: a second run queues behind the first instead of cancelling it.
+    expect(wf.concurrency).toEqual({ group: 'ci-shuffle', 'cancel-in-progress': false });
   });
 
   it('has no job named `test` and only read permission, so it gates no merge, ship or deploy', () => {
