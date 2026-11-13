@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H97,process,Worker briefs and the PR template should say net prod LOC excludes comment lines,lead,not started,"From Codex on PR 1579: its body reads 'Net prod LOC: -102 for the lending deletion and +8 for H72, so -94 overall (comments included)', and its commit messages count the same way. CLAUDE.md (Code entropy) says tests and comments never count. Say it where the number gets written: the worker brief (.claude/agents/worker-opus.md) and a PR template line (the repo has no .github/pull_request_template.md today). (H97)",,no
