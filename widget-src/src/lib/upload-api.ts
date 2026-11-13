@@ -119,7 +119,7 @@ export const batchPollAnswer = z.union([
   z.object({ status: z.enum(['processing', 'error']), completed: pollCount, total: pollCount }),
   z.looseObject({ status: z.literal('ended'), completed: pollCount, total: pollCount,
     results: z.array(z.looseObject({})).optional(), error: z.string().min(1).optional(), errorCode: z.string().optional() })
-    // The loop finishes only on results and throws only on error text (upload-pipeline.ts:350-352).
+    // The watch finishes on results and fails on error text (batch-watch.ts `transition`).
     .refine(p => p.results !== undefined || p.error !== undefined),
 ]);
 
