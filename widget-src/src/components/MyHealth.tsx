@@ -234,7 +234,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     if (!settingsOpen || recordHeld) return;
     let live = true;
     void getChatHistory().then(chat => { if (live) setChatHeld((chat?.listConversations().length ?? 0) > 0); });
-    return () => { live = false; };
+    return () => { live = false; setChatHeld(false); }; // read again at each open: none shows from before an erase
   }, [settingsOpen, recordHeld]);
   // Where the record lives (US-09), while Settings show (one card, one picker). A phone's true
   // guest gets it first, under the Account title (US-62 AC34); a reconnect keeps it low, its title

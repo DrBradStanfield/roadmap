@@ -92,6 +92,11 @@ it('US-11 (H114): a visitor whose only stored data is one conversation sees Dele
   vi.spyOn(window, 'alert').mockImplementation(() => {});
   fireEvent.click(button);
   await waitFor(async () => expect((await ChatHistoryStore.create(new LocalStorageAdapter())).listConversations()).toEqual([]));
+  await waitFor(() => expect(view.container.querySelector('.mh-settings')).toBeNull()); // the erase closes Settings
+  openSettings(view.container);
+  expect(deleteButton(view.container)).toBeNull(); // none from before the erase, not even until the read answers
+  await settle(20);
+  expect(deleteButton(view.container)).toBeNull();
 });
 
 it('US-11 (H114): a truly empty new visitor does not see Delete all my data', async () => {
@@ -100,6 +105,7 @@ it('US-11 (H114): a truly empty new visitor does not see Delete all my data', as
   await loaded(view.container);
   await settle(20);
   openSettings(view.container);
+  await settle(20); // the chat history's read has answered
   expect(view.container.querySelector('.mh-settings')).not.toBeNull();
   expect(deleteButton(view.container)).toBeNull();
 });
