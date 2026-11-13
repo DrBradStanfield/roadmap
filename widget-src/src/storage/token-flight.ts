@@ -14,13 +14,23 @@ import { getSignIn, setSignIn, type LogOffId } from '../lib/storage';
 
 export type TokenProvider = 'google-drive' | 'dropbox';
 
-/** An access token the provider answered with a 401, spent for every adapter in this browser, a later
- *  one included: its stored copy is saved expired, so each goes to the refresh (US-09 AC50). A grant
- *  saved since under `key` (a reconnect) is a different token and stays as it is. */
-export function spendToken<T extends { accessToken: string }>(key: string, tokens: T, gen: LogOffId): T {
+type Grant = { accessToken: string; refreshToken?: string; expiresAt: number };
+
+/** An access token the provider answered with a 401 (US-09 AC50). A grant with no refresh token (a Drive
+ *  popup grant) is spent for every adapter in this browser, in any tab: its stored copy is saved expired,
+ *  and `spentHere` reads it. A grant saved since under `key` (a reconnect) is a different token and stays.
+ *  With a refresh token only this copy is spent: the refresh decides, and a late 401 must not spend the
+ *  token a refresh saved meanwhile. */
+export function spendToken<T extends Grant>(key: string, tokens: T, gen: LogOffId): T {
   const spent = { ...tokens, expiresAt: 0 };
-  if (getSignIn<T>(key)?.accessToken === tokens.accessToken) setSignIn(key, spent, gen);
+  if (!tokens.refreshToken && getSignIn<T>(key)?.accessToken === tokens.accessToken) setSignIn(key, spent, gen);
   return spent;
+}
+
+/** `tokens` as this browser now knows them: expired once any adapter spent the same token (US-09 AC50). */
+export function spentHere<T extends Grant>(key: string, tokens: T): T {
+  const stored = getSignIn<T>(key);
+  return stored?.accessToken === tokens.accessToken && stored.expiresAt === 0 ? stored : tokens;
 }
 
 /** The refreshes in flight on this page, by provider and refresh token. */

@@ -28,7 +28,7 @@ import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError, jsonBody, 
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
-import { refreshOnce, spendToken } from './token-flight';
+import { refreshOnce, spendToken, spentHere } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 import { driveWatchLoop } from './drive-watch';
 import { gis, gisReady, loadGis } from './drive-gis';
@@ -164,7 +164,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /** True if the cached access token is still usable as-is. */
   hasValidToken(): boolean {
-    return !!this.tokens?.accessToken && Date.now() < this.tokens.expiresAt - 60_000;
+    return !!this.tokens?.accessToken && Date.now() < spentHere(TOKENS_KEY, this.tokens).expiresAt - 60_000;
   }
 
   /**
@@ -431,8 +431,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- helpers --------------------------------------------------------------
 
-  /** Drive refused the access token (an API 401, access revoked): no adapter uses it again, a later one
-   *  included, so the next call refreshes and the refresh decides (US-09 AC48, AC50). Rethrows: the 401 still fails this call. */
+  /** Drive refused the access token (an API 401, access revoked): it is not used again, a popup grant's
+   *  by no adapter here, so the next call refreshes and the refresh decides (US-09 AC48, AC50). Rethrows: the 401 still fails this call. */
   private readonly refused = (error: unknown): never => {
     if (error instanceof StorageError && error.status === 401 && this.tokens) this.tokens = spendToken(TOKENS_KEY, this.tokens, this.gen);
     throw error;

@@ -447,6 +447,24 @@ describe('US-09 AC50 (lead A29): a Drive access token Drive turned down is used 
     expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'google-drive' });
   });
 
+  it('adapters built before the 401, here or in another tab, send no request with the old token after it', async () => {
+    chosen('google-drive', POPUP());
+    driveRefusesOld();
+    const [first, second, otherTab] = [new GoogleDriveAdapter(DRIVE), new GoogleDriveAdapter(DRIVE), new GoogleDriveAdapter(DRIVE)];
+    await failure(first.read(ROADMAP_FILE_NAME));
+    expect((await failure(second.read(ROADMAP_FILE_NAME)))?.reason).toBe('reconnect');
+    expect((await failure(otherTab.write(ROADMAP_FILE_NAME, {}, null)))?.reason).toBe('reconnect'); // tabs share localStorage
+    expect(sentWith('test-token-old')).toBe(1);
+    expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'google-drive' });
+  });
+
+  it('a 401 on a server-refresh grant leaves the stored grant alone: the refresh decides', async () => {
+    chosen('google-drive', LIVE());
+    answer = (url) => (url === EXCHANGE ? reply(503) : reply(401, { error: { code: 401 } }));
+    await failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME));
+    expect(JSON.parse(localStorage.getItem(DRIVE_TOKENS)!).expiresAt).toBeGreaterThan(Date.now());
+  });
+
   it('once the page is signed out, an adapter built then sends no request with the old token', async () => {
     chosen('google-drive', POPUP());
     driveRefusesOld();
