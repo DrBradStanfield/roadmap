@@ -149,11 +149,12 @@ final class FirstRunTests: XCTestCase {
         var cover = Cover.none
         var offer = [Offer.Event.due, .backUpTapped, .promptClosed].reduce(Offer.idle, Offer.transition)
         var counted = (epoch: 0, source: "")
+        /// `open`: ShownRecord.open, the source's own record drawn (S72, S73).
         var source = "", open = true, epoch = 0, profile = full
 
         mutating func recordChanged() {
             let erased = source == counted.source && OnboardingSteps.erasedSince(counted.epoch, epoch: epoch, profile: profile)
-            let uncounted = source != counted.source && Cover.countable(source: source, open: open)
+            let uncounted = source != counted.source && open
             switch Cover.onRecordChange(cover: cover, offer: offer, holding: false, erasedElsewhere: erased, uncounted: uncounted) {
             case .erase?: cover = Cover.transition(cover, .erased).0
             case .closeOffer?: offer = [.promptClosed, .syncClosed].reduce(offer, Offer.transition)
@@ -162,8 +163,8 @@ final class FirstRunTests: XCTestCase {
             }
         }
 
-        /// RootView.finished's takeCount: only the record of its own source counts (S43).
-        mutating func finish() { if Cover.countable(source: source, open: open) { counted = (epoch, source) } }
+        /// RootView.finished's takeCount: only the open record of its own source counts (S43, S73).
+        mutating func finish() { if open { counted = (epoch, source) } }
         /// Sends `event` as RootView.send does: a finish effect runs finish().
         mutating func send(_ event: Cover.Event) {
             let (next, effect) = Cover.transition(cover, event)
@@ -176,8 +177,12 @@ final class FirstRunTests: XCTestCase {
         mutating func connect() { (source, open, epoch) = ("dropbox", true, 2); recordChanged() }
         /// The website erases; the next pull lands it.
         mutating func erasedOnTheWebsite() { (epoch, profile) = (3, Self.erasedProfile); recordChanged() }
-        /// Disconnect copies the cloud record down to the phone.
-        mutating func disconnect() { (source, open) = ("", false); recordChanged() }
+        /// Disconnect copies the cloud record down to the phone. The source turns local while the
+        /// cloud's record is still drawn, then the phone's copy lands at the same count (S73).
+        mutating func disconnect() {
+            (source, open) = ("", false); recordChanged()
+            open = true; recordChanged()
+        }
         /// Sync's Done, or a swipe: the binding closes it, then onDismiss.
         mutating func done() { offer = Offer.transition(offer, .syncClosed); sheetGone() }
     }
@@ -222,26 +227,15 @@ final class FirstRunTests: XCTestCase {
 
     // MARK: The count at a finish (S43)
 
-    /// Only the record of its own source is countable: the phone's when local-only, the opened
-    /// cloud record when connected; never the phone's copy of a cloud not open yet.
-    func testOnlyTheOpenedRecordOfItsSourceIsCountable_US54_AC7() {
-        let rows: [(source: String, open: Bool, want: Bool)] = [
-            ("", false, true), ("", true, true), ("dropbox", false, false), ("dropbox", true, true),
-            ("googleDrive", false, false), ("googleDrive", true, true),
-        ]
-        for row in rows {
-            XCTAssertEqual(Cover.countable(source: row.source, open: row.open), row.want, "\(row)")
-        }
-    }
-
     /// RootView's render path (lead S72): its key is ShownRecord's fields, and `onChange(of:
     /// shownRecord)` runs recordChanged only when the key changes. `shown` is the connection's
-    /// session, `drawn` the store's. `.countOnly` mirrors the rejected fix: countable reads the draw,
-    /// but the key's open is still sync.recordOpen (`shown != nil`). `.old` is main before S72: both
-    /// read sync.recordOpen.
+    /// session, `drawn` the store's, `phoneDrawn` the store on the phone's record. `.countOnly`
+    /// mirrors the rejected fix: countable reads the draw, but the key's open is still
+    /// sync.recordOpen (`shown != nil`), with no draw in it. `.old` is main before S72: the key
+    /// reads sync.recordOpen, and countable is `source.isEmpty || recordOpen`.
     private struct Render {
         enum Variant { case fixed, countOnly, old }
-        var source = "", shown: Int? = nil, drawn: Int? = nil, epoch = 0
+        var source = "", shown: Int? = nil, drawn: Int? = nil, phoneDrawn = true, epoch = 0
         var counted = (epoch: 0, source: "")
         let variant: Variant
         private var key: [String]
@@ -252,9 +246,9 @@ final class FirstRunTests: XCTestCase {
             key = currentKey
         }
 
-        private var drawnOpen: Bool { ShownRecord.open(shown: shown, drawn: drawn) }
+        private var drawnOpen: Bool { ShownRecord.open(source: source, shown: shown, drawn: drawn, phoneDrawn: phoneDrawn) }
         private var keyOpen: Bool { variant == .fixed ? drawnOpen : shown != nil }
-        private var countOpen: Bool { variant == .old ? shown != nil : drawnOpen }
+        private var countOpen: Bool { variant == .old ? source.isEmpty || shown != nil : drawnOpen }
         private var currentKey: [String] { [source, "\(keyOpen)", "\(epoch)"] }
 
         mutating func render() {
@@ -264,14 +258,22 @@ final class FirstRunTests: XCTestCase {
         }
 
         /// RootView.finished's takeCount (and recordChanged's, once uncounted).
-        mutating func finish() { if Cover.countable(source: source, open: countOpen) { counted = (epoch, source) } }
+        mutating func finish() { if countOpen { counted = (epoch, source) } }
 
         /// Signed in to Dropbox, the session opens, then its record is drawn at `cloudEpoch`;
         /// a render after each step. The phone's copy is at epoch 0.
         mutating func connect(cloudEpoch: Int, check: (Render) -> Void = { _ in }) {
             source = "dropbox"; render(); check(self)
             shown = 7; render(); check(self) // CloudSync's .opened: the draw has not landed
-            (drawn, epoch) = (7, cloudEpoch); render()
+            (drawn, phoneDrawn, epoch) = (7, false, cloudEpoch); render()
+        }
+
+        /// Disconnect (CloudSync.disconnect): `.disconnectEnded` turns the source local and closes
+        /// the session while the store still draws the cloud's record (`window`, a render there),
+        /// then showPhone lands the phone's copy at `phoneEpoch`.
+        mutating func disconnect(phoneEpoch: Int, window: (Render) -> Void = { _ in }) {
+            (source, shown) = ("", nil); render(); window(self)
+            (drawn, phoneDrawn, epoch) = (nil, true, phoneEpoch); render()
         }
     }
 
@@ -309,6 +311,47 @@ final class FirstRunTests: XCTestCase {
         XCTAssertEqual(countOnly.counted.source, "", "the rejected fix takes nothing at the draw")
     }
 
+    /// S73: a Disconnect counts nothing while the cloud's record is still drawn under the phone's
+    /// name, not at a render or a finish in the window, then takes the phone's own count when it
+    /// lands. Main before S73 took the cloud's count under "" in the window.
+    func testADisconnectCountsThePhoneOnlyOnceItsRecordIsDrawn_US54_AC7() {
+        var phone = Render()
+        phone.connect(cloudEpoch: 2)
+        phone.disconnect(phoneEpoch: 3) { step in
+            XCTAssertEqual(step.counted.source, "dropbox", "the cloud's record is never counted under the phone's name")
+            XCTAssertEqual(step.counted.epoch, 2)
+            var finished = step
+            finished.finish() // the questions finish in the window
+            XCTAssertEqual(finished.counted.source, "dropbox", "a finish before the land takes nothing")
+        }
+        XCTAssertEqual(phone.counted.epoch, 3, "the phone's count")
+        XCTAssertEqual(phone.counted.source, "")
+
+        var old = Render(.old)
+        old.connect(cloudEpoch: 2)
+        old.disconnect(phoneEpoch: 3) { step in
+            XCTAssertEqual(step.counted.epoch, 2, "main took the cloud's count in the window")
+            XCTAssertEqual(step.counted.source, "")
+        }
+        XCTAssertEqual(old.counted.epoch, 2, "and kept it past the land")
+    }
+
+    /// S73: the phone's copy lands at the cloud's epoch, as after a copy-down. The key still changes
+    /// at the land (open flips), so the count is taken. Without the draw in the key, the window is
+    /// the only change and counts nothing, and the land takes nothing either.
+    func testADisconnectAtAnEqualEpochStillTakesThePhonesCount_US54_AC7() {
+        var phone = Render()
+        phone.connect(cloudEpoch: 2)
+        phone.disconnect(phoneEpoch: 2)
+        XCTAssertEqual(phone.counted.epoch, 2)
+        XCTAssertEqual(phone.counted.source, "", "the land takes the count")
+
+        var countOnly = Render(.countOnly)
+        countOnly.connect(cloudEpoch: 2)
+        countOnly.disconnect(phoneEpoch: 2)
+        XCTAssertEqual(countOnly.counted.source, "dropbox", "without the flag in the key the land takes nothing")
+    }
+
     /// A phone past the welcome screen with a full record, never finished, connected to Dropbox
     /// whose record has not opened at launch: the phone's copy says erase count 0, the cloud's 2.
     private func launchedBeforeTheCloudOpens() -> Phone {
@@ -327,7 +370,7 @@ final class FirstRunTests: XCTestCase {
         XCTAssertEqual(phone.counted.source, "", "the phone's copy is not counted under Dropbox's name")
         XCTAssertEqual(phone.counted.epoch, 0)
         (phone.open, phone.epoch) = (true, 2)
-        let uncounted = phone.source != phone.counted.source && Cover.countable(source: phone.source, open: phone.open)
+        let uncounted = phone.source != phone.counted.source && phone.open
         XCTAssertEqual(Cover.onRecordChange(cover: phone.cover, offer: phone.offer, holding: false, erasedElsewhere: false, uncounted: uncounted),
                        .takeCount, "the opening finds the record uncounted")
         phone.recordChanged()
@@ -348,7 +391,7 @@ final class FirstRunTests: XCTestCase {
     /// A local-only launch finish takes the phone's count, as before.
     func testALocalLaunchFinishTakesThePhonesCount_US54_AC7() {
         var phone = Phone()
-        (phone.offer, phone.cover, phone.source, phone.open, phone.epoch) = (.idle, .deciding, "", false, 1)
+        (phone.offer, phone.cover, phone.source, phone.open, phone.epoch) = (.idle, .deciding, "", true, 1)
         phone.counted = (0, "dropbox")
         phone.send(.launched(.init(welcomed: true, onboarded: false, needsQuestions: false)))
         XCTAssertEqual(phone.counted.epoch, 1)

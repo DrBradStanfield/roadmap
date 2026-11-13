@@ -715,8 +715,8 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(cloud.source, "google-drive")
         let phone = ShownRecord(source: "", shownSession: nil, store: store)
         XCTAssertEqual(phone.epoch, 5)
-        XCTAssertEqual(phone.source, "", "the phone's record: no source, not open")
-        XCTAssertFalse(phone.open)
+        XCTAssertEqual(phone.source, "", "the phone's record: no source")
+        XCTAssertTrue(phone.open, "the store is on the phone's record: open (S73)")
 
         try FileManager.default.removeItem(at: records)
         await store.showPhone().value // the phone's file cannot be read: nothing is drawn
@@ -745,14 +745,18 @@ final class ReminderSchedulerTests: XCTestCase {
         return (store, records)
     }
 
-    /// US-25 AC12b, US-54 AC7 (lead S72): "open" is the shown session's record drawn. A connected
-    /// cloud with no session open has nil on both sides, so the nil guard keeps it closed.
-    func testOpenIsTheShownSessionsRecordDrawn_S72() {
-        let rows: [(shown: Int?, drawn: Int?, want: Bool)] = [
-            (nil, nil, false), (7, nil, false), (nil, 7, false), (7, 7, true), (8, 7, false),
+    /// US-25 AC12b, US-54 AC7 (leads S72, S73): "open" is the source's own record drawn. Connected:
+    /// the shown session's record; with no session open, nil on both sides, the nil guard keeps it
+    /// closed, and the phone's flag counts for nothing. Local: the store on the phone's record,
+    /// whatever session a Disconnect's cloud record still carries.
+    func testOpenIsTheSourcesOwnRecordDrawn_S72_S73() {
+        let rows: [(source: String, shown: Int?, drawn: Int?, phoneDrawn: Bool, want: Bool)] = [
+            ("dropbox", nil, nil, false, false), ("dropbox", 7, nil, false, false), ("dropbox", nil, 7, false, false),
+            ("dropbox", 7, 7, false, true), ("dropbox", 8, 7, false, false), ("dropbox", nil, nil, true, false),
+            ("", nil, nil, true, true), ("", nil, 7, false, false), ("", nil, nil, false, false),
         ]
         for row in rows {
-            XCTAssertEqual(ShownRecord.open(shown: row.shown, drawn: row.drawn), row.want, "\(row)")
+            XCTAssertEqual(ShownRecord.open(source: row.source, shown: row.shown, drawn: row.drawn, phoneDrawn: row.phoneDrawn), row.want, "\(row)")
         }
     }
 
@@ -773,6 +777,52 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(after.epoch, 5, "the cloud's epoch")
         XCTAssertNotEqual(before, after, "the draw changes the key at an equal epoch")
         XCTAssertFalse(ShownRecord(source: "dropbox", shownSession: 8, store: store).open, "a newer session's record is not drawn yet")
+    }
+
+    /// US-54 AC7 (lead S73): on a real store, a Disconnect turns the source local while the cloud's
+    /// record is still drawn: not open. The phone's record landing is, and at an equal epoch the
+    /// key still changes at the land, so RootView's onChange runs and takes the phone's count.
+    func testThePhonesLandFlipsOpenEvenAtAnEqualEpoch_S73() async throws {
+        let (store, _) = try phoneStoreAtEpoch5()
+        await store.showCloud(HealthEngine.CloudView(record: store.recordJSON, erase: "e", session: 7)).value
+        XCTAssertNotNil(store.source.erase, "fixture: the cloud's record is drawn")
+
+        let landing = store.showPhone() // CloudSync.disconnect queues it, then sends .disconnectEnded
+        let before = ShownRecord(source: "", shownSession: nil, store: store)
+        XCTAssertFalse(before.open, "the source is local but the cloud's record is still drawn")
+        XCTAssertEqual(before.epoch, 5)
+
+        await landing.value
+        XCTAssertNil(store.source.erase, "fixture: the phone's record is drawn")
+        let after = ShownRecord(source: "", shownSession: nil, store: store)
+        XCTAssertTrue(after.open, "the phone's record is drawn")
+        XCTAssertEqual(after.epoch, 5, "the phone's epoch, equal to the cloud's")
+        XCTAssertNotEqual(before, after, "the land changes the key at an equal epoch")
+    }
+
+    /// US-25 AC9, US-11 (lead S73, the owner's reminders case): a Disconnect whose phone copy is
+    /// byte-equal to the cloud's record. RootView bumps the token twice (the source going local, then
+    /// the phone's land flipping open), but readable.json never changes, so its .task(id:) does not
+    /// refresh. A bump only moves the token and drops the fallback epoch: nothing removes or adds a
+    /// notification, so the person keeps the reminders the cloud's record scheduled, which are the
+    /// phone's own (same record), until the next foreground or edit refreshes them. A contract test
+    /// of the scheduler side, driven as RootView does.
+    func testADisconnectToAnEqualRecordKeepsTheRemindersScheduled_S73() async {
+        engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"]) // the cloud's record
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        let scheduled = center.pending.map(\.identifier)
+        XCTAssertEqual(scheduled, ["reminder.2027-01-15", "reminder.2027-03-01"])
+        let reads = sentFirstSeen.count
+
+        scheduler.recordSourceChanged() // .disconnectEnded: the source goes from dropbox to ""
+        scheduler.recordSourceChanged() // the phone's copy lands: ShownRecord's open flips; the json is unchanged, no refresh
+        XCTAssertEqual(sentFirstSeen.count, reads, "a bump reads nothing")
+        XCTAssertEqual(center.pending.map(\.identifier), scheduled, "a bump removes nothing: the reminders stay")
+        XCTAssertTrue(scheduler.optedIn)
+
+        await scheduler.refresh() // the next return to the foreground
+        XCTAssertEqual(center.pending.map(\.identifier), scheduled, "the same record schedules the same days")
     }
 
     /// US-25 AC12b, US-11 (lead S72): a switch whose new cloud's draw fails. Its open never flips

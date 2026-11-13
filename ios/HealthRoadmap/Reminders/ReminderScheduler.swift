@@ -188,9 +188,10 @@ final class ReminderScheduler {
 
 /// Which record is on screen (RootView) and its drawn erase count. The phone's copy shows until a
 /// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. "Open"
-/// turns true when the shown session's record is drawn, not when the session opens (S72), so the
-/// draw changes the key even at an equal epoch. RootView bumps the reminders' token on any
-/// change to it (S41).
+/// is the source's own record drawn: a connected cloud's once its shown session's record is drawn,
+/// not when the session opens (S72); the phone's once the store is on it, not while a Disconnect
+/// still draws the cloud's (S73). So each draw changes the key even at an equal epoch. RootView
+/// bumps the reminders' token on any change to it (S41), and only an open record is counted.
 struct ShownRecord: Equatable {
     let source: String, open: Bool, epoch: Int?
 
@@ -198,10 +199,12 @@ struct ShownRecord: Equatable {
     /// build one, so no caller can leave the epoch out (as PR 1608's key did). `shownSession`:
     /// CloudConnection's, nil while no cloud session is open.
     @MainActor init(source: String, shownSession: Int?, store: RecordStore) {
-        (self.source, open, epoch) = (source, Self.open(shown: shownSession, drawn: store.source.session), store.myData?.eraseEpoch)
+        (self.source, epoch) = (source, store.myData?.eraseEpoch)
+        open = Self.open(source: source, shown: shownSession, drawn: store.source.session, phoneDrawn: store.source.erase == nil)
     }
 
-    /// The shown session's record is drawn. Nil on both sides is a connected cloud with no
-    /// session open and the phone's copy drawn: not open.
-    static func open(shown: Int?, drawn: Int?) -> Bool { shown != nil && shown == drawn }
+    /// The source's own record is drawn. Local (`source` empty): the store is on the phone's record
+    /// (`phoneDrawn`). Connected: the shown session's record is drawn; nil on both sides is a cloud
+    /// with no session open and the phone's copy drawn: not open.
+    static func open(source: String, shown: Int?, drawn: Int?, phoneDrawn: Bool) -> Bool { source.isEmpty ? phoneDrawn : shown != nil && shown == drawn }
 }
