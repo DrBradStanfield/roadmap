@@ -22,6 +22,7 @@ final class OnboardingFlowTests: XCTestCase {
             ("landed advance", .landed(.advance, next: .height)),
             ("landed advance, last", .landed(.advance, next: nil)),
             ("landed words", .landed(.words("No"), next: .height)),
+            ("landed unwritten", .landed(.unwritten, next: .height)),
             ("landed ask", .landed(.askReplace(row1), next: .height)),
             ("confirmed row-1", .confirmed(row1)),
             ("confirmed row-2", .confirmed(row2)),
@@ -57,6 +58,8 @@ final class OnboardingFlowTests: XCTestCase {
                 "landed advance": (page(.height), [.repin]),
                 "landed advance, last": (.finished, [.unpin, .finish]),
                 "landed words": (page(.weight, .editing(message: "No")), [.repin]),
+                // Bug C, and AC11g: the words show and the pin stays (review F2).
+                "landed unwritten": (page(.weight, .editing(message: "That could not be saved.")), []),
                 "landed ask": (page(.weight, .asking(row1)), []),
             ]),
             (page(.weight, .asking(row1)), [
@@ -76,6 +79,7 @@ final class OnboardingFlowTests: XCTestCase {
                 "landed advance": (page(.review), [.repin]),
                 "landed advance, last": (page(.review), [.repin]),
                 "landed words": (page(.height, .editing(message: "No"), fromSummary: true), [.repin]),
+                "landed unwritten": (page(.height, .editing(message: "That could not be saved."), fromSummary: true), []),
                 "landed ask": (page(.height, .asking(row1), fromSummary: true), []),
             ]),
             (page(.review), ["reviewAccepted": (.finished, [.unpin, .finish]), "moved birth": birth]),
@@ -127,13 +131,14 @@ final class OnboardingFlowTests: XCTestCase {
     }
 
     /// Bug C: an answer the page cannot write shows words on the page, never a silent unlock.
+    /// Nothing reached the engine, so the screen's pin is not moved (US-25 AC11g, review F2).
     func testAnAnswerThatCannotBeWrittenSaysSo_BugC() {
         let landing = Flow.landing(.stay, step: .height)
         let (mode, effects) = run(page(.height), [.tapped, .landed(landing, next: .weight)])
         XCTAssertEqual(mode, page(.height, .editing(message: "That could not be saved.")))
         XCTAssertEqual(mode.save?.message, "That could not be saved.")
         XCTAssertFalse(mode.save?.busy ?? true, "the page takes another try")
-        XCTAssertEqual(effects, [.save(.height), .repin])
+        XCTAssertEqual(effects, [.save(.height)], "no repin")
     }
 
     /// AC5: "Replace it" writes the weight the person typed, converted once when it was saved,

@@ -120,6 +120,9 @@ enum OnboardingFlow {
                 // The record may have moved on (an erase, a unit change elsewhere): the next
                 // try is checked against the record now shown.
                 case .words(let words): return (.page(page, .editing(message: words)), [.repin])
+                // Nothing reached the engine: the pin stays, so the next try is still checked
+                // against the record this page showed (US-25 AC11g, S6 review F2).
+                case .unwritten: return (.page(page, .editing(message: couldNotSave)), [])
                 case .askReplace(let replace): return (.page(page, .asking(replace)), [])
                 }
             case .moved(let to):
@@ -160,8 +163,9 @@ enum OnboardingFlow {
         case replaced(RecordStore.ApplyResult)
     }
 
-    /// What the page shows after a save: the next step, words, or the replace question.
-    enum Landing: Equatable { case advance, words(String), askReplace(Replace) }
+    /// What the page shows after a save: the next step, the engine's words, `couldNotSave` for an
+    /// answer that never reached the engine, or the replace question.
+    enum Landing: Equatable { case advance, words(String), unwritten, askReplace(Replace) }
 
     /// The words for an answer the page cannot write (bug C); the engine's own fallback words.
     static let couldNotSave = "That could not be saved."
@@ -169,7 +173,7 @@ enum OnboardingFlow {
     static func landing(_ outcome: SaveOutcome, step: OnboardingStep) -> Landing {
         switch outcome {
         case .stay:
-            return .words(couldNotSave)
+            return .unwritten
         case .unchanged:
             return .advance
         // Today already holds a weight: ask before replacing it with the one typed (AC5, US-25 AC5).

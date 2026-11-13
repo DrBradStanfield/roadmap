@@ -29,11 +29,11 @@ final class OnboardingLandingTests: XCTestCase {
                        .askReplace(OnboardingFlow.Replace(id: "row-1", value: 80)))
     }
 
-    /// Bug C: an answer it cannot write (`stay`) says so on the page, in the engine's own
-    /// fallback words, instead of unlocking the page in silence.
+    /// Bug C: an answer it cannot write (`stay`) says so on the page (`unwritten`: the engine's
+    /// own fallback words, OnboardingFlowTests), instead of unlocking the page in silence.
     func testAnAnswerItCannotWriteSaysSo_BugC() {
         for step in OnboardingStep.questions {
-            XCTAssertEqual(OnboardingFlow.landing(.stay, step: step), .words("That could not be saved."), "\(step)")
+            XCTAssertEqual(OnboardingFlow.landing(.stay, step: step), .unwritten, "\(step)")
         }
     }
 
