@@ -5,6 +5,7 @@
  */
 import { ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody } from '@roadmap/health-core/adapter';
 import { DRIVE_API } from '@roadmap/health-core/drive-rest';
+import { isSignedOut } from './sign-in-state';
 
 /** What the loop reads from the adapter, and nothing more. */
 export interface DriveWatchHost {
@@ -12,6 +13,8 @@ export interface DriveWatchHost {
   readonly recordIds: ReadonlySet<string>;
   cachedFileId(fileName: string): string | undefined;
   authHeaders(): Promise<Record<string, string>>;
+  /** Rethrows a failed call's error, noting a refused access token first (US-09 AC48). */
+  refused(error: unknown): never;
 }
 
 /** Drive has no long-poll for a browser (its push channels need a public
@@ -33,12 +36,13 @@ interface DriveChangesPage {
 export async function driveWatchLoop(host: DriveWatchHost, fileName: string, onChange: () => void, signal: AbortSignal): Promise<void> {
   let retryMs = 0;
   // The outer loop owns the page token: a failure drops it, and the next
-  // turn asks Drive for a fresh one.
-  while (!signal.aborted) {
+  // turn asks Drive for a fresh one. A sign-in this page knows has ended stops it
+  // until a reload: no request can succeed (US-09 AC48).
+  while (!signal.aborted && !isSignedOut('google-drive')) {
     try {
       let token = await startPageToken(host, signal);
       catchUpAfterFailure(retryMs, signal, onChange);
-      while (!signal.aborted) {
+      while (!signal.aborted && !isSignedOut('google-drive')) { // the raise stops an established watch too (Codex R2)
         const url = `${DRIVE_API}/changes?pageToken=${encodeURIComponent(token)}&pageSize=100`
           + '&fields=newStartPageToken,nextPageToken,changes(fileId)';
         const page: DriveChangesPage = await jsonBody(await changesRequest(host, url, signal));
@@ -71,6 +75,6 @@ async function startPageToken(host: DriveWatchHost, signal: AbortSignal): Promis
 
 async function changesRequest(host: DriveWatchHost, url: string, signal: AbortSignal): Promise<Response> {
   const res = await fetch(url, { headers: await host.authHeaders(), signal });
-  if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) host.refused(new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status));
   return res;
 }

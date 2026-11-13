@@ -2,8 +2,8 @@ import XCTest
 @testable import HealthRoadmap
 
 /// US-58 AC4b, AC4c (iPhone survey S25, 2026-11-13): a metric page's read is one state, changed
-/// only by `MetricRead.transition`. A failed read is failed, never empty, so it never says
-/// "No data yet"; a landing for another revision changes nothing.
+/// only by `MetricRead.transition`. A failed read is failed, never empty, and always offers Try
+/// again; a landing for another revision changes nothing.
 final class MetricReadTests: XCTestCase {
     typealias Read = MetricRead.Read
 
@@ -79,8 +79,8 @@ final class MetricReadTests: XCTestCase {
         // US-25 AC21: an erase drops the kept charts, sometimes without moving the revision.
         XCTAssertEqual(page(.chart(revision: 1, kept), nil, true, nil), "guide only", "never a chart the store dropped")
         XCTAssertEqual(page(.empty(revision: 1), nil, true, nil), "No data yet", "the read came back with no values")
-        XCTAssertEqual(page(.failed(revision: 1), nil, true, nil), "failed")
-        XCTAssertEqual(page(.failed(revision: 1), nil, false, nil), "No data yet", "no value to duplicate: Add stays (R1)")
+        XCTAssertEqual(page(.failed(revision: 1), nil, true, nil), "failed: still in record")
+        XCTAssertEqual(page(.failed(revision: 1), nil, false, nil), "failed: No data yet", "no value to duplicate: Add beside Try again")
         XCTAssertEqual(page(.reading(revision: 1), nil, true, nil), "guide only", "no flash of No data yet before the chart")
         XCTAssertEqual(page(.reading(revision: 1), nil, false, nil), "No data yet", "nothing to read")
         XCTAssertEqual(page(.reading(revision: 1), kept, true, nil), "chart 3.1", "the older chart while the read runs")
@@ -96,27 +96,31 @@ final class MetricReadTests: XCTestCase {
         }
     }
 
-    /// The owner's R1 ruling: a failed read says its values are still in the record only when the
-    /// screen last drawn holds one; else "No data yet" and Add, as for an empty metric.
-    func testAFailedReadSaysItsValuesAreKeptOnlyWhenTheScreenHoldsOne_US58_AC4c() throws {
+    /// Brad's rules, 14 Nov (US-58 AC4c): every failed read offers Try again. The screen last drawn
+    /// decides what else it says: a reading there, sentence A; positively none, "No data yet" and Add
+    /// beside Try again; no screen, or one older than an erase, only a kept chart can say, and with
+    /// none the page makes no claim either way.
+    func testEveryFailedReadOffersTryAgainAndClaimsOnlyWhatTheScreenShows_US58_AC4c() throws {
         let kept = try Self.chart(["3.1"])
         let failed = { (screen: Bool?, kept: ChartData?, hasReadings: Bool) in
             Self.named(MetricRead.page(.failed(revision: 1), revision: 1, problem: nil, kept: kept, hasReadings: hasReadings, screenHasReading: screen))
         }
-        XCTAssertEqual(failed(true, nil, true), "failed", "the screen holds a reading")
-        XCTAssertEqual(failed(false, nil, false), "No data yet", "the screen holds none")
-        // Condition A: the screen drawn decides, never the failed read (which kept nothing) or the page's own row.
-        XCTAssertEqual(failed(true, nil, false), "failed", "the drawn screen's reading, though the read kept nothing")
-        XCTAssertEqual(failed(false, kept, true), "No data yet", "the drawn screen holds none, whatever else says so")
-        // Condition B: no screen, or one from before an erase: only values the store still keeps count.
-        XCTAssertEqual(failed(nil, kept, true), "failed", "the store still keeps values")
-        XCTAssertEqual(failed(nil, nil, true), "No data yet", "nothing kept")
-        XCTAssertEqual(failed(nil, try Self.chart([]), true), "No data yet", "kept, with no values")
+        XCTAssertEqual(failed(true, nil, true), "failed: still in record", "the screen holds a reading")
+        XCTAssertEqual(failed(false, nil, false), "failed: No data yet", "the screen positively holds none")
+        // The screen drawn decides, never the failed read (which kept nothing) or the page's own row.
+        XCTAssertEqual(failed(true, nil, false), "failed: still in record", "the drawn screen's reading, though the read kept nothing")
+        XCTAssertEqual(failed(false, kept, true), "failed: No data yet", "the drawn screen holds none, whatever else says so")
+        // No screen, or one from before an erase: only a chart the store still keeps can say.
+        XCTAssertEqual(failed(nil, kept, true), "failed: still in record", "the store still keeps values")
+        XCTAssertEqual(failed(nil, try Self.chart([]), true), "failed: No data yet", "kept, with no values")
+        XCTAssertEqual(failed(nil, nil, true), "failed: unknown", "nothing establishes it: no claim either way")
+        XCTAssertEqual(failed(nil, nil, false), "failed: unknown", "the page's own row is no evidence")
     }
 
-    /// The engine failure's words, in one place (awaiting Brad's yes on the sentence).
-    func testAnEngineFailureNamesTheMetricAndSaysItsValuesAreKept_US58_AC4c() {
-        XCTAssertEqual(MetricRead.couldNotRead("LDL"), "Your LDL values could not be read. They are still in your record.")
+    /// The failed read's words, in one place: sentence A (Brad, 13 Nov) and its first sentence alone (14 Nov).
+    func testAFailedReadsWords_US58_AC4c() {
+        XCTAssertEqual(MetricRead.couldNotRead("LDL", stillInRecord: true), "Your LDL values could not be read. They are still in your record.")
+        XCTAssertEqual(MetricRead.couldNotRead("LDL", stillInRecord: false), "Your LDL values could not be read.")
     }
 
     static func named(_ page: MetricRead.Page) -> String {
@@ -124,7 +128,9 @@ final class MetricReadTests: XCTestCase {
         case .chart(let chart): "chart \(chart.history.rows.map(\.value).joined(separator: " "))"
         case .noDataYet: "No data yet"
         case .guideOnly: "guide only"
-        case .failed: "failed"
+        case .failed(.stillInRecord): "failed: still in record"
+        case .failed(.noneShown): "failed: No data yet"
+        case .failed(.unknown): "failed: unknown"
         case .problem(let problem): "problem: \(problem.heading)"
         }
     }

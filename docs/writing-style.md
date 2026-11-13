@@ -65,7 +65,7 @@ Source: Wikipedia "Signs of AI writing" (Aug 2026), distilled to what matters fo
 
 A draft that fails any step gets rewritten, not annotated.
 
-## 4. Brad's voice (scripts, and anything written in his name)
+## 4. Brad's voice (scripts and anything written in his name; not customer-service replies, which follow their playbooks)
 
 Imitate the examples; don't sprinkle their phrases. After each video, his two or three best new lines replace the weakest examples here (the ledger of all his edits is `docs/script-pipeline/brad-edits.csv`).
 

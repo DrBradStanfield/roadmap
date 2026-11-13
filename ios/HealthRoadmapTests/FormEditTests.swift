@@ -109,15 +109,15 @@ final class FormEditTests: XCTestCase {
 
     /// US-58 AC4b, AC4c (S25): a failed read never says "No data yet" over values still in the
     /// record, which invited a duplicate; it says so and offers Try again. With no value drawn there
-    /// is nothing to duplicate, so it keeps "No data yet" and Add (owner's R1 ruling). A read that
-    /// came back empty still says it, and it never flashes on a metric with readings while read.
+    /// is nothing to duplicate, so "No data yet" and Add sit beside Try again (Brad, 14 Nov). A read
+    /// that came back empty still says it, and it never flashes on a metric with readings while read.
     func testAFailedReadNeverSaysNoDataYet_US58() throws {
         let page = { (read: MetricRead.Read, hasReadings: Bool) in
             MetricReadTests.named(MetricRead.page(read, revision: 1, problem: nil, kept: nil, hasReadings: hasReadings, screenHasReading: hasReadings))
         }
         let failed = MetricRead.transition(.reading(revision: 1), .landed(revision: 1, nil))
-        XCTAssertEqual(page(failed, true), "failed", "the engine threw on a metric with values")
-        XCTAssertEqual(page(failed, false), "No data yet", "no value drawn: nothing to duplicate")
+        XCTAssertEqual(page(failed, true), "failed: still in record", "the engine threw on a metric with values")
+        XCTAssertEqual(page(failed, false), "failed: No data yet", "no value drawn: Add beside Try again")
         let empty = MetricRead.transition(.reading(revision: 1), .landed(revision: 1, try MetricReadTests.chart([])))
         XCTAssertEqual(page(empty, true), "No data yet", "the read came back empty")
         XCTAssertEqual(page(.reading(revision: 1), true), "guide only", "reading: the guide only")

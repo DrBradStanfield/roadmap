@@ -12,15 +12,15 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
-import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
+import { act, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { localDay } from '@roadmap/health-core/merge';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveMeasurements, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -84,8 +84,10 @@ let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 const named = (name: string) => sent.filter((e) => e.eventName === name);
 /** The calls HealthTool made, by name, before the per-tab throttle. */
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
-const stops: Array<() => void> = [];
 
+// Fake timers that move with the clock (test audit W05): wait(ms) jumps the 500 ms
+// saves and the 800 ms auto-advance with the same durations, so the timing rules stay pinned.
+useHealthToolLifecycle({ fakeTimers: true });
 beforeEach(async () => {
   sent = [];
   tracked.calls = [];
@@ -93,7 +95,6 @@ beforeEach(async () => {
   chat.proposeEdit = null;
   chat.unmuted = null;
   upload.complete = null;
-  localStorage.clear(); sessionStorage.clear();
   // A wide desktop: the chat column shows.
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
@@ -105,24 +106,11 @@ beforeEach(async () => {
     }
     throw new Error('Synthetic test: no network');
   }));
-  Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
-afterEach(async () => {
-  cleanup();
-  for (const stop of stops.splice(0)) stop();
-  await flushRoadmapStore();
-  vi.restoreAllMocks(); vi.unstubAllGlobals();
-});
+afterEach(() => { stopLiveRefresh(); });
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
 
@@ -130,7 +118,7 @@ const activeWeights = async () => (await recordOnDisk()).measurements
 async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('#heightCm') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
-  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  await wait(0);
   openAboutYou(view.container);
   return view;
 }
@@ -143,14 +131,14 @@ function type(input: Element | null, value: string) {
   fireEvent.change(input, { target: { value } });
 }
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
-const settle = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 /** Height and weight typed, the weight field left: its save runs 500 ms later. */
 async function measurements(view: RenderResult, height = '178', weight = '80') {
   type(q(view, '#heightCm'), height);
   leave(q(view, '#heightCm'));
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), localToday()]]), { timeout: 2000 });
+  await wait(2000);
+  expect(await activeWeights()).toEqual([[Number(weight), localToday()]]);
 }
 function birth(view: RenderResult, month = '5', year = '1975') {
   fireEvent.change(q(view, '#birthMonth')!, { target: { value: month } });
@@ -234,7 +222,7 @@ describe('US-62 AC13: what a refused write\'s re-read raises is not counted', ()
     leave(q(view, '#heightCm'));
     await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 3000 });
     await waitFor(() => expect(fullForm(view)).toBe(true)); // the re-read raised the stage to 4
-    await settle(50);
+    await wait(50);
     expect(calls('onboarding_step')).toEqual([]);
     expect(calls('onboarding_done')).toEqual([]);
     expect(q(view, '.mh-ready')).toBeNull();
@@ -276,7 +264,8 @@ describe('US-62 AC25: the last answer lands on My health, once per record (D1)',
     expect(sexQuestion(view)).toBeNull(); // stage 1: only the weight is missing
     type(q(view, '#weightKg'), '105');
     await waitFor(() => expect(landed()).toBe(true)); // the first record's landing
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
+    await wait(2000); // the weight's 500 ms save
+    expect(await activeWeights()).toEqual([[105, localToday()]]);
     await eraseHere(view);
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
     // The new record: another writer gives height, sex and birth; the weight is missing again.
@@ -313,10 +302,10 @@ describe('US-62 AC13: another writer\'s change clears an answer given here', () 
     // An answer given here that raises nothing: the mark is set and not spent.
     type(q(view, '#heightCm'), '171');
     leave(q(view, '#heightCm'));
-    await settle(700);
+    await wait(700);
     await anotherWriter({ sex: 'female', birthYear: 1980, birthMonth: 3 });
     await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
-    await settle(50);
+    await wait(50);
     expect(calls('onboarding_step')).toEqual([]);
     expect(calls('onboarding_done')).toEqual([]);
     expect(q(view, '.mh-ready')).toBeNull();
@@ -335,7 +324,7 @@ describe('US-62 AC12, AC31 (D6, Brad 2026-11-10: keep it): another device fills 
     expect(fullForm(view)).toBe(false);
     await anotherWriter({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female' });
     await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
-    await settle(50);
+    await wait(50);
     // About you, as the onboarding's card, still above the sections.
     const about = q(view, '.mh-page .about-card');
     expect(about).toBeTruthy();
@@ -393,14 +382,15 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await open();
     type(q(view, '#weightKg'), '105'); // the last answer (Shopify build)
     await waitFor(() => expect(landed()).toBe(true));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[105, localToday()]]), { timeout: 2000 });
+    await wait(2000); // the weight's 500 ms save
+    expect(await activeWeights()).toEqual([[105, localToday()]]);
     const before = matrixWeight(view);
     cross(); // a phone: the panels are built again
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     const cell = matrixWeight(view)!;
     expect(cell).not.toBe(before); // a new matrix: its own refs started empty
     type(cell, '106');
-    await settle(100);
+    await wait(100);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
   });
@@ -414,10 +404,10 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     cross(); // the focused box unmounts with no blur
     // Built again, the whole form has no box beside the height: the weight is the matrix's (H71).
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
-    await settle(900);
+    await wait(900);
     expect(landed()).toBe(false);
     type(matrixWeight(view), '82');
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
   });
 
@@ -427,10 +417,10 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
-    await settle(200); // About you's rows, opened by open(), take their focus first
+    await wait(200); // About you's rows, opened by open(), take their focus first
     const cell = matrixWeight(view)!;
     type(cell, '106'); // Shopify build: a weight would land, were it the last answer
-    await settle(100);
+    await wait(100);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
   });
@@ -446,7 +436,7 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     const cell = matrixWeight(view)!;
     type(cell, '106');
-    await settle(100);
+    await wait(100);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
     expect(q(view, '.mh-page .about-card')).toBeTruthy();
@@ -455,18 +445,18 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
   it('US-62 AC25 (D4, R2): an onboarding that ends on sex spends its landing: a later matrix weight does not land', async () => {
     const view = await wholeFormWithoutSexOrBirth();
     birth(view, '5', '1975'); // the year before sex: asked, but not the last answer
-    await settle(50);
+    await wait(50);
     const focused = document.activeElement;
     fireEvent.click(view.getByRole('radio', { name: 'Male' })); // sex last: the onboarding ends here, with no landing (AC31)
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
-    await settle(50);
+    await wait(50);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(focused);
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
-    await settle(200);
+    await wait(200);
     const cell = matrixWeight(view)!;
     type(cell, '106');
-    await settle(100);
+    await wait(100);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
   });
@@ -477,14 +467,14 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
-    await settle(200);
+    await wait(200);
     // Frames held until the chat sees the four answers hold: before the page's passive effects run.
     const frames: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length; });
     const runFrames = () => { for (const cb of frames.splice(0)) cb(0); };
     chat.unmuted = runFrames;
     type(matrixWeight(view), '106'); // the weight, the last answer, typed in the matrix (Shopify build)
-    await settle(50);
+    await wait(50);
     await waitFor(() => { runFrames(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
     expect(calls('onboarding_done')).toHaveLength(1);
   });
@@ -492,11 +482,11 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
   it('US-62 AC25 (D4): a complete year typed before sex lands nothing and leaves the landing for the year that is the last answer', async () => {
     const view = await wholeFormWithoutSexOrBirth();
     birth(view, '5', '1975'); // sex not yet given: not the last answer
-    await settle(50);
+    await wait(50);
     expect(landed()).toBe(false);
     type(q(view, '#birthYear'), ''); // cleared to retype
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    await settle(50);
+    await wait(50);
     expect(landed()).toBe(false);
     type(q(view, '#birthYear'), '1976'); // now the last answer
     await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
@@ -505,13 +495,13 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
   it('US-62 AC25 (D4): after an erase in this tab the new record lands on its last answer, whatever the record before did', async () => {
     const view = await wholeFormWithoutSexOrBirth();
     birth(view, '5', '1975'); // a year before sex: no landing
-    await settle(50);
+    await wait(50);
     expect(landed()).toBe(false);
     await eraseHere(view); // the record never completed
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    await settle(50);
+    await wait(50);
     birth(view); // the year, the new record's last answer
     await waitFor(() => expect(landed()).toBe(true), { timeout: 1000 });
   });
@@ -537,7 +527,7 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     const box = q(view, '#weightKg');
     type(box, '25'); // complete, but may become 250: the wait starts
     type(box, '2');
-    await settle(900);
+    await wait(900);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(box);
     type(box, '82');
@@ -549,7 +539,7 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     const box = q(view, '#weightKg');
     type(box, '25');
     type(box, '');
-    await settle(900);
+    await wait(900);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(box);
     type(box, '82');
@@ -562,11 +552,11 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
-    await settle(200);
+    await wait(200);
     const cell = matrixWeight(view)!;
     type(cell, '2');
     type(cell, '25');
-    await settle(100);
+    await wait(100);
     expect(landed()).toBe(false); // "25" may become "250": still waiting
     type(cell, '250');
     await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
@@ -578,10 +568,10 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     const box = q(view, '#weightKg');
     type(box, '25');
     act(() => { (q(view, '#heightCm') as HTMLElement).focus(); }); // another field, before the wait ends
-    await settle(1000);
+    await wait(1000);
     expect(landed()).toBe(false);
     type(box, '82');
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(box);
   });
@@ -597,7 +587,7 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     type(q(view, '#weightKg'), '25'); // the last answer; may become 250: an 800 ms wait
     await waitFor(() => expect(alert).toHaveBeenCalledWith(WRITE_REFUSED), { timeout: 2000 });
     expect(landed()).toBe(false); // refused within the wait
-    await settle(900);
+    await wait(900);
     expect(fullForm(view)).toBe(true); // the re-read holds the four answers, with no keystroke here
     expect(landed()).toBe(false);
   });
@@ -607,11 +597,11 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 105, unitSystem: 'si', date: null }]));
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy()); // the onboarding ended here
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
     act(() => { (document.activeElement as HTMLElement | null)?.blur(); });
     type(q(view, '#weightKg'), '106');
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
   });
 
@@ -623,12 +613,12 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
       await upload.complete!();
     });
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
     await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     const cell = matrixWeight(view)!;
     type(cell, '106');
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
     expect(document.activeElement).toBe(cell);
   });
@@ -660,7 +650,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
-    await settle(200);
+    await wait(200);
     return view;
   }
 
@@ -672,7 +662,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy(), { timeout: 3000 });
     expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
     expect(calls('onboarding_done')).toHaveLength(1);
-    await settle(300);
+    await wait(300);
     expect(landed()).toBe(false);
   });
 
@@ -725,7 +715,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       await flushRoadmapStore();
       const view = await open();
       if (waist) await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
-      await settle(200);
+      await wait(200);
       await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
       return view;
     }
@@ -735,7 +725,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       chatWeight();
       if (waist) expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105');
       await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
-      await settle(300);
+      await wait(300);
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
       expect(landed()).toBe(false); // AC25b: an answer from the chat never jumps
@@ -750,7 +740,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
-      await settle(300);
+      await wait(300);
       expect(landed()).toBe(false);
     });
 
@@ -759,7 +749,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       chatWeight();
       await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
       type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
-      await settle(1000);
+      await wait(1000);
       expect(landed()).toBe(false);
       expect(calls('onboarding_step')).toHaveLength(1);
       expect(calls('onboarding_done')).toHaveLength(1);
@@ -769,7 +759,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       const view = await chatReady({ missing });
       chatWeight();
       await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
-      await settle(300);
+      await wait(300);
       expect(calls('onboarding_done')).toHaveLength(0);
       expect(q(view, '.mh-ready')).toBeNull();
     });
@@ -789,7 +779,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       typedWeight(view, grid);
       chatWeight();
       await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
-      await settle(1500);
+      await wait(1500);
       expect(landed()).toBe(false);
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
@@ -799,7 +789,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       const view = await chatReady({ weight: true });
       chatWeight();
       await waitFor(() => expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105'));
-      await settle(300);
+      await wait(300);
       expect(calls('onboarding_step')).toEqual([]);
       expect(calls('onboarding_done')).toEqual([]);
       expect(q(view, '.mh-ready')).toBeNull();
@@ -817,7 +807,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       const view = await open();
       await measurements(view); // saved, so the record holds a plausible weight; typed here, it stays in the box
       fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-      await settle(50);
+      await wait(50);
       await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
       const frames = heldFrames();
       birth(view, '5', '1975'); // the last answer; its rest's frame held, so the landing awaits it
@@ -840,7 +830,7 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       await initRoadmapStore(new LocalStorageAdapter());
       const view = await open();
       await waitFor(() => expect(weightRow(view)?.querySelector('.bt-cell-draft input')).toBeTruthy());
-      await settle(200);
+      await wait(200);
       await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
       chatWeight();
       await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
@@ -874,8 +864,9 @@ describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form mo
     expect(cells().some((c) => c.classList.contains('bt-input-active'))).toBe(true); // flashed, as a chat edit is
     type(q(view, '#weightKg'), '81');
     leave(q(view, '#weightKg'));
-    await waitFor(async () => expect(await activeWeights()).toContainEqual([81, localToday()]), { timeout: 2000 });
-    await settle(300);
+    await wait(2000); // the weight's 500 ms save
+    expect(await activeWeights()).toContainEqual([81, localToday()]);
+    await wait(300);
     for (const metric of metrics) expect(await rowsOn(metric)).toEqual([]);
     expect(cells().map((c) => c.value)).toEqual(shownValues); // still waiting for the person's Save
   });
@@ -891,7 +882,7 @@ describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form mo
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    await settle(50); // the sex answer's reveal focuses the month, as a person's next tap would follow it
+    await wait(50); // the sex answer's reveal focuses the month, as a person's next tap would follow it
     birth(view, '5', '1975'); // the last answer
     await waitFor(() => expect(fullForm(view)).toBe(true));
     const cell = () => vitalsRow(view, 'Waist Circumference')!.querySelector<HTMLInputElement>('.bt-cell-draft input')!;
@@ -899,7 +890,7 @@ describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form mo
     const focus = () => (document.activeElement === cell() ? 'the grid cell'
       : document.activeElement?.matches('.mh-ready-title') ? 'the landing' : document.activeElement?.tagName);
     await waitFor(() => expect(focus()).toBe('the landing'));
-    await settle(300);
+    await wait(300);
     expect(focus()).toBe('the landing');
     expect(view.getByRole('button', { name: 'Unsaved values: review' })).toBeTruthy(); // the table stays shut; the cue says so
     expect(await rowsOn('waist')).toEqual([]); // unsaved

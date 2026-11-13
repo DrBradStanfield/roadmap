@@ -7,7 +7,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor, type RenderResult } from '@testing-library/react';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
 
@@ -21,8 +20,8 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 
 /** The browser's language and time zone, as detectUnitSystem reads them. */
 function visitorIn(language: string, timeZone: string): void {
@@ -38,15 +37,12 @@ beforeEach(async () => {
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

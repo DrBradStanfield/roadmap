@@ -4,8 +4,10 @@
  * the current cloud down to this device first, so nothing is ever stranded.
  *
  * A provider that could not be read this session is NAMED, never replaced by the
- * guest pitch (US-09 AC13): Drive keeps its own inline Reconnect button (GIS
- * popup fallback — one click, no modal), every other provider gets Retry.
+ * guest pitch (US-09 AC13): a Drive or Dropbox sign-in that ended gets its own
+ * Reconnect button (Drive's GIS popup, Dropbox's sign-in redirect), and a cloud
+ * that did not answer gets Retry. Which one is the page's sign-in state
+ * (US-09 AC48), so a sign-in that ends mid-session shows here with no reload.
  *
  * openBackendPicker() (src/lib/storage-notice.tsx) is the only way in; the
  * listener below is the only listener.
@@ -15,9 +17,10 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, holdsCopyHere, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
-import { PROVIDERS } from './providers';
+import { noCopyQuestion, PROVIDERS, safeWhere } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -102,12 +105,18 @@ const SYNCED_TO = (provider: string) => `Synced to ${provider}`;
 const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
   pendingSync && status === 'not-saved-on-device';
 
+/** The page's one sign-in state (US-09 AC48), seeded at boot and raised when a sign-in ends. */
+const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
+
+/** US-09 AC48: the bar's words for a Drive or Dropbox sign-in that ended. */
+const SIGN_IN_AGAIN = { 'google-drive': 'Sign in to Google again', dropbox: 'Sign in to Dropbox again' } as const;
+
 /** US-09 AC30: the title line's words, from the real storage state (storageState's
  *  three, the session's save status and the device marker), so they never claim
- *  what is not true. A reconnect session runs on 'local', so it is asked first. */
-function storageBarLabel(backend: Backend, reconnect: Exclude<Backend, 'local'> | undefined, facts: SaveFacts, problemsOnly: boolean): string {
-  // Only Drive can re-auth in place; the others only try the read again, as the panel says.
-  if (reconnect) return reconnect === 'google-drive' ? 'Sign in to Google again' : 'Retry';
+ *  what is not true. A lost sign-in is asked first: it may run on 'local'. */
+function storageBarLabel(backend: Backend, lost: LostSignIn | undefined, facts: SaveFacts, problemsOnly: boolean): string {
+  // A sign-in that ended re-auths in place; a cloud that did not answer only tries the read again, as the panel says.
+  if (lost) return lost.kind === 'signedOut' ? SIGN_IN_AGAIN[lost.provider] : 'Retry';
   if (backend === 'local') return 'Sign in';
   // Status, not a call to action (Brad 2026-11-09). A marker set while the
   // session is saved stands over a device copy its release could not read, or
@@ -128,16 +137,19 @@ export const GIS_LOADING = 'Google is loading. Tap again.';
  *  re-auths through the GIS popup FALLBACK (~1 h token), which works even with
  *  the exchange endpoint down and needs this click's user gesture, so it starts
  *  synchronously inside the click; local edits made while signed out merge up
- *  before the reload. The others can only try the read again. The Drive
- *  reconnect and "Use this browser only" are moves, one at a time with the
+ *  before the reload. Dropbox signs in again by its redirect, and the return
+ *  merges them up (US-09 AC48). A cloud that did not answer can only try the
+ *  read again. Each reconnect saves the session before its lift (R1). The
+ *  reconnects and "Use this browser only" are moves, one at a time with the
  *  picker (US-09 AC45). A reconnect's failure before it saved is said only here; a failed
  *  "Use this browser only", or a reconnect that fails after it saved, ends the
  *  move as a failure, so the picker says it too. */
-function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
+function useReconnect(lost?: LostSignIn) {
   const flow = useSwitchFlow();
   const [error, setError] = useState<string | null>(null);
   // GIS loads on mount, so the click can open the popup synchronously.
-  useEffect(() => { if (reconnect === 'google-drive') preloadGis(); }, [reconnect]);
+  const driveSignIn = lost?.kind === 'signedOut' && lost.provider === 'google-drive';
+  useEffect(() => { if (driveSignIn) preloadGis(); }, [driveSignIn]);
   // runMove claims before its first await, so the move's start stays inside the click.
   const move = (event: SwitchEvent, body: (m: Move) => Promise<void>): void => {
     setError(null);
@@ -149,7 +161,15 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
     }));
   };
   const reconnectNow = (): void => {
-    if (reconnect !== 'google-drive') { location.reload(); return; }
+    if (lost?.kind !== 'signedOut') { location.reload(); return; }
+    if (lost.provider === 'dropbox') {
+      move({ type: 'start', to: 'dropbox', step: 'list' }, async ({ gen, navigating }) => {
+        await flushBeforeExit();
+        navigating();
+        await adapterFor('dropbox', gen)!.connect(); // its return is kept only under the move's log-off id
+      });
+      return;
+    }
     // Still loading: a popup started now would outlast the click and be blocked.
     if (!gisReady()) { preloadGis(); setError(GIS_LOADING); return; }
     move({ type: 'reconnect' }, async ({ run, gen, navigating }) => {
@@ -159,6 +179,7 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
       if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
+        await flushBeforeExit();
         await liftLocalInto(new GoogleDriveAdapter(googleDriveConfig(), gen), 'google-drive');
       }
       if (!isCurrentRun(run)) return;
@@ -176,9 +197,10 @@ function useReconnect(reconnect?: Exclude<Backend, 'local'>) {
  *  button is the one sign-in, and `problemsOnly` draws the bar atop My health only while a
  *  reconnect or a change not synced needs saying: never for a save that runs, which would
  *  flash on every edit burst, unless the marker is set: then "Not synced yet." (owner, 2026-11-12). */
-export function StorageBar({ backend, reconnect, problemsOnly = false }: { backend: Backend; reconnect?: Exclude<Backend, 'local'>; problemsOnly?: boolean }) {
+export function StorageBar({ backend, problemsOnly = false }: { backend: Backend; problemsOnly?: boolean }) {
   const facts = useSaveFacts(backend);
   const isMobile = useIsMobile();
+  const reconnect = lostSignIn(useSignIn());
   const { reconnecting, idle, error, reconnectNow } = useReconnect(reconnect);
   const label = storageBarLabel(backend, reconnect, facts, problemsOnly);
   if (problemsOnly && !reconnect && label !== NOT_SYNCED_ON_DEVICE && label !== NOT_SYNCED) return null;
@@ -202,9 +224,8 @@ export function StorageBar({ backend, reconnect, problemsOnly = false }: { backe
   );
 }
 
-export function SyncControl({ backend, reconnect, hasData = true, attention = false }: {
+export function SyncControl({ backend, hasData = true, attention = false }: {
   backend: Backend;
-  reconnect?: Exclude<Backend, 'local'>;
   /** False while the user hasn't entered any data yet — the device-tier
    *  "choose where to save" pitch stays hidden (nothing to save; Brad,
    *  2026-06-11). Cloud/reconnect states always show — data is at stake. */
@@ -215,6 +236,8 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   const [pickerOpen, setPickerOpen] = useState(false);
   // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
   const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
+  const signIn = useSignIn();
+  const reconnect = lostSignIn(signIn);
   const { reconnecting, idle, error, move, reconnectNow } = useReconnect(reconnect);
   const writesAllowed = useSyncExternalStore(onHealthWritesChange, healthWritesAllowed);
 
@@ -232,46 +255,59 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
 
   const facts = useSaveFacts(backend);
 
-  // Forget the unreachable connection (no copy-down needed — this session
-  // already runs on the device copy; the cloud file stays put). A move (AC45).
-  const forgetProvider = (provider: Exclude<Backend, 'local'>): void =>
+  // Forget the unreachable connection: the session is saved, then this page's record is
+  // copied onto the device copy (US-09 AC48, Codex R1); the cloud file stays put. A move (AC45).
+  const forgetProvider = (provider: LostSignIn['provider']): void =>
     move({ type: 'start', to: 'local', step: 'list' }, async () => {
+      await flushBeforeExit();
+      await copySessionToDevice(provider);
       await adapterFor(provider)?.disconnect();
       forgetBackend();
       location.reload();
     });
+  // With no copy here, the exit would start an empty record: ask first (US-09 AC49, owner ruling).
+  const chooseThisBrowserOnly = (provider: LostSignIn['provider']): void => (holdsCopyHere() ? forgetProvider(provider) : askBeforeExit());
 
-  const state = storageState(backend, reconnect);
+  const state = storageState(backend, signIn);
   const provider = backend === 'local' ? '' : PROVIDERS[backend].label;
   let content: React.ReactNode;
   if (reconnect) {
     // The remembered provider could not be read this session (US-09 AC13). Name
     // it and offer the way back — never the guest "choose where to save" pitch:
-    // this user HAS chosen, and their record is sitting in that provider. Drive
-    // can re-auth in place (the GIS popup), so it gets that button; for the
-    // others the only cure is to try the read again.
-    const label = PROVIDERS[reconnect].label;
-    const drive = reconnect === 'google-drive';
+    // this user HAS chosen, and their record is sitting in that provider. A Drive
+    // or Dropbox sign-in that ended gets a new sign-in (Dropbox in Drive's words,
+    // the name swapped: Brad, US-09 AC48); a cloud that did not answer can only
+    // try the read again.
+    const label = PROVIDERS[reconnect.provider].label;
+    const signedOut = reconnect.kind === 'signedOut';
     content = (
       <div className="hr-sync hr-sync-local">
-        <span className="hr-sync-status">{label} {drive ? 'is signed out' : 'could not be reached'}</span>
+        <span className="hr-sync-status">{label} {signedOut ? 'is signed out' : 'could not be reached'}</span>
         <button
           className="hr-sync-btn"
           disabled={!idle}
           onClick={reconnectNow}
         >
-          {drive ? (reconnecting ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
+          {signedOut ? (reconnecting ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
-          Your record is safe in your {label}.
+          Your record is safe {safeWhere(reconnect.provider)}.
           {/* A page whose device writes are refused keeps nothing in this browser. */}
-          {drive && ' Sign in again to keep it in step.'}
-          {writesAllowed && (drive
+          {signedOut && ' Sign in again to keep it in step.'}
+          {writesAllowed && (signedOut
             ? ' Anything you change meanwhile is kept in this browser and merges when you reconnect.'
             : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => forgetProvider(reconnect)}>Use this browser only</button>
+          {signIn.kind === 'confirmingExit' ? (
+            <>
+              <span className="hr-sync-detail">{noCopyQuestion(reconnect.provider)}</span>
+              <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => { exitAnswered(); forgetProvider(reconnect.provider); }}>Use this browser only</button>
+              <button type="button" className="hr-sync-link" onClick={exitAnswered}>Cancel</button>
+            </>
+          ) : (
+            <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => chooseThisBrowserOnly(reconnect.provider)}>Use this browser only</button>
+          )}
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
@@ -293,10 +329,11 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
           </button>
         </span>
         {deviceHolds(facts) && (
+          // " It will upload automatically." between the two sentences while facts.retry is held out
+          // pending Brad's approval of the wording (US-09 AC30, 2026-11-14); the retry itself is unchanged.
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            {/* Only while a retry will come: never after a refused sign-in (US-09 AC30). */}
-            {facts.retry && ' It will upload automatically.'} Your data is safe in this browser meanwhile.
+            Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>
@@ -326,7 +363,7 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
       {/* An unreachable provider is still the CURRENT one: the picker must copy
           it down (and fail loudly if it cannot) before any switch, or the
           record is orphaned there (US-09 AC13). */}
-      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} unreachable={!!reconnect} onClose={() => setPickerOpen(false)} />}
+      {pickerOpen && <BackendPickerModal current={reconnect?.provider ?? backend} unreachable={!!reconnect} onClose={() => setPickerOpen(false)} />}
     </>
   );
 }

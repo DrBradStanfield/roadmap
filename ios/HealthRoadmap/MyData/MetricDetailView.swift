@@ -5,8 +5,8 @@ import SwiftUI
 /// the top, the range picker, the latest value large with its day, a chart that
 /// opens on the newest value and scrolls back, then Show All Data and Unit, then
 /// "About" the metric and its sources (US-58). A metric with no readings says "No data yet",
-/// offers "Add your first value", then shows its guide (AC4b); a failed read says so and offers
-/// Try again (AC4c).
+/// offers "Add your first value", then shows its guide (AC4b); a failed read always offers Try
+/// again (AC4c).
 /// Tapping an active value in Show All Data corrects it: a new row, the old one
 /// kept and struck through as entered in error. There is no delete: the record
 /// is append-only (Brad 2026-09-24). The web twin is
@@ -70,17 +70,16 @@ struct MetricDetailView: View {
             case .noDataYet:
                 // No readings, or a read that came back empty (adversary R2; US-58 AC4b):
                 // adding one comes first, then the guide, so the page is never blank.
+                Section { noDataYet }
+            case .failed(let failure):
+                // Every failed read offers Try again; "Add your first value" only where the screen
+                // shows no reading, so a value still in the record is never duplicated (US-58 AC4c).
                 Section {
-                    Text("No data yet").foregroundStyle(.secondary)
-                    Button { editing = Self.adding(row, in: store) } label: {
-                        Label("Add your first value", systemImage: "plus.circle.fill")
+                    if failure == .noneShown {
+                        noDataYet
+                    } else {
+                        Text(MetricRead.couldNotRead(row.label, stillInRecord: failure == .stillInRecord)).foregroundStyle(.secondary)
                     }
-                    .disabled(store.unitSwitches > 0)
-                }
-            case .failed:
-                // The values are still in the record: no "Add your first value" (US-58 AC4c).
-                Section {
-                    Text(MetricRead.couldNotRead(row.label)).foregroundStyle(.secondary)
                     Button("Try again", systemImage: "arrow.clockwise") { Task { await readChart() } }
                 }
             case .problem(let problem):
@@ -135,6 +134,16 @@ struct MetricDetailView: View {
         }
         .editingSheet($editing, store: store, saved: saved)
         .refusalAlert($lpaRefusal)
+    }
+
+    /// "No data yet" and "Add your first value" (US-58 AC4b), for an empty metric and beside a
+    /// failed read's Try again where the screen shows no reading (AC4c).
+    @ViewBuilder private var noDataYet: some View {
+        Text("No data yet").foregroundStyle(.secondary)
+        Button { editing = Self.adding(row, in: store) } label: {
+            Label("Add your first value", systemImage: "plus.circle.fill")
+        }
+        .disabled(store.unitSwitches > 0)
     }
 
     /// Asks for this revision's chart and lands the answer for that revision: a late answer

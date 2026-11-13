@@ -30,8 +30,8 @@ import { resolveBackend } from './resolve-backend';
 async function main() {
   // Nothing may run before boot(): its first line notes another tab's log-off
   // (US-09 AC2h), and logout-latch-during-load.test.ts runs only boot().
-  const { backend, reconnect, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
-  const state = storageState(backend, reconnect);
+  const { backend, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
+  const state = storageState(backend);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
   // and the token that authorises it dies with the file — so it runs first.
@@ -62,11 +62,11 @@ async function main() {
         {emailLanding && <EmailLandingNotice />}
         <GuestContext.Provider value={state === 'guest'}>
           <HealthTool
-            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
+            syncControl={({ hasData, attention }) => <SyncControl backend={backend} hasData={hasData} attention={attention} />}
             remindersSection={<RemindersSection backend={backend} />}
-            storageBar={<StorageBar backend={backend} reconnect={reconnect} />}
+            storageBar={<StorageBar backend={backend} />}
             saveAlert={<LocalSaveAlert backend={backend} />}
-            syncAlert={<StorageBar backend={backend} reconnect={reconnect} problemsOnly />}
+            syncAlert={<StorageBar backend={backend} problemsOnly />}
           />
         </GuestContext.Provider>
         <HistoryLightboxHost />

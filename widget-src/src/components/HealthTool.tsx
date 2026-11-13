@@ -379,7 +379,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date())),
+      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date(), screeningsToInputs(screenings))),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade

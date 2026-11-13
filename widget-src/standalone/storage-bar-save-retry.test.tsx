@@ -3,9 +3,10 @@
  * US-09 AC30 (lead A1 step e): a failed cloud save is retried when the
  * browser comes back online, through the real data layer, record session,
  * live refresh and web host. The line goes back to "Synced to Dropbox", and
- * one `save_retry` product event says how it went. Settings says "It will
- * upload automatically." only while a retry will in fact happen: after a
- * failed save that was not a refused grant.
+ * one `save_retry` product event says how it went. A retry is due only after a
+ * failed save that was not a refused grant. Settings' sentence for that state
+ * ("It will upload automatically.") is held out pending Brad's approval of the
+ * wording (2026-11-14), so the waiting line reads its two sentences alone.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
@@ -21,8 +22,8 @@ vi.mock('../src/lib/server-api', async (original) => ({
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
-  storageState: (backend: string, reconnect?: string) =>
-    (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
+  storageState: (backend: string, signIn?: { kind: string }) =>
+    (signIn?.kind === 'signedOut' || signIn?.kind === 'unreachable' ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
@@ -35,7 +36,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { GitHubAdapter } from '../src/storage/github';
 
@@ -151,9 +152,13 @@ describe('US-09 AC30: a failed cloud save is retried when the browser comes back
 });
 
 describe('US-09 AC30: Settings says a retry will come only when one will (lead A1 step e)', () => {
-  it('after a failed save (offline), the waiting line says it will upload automatically', async () => {
+  // The sentence is held out pending Brad's approval of the wording (2026-11-14); the retry is still due.
+  it('after a failed save (offline), a retry is due and the waiting line reads its two sentences alone', async () => {
     await failedSave(OFFLINE());
-    expect(settingsDetail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+    expect(currentRetryDue()).toBe(true);
+    const detail = settingsDetail();
+    expect(detail).toBe(`${WAITING} ${SAFE}`);
+    expect(detail).not.toContain(RETRY_CLAUSE);
   });
 
   it('after a refused grant, the waiting line never promises an upload', async () => {
@@ -164,18 +169,21 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
   });
 
   // F7: a log-off in another tab stops this page's writes (US-09 AC2c), so no retry will come.
-  // The sentence goes at once, with no save event to tell the line.
-  it('a log-off in another tab takes the sentence away at once', async () => {
+  // The retry stops being due at once, with no save event to tell the line. The sentence that
+  // said so is held out pending Brad's approval (2026-11-14), so the line reads the same before and after.
+  it('a log-off in another tab ends the due retry at once', async () => {
     await failedSave(OFFLINE());
     cleanup();
     render(<SyncControl backend="dropbox" />);
     const detail = () => document.querySelector('.hr-sync-detail')?.textContent ?? null;
-    expect(detail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+    expect(currentRetryDue()).toBe(true);
+    expect(detail()).toBe(`${WAITING} ${SAFE}`);
     act(() => {
       localStorage.setItem(LOG_OFF_ID_KEY, 'logged-off-elsewhere');
       window.dispatchEvent(new StorageEvent('storage', { key: LOG_OFF_ID_KEY }));
     });
-    expect(detail()).not.toContain(RETRY_CLAUSE);
+    expect(currentRetryDue()).toBe(false);
+    expect(detail()).toBe(`${WAITING} ${SAFE}`);
   });
 
   // Codex R2 (F3): a revoked grant met after the write landed keeps its reason through the rewrap.

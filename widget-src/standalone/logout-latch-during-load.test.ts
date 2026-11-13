@@ -313,7 +313,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     const waiting = deferred();
     const running = runMainUntilLoaded(other, async () => {
       await waiting.promise;
-      return { resolved: { adapter: new other.local.LocalStorageAdapter(), backend: 'local', reconnect: 'google-drive' } };
+      return { resolved: { adapter: new other.local.LocalStorageAdapter(), backend: 'local', reconnect: { kind: 'signedOut', provider: 'google-drive' } } };
     });
 
     await connect.logOff('local');

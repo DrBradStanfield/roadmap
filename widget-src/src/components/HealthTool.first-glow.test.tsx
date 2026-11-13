@@ -11,10 +11,9 @@
  * network is stubbed: the events POST and the email capture answer success.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { act, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
 const flags = vi.hoisted(() => ({ shopify: true }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, get SHOPIFY_SURFACE() { return flags.shopify; } }));
@@ -30,14 +29,16 @@ vi.mock('../lib/chat-api', async original => ({
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 let captures = 0;
 
+// Fake timers that move with the clock: wait(ms) jumps the 3 s settle and the
+// 3.5 s glow at once, with the same durations, so the rules stay pinned.
+useHealthToolLifecycle({ fakeTimers: true });
 beforeEach(async () => {
   flags.shopify = true;
   captures = 0;
-  localStorage.clear(); sessionStorage.clear();
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     if (String(url).includes('/api/measurements')) { captures++; return new Response('{"success":true}', { headers: { 'content-type': 'application/json' } }); }
@@ -45,22 +46,12 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   vi.spyOn(window, 'open').mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print: vi.fn(), focus: vi.fn() }) as unknown as Window);
-  Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
-afterEach(async () => {
-  cleanup();
-  for (const stop of stops.splice(0)) stop();
-  await flushRoadmapStore();
-  vi.restoreAllMocks(); vi.unstubAllGlobals();
-});
+afterEach(() => { stopLiveRefresh(); });
 
 const q = (view: RenderResult, sel: string) => view.container.querySelector(sel);
-const wait = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 const cards = (view: RenderResult) => view.container.querySelectorAll('.suggestion-card').length;
 const glowing = (view: RenderResult) => view.container.querySelectorAll('.suggestion-highlight:not(.suggestion-fade-out)').length;
 const lit = (view: RenderResult) => view.container.querySelectorAll('.suggestion-highlight').length;
@@ -108,7 +99,8 @@ describe('US-07 AC3 (P7): a new visitor\'s first cards glow', () => {
     expect(captures).toBe(1);
     await waitFor(() => expect(glowing(view)).toBeGreaterThan(0));
     expect(unlit(view)).toBe(0); // every suggestion is new to this visitor
-    await waitFor(() => expect(lit(view)).toBe(0), { timeout: 5000 }); // glow, fade, still
+    await wait(5000);
+    expect(lit(view)).toBe(0); // glow, fade, still
   }, 20_000);
 
   it('Pages (no email box): the cards glow as they first appear', async () => {
@@ -117,7 +109,8 @@ describe('US-07 AC3 (P7): a new visitor\'s first cards glow', () => {
     expect(q(view, '.email-capture')).toBeNull();
     await waitFor(() => expect(glowing(view)).toBeGreaterThan(0));
     expect(unlit(view)).toBe(0); // every suggestion is new to this visitor
-    await waitFor(() => expect(lit(view)).toBe(0), { timeout: 5000 });
+    await wait(5000);
+    expect(lit(view)).toBe(0);
   }, 20_000);
 
   it('Pages: a returning visitor whose record opens the whole form at mount sees no glow', async () => {

@@ -11,10 +11,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { showTables } from '../testing/health-tool-harness';
+import { showTables, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
@@ -28,7 +27,6 @@ vi.mock('../lib/chat-api', async original => ({
 import { HealthTool } from './HealthTool';
 
 const KEY = 'health_roadmap_unit_overrides';
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   localStorage.clear(); sessionStorage.clear();
@@ -37,17 +35,14 @@ beforeEach(async () => {
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64, waistCm: 80 }, {});
   await flushRoadmapStore();
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

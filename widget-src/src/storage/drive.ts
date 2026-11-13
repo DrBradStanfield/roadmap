@@ -29,7 +29,10 @@ import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloa
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
 import { refreshOnce } from './token-flight';
+import { isSignedOut, signInEnded } from './sign-in-state';
 import { driveWatchLoop } from './drive-watch';
+import { gis, gisReady, loadGis } from './drive-gis';
+export { gisReady, preloadGis } from './drive-gis';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
@@ -122,72 +125,6 @@ export class DriveGrantRefusedError extends StorageError {
     );
     this.name = 'DriveGrantRefusedError';
   }
-}
-
-// --- GIS (Google Identity Services) popup fallback ---------------------------
-
-interface TokenResponse {
-  access_token?: string;
-  expires_in?: number;
-  /** The scopes the user actually approved, space-delimited. */
-  scope?: string;
-  error?: string;
-}
-interface TokenClient {
-  requestAccessToken: (overrides?: { prompt?: string }) => void;
-}
-type Gis = {
-  accounts: {
-    oauth2: {
-      initTokenClient: (cfg: {
-        client_id: string;
-        scope: string;
-        callback: (r: TokenResponse) => void;
-        error_callback?: (e: unknown) => void;
-      }) => TokenClient;
-    };
-  };
-};
-function gis(): Gis | undefined {
-  return (window as unknown as { google?: Gis }).google;
-}
-
-/** True once the GIS script has loaded, so a popup can open inside the click. */
-export function gisReady(): boolean {
-  return !!gis()?.accounts?.oauth2;
-}
-
-/** Start loading GIS ahead of the click that needs it (US-09 AC30): a script
- *  that loads after the click can outlast its user activation, and the popup is
- *  then blocked. A failure here is retried by the click's own load. */
-export function preloadGis(): void {
-  loadGis().catch(() => undefined);
-}
-
-/** Lazily inject + await the GIS script — loaded only when the fallback runs. */
-function loadGis(): Promise<void> {
-  if (gisReady()) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    if (!document.querySelector('script[src*="gsi/client"]')) {
-      const s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true;
-      // A script that failed (the network was down) is taken out, so the next
-      // load asks again instead of waiting on it forever (US-09 AC30a).
-      s.onerror = () => s.remove();
-      document.head.appendChild(s);
-    }
-    const startedAt = Date.now();
-    const iv = setInterval(() => {
-      if (gis()?.accounts?.oauth2) {
-        clearInterval(iv);
-        resolve();
-      } else if (Date.now() - startedAt > 10_000) {
-        clearInterval(iv);
-        reject(new StorageError('Google sign-in failed to load (check the network / origin allow-list).'));
-      }
-    }, 50);
-  });
 }
 
 export class GoogleDriveAdapter implements StorageAdapter {
@@ -319,10 +256,16 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * own; 'transient' = the endpoint was unreachable or errored, so the next
    * attempt may succeed. The reminders identity needs the difference — a
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
+   * A refusal, or an expired popup grant, ends this page's sign-in; a grant it
+   * knows is dead is not posted again (US-09 AC48).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
     const startedFrom = this.tokens?.refreshToken;
-    if (!startedFrom) return 'none';
+    if (!startedFrom) {
+      if (this.tokens && !this.hasValidToken()) signInEnded(this.id, this.gen);
+      return 'none';
+    }
+    if (isSignedOut(this.id)) return 'none';
     // One flight per page and grant (US-09 AC47); each caller judges its answer below.
     const answer = await refreshOnce('google-drive', startedFrom, () => postRefreshGrant(this.config.exchangeUrl, startedFrom));
     if (!answer) return 'transient'; // network/server down/timeout → caller falls back to the popup path
@@ -330,6 +273,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (status === 400 || status === 401) {
       if (this.grantMoved(startedFrom)) return 'none';
       if (answer.error === 'invalid_grant') this.clearTokens(); // only Google's "revoked or expired" forgets the grant (US-09 AC47)
+      signInEnded(this.id, this.gen);
       return 'none';
     }
     if (!json) return 'transient';
@@ -353,11 +297,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * grant is the only shared truth. Read after a refresh's last await: if it is
    * no longer the grant the refresh started from, this adapter keeps nothing
    * and leaves storage alone. A replaced grant may be another account, so it
-   * is never adopted (US-09 AC2f).
+   * is never adopted (US-09 AC2f). A grant gone while the account stays is
+   * another tab's invalid_grant: this page's sign-in ended too (US-09 AC48).
    */
   private grantMoved(startedFrom: string): boolean {
-    if (getSignIn<DriveTokens>(TOKENS_KEY)?.refreshToken === startedFrom) return false;
+    const stored = getSignIn<DriveTokens>(TOKENS_KEY);
+    if (stored?.refreshToken === startedFrom) return false;
     this.tokens = null;
+    if (!stored && getSignIn(CONFIG_KEY)) signInEnded(this.id, this.gen);
     return true;
   }
 
@@ -391,7 +338,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+  read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    return this.readFile(fileName, signal).catch(this.refused);
+  }
+
+  private async readFile(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
     if (fileName === ROADMAP_FILE_NAME) {
       const result = await readDriveRecord(await this.getToken(), this.recordIds, signal);
       this.rememberRecord();
@@ -410,7 +361,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { body: await driveDownloadJson(token, fileId), version };
   }
 
-  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+  write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+    return this.writeFile(fileName, body, expectedVersion, signal).catch(this.refused);
+  }
+
+  private async writeFile(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     if (fileName === ROADMAP_FILE_NAME) {
       const { fileId, ...result } = await writeDriveRecord(await this.getToken(), body, expectedVersion, () => this.ensureFolderId(), this.recordIds, signal);
       this.rememberRecord();
@@ -442,16 +397,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
   }
 
-  async readDocument(ref: string): Promise<Blob> {
+  readDocument(ref: string): Promise<Blob> {
     const { folder, name } = splitDocumentRef(ref);
-    const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    return driveDownloadDocument(await this.getToken(), name, parentId);
+    return this.documentFolder(folder).then(async (parentId) => driveDownloadDocument(await this.getToken(), name, parentId)).catch(this.refused);
   }
 
-  async writeDocument(ref: string, bytes: Blob): Promise<void> {
+  writeDocument(ref: string, bytes: Blob): Promise<void> {
     const { folder, name } = splitDocumentRef(ref);
-    const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    return driveUploadDocument(await this.getToken(), name, bytes, parentId);
+    return this.documentFolder(folder).then(async (parentId) => driveUploadDocument(await this.getToken(), name, bytes, parentId)).catch(this.refused);
+  }
+
+  private documentFolder(folder: string | null): Promise<string> {
+    return folder ? this.ensureSubfolderId(folder) : this.ensureFolderId();
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -468,10 +425,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
       recordIds: this.recordIds,
       cachedFileId: (name) => this.cachedFileId(name),
       authHeaders: () => this.authHeaders(),
+      refused: this.refused,
     }, fileName, onChange, signal);
   }
 
   // --- helpers --------------------------------------------------------------
+
+  /** Drive refused the access token (an API 401, access revoked): it is not used again, so the next
+   *  call refreshes and the refresh decides (US-09 AC48). Rethrows: the 401 still fails this call. */
+  private readonly refused = (error: unknown): never => {
+    if (error instanceof StorageError && error.status === 401 && this.tokens) this.tokens = { ...this.tokens, expiresAt: 0 };
+    throw error;
+  };
 
   private saveTokens(tokens: DriveTokens): boolean {
     this.tokens = tokens;
@@ -627,9 +592,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { Authorization: `Bearer ${await this.getToken()}` };
   }
 
-  /** Valid cached token → server refresh → otherwise interaction is needed. */
+  /** Valid cached token → server refresh → otherwise interaction is needed. Signed out, only a valid popup grant passes: a raise names one only once expired, so it is the reconnect's (US-09 AC48, Codex R2). */
   private async getToken(): Promise<string> {
-    const refreshed = this.hasValidToken() ? 'ok' : await this.refresh(); // 'none': no grant to refresh with; 'transient' may pass
+    const refreshed = this.hasValidToken() && !(isSignedOut(this.id) && this.tokens!.refreshToken) ? 'ok' : await this.refresh();
     if (refreshed === 'ok') return this.tokens!.accessToken;
     throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined); // US-09 AC30
   }

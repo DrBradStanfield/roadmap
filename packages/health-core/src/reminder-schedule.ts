@@ -356,8 +356,8 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
 }
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {
-  return withPsaMeasurement(screeningsToInputs(fileScreeningRows(file.screenings), now),
-    planPsa(currentValueRows(file), now));
+  const answers = screeningsToInputs(fileScreeningRows(file.screenings), now);
+  return withPsaMeasurement(answers, planPsa(currentValueRows(file), now, answers));
 }
 
 /**
