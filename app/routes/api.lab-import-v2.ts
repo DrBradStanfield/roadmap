@@ -1,10 +1,9 @@
 import crypto from 'node:crypto';
 import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
-import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { createBatch, pollBatch, BatchRefusedError, reportExtractionStop } from '../lib/anthropic.server';
-import { extractOneFile, withDaysItReads, withRefusalsItReads } from '../lib/lab-extract-one.server';
+import { extractOneFile, forWidget, reportLabImportError } from '../lib/lab-extract-one.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
@@ -129,7 +128,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
-      { status: result.status, results: result.results?.map(r => withRefusalsItReads(withDaysItReads(r, batch.days), batch.refusedRows)), completed: result.completed, total: result.total },
+      { status: result.status, results: result.results?.map(r => forWidget(r, { ...batch.days, refusedRows: batch.refusedRows })), completed: result.completed, total: result.total },
     );
   } catch (error) {
     // A failed read can change: answer `error` with the last count served, and the
@@ -204,8 +203,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return extractOneFile(validation.data, () => ({ remaining: ipQuota.remaining(ip) }));
   } catch (error) {
-    console.error('Lab import error (v2):', safeErrorFields(error));
-    Sentry.captureException(error, { tags: { feature: 'lab_import_v2' } });
+    reportLabImportError(error);
     return Response.json({ success: false, error: 'Failed to process request' }, { status: 500 });
   }
 }
