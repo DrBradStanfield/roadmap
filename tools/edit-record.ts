@@ -118,15 +118,18 @@ export function parseArgs(argv: string[]): Args {
  * A number the user typed, or a refusal naming the flag. Matched against a
  * plain decimal rather than handed to `Number`, which reads '' as 0, '0x10'
  * as 16 and ' ' as 0 — none of them a value anybody typed on purpose, and the
- * first of them lands a zero on a clinical row.
+ * first of them lands a zero on a clinical row. A decimal past the largest
+ * number JavaScript holds reads as Infinity, and an `--expect` of Infinity
+ * matches every finite row.
  */
 const DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/;
 
 function numberFlag(args: Args, flag: Flag): number {
   const raw = args.flags[flag];
   if (raw === undefined) throw new PlanError(`${flag} is required`, 'Run with --help for the options.');
-  if (!DECIMAL.test(raw.trim())) throw new PlanError(`${flag} must be a number, not "${raw}"`, 'Try `--value 2.1`.');
-  return Number(raw.trim());
+  const value = Number(raw.trim());
+  if (!DECIMAL.test(raw.trim()) || !Number.isFinite(value)) throw new PlanError(`${flag} must be a number, not "${raw}"`, 'Try `--value 2.1`.');
+  return value;
 }
 
 // ---------------------------------------------------------------------------
