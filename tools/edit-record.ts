@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { isCoreRow } from '../packages/health-core/src/core-rows';
 import { BACKUPS_KEPT, FileAdapter } from '../packages/health-core/src/file-adapter';
 import { comparatorOf, formatGradedOrLimit } from '../packages/health-core/src/lab-limits';
+import { readableSlotRow } from '../packages/health-core/src/mcp-tool-contract';
 import { oneLine, PlanError } from '../packages/health-core/src/plan';
 import {
   appendLabValue,
@@ -145,12 +146,17 @@ function coreMetricOf(row: Row): MetricType | undefined {
   return 'metricType' in row || isCoreRow(row) ? (rowName(row) as MetricType) : undefined;
 }
 
+/** What stands in for a value no reader can read: the MCP tools' words. */
+const UNREADABLE = 'a value this app cannot read';
+
 /**
  * What to echo back. A core value is STORED unrounded — converting 81 mg/dL
  * gives 2.094647… and the app stores the same — but a confirmation line reads
- * as a value, so it is rounded the way the app displays it.
+ * as a value, so it is rounded the way the app displays it. A value no reader
+ * can read is never echoed (US-65 AC3a), as the MCP tools do: it may be anything.
  */
 function shownValue(row: Row): string {
+  if (!readableSlotRow(row)) return UNREADABLE;
   const metric = coreMetricOf(row);
   // A PSA prints on its side of 4.0, as the app shows it (US-06 AC18).
   if (metric === 'psa') return formatGradedOrLimit('psa', row.value, 'si', comparatorOf(row).comparator);
@@ -163,7 +169,7 @@ function refuse(result: Extract<EditResult<Row>, { ok: false }>, path: string): 
   if (result.reason === 'slot-occupied' && held) {
     throw new PlanError(
       result.message,
-      `That day holds ${held.value} (row ${oneLine(held.id)}, ${oneLine(String(held.recordedAt).slice(0, 10))}). ` +
+      `That day holds ${readableSlotRow(held) ? held.value : UNREADABLE} (row ${oneLine(held.id)}, ${oneLine(String(held.recordedAt).slice(0, 10))}). ` +
         `Correct it instead: npx tsx tools/edit-record.ts correct ${path} --id ${oneLine(held.id)} --value <new value>`,
     );
   }
