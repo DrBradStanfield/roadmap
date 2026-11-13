@@ -49,8 +49,9 @@ extension AppleHealthSync {
             case (.running, .disconnect): (.stopping, nil)
             case (.stopping, .disconnect), (.disconnected, .disconnect): (run, nil)
 
-            // A running pass owns what Settings shows (D2 (a)).
-            case (.running, .connectFailed): (run, nil)
+            // A running pass owns what Settings shows (D2 (a)). A draining one keeps its claim: idle
+            // here would let a reconnect start a second pass beside it, and `drained` stop waiting.
+            case (.running, .connectFailed), (.stopping, .connectFailed): (run, nil)
             case (_, .connectFailed(let message)): (.idle(.failed(message)), nil)
             }
         }

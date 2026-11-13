@@ -48,6 +48,43 @@ final class AppleHealthRunPinsTests: XCTestCase {
         XCTAssertEqual(sync.status, .unavailable, "the Apple Health section stays hidden")
     }
 
+    /// Review R1 (US-72 AC10): a Connect that fails while an erase drains a pass leaves the pass
+    /// its claim, so `drained` still waits and a reconnect queues behind it, never a second pass
+    /// beside it.
+    func testAFailedConnectDuringTheDrainKeepsThePassItsClaim_US72_AC10() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let health = FakeHealthStore()
+        var reached = false, released = false
+        health.saveHold = { [weak health] in
+            health?.saveHold = nil
+            reached = true
+            while !released { await Task.yield() }
+        }
+        let sync = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: defaults))
+        let connecting = Task { await sync.connect() }
+        while !reached { await Task.yield() }
+        let erase = Task { await sync.erased(wasConnected: true) }
+        while sync.run != .stopping { await Task.yield() }
+
+        health.authorizationError = CocoaError(.userCancelled)
+        await sync.connect()
+        XCTAssertEqual(sync.run, .stopping, "the draining pass keeps its claim")
+        XCTAssertTrue(sync.run.passing, "an erase's delete still waits for it")
+
+        health.authorizationError = nil
+        let reconnecting = Task { await sync.connect() }
+        while sync.run != .running(queued: true) { await Task.yield() }
+        released = true
+        await connecting.value
+        await reconnecting.value
+        _ = await erase.value
+
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+        XCTAssertTrue(sync.waiting.isEmpty, "every caller was let go")
+    }
+
     /// The connect pass's one save to Health is held, an erase disconnects Health meanwhile, then
     /// the save throws `error`, ending the pass locked or failed.
     private func assertNotConnected(afterAPassThat error: Error) async throws {

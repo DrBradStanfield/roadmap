@@ -436,7 +436,11 @@ final class FakeHealthStore: HealthStoreClient {
     /// Lab results asked for on their own, on coming forward (US-72 AC1).
     private(set) var labRequests = 0
 
+    /// The permission request fails before any sheet shows (lead H27 review R1).
+    var authorizationError: Error?
+
     func requestAuthorization() async throws -> Bool {
+        if let authorizationError { throw authorizationError }
         authorized = true
         requests += 1
         let asked = supportsHealthRecords && recordsNotYetAsked

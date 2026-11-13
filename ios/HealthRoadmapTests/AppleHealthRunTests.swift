@@ -126,7 +126,8 @@ final class AppleHealthRunTests: XCTestCase {
             ("gateClosed", .disconnected, .release),
             ("disconnect connected", .stopping, nil),
             ("disconnect not connected", .stopping, nil),
-            ("connectFailed", .idle(.failed("sheet failed")), nil),
+            // A failed reconnect during the drain: the pass still runs, so the claim stays (review R1).
+            ("connectFailed", .stopping, nil),
         ]),
     ]
 
