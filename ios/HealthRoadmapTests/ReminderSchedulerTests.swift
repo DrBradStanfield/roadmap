@@ -14,6 +14,10 @@ final class ReminderSchedulerTests: XCTestCase {
     private var engineFails = false
     /// What the scheduler passed the engine as kept first-seen days, call by call.
     private var sentFirstSeen: [[String: String]] = []
+    /// When set, each engine read takes the record as it is when called, then waits to be
+    /// resumed: a read in flight across a record switch (S41).
+    private var holdsReads = false
+    private var heldReads: [CheckedContinuation<Void, Never>] = []
 
     override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
@@ -26,13 +30,17 @@ final class ReminderSchedulerTests: XCTestCase {
         engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"])
         engineFails = false
         sentFirstSeen = []
+        holdsReads = false
+        heldReads = []
     }
 
     private func scheduler() -> ReminderScheduler {
         ReminderScheduler(center: center, folder: folder) { [unowned self] firstSeen in
             sentFirstSeen.append(firstSeen)
-            if engineFails { throw HealthEngine.EngineError.callFailed("unreadable") }
-            return engineOutput
+            let fails = engineFails, output = engineOutput
+            if holdsReads { await withCheckedContinuation { heldReads.append($0) } }
+            if fails { throw HealthEngine.EngineError.callFailed("unreadable") }
+            return output!
         }
     }
 
@@ -459,37 +467,51 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
     }
 
-    /// US-25 AC12b (lead S41): a switch to a record at a higher epoch whose read before the ask
-    /// fails: the grant ends off. The next tap, after a good read of the new record, turns them on.
-    func testASwitchUpWithAFailedReadEndsOffThenTheNextTapTurnsOn_US25_AC12b() async {
+    /// US-25 AC12b, US-11 (lead S41): a switch up to record B, read there, then back to record A,
+    /// whose read before the ask fails and which is erased while iOS answers. B's higher epoch must
+    /// not vouch for A, so reminders end off; the next tap, after a good read of A, turns them on.
+    func testASwitchUpAndBackThenAnEraseDuringTheAskLeavesRemindersOff_US25_AC12b() async {
         let scheduler = scheduler()
         await scheduler.refresh() // record A, a good read at epoch 0
-        scheduler.recordSourceChanged() // now record B, at epoch 3
+        scheduler.recordSourceChanged()
+        engineOutput = reminders(epoch: 3, days: ["2027-01-15"])
+        await scheduler.refresh() // record B, a good read at epoch 3
+        scheduler.recordSourceChanged() // back to record A, at epoch 0
         center.holdsAnswers = true
         engineFails = true
         let ask = Task { await scheduler.optIn() }
         await until { self.center.held.count == 1 }
         engineFails = false
-        engineOutput = reminders(epoch: 3, days: ["2027-01-15"])
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"]) // A erased during the ask
         center.releaseAll()
         let on = await ask.value
-        XCTAssertFalse(on, "no good read of B before the ask: fail safe")
+        XCTAssertFalse(on, "B's epoch 3 never vouches for A's erase to 1")
         XCTAssertEqual(center.pending.count, 0)
         center.holdsAnswers = false
-        await scheduler.refresh() // a good read of B
+        await scheduler.refresh() // a good read of A at epoch 1
         let again = await scheduler.optIn()
-        XCTAssertTrue(again, "the next tap, with B read, turns reminders on")
+        XCTAssertTrue(again, "the next tap, with A read, turns reminders on")
         XCTAssertEqual(center.pending.count, 1)
     }
 
-    /// US-25 AC12b (lead S41): a good read after the switch is the new record's own, so it stands
-    /// in again for a failed read before the ask, and the grant is accepted.
+    /// US-25 AC12b (lead S41): right after a switch, a grant with no good read of the new record
+    /// ends off, even with nothing erased; a good read of it restores the fallback, so the next
+    /// grant is accepted.
     func testAGoodReadAfterASwitchRestoresTheFallback_US25_AC12b() async {
         engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
         let scheduler = scheduler()
         await scheduler.refresh() // record A at epoch 5
-        scheduler.recordSourceChanged()
+        scheduler.recordSourceChanged() // now record B, at epoch 1
         engineOutput = reminders(epoch: 1, days: ["2027-01-15", "2027-03-01"])
+        center.holdsAnswers = true
+        engineFails = true
+        let first = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let before = await first.value
+        XCTAssertFalse(before, "A's epoch 5 is not B's: no fallback yet")
+        center.holdsAnswers = false
         await scheduler.refresh() // record B, a good read at epoch 1
         center.holdsAnswers = true
         engineFails = true
@@ -500,6 +522,69 @@ final class ReminderSchedulerTests: XCTestCase {
         let on = await ask.value
         XCTAssertTrue(on, "B's own last good read matches B after the grant")
         XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b, US-11 (lead S41): a connected cloud shows the phone's copy until it opens. A
+    /// refresh in that window reads the phone's copy; the open is a second switch, so the phone's
+    /// epoch never vouches for the cloud record's erase during the ask.
+    func testTheWindowBeforeTheCloudOpensNeverVouchesForTheCloudRecord_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // the phone's record at epoch 5
+        scheduler.recordSourceChanged() // signed in: the provider is set, the phone's copy still shows
+        await scheduler.refresh() // a return to the foreground reads the phone's copy again
+        scheduler.recordSourceChanged() // the cloud record opens, at epoch 1
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // the cloud record erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "the phone's epoch 5 never vouches for the cloud's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch
+    /// to record B. Its epoch is A's, so it never becomes B's fallback.
+    func testARefreshInFlightAcrossASwitchNeverBecomesTheFallback_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        holdsReads = true
+        let refresh = Task { await scheduler.refresh() } // reads record A at epoch 5
+        await until { self.heldReads.count == 1 }
+        holdsReads = false
+        scheduler.recordSourceChanged() // now record B, at epoch 1
+        heldReads.removeFirst().resume()
+        await refresh.value
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // B erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "A's late read never vouches for B's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// US-25 AC12b, US-11 (lead S41): the switch lands while iOS answers. The reads before the ask
+    /// were the old record's, so they never vouch for the new record's erase.
+    func testASwitchDuringThePermissionAskLeavesRemindersOff_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // record A at epoch 5
+        center.holdsAnswers = true
+        let ask = Task { await scheduler.optIn() } // its read before the ask is A's 5
+        await until { self.center.held.count == 1 }
+        scheduler.recordSourceChanged() // now record B, at epoch 1
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // B erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "A's reads never vouch for B's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
     }
 
     /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.

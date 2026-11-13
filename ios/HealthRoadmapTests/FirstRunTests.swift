@@ -62,8 +62,12 @@ final class FirstRunTests: XCTestCase {
         check(launch(.init(welcomed: true, onboarded: true, erasedElsewhere: true)), .questions(.afterErase), .startOver, "an erase on another device brings the questions back")
         check(launch(.init(welcomed: true, needsQuestions: true, run: .onlyMissing)), .questions(.onlyMissing), nil, "a relaunch mid-run resumes it the same way")
         check(launch(.init(welcomed: true, onboarded: true)), .none, nil, "a finished phone opens on the tabs")
-        // Not onboarded and not erased elsewhere counts: only a finished phone starts over.
-        check(launch(.init(welcomed: true, erasedElsewhere: true)), .none, nil)
+        // Not onboarded and not erased elsewhere counts: only a finished phone starts over. A full
+        // record past the welcome screen that never finished finishes now (S42).
+        check(launch(.init(welcomed: true, erasedElsewhere: true)), .none, .finish)
+        check(launch(.init(welcomed: true, needsQuestions: false)), .none, .finish, "welcomed, a full record, never finished: finish now (S34, S42)")
+        check(launch(.init(welcomed: true, needsQuestions: nil)), .none, nil, "an unread record: no finish, the next launch decides (S42)")
+        check(launch(.init(welcomed: true, onboarded: true, needsQuestions: nil)), .none, nil, "a finished phone with an unread record opens on the tabs")
         for cover in [Cover.welcome, .questions(.fresh), .none] {
             check(Cover.transition(cover, .launched(.init())), cover, nil, "\(cover): launch decides once")
         }
@@ -122,7 +126,7 @@ final class FirstRunTests: XCTestCase {
         return FirstRunKeys(defaults: defaults)
     }
 
-    private func decide(_ keys: FirstRunKeys, needsFlow: Bool, erasedElsewhere: Bool = false) -> (Cover, Cover.Effect?) {
+    private func decide(_ keys: FirstRunKeys, needsFlow: Bool?, erasedElsewhere: Bool = false) -> (Cover, Cover.Effect?) {
         Cover.transition(.deciding, .launched(keys.launch(needsFlow: needsFlow, erasedElsewhere: erasedElsewhere)))
     }
 
@@ -168,7 +172,8 @@ final class FirstRunTests: XCTestCase {
     /// person's saves count toward the backup offer (RootView's ownSaves guard).
     func testWelcomeStartWithAFullRecordFinishes_US57_AC9() {
         let keys = Self.keys()
-        XCTAssertFalse(keys.needsQuestions(needsFlow: false))
+        XCTAssertEqual(keys.needsQuestions(needsFlow: false), false)
+        XCTAssertNil(keys.needsQuestions(needsFlow: nil), "an unread record cannot say")
         let (cover, effect) = Cover.transition(.welcome, .started(needs: keys.needsQuestions(needsFlow: false)))
         keys.persist(cover, effect)
         XCTAssertEqual(effect, .finish)
@@ -194,6 +199,22 @@ final class FirstRunTests: XCTestCase {
         let profile = MyData.Profile(sex: "female", birthYear: 1980, birthMonth: 6, height: nil, heightUnit: "cm", feetInches: nil)
         XCTAssertTrue(OnboardingSteps.needsFlow(profile), "a record without height needs the questions")
         check(decide(keys, needsFlow: OnboardingSteps.needsFlow(profile)), .questions(.fresh), nil)
+    }
+
+    /// S42: Start while the record is unread, then a relaunch with a full record: it finishes at
+    /// launch, so `onboarded` is set and saves count. The launch after decides the tabs with no
+    /// effect, so finish never runs twice. A relaunch still unread finishes nothing.
+    func testAnUnreadStartThenAFullRecordFinishesAtTheNextLaunchOnce_US57_AC9() {
+        let keys = Self.keys()
+        let (cover, effect) = Cover.transition(.welcome, .started(needs: nil))
+        keys.persist(cover, effect)
+        check(decide(keys, needsFlow: nil), .none, nil, "still unread: decide again next launch")
+        XCTAssertFalse(keys.onboarded)
+        let relaunch = decide(keys, needsFlow: false)
+        check(relaunch, .none, .finish, "a full record finishes once read")
+        keys.persist(relaunch.0, relaunch.1)
+        XCTAssertTrue(keys.onboarded, "saves now count")
+        check(decide(keys, needsFlow: false), .none, nil, "the launch after: no second finish")
     }
 
     /// Entering a run writes why it runs, and the welcome screen is done.

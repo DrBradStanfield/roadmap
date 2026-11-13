@@ -116,8 +116,9 @@ struct RootView: View {
         }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
         .onChange(of: shownRecord) { recordChanged() }
-        // Another record's erase epoch never stands in for this one's (S41).
-        .onChange(of: source) { reminders.recordSourceChanged() }
+        // Another record's erase epoch never stands in for this one's (S41): a connected cloud
+        // shows the phone's copy until it opens, so the switch is the source or the open changing.
+        .onChange(of: ShownRecord(source: source, open: sync.recordOpen, epoch: nil)) { reminders.recordSourceChanged() }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
@@ -167,9 +168,9 @@ struct RootView: View {
     }
 
     /// nil while the record is unread: the cover closes unfinished, so the next launch decides (S42).
-    private var needsQuestions: Bool? { store.myData == nil ? nil : keys.needsQuestions(needsFlow: needsFlow) }
+    private var needsQuestions: Bool? { keys.needsQuestions(needsFlow: needsFlow) }
 
-    private var needsFlow: Bool { store.myData.map { OnboardingSteps.needsFlow($0.profile) } ?? false }
+    private var needsFlow: Bool? { store.myData.map { OnboardingSteps.needsFlow($0.profile) } }
 
     /// Clarity's screen name, in fixed words (US-25 AC19).
     private var screenName: Analytics.Screen {

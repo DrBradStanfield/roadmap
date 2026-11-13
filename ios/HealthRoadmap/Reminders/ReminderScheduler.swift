@@ -23,6 +23,8 @@ final class ReminderScheduler {
     private(set) var reminders: PhoneReminders?
     /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
     private var lastEpoch: Int?
+    /// Bumped when another record shows: a read or an ask begun before it is stale (S41). A token, not a mode.
+    private var generation = 0
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?
     /// Off, asking iOS, or on under the record's erase epoch at the time (AC12b). Stored, so
@@ -98,7 +100,10 @@ final class ReminderScheduler {
 
     /// The record on screen became another one (phone or cloud): the last good read was the old
     /// record's, so an ask whose own read fails has nothing to fall back to until the next good read (S41).
-    func recordSourceChanged() { lastEpoch = nil }
+    func recordSourceChanged() {
+        generation += 1
+        lastEpoch = nil
+    }
 
     private func send(_ event: ReminderEvent) -> ReminderEffect? {
         let (next, effect) = ReminderMode.transition(mode, event)
@@ -109,20 +114,26 @@ final class ReminderScheduler {
     private func run(_ effect: ReminderEffect?) async {
         switch effect {
         case .askPermission(let attempt):
+            let captured = generation
             let askedAt = (try? await compute(firstSeen()))?.eraseEpoch
             let lastRead = lastEpoch
             let granted = (try? await center.requestPermission()) ?? false
             let epoch = granted ? (try? await compute(firstSeen()))?.eraseEpoch : nil
-            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt, lastRead: lastRead)))
+            // A switch during the ask: both reads before it were the old record's (S41).
+            let same = generation == captured
+            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch,
+                                  askedAt: same ? askedAt : nil, lastRead: same ? lastRead : nil)))
         case .refresh: await refresh()
         case nil: break
         }
     }
 
     private func reschedule() async {
+        let started = generation
         let next = try? await compute(firstSeen())
         reminders = next
-        if let next { lastEpoch = next.eraseEpoch }
+        // A read begun before a switch is the old record's: it never becomes the fallback (S41).
+        if let next, generation == started { lastEpoch = next.eraseEpoch }
         // An erase since the opt-in ends it. A failed read is not an erase: it only
         // cancels this round, and the next good read schedules again.
         _ = send(.read(epoch: next?.eraseEpoch))
