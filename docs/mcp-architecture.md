@@ -76,7 +76,7 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code: never b
 | --- | --- |
 | `app/routes/mcp.$.tsx` | MCP endpoint plus `/authorize`, `/token`, `/register`, `/callback`. One splat, one file. No `/disconnect`: with no state to delete there is nothing for it to do, and the real revocation is the provider's own settings page (§1). |
 | `app/routes/[.]well-known.$.tsx` | RFC 9728 and RFC 8414 documents must sit at host root, so they cannot live under `/mcp`. One splat serves both. |
-| `app/lib/mcp.server.ts` | Dispatch, corrections guards, write budget, -32603 gate. Tool definitions live in `packages/health-core/src/mcp-tool-catalogue.ts` and Zod schemas in `mcp-tool-contract.ts`, both re-exported by `mcp-tools.ts`. |
+| `app/lib/mcp.server.ts` | Dispatch, corrections guards, write budget, -32603 gate. Tool definitions live in `packages/health-core/src/mcp-tool-catalogue.ts` and Zod schemas in `mcp-tool-contract.ts`; import each from its own module. |
 | `app/lib/mcp-config.server.ts` | The two secrets, the on switch, the public URLs. |
 | `app/lib/mcp-seal.server.ts` | Seal/unseal: per-type keys, AAD, padding, `kid`. |
 | `app/lib/mcp-step.server.ts` | The two-call step receipts (US-35 AC7, US-36 AC9): HMACs under per-kind HKDF keys, `STEP_WINDOWS`, `signStep`/`openStep`, `issueProposal`/`openProposal`. |

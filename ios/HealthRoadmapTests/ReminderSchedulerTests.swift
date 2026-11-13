@@ -297,6 +297,152 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(out.firstSeen, [:], "no follow-up in a new record")
     }
 
+    /// US-25 AC12b (iPhone survey S7): a second tap on the switch while iOS is still answering
+    /// the first asks nothing more. Permission already decided means no alert, so the switch,
+    /// still drawn off, takes the tap.
+    func testADoubleTapMidOptInAsksIOSOnce_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let first = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        let second = Task { await scheduler.optIn() }
+        await until { false } // the second tap runs as far as it can
+        center.releaseAll()
+        _ = await first.value
+        _ = await second.value
+        XCTAssertEqual(center.permissionAsks, 1, "one tap's worth of asking")
+        XCTAssertTrue(scheduler.optedIn)
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b (iPhone survey S7): an answer that lands after the user turned reminders off
+    /// leaves them off. Before, the double tap's second answer turned them back on.
+    func testALateOptInCannotUndoALaterOptOut_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let first = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        let second = Task { await scheduler.optIn() }
+        await until { false }
+        center.releaseFirst()
+        _ = await first.value
+        XCTAssertTrue(scheduler.optedIn, "the first answer turns reminders on")
+        await scheduler.optOut()
+        center.releaseAll()
+        _ = await second.value
+        XCTAssertFalse(scheduler.optedIn, "the user asked for off")
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// US-25 AC12b (adversary F1): the answer to an older ask is dropped through the scheduler,
+    /// whether reminders are off by then or a newer ask is out.
+    func testALateAnswerToAnOlderAskIsDropped_US25_AC12b() async {
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        // "Allow notifications" asks again while on; the user turns reminders off; the answer lands.
+        center.holdsAnswers = true
+        let reask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        await scheduler.optOut()
+        center.releaseAll()
+        _ = await reask.value
+        XCTAssertFalse(scheduler.optedIn, "off x asked: the late answer is dropped")
+        XCTAssertEqual(center.pending.count, 0)
+
+        // On again; a re-ask is out; off; on again (a newer ask); the older answer lands first.
+        center.holdsAnswers = false
+        _ = await scheduler.optIn()
+        center.holdsAnswers = true
+        let older = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        await scheduler.optOut()
+        let newer = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 2 }
+        center.releaseFirst()
+        _ = await older.value
+        XCTAssertFalse(scheduler.optedIn, "asking x an older attempt's answer: still asking")
+        XCTAssertEqual(center.pending.count, 0)
+        center.releaseFirst()
+        _ = await newer.value
+        XCTAssertTrue(scheduler.optedIn, "the newer ask's grant turns reminders on")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b, US-11: an erase that lands while iOS is answering ends the ask. The grant
+    /// was given for the record before the erase, so reminders stay off and nothing is scheduled.
+    func testAnEraseDuringThePermissionAskLeavesRemindersOff_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh() // the erase's refresh
+        center.releaseAll()
+        _ = await ask.value
+        XCTAssertFalse(scheduler.optedIn, "no reminders for the erased record")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
+    /// US-25 AC12b, US-11 (lead R1): the read before the ask fails, an erase lands while iOS
+    /// answers, then the grant arrives. The last good read tells the erase: reminders stay off.
+    func testAFailedReadBeforeTheAskStillCatchesAnEraseDuringIt_US25_AC12b() async {
+        let scheduler = scheduler()
+        await scheduler.refresh() // a good read at epoch 0
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh() // the erase's refresh
+        center.releaseAll()
+        _ = await ask.value
+        XCTAssertFalse(scheduler.optedIn, "no reminders for the erased record")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
+    /// US-25 AC12b (lead R1): the read before the ask fails with nothing erased; the last good
+    /// read stands in, so the grant turns reminders on.
+    func testAFailedReadBeforeTheAskFallsBackToTheLastGoodRead_US25_AC12b() async {
+        let scheduler = scheduler()
+        await scheduler.refresh() // a good read at epoch 0
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertTrue(on, "the last good read matches the record after the grant")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b, US-11 (lead R1): with no good read before the ask, an erase during it cannot
+    /// be told, so the grant does not turn reminders on. A later tap, with the record read, does.
+    func testAGrantWithNoGoodReadBeforeTheAskLeavesRemindersOff_US25_AC12b() async {
+        engineFails = true
+        let scheduler = scheduler()
+        center.holdsAnswers = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "never read: fail safe")
+        XCTAssertEqual(center.pending.count, 0)
+        center.holdsAnswers = false
+        let again = await scheduler.optIn()
+        XCTAssertTrue(again, "the next tap, with the record read, turns reminders on")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.
+    private func until(_ done: () -> Bool) async {
+        for _ in 0..<200 where !done() { await Task.yield() }
+    }
+
     private func request(_ id: String) -> UNNotificationRequest {
         UNNotificationRequest(identifier: id, content: UNMutableNotificationContent(), trigger: nil)
     }
@@ -309,9 +455,17 @@ final class FakeNotificationCenter: NotificationScheduling {
     var grants = true
     var status = NotificationPermission.notAsked
     var permissionAsks = 0
+    /// When set, each permission answer waits for `releaseFirst` or `releaseAll`, as iOS's
+    /// answer arrives after an XPC hop.
+    var holdsAnswers = false
+    private(set) var held: [CheckedContinuation<Void, Never>] = []
+
+    func releaseFirst() { if !held.isEmpty { held.removeFirst().resume() } }
+    func releaseAll() { while !held.isEmpty { releaseFirst() } }
 
     func requestPermission() async throws -> Bool {
         permissionAsks += 1
+        if holdsAnswers { await withCheckedContinuation { held.append($0) } }
         status = grants ? .allowed : .denied
         return grants
     }

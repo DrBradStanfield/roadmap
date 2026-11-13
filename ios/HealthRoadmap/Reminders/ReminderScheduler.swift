@@ -21,14 +21,18 @@ import UserNotifications
 final class ReminderScheduler {
     /// What the engine last said; nil when the record could not be read.
     private(set) var reminders: PhoneReminders?
+    /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
+    private var lastEpoch: Int?
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?
-    /// The record's erase epoch when the user turned reminders on; nil when off.
-    /// Stored, so SwiftUI sees it change; saved to `optInFile` on every change.
-    private var optedInEpoch: Int? {
+    /// Off, asking iOS, or on under the record's erase epoch at the time (AC12b). Stored, so
+    /// SwiftUI sees it change; only `on` is saved to `optInFile`, so a launch mid-ask starts off.
+    private var mode: ReminderMode = .off {
         didSet { save() }
     }
-    var optedIn: Bool { optedInEpoch != nil }
+    var optedIn: Bool { if case .on = mode { true } else { false } }
+    /// Mints each ask's attempt, so a late answer to an older one is known: a token, not a mode.
+    private var attempts = 0
 
     /// Our notifications, and only ours, start with this.
     nonisolated static let prefix = "reminder."
@@ -52,12 +56,12 @@ final class ReminderScheduler {
         self.compute = compute
         optInFile = folder.appending(path: "reminders-opt-in")
         firstSeenFile = folder.appending(path: "reminders-first-seen")
-        optedInEpoch = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }
+        mode = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }.map { .on(epoch: $0) } ?? .off
     }
 
     private func save() {
-        if let optedInEpoch {
-            try? Data(String(optedInEpoch).utf8).write(to: optInFile, options: .atomic)
+        if case .on(let epoch) = mode {
+            try? Data(String(epoch).utf8).write(to: optInFile, options: .atomic)
         } else {
             try? FileManager.default.removeItem(at: optInFile)
         }
@@ -81,24 +85,43 @@ final class ReminderScheduler {
     }
 
     /// Asks iOS for permission, and on a yes turns reminders on under the record's current epoch.
+    /// A tap while an ask is out asks nothing more (AC12b).
     func optIn() async -> Bool {
-        let granted = (try? await center.requestPermission()) ?? false
-        if granted, let epoch = (try? await compute(firstSeen()))?.eraseEpoch { optedInEpoch = epoch }
-        await refresh()
+        attempts += 1
+        await run(send(.tappedOn(attempt: attempts)))
         return optedIn
     }
 
     func optOut() async {
-        optedInEpoch = nil
-        await refresh()
+        await run(send(.tappedOff))
+    }
+
+    private func send(_ event: ReminderEvent) -> ReminderEffect? {
+        let (next, effect) = ReminderMode.transition(mode, event)
+        if next != mode { mode = next }
+        return effect
+    }
+
+    private func run(_ effect: ReminderEffect?) async {
+        switch effect {
+        case .askPermission(let attempt):
+            let askedAt = (try? await compute(firstSeen()))?.eraseEpoch
+            let lastRead = lastEpoch
+            let granted = (try? await center.requestPermission()) ?? false
+            let epoch = granted ? (try? await compute(firstSeen()))?.eraseEpoch : nil
+            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt, lastRead: lastRead)))
+        case .refresh: await refresh()
+        case nil: break
+        }
     }
 
     private func reschedule() async {
         let next = try? await compute(firstSeen())
         reminders = next
+        if let next { lastEpoch = next.eraseEpoch }
         // An erase since the opt-in ends it. A failed read is not an erase: it only
         // cancels this round, and the next good read schedules again.
-        if let epoch = optedInEpoch, let next, epoch != next.eraseEpoch { optedInEpoch = nil }
+        _ = send(.read(epoch: next?.eraseEpoch))
         permission = await center.permission()
         // Off, refused or erased: the first-seen days go whatever the engine answered (or if it
         // failed), so turning reminders on again fires each follow-up on its first morning.

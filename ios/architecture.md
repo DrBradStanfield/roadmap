@@ -1209,6 +1209,23 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   phone writing it would put a fake enrolment in a synced record. Notification permission
   is per device anyway. If Brad wants one switch for both, it needs its own field in the
   schema (a merge and schema call, so the orchestrator's).
+- **The switch is one mode (2026-11-13, US-25 AC12b, iPhone survey S7).** `ReminderMode` is
+  off, `asking(attempt:)` or `on(epoch:)`, changed only by the pure `ReminderMode.transition`
+  (3 modes by 4 events, no default arm, `ReminderModeTests`), which also names the effect:
+  ask iOS, or refresh. Each tap mints an attempt (a counter, a token, not a mode). A tap while
+  asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
+  before, a double tap asked iOS twice, and the second grant could turn reminders back on
+  after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
+  an erase moved it in between, the grant is refused and reminders stay off (US-11). If the
+  first read fails, the last good read's epoch stands in; with none ever, the grant is refused
+  (fail safe; the next tap, with the record read, turns them on). Known lead (S39):
+  a refresh that read the record before an erase can land `read(old)` after a grant set
+  `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
+  the epoch. iOS's permission stays a value read from iOS, never a case:
+  the user changes it in Settings with no event to us. Only `on` is written to the opt-in
+  file, same format as before. The switch still reads off until the grant lands. Known gap,
+  left for words: when permission is already decided the ask shows no alert, and the switch
+  stays off and tappable for that moment.
 - **No per-category switches.** The web has none since its v1 settings went; the schedule
   still honours any `reminderPreferences` already in the record.
 - **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
@@ -1695,7 +1712,13 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
   Both are generated from `engine/contract.ts`, the one source (I-2, 2026-11-13):
   edit it, then `npx tsx ios/scripts/gen-contract.ts`; `engine/contract.test.ts` fails
-  when either file differs from what it generates.
+  when either file differs from what it generates. The same script writes
+  `engine/contract.schema.json` (the bridge, neutral, for any platform's generator) and the
+  app's Swift, checked in: `HealthRoadmap/Engine/Generated/EngineContract.swift` (the bridge
+  id, the doors list, the wire types: EngineEdit, EditOutcome, UnitConversion and the shapes
+  they hold) and `EngineDoors.swift` (one typed `door…` method per door on HealthEngine, the
+  app's only way to a door). `engine/contract-drift.test.ts` fails in CI on any difference, and
+  on hand-written Swift that names a door in a raw `call`.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
@@ -1752,8 +1775,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     and `MessageAlert` (the one-button alert every tab uses).
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
     resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
-    height or weight and its entry-only unit switch), `OnboardingView` and `OnboardingPage`
-    (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
+    height or weight and its entry-only unit switch), `OnboardingFlow` (the flow's one named
+    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
     line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
     unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
@@ -1896,6 +1919,37 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 - **Existing users skip it**: a record holding sex, birth year and height. "I already use
   Health Roadmap" connects the cloud first, then asks only what is missing.
 - **No usage event** (D9 holds): App Store Connect retention is the signal.
+- **One named state (2026-11-13, iPhone survey S6, US-54 AC5d).** `OnboardingFlow.Mode` is
+  starting, connecting, `page(Page, SheetSave.State<Replace>)` or `finished(Page?)`, changed
+  only by the pure `OnboardingFlow.transition`, which returns the effects the view runs (pin,
+  repin, unpin, connect, finish, save, replace, restart); `OnboardingFlowTests` holds the table. It
+  replaced seven `@State` flags (step, editing, message, connecting, birthAnswered, replacing,
+  saving). Why: they drifted apart, and each drift was a bug (a double tap saved or connected
+  twice, finish ran twice, a silent unlock). A page's save is the sheets' `SheetSave`, so the
+  tap claims it in its own turn and "Replace it" carries the row and the weight typed.
+  `finished` holds the last page so the cover slides down with it drawn. An answer it cannot
+  write (`Landing.unwritten`) keeps the pin. A refusal while the pinned record is no longer the
+  one shown (`RecordStore.pinStillShown`, the same `shows` predicate `applyInTurn`'s guard uses)
+  is a `restart`: the words show, the page waits, the store repins and the flow is planned again
+  from the record now shown by begin's own `OnboardingSteps.first`. Onboarding cannot close as a
+  sheet does, so it plans again instead of refusing for good. The trigger is state, not the
+  refusal's text or reason (owner's ruling (c) over carrying `reason` on `ApplyResult`, PR 1570):
+  one place, `OnboardingFlow.landing(moved:)`. Any other refusal shows its words and repins. Pin and unpin are effects: begin pins as the first page shows,
+  finishing gives the pin back. Lead F3: a save landing after `onDisappear` could unpin twice
+  (no live path: the cover closes only through finish).
+- **The cover and the backup offer, one state each (2026-11-13, iPhone survey S9, S16).**
+  `Cover` (App/FirstRun.swift) is deciding, welcome, `questions(Run)` (fresh, onlyMissing,
+  afterErase) or none, changed only by `Cover.transition` (launched, started, connected,
+  finished, erased), which names its effect, finish or startOver. It replaced `firstRun`,
+  `decided` and three `@AppStorage` aliases. Why: finish ran from three places, so it could
+  run twice; now a second finish does nothing. The eight keys keep their names, so no
+  migration: `FirstRunKeys.persist` writes them, and finishing now clears the run's flags.
+  Welcome's Start on a full record finishes too (S34), so its saves count. `Offer` is idle,
+  `offering(backUp:)` or sync, replacing three Bools; Back up leaves `prompting`, which closes
+  the prompt, and Sync opens in its onDismiss, so two sheets never overlap. One
+  `.task(id: offerAsks)` holds the 1 s wait, so a newer ask restarts it. `FirstRunTests` holds
+  both tables. Open: a remote erase while the backup or Sync sheet is up (S9 fault 1) waits for
+  a simulator probe.
 
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 

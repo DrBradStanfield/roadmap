@@ -22,7 +22,7 @@ extension RecordStore {
     private func importLabsInTurn(extractionJSON: String, refs: [String], reportDay: String, as seen: Screen) async -> Result<LabSaveSummary, LabRefusal> {
         // Another record since the review opened (a sync, a Disconnect's read): refused before
         // anything is read against the record now shown, as `applyInTurn` refuses it.
-        guard seen.erase == cloudErase, seen.mark.holds(at: mark) else { return .failure(LabRefusal(message: Self.recordChanged)) }
+        guard shows(seen) else { return .failure(LabRefusal(message: Self.recordChanged)) }
         let edit = RecordEdit.labImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay)
         do {
             let summary: Result<LabSaveSummary, LabRefusal>
@@ -30,7 +30,7 @@ extension RecordStore {
             if let erase = seen.erase {
                 let answer = try await engine.cloudLabImport(extractionJSON: extractionJSON, refs: refs, reportDay: reportDay, erase: erase,
                                                              units: seen.units, now: .now, choices: seen.choices)
-                result = await shown(answer.outcome, of: edit)
+                result = await shown(answer.outcome, order: answer.order, of: edit)
                 summary = answer.summary.map { .success($0) } ?? .failure(LabRefusal(message: answer.outcome.message ?? "These values could not be saved."))
             } else {
                 if let problem { return .failure(LabRefusal(message: problem.words)) }
@@ -67,7 +67,7 @@ extension RecordStore {
     }
 
     private func saveDocumentInTurn(extractionJSON: String, choice: DocumentChoice, original: LabFileReader.Original?, as seen: Screen) async -> DocumentResult {
-        guard seen.erase == cloudErase, seen.mark.holds(at: mark) else {
+        guard shows(seen) else {
             return .refused("Your record changed while this was open, so this was not saved. Close this and try again.")
         }
         if seen.erase == nil, let problem { return .refused(problem.words) }

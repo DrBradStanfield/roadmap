@@ -26,9 +26,9 @@ import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './provid
 import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
-import { FULL } from '../src/storage/local-storage-adapter';
+import { deviceRecordStored, FULL } from '../src/storage/local-storage-adapter';
 import { trackProductEvent } from '../src/lib/server-api';
-import { copyRecordToDevice, flushRoadmapStore, getBackendKind } from '../src/lib/roadmap-data';
+import { copyRecordToDevice, currentSaveStatus, flushRoadmapStore, getBackendKind } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
@@ -345,6 +345,20 @@ export async function copySessionToDevice(provider: CloudBackend): Promise<void>
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-to-device', backend: provider } });
     throw new Error(FULL);
   }
+}
+
+/** What "Use this browser only" does first (US-09 AC49, AC50). A cloud store opens only on a cloud it read,
+ *  and the page opens one store, so a lost sign-in on a cloud store ended mid-session: its record is
+ *  current, and the exit runs. A session that fell back to this browser at load never read its cloud: over a
+ *  stored copy or an unsaved edit it asks whether that copy may be out of date; over nothing it asks before
+ *  starting empty. After another tab's log-off this browser keeps nothing, so that is asked. The defaults
+ *  read the page as it is now. */
+export function exitChoice(
+  cloudRead = getBackendKind() === 'cloud',
+  holdsHere = healthWritesAllowed() && (currentSaveStatus() !== 'saved' || deviceRecordStored()),
+): 'exit' | 'askEmpty' | 'askStale' {
+  if (cloudRead) return 'exit';
+  return holdsHere ? 'askStale' : 'askEmpty';
 }
 
 /** The cloud this page has already copied down and signed out of. A switch

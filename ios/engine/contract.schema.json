@@ -1,0 +1,1226 @@
+{
+  "about": "Generated from ios/engine/contract.ts (npx tsx ios/scripts/gen-contract.ts): the bridge, neutral, for each platform's generator.",
+  "bridge": "40fc97db4ca12547",
+  "natives": [
+    "http",
+    "cancelHttp",
+    "setTimer",
+    "clearTimer",
+    "utf8Encode",
+    "utf8Decode",
+    "accessToken",
+    "phoneRead",
+    "phoneWrite",
+    "phoneRemove",
+    "pending",
+    "notify"
+  ],
+  "events": [
+    "changed",
+    "failed",
+    "saved",
+    "saving",
+    "synced"
+  ],
+  "values": [
+    "engineVersion",
+    "schemaVersion"
+  ],
+  "doors": {
+    "applyEditJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "editJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "result": {
+        "type": "ref",
+        "ref": "EditOutcome"
+      }
+    },
+    "chatContextJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "chatEditsJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "editsJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "today",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "chatDeleteJson": {
+      "kind": "settle",
+      "args": [
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "conversationId",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "chatListJson": {
+      "kind": "settle",
+      "args": [
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "chatMessagesJson": {
+      "kind": "settle",
+      "args": [
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "conversationId",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "chatRecordExchangeJson": {
+      "kind": "settle",
+      "args": [
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "exchangeJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "cloudClose": {
+      "kind": "promise",
+      "args": [
+        {
+          "name": "copyDown",
+          "type": "bool"
+        }
+      ]
+    },
+    "cloudEdit": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "editJson",
+          "type": "string"
+        },
+        {
+          "name": "erase",
+          "type": "string"
+        },
+        {
+          "name": "shownUnits",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "shownLpaUnit",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "result": {
+        "type": "ref",
+        "ref": "EditOutcome"
+      }
+    },
+    "cloudErase": {
+      "kind": "promise",
+      "args": [
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "keepChat",
+          "type": "callback",
+          "optional": true
+        }
+      ]
+    },
+    "cloudFlush": {
+      "kind": "promise",
+      "args": []
+    },
+    "cloudHidden": {
+      "kind": "sync",
+      "args": []
+    },
+    "cloudLabImport": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "extractionJson",
+          "type": "string"
+        },
+        {
+          "name": "refsJson",
+          "type": "string"
+        },
+        {
+          "name": "reportDay",
+          "type": "string"
+        },
+        {
+          "name": "erase",
+          "type": "string"
+        },
+        {
+          "name": "shownUnits",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string"
+        }
+      ]
+    },
+    "cloudOpen": {
+      "kind": "promise",
+      "args": [
+        {
+          "name": "provider",
+          "type": "string",
+          "enum": [
+            "dropbox",
+            "google-drive"
+          ]
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "firstConnect",
+          "type": "bool"
+        },
+        {
+          "name": "mergePhone",
+          "type": "bool"
+        }
+      ]
+    },
+    "cloudRefresh": {
+      "kind": "promise",
+      "args": []
+    },
+    "cloudVisible": {
+      "kind": "sync",
+      "args": []
+    },
+    "documentSave": {
+      "kind": "promise",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "extractionJson",
+          "type": "string"
+        },
+        {
+          "name": "choiceJson",
+          "type": "string"
+        },
+        {
+          "name": "original",
+          "type": "bytes",
+          "nullable": true
+        },
+        {
+          "name": "erase",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "erasePhoneJson": {
+      "kind": "settle",
+      "args": [
+        {
+          "name": "recordText",
+          "type": "string"
+        },
+        {
+          "name": "historyText",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "healthWritesJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "historyJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "metric",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "optionalArgs": [
+        {
+          "name": "series",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "labReviewJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "extractionJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "sourceFileName",
+          "type": "string"
+        },
+        {
+          "name": "contentHash",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "labSaveSummaryJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "extractionJson",
+          "type": "string"
+        },
+        {
+          "name": "refsJson",
+          "type": "string"
+        },
+        {
+          "name": "reportDay",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "mergeJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "localJson",
+          "type": "string"
+        },
+        {
+          "name": "remoteJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
+    "newRecordJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "locale",
+          "type": "string"
+        },
+        {
+          "name": "timeZone",
+          "type": "string"
+        }
+      ]
+    },
+    "numberJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "text",
+          "type": "string"
+        }
+      ]
+    },
+    "convertJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "metric",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "number"
+        },
+        {
+          "name": "from",
+          "type": "string"
+        },
+        {
+          "name": "to",
+          "type": "string"
+        }
+      ],
+      "result": {
+        "type": "ref",
+        "ref": "UnitConversion"
+      }
+    },
+    "planJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "remindersJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ],
+      "optionalArgs": [
+        {
+          "name": "firstSeenJson",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "screenJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "unitsJson",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "optionalArgs": [
+        {
+          "name": "isUS",
+          "type": "bool",
+          "optional": true
+        }
+      ]
+    },
+    "sectionsJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "planJson",
+          "type": "string"
+        }
+      ]
+    },
+    "fileNamesJson": {
+      "kind": "sync",
+      "args": [
+        {
+          "name": "filesJson",
+          "type": "string"
+        }
+      ]
+    },
+    "settledJson": {
+      "kind": "sync",
+      "args": []
+    },
+    "labSearchJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "text",
+          "type": "string"
+        }
+      ]
+    },
+    "documentOriginal": {
+      "kind": "promise",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "id",
+          "type": "string"
+        }
+      ]
+    },
+    "uploadVerdictsJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "request",
+          "type": "string"
+        }
+      ]
+    },
+    "cloudOnline": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": []
+    }
+  },
+  "types": {
+    "ChatMedicationRow": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "medicationKey",
+          "type": "string"
+        },
+        {
+          "name": "drugName",
+          "type": "string"
+        },
+        {
+          "name": "doseValue",
+          "type": "number",
+          "optional": true,
+          "nullable": true
+        },
+        {
+          "name": "doseUnit",
+          "type": "string",
+          "optional": true,
+          "nullable": true
+        }
+      ]
+    },
+    "EditOutcome": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "ok",
+          "type": "bool"
+        },
+        {
+          "name": "record",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "existingId",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "erase",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "healthRecords",
+          "type": "ref",
+          "ref": "HealthRecordCounts",
+          "optional": true
+        }
+      ]
+    },
+    "EngineEdit": {
+      "type": "union",
+      "discriminator": "kind",
+      "cases": [
+        {
+          "tag": "profile",
+          "fields": [
+            {
+              "name": "sex",
+              "type": "string",
+              "enum": [
+                "male",
+                "female"
+              ],
+              "optional": true
+            },
+            {
+              "name": "birthYear",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "birthMonth",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "height",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "heightFeet",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "heightInches",
+              "type": "number",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "bloodPressure",
+          "fields": [
+            {
+              "name": "systolic",
+              "type": "number"
+            },
+            {
+              "name": "diastolic",
+              "type": "number"
+            },
+            {
+              "name": "day",
+              "type": "string"
+            },
+            {
+              "name": "replace",
+              "type": "bool",
+              "optional": true
+            },
+            {
+              "name": "seenIds",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "units",
+          "fields": [
+            {
+              "name": "unitSystem",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "alcohol",
+          "fields": [
+            {
+              "name": "alcohol",
+              "type": "string",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "tag": "lpaUnit",
+          "fields": [
+            {
+              "name": "unit",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "add",
+          "fields": [
+            {
+              "name": "metric",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            },
+            {
+              "name": "day",
+              "type": "string",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "correct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "tag": "medication",
+          "fields": [
+            {
+              "name": "medicationKey",
+              "type": "string"
+            },
+            {
+              "name": "drugName",
+              "type": "string"
+            },
+            {
+              "name": "doseValue",
+              "type": "number",
+              "optional": true,
+              "nullable": true
+            },
+            {
+              "name": "doseUnit",
+              "type": "string",
+              "optional": true,
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "tag": "supplement",
+          "fields": [
+            {
+              "name": "supplementKey",
+              "type": "string"
+            },
+            {
+              "name": "supplementName",
+              "type": "string"
+            },
+            {
+              "name": "doseValue",
+              "type": "number",
+              "optional": true,
+              "nullable": true
+            },
+            {
+              "name": "doseUnit",
+              "type": "string",
+              "optional": true,
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "startedAt",
+              "type": "string",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "appleHealth",
+          "fields": [
+            {
+              "name": "samples",
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "HealthSample"
+              }
+            }
+          ]
+        },
+        {
+          "tag": "healthRecords",
+          "fields": [
+            {
+              "name": "records",
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "HealthRecord"
+              }
+            }
+          ]
+        },
+        {
+          "tag": "medicationField",
+          "fields": [
+            {
+              "name": "field",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "screening",
+          "fields": [
+            {
+              "name": "key",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "customSupplement",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "labImport",
+          "fields": [
+            {
+              "name": "extractionJson",
+              "type": "string"
+            },
+            {
+              "name": "refs",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "reportDay",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "tag": "labAdd",
+          "fields": [
+            {
+              "name": "series",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            },
+            {
+              "name": "day",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "unit",
+              "type": "string",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "labAddName",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            },
+            {
+              "name": "unit",
+              "type": "string"
+            },
+            {
+              "name": "day",
+              "type": "string",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "chatEdits",
+          "fields": [
+            {
+              "name": "part",
+              "type": "string"
+            },
+            {
+              "name": "edits",
+              "type": "unknown"
+            },
+            {
+              "name": "today",
+              "type": "string"
+            },
+            {
+              "name": "seen",
+              "type": "unknown",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "tag": "chatUndo",
+          "fields": [
+            {
+              "name": "medications",
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "ChatMedicationRow"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "HealthRecord": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "sourceId",
+          "type": "string"
+        },
+        {
+          "name": "resourceType",
+          "type": "string"
+        },
+        {
+          "name": "fhirVersion",
+          "type": "string"
+        },
+        {
+          "name": "json",
+          "type": "string"
+        }
+      ]
+    },
+    "HealthRecordCounts": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "added",
+          "type": "int"
+        },
+        {
+          "name": "corrected",
+          "type": "int"
+        },
+        {
+          "name": "withdrawn",
+          "type": "int"
+        },
+        {
+          "name": "alreadyInRecord",
+          "type": "int"
+        },
+        {
+          "name": "notRead",
+          "type": "int"
+        }
+      ]
+    },
+    "HealthSample": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "externalId",
+          "type": "string"
+        },
+        {
+          "name": "metricType",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "number"
+        },
+        {
+          "name": "measuredAt",
+          "type": "string"
+        },
+        {
+          "name": "pairId",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "HeightFeetInches": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "feet",
+          "type": "int"
+        },
+        {
+          "name": "inches",
+          "type": "int"
+        }
+      ]
+    },
+    "UnitConversion": {
+      "type": "object",
+      "fields": [
+        {
+          "name": "value",
+          "type": "number"
+        },
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "feetInches",
+          "type": "ref",
+          "ref": "HeightFeetInches",
+          "nullable": true
+        }
+      ]
+    }
+  }
+}

@@ -201,7 +201,7 @@ struct MetricHistory: Decodable, Equatable {
 
 /// An answer to a form question, or a supplement change (`FormEdit` and the
 /// supplement edit in ios/engine/my-data.ts).
-enum FormEdit: Encodable, Equatable {
+enum FormEdit: Equatable {
     case medicationField(field: String, value: String)
     /// '' clears the answer.
     case screening(key: String, value: String)
@@ -210,31 +210,14 @@ enum FormEdit: Encodable, Equatable {
     /// A supplement typed by name; the engine makes its key.
     case customSupplement(name: String)
 
-    private enum Key: String, CodingKey {
-        case kind, field, value, key, supplementKey, supplementName, doseValue, doseUnit, status, name
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var json = encoder.container(keyedBy: Key.self)
+    /// The wire edit (Engine/Generated/EngineContract.swift), generated from ios/engine/contract.ts.
+    var wire: EngineEdit {
         switch self {
-        case .medicationField(let field, let value):
-            try json.encode("medicationField", forKey: .kind)
-            try json.encode(field, forKey: .field)
-            try json.encode(value, forKey: .value)
-        case .screening(let key, let value):
-            try json.encode("screening", forKey: .kind)
-            try json.encode(key, forKey: .key)
-            try json.encode(value, forKey: .value)
+        case .medicationField(let field, let value): .medicationField(field: field, value: value)
+        case .screening(let key, let value): .screening(key: key, value: value)
         case .supplement(let key, let name, let dose, let unit, let stopped):
-            try json.encode("supplement", forKey: .kind)
-            try json.encode(key, forKey: .supplementKey)
-            try json.encode(name, forKey: .supplementName)
-            try json.encode(dose, forKey: .doseValue)
-            try json.encode(unit, forKey: .doseUnit)
-            try json.encode(stopped ? "stopped" : "active", forKey: .status)
-        case .customSupplement(let name):
-            try json.encode("customSupplement", forKey: .kind)
-            try json.encode(name, forKey: .name)
+            .supplement(supplementKey: key, supplementName: name, doseValue: dose, doseUnit: unit, status: stopped ? "stopped" : "active")
+        case .customSupplement(let name): .customSupplement(name: name)
         }
     }
 }

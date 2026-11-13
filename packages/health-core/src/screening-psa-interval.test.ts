@@ -22,6 +22,8 @@ const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 const SPEC = read('docs/drafts/screening-words-2026-11-12.md');
 const SECTION = SPEC.slice(SPEC.indexOf('## Change 4 '), SPEC.indexOf('## Change 5 ')).split('\n');
 const CHANGE_3 = SPEC.slice(SPEC.indexOf('## Change 3 '), SPEC.indexOf('## Change 4 ')).split('\n');
+// Brad 2026-11-14: the ACS revised its guideline; the amendment replaces Change 4's attribution sentences.
+const AMENDED = SPEC.slice(SPEC.indexOf('## Amendment, Brad 2026-11-14')).split('\n');
 const HTML = read('roadmap_text.html');
 const ALGO = read('health_roadmap_algorithm.md');
 
@@ -219,11 +221,15 @@ describe('US-06 AC21: the Elevated PSA card gains the 3-month sentence (spec Cha
 
 describe('US-06 AC21: the three files (spec lines 150-171)', () => {
   it('evidence: both sentences, and the ACS recommendations page on screening-prostate', () => {
-    const [prostate] = quotes(specLine('**evidence.ts**', '- `screening-prostate`, add:'));
-    const [elevated] = quotes(specLine('**evidence.ts**', '- `screening-prostate-elevated`, add:'));
+    const [oldProstate] = quotes(specLine('**evidence.ts**', '- `screening-prostate`, add:'));
+    const [oldElevated] = quotes(specLine('**evidence.ts**', '- `screening-prostate-elevated`, add:'));
+    const [prostate] = quotes(specLine('**evidence.ts**', '- `screening-prostate`, replace:', AMENDED));
+    const [elevated] = quotes(specLine('**evidence.ts**', '- `screening-prostate-elevated`, replace:', AMENDED));
     const url = specLine('**evidence.ts**', '- `screening-prostate`, add:').match(/https:\/\/\S+\.html/)![0];
     expect(SUGGESTION_EVIDENCE['screening-prostate'].reason).toContain(prostate);
     expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason).toContain(elevated);
+    expect(SUGGESTION_EVIDENCE['screening-prostate'].reason).not.toContain(oldProstate);
+    expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason).not.toContain(oldElevated);
     expect(SUGGESTION_EVIDENCE['screening-prostate'].references.map((r) => r.url)).toContain(url);
   });
 
@@ -234,16 +240,23 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     const rows = SECTION.slice(SECTION.findIndex((l) => l.startsWith(header))).filter((l) => l.startsWith('- "| ')).map((l) => quotes(l)[0]);
     expect(rows).toHaveLength(3);
     expect(ALGO).toContain(`\n${rows.join('\n')}\n`);
-    expect(ALGO).toContain(`\n- ${outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific'))}\n`);
+    expect(ALGO).not.toContain(outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific')));
+    expect(ALGO).toContain(`\n- ${outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific', AMENDED))}\n`);
   });
 
   it('the page paragraph and the Changelog line', () => {
-    const [before, after] = quotes(specLine('**Page**', '- Before:')).concat(quotes(specLine('**Page**', '- After:')));
+    const [before, oldAfter] = quotes(specLine('**Page**', '- Before:')).concat(quotes(specLine('**Page**', '- After:')));
+    const [after] = quotes(specLine('**Page**', '- After:', AMENDED));
     expect(HTML).not.toContain(before);
+    expect(HTML).not.toContain(oldAfter);
     expect(HTML).toContain(`<li data-mce-fragment="1">${after}</li>`);
-    const line = quotes(specLine('**Page**', '- Changelog:'))[0];
+    const oldLine = quotes(specLine('**Page**', '- Changelog:'))[0];
+    const line = quotes(specLine('**Page**', '- Changelog:', AMENDED))[0];
+    const added = quotes(specLine('**Page**', '- New changelog entry, 13th November 2026:', AMENDED))[0];
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
+    expect(log).not.toContain(oldLine);
     expect(log).toContain(`\n<li>12<sup>th</sup> November 2026: ${line}</li>\n`);
+    expect(log).toContain(`<ul>\n<li>13<sup>th</sup> November 2026: ${added}</li>\n`);
     // After the existing same-date lines, before the 5 November one.
     expect(log.indexOf(line)).toBeLessThan(log.indexOf('<li>5<sup>th</sup> November 2026'));
     expect(log.indexOf(line)).toBeGreaterThan(log.indexOf('Colorectal follow-up: after a positive test'));

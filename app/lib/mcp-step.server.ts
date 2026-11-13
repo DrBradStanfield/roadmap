@@ -9,7 +9,7 @@
 import crypto from 'node:crypto';
 import { sealKeys } from './mcp-config.server';
 import { deriveKey, hash, type SealAudience } from './mcp-seal.server';
-import { RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-tools';
+import { RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-tool-contract';
 
 export type StepKind = 'import' | 'proposal';
 

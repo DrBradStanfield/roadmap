@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { dispatchRpc, INTERNAL_ERROR, INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, type RpcSurface } from './mcp-rpc';
-import { MCP_PROMPTS, MCP_TOOLS } from './mcp-tools';
+import { MCP_PROMPTS, MCP_TOOLS } from './mcp-tool-catalogue';
 
 const surface: RpcSurface = {
   protocolVersion: (asked) => (asked === '2025-06-18' ? asked : '2025-11-25'),

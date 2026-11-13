@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-I-2,S6 record edits and iPhone engine,Generate the Swift bridge side from the contract JSON,partial,"ios/engine/contract.ts is the one source and generates the JSON pair (step 1); the Swift side is still hand-written (EngineRelease.swift, MyData.swift RecordEdit)",,ios/engine/contract.test.ts,no
+I-2,S6 record edits and iPhone engine,Generate the Swift bridge side from the contract JSON,partial,"ios/engine/contract.ts generates the JSON pair, contract.schema.json and the Swift (HealthRoadmap/Engine/Generated: wire types, one typed method per door); left: the error envelope (I-10), Kotlin, and other door answers still opaque",1519;1534,ios/engine/contract-drift.test.ts,no
