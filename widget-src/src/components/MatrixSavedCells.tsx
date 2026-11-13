@@ -183,6 +183,7 @@ export function ValueCell({
     // never comes due in a hidden tab), and is written at once: the page's
     // own flush ran before this listener (Codex R1). Text left in an open
     // editor is not saved (US-04 AC1).
+    // An ordering patch until one hide path stages every cell, then flushes once (H92).
     const hidden = () => { sendLeave('hidden'); flushRoadmapStoreSync(); };
     const onHide = () => { if (document.visibilityState === 'hidden') hidden(); };
     const onPageHide = hidden;

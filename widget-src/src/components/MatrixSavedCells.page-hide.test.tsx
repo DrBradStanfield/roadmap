@@ -54,6 +54,31 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     expect(onCorrect.mock.invocationCallOrder[0]).toBeLessThan(flush.mock.invocationCallOrder[0]);
   });
 
+  // Owner ruling F1: a tab or app switch blurs the editor before the hide,
+  // so it is a leave, the same as a click away.
+  it('a tab switch (blur, then hide) saves the typed text as a leave', async () => {
+    const { view, onCorrect, input } = editor();
+    fireEvent.change(input, { target: { value: '3.4' } });
+    fireEvent.blur(input);
+    hidePage();
+    expect(onCorrect).toHaveBeenCalledTimes(1);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
+    await wait(2000);
+    expect(onCorrect).toHaveBeenCalledTimes(1);
+    expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull();
+  });
+
+  it('a tab switch over text it cannot save closes the editor and writes nothing', async () => {
+    const { view, onCorrect, input } = editor();
+    fireEvent.change(input, { target: { value: '99999' } }); // outside LDL's range
+    fireEvent.blur(input);
+    hidePage();
+    await wait(2000);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull();
+    expect(view.getByRole('button').textContent).toContain('3.2');
+  });
+
   it('hiding the tab with the editor open saves nothing', async () => {
     const { view, input, onCorrect } = editor();
     fireEvent.change(input, { target: { value: '3.4' } });
