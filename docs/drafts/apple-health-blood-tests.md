@@ -178,10 +178,13 @@ Health only as a read-only clinical record.
   - UK and Canadian feeds: profiles not checked. Unknown.
   - Results can be `preliminary`, `final`, `amended`, `corrected`, `cancelled` or
     `entered-in-error`. Only some should land (below).
-- Verified 2026-11 (a US Labcorp account): `labResultRecord` can hold a DiagnosticReport
-  whose results are contained Observations (Argonaut DSTU2), and every result arrives that
-  way. The import reads each referenced contained Observation; other resource types are
-  skipped and counted.
+- Seen 2026-11 (a US Labcorp account): the Health export's `clinical-records/` folder
+  holds DiagnosticReports whose results are contained Observations (Argonaut DSTU2). The
+  import reads each referenced contained Observation (US-72 AC15).
+- Seen 2026-11-13 on the phone, the same account: `labResultRecord` hands an app not those
+  reports but each contained result as its own Observation, one per result, its id
+  `DiagnosticReport/<report id>#<result id>`. So the export is not what an app reads. The
+  import reads that id under AC15's identity for the result (US-72 AC17).
 
 ## 5. Options
 

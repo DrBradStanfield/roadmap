@@ -41,7 +41,9 @@ struct HealthSyncMemory {
     /// 2: results dated by `issued`, the MDRD eGFR and the import winning a conflict (US-72).
     /// 3: results contained in a DiagnosticReport (a US lab's panel), which every earlier
     /// build refused while still moving the anchor past them.
-    static let labResultsRulesVersion = 3
+    /// 4: a result HealthKit took out of a panel, id `DiagnosticReport/<report>#<result>`,
+    /// which every earlier build refused for its id (US-72 AC17).
+    static let labResultsRulesVersion = 4
 
     /// The rules version the lab results anchor was kept under; 0 before this was stored.
     var labResultsRules: Int {
