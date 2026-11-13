@@ -43,7 +43,7 @@ function setup(loaded = true) {
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
+    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
   };
   const hook = renderHook(() => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
@@ -56,7 +56,7 @@ function setup(loaded = true) {
 const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 const counted = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied').length;
 
-interface Seen { reads: number; form: boolean; saved: boolean; lists: boolean; flush: boolean; erase: boolean; cleared: unknown[][]; counted: number; holdLeft: boolean }
+interface Seen { reads: number; form: boolean; saved: boolean; lists: boolean; flush: boolean; listFlush: boolean; erase: boolean; cleared: unknown[][]; counted: number; holdLeft: boolean }
 /** What the page did on one signal, and whether a held change was still waiting after it. */
 async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   const { fx, hook } = setup();
@@ -76,6 +76,9 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
     saved: fx.later.markSaved.mock.calls.length > 0,
     lists: fx.applyLists.mock.calls.length > 0,
     flush: fx.later.flushPendingSave.mock.calls.length > 0,
+    // H52: the waiting list saves start before the read, so the lists it shows hold them.
+    listFlush: fx.later.flushListSaves.mock.calls.length > 0
+      && fx.later.flushListSaves.mock.invocationCallOrder[0] < fx.reloadValues.mock.invocationCallOrder[0],
     erase: fx.erase.dispatch.mock.calls.length > 0,
     cleared: fx.later.clearAnswered.mock.calls,
     counted: counted(),
@@ -87,9 +90,9 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   return { ...seen, holdLeft: counted() === 1 && fx.reloadValues.mock.calls.length === 1 };
 }
 
-const FULL = { reads: 1, form: true, saved: true, lists: true, flush: true, erase: true };
-const VALUES_ONLY = { reads: 1, form: false, saved: false, lists: false, flush: false, erase: false };
-const NONE = { reads: 0, form: false, saved: false, lists: false, flush: false, erase: false };
+const FULL = { reads: 1, form: true, saved: true, lists: true, flush: true, listFlush: true, erase: true };
+const VALUES_ONLY = { reads: 1, form: false, saved: false, lists: false, flush: false, listFlush: false, erase: false };
+const NONE = { reads: 0, form: false, saved: false, lists: false, flush: false, listFlush: false, erase: false };
 
 // reason, a change held before the signal, then what the page does.
 const TABLE: Array<[ReadReason, boolean, Seen]> = [
@@ -239,6 +242,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.erase.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'read' })); // (its one call: the loaded page, 2b-3)
     // Nothing of the old record is written back: no waiting save started, no list or answer change.
     expect(fx.later.flushPendingSave).not.toHaveBeenCalled();
+    expect(fx.later.flushListSaves).not.toHaveBeenCalled();
     expect(fx.applyLists).not.toHaveBeenCalled();
     expect(fx.later.clearAnswered).not.toHaveBeenCalled();
     expect(counted()).toBe(0);

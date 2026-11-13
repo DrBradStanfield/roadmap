@@ -63,7 +63,7 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
+    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
     reloadValues: vi.fn(async (): Promise<LatestMeasurementsResult | null> => {
       log.push('read');
       await Promise.resolve();

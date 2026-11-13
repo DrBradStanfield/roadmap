@@ -17,8 +17,9 @@ type RecordPatches = Pick<ReturnType<typeof useRecordState>, 'patchMedication' |
  *   showed when the change was made. A newer change to the same row restarts
  *   it.
  * A change is shown at once (the record copy is patched ahead of its save).
- * A waiting save then fires on its timer, or now when the page goes away
- * (`flushListSaves`), or is dropped unsaved: by an erase (`dropListSaves`),
+ * A waiting save then fires on its timer, or now when the page goes away or
+ * a whole re-read is about to replace the lists (`flushListSaves`, only while
+ * its erase is still shown), or is dropped unsaved: by an erase (`dropListSaves`),
  * by the page unmounting, or by the supplement's own stop.
  *
  * After every medication or screening save, refused or not, the chat copy
@@ -46,7 +47,7 @@ export function useListSaves(record: RecordPatches, writeRefused: (erase?: strin
     return mirrorSavedLists();
   }, [writeRefused]);
   const dropListSaves = useCallback(() => listSaves.dropListSaves(all()), []);
-  const flushListSaves = useCallback(() => listSaves.flushListSaves(all()), []);
+  const flushListSaves = useCallback(() => listSaves.flushShown(all()), []);
   // Unmounting drops what waits: a save after the page is gone would be stale.
   useEffect(() => () => listSaves.dropListSaves(all()), []);
   /** A medication's save still waits (the chat's Undo reads it, US-16). */

@@ -22,7 +22,7 @@ import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, getShownErase, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
@@ -88,12 +88,16 @@ vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 // would (survey R2). `inGap` records that it did, so a test cannot pass without the gap.
 const atMount = vi.hoisted(() => ({ run: null as null | (() => void), effectsRan: false, inGap: false }));
 // The modal's hand-back to the page, captured so a test can finish an upload (US-62 AC13).
-const upload = vi.hoisted(() => ({ complete: null as null | (() => void | Promise<void>) }));
+const upload = vi.hoisted(() => ({
+  complete: null as null | (() => void | Promise<void>),
+  screening: null as null | ((key: string, value: string, erase: string) => void),
+}));
 vi.mock('./UploadModal', async () => {
   const { useEffect, useLayoutEffect } = await import('react');
   return {
-    UploadModal: ({ onComplete }: { onComplete: () => void | Promise<void> }) => {
+    UploadModal: ({ onComplete, onScreeningUpdate }: { onComplete: () => void | Promise<void>; onScreeningUpdate: (key: string, value: string, erase: string) => void }) => {
       upload.complete = onComplete;
+      upload.screening = onScreeningUpdate;
       if (atMount.run) for (const end = performance.now() + 20; performance.now() < end;) { /* a long first render */ }
       useLayoutEffect(() => {
         const run = atMount.run;
@@ -129,6 +133,7 @@ beforeEach(async () => {
   Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
+  upload.screening = null;
   vi.mocked(trackABConversion).mockClear();
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
@@ -1059,5 +1064,54 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(field(view, 'birthYear')).toBe('1980');
     expect(mirror()?.inputs.birthYear).toBe(1981);
     expect(calls('remote_change_applied')).toEqual([]);
+  });
+});
+
+describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms shows the change it waits to save', () => {
+  /** The record's answer for one medication or screening key. */
+  const recorded = async () => {
+    const result = await loadLatestMeasurements();
+    return {
+      statin: result?.medications.find(m => m.medicationKey === 'statin')?.doseValue,
+      colonoscopy: result?.screenings.find(s => s.screeningKey === 'colorectal_last_date')?.value,
+    };
+  };
+  const select = (view: RenderResult, sel: string) => q(view, sel) as HTMLSelectElement;
+
+  it('US-34 AC4, US-16 AC2a (H52): a medication changed, then another writer\'s change re-reads inside 300 ms; after the save lands, the screen shows the change and the record holds it', async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await addMeasurement('ldl', 3, '2026-09-01');
+    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(q(view, '#statin-dose')).toBeTruthy());
+    fireEvent.change(select(view, '#statin-dose'), { target: { value: '40' } });
+    await anotherWriter(() => addMeasurement('weight', 81, localToday())); // inside the dose's 300 ms
+    await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1));
+    await settle(400);
+    await act(async () => { await flushRoadmapStore(); });
+    expect((await recorded()).statin).toBe(40);
+    expect(select(view, '#statin-dose').value).toBe('40');
+  });
+
+  it('US-34 AC4, US-16 AC2a (H52): an upload whose document carries a screening date keeps that date shown after the upload\'s re-read', async () => {
+    await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1960, birthMonth: 1 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await saveScreening('colorectal_method', 'colonoscopy_10yr');
+    await saveScreening('colorectal_last_date', '2024-03');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(q(view, 'select#colorectal_last_date')).toBeTruthy());
+    await waitFor(() => expect(upload.screening).toBeTruthy());
+    // As useUploadFlow does it: the document's screening date, then the upload's re-read, in one turn.
+    await act(async () => {
+      upload.screening!('colorectal_last_date', '2025-06', getShownErase());
+      await upload.complete!();
+    });
+    await settle(400);
+    await act(async () => { await flushRoadmapStore(); });
+    expect((await recorded()).colonoscopy).toBe('2025-06');
+    expect(select(view, 'select#colorectal_last_date').value).toBe('2025-06');
   });
 });
