@@ -270,15 +270,16 @@ export const inPsaRange = (value: number | undefined): value is number => {
  * wins, since the answer gives no day. A PSA printed as a limit is graded
  * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
  * value, and its day still counts; `planPsa`'s `raisedBefore` rides on the
- * limit (US-06 AC21 item 6). An old answer whose value fails `inPsaRange` is
- * no answer, its date included: the date alone never displaces a row.
+ * limit (US-06 AC21 item 6). An old answer whose value fails `inPsaRange`
+ * keeps its date and loses its value: it reads as a date-only answer, as the
+ * chat's row sanitiser reads it (Brad 2026-11-13).
  */
 export function withPsaMeasurement(
   answers: import('./types').ScreeningInputs,
   psa: { value: number; recordedAt: string; comparator?: unknown; raisedBefore?: true } | undefined,
 ): import('./types').ScreeningInputs {
   const unusable = answers.prostatePsaValue !== undefined && !inPsaRange(answers.prostatePsaValue);
-  const screenings = unusable ? { ...answers, prostatePsaValue: undefined, prostateLastDate: undefined } : answers;
+  const screenings = unusable ? { ...answers, prostatePsaValue: undefined } : answers;
   const day = psa?.recordedAt.slice(0, 10);
   if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
   const { comparator } = comparatorOf(psa);
