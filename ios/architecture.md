@@ -1223,14 +1223,21 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   an erase moved it in between, the grant is refused and reminders stay off (US-11). If the
   first read fails, the last good read's epoch stands in; with none ever, the grant is refused
   (fail safe; the next tap, with the record read, turns them on). A switch to another record
-  (RootView: the source or the cloud's open changing, since a connected cloud shows the phone's
-  copy until it opens) clears the last good read and bumps a `generation` token. A read begun
+  (RootView: any change to ShownRecord, the source, the cloud's open or the erase epoch shown,
+  since a connected cloud shows the phone's copy until it opens and its record is drawn only
+  after the open) clears the last good read and bumps a `generation` token. A read begun
   before the switch never becomes the fallback, and an ask that spans one drops both reads
   taken before it, so the old record's epoch does not stand in for the new one's (S41; no path to
-  a lower epoch after a switch is known, so this is defence in depth). It keys on the connection
-  (source, open), not the text shown: where the store swaps the text later (a re-sign-in while
-  open, a failed close or keep), a refresh in between can still read the old text under the new
-  token, until the next good read or open. The RootView trigger is checked by reading, not a test. Known lead (S39):
+  a lower epoch after a switch is known, so this is defence in depth). Keying on the epoch shown
+  also covers a refresh between the open and the draw, and the store swapping the text later (a
+  re-sign-in while open, a failed close or keep): a swap that moves the drawn epoch bumps the token,
+  and one that keeps it leaves a fallback of the same value. Not covered: a swap between two records
+  neither of which drew (the key's epoch stays nil while the text the scheduler reads changes); it
+  also needs the new record's epoch to be lower, with no known path. The key is built by
+  `ShownRecord(source:open:store:)` (Reminders/ReminderScheduler.swift); a test pins that it carries
+  the drawn record's epoch (nil when none is drawn), the open and the source. It is ShownRecord's
+  only init, so no caller can leave the epoch out; only RootView's onChange and the source and open
+  it passes are checked by reading. Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:

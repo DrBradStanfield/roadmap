@@ -17,7 +17,7 @@ vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import * as Sentry from '@sentry/react';
-import { deleteConversation, loadConversation, sendMessage } from './chat-api';
+import { deleteConversation, listConversations, loadConversation, sendMessage } from './chat-api';
 
 const ok = () =>
   new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: null, content: 'fresh answer' }), {
@@ -46,6 +46,13 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     expect(body.localFirst).toBe(true);
     expect(body.history).toEqual([{ role: 'user', content: 'first' }, { role: 'assistant', content: 'reply' }]);
     expect(body.guestInputs).toEqual({ unitSystem: 'si' });
+  });
+
+  it('US-15 AC64a (C26): a history store whose list throws answers null, so the chat can read it again, and the report names no title', async () => {
+    store.listConversations.mockImplementationOnce(() => { throw new Error('SYNTHETIC_TITLE'); });
+    await expect(listConversations()).resolves.toBeNull();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.objectContaining({ message: 'Chat list failed' }), { tags: { feature: 'chat', kind: 'store' } });
+    expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toContain('SYNTHETIC_TITLE');
   });
 
   it('US-09 AC2c: an answer whose history save the device refuses still reaches the page, and the report names no chat text', async () => {

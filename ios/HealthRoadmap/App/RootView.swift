@@ -115,10 +115,9 @@ struct RootView: View {
             Text(eraser.held?.words ?? "")
         }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
-        .onChange(of: shownRecord) { recordChanged() }
-        // Another record's erase epoch never stands in for this one's (S41): a connected cloud
-        // shows the phone's copy until it opens, so the switch is the source or the open changing.
-        .onChange(of: ShownRecord(source: source, open: sync.recordOpen, epoch: nil)) { reminders.recordSourceChanged() }
+        // Another record's erase epoch never stands in for this one's (S41): any change to
+        // ShownRecord, the drawn epoch included, is a switch for the reminders.
+        .onChange(of: shownRecord) { reminders.recordSourceChanged(); recordChanged() }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
@@ -182,12 +181,8 @@ struct RootView: View {
         }
     }
 
-    /// Which record is on screen and its erase count. The phone's copy shows until a
-    /// connected cloud opens, so "open" is part of it.
-    private struct ShownRecord: Equatable { var source: String; var open: Bool; var epoch: Int? }
-
     private var shownRecord: ShownRecord {
-        ShownRecord(source: source, open: sync.recordOpen, epoch: store.myData?.eraseEpoch)
+        ShownRecord(source: source, open: sync.recordOpen, store: store)
     }
 
     private var source: String { sync.provider?.rawValue ?? "" }

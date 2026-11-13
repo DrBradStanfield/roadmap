@@ -148,11 +148,11 @@ function cloudHistory(): Promise<ChatHistoryStore | null> {
 }
 
 export async function listConversations(): Promise<ChatListResult | null> {
-  const store = await cloudHistory();
-  if (store) {
-    return { conversations: store.listConversations(), isGuest: false };
-  }
+  let kind: 'store' | 'fetch' = 'store';
   try {
+    const store = await cloudHistory();
+    if (store) return { conversations: store.listConversations(), isGuest: false };
+    kind = 'fetch';
     const qs = chatQueryParts();
     const params = qs.length ? `?${qs.join('&')}` : '';
     const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat${params}`);
@@ -178,7 +178,8 @@ export async function listConversations(): Promise<ChatListResult | null> {
     };
   } catch (error) {
     console.warn('Chat list failed.'); // as a failed load: the error can quote titles (Codex R1)
-    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind: 'fetch' } });
+    // Null, never a throw: the list is read again on the next open (C26, US-15 AC64a).
+    Sentry.captureException(recordFailure(error, 'Chat list failed'), { tags: { feature: 'chat', kind } });
     return null;
   }
 }

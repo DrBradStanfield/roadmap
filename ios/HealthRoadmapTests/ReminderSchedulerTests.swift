@@ -546,6 +546,70 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 0)
     }
 
+    /// US-25 AC12b, US-11 (lead S41, checkpoint review): the cloud's open lands before its record is
+    /// drawn (CloudSync.open sets the session, then RecordStore.draw awaits the engine). A refresh in
+    /// that gap reads the phone's copy under the open's token. The draw moves ShownRecord's epoch,
+    /// and RootView treats that as a switch too, so the phone's epoch never vouches for the cloud
+    /// record's erase during the ask. A contract test: on main RootView's key left the epoch out, so
+    /// it made no call at the draw; this test drives the scheduler as RootView now does.
+    func testARefreshBetweenTheOpenAndTheDrawNeverVouchesForTheCloudRecord_US25_AC12b() async {
+        engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
+        let scheduler = scheduler()
+        await scheduler.refresh() // the phone's record at epoch 5
+        scheduler.recordSourceChanged() // signed in: the provider is set, the phone's copy still shows
+        scheduler.recordSourceChanged() // the cloud's session opens; its record is not drawn yet
+        await scheduler.refresh() // a refresh in the gap reads the phone's copy at 5, under the open's token
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        scheduler.recordSourceChanged() // the cloud record is drawn at epoch 1: ShownRecord's epoch moves 5 to 1
+        center.holdsAnswers = true
+        engineFails = true // the tap's read before the ask fails
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 2, days: ["2027-01-15"]) // the cloud record erased during the ask
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "the phone's epoch 5 never vouches for the cloud's erase to 2")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
+    /// US-25 AC12b, US-11 (lead S41): RootView's key, built from what RootView has. It carries the
+    /// drawn record's erase epoch, so the draw moving it is a switch for the reminders: PR 1608's key
+    /// left the epoch out and missed a refresh between the cloud's open and its draw.
+    func testRootViewsKeyCarriesTheDrawnRecordsEpoch_US25_AC12b() async throws {
+        let records = folder.appending(path: "record")
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let file = records.appending(path: "health-roadmap.json")
+        let engine = try HealthEngine()
+        _ = try RecordStore(folder: records, engine: engine, deviceId: "ios-test") // writes an empty record
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+        var meta = try XCTUnwrap(record["meta"] as? [String: Any])
+        meta["eraseEpoch"] = 5
+        meta["erasedAt"] = (meta["updatedAt"] as? String) ?? "2026-01-01T00:00:00.000Z"
+        record["meta"] = meta
+        record["erasedRows"] = ["fromEpoch": 5, "ids": [String]()]
+        try JSONSerialization.data(withJSONObject: record).write(to: file)
+        let store = try RecordStore(folder: records, engine: engine, deviceId: "ios-test")
+        XCTAssertEqual(store.myData?.eraseEpoch, 5, "fixture: the drawn record is at epoch 5")
+
+        let cloud = ShownRecord(source: "google-drive", open: true, store: store)
+        XCTAssertEqual(cloud.epoch, 5, "the drawn epoch is carried")
+        XCTAssertEqual(cloud.source, "google-drive")
+        XCTAssertTrue(cloud.open)
+        let phone = ShownRecord(source: "", open: false, store: store)
+        XCTAssertEqual(phone.epoch, 5)
+        XCTAssertEqual(phone.source, "", "the phone's record: no source, not open")
+        XCTAssertFalse(phone.open)
+
+        try FileManager.default.removeItem(at: records)
+        await store.showPhone().value // the phone's file cannot be read: nothing is drawn
+        XCTAssertNil(store.myData, "fixture: no drawn record")
+        let undrawn = ShownRecord(source: "dropbox", open: false, store: store)
+        XCTAssertNil(undrawn.epoch, "no drawn record gives no epoch")
+        XCTAssertEqual(undrawn.source, "dropbox")
+    }
+
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch
     /// to record B. Its epoch is A's, so it never becomes B's fallback.
     func testARefreshInFlightAcrossASwitchNeverBecomesTheFallback_US25_AC12b() async {
