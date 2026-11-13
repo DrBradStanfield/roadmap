@@ -117,7 +117,7 @@ interface PlanViewOptions {
 }
 
 export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, cardsShown, alcoholQuestion }: PlanViewOptions): PlanView {
-  const { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
+  const { print, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
   const planned = isValid && !!results;
@@ -184,12 +184,12 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   }, [usProducts]);
 
   // US-09 AC19: the storage button's pulse.
-  const attention = storagePulse({ shopify: SHOPIFY_SURFACE, state: capture.state, gateSkipped: capture.gateSkipped, knownMinor: !!results?.knownMinor, pdfOpened });
+  const attention = storagePulse({ shopify: SHOPIFY_SURFACE, state: capture.state, gateSkipped: capture.gateSkipped, knownMinor: !!results?.knownMinor, pdfOpened: print.opened });
 
-  const report = planned && printing && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
+  const report = planned && print.phase === 'drawing' && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
   const pdf = (
     <PlanPdf key={shownErase} mode={pdfMode} formStage={formStage} capture={capture}
-             printStatus={printStatus} pdfBlocked={pdfBlocked} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
+             print={print} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
   );
   const foot = <PlanFoot planned={planned}/>;
 
