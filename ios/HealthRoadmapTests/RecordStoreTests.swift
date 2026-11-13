@@ -158,6 +158,60 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.shownChart(for: "waist")?.history, a)
     }
 
+    /// US-58 AC4c (S25): a failed history read is not kept for its revision, so Try again, or the
+    /// page opened again, calls the engine again; a chart that lands is kept and read once.
+    func testAFailedReadIsNotKeptSoAskingAgainReadsAgain_US58() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        globalThis.__historyCalls = 0;
+        globalThis.__historyFails = true;
+        HealthEngine = Object.assign({}, HealthEngine, { historyJson: (door => function () {
+          __historyCalls += 1;
+          if (__historyFails) throw new Error('test: the history read fails');
+          return door.apply(this, arguments);
+        })(HealthEngine.historyJson) });
+
+        """
+        let engine = try HealthEngine(source: source, sourceURL: url)
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let calls = { try engine.blocking { try $0.evaluate("__historyCalls").toInt32() } }
+        let before = try calls()
+        let revision = store.revision
+
+        let failed = await store.chart(for: "weight")
+        XCTAssertNil(failed, "the engine threw")
+        XCTAssertNil(store.shownChart(for: "weight"), "a failure is not kept")
+        XCTAssertEqual(try calls(), before + 1)
+        let again = await store.chart(for: "weight")
+        XCTAssertNil(again)
+        XCTAssertEqual(try calls(), before + 2, "the same revision asked again calls the engine again")
+
+        _ = try engine.blocking { try $0.evaluate("__historyFails = false") }
+        let landed = await store.chart(for: "weight")
+        XCTAssertEqual(landed?.history.rows.map(\.value), ["80.0"], "Try again lands the values")
+        XCTAssertEqual(try calls(), before + 3)
+        _ = await store.chart(for: "weight")
+        XCTAssertEqual(try calls(), before + 3, "a chart that landed is kept: no fourth call")
+        XCTAssertEqual(store.revision, revision, "all at one revision")
+    }
+
+    /// S25, owner's R1 ruling (US-58 AC4c): whether a failed read's page says its values are kept
+    /// rests on the screen last drawn, and never on one from before an erase whose draw failed.
+    func testAScreenFromBeforeAFailedEraseDrawSaysNothing_US58() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let waist = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "waist" })
+        XCTAssertEqual(MetricDetailView.screenHasReading(weight, in: store), true)
+        XCTAssertEqual(MetricDetailView.screenHasReading(waist, in: store), false)
+        // An erased cloud view handed over before the screen shown: its draw fails, the erase counts.
+        await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
+        XCTAssertNotNil(store.myData, "the old screen still draws")
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
+    }
+
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
     /// never current, and a correction's "Now" hint comes only from a history in the sheet's
     /// own unit. Lp(a) at 100 nmol/L, the unit moves to mg/dL, a tap before the history is

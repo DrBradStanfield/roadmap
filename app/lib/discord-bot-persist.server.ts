@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/react-router';
 import { generateTitle } from './chat.server';
 import type { RouterResult } from './chat-router.server';
 import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { DISCORD_BOT_PROFILE_ID, PLATFORM_DISCORD } from './discord-bot-config.server';
 
 // ---------------------------------------------------------------------------

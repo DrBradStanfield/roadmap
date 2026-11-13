@@ -23,6 +23,7 @@ import { WHTR_TARGET, type MetricType } from '../../packages/health-core/src/uni
 import { BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
 import { cellUnitFor, systemFor, type UnitChoices } from './unit-choices';
 import type { EditOutcome } from './my-data';
+import type { FormEdit } from './contract';
 import { cellFromSI, cellLabel, limitCellText, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, formatGradedOrLimit, isComparator, type Comparator } from '../../packages/health-core/src/lab-limits';
 import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../../packages/health-core/src/lab-series';
@@ -122,14 +123,8 @@ export interface MedicationMarker {
   label: string;
 }
 
-/** The edits this file answers; my-data.ts's `Edit` includes them. */
-export type FormEdit =
-  /** One answer to a medication question (`field` is a key of `medications`). */
-  | { kind: 'medicationField'; field: string; value: string }
-  /** One screening answer; '' clears it. */
-  | { kind: 'screening'; key: string; value: string }
-  /** A supplement typed by name, not on the list. */
-  | { kind: 'customSupplement'; name: string };
+/** The edits this file answers: contract.ts's FORM_EDIT, part of its EDIT (I-2). */
+export type { FormEdit } from './contract';
 
 /** The record's plan for `now` and `choices`; null when it cannot be made (no usable height; US-07 AC8). */
 export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Plan | null {

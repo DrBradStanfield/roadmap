@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-20,S2 server,chat-context.ts still sends a constant empty uploadedDocuments array to the model,not started,"packages/health-core/src/chat-context.ts:346 sets uploadedDocuments: [] on every request (comment at :68 says it is always empty). Removing it changes prompt bytes, so it needs its own PR with a prompt-cache check",,,no

@@ -6,10 +6,8 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 // lookup getAuthenticatedUser reaches only after a customer is identified.
 const mocks = vi.hoisted(() => ({ appProxy: vi.fn(), getOrCreateSupabaseUser: vi.fn(async () => 'user-1') }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: mocks.appProxy } } }));
-vi.mock('./supabase.server', () => ({
-  getOrCreateSupabaseUser: mocks.getOrCreateSupabaseUser,
-  createUserClient: vi.fn(() => ({})),
-}));
+vi.mock('./supabase-identity.server', () => ({ getOrCreateSupabaseUser: mocks.getOrCreateSupabaseUser }));
+vi.mock('./supabase-client.server', () => ({ createUserClient: vi.fn(() => ({})) }));
 
 import { getAuthenticatedUser, getCustomerId, isValidUuid } from './route-helpers.server';
 import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from './app-proxy.test-helpers';

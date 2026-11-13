@@ -23,15 +23,10 @@ import { applyPressure } from './blood-pressure';
 import { cellUnitFor, unitsOf, type UnitChoices } from './unit-choices';
 import { isReadableRow, readableView } from '../../packages/health-core/src/readable-rows';
 import { partRefusal } from '../../packages/health-core/src/chat-edit-refusals';
+import type { ChatEdit } from './contract';
 
-/** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson. */
-export type ChatEdit =
-  /** One part of a reply's `proposedEdits`, exactly as the server sent them. `today`: the phone's day, YYYY-MM-DD.
-   *  `seen`: the review preview's `seen`, passed back as it came; when the record no longer
-   *  holds what the banner named, the review part is refused (US-67 AC3). */
-  | { kind: 'chatEdits'; part: 'medications' | 'review'; edits: unknown; today: string; seen?: unknown }
-  /** The medications part's Undo: each row as it was, written in order (chatEditsPreview's `undo`). */
-  | { kind: 'chatUndo'; medications: ChatMedicationRow[] };
+/** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson: contract.ts's CHAT_EDIT (I-2). */
+export type { ChatEdit } from './contract';
 
 export interface ChatLine { text: string }
 export interface ChatReviewLine { text: string; replaces: string | null }
@@ -137,8 +132,7 @@ function medicationPart(file: RoadmapFile, edits: ProposedEdit[], invalid: strin
   return { ok: true, file: next, lines, undo: undoable ? undo : null };
 }
 
-function undoMedications(file: RoadmapFile, rows: unknown, now: string): Outcome {
-  if (!Array.isArray(rows)) return { ok: false, reason: 'invalid-value', message: 'This undo could not be read, so nothing changed.' };
+function undoMedications(file: RoadmapFile, rows: ChatMedicationRow[], now: string): Outcome {
   let next = file;
   for (const row of rows) {
     const checked = medicationSchema.safeParse(row);

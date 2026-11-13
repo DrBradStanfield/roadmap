@@ -26,22 +26,22 @@ vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, capture
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
+const chatTables = vi.hoisted(() => (table: string) => {
+  const query = { select: () => query, eq: () => query, gte: () => query,
+    order: () => query, limit: () => query, update: () => query,
+    maybeSingle: async () => ({ data: null, error: null }),
+    then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk),
+    insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
+    single: async () => ({ data: { id: 'conv-new' }, error: null }) };
+  return query;
+});
+// One client: the turn claim's store for single_use_claims, the chat tables above for the rest.
 vi.mock('./supabase-client.server', async (actual) => {
   const helpers = await import('./single-use-claims.test-helpers');
   claims.state ??= helpers.newClaimsState();
-  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(claims.state) };
+  const claimStore = helpers.claimsAdmin(claims.state);
+  return { ...(await actual<object>()), supabaseAdmin: { from: (table: string) => (table === 'single_use_claims' ? claimStore.from(table) : chatTables(table)) } };
 });
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
-  from: (table: string) => {
-    const query = { select: () => query, eq: () => query, gte: () => query,
-      order: () => query, limit: () => query, update: () => query,
-      maybeSingle: async () => ({ data: null, error: null }),
-      then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk),
-      insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
-      single: async () => ({ data: { id: 'conv-new' }, error: null }) };
-    return query;
-  },
-} }));
 
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 const QUESTION = 'Synthetic question about sleep';

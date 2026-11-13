@@ -12,6 +12,7 @@ import { formatValue } from '../../packages/health-core/src/lab-limits';
 import { comparatorOf } from '../../packages/health-core/src/lab-limits';
 import type { PressureReading } from '../../packages/health-core/src/row-grade';
 import type { HistoryRow, MetricHistory } from './my-data-forms';
+import type { PressureEdit } from './contract';
 
 /** The phone's name for the pair; no row carries it. */
 export const BLOOD_PRESSURE = 'blood_pressure';
@@ -21,17 +22,8 @@ const UNIT = 'mmHg';
 const WRITE_MS = 5_000;
 const CHANGED = 'Your record changed while this was open, so this was not saved. Close this and enter the value again.';
 
-export interface PressureEdit {
-  kind: 'bloodPressure';
-  systolic: number;
-  diastolic: number;
-  /** YYYY-MM-DD */
-  day: string;
-  /** The user agreed to replace what the day holds: each changed half becomes a correction. */
-  replace?: boolean;
-  /** With `replace`: the ids of the day's active halves the user saw. Any other set refuses. */
-  seenIds?: string[];
-}
+/** contract.ts's PRESSURE_EDIT, the one source (I-2). */
+export type { PressureEdit } from './contract';
 
 type Outcome =
   | { ok: true; file: RoadmapFile }

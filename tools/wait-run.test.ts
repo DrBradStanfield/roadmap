@@ -78,7 +78,16 @@ function envFor(state: string, env: Record<string, string>) {
     CONCLUSION: 'success', HEALTH: '200', FAILS: '0', ...env };
 }
 
+// The stubs make a run a pure function of its args and env, so a case several tests check runs once. Not the
+// timed hung-gh cases: their tests measure the run itself.
+const ran = new Map<string, ReturnType<typeof runOnce>>();
 function run(args: string[], env: Record<string, string> = {}) {
+  if ('GH_SLEEP' in env || 'GH_HANG' in env) return runOnce(args, env);
+  const key = JSON.stringify([args, env]);
+  if (!ran.has(key)) ran.set(key, runOnce(args, env));
+  return ran.get(key)!;
+}
+function runOnce(args: string[], env: Record<string, string>) {
   const state = join(S, `state-${Math.random()}`);
   const r = spawnSync('sh', [SCRIPT, ...args], { encoding: 'utf8', env: envFor(state, env) });
   const lines = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8').trim().split('\n').filter(Boolean) : []);
