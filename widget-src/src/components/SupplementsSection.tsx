@@ -2,13 +2,14 @@
 // unit, and "+ Add another supplement", whose search adds a preset or a custom
 // name. Split from InputPanel.tsx (2026-11-09) when the touch fix grew it.
 
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SUPPLEMENT_OPTIONS } from '@roadmap/health-core/types';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { SUPPLEMENT_TEXT, SUPPLEMENT_DOSE_UNITS, customSupplementAdd, customSupplementMatch } from '@roadmap/health-core/input-form';
 import { blockBadNumericKeys } from '../lib/blood-test-cell';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
+import { CLOSED, transition, type SupplementAddEvent } from '../lib/supplement-add';
 import type { ApiSupplement } from '../lib/api-types';
 
 export function SupplementsSection({ supplements, onSupplementChange, onSupplementDelete }: {
@@ -17,24 +18,22 @@ export function SupplementsSection({ supplements, onSupplementChange, onSuppleme
   onSupplementDelete: (key: string) => void;
 }) {
 
-const [supplementSearch, setSupplementSearch] = useState('');
 const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
-const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
 // "+ Add another supplement" opens the search in its place (Brad 2026-11-09, as Add a blood test).
-const [addingSupplement, setAddingSupplement] = useState(false);
+// Its mode is one named state (lib/supplement-add.ts); events queue in order, so a blur sees the press before it.
+const [add, send] = useReducer(transition, CLOSED);
+const addingSupplement = add.phase === 'open';
+const showSupplementDropdown = add.phase === 'open' && add.list;
+const supplementSearch = add.phase === 'open' ? add.query : '';
 const supplementDropdownRef = useRef<HTMLDivElement>(null);
 const supplementSearchRef = useRef<HTMLInputElement>(null);
 const supplementAddRef = useRef<HTMLButtonElement>(null);
-/** A finger is down on the list and has not scrolled it (a scroll is a pointercancel). */
+/** This touch's claim: a finger is down on the list and has not scrolled it (a scroll is a pointercancel). */
 const supplementTouch = useRef(false);
-/** A press, by finger or pointer, is down on the list: an iPhone blurs the search before its click (AC30g). */
-const pressInList = useRef(false);
-/** Back to the "+ Add another supplement" row, the focus on it when asked. */
-const closeSupplementAdd = (refocus: boolean) => {
-  pressInList.current = false;
-  setShowSupplementDropdown(false);
-  flushSync(() => setAddingSupplement(false));
-  if (refocus) supplementAddRef.current?.focus();
+/** Back to the "+ Add another supplement" row, the focus on it. */
+const closeSupplementAdd = (event: Extract<SupplementAddEvent, { type: 'escaped' | 'added' }>) => {
+  flushSync(() => send(event));
+  supplementAddRef.current?.focus();
 };
 
 // An erase clears off-file drafts too, including one under a later reused key.
@@ -49,10 +48,7 @@ useEffect(() => {
   // On pointerdown, whose target is the element under the finger: a touch's
   // mousedown comes later, where WebKit's tap adjustment puts it (US-62 AC30e).
   const handleClickOutside = (e: PointerEvent) => {
-    if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
-      pressInList.current = false;
-      setShowSupplementDropdown(false);
-    }
+    if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) send({ type: 'pressedOutside' });
   };
   document.addEventListener('pointerdown', handleClickOutside);
   return () => document.removeEventListener('pointerdown', handleClickOutside);
@@ -77,8 +73,7 @@ useEffect(() => {
   const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
     setSupplementDoseDrafts(prev => ({ ...prev, [key]: undefined }));
     onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
-    setSupplementSearch('');
-    closeSupplementAdd(true); // the focus back on the row, not lost to the page (AC30c)
+    closeSupplementAdd({ type: 'added' }); // the focus back on the row, not lost to the page (AC30c)
   };
   const addCustomSupplement = () => {
     const { supplementKey, supplementName } = customSupplementAdd(trimmedSearch, supplements);
@@ -143,12 +138,13 @@ useEffect(() => {
           // Focus leaving the search and its list empty, by Tab or a tap elsewhere: back to the row (#985).
           // Escape in either goes back too, the focus on the row (keydown below).
           // A press in the list blurs it first on an iPhone; closing then moved the next card under the finger (AC30g).
-          if (addingSupplement && !pressInList.current && !supplementSearch.trim() && !e.currentTarget.contains(e.relatedTarget as Node | null)) closeSupplementAdd(false);
-        }} onKeyDown={e => { if (e.key === 'Escape' && addingSupplement) { setSupplementSearch(''); closeSupplementAdd(true); } }}>
+          // Only an empty search with no press held closes (transition).
+          if (addingSupplement && !e.currentTarget.contains(e.relatedTarget as Node | null)) flushSync(() => send({ type: 'focusLeft' }));
+        }} onKeyDown={e => { if (e.key === 'Escape' && addingSupplement) closeSupplementAdd({ type: 'escaped' }); }}>
           {!addingSupplement ? (
             <button ref={supplementAddRef} type="button" className="alr-add-btn" onClick={() => {
               // Shown and focused inside the tap itself, so a phone opens its keyboard (US-01 AC6).
-              flushSync(() => setAddingSupplement(true));
+              flushSync(() => send({ type: 'opened' }));
               supplementSearchRef.current?.focus();
             }}>
               + Add another supplement
@@ -160,11 +156,8 @@ useEffect(() => {
             placeholder={SUPPLEMENT_TEXT.addPlaceholder}
             value={supplementSearch}
             maxLength={100}
-            onFocus={() => setShowSupplementDropdown(true)}
-            onChange={e => {
-              setSupplementSearch(e.target.value);
-              setShowSupplementDropdown(true);
-            }}
+            onFocus={() => send({ type: 'focused' })}
+            onChange={e => send({ type: 'typed', query: e.target.value })}
             onKeyDown={e => {
               // Return adds the exact match, else the list's first option, else the typed name (AC30e).
               if (e.key !== 'Enter' || e.nativeEvent.isComposing || !trimmedSearch) return;
@@ -180,8 +173,8 @@ useEffect(() => {
             // default prevented, no mousedown or click follows to land where WebKit's tap
             // adjustment or the closing keyboard puts it (iPhone: nothing was added, AC30e).
             <div className="supplement-dropdown" onMouseDown={e => e.preventDefault()}
-              onPointerDown={e => { supplementTouch.current = e.pointerType === 'touch'; pressInList.current = true; }}
-              onPointerCancel={() => { supplementTouch.current = false; pressInList.current = false; }}
+              onPointerDown={e => { supplementTouch.current = e.pointerType === 'touch'; send({ type: 'pressedList' }); }}
+              onPointerCancel={() => { supplementTouch.current = false; send({ type: 'pressCancelled' }); }}
               onTouchEnd={e => {
                 const option = (e.target as Element).closest('button');
                 if (!supplementTouch.current || !option) return;
