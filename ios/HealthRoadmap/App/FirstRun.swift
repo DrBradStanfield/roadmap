@@ -93,6 +93,27 @@ enum Cover: Equatable {
             }
         }
     }
+
+    /// What a record change asks of RootView (S48).
+    enum RecordChange: Equatable {
+        /// Raise the questions: send `.erased`.
+        case erase
+        /// Close the backup prompt or Sync sheet first; its onDismiss asks again.
+        case closeOffer
+        /// Take the count of a record not yet counted (RootView.takeCount).
+        case takeCount
+    }
+
+    /// Only over the bare tabs, with no hold from this phone's own erase. An erase from elsewhere
+    /// closes the backup offer's sheet first, so the cover never presents under it (My health's
+    /// own sheets: S65). The sheet's onDismiss works the erase out again, so a Disconnect confirmed
+    /// just before the pull that reaches showPhone during the close can still hide it (S71).
+    /// `uncounted`: the record shown is one the phone has not counted yet.
+    static func onRecordChange(cover: Cover, offer: Offer, holding: Bool, erasedElsewhere: Bool, uncounted: Bool) -> RecordChange? {
+        guard cover == .none, !holding else { return nil }
+        if erasedElsewhere { return offer == .idle ? .erase : .closeOffer }
+        return uncounted ? .takeCount : nil
+    }
 }
 
 /// The backup offer after the person's third save (US-57 AC8; iPhone survey S16): idle, the

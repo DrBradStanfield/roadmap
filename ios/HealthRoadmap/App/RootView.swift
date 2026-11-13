@@ -72,7 +72,8 @@ struct RootView: View {
             health?.analytics = analytics
         }
         // Back up closes the prompt by leaving `prompting`; Sync opens once it has gone (onDismiss).
-        .sheet(isPresented: Binding(get: { offer.prompting }, set: { if !$0 { send(.promptClosed) } }), onDismiss: { send(.promptClosed) }) {
+        // Each sheet's onDismiss looks at the record again: an erase that closed it (S48).
+        .sheet(isPresented: Binding(get: { offer.prompting }, set: { if !$0 { send(.promptClosed) } }), onDismiss: { send(.promptClosed); recordChanged() }) {
             CloudPromptView { send(.backUpTapped) }
                 .onAppear {
                     // Shown, so never again (AC8); marked only once it is on screen.
@@ -80,7 +81,7 @@ struct RootView: View {
                     analytics.event(.cloudPromptShown)
                 }
         }
-        .sheet(isPresented: Binding(get: { offer == .sync }, set: { if !$0 { send(.syncClosed) } })) { SyncView(sync: sync) }
+        .sheet(isPresented: Binding(get: { offer == .sync }, set: { if !$0 { send(.syncClosed) } }), onDismiss: recordChanged) { SyncView(sync: sync) }
         .task(id: store.ownSaves) {
             // The person's own saves after onboarding (AC9). Onboarding's answers are made
             // under its cover; finishing passes over its last one (review R1).
@@ -197,10 +198,17 @@ struct RootView: View {
     /// The count for a record the phone has not counted yet (a cloud just connected or
     /// switched; the questions' own state) is taken, not compared. The phone's copy of a
     /// connected cloud never sets it: only the opened cloud record does.
+    /// An erase from elsewhere closes the backup prompt or Sync sheet first (S48): their onDismiss
+    /// calls this again, and the questions rise once the sheet has gone.
     private func recordChanged() {
-        guard cover == .none, !eraser.holdsRemoteErases else { return }
-        if erasedElsewhere { send(.erased); return }
-        if source != onboardedSource, source.isEmpty || sync.recordOpen { takeCount() }
+        let uncounted = source != onboardedSource && (source.isEmpty || sync.recordOpen)
+        switch Cover.onRecordChange(cover: cover, offer: offer, holding: eraser.holdsRemoteErases, erasedElsewhere: erasedElsewhere, uncounted: uncounted) {
+        case .erase?: send(.erased)
+        // From any offer, these two land idle: the prompt closes (to Sync after Back up), then Sync.
+        case .closeOffer?: send(.promptClosed); send(.syncClosed)
+        case .takeCount?: takeCount()
+        case nil: break
+        }
     }
 
     private func takeCount() {
