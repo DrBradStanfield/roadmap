@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H125,web,A guest record with no plan shows no storage card in desktop Settings,bug,not started,"The storage card's hasData is plan.planned, or a phone with Settings shown (widget-src/src/components/HealthTool.tsx ~:598), so on a wide screen a guest record with no plan shows no storage card in Settings (PR 1738 note).",,no

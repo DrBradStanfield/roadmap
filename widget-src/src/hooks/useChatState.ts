@@ -104,7 +104,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   useEffect(() => { inputTextRef.current = inputText; }, [inputText]);
 
   // Other tabs' sends in flight (US-15 AC17c); this tab's own is the store's turn.
-  const { othersBusy, othersBusyNow, ownEnded, onRemote } = useChatBusy();
+  const { othersBusy, othersReplyIn, othersBusyNow, ownEnded, onRemote } = useChatBusy();
   // The latest props and callbacks, read as each effect runs, never a render's that did not finish.
   const latest = useRef({ guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded });
   useLayoutEffect(() => { latest.current = { guestInputs, onProposeEdit, onRemoteConversationSelected, ownEnded }; });
@@ -128,13 +128,15 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   /** This instance's chat state, to every other instance (US-15 AC17c names its fields). Only requests
    *  in flight are said to be busy, never a thread load here (N4); `isLoading`, for an older bundle, adds
-   *  other tabs' so a post never ends their waits elsewhere (R4). `loaded`: whether `messages` are a history (R1). */
+   *  other tabs' so a post never ends their waits elsewhere (R4). `loaded`: whether `messages` are a history (R1).
+   *  `asked` and `shown`: where its reply's dots draw elsewhere (AC17d); an erased turn's draw nowhere. */
   const postState = () => {
     const s = store.getSnapshot();
     const sending = s.turn.phase !== 'idle';
     postSync({ instanceId, type: 'state', ts: Date.now(), payload: {
       conversations: s.conversations, activeConversationId: s.shown.id, messages: s.messages,
       isLoading: sending || othersBusyNow(), sending, loaded: s.load.phase === 'none', error: s.error,
+      ...(s.turn.phase === 'sending' || s.turn.phase === 'streaming' ? { asked: s.turn.asked.key } : {}), shown: s.shown.key,
     } });
   };
 
@@ -225,8 +227,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     }
     if (msg.type === 'state') {
       void store.dispatch({ type: 'mirror-state', payload: msg.payload });
-      // That tab's own send, tracked apart from this tab's (US-15 AC17c).
-      onRemote(msg.instanceId, msg.payload.sending, msg.payload.isLoading);
+      // That tab's own send, tracked apart from this tab's (US-15 AC17c), and the chat shown here now that mirrors its (AC17d).
+      const { sending, isLoading: shows, asked, shown } = msg.payload;
+      onRemote(msg.instanceId, { sending, shows, asked, shown }, store.getSnapshot().shown.key);
       return;
     }
     if (msg.type === 'thread-new') void store.dispatch({ type: 'mirror-new' });
@@ -290,8 +293,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       inputText,
       // Send and the box are locked while any request is open or the shown thread is not read (busy).
       isLoading: busy(chat, othersBusy),
-      // The dots or the streamed reply: this tab's reply only under the chat that asked; another tab's as before (US-15 AC7a, R7 b).
-      replying: isLocalSender(chat) || othersBusy,
+      // The dots or the streamed reply: this tab's or another tab's, only under the chat that asked (US-15 AC7a, AC17d).
+      replying: isLocalSender(chat) || othersReplyIn(chat.shown.key),
       isLocalSender: isLocalSender(chat),
       load: chat.load.phase,
       // Words beside a Send this tab's own request locks (R3): one an erase emptied, or one for a chat not on screen.

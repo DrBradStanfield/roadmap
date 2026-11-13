@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+P10,plan view,The capture box's refused-window note names a button not on screen,minor,not started,"widget-src/src/components/PlanPdf.tsx GuestEmailCapture's PdfNote shows PDF_WINDOW_BLOCKED (""Try Save as PDF again"") during the send and with an email error, while the box shows only Get My Health Plan; Save as PDF appears once captured. Existing words, so Brad's call (review R4 on PR 1740)",,yes

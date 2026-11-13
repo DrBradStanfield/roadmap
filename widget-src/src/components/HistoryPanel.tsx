@@ -17,6 +17,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
 import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
@@ -262,7 +263,7 @@ export function MixedUnitsNote({ label, units }: { label: string; units: string[
 export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [read, setRead] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
   // Selected metrics (initialized after first fetch)
@@ -275,12 +276,12 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    loadAllHistory().then(rows => {
-      setMeasurements(rows);
-      setLoading(false);
-    });
-    loadLabValues().then(rows => { if (rows) setLabVals(rows); });
-    loadMedicationHistory().then(setMedHistory);
+    // A failed read ends the wait and claims nothing (US-21 AC3b); reported as the main form's first read is.
+    // A failed lab or medication read leaves its rows empty.
+    const report = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
+    loadAllHistory().then(rows => { setMeasurements(rows); setRead('ready'); }, error => { setRead('failed'); report(error); });
+    loadLabValues().then(rows => { if (rows) setLabVals(rows); }, report);
+    loadMedicationHistory().then(setMedHistory, report);
   }, []);
 
   // Initialize selected metrics from URL param or default to all
@@ -371,9 +372,9 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     <div className="history-panel">
       <h2>Health History</h2>
 
-      {loading && measurements.length === 0 ? (
+      {read === 'loading' ? (
         <p className="history-loading">Loading history...</p>
-      ) : metricTypes.length === 0 && labMetricNames.length === 0 ? (
+      ) : read === 'failed' ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (
         <>

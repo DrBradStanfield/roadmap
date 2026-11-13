@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H122,iPhone erase,"On an unreadable phone-only record, Delete all my data is reachable but always refuses",bug,not started,"On a phone-only record that cannot be read, Delete all my data is reachable (H114) but always refuses (ios/HealthRoadmap/MyData/RecordStore.swift ~:299-301, ios/HealthRoadmapTests/DataEraserTests.swift ~:161); the web erases over unreadable bytes (packages/health-core/src/record-session-erase.ts ~:124, US-11 AC9). Design note first; needs DataEraser and engine erase files.",,no

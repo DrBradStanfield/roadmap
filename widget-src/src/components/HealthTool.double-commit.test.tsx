@@ -1,0 +1,160 @@
+// @vitest-environment jsdom
+/**
+ * US-03 AC2 (one active row per metric and day), a probe: two commits
+ * of one typed value in the same render save it once.
+ *
+ * The vitals grid's commit (StartingInfoVitals) and the value page's Add
+ * (ValuePage AddValue, whose Add button `saving` disables) guard on React
+ * state, which a second call in the same render cannot see. React 18 holds every render queued inside an
+ * act() scope until it exits, so two triggers fired in one act both reach the
+ * save with the same draft: the faithful worst case. What stops the second
+ * write is the save itself: saves run one after another
+ * (useLongitudinalSave), each routed against the store's rows as it writes
+ * (matrix-save routeTasksToSaves: the slot no longer holds the row the cell
+ * expected, so `changed`), and the store's own slot rule (placeMeasurement:
+ * `slot-occupied`). These tests pin that.
+ * Not pinned: the second save answers `changed`, so the cell or form shows
+ * "changed on another device" over a value that did save (seen 2026-11-14).
+ *
+ * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
+ */
+import { describe, it, expect, vi, type MockInstance } from 'vitest';
+import { act, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
+import { localDay } from '@roadmap/health-core/merge';
+import { RoadmapStore } from '../storage/roadmap-store';
+import { recordOnDisk, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { typeInto } from '../testing/matrix-gestures';
+
+// What the page does as a lab upload starts, before any file is read.
+const upload = vi.hoisted(() => ({ onStart: null as null | (() => Promise<void>) }));
+
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.mock('../lib/server-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/server-api')>()),
+  trackProductEvent: vi.fn(),
+  trackABImpression: vi.fn(),
+  trackABConversion: vi.fn(),
+}));
+vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
+vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
+vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
+vi.mock('./UploadModal', () => ({
+  UploadModal: ({ onStart }: { onStart: () => Promise<void> }) => { upload.onStart = onStart; return null; },
+}));
+
+import { HealthTool } from './HealthTool';
+
+useHealthToolLifecycle();
+
+const SAVED_DAY = '2026-09-01';
+const PROFILE = { sex: 'male' as const, heightCm: 178, birthYear: 1980, birthMonth: 1, unitSystem: 'si' as const };
+const today = () => localDay(new Date());
+type Inserts = MockInstance<RoadmapStore['addMeasurement']>;
+
+/** Every row of a metric on disk: value, day, status. */
+const rowsOf = async (metric: string) => (await recordOnDisk()).measurements
+  .filter((m) => m.metricType === metric)
+  .map((m) => [m.value, m.recordedAt.slice(0, 10), m.status])
+  .sort((a, b) => String(a[1]).localeCompare(String(b[1])) || String(a[2]).localeCompare(String(b[2])));
+
+/** A returning guest with a weight saved on SAVED_DAY, the grids on screen; the store's inserts counted from here. */
+async function withGrid(): Promise<{ view: RenderResult; inserts: Inserts }> {
+  await seedGuest(PROFILE, [['weight', 82]], [], SAVED_DAY);
+  const inserts = vi.spyOn(RoadmapStore.prototype, 'addMeasurement');
+  const view = render(<HealthTool />);
+  showTables(view.container);
+  await waitFor(() => expect(view.container.querySelector('.bt-vitals-card .bt-cell-draft input')).not.toBeNull());
+  return { view, inserts };
+}
+const vitals = (view: RenderResult) => view.container.querySelector('.bt-vitals-card') as HTMLElement;
+const row = (scope: Element, label: string) => [...scope.querySelectorAll<HTMLElement>('.bt-row')]
+  .find((r) => r.querySelector('.bt-name-label')?.textContent === label)!;
+const draftWeight = (view: RenderResult) => row(vitals(view), 'Weight').querySelector('.bt-cell-draft input') as HTMLInputElement;
+const bpHalf = (view: RenderResult, half: 'Systolic' | 'Diastolic') =>
+  row(vitals(view), 'Blood Pressure').querySelector(`.bt-cell-draft input[aria-label="${half} blood pressure"]`) as HTMLInputElement;
+/** A tap on the page outside every grid, as useSaveOnLeave hears it. */
+const tapOutside = () => { fireEvent.pointerDown(document.body); fireEvent.pointerUp(document.body); };
+/** Let the queued saves and the re-read finish. */
+const settled = () => act(async () => { for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0)); });
+/** The store's inserts of one metric, as the save made them. */
+const insertsOf = (inserts: Inserts, metric: string) => inserts.mock.calls.filter((c) => c[0] === metric).length;
+
+describe('US-03 AC2 (double commit): a vitals New cell committed twice in one render saves once', () => {
+  it('Enter and a tap outside in one render: one weight insert, one row today', async () => {
+    const { view, inserts } = await withGrid();
+    typeInto(draftWeight(view), '84');
+    act(() => {
+      fireEvent.keyDown(draftWeight(view), { key: 'Enter' });
+      tapOutside();
+    });
+    await settled();
+    expect(insertsOf(inserts, 'weight')).toBe(1);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+  });
+
+  it('a tap outside and an upload starting in one render: one weight insert, one row today', async () => {
+    const { view, inserts } = await withGrid();
+    typeInto(draftWeight(view), '84');
+    await act(async () => {
+      tapOutside();
+      await upload.onStart!(); // commits both grids' drafts (flushRef), then the fields
+    });
+    await settled();
+    expect(insertsOf(inserts, 'weight')).toBe(1);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+  });
+
+  it('a blood pressure: Enter on the diastolic and an upload starting in one render: one insert of each half', async () => {
+    const { view, inserts } = await withGrid();
+    typeInto(bpHalf(view, 'Systolic'), '128');
+    typeInto(bpHalf(view, 'Diastolic'), '82');
+    await act(async () => {
+      fireEvent.keyDown(bpHalf(view, 'Diastolic'), { key: 'Enter' });
+      await upload.onStart!();
+    });
+    await settled();
+    expect([insertsOf(inserts, 'systolic_bp'), insertsOf(inserts, 'diastolic_bp')]).toEqual([1, 1]);
+    expect(await rowsOf('systolic_bp')).toEqual([[128, today(), 'active']]);
+    expect(await rowsOf('diastolic_bp')).toEqual([[82, today(), 'active']]);
+  });
+});
+
+describe('US-03 AC2 (double commit): the value page\'s Add pressed twice in one render saves once', () => {
+  /** The weight's value page, opened from its My health row; the store's writes counted from here. */
+  async function weightPage(savedDay: string) {
+    await seedGuest(PROFILE, [['weight', 82]], [], savedDay);
+    const inserts = vi.spyOn(RoadmapStore.prototype, 'addMeasurement');
+    const corrections = vi.spyOn(RoadmapStore.prototype, 'correctValue');
+    const view = render(<HealthTool />);
+    const weightRow = await waitFor(() => {
+      const r = [...view.container.querySelectorAll<HTMLElement>('[data-topic="weight"] .md-row')]
+        .find((x) => x.querySelector('.md-row-label')?.textContent === 'Weight');
+      expect(r).toBeDefined();
+      return r!;
+    });
+    fireEvent.click(weightRow);
+    const page = view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!;
+    const value = within(page).getByLabelText(/Value/) as HTMLInputElement;
+    const form = page.querySelector('form.md-add') as HTMLFormElement;
+    return { inserts, corrections, value, form };
+  }
+
+  it('an empty day: two submits in one render, one insert, one row today', async () => {
+    const { inserts, value, form } = await weightPage(SAVED_DAY);
+    fireEvent.change(value, { target: { value: '84' } });
+    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    await settled();
+    expect(insertsOf(inserts, 'weight')).toBe(1);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+  });
+
+  it('a day already holding a weight: two submits in one render, one correction, one active row that day', async () => {
+    const { inserts, corrections, value, form } = await weightPage(today());
+    fireEvent.change(value, { target: { value: '84' } });
+    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    await settled();
+    expect(insertsOf(inserts, 'weight')).toBe(0);
+    expect(corrections).toHaveBeenCalledTimes(1);
+    expect(await rowsOf('weight')).toEqual([[84, today(), 'active'], [82, today(), 'entered-in-error']]);
+  });
+});

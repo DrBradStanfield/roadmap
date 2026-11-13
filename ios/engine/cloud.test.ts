@@ -928,6 +928,62 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(days(dropbox.record)).toEqual([]);
   });
 
+  /** An erase the cloud refused: kept on the phone, still unsent (lead S50a). */
+  async function unsentErase() {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const device = await phone(dropbox);
+    await device.engine.cloudOpen('dropbox', 'ios-1', false, false);
+    dropbox.uploadsWork = false;
+    expect((JSON.parse(await device.engine.cloudErase(chat, NOW)) as Erased).erased).toBe(true);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+    return { dropbox, ...device };
+  }
+
+  it('S50a: Disconnect sends an unsent erase before it copies the cloud down', async () => {
+    const { dropbox, engine } = await unsentErase();
+    dropbox.uploadsWork = true;
+    expect(await engine.cloudClose(true)).toBe('copied');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('S50a: an erase still unsent at Disconnect is sent by the next connect to that cloud (the lift)', async () => {
+    const { dropbox, engine, state } = await unsentErase();
+    expect(await engine.cloudClose(true)).toBe('copied');
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    // Disconnect removes the pending marker (CloudSync.swift disconnectOutcome), so the lift alone sends it.
+    state.pending = false;
+
+    dropbox.uploadsWork = true;
+    await engine.cloudOpen('dropbox', 'ios-1', true, false);
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('S50a: when that connect\'s lift fails once, the session merges the erased phone copy in and sends it', async () => {
+    const { dropbox, engine, state } = await unsentErase();
+    expect(await engine.cloudClose(true)).toBe('copied');
+    state.pending = false; // as Disconnect leaves it
+
+    dropbox.uploadsWork = true;
+    let failNext = true;
+    const answer = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => {
+      if (failNext && url.endsWith('/files/upload')) {
+        failNext = false;
+        return { status: 500, headers: {}, body: 'internal_error' };
+      }
+      return answer(url, headers, body);
+    };
+    await engine.cloudOpen('dropbox', 'ios-1', true, false);
+    expect(failNext).toBe(false);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
   it('an erase the cloud refused and the phone could not keep is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
