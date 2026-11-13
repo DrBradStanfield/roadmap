@@ -1454,24 +1454,47 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   // length. Each row is the worst case for one pattern: a long run of its own
   // characters with nothing that completes a match. None holds contact details
   // or a value, so the guard passes it and the URL cap refuses it as too long.
-  it('US-32 AC58 — judges the worst long run for each guard pattern quickly', () => {
-    for (const [name, detail] of [
-      ['plain letters', 'a'.repeat(200_000)],
-      ['email', 'a'.repeat(100_000) + '@' + 'a'.repeat(100_000)],
-      ['file name', 'a.'.repeat(100_000)],
-      ['value with unit', '1'.repeat(200_000)],
-      ['value with unit, decimal', '1.' + '2'.repeat(199_998)],
-      ['url with query', 'http://'.repeat(28_572)],
-      ['phone', '1' + ' '.repeat(199_998) + 'x'],
-    ] as const) {
-      const started = performance.now();
-      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
-      expect(performance.now() - started, name).toBeLessThan(1000);
+  // The test times growth, not speed: a linear guard takes about 4x as long on
+  // 4x the text on any machine, a quadratic one about 16x. An absolute budget
+  // failed on a loaded Mac and in CI (docs/gotchas.md). Each size is the
+  // fastest of a few runs, so a load spike on one run does not count.
+  it('US-32 AC58 — judges the worst long run for each guard pattern in linear time', () => {
+    const SIZES = [12_500, 50_000, 200_000];
+    const GROWTH_LIMIT = 10; // per 4x step: linear ~4, quadratic ~16
+    const FLOOR_MS = 1; // below this a timer reading is noise, not a cost
+    const HANG_MS = 10_000; // last-resort backstop, whatever the machine
+    const fastest = (detail: string) => {
+      let best = Infinity;
+      for (let run = 0; run < 3; run += 1) {
+        const started = performance.now();
+        reportFeedback({ ...GOOD, detail }, NOW);
+        best = Math.min(best, performance.now() - started);
+      }
+      return best;
+    };
+    for (const [name, make] of [
+      ['plain letters', (n) => 'a'.repeat(n)],
+      ['email', (n) => 'a'.repeat(n / 2) + '@' + 'a'.repeat(n / 2)],
+      ['file name', (n) => 'a.'.repeat(n / 2)],
+      ['value with unit', (n) => '1'.repeat(n)],
+      ['value with unit, decimal', (n) => '1.' + '2'.repeat(n - 2)],
+      ['url with query', (n) => 'http://'.repeat(Math.ceil(n / 7))],
+      ['phone', (n) => '1' + ' '.repeat(n - 2) + 'x'],
+    ] as const satisfies ReadonlyArray<readonly [string, (n: number) => string]>) {
+      let previous = fastest(make(SIZES[0]));
+      for (const size of SIZES.slice(1)) {
+        const took = fastest(make(size));
+        expect(took, `${name} at ${size}`).toBeLessThan(HANG_MS);
+        expect(took / Math.max(previous, FLOOR_MS), `${name}: growth from ${size / 4} to ${size} characters`)
+          .toBeLessThan(GROWTH_LIMIT);
+        previous = took;
+      }
+      const outcome = reportFeedback({ ...GOOD, detail: make(SIZES[SIZES.length - 1]) }, NOW);
       expect(outcome, name).toMatchObject({ status: 'rejected' });
       expect(outcome, name).not.toHaveProperty('reason');
       expect(outcome.text, name).toContain('too long');
     }
-  });
+  }, 60_000);
 
   it('US-32 AC58 — the linear patterns refuse what they refused before', () => {
     for (const detail of [
