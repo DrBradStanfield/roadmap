@@ -30,10 +30,11 @@ function replyStanding(asked: string, stayed: boolean): 'shown' | 'erasing' | 'r
 }
 
 /** Decide where a chatbot vitals edit should land. When the vitals matrix is
- *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
- *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
- *  the plain form field (fresh users, no flash). Pure, so the routing is
- *  unit-testable without rendering. */
+ *  mounted (`matrixMounted`, i.e. its prefill ref is registered: the whole
+ *  form) the value routes to the matrix cell so it pre-fills AND flashes;
+ *  otherwise it goes to the form's inputs: a weight to the box beside the
+ *  height, a waist or pressure to wait, unshown, for the hand-over below.
+ *  Pure, so the routing is unit-testable without rendering. */
 export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
   return matrixMounted ? 'matrix' : 'field';
 }
@@ -104,8 +105,8 @@ export function useChatEdits({
     // form), route into its draft/backfill cell so it pre-fills AND flashes —
     // exactly like the blood-test matrix. The matrix only registers its prefill
     // ref while mounted, so a non-null ref is the "matrix is shown" signal.
-    // Before the whole form (ref null) the edit sets the form input directly:
-    // no flash.
+    // Before the whole form (ref null) the edit sets the form's inputs: the
+    // weight box shows a weight; a waist or pressure waits for the hand-over.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
       if (edit.field === 'weightKg') chatWeightRef.current();
       // The matrix refuses a weight it does not show (the weight beside the

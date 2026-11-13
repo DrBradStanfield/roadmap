@@ -147,7 +147,7 @@ const uploadStarts = () => act(async () => { await upload.onStart!(); });
 /** A lab upload has saved its values: the page re-reads. */
 const uploadEnds = () => act(async () => { await upload.onComplete!(); });
 
-/** Type into a first-time vitals field and leave it. Its save runs 500 ms
+/** Type into the onboarding's weight box and leave it. Its save runs 500 ms
  *  later; `beforeSave` acts while it waits. */
 async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?: () => void) {
   typeInto(field, value);
@@ -155,7 +155,7 @@ async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?:
   beforeSave?.();
   await wait(600);
 }
-/** A guest who has typed today's weight into its first-time field. With the
+/** A guest who has typed today's weight into the onboarding's weight box. With the
  *  birth date on record that weight finishes the onboarding, and leaving it
  *  moves About you low, the weight joining the vitals (US-62 AC12); with none,
  *  the weight box stays beside the height. */
@@ -166,8 +166,8 @@ async function firstWeight(value: string, { born = true } = {}): Promise<RenderR
   await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), localToday()]]));
   return view;
 }
-/** Today's saved weight in its first-time field: the onboarding's weight box,
- *  beside the height, holds it (US-62 AC13). */
+/** The onboarding's weight box, beside the height, which holds today's
+ *  saved weight (US-62 AC13). */
 const openToday = (view: RenderResult) => shown<HTMLInputElement>(view.container, '#weightKg');
 /** The line a typed weight shows under the box: what saving it replaces. */
 const weightReference = (view: RenderResult) =>
@@ -796,14 +796,14 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
 });
 
 // Cleanup review of 2026-09-25: each edit in one chat reply spread the same
-// copy of the form, so a reply carrying two first-time field edits kept only
+// copy of the form, so a reply carrying two edits for the form's own fields kept only
 // the last.
-describe('US-16 AC1: the chat fills the first-time fields', () => {
+describe('US-16 AC1: before the whole form, one chat reply\'s edits all wait in the form', () => {
   it.each([
     ['a blood pressure ("120/80")', { systolicBp: 120, diastolicBp: 80 }, { systolic_bp: 120, diastolic_bp: 80 }],
     ['a weight and a waist', { weightKg: 84, waistCm: 90 }, { weight: 84, waist: 90 }],
   ])('one reply carrying %s leaves both in the form, and a save saves both', async (_what, fields, saved) => {
-    await guest(); // stage 2: the first-time fields
+    await guest(); // stage 2: no grid yet, so the edits wait in the form
     const view = render(<HealthTool />);
     await shown(view.container, '#weightKg');
     act(() => chat.proposeEdit!(Object.entries(fields).map(([field, displayValue]) =>
