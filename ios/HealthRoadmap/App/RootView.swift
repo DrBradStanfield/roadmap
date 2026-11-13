@@ -196,8 +196,9 @@ struct RootView: View {
     }
 
     /// The count for a record the phone has not counted yet (a cloud just connected or
-    /// switched; the questions' own state) is taken, not compared. The phone's copy of a
-    /// connected cloud never sets it: only the cloud record, once drawn, does (S72).
+    /// switched; the questions' own state) is taken, not compared. Only an open record sets it
+    /// (ShownRecord.open): never the phone's copy of a connected cloud, only the cloud record once
+    /// drawn (S72); never the cloud's record a Disconnect still draws, only the phone's once it lands (S73).
     /// An erase from elsewhere closes the backup prompt or Sync sheet first (S48): their onDismiss
     /// calls this again, and the questions rise once the sheet has gone.
     private func recordChanged() {
@@ -211,9 +212,10 @@ struct RootView: View {
         }
     }
 
-    private var countable: Bool { Cover.countable(source: source, open: shownRecord.open) }
+    /// The record shown is its source's own, drawn: only it sets the erase count (S43, S72, S73).
+    private var countable: Bool { shownRecord.open }
 
-    /// finished() calls it too: a finish before a connected cloud's record is drawn takes nothing (S43, S72).
+    /// finished() calls it too: a finish before the source's own record is drawn takes nothing (S43, S72, S73).
     private func takeCount() {
         guard countable, let data = store.myData else { return }
         (onboardedEpoch, onboardedSource) = (data.eraseEpoch ?? 0, source)
