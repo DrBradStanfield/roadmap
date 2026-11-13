@@ -61,6 +61,16 @@ describe('US-32 AC4a: two values for one test and day in one add_lab_values call
     expect(outcome.text).not.toContain('correct_value');
   });
 
+  it.each([
+    ['a core blood test', 'LDL', 'LDL-C', 'mmol/L', 'values[1] (LDL-C)'],
+    ['a name with a line break, kept on one line', 'zzq test', 'ZZQ\nTEST', 'U/L', 'values[1] (ZZQ TEST)'],
+  ])('names the earlier value for %s', (_, first, second, unit, which) => {
+    const values = [first, second].map((metricName, i) => ({ metricName, value: 2 + i, unit, recordedAt: '2026-08-01' }));
+    const outcome = callTool('add_lab_values', { values }, { file: record(), now: NOW });
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'slot-occupied' });
+    expect(outcome.text).toContain(`${which}: the same test and day as values[0] in this call.`);
+  });
+
   it('still names the saved row when the record already holds the day', () => {
     const file = record(true);
     const outcome = callTool('add_lab_values', {

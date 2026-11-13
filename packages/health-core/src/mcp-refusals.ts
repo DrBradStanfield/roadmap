@@ -1,6 +1,6 @@
 /**
- * The words a refused write answers in: a `record-edits.ts` rejection put in
- * the agent's own terms. Split out of `mcp-tools.ts` (US-64 AC23).
+ * The words a `record-edits.ts` rejection answers in, put in the agent's own
+ * terms. Split out of `mcp-tools.ts` (US-64 AC23).
  */
 import { oneLine } from './plan';
 import { type EditRejection } from './record-edits';
