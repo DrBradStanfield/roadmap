@@ -1216,7 +1216,9 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
   before, a double tap asked iOS twice, and the second grant could turn reminders back on
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
-  an erase moved it in between, the grant is refused and reminders stay off (US-11). Known lead:
+  an erase moved it in between, the grant is refused and reminders stay off (US-11). If the
+  first read fails, the last good read's epoch stands in; with none ever, the grant is refused
+  (fail safe; the next tap, with the record read, turns them on). Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:
@@ -1710,7 +1712,13 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
   Both are generated from `engine/contract.ts`, the one source (I-2, 2026-11-13):
   edit it, then `npx tsx ios/scripts/gen-contract.ts`; `engine/contract.test.ts` fails
-  when either file differs from what it generates.
+  when either file differs from what it generates. The same script writes
+  `engine/contract.schema.json` (the bridge, neutral, for any platform's generator) and the
+  app's Swift, checked in: `HealthRoadmap/Engine/Generated/EngineContract.swift` (the bridge
+  id, the doors list, the wire types: EngineEdit, EditOutcome, UnitConversion and the shapes
+  they hold) and `EngineDoors.swift` (one typed `door…` method per door on HealthEngine, the
+  app's only way to a door). `engine/contract-drift.test.ts` fails in CI on any difference, and
+  on hand-written Swift that names a door in a raw `call`.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
@@ -1929,6 +1937,19 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   one place, `OnboardingFlow.landing(moved:)`. Any other refusal shows its words and repins. Pin and unpin are effects: begin pins as the first page shows,
   finishing gives the pin back. Lead F3: a save landing after `onDisappear` could unpin twice
   (no live path: the cover closes only through finish).
+- **The cover and the backup offer, one state each (2026-11-13, iPhone survey S9, S16).**
+  `Cover` (App/FirstRun.swift) is deciding, welcome, `questions(Run)` (fresh, onlyMissing,
+  afterErase) or none, changed only by `Cover.transition` (launched, started, connected,
+  finished, erased), which names its effect, finish or startOver. It replaced `firstRun`,
+  `decided` and three `@AppStorage` aliases. Why: finish ran from three places, so it could
+  run twice; now a second finish does nothing. The eight keys keep their names, so no
+  migration: `FirstRunKeys.persist` writes them, and finishing now clears the run's flags.
+  Welcome's Start on a full record finishes too (S34), so its saves count. `Offer` is idle,
+  `offering(backUp:)` or sync, replacing three Bools; Back up leaves `prompting`, which closes
+  the prompt, and Sync opens in its onDismiss, so two sheets never overlap. One
+  `.task(id: offerAsks)` holds the 1 s wait, so a newer ask restarts it. `FirstRunTests` holds
+  both tables. Open: a remote erase while the backup or Sync sheet is up (S9 fault 1) waits for
+  a simulator probe.
 
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 

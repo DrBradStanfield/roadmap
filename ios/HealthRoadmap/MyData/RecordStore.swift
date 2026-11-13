@@ -433,7 +433,8 @@ final class RecordStore {
     /// Through the engine's open session: the save loop sends it to the cloud.
     private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) async -> ApplyResult {
         do {
-            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit), of: edit)
+            let (outcome, order) = try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit)
+            return await shown(outcome, order: order, of: edit)
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
         }
