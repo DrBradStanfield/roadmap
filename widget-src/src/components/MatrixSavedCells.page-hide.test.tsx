@@ -73,6 +73,7 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     fireEvent.change(input, { target: { value: '99999' } }); // outside LDL's range
     fireEvent.blur(input);
     hidePage();
+    expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull(); // at the hide, not the timer
     await wait(2000);
     expect(onCorrect).not.toHaveBeenCalled();
     expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull();
