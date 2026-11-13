@@ -2,14 +2,14 @@
  * The erase's reminders teardown as one state (US-11 AC4c, lead S59b), kept
  * apart from reminders.ts, whose cancelRemindersForErase drives it.
  *
- * Until its swap, this tab's erase can still merge in another device's Turn on
+ * While it runs, this tab's erase can still merge in another device's Turn on
  * (a re-read while the prepare waits on the Drive proof, or on the chat
- * erase), even one that brings another erase with it. So from the prepare's
- * first read until the commit, every distinct active token seen while this
- * tab's erase runs is kept, in memory only, to be cancelled. While the erased
- * copy uploads, a merge can still bring in an opt-in that survives the erase
- * (another device erased to the same epoch, then turned reminders on): the
- * commit leaves the one the record still holds active (`toCancel`). The
+ * erase), even one that brings another erase with it. So every distinct active
+ * token seen while this tab's erase runs, before its swap or while the erased
+ * copy uploads, is kept until the commit, in memory only; spared if the record
+ * still holds it active (`toCancel`): a merge during the upload can bring in
+ * an opt-in that survives the erase (another device erased to the same epoch,
+ * then turned reminders on). The
  * listener on hr:remote-changed is attached while the state is `watching`,
  * and only then: the transition says when.
  */
@@ -68,9 +68,9 @@ export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEven
   }
 }
 
-/** What the commit cancels: every token kept but one the record still holds
- *  active once the erase stands. That one came in after the swap and survived
- *  the erase's save (another device erased to the same epoch, then turned
+/** What the commit cancels: every token kept until the commit; spared if the
+ *  record still holds it active once the erase stands. That one survived the
+ *  erase's save (another device erased to the same epoch, then turned
  *  reminders on), so it is live consent, not a pre-erase row. */
 export function toCancel(state: EraseCancel, standing: FileReminderOptIn | undefined): { token: string; idToken: string | null }[] {
   if (state.kind !== 'watching') return [];
