@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-H19,composition,"The document save reads the store's erase mark as the batch starts, not an erase the caller hands it",hidden link,not started,"storage/roadmap-store.ts:504 const erase = this.shownErase. Fix 4 PR 3 end state: every writer's erase argument is required by the type, then the store mark goes",,no
+H19,composition,"The document save reads the store's erase mark as the batch starts, not an erase the caller hands it",hidden link,not started,"storage/roadmap-store.ts:428 const erase = this.shownErase. Fix 4 PR 3 end state: every writer's erase argument is required by the type, then the store mark goes",,no
