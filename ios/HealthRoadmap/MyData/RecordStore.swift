@@ -377,7 +377,7 @@ final class RecordStore {
         // its unit and the typed number, so a second Save would store that number
         // in a record or units it never showed (re-check R1). On the phone both
         // erases are nil: the epoch and erase count tell an erase apart (AC11g).
-        guard seen.erase == cloudErase, seen.mark.holds(at: mark) else {
+        guard shows(seen) else {
             return .refused(message: Self.recordChanged, existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
