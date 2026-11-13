@@ -20,7 +20,7 @@ import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, holdsCopyHere, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
 import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
-import { noCopyQuestion, PROVIDERS } from './providers';
+import { noCopyQuestion, PROVIDERS, safeWhere } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -291,7 +291,7 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
           {signedOut ? (reconnecting ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
-          Your record is safe in your {label}.
+          Your record is safe {safeWhere(reconnect.provider)}.
           {/* A page whose device writes are refused keeps nothing in this browser. */}
           {signedOut && ' Sign in again to keep it in step.'}
           {writesAllowed && (signedOut

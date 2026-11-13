@@ -36,11 +36,14 @@ export const PROVIDERS = {
   'self-host': { label: 'your own server', adapter: (gen) => new WebDavAdapter(undefined, gen), reminders: false, event: 'webdav' },
 } as const satisfies Record<CloudBackend, Provider>;
 
-/** US-09 AC49: asked before "Use this browser only" starts an empty record. Your own server is "on", never
- *  "in your your own server" (owner ruling). */
+/** Where a record is safe: "in your Dropbox", or "on your own server", never "in your your own server" (US-09 AC49). */
+export function safeWhere(backend: CloudBackend): string {
+  return backend === 'self-host' ? 'on your own server' : `in your ${PROVIDERS[backend].label}`;
+}
+
+/** US-09 AC49: asked before "Use this browser only" starts an empty record. */
 export function noCopyQuestion(backend: CloudBackend): string {
-  const where = backend === 'self-host' ? 'on your own server' : `in your ${PROVIDERS[backend].label}`;
-  return `This browser has no copy of your record yet. It stays safe ${where}. Start empty in this browser?`;
+  return `This browser has no copy of your record yet. It stays safe ${safeWhere(backend)}. Start empty in this browser?`;
 }
 
 /** Every provider's stored sign-in entries, for the page-load sweep and log-off (US-09 AC45). */

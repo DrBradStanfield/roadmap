@@ -532,6 +532,10 @@ describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this b
 
   it.each(['google-drive', 'dropbox'] as const)('%s: "Use this browser only" asks first, naming the cloud; Cancel changes nothing', async (cloud) => {
     await arriveSignedOut(cloud);
+    // Each provider's sign-in entries: tokens and the config key (US-09 AC48's 'health_roadmap_dropbox').
+    const SIGN_IN = [DRIVE_CONFIG, DRIVE_TOKENS, 'health_roadmap_dropbox', DROPBOX_TOKENS];
+    const signInBefore = SIGN_IN.map((key) => localStorage.getItem(key));
+    expect(signInBefore[cloud === 'dropbox' ? 2 : 0]).not.toBeNull();
     fireEvent.click(button('Use this browser only')!);
     expect(shown(question(cloud))).toBe(true);
     await turns();
@@ -543,7 +547,8 @@ describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this b
     await turns();
     expect(reload).not.toHaveBeenCalled();
     expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);
-    expect(localStorage.getItem(cloud === 'dropbox' ? DROPBOX_TOKENS : DRIVE_TOKENS)).not.toBeNull();
+    expect(SIGN_IN.map((key) => localStorage.getItem(key))).toEqual(signInBefore); // config keys and tokens kept
+    expect(document.querySelector('.hr-sync-error')).toBeNull(); // no error line
   });
 
   it.each(['google-drive', 'dropbox'] as const)('%s: a browser that holds a copy is not asked', async (cloud) => {

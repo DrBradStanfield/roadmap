@@ -141,4 +141,17 @@ describe('US-09 AC49 (lead A28): the question before an empty exit names where t
     expect(shown).toContain(text);
     expect(reload).not.toHaveBeenCalled();
   });
+
+  const DETAIL_ROWS = [
+    [{ kind: 'signedOut', provider: 'google-drive' }, 'Your record is safe in your Google Drive. Sign in again to keep it in step.'],
+    [{ kind: 'signedOut', provider: 'dropbox' }, 'Your record is safe in your Dropbox. Sign in again to keep it in step.'],
+    [{ kind: 'unreachable', provider: 'github' }, 'Your record is safe in your GitHub.'],
+    [{ kind: 'unreachable', provider: 'self-host' }, 'Your record is safe on your own server.'],
+  ] as const;
+
+  it.each(DETAIL_ROWS)('the panel\'s detail line, %o', (lost, start) => {
+    bootSignIn(lost);
+    mount('local');
+    expect(detail()).toMatch(new RegExp(`^${start.replace(/\./g, '\\.')}( Anything|$)`));
+  });
 });
