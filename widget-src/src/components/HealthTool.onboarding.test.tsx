@@ -1361,3 +1361,71 @@ describe('US-11 AC6: a remote erase always applies', () => {
     expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).not.toContain('Height must be at least 50 cm');
   });
 });
+
+describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no first-time vitals card', () => {
+  const activeOn = async (metric: string) => (await recordOnDisk()).measurements
+    .filter((m) => m.metricType === metric && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
+  /** A topic's rows: each label with its reading, or "Add". */
+  const rowsOf = (view: RenderResult, topic: string) => Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`))
+    .map((r) => [r.querySelector('.md-row-label')?.textContent, r.querySelector('.md-row-latest, .md-row-add')?.textContent]);
+  const openRow = (view: RenderResult, topic: string, label: string) => fireEvent.click(Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`))
+    .find((r) => r.querySelector('.md-row-label')?.textContent === label)!);
+  const page = (view: RenderResult) => q(view, '.mh-page-host .md-page') as HTMLElement;
+
+  it('no landing (the birth month picked last): About you stays up, Waist and Blood Pressure are "Add" rows, and each page saves to the record and the plan', async () => {
+    const view = await open();
+    await measurements(view);
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birthWithoutJump(view);
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(q(view, '.mh-page .about-card')).toBeTruthy(); // no landing: About you is still up
+    expect(q(view, '#waistCm, #systolicBp, #diastolicBp')).toBeNull();
+    expect(rowsOf(view, 'weight')).toEqual([['Waist', 'Add'], ['HbA1c', 'Add']]); // the weight is beside the height, not a row
+    expect(rowsOf(view, 'bloodPressure')[0]).toEqual(['Blood Pressure', 'Add']);
+    expect(tiles(view)).not.toContain('Waist-to-Height');
+
+    openRow(view, 'weight', 'Waist');
+    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+    fireEvent.change(within(page(view)).getByLabelText('Value'), { target: { value: '90' } });
+    fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
+    await waitFor(() => expect(tiles(view)).toContain('Waist-to-Height'));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
+
+    openRow(view, 'bloodPressure', 'Blood Pressure');
+    await waitFor(() => expect(within(page(view)).getByLabelText('Systolic (top number)')).toBeTruthy());
+    fireEvent.change(within(page(view)).getByLabelText('Systolic (top number)'), { target: { value: '120' } });
+    fireEvent.change(within(page(view)).getByLabelText('Diastolic (bottom number)'), { target: { value: '80' } });
+    fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
+    // One reading: both halves together, on one day.
+    await waitFor(async () => expect([await activeOn('systolic_bp'), await activeOn('diastolic_bp')]).toEqual([[[120, localToday()]], [[80, localToday()]]]));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
+    await waitFor(() => expect(rowsOf(view, 'bloodPressure')[0]).toEqual(['Blood Pressure', '120/80']));
+    expect(rowsOf(view, 'weight')[0][0]).toBe('Waist-to-height');
+  });
+
+  it('a record with data but no weight, in a fresh browser: a Weight "Add" row, no weight box, and the height does not hop to a missing box', async () => {
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const view = await open();
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    expect(q(view, '.mh-page .about-card')).toBeTruthy(); // About you at the top
+    expect(q(view, '#weightKg')).toBeNull();
+    expect(rowsOf(view, 'weight')).toContainEqual(['Weight', 'Add']);
+    // Path (c): a complete height moves nowhere, since no weight box shows; no error.
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '178');
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(document.activeElement).toBe(height);
+    expect(Array.from(view.container.querySelectorAll('.error-message'))).toEqual([]);
+
+    openRow(view, 'weight', 'Weight');
+    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Weight' })).toBeTruthy());
+    fireEvent.change(within(page(view)).getByLabelText('Value'), { target: { value: '80' } });
+    fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]));
+    fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
+    expect(q(view, '#heightCm')).toBeTruthy();
+    expect(Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-name-label')).map((l) => l.textContent)).toContain('Weight');
+  });
+});
