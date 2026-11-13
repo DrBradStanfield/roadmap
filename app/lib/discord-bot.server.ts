@@ -27,7 +27,7 @@ import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { createRateLimiter } from './rate-limiter';
 import {
   DISCORD_BOT_TOKEN,

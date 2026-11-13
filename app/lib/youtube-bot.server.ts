@@ -34,7 +34,7 @@
  *   tools/youtube-comment-dryrun.ts (preview tool, same pipeline)
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { YOUTUBE_PROMPT_TEMPLATE } from './youtube-context';
 import {
   POLL_INTERVAL_MS,
