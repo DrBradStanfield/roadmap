@@ -2267,10 +2267,6 @@ input[type="number"] {
   flex-shrink: 0;
 }
 
-.review-row-value {
-  color: var(--color-gray-dark);
-}
-
 .review-row-dup {
   font-size: 12px;
   color: var(--color-gray-dark);
@@ -4126,6 +4122,10 @@ input[type="number"] {
   .bt-timeline-scroll .bt-cell-trend {
     position: static;
     transform: none;
+  }
+  /* Scrollbar hidden: a fade says more lies right; gone at the end and while a cell has focus (D2). */
+  .bt-timeline-scroll.bt-more-right:not(:focus-within) {
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
   }
 }
 

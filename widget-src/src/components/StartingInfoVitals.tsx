@@ -41,7 +41,7 @@ import { FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { describedBy } from '../lib/aria';
 import { useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
-import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { useRightFade, useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
@@ -289,7 +289,7 @@ export function StartingInfoVitals({
   );
   const colCount = columns.length;
 
-  const scrollRef = useScrollToRightOnMount<HTMLDivElement>([colCount]);
+  const scrollRef = useRightFade(useScrollToRightOnMount<HTMLDivElement>([colCount]));
 
   const advanceToRest = useAutoAdvance(true);
   const setSimpleDraft = (metric: 'weight' | 'waist', typed: string) => {

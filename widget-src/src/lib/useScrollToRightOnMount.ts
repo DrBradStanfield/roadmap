@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 /**
  * Scrolls the returned element to its rightmost position on first mount —
@@ -35,5 +35,26 @@ export function useScrollToRightOnMount<T extends HTMLElement>(deps: unknown[]) 
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+  return ref;
+}
+
+/**
+ * Marks the scroller `bt-more-right` while columns lie past its right edge; the phone CSS
+ * fades that edge, since the scrollbar is hidden (D2, after H79). Plain view state, read from
+ * the scroll position on each scroll and resize. Returns the ref it was given.
+ */
+export function useRightFade<T extends HTMLElement>(ref: RefObject<T>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // 1px slack: WebKit can stop a fractional pixel short of the end.
+    const mark = () => el.classList.toggle('bt-more-right', el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+    mark();
+    el.addEventListener('scroll', mark, { passive: true });
+    // A grid mounted hidden, or one that gains a column, changes size without scrolling.
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(mark);
+    [el, el.firstElementChild].forEach(box => box && resized?.observe(box));
+    return () => { el.removeEventListener('scroll', mark); resized?.disconnect(); };
+  }, [ref]);
   return ref;
 }
