@@ -108,6 +108,7 @@ struct SyncView: View {
         case .done(copied: false):
             message = "\(provider.label) could not be reached, so changes made on other devices since the last sync are not on this iPhone. Everything saved on this iPhone is kept."
         case .failed: message = SyncStatusText.disconnectFailed(provider)
+        case .eraseUnsent: message = EraseText.unsent(provider)
         }
     }
 }

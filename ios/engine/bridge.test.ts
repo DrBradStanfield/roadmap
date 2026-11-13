@@ -73,10 +73,12 @@ describe('bridge contract (US-25 AC18)', () => {
   // here; none is ever renamed, retyped or dropped, and a door's arguments never change.
   // `bytes`: a door answering a Promise of an ArrayBuffer, not JSON. With no cloud open here it
   // rejects; its bytes answer is pinned in cloud.test.ts (US-73 AC12).
-  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true }> = {
+  // `words`: a door answering a Promise of one bare word, never JSON (S50b).
+  const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true; words?: string[] }> = {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
     cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
+    cloudEraseHeld: { args: [], call: [], words: ['none', 'transient', 'definite', 'unknown', 'expired'] }, // S50b: 'none' with no cloud open
     uploadVerdictsJson: {
       args: ['request'],
       call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
@@ -101,6 +103,7 @@ describe('bridge contract (US-25 AC18)', () => {
       expect(optional.optionalDoors[name].args, name).toEqual(frozen.args);
       const door = (entry as unknown as Record<string, (...a: unknown[]) => unknown>)[name];
       if (frozen.bytes) await expect(door(...frozen.call), name).rejects.toThrow('not open');
+      else if (frozen.words) expect(frozen.words, name).toContain(await door(...frozen.call));
       else expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call) as string)), name).toEqual([]);
     }
   });

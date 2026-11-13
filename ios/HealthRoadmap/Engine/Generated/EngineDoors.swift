@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: feb576c1d7928941
+// contractHash: fa0b8b7ca709c585
 
 import Foundation
 import JavaScriptCore
@@ -226,5 +226,15 @@ extension HealthEngine {
     /// `cloudOnline`: answers at once; nil from an engine without it.
     func doorCloudOnline() throws -> String? {
         try optionalCall("cloudOnline", [])
+    }
+
+    /// `cloudEraseHeld`: answers a Promise; nil from an engine without it.
+    func doorCloudEraseHeld() async throws -> String? {
+        try await optionalCall("cloudEraseHeld", [], read: { $0.isUndefined ? "" : $0.toString() })
+    }
+
+    /// `cloudEraseHeld`, its settled value read by `read` on the engine's queue.
+    func doorCloudEraseHeld<T: Sendable>(read: @escaping (JSValue) -> T) async throws -> T? {
+        try await optionalCall("cloudEraseHeld", [], read: read)
     }
 }

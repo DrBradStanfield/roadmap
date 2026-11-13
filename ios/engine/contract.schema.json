@@ -696,6 +696,11 @@
       "kind": "sync",
       "optionalDoor": true,
       "args": []
+    },
+    "cloudEraseHeld": {
+      "kind": "promise",
+      "optionalDoor": true,
+      "args": []
     }
   },
   "types": {
