@@ -216,6 +216,71 @@ final class RedrawHeldEraseTests: XCTestCase {
         return record["documents"] as? [[String: Any]] ?? []
     }
 
+    /// The cloud record open with a weight, drawn, and the engine's screen draw failing from now on.
+    /// `sync` is kept alive: the session saves to the cloud only while its CloudSync lives.
+    private func openCloud() async throws -> (store: RecordStore, engine: HealthEngine, sync: CloudSync) {
+        dropbox.put(try webRecord())
+        try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        await sync.start()
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        XCTAssertEqual(store.hold, .readable)
+        try screenFails(true, engine)
+        return (store, engine, sync)
+    }
+
+    /// Lead H17 (US-25 AC16f): the cloud session takes an edit whose draw then fails. The store holds
+    /// the edited record with no drawing, never the old one as current; a redraw then shows the edit.
+    func testACloudEditWhoseDrawFailsIsHeldUndrawn_H17() async throws {
+        let (store, engine, sync) = try await openCloud()
+        let before = store.recordJSON
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 70, day: "2026-11-13")), "the session took the edit")
+
+        XCTAssertNotEqual(store.recordJSON, before, "the store holds the edited record, not the old one")
+        XCTAssertEqual(try weights(store.recordJSON).count, 2, "the held record has the new weight")
+        XCTAssertEqual(store.hold, .heldUndrawn)
+        XCTAssertNil(store.myData, "held with no drawing: My data says the record did not load")
+        let edits = try cloudEdits(engine)
+        guard case .refused = await store.apply(.add(metric: "weight", value: 71, day: "2026-11-14")) else {
+            return XCTFail("an edit landed in the held record")
+        }
+        XCTAssertEqual(try cloudEdits(engine), edits, "nothing reached the session")
+
+        try screenFails(false, engine)
+        let held = store.recordJSON
+        await store.redraw().value
+        XCTAssertEqual(store.recordJSON, held)
+        XCTAssertEqual(store.hold, .readable)
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }?.latest, "My data shows the edit")
+        XCTAssertEqual(weight.day, "2026-11-13", "the new weight, not the old one")
+        withExtendedLifetime(sync) {}
+    }
+
+    /// Lead H17 (US-25 AC16f): the same for a document saved to the cloud session (saveDocumentInTurn).
+    func testACloudDocumentSaveWhoseDrawFailsIsHeldUndrawn_H17() async throws {
+        let (store, engine, sync) = try await openCloud()
+        XCTAssertEqual(try documents(store.recordJSON).count, 0)
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
+        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
+        guard case .saved(let count, _, _, _) = filed else { return XCTFail("the document did not land: \(filed)") }
+        XCTAssertEqual(count, 1)
+
+        XCTAssertEqual(try documents(store.recordJSON).count, 1, "the store holds the record with the document")
+        XCTAssertEqual(store.hold, .heldUndrawn)
+        XCTAssertNil(store.myData, "held with no drawing: My data says the record did not load")
+
+        try screenFails(false, engine)
+        let held = store.recordJSON
+        await store.redraw().value
+        XCTAssertEqual(store.recordJSON, held)
+        XCTAssertEqual(store.hold, .readable)
+        XCTAssertNotNil(store.myData, "drawn once the engine can")
+        XCTAssertEqual(try documents(XCTUnwrap(store.readable?.json)).count, 1, "the reader sees the document")
+        withExtendedLifetime(sync) {}
+    }
+
     /// A record drawn as usual is drawn again as before: same record, one more draw.
     func testADrawnRecordIsRedrawnAsBefore_S45() async throws {
         let store = try RecordStore(folder: folder, engine: try engine(), deviceId: "test")

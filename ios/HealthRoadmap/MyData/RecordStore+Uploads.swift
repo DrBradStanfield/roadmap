@@ -89,7 +89,7 @@ extension RecordStore {
                 // The engine's session took it; the screen follows unless it has moved on to another record.
                 guard cloudErase == erase, let nextErase = answer.erase else { return result }
                 if next != recordJSON {
-                    await draw(next, order: answer.order, as: .cloudEdited(erase: nextErase))
+                    await draw(next, order: answer.order, as: .cloudEdited(erase: nextErase), holdUndrawn: true)
                     onEdit?()
                 }
                 return result
