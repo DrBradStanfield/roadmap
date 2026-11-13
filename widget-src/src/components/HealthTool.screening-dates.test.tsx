@@ -15,7 +15,7 @@ import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -31,7 +31,8 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
 
-useHealthToolLifecycle();
+// Fake timers that move with the clock: wait(1200) jumps the list save at once.
+useHealthToolLifecycle({ fakeTimers: true });
 
 /** A 66-year-old woman with a weight on record: every screening shows. */
 async function pageWith(screenings: Array<[string, string]>, selector: string) {
@@ -82,7 +83,8 @@ describe('US-06 AC16: a screening date picker shows the saved date, not an old p
   const picked = (container: HTMLElement, key: string) => date(container, key)!.value;
   /** The record's answer for a screening key ('' when none), after the list save has run. */
   async function saved(key: string): Promise<string> {
-    await act(async () => { await new Promise(r => setTimeout(r, 1200)); await flushRoadmapStore(); });
+    await wait(1200);
+    await act(async () => { await flushRoadmapStore(); });
     const body = (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
     return readScreening(body.screenings, key);
   }
