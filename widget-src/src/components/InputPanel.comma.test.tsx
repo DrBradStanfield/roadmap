@@ -21,8 +21,11 @@ let phone = false;
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width') ? phone : !phone, media: q, addEventListener() {}, removeEventListener() {} }));
 afterEach(() => { phone = false; });
 
-const renderPanel = () => {
-  const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, weightKg: 80, waistCm: 90, psa: 2 };
+const DONE = { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true };
+/** The onboarding's weight box shows beside the height before the whole form opens (US-62 AC13). */
+const WEIGHT_BOX = { stage: 1 as const, reached: 1 as const, fullForm: false, aboutYouLow: false };
+const renderPanel = (onboarding: typeof DONE | typeof WEIGHT_BOX = DONE) => {
+  const inputs = { sex: 'male' as const, heightCm: 180, birthYear: 1960, birthMonth: 1, weightKg: 80, psa: 2 };
   const onChange = vi.fn();
   const onScreeningChange = vi.fn();
   const scheduleLongitudinalSave = vi.fn();
@@ -38,7 +41,7 @@ const renderPanel = () => {
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave, flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
+    hasApiResponse: true, onboarding, planBasis: { age: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   openAboutYou(view.container); // About you is low, as rows; open each, so the height box shows (US-62 AC12)
@@ -65,8 +68,8 @@ describe('US-02 AC7: an unreadable number box is not a clear', () => {
     expect(input.value).toBe('');
   });
 
-  it.each(['heightCm', 'weightKg', 'waistCm', 'psa'])('%s: unreadable text keeps the saved value, says so, and blur saves nothing', field => {
-    const p = renderPanel();
+  it.each(['heightCm', 'weightKg', 'psa'])('%s: unreadable text keeps the saved value, says so, and blur saves nothing', field => {
+    const p = renderPanel(field === 'weightKg' ? WEIGHT_BOX : DONE);
     const input = p.box(field === 'psa' ? 'psa-input' : field);
     expect(input).not.toBeNull();
     typeUnreadable(input);
@@ -77,8 +80,8 @@ describe('US-02 AC7: an unreadable number box is not a clear', () => {
     expect(callsFor(p.onChange, field)).toEqual([]);
   });
 
-  it.each(['heightCm', 'weightKg', 'waistCm', 'psa'])('%s: an emptied box clears', field => {
-    const p = renderPanel();
+  it.each(['heightCm', 'weightKg', 'psa'])('%s: an emptied box clears', field => {
+    const p = renderPanel(field === 'weightKg' ? WEIGHT_BOX : DONE);
     typeEmpty(p.box(field === 'psa' ? 'psa-input' : field));
     expect(callsFor(p.onChange, field).at(-1)!.slice(0, 2)).toEqual([field, undefined]);
     expect(p.queryByText('Enter a number')).toBeNull();

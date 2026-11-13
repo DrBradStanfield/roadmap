@@ -25,7 +25,7 @@ const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInpu
   labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
   onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-  fieldsSaved: 0, hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
+  hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},
 }) as unknown as Parameters<typeof InputPanel>[0];
 
 /** InputPanel over a form that takes its own edits, as HealthTool's does. */
