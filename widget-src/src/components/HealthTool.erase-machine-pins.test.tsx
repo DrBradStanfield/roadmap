@@ -53,6 +53,7 @@ async function anotherTabWrites(change: (file: File, now: string) => File) {
   // Its store stamps the file's last write too. Without it, a seed that ran
   // inside one millisecond (always, on the fake clock) leaves the new stamp
   // clamped back to a tie with the old one (migrate.ts sanitizeStamp).
+  // Why: a real store's save sets meta.updatedAt with the write; without it the profile stamp is newer than the file's last write, merge.ts/migrate.ts sanitizeStamp clamps it back, and the stamps tie.
   file.meta = { ...file.meta, updatedAt: now };
   await adapter.write(ROADMAP_FILE_NAME, file, version);
   window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
