@@ -10,13 +10,13 @@ extension RecordStore {
     /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
     /// from a core metric of the same name. Nothing from a record an erase replaced (US-25 AC21).
     func chart(for metric: String, series: String? = nil) async -> ChartData? {
-        guard problem == nil, !predatesErase else { return nil }
+        guard Self.chartsAllowed(hold) else { return nil }
         let stamp = self.stamp(series)
         let key = Self.historyKey(metric, series)
         if let kept = histories[key], kept.stamp == stamp { return kept.chart }
         if let read = reading[key], read.stamp == stamp {
             let chart = await read.task.value
-            return predatesErase ? nil : chart
+            return hold == .predatesErase ? nil : chart
         }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
         let task = Task {
@@ -27,7 +27,7 @@ extension RecordStore {
         if reading[key]?.stamp == stamp { reading[key] = nil }
         // The record moved on while the engine ran: a page asks again for the new one. An erase
         // whose draw failed moves no stamp, so it is checked too.
-        guard !predatesErase else { return nil }
+        guard hold != .predatesErase else { return nil }
         if stamp == self.stamp(series) {
             histories = histories.filter { $0.value.stamp.revision == stamp.revision }
             histories[key] = chart.map { KeptHistory(stamp: stamp, chart: $0) }
@@ -42,6 +42,15 @@ extension RecordStore {
         Stamp(revision: revision, draws: series.map(HealthPage.series.contains) == true ? draws : nil)
     }
 
+    /// A chart reads a record that is drawn, held undrawn or not yet loaded; never an unreadable one
+    /// or one an erase replaced (US-25 AC21).
+    nonisolated static func chartsAllowed(_ hold: Hold) -> Bool {
+        switch hold {
+        case .readable, .heldUndrawn, .empty: true
+        case .unreadable, .predatesErase: false
+        }
+    }
+
     /// A kept history's key: a lab test's is "lab:<series key>", never a core metric's name.
     nonisolated static func historyKey(_ metric: String, _ series: String?) -> String {
         series.map { "\($0):\(metric)" } ?? metric
@@ -50,14 +59,14 @@ extension RecordStore {
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one
     /// engine call, and the page's `.task(id: revision)` brings it up to date.
     func shownChart(for metric: String, series: String? = nil) -> ChartData? {
-        problem == nil && !predatesErase ? histories[Self.historyKey(metric, series)]?.chart : nil
+        Self.chartsAllowed(hold) ? histories[Self.historyKey(metric, series)]?.chart : nil
     }
 
     /// The history read for the record and units as they are now; nil while it trails them
     /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
     /// one, its taps held, until the fresh one lands.
     func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
-        guard problem == nil, !predatesErase, let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
+        guard Self.chartsAllowed(hold), let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
         return kept.chart.history
     }
 

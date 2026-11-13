@@ -263,7 +263,7 @@ final class RecordStore {
     @discardableResult
     func redraw(now: Date = .now) -> Task<Void, Never> {
         chain {
-            guard self.drawn != nil || self.heldUndrawn,
+            guard self.drawn != nil || self.hold == .heldUndrawn,
                   let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: now, deviceId: self.deviceId, units: self.unitChoices.json)
             else { return }
             self.display(shown)
@@ -397,7 +397,10 @@ final class RecordStore {
         // An erase held with no drawing (showErased) takes no edit until it is drawn: an Apple Health
         // pass that cannot see the erase without a drawing adds nothing to it (US-25 AC16f).
         // A record an erase replaced, its draw failed, takes none either (lead S52), nor one not yet loaded.
-        if predatesErase || heldUndrawn || (drawn == nil && problem == nil && recordJSON.isEmpty) { return .refused(message: Self.recordChanged, existingId: nil) }
+        switch hold {
+        case .predatesErase, .heldUndrawn, .empty: return .refused(message: Self.recordChanged, existingId: nil)
+        case .readable, .unreadable: break
+        }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
