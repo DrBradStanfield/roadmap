@@ -140,6 +140,9 @@ jobs:
         tz: ${{ fromJSON(github.event_name == 'pull_request' && '["UTC"]' || (github.event_name == 'workflow_dispatch' || github.event.schedule == '0 12 * * *') && '["UTC", "America/Los_Angeles", "Pacific/Auckland"]' || '["UTC", "America/Los_Angeles"]') }}
     env:
       TZ: ${{ matrix.tz }}
+      # Tests whose result cannot depend on the zone (a full Vite build: TA-W13) run on the UTC leg only.
+      # Every run's zone list holds UTC, so each still runs once per CI run. Unset (a local run) means run.
+      ZONE_FREE_TESTS: ${{ matrix.tz == 'UTC' && 'run' || 'skip' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

@@ -19,7 +19,6 @@ import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 import type { ChatListResult } from '../lib/chat-api';
@@ -52,6 +51,7 @@ vi.mock('./ChatSection', () => ({
 }));
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 const TODAY = localDay(new Date());
 const conversations = (...titles: string[]): ChatListResult => ({
@@ -61,7 +61,6 @@ const conversations = (...titles: string[]): ChatListResult => ({
 const OLD = conversations('My LDL of 4.9 and my statin');
 const NONE = conversations();
 
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   list.calls = 0;
@@ -77,10 +76,7 @@ beforeEach(async () => {
   vi.stubGlobal('confirm', () => true);
   vi.stubGlobal('alert', () => {});
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // A synthetic returning user with all four answers: the chat is open to them.
   await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
@@ -89,7 +85,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

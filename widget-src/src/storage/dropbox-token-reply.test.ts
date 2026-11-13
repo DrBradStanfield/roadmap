@@ -123,7 +123,8 @@ describe('US-09 AC1a: a token reply that is not JSON is refused as a storage fai
   it('at refresh, after a disconnect elsewhere: says so and keeps nothing in memory', async () => {
     local.set(TOKEN_KEY, JSON.stringify({ accessToken: 'at-old', refreshToken: 'rt-old', expiresAt: Date.now() - 1000 }));
     const adapter = new DropboxAdapter(CONFIG);
-    vi.stubGlobal('fetch', vi.fn(async () => { local.delete(TOKEN_KEY); return html(); }));
+    // A disconnect removes the config first, then the tokens (US-09 AC48: the config is backfilled at load).
+    vi.stubGlobal('fetch', vi.fn(async () => { local.delete('health_roadmap_dropbox'); local.delete(TOKEN_KEY); return html(); }));
     await expect(adapter.accountEmail()).rejects.toThrow(/disconnected/);
     expect(adapter.isConnected()).toBe(false);
   });

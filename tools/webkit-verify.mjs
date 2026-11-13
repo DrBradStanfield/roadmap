@@ -15,6 +15,9 @@ export function assertMatrixLayout(data) {
   }
 }
 
+// The blood table behind "All results as a table". The vitals rows above it are a .bt-timeline too (H71).
+export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card)';
+
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectMatrixLayout(root) {
   const scroll = root.querySelector('.bt-timeline-scroll');
@@ -379,7 +382,7 @@ async function inspect(browser, deviceName, viewport) {
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
-    const matrix = page.locator('.bt-timeline').first();
+    const matrix = page.locator(BLOOD_TABLE).first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();
     const data = await matrix.evaluate(collectMatrixLayout);

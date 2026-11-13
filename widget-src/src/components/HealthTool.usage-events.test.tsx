@@ -11,7 +11,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -30,6 +29,7 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 /** Every product event POSTed, as { eventName, metadata }. */
 let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
@@ -52,7 +52,6 @@ function scrollIntoViewport(selector: string) {
   });
 }
 
-const stops: Array<() => void> = [];
 let phone = false;
 
 beforeEach(async () => {
@@ -72,10 +71,7 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // Enough for a plan with suggestions.
   await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 }, {});
@@ -83,7 +79,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+TA-2,Test suite,"A file whose field stamp is newer than meta.updatedAt is clamped and can lose a tie; confirm no real writer (web, engine, CLI, hosted MCP) can produce one",not started,"Found converting erase-machine-pins to fake timers (PR 1587): the test helper wrote a profile stamp 1 s ahead of meta.updatedAt; packages/health-core/src/migrate.ts sanitizeStamp clamps it and the value tie-break decides",1587,none,no

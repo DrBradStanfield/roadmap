@@ -4,10 +4,13 @@
 // hoists them per file. Imported by tests only.
 
 import { beforeEach, afterEach, vi } from 'vitest';
-import { cleanup, fireEvent } from '@testing-library/react';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { openSettings } from './settings';
 import type { HealthInputs } from '@roadmap/health-core/types';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { RoadmapStore } from '../storage/roadmap-store';
 import {
   addMeasurement,
   flushRoadmapStore,
@@ -17,12 +20,27 @@ import {
 } from '../lib/roadmap-data';
 
 /**
+ * What the fake-timer mode fakes: the timers and the clock the app's debounces,
+ * glow and re-read throttle run on. queueMicrotask and promises stay real, so a
+ * test that relies on a microtask gap still sees it. jsdom's requestAnimationFrame
+ * is not faked itself but runs on the faked setInterval, so frames move with the
+ * fake clock (still with the wall clock too, through shouldAdvanceTime).
+ */
+const FAKED = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] as const;
+
+/**
  * Register the lifecycle once, at a suite file's top level: a clean browser
  * store and a wide desktop (the plan and the form both on screen) before each
  * test; unmount, the store's pending writes and every stub undone after it.
+ *
+ * `fakeTimers: true` runs each test on fake timers that still move with the
+ * wall clock (shouldAdvanceTime), so `wait(ms)` jumps a debounce at once and a
+ * waitFor still gets there; real timers come back after each test. Opt-in: a
+ * file that leaves it off runs exactly as before.
  */
-export function useHealthToolLifecycle(): void {
+export function useHealthToolLifecycle({ fakeTimers = false }: { fakeTimers?: boolean } = {}): void {
   beforeEach(() => {
+    if (fakeTimers) vi.useFakeTimers({ shouldAdvanceTime: true, toFake: [...FAKED] });
     localStorage.clear();
     sessionStorage.clear();
     vi.stubGlobal('matchMedia', (q: string) => ({
@@ -41,7 +59,56 @@ export function useHealthToolLifecycle(): void {
     // each vi.fn's calls and unused mock*Once values, as restoreAllMocks did in 1.x.
     vi.resetAllMocks();
     vi.unstubAllGlobals();
+    if (fakeTimers) {
+      // jsdom runs its animation frames on the global setInterval, faked here. A frame
+      // still pending when real timers come back leaves jsdom waiting on a fake interval
+      // that never fires, and every later frame in the file hangs: cancel them first.
+      const last = requestAnimationFrame(() => {});
+      for (let handle = 1; handle <= last; handle++) cancelAnimationFrame(handle);
+      vi.useRealTimers();
+    }
   });
+}
+
+/** Fake-timer mode only: run every timer due in the next `ms`, inside act. */
+export const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+
+/** Settle microtasks and short timers without leaving the act scope (so React renders nothing). */
+export const drain = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0)); };
+
+/** Wait `ms` of real time, then drain, inside act. */
+export const settle = async (ms = 0) => { await act(async () => { await new Promise(r => setTimeout(r, ms)); await drain(); }); };
+
+const liveRefreshStops: Array<() => void> = [];
+
+/**
+ * Call in beforeEach: each page's real live re-read still starts, and
+ * `stopLiveRefresh()` (call in afterEach) stops it, as a closed page's is. A
+ * guest page's listener stays on while hidden (US-34 AC6), so a page an earlier
+ * test left behind would otherwise take in, and announce, every later test's
+ * other-tab save. A file that re-imports its modules (vi.resetModules) passes
+ * the RoadmapStore it imported.
+ */
+export function trackLiveRefresh(Store: typeof RoadmapStore = RoadmapStore): void {
+  const start = Store.prototype.startLiveRefresh;
+  vi.spyOn(Store.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
+    const stop = start.call(this);
+    liveRefreshStops.push(stop);
+    return stop;
+  });
+}
+
+/** Stop every live refresh started since `trackLiveRefresh()`. */
+export function stopLiveRefresh(): void {
+  for (const stop of liveRefreshStops.splice(0)) stop();
+}
+
+/** The record as saved on this device, once the store's pending writes land.
+ *  A record nothing was saved to is never written (US-10 AC5a): read it as empty. */
+export async function recordOnDisk(): Promise<RoadmapFile> {
+  await act(async () => { await flushRoadmapStore(); });
+  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
 }
 
 /**

@@ -479,8 +479,10 @@ export function loadGuestInputs(): ChatContextPayload | null {
   const cached = loadFromLocalStorage();
   if (!cached) return null;
   // The newest usable PSA stands in for the newest PSA row, in the snapshot
-  // and the history alike, so the chat reads what the widget's cards read (US-06 AC14).
-  const rows = cached.psa ? [...cached.previousMeasurements.filter(m => m.metricType !== 'psa'), cached.psa] : cached.previousMeasurements;
+  // and the history alike, so the chat reads what the widget's cards read (US-06 AC14). Its flag is the full
+  // record's (mirrorRecord), true or false, never worked out again from this one-row copy (US-06 AC21 item 6).
+  const psa = cached.psa ?? cached.previousMeasurements.find(m => m.metricType === 'psa');
+  const rows = psa ? [...cached.previousMeasurements.filter(m => m.metricType !== 'psa'), { ...psa, raisedBefore: cached.psa?.raisedBefore === true }] : cached.previousMeasurements;
   const merged = mergeLongitudinalInputs(cached.inputs, rows);
   if (Object.keys(merged).length === 0) return null;
   const creatinine = rows.find(m => m.metricType === 'creatinine')?.recordedAt;

@@ -11,7 +11,7 @@ import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import type { Backend } from './connect';
 import { CONFIG_KEY as DRIVE_CONFIG_KEY, TOKENS_KEY as DRIVE_TOKENS_KEY } from '../src/storage/drive';
-import { TOKEN_KEY as DROPBOX_TOKEN_KEY } from '../src/storage/dropbox';
+import { CONFIG_KEY as DROPBOX_CONFIG_KEY, TOKEN_KEY as DROPBOX_TOKEN_KEY } from '../src/storage/dropbox';
 import { CONFIG_KEY as GITHUB_CONFIG_KEY } from '../src/storage/github';
 import { CONFIG_KEY as WEBDAV_CONFIG_KEY } from '../src/storage/webdav';
 
@@ -36,8 +36,18 @@ export const PROVIDERS = {
   'self-host': { label: 'your own server', adapter: (gen) => new WebDavAdapter(undefined, gen), reminders: false, event: 'webdav' },
 } as const satisfies Record<CloudBackend, Provider>;
 
+/** Where a record is safe: "in your Dropbox", or "on your own server", never "in your your own server" (US-09 AC49). */
+export function safeWhere(backend: CloudBackend): string {
+  return backend === 'self-host' ? 'on your own server' : `in your ${PROVIDERS[backend].label}`;
+}
+
+/** US-09 AC49: asked before "Use this browser only" starts an empty record. */
+export function noCopyQuestion(backend: CloudBackend): string {
+  return `This browser has no copy of your record yet. It stays safe ${safeWhere(backend)}. Start empty in this browser?`;
+}
+
 /** Every provider's stored sign-in entries, for the page-load sweep and log-off (US-09 AC45). */
-export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY] as const;
+export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_CONFIG_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY] as const;
 
 /** A backend's entry; undefined for 'local' or a name with none. The
  *  remembered choice is unchecked storage text, so it may name anything. */

@@ -210,6 +210,72 @@ final class RecordStoreTests: XCTestCase {
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
         XCTAssertNotNil(store.myData, "the old screen still draws")
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
+        // The app comes back to the front, or midnight passes: the same pre-erase record drawn again
+        // is still from before the erase (checkpoint 1 review, lead 1).
+        await store.redraw().value
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "a redraw of the erased record never catches up")
+        XCTAssertNil(MetricDetailView.screenHasReading(waist, in: store))
+    }
+
+    /// Owner's ruling (b) on PR 1595: an erase view refused only because a newer record from the
+    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. A draw
+    /// refused for any other reason (the engine threw, or the newer record's own draw failed) does.
+    func testOnlyAStaleEraseViewUnderANewerDrawnRecordCatchesTheScreenUp_US58() async throws {
+        let engine = try HealthEngine()
+        let cloud = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
+
+        // The session's next record, already erased, landed before the erase view.
+        let stale = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await stale.showCloud(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 2)).value
+        await stale.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 1)).value
+        XCTAssertFalse(stale.predatesErase, "the record shown was stamped after the erase")
+
+        // The engine cannot draw the erase view.
+        let threw = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await threw.showErased(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 3)).value
+        XCTAssertTrue(threw.predatesErase, "nothing drew the erase")
+
+        // An older cloud record is drawn; a newer one was handed over but never drawn: the screen still
+        // shows the older one, which predates the erase view between them.
+        let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
+        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        await undrawn.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 4)).value
+        XCTAssertTrue(undrawn.predatesErase, "stale only against the record drawn, never one only handed over")
+
+        // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
+        let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await phone.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 7)).value
+        await phone.showPhone().value
+        await phone.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 6)).value
+        XCTAssertTrue(phone.predatesErase, "the phone's file drawn since resets the stamp")
+    }
+
+    /// US-25 AC21 (checkpoint 1 review, lead 2): after an erase whose draw failed, a value page opened
+    /// afterwards reads nothing from the erased record: no chart is returned or kept, so its values are
+    /// never drawn again. The page then says only that they could not be read.
+    func testAPageOpenedAfterAFailedEraseDrawNeverChartsTheErasedRecord_US25_AC21() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        _ = await store.chart(for: "weight")
+        XCTAssertNotNil(store.shownChart(for: "weight"), "kept before the erase")
+        await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
+        XCTAssertNotNil(store.myData, "the old screen still draws")
+        XCTAssertNil(store.shownChart(for: "weight"), "the erase dropped it")
+        await store.redraw().value
+        let read = await store.chart(for: "weight")
+        XCTAssertNil(read, "a page opened now reads nothing from the erased record")
+        XCTAssertNil(store.shownChart(for: "weight"), "and nothing is kept for the next page")
+        // A read that ran across the erase and was kept anyway is still never handed to a page.
+        let stale = try XCTUnwrap(MetricReadTests.chart(["80.0"]))
+        store.histories["weight"] = RecordStore.KeptHistory(stamp: RecordStore.Stamp(revision: store.revision, draws: nil), chart: stale)
+        XCTAssertNil(store.shownChart(for: "weight"), "never drawn from the erased record")
+        XCTAssertNil(store.shownHistory(for: "weight"), "never opens a correction on it")
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let page = MetricRead.page(MetricRead.transition(.reading(revision: store.revision), .landed(revision: store.revision, read)),
+                                   revision: store.revision, problem: store.problem, kept: store.shownChart(for: "weight"),
+                                   hasReadings: true, screenHasReading: MetricDetailView.screenHasReading(weight, in: store))
+        XCTAssertEqual(MetricReadTests.named(page), "failed: unknown", "no claim either way, and Try again")
     }
 
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is

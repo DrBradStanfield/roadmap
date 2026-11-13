@@ -16,7 +16,7 @@ import { render, waitFor, fireEvent, act } from '@testing-library/react';
 import type { ProposedEdit, ProposedMedicationEdit } from '@roadmap/health-core/chat-edits';
 import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -39,7 +39,9 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
-useHealthToolLifecycle();
+// Fake timers that move with the clock: wait(400) jumps the save debounce at
+// once, with the same 400 ms, so each save still lands before the check.
+useHealthToolLifecycle({ fakeTimers: true });
 
 type Med = [key: string, drug: string, dose?: number];
 /** 178 cm, 101.4 kg: BMI 32, so the weight cascade is on. Born 1980: medicine
@@ -72,7 +74,7 @@ async function rowCounts(): Promise<Record<string, number>> {
 
 /** Let the form's 300 ms save debounce and the store finish. */
 async function settle(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 400));
+  await wait(400);
   await flushRoadmapStore();
 }
 

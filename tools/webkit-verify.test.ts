@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assertDesktopLayout, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { JSDOM } from 'jsdom';
+import { BLOOD_TABLE, assertDesktopLayout,assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -19,6 +20,14 @@ describe('US-20: WebKit deployment gate', () => {
   });
   it('accepts horizontal scrolling within the matrix', () => {
     expect(() => assertMatrixLayout(valid)).not.toThrow();
+  });
+  // Deploy 43375231468: since H71 (PR 1508) the vitals rows are a .bt-timeline drawn above
+  // the blood table, so the gate read the vitals card and found no seeded blood results.
+  it('reads the blood table, not the vitals card drawn above it', () => {
+    const { document } = new JSDOM(`
+      <div class="bt-timeline bt-vitals-card" id="vitals"></div>
+      <div class="bt-timeline" id="blood"></div>`).window;
+    expect(document.querySelector(BLOOD_TABLE)?.id).toBe('blood');
   });
 });
 

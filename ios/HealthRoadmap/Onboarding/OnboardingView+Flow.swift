@@ -3,9 +3,9 @@ import SwiftUI
 /// The new-user flow's steps: start, Apple Health, saving each answer, and moving on (US-54).
 extension OnboardingView {
     func begin() async {
-        guard step == nil else { return }
+        guard mode == .starting else { return }
         // An unreadable record: My data says why, so never strand the person here (review R13).
-        guard let data = store.myData else { finish(); return }
+        guard let data = store.myData else { return send(.began(nil)) }
         fromHealth = OnboardingSteps.decode(fromHealthNames)
         if onlyMissing { healthAsked = true }
         // A record from the cloud keeps its own units, also on a resumed run (Codex re-check R1),
@@ -18,27 +18,77 @@ extension OnboardingView {
         if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, locale: .current, engine: engineUnits) {
             _ = await store.apply(.units(units))
             // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
-            guard !Task.isCancelled, step == nil else { return }
+            guard !Task.isCancelled, mode == .starting else { return }
         }
         // Each typed screen starts in the record's units: the region default for a new record.
         answers.height.us = recordUnits(.height) == "conventional"
         answers.weight.us = recordUnits(.weight) == "conventional"
         await prefill(from: HealthCharacteristics.none)
         // Gone while the engine filled the boxes: nothing to pin.
-        guard !Task.isCancelled, step == nil else { return }
-        noteSupplied()
-        step = onlyMissing
-            ? OnboardingSteps.next(after: .health, profile: data.profile, hasWeight: recordWeight != nil, onlyMissing: true) ?? .weight
-            : OnboardingSteps.start(data.profile, healthAsked: healthAsked, skip: supplied, weightDay: weightRow?.latest?.day)
-        // Each answer is checked against the record its screen showed (US-25 AC11g).
-        store.pinScreen()
+        guard !Task.isCancelled, mode == .starting else { return }
+        // Pinned as it shows: each answer is checked against the record its screen showed (US-25 AC11g).
+        send(.began(firstPage()))
     }
 
-    func allowHealth() async {
-        connecting = true
+    /// The first page for the record now shown (nil when it cannot be read): begin's, and a restart's.
+    private func firstPage() -> OnboardingFlow.Page? {
+        noteSupplied()
+        guard let profile else { return nil }
+        return .init(step: OnboardingSteps.first(profile, onlyMissing: onlyMissing, healthAsked: healthAsked, skip: supplied,
+                                                 weightDay: weightRow?.latest?.day, hasWeight: recordWeight != nil))
+    }
+
+    /// The record moved under the page (US-54 AC5d): take the record now shown, fill the boxes
+    /// left alone from it, and plan the flow again, as begin does.
+    private func restart() async {
+        store.repinScreen()
+        answers.forget(whatIsNotIn: profile)
+        // "From Apple Health" only on an answer the record still holds.
+        fromHealth = fromHealth.filter { step in
+            switch step {
+            case .sex: profile?.sex != nil
+            case .birth: profile?.birthYear != nil
+            case .height: profile?.height != nil
+            case .weight: recordWeight != nil
+            case .health, .review: false
+            }
+        }
+        await prefill(from: HealthCharacteristics.none)
+        send(.replanned(firstPage()))
+    }
+
+    /// Moves the flow by `event` and runs the effects it names. A page change slides; the
+    /// first page and the end do not.
+    func send(_ event: OnboardingFlow.Event) {
+        let (next, effects) = OnboardingFlow.transition(mode, event)
+        if let from = mode.step, let to = next.step, from != to {
+            withAnimation(.snappy) { mode = next }
+        } else {
+            mode = next
+        }
+        effects.forEach(run)
+    }
+
+    private func run(_ effect: OnboardingFlow.Effect) {
+        switch effect {
+        case .pin: store.pinScreen()
+        case .repin: store.repinScreen()
+        case .unpin: store.unpinScreen()
+        case .finish: finish()
+        case .connect: Task { await connect() }
+        case .restart: Task { await restart() }
+        case .save(let step): Task { land(await save(step), step) }
+        // "Replace it": a FHIR correction of today's weight with the weight its question held, never a removal.
+        case .replace(let replace): Task { land(.replaced(await store.apply(.correct(id: replace.id, value: replace.value))), .weight) }
+        }
+    }
+
+    /// Allow's connect, started once by the flow (S6 bug D).
+    private func connect() async {
         let heightBefore = profile?.height
         let weightBefore = recordWeight
         await health.connect()
+        // Only once Apple Health has answered: a quit inside its sheet asks again.
         healthAsked = true
         let given = health.characteristics()
         // Label what Apple Health filled in (AC4): what the record lacked and Health gave.
@@ -53,8 +103,7 @@ extension OnboardingView {
         if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved() {
             fromHealth.subtract([.sex, .birth])
         }
-        connecting = false
-        advance(from: .health)
+        send(.connected(next: next(after: .health)))
     }
 
     /// Fills the answers from the record first, then from Apple Health, else wheels'
@@ -64,7 +113,7 @@ extension OnboardingView {
         if let year = profile?.birthYear ?? health.birthYear {
             answers.birthYear = year
             answers.birthMonth = profile?.birthMonth ?? health.birthMonth ?? answers.birthMonth
-            birthAnswered = true
+            answers.birthAnswered = true
         }
         for (step, path) in [(OnboardingStep.height, \Answers.height), (.weight, \Answers.weight)] where !answers[keyPath: path].edited {
             let (recorded, recordUnits) = (recorded(step), recordUnits(step))
@@ -94,52 +143,30 @@ extension OnboardingView {
 
     private var recordWeight: Double? { weightRow?.latest.flatMap { Double($0.value) } }
 
-    /// Saves an answer. The page waits (`saving`) while its value is read, converted by
-    /// the engine off the main thread, and written.
-    func save(_ step: OnboardingStep) {
-        message = nil
-        saving = true
-        Task {
-            defer { saving = false }
-            let outcome: SaveOutcome
-            switch await change(for: step) {
-            case .stay:
-                outcome = .stay
-            case .unchanged:
-                outcome = .unchanged
-            case .edit(let edit):
-                outcome = .applied(await store.apply(edit))
-            }
-            land(Self.landing(outcome, step: step), step)
+    /// Saves an answer: its value read, converted by the engine off the main thread, and
+    /// written. The page waits, its save claimed by the tap.
+    private func save(_ step: OnboardingStep) async -> OnboardingFlow.SaveOutcome {
+        switch await change(for: step) {
+        case .stay: return .stay
+        case .unchanged: return .unchanged
+        case .edit(let edit, let typed): return .applied(await store.apply(edit), typed: typed)
         }
     }
 
-    /// What a save came to: nothing it could write (`stay`), nothing new (`unchanged`), the
-    /// engine's answer to its edit, or to "Replace it" (nil: no typed weight to replace with).
-    enum SaveOutcome: Equatable { case stay, unchanged, applied(RecordStore.ApplyResult), replaced(RecordStore.ApplyResult?) }
-
-    /// What the page shows after a save: nothing new, the next step, the engine's words, or
-    /// the replace prompt. Pure, so OnboardingLandingTests pins it (S6).
-    enum Landing: Equatable { case stay, advance, words(String), askReplace(id: String) }
-
-    static func landing(_ outcome: SaveOutcome, step: OnboardingStep) -> Landing {
-        switch outcome {
-        case .stay, .replaced(nil):
-            return .stay
-        case .unchanged:
-            return .advance
-        // Today already holds a weight: ask before replacing it (AC5, US-25 AC5).
-        case .applied(.refused(_, let existingId?)) where step == .weight:
-            return .askReplace(id: existingId)
-        case .applied(let result), .replaced(let result?):
-            switch result {
-            case .saved: return .advance
-            case .refused(let words, _): return .words(words)
-            }
-        }
+    /// What a save came to, with the step after this one worked out from the record now.
+    private func land(_ outcome: OnboardingFlow.SaveOutcome, _ step: OnboardingStep) {
+        send(.landed(OnboardingFlow.landing(outcome, step: step, moved: !store.pinStillShown), next: next(after: step)))
     }
 
-    private enum Change { case stay, unchanged, edit(RecordEdit) }
+    /// The step after `step`, from the record as it is now; nil when there is none.
+    private func next(after step: OnboardingStep) -> OnboardingStep? {
+        noteSupplied()
+        guard let profile else { return nil }
+        return OnboardingSteps.next(after: step, profile: profile, hasWeight: recordWeight != nil, onlyMissing: onlyMissing, skip: supplied)
+    }
+
+    /// `typed`: a typed weight, in the record's units, which "Replace it" would write.
+    private enum Change { case stay, unchanged, edit(RecordEdit, typed: Double? = nil) }
 
     /// What an answer writes: nothing new (`unchanged`, the page moves on), an edit, or
     /// nothing it can write yet (`stay`).
@@ -157,7 +184,7 @@ extension OnboardingView {
         // one that cannot be read or converted stays on its screen.
         case .height:
             guard answers.height.edited else { return .unchanged }
-            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map(Change.edit) ?? .stay
+            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map { Change.edit($0) } ?? .stay
         case .weight:
             // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
             // row in the row's own kilograms, never the rounded display, never written back (AC3b).
@@ -169,21 +196,17 @@ extension OnboardingView {
             guard answers.weight.edited,
                   !(await answers.weight.repeats(recordWeight, recordUnits: recordUnits(.weight), convert: store.convert))
             else { return .unchanged }
-            return await savedValue(.weight).map { .edit(.add(metric: "weight", value: $0, day: DayText.iso(.now))) } ?? .stay
+            // Converted once, here: "Replace it" writes this same number (AC5).
+            let typed = await answers.weight.saved(recordUnits: recordUnits(.weight), convert: store.convert)
+            return typed.map { Change.edit(.add(metric: "weight", value: $0, day: DayText.iso(.now)), typed: $0) } ?? .stay
         }
-    }
-
-    /// A typed answer in the units the engine's edit reads now, converted once; nil when
-    /// the person typed nothing there.
-    private func savedValue(_ step: OnboardingStep) async -> Double? {
-        await answer(step).saved(recordUnits: recordUnits(step), convert: store.convert)
     }
 
     /// A typed screen's unit switch, for entry only (AC6): the record's units stay as they
     /// are. A box left alone shows the record's value again in the new units; a typed one
     /// is converted. Both through the engine.
     func chooseUnits(us: Bool, on step: OnboardingStep) {
-        message = nil
+        send(.wordsStale)
         let path: WritableKeyPath<Answers, TypedAnswer> = step == .weight ? \.weight : \.height
         let (recorded, recordUnits) = (recorded(step), recordUnits(step))
         // Counted in the tap: a quicker later tap wins over this one's conversion.
@@ -204,56 +227,8 @@ extension OnboardingView {
         answers[keyPath: path].land(after, from: before)
     }
 
-    /// "Replace it": a FHIR correction of today's weight, never a removal.
-    func replaceWeight() {
-        guard let id = replacing else { return }
-        replacing = nil
-        saving = true
-        Task {
-            defer { saving = false }
-            var result: RecordStore.ApplyResult?
-            if let weight = await savedValue(.weight) {
-                result = await store.apply(.correct(id: id, value: weight))
-            }
-            land(Self.landing(.replaced(result), step: .weight), .weight)
-        }
-    }
-
-    private func land(_ landing: Landing, _ step: OnboardingStep) {
-        switch landing {
-        case .stay:
-            break
-        case .advance:
-            advance(from: step)
-        case .words(let words):
-            // The engine's words. The record may have moved on (an erase or a unit
-            // change elsewhere): pin the record now shown, so the next try is checked against it.
-            message = words
-            store.repinScreen()
-        case .askReplace(let id):
-            replacing = id
-        }
-    }
-
-    func advance(from step: OnboardingStep) {
-        // An answer opened from the summary's Edit returns to it (AC3b).
-        if editing { return go(.review) }
-        noteSupplied()
-        guard let profile, let next = OnboardingSteps.next(after: step, profile: profile, hasWeight: recordWeight != nil, onlyMissing: onlyMissing, skip: supplied) else {
-            finish()
-            return
-        }
-        go(next)
-    }
-
-    func go(_ next: OnboardingStep) {
-        message = nil
-        if next == .review { editing = false }
-        store.repinScreen()
-        withAnimation(.snappy) { step = next }
-    }
-
-    func previous(_ step: OnboardingStep) -> OnboardingStep? {
-        editing ? .review : OnboardingSteps.previous(before: step, onlyMissing: onlyMissing, skip: supplied)
+    /// Back: the summary for an answer opened from it, else the step before.
+    func previous(_ page: OnboardingFlow.Page) -> OnboardingFlow.Page? {
+        page.fromSummary ? .init(step: .review) : OnboardingSteps.previous(before: page.step, onlyMissing: onlyMissing, skip: supplied).map { .init(step: $0) }
     }
 }
