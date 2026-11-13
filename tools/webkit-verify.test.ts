@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { BLOOD_TABLE, advisory, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { spawnSync } from 'node:child_process';
+import { BLOOD_TABLE, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, probeFocusRing, settleTop, wheelDistance } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -217,20 +218,35 @@ describe('US-62 AC10b (H78): WebKit focus ring gate', () => {
     expect(() => assertFocusRing({ date: { ...teal, outlineColor: 'rgb(26, 26, 26)' }, value: teal })).toThrow('differs from the Value box');
     expect(() => assertFocusRing({ date: teal, value: { ...teal, outlineStyle: 'none' } })).toThrow('the Value box shows no focus ring');
   });
-  // H90: a new probe is advisory until one green production deploy: printed, never raised.
-  const labels = { passed: (r: string) => `desktop 1440: focus rings verified ${r}`, failed: 'desktop 1440: focus ring probe' };
-  it('prints a pass with its reading', async () => {
-    const log: string[] = [];
-    await advisory(async () => 'teal', labels, (line: string) => log.push(line));
-    expect(log).toEqual(['desktop 1440: focus rings verified teal']);
+  // H90: enforcing since Deploy run 43456092815 printed "focus rings verified" on all four devices.
+  const fakePage = (date: object, value: object) => ({
+    keyboard: { press: async () => {} },
+    locator: (selector: string) => ({ first: () => ({
+      focus: async () => {},
+      evaluate: async () => (selector.includes('type="date"') ? date : value),
+    }) }),
   });
-  it('prints a failing assert (or a missing box) and does not raise it', async () => {
+  const noRing = { ...teal, outlineStyle: 'none', boxShadow: 'none' };
+  it('H90: prints a pass with the date box reading', async () => {
     const log: string[] = [];
-    const date = { ...teal, outlineStyle: 'none' };
-    await expect(advisory(async () => assertFocusRing({ date, value: teal }), labels, (line: string) => log.push(line))).resolves.toBeUndefined();
-    await advisory(async () => { throw new Error('locator timed out'); }, labels, (line: string) => log.push(line));
-    expect(log[0]).toMatch(/^desktop 1440: focus ring probe FAILED \(advisory\): the date box shows no focus ring/);
-    expect(log[1]).toBe('desktop 1440: focus ring probe FAILED (advisory): locator timed out');
+    await probeFocusRing(fakePage(teal, teal), 'desktop 1440', (line: string) => log.push(line));
+    expect(log).toEqual([`desktop 1440: focus rings verified ${JSON.stringify(teal)}`]);
+  });
+  it('H90: a date box with no ring (outline none, no box-shadow) throws, and prints no pass', async () => {
+    const log: string[] = [];
+    await expect(probeFocusRing(fakePage(noRing, teal), 'desktop 1440', (line: string) => log.push(line)))
+      .rejects.toThrow('the date box shows no focus ring on keyboard focus');
+    expect(log).toEqual([]);
+  });
+  it('H90: the gate exits non-zero when the focus step throws at top level, as main() runs it', () => {
+    const script = `import { probeFocusRing } from ${JSON.stringify(new URL('./webkit-verify.mjs', import.meta.url).href)};
+      const teal = ${JSON.stringify(teal)};
+      const page = { keyboard: { press: async () => {} }, locator: (s) => ({ first: () => ({ focus: async () => {},
+        evaluate: async () => (s.includes('type="date"') ? ${JSON.stringify(noRing)} : teal) }) }) };
+      await probeFocusRing(page, 'desktop 1440');`;
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('the date box shows no focus ring on keyboard focus');
   });
 });
 
