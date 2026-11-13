@@ -2,7 +2,7 @@ import Foundation
 
 /// The new-user flow's one named state (US-54 AC5, iPhone survey S6): starting while
 /// begin() reads the record, connecting while Apple Health answers Allow, a page with
-/// its save, or finished. Changed only by `transition`, which names the effects the
+/// its save, or finished with the last page still drawn. Changed only by `transition`, which names the effects the
 /// view runs (OnboardingView+Flow.swift); OnboardingFlowTests has the table.
 ///
 /// A page's save is the sheets' own machine (`SheetSave`), so a tap claims it in the same
@@ -32,17 +32,22 @@ enum OnboardingFlow {
         case starting
         case connecting
         case page(Page, Save)
-        case finished
+        /// Done, holding the last page, so the cover slides down with it drawn (S6 review F1);
+        /// nil when there was none (an unreadable record).
+        case finished(Page?)
 
-        /// The step drawn: the Apple Health page while connecting; none while starting or once finished.
-        var step: OnboardingStep? {
+        /// The step drawn: the Apple Health page while connecting, the last page once finished,
+        /// none while starting.
+        var step: OnboardingStep? { page?.step }
+        /// The page drawn, its Back included; once finished, the last one, whose taps change nothing.
+        var page: Page? {
             switch self {
-            case .starting, .finished: nil
-            case .connecting: .health
-            case .page(let page, _): page.step
+            case .starting: nil
+            case .connecting: Page(step: .health)
+            case .page(let page, _), .finished(let page?): page
+            case .finished(nil): nil
             }
         }
-        var page: Page? { if case .page(let page, _) = self { page } else { nil } }
         var save: Save? { if case .page(_, let save) = self { save } else { nil } }
         /// The screen's pin is held: taken when the first page shows, given back on finishing.
         var pinned: Bool {
@@ -87,7 +92,7 @@ enum OnboardingFlow {
             switch event {
             case .began(let page?): return (.page(page, .editing(message: nil)), [.pin])
             // Never pinned, so nothing to give back.
-            case .began(nil): return (.finished, [.finish])
+            case .began(nil): return (.finished(nil), [.finish])
             case .allowTapped, .connected, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .reviewAccepted:
                 return (mode, [])
             }
@@ -120,15 +125,15 @@ enum OnboardingFlow {
                 // The record may have moved on (an erase, a unit change elsewhere): the next
                 // try is checked against the record now shown.
                 case .words(let words): return (.page(page, .editing(message: words)), [.repin])
-                // Nothing reached the engine: the pin stays, so the next try is still checked
-                // against the record this page showed (US-25 AC11g, S6 review F2).
-                case .unwritten: return (.page(page, .editing(message: couldNotSave)), [])
+                // Nothing was written against the record this page showed: the pin stays, so the
+                // next try is checked against it again (US-25 AC11g; S6 review F2, recordChanged).
+                case .unwritten(let words): return (.page(page, .editing(message: words)), [])
                 case .askReplace(let replace): return (.page(page, .asking(replace)), [])
                 }
             case .moved(let to):
                 return save.busy ? (mode, []) : (.page(to, .editing(message: nil)), [.repin])
             case .reviewAccepted:
-                return page.step == .review ? (.finished, [.unpin, .finish]) : (mode, [])
+                return page.step == .review ? (.finished(page), [.unpin, .finish]) : (mode, [])
             }
         case .finished:
             switch event {
@@ -143,7 +148,7 @@ enum OnboardingFlow {
     /// step, else done.
     private static func advance(from page: Page, next: OnboardingStep?) -> (Mode, [Effect]) {
         if page.fromSummary { return (.page(Page(step: .review), .editing(message: nil)), [.repin]) }
-        guard let next else { return (.finished, [.unpin, .finish]) }
+        guard let next else { return (.finished(page), [.unpin, .finish]) }
         return (.page(Page(step: next), .editing(message: nil)), [.repin])
     }
 
@@ -163,9 +168,10 @@ enum OnboardingFlow {
         case replaced(RecordStore.ApplyResult)
     }
 
-    /// What the page shows after a save: the next step, the engine's words, `couldNotSave` for an
-    /// answer that never reached the engine, or the replace question.
-    enum Landing: Equatable { case advance, words(String), unwritten, askReplace(Replace) }
+    /// What the page shows after a save: the next step, the engine's words (the record now
+    /// shown is taken), words for a save that met no record this page showed (`unwritten`: the
+    /// pin stays), or the replace question.
+    enum Landing: Equatable { case advance, words(String), unwritten(String), askReplace(Replace) }
 
     /// The words for an answer the page cannot write (bug C); the engine's own fallback words.
     static let couldNotSave = "That could not be saved."
@@ -173,7 +179,12 @@ enum OnboardingFlow {
     static func landing(_ outcome: SaveOutcome, step: OnboardingStep) -> Landing {
         switch outcome {
         case .stay:
-            return .unwritten
+            return .unwritten(couldNotSave)
+        // The record changed since this page showed it (an erase, a sync turned on or off): the
+        // next tap is refused again, never saved into a record the page never showed (RecordStore's rule).
+        case .applied(.refused(let words, _), _) where words == RecordStore.recordChanged,
+             .replaced(.refused(let words, _)) where words == RecordStore.recordChanged:
+            return .unwritten(words)
         case .unchanged:
             return .advance
         // Today already holds a weight: ask before replacing it with the one typed (AC5, US-25 AC5).

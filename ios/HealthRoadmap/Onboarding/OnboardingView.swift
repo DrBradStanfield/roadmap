@@ -24,7 +24,8 @@ struct OnboardingView: View {
 
     /// A setting, not health data: the Apple Health screen was answered once.
     @AppStorage("onboardingHealthAsked") var healthAsked = false
-    /// The flow's one named state (S6): starting, connecting, a page with its save, finished.
+    /// The flow's one named state (S6): starting, connecting, a page with its save, finished
+    /// (holding the last page).
     @State var mode = OnboardingFlow.Mode.starting
     @State var answers = Answers()
     /// The steps Apple Health filled in, by name only, kept so a relaunch keeps AC3b's guards
@@ -41,8 +42,8 @@ struct OnboardingView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     /// The engine's words for the last try, shown under the question.
     private var message: String? { mode.save?.message }
-    /// An answer is being saved: the page waits for it before moving on.
-    private var busy: Bool { mode.save?.busy ?? false }
+    /// An answer is being saved, Apple Health is answering, or the flow is done: the page waits.
+    private var busy: Bool { mode.save?.busy ?? true }
 
     var profile: MyData.Profile? { store.myData?.profile }
     /// The units the engine's edits read: the record's for height, weight's own for weight,
@@ -100,7 +101,8 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Self.healthPage(connecting: mode == .connecting) { send(.allowTapped) }
+            // Connecting, or done after it: the button stays as it was while the cover slides down.
+            Self.healthPage(connecting: mode.save == nil) { send(.allowTapped) }
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",

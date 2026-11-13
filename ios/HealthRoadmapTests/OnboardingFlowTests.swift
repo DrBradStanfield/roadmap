@@ -22,7 +22,8 @@ final class OnboardingFlowTests: XCTestCase {
             ("landed advance", .landed(.advance, next: .height)),
             ("landed advance, last", .landed(.advance, next: nil)),
             ("landed words", .landed(.words("No"), next: .height)),
-            ("landed unwritten", .landed(.unwritten, next: .height)),
+            ("landed unwritten", .landed(.unwritten("That could not be saved."), next: .height)),
+            ("landed record changed", .landed(.unwritten(RecordStore.recordChanged), next: .height)),
             ("landed ask", .landed(.askReplace(row1), next: .height)),
             ("confirmed row-1", .confirmed(row1)),
             ("confirmed row-2", .confirmed(row2)),
@@ -43,9 +44,10 @@ final class OnboardingFlowTests: XCTestCase {
         let birth = (page(.birth), [Flow.Effect.repin])
         let table: [(Flow.Mode, [String: (Flow.Mode, [Flow.Effect])])] = [
             // begin()'s early finish (an unreadable record) finishes once and never pinned.
-            (.starting, ["began sex": (page(.sex), [.pin]), "began nil": (.finished, [.finish])]),
-            // Bug D: a second Allow while Apple Health answers starts nothing.
-            (.connecting, ["connected sex": (page(.sex), [.repin]), "connected nil": (.finished, [.unpin, .finish])]),
+            (.starting, ["began sex": (page(.sex), [.pin]), "began nil": (.finished(nil), [.finish])]),
+            // Bug D: a second Allow while Apple Health answers starts nothing. Finished holds the
+            // last page, so the cover slides down with it drawn (review F1).
+            (.connecting, ["connected sex": (page(.sex), [.repin]), "connected nil": (.finished(Page(step: .health)), [.unpin, .finish])]),
             (page(.health), ["allowTapped": (.connecting, [.connect]), "moved birth": birth]),
             (page(.sex), ["tapped": (page(.sex, .saving), [.save(.sex)]), "moved birth": birth]),
             (page(.weight, .editing(message: "Old")), [
@@ -56,10 +58,13 @@ final class OnboardingFlowTests: XCTestCase {
             // Bug E: a second tap while saving saves nothing; Back waits too.
             (page(.weight, .saving), [
                 "landed advance": (page(.height), [.repin]),
-                "landed advance, last": (.finished, [.unpin, .finish]),
+                "landed advance, last": (.finished(Page(step: .weight)), [.unpin, .finish]),
                 "landed words": (page(.weight, .editing(message: "No")), [.repin]),
                 // Bug C, and AC11g: the words show and the pin stays (review F2).
                 "landed unwritten": (page(.weight, .editing(message: "That could not be saved.")), []),
+                // The record changed since the page showed it: the words show and the pin stays,
+                // so the next tap is refused again (owner's ruling on PR 1570).
+                "landed record changed": (page(.weight, .editing(message: RecordStore.recordChanged)), []),
                 "landed ask": (page(.weight, .asking(row1)), []),
             ]),
             (page(.weight, .asking(row1)), [
@@ -80,11 +85,13 @@ final class OnboardingFlowTests: XCTestCase {
                 "landed advance, last": (page(.review), [.repin]),
                 "landed words": (page(.height, .editing(message: "No"), fromSummary: true), [.repin]),
                 "landed unwritten": (page(.height, .editing(message: "That could not be saved."), fromSummary: true), []),
+                "landed record changed": (page(.height, .editing(message: RecordStore.recordChanged), fromSummary: true), []),
                 "landed ask": (page(.height, .asking(row1), fromSummary: true), []),
             ]),
-            (page(.review), ["reviewAccepted": (.finished, [.unpin, .finish]), "moved birth": birth]),
+            (page(.review), ["reviewAccepted": (.finished(Page(step: .review)), [.unpin, .finish]), "moved birth": birth]),
             // Bugs D, E: a late connect or a second Continue never finishes again.
-            (.finished, [:]),
+            (.finished(Page(step: .review)), [:]),
+            (.finished(nil), [:]),
         ]
         for (mode, moves) in table {
             for (name, event) in events {
@@ -108,7 +115,7 @@ final class OnboardingFlowTests: XCTestCase {
     /// flow finished calls finish() no second time.
     func testADoubleTapOnAllowConnectsOnce_BugD() {
         let (mode, effects) = run(page(.health), [.allowTapped, .allowTapped, .connected(next: nil), .connected(next: nil)])
-        XCTAssertEqual(mode, .finished)
+        XCTAssertEqual(mode, .finished(Page(step: .health)))
         XCTAssertEqual(effects, [.connect, .unpin, .finish])
     }
 
@@ -134,6 +141,7 @@ final class OnboardingFlowTests: XCTestCase {
     /// Nothing reached the engine, so the screen's pin is not moved (US-25 AC11g, review F2).
     func testAnAnswerThatCannotBeWrittenSaysSo_BugC() {
         let landing = Flow.landing(.stay, step: .height)
+        XCTAssertEqual(landing, .unwritten("That could not be saved."))
         let (mode, effects) = run(page(.height), [.tapped, .landed(landing, next: .weight)])
         XCTAssertEqual(mode, page(.height, .editing(message: "That could not be saved.")))
         XCTAssertEqual(mode.save?.message, "That could not be saved.")
@@ -151,5 +159,16 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(held, Flow.Replace(id: "row-9", value: 81.5))
         XCTAssertEqual(run(mode, [.confirmed(held)]).1, [.replace(held)])
         XCTAssertEqual(effects, [.save(.weight)], "no write before the person says so")
+    }
+
+    /// F1: the page drawn once finished is the last one, so the cover never slides down empty;
+    /// an unreadable record, which drew none, draws none.
+    func testFinishedKeepsTheLastPageDrawn_US54_AC5d() {
+        let (done, _) = run(page(.weight, .saving), [.landed(.advance, next: nil)])
+        XCTAssertEqual(done.step, .weight)
+        XCTAssertNil(done.save, "nothing to save: the page's taps change nothing")
+        XCTAssertFalse(done.pinned)
+        XCTAssertEqual(run(page(.review), [.reviewAccepted]).0.step, .review)
+        XCTAssertNil(run(.starting, [.began(nil)]).0.step)
     }
 }

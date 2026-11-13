@@ -33,7 +33,7 @@ final class OnboardingLandingTests: XCTestCase {
     /// own fallback words, OnboardingFlowTests), instead of unlocking the page in silence.
     func testAnAnswerItCannotWriteSaysSo_BugC() {
         for step in OnboardingStep.questions {
-            XCTAssertEqual(OnboardingFlow.landing(.stay, step: step), .unwritten, "\(step)")
+            XCTAssertEqual(OnboardingFlow.landing(.stay, step: step), .unwritten("That could not be saved."), "\(step)")
         }
     }
 
@@ -59,5 +59,35 @@ final class OnboardingLandingTests: XCTestCase {
         XCTAssertEqual(OnboardingFlow.landing(.applied(confirmed), step: .weight), .advance)
         // And were a refusal ever to name a row there, no weight was typed: words, never the question.
         XCTAssertEqual(OnboardingFlow.landing(.applied(refused("Taken.", "row-1")), step: .weight), .words("Taken."))
+    }
+
+    /// The owner's ruling on PR 1570: after a sync moves the record under an open page, the
+    /// refusal ("Your record changed...") keeps the page's pin, so the next tap is refused
+    /// again instead of saving into a record the page never showed (US-25 AC11g, US-54 AC5d).
+    func testAfterASyncTheNextTapIsRefusedAgain_US54_AC5d() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Onboarding \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        store.pinScreen()  // the height page shows the phone's record
+        defer { store.unpinScreen() }
+        let cloudRecord = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
+        await store.showCloud(HealthEngine.CloudView(record: cloudRecord, erase: "e1", session: 1)).value
+
+        var mode = OnboardingFlow.Mode.page(.init(step: .height), .editing(message: nil))
+        for attempt in 1...2 {
+            let (claimed, claim) = OnboardingFlow.transition(mode, .tapped)
+            XCTAssertEqual(claim, [.save(.height)], "try \(attempt) saves")
+            let result = await store.apply(.profile(height: 180))
+            XCTAssertEqual(result, refused(RecordStore.recordChanged), "try \(attempt) is refused")
+            let landing = OnboardingFlow.landing(.applied(result), step: .height)
+            XCTAssertEqual(landing, .unwritten(RecordStore.recordChanged))
+            let (next, effects) = OnboardingFlow.transition(claimed, .landed(landing, next: .weight))
+            XCTAssertEqual(effects, [], "no repin, so the pin is still the record the page showed")
+            XCTAssertEqual(next.save?.message, RecordStore.recordChanged)
+            mode = next
+        }
+        XCTAssertNil(store.myData?.profile.height, "nothing written into the record the page never showed")
     }
 }

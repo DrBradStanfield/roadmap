@@ -1752,8 +1752,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     and `MessageAlert` (the one-button alert every tab uses).
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
     resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
-    height or weight and its entry-only unit switch), `OnboardingView` and `OnboardingPage`
-    (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
+    height or weight and its entry-only unit switch), `OnboardingFlow` (the flow's one named
+    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
     line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
     unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
@@ -1896,6 +1896,20 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 - **Existing users skip it**: a record holding sex, birth year and height. "I already use
   Health Roadmap" connects the cloud first, then asks only what is missing.
 - **No usage event** (D9 holds): App Store Connect retention is the signal.
+- **One named state (2026-11-13, iPhone survey S6, US-54 AC5d).** `OnboardingFlow.Mode` is
+  starting, connecting, `page(Page, SheetSave.State<Replace>)` or `finished(Page?)`, changed
+  only by the pure `OnboardingFlow.transition`, which returns the effects the view runs (pin,
+  repin, unpin, connect, finish, save, replace); `OnboardingFlowTests` holds the table. It
+  replaced seven `@State` flags (step, editing, message, connecting, birthAnswered, replacing,
+  saving). Why: they drifted apart, and each drift was a bug (a double tap saved or connected
+  twice, finish ran twice, a silent unlock). A page's save is the sheets' `SheetSave`, so the
+  tap claims it in its own turn and "Replace it" carries the row and the weight typed.
+  `finished` holds the last page so the cover slides down with it drawn. A save that met no
+  record the page showed (`Landing.unwritten`: an unwritable answer, or `recordChanged`) keeps
+  the pin, as a sheet keeps refusing until it closes; a refusal from the engine takes the
+  record now shown (`repin`). Pin and unpin are effects: begin pins as the first page shows,
+  finishing gives the pin back. Lead F3: a save landing after `onDisappear` could unpin twice
+  (no live path: the cover closes only through finish).
 
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 
