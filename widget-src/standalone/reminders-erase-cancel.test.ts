@@ -85,6 +85,28 @@ const REMOTE = 'hr:remote-changed';
 
 type Posted = { op: string; token?: string; idToken?: string };
 
+/** The page's cloud, whose record writes can be held: each write awaits `hold`, if set, before it goes.
+ *  Built on the adapter module the store loads after resetModules, so its ConflictError is the one the store knows. */
+async function heldCloud(cloud: MemoryCloud) {
+  const { MemoryAdapter: Adapter } = await import('@roadmap/health-core/memory-adapter');
+  return new (class extends Adapter {
+    hold: ((body: RoadmapFile) => Promise<void>) | null = null;
+    async write(...args: Parameters<MemoryAdapter['write']>) {
+      if (args[0] === ROADMAP_FILE_NAME && this.hold) await this.hold(args[1] as RoadmapFile);
+      return super.write(...args);
+    }
+  })(cloud);
+}
+
+/** Lets queued work run until `done` holds (at most about two seconds). */
+async function settle(done: () => boolean): Promise<void> {
+  for (let i = 0; i < 2000 && !done(); i++) await new Promise((r) => setTimeout(r, 1));
+}
+async function until(done: () => boolean): Promise<void> {
+  await settle(done);
+  expect(done()).toBe(true);
+}
+
 async function eraseSetUp() {
   const data = await import('../src/lib/roadmap-data');
   const reminders = await import('./reminders');
@@ -100,7 +122,8 @@ async function eraseSetUp() {
     return () => {};
   });
   const cloud = new MemoryCloud();
-  await data.initRoadmapStore(new MemoryAdapter(cloud));
+  const held = await heldCloud(cloud);
+  await data.initRoadmapStore(held);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
   expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' })).toBe(true);
   await data.flushRoadmapStore();
@@ -135,9 +158,23 @@ async function eraseSetUp() {
     await other.flush();
     return page.refreshFromRemote();
   };
+  /** Another device erases first, then turns reminders on; this page re-reads both in. */
+  const otherDeviceErasesThenTurnsOn = async () => {
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect((await other.deleteAllData()).success).toBe(true);
+    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.eraseIdentity)).toBe(true);
+    await other.flush();
+    return page.refreshFromRemote();
+  };
+  /** Another device turns reminders on, written straight to the cloud, with no re-read here. */
+  const otherDeviceWrites = async () => {
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' })).toBe(true);
+    await other.flush();
+  };
   const proof = vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken');
   proof.mockResolvedValue(PROOF);
-  return { data, posts, keepalive, refuse, listening, otherDeviceTurnsOn, proof, ChatSession, Sentry, trackProductEvent };
+  return { data, cloud, held, posts, keepalive, refuse, listening, otherDeviceTurnsOn, otherDeviceErasesThenTurnsOn, otherDeviceWrites, proof, ChatSession, Sentry, trackProductEvent };
 }
 
 describe('US-11 AC4c: an erase cancels every active reminders token it sees (lead S59b)', () => {
@@ -178,6 +215,83 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
       { op: 'cancel', token: TOKEN_A, idToken: PROOF },
       { op: 'cancel', token: TOKEN_B },
     ]);
+  });
+
+  // D3 (a): the merged-in token comes with another device's erase, so the
+  // record leaves the erase this one began at before its swap.
+  it.each(['proof', 'chat erase'] as const)('a token merged in with another device\'s erase during the %s wait is cancelled too', async (wait) => {
+    const t = await eraseSetUp();
+    let adopted = false;
+    const before = t.data.getEraseIdentity();
+    if (wait === 'proof') {
+      t.proof.mockImplementation(async () => {
+        adopted = await t.otherDeviceErasesThenTurnsOn();
+        return PROOF;
+      });
+    } else {
+      const eraseChat = t.ChatSession.prototype.eraseAll;
+      vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
+        adopted = await t.otherDeviceErasesThenTurnsOn();
+        return eraseChat.call(this);
+      });
+    }
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(adopted).toBe(true);
+    expect(t.data.getEraseIdentity()).not.toBe(before);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_A, idToken: PROOF },
+      { op: 'cancel', token: TOKEN_B },
+    ]);
+    expect(t.listening.size).toBe(0);
+  });
+
+  // D3 (b): a save that began before Delete folds token B in during the proof
+  // wait (its first pass meets B's write), but announces only when its last
+  // pass lands, after the swap, when the working copy holds the erased opt-in.
+  // Nothing here hears B: it is US-11 AC4c's Limit, lead H126. This pins the
+  // limit as it stands; a fix turns the last line into [A, B].
+  it('Limit (H126): a token a running save folds in during the proof wait, announced only after the swap, is not cancelled', async () => {
+    const t = await eraseSetUp();
+    const before = t.data.getEraseIdentity();
+    let foldedSilently = false;
+    let releaseFirst!: () => void;
+    const firstHeld = new Promise<void>((r) => { releaseFirst = r; });
+    const epochs: number[] = [];
+    t.held.hold = async (body) => {
+      epochs.push(body.meta.eraseEpoch ?? 0);
+      if (epochs.length === 1) await firstHeld; // pass 1: B writes meanwhile, so it conflicts, re-reads and folds B in
+      else if (epochs.length === 3) await settle(() => t.data.getEraseIdentity() !== before); // pass 2: still out at the swap
+    };
+    const announcedAt: string[] = [];
+    const announcer = () => announcedAt.push(t.data.getEraseIdentity());
+    window.addEventListener(REMOTE, announcer);
+    expect(t.data.setLpaUnit('mg/dL')).toBe(true);
+    const saving = t.data.flushRoadmapStore();
+    await until(() => epochs.length === 1);
+    expect(t.data.setLpaUnit('mg/L')).toBe(true); // owes a second pass
+    t.proof.mockImplementation(async () => {
+      await t.otherDeviceWrites();
+      releaseFirst();
+      await until(() => t.data.getReminderOptIn()?.token === TOKEN_B); // folded in, not yet announced
+      foldedSilently = announcedAt.length === 0;
+      return PROOF;
+    });
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    await saving;
+
+    // The case itself: pass 1's retry and pass 2 went out before the erased
+    // copy, and the one announce came only after the swap.
+    expect(foldedSilently).toBe(true);
+    expect(epochs.slice(0, 3)).toEqual([0, 0, 0]);
+    expect(announcedAt.length).toBeGreaterThan(0);
+    expect(announcedAt.every((at) => at !== before)).toBe(true);
+    expect(t.data.getEraseIdentity()).not.toBe(before);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
+    window.removeEventListener(REMOTE, announcer);
+    expect(t.listening.size).toBe(0);
   });
 
   it('a refused erase posts nothing, and its listener goes at the next re-read', async () => {

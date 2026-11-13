@@ -93,6 +93,11 @@ export const askedUnder = getShownErase;
 export function stillShown(asked: string): boolean {
   return asked === getEraseIdentity() && asked === getShownErase() && !store?.refuses(asked);
 }
+/** Whether this tab's erase runs, from its confirm to the end of its write
+ *  (the session's erasing mode, which refuses a write at any erase). */
+export function eraseRunsHere(): boolean {
+  return !!store && store.refuses(store.eraseIdentity);
+}
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
