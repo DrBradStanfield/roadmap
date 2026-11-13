@@ -1,0 +1,43 @@
+{
+  "about": "Generated files checked in, for tools/merge-gated.sh (US-64 AC34). Before a merge, for each row whose output or inputs the PR touches (old and new paths of a rename both count), the script refuses when main has changed that output or its generator script since the PR's merge base, naming the generator. Pure git: nothing here is ever run; script is only a pathspec. Inputs are globs, as in a git pathspec (* also matches /). tools/merge-gated-generated.test.ts pins the rows.",
+  "rows": [
+    {
+      "output": "instrument-scrub.mjs",
+      "script": "tools/generate-instrument-scrub.mjs",
+      "inputs": [
+        "tools/generate-instrument-scrub.mjs",
+        "packages/health-core/src/sentry-scrub-server.ts",
+        "packages/health-core/src/sentry-scrub.ts",
+        "packages/health-core/src/scrub-vocabulary.ts",
+        "packages/health-core/src/lab-catalog.ts",
+        "packages/health-core/src/colonoscopy-schedule.ts",
+        "packages/health-core/src/core-rows.ts",
+        "packages/health-core/src/import-hints.ts",
+        "packages/health-core/src/lab-limits.ts",
+        "packages/health-core/src/mappings.ts",
+        "packages/health-core/src/merge.ts",
+        "packages/health-core/src/parseNumber.ts",
+        "packages/health-core/src/roadmap-file.ts",
+        "packages/health-core/src/screening-inputs.ts",
+        "packages/health-core/src/screening-rules.ts",
+        "packages/health-core/src/types.ts",
+        "packages/health-core/src/units.ts",
+        "packages/health-core/src/validation.ts",
+        "packages/health-core/src/zod.ts",
+        "package-lock.json"
+      ],
+      "generator": "node tools/generate-instrument-scrub.mjs"
+    },
+    {
+      "output": "docs/blog/index.json",
+      "script": "scripts/rebuild-blog-index.ts",
+      "inputs": [
+        "docs/blog/*.md",
+        "docs/guideline/*.md",
+        "scripts/rebuild-blog-index.ts",
+        "app/lib/frontmatter.ts"
+      ],
+      "generator": "npm run rebuild-index"
+    }
+  ]
+}

@@ -74,14 +74,23 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
    that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
-   `ios-compile`, which only prints a note, Brad 2026-11-13), and no Deploy run is
-   unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI was started by
-   workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the `ci.yml` run check.
-   A PR that changes a gate file (`tools/merge-gated.sh` or `.github/workflows/ci.yml`) needs nothing different
-   from you: the script fetches main and lets main's copy judge it, and refuses (16) when main has no copy, so the
-   owner merges that PR by hand. A `ci.yml` PR also prints a note: its own CI ran the PR's workflow, so read that
-   diff before merging. Every gh call and the fetch are killed after 60 s; a merge cut off that way has an unknown
-   outcome, so check the PR. Each refusal has its own exit code (header of the script). Waiting first:
+   `ios-compile`, which only prints a note, Brad 2026-11-13), no generated file is out of step with main (below),
+   and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
+   was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
+   `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
+   `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
+   script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
+   change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from
+   git with renames split, so moving an input away still counts; every PR therefore costs one fetch of main and
+   its head. This check is pure git and runs nothing from the manifest or the PR; CI's freshness tests do the
+   real check.
+   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
+   `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
+   judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
+   a note: its own CI ran the PR's workflow, so read that diff before merging. Every gh call and the fetch are
+   killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each kind of refusal has
+   its own exit code, listed in the script's header, except that 9 covers both a red check and a generated file
+   out of step with main. Waiting first:
    `sh tools/wait-run.sh pr <n>`.
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
