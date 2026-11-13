@@ -112,7 +112,7 @@ describe('I-7 pins: chat profile edit', () => {
   const profile = (input: object) => parseProposedEdit('propose_profile_edit', input)!;
   const chat = (file: RoadmapFile, edits: unknown) => applyEdit(file, { kind: 'chatEdits', part: 'review', edits, today: localDay(NOW) }, NOW);
 
-  it('writes the stated sex and height, and saves nothing for one out of range', () => {
+  it('writes the stated sex and height, and refuses one out of range', () => {
     const after = written(chat(metric(), [profile({ sex: 'male', height: { value: 180, unit: 'cm' } })]));
     expect(after.profile).toMatchInlineSnapshot(`
       {
@@ -137,9 +137,19 @@ describe('I-7 pins: chat profile edit', () => {
         "updatedAt": "2026-11-02T08:00:00.000Z",
       }
     `);
-    // Out of range never reaches the write: the chat drops it and saves nothing.
+    // The shape the server sends for a height out of range: updateProfile refuses it.
+    expect(chat(metric(), [{ kind: 'profile', sex: null, heightCm: 400 }])).toMatchInlineSnapshot(`
+      {
+        "message": "Your height is outside what the record accepts. Nothing was saved.",
+        "ok": false,
+        "reason": "chat-refused",
+      }
+    `);
+  });
+
+  it('a null entry (a proposal the server parser dropped) is skipped', () => {
     const file = metric();
-    const outOfRange = chat(file, [profile({ height: { value: 400, unit: 'cm' } })]);
-    expect(outOfRange.ok && outOfRange.file).toBe(file);
+    const skipped = chat(file, [null]);
+    expect(skipped.ok && skipped.file).toBe(file);
   });
 });
