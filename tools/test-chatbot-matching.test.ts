@@ -347,6 +347,53 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
   }, 60_000);
 });
 
+// TA-T01 follow-up (PR 1551 review): runHarness holds process-wide globals, so it must not overlap
+// a run vitest abandoned on timeout, must not lean on vitest's cwd, and must not let a fetch with
+// no stub pass as a counted API error.
+describe('runHarness guards (test support, TA-T01)', () => {
+  const q = pickCase();
+  const route = (init: RequestInit) =>
+    textReply(JSON.parse(String(init.body)).messages[0].content.includes(q.query) ? `{"handles":["${q.expected[0]}"]}` : '{"handles":[]}');
+
+  it('refuses to start while an earlier run still holds the globals, and runs again once it restores', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>(r => { release = r; });
+    let entered!: () => void;
+    const inFetch = new Promise<void>(r => { entered = r; });
+    const first = runHarness(['--category', q.category, '--runs', '1'], {
+      fetch: async (_url, init) => { entered(); await gate; return route(init); },
+    });
+    await inFetch; // the first run is mid-fetch, as an abandoned case would be
+    await expect(runHarness(['--category', q.category, '--runs', '1'], { fetch: async (_u, init) => route(init) }))
+      .rejects.toThrow(/earlier run has not restored/);
+    release();
+    expect((await first).status).toBe(0);
+    const third = await runHarness(['--category', q.category, '--runs', '1'], { fetch: async (_u, init) => route(init) });
+    expect(noColour(third.out), third.err).toContain('Passing:     1');
+    expect(third.status).toBe(0);
+  }, 60_000);
+
+  it('reports the repo root as cwd wherever vitest was launched', async () => {
+    const real = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-matching-cwd-'));
+    process.chdir(dir);
+    try {
+      const res = await runHarness(['--category', q.category, '--runs', '1'], { fetch: async (_u, init) => route(init) });
+      expect(noColour(res.out), res.err).toContain('Passing:     1');
+      expect(res.status).toBe(0);
+    } finally {
+      process.chdir(real);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('fails the case when the harness calls fetch with no stub given', async () => {
+    await expect(runHarness(['--category', q.category, '--runs', '1'])).rejects.toThrow(/unexpected fetch with no stub given: https:\/\/api\.anthropic\.com/);
+    // The globals came back: a stubbed run works straight after.
+    expect((await runHarness(['--category', q.category, '--runs', '1'], { fetch: async (_u, init) => route(init) })).status).toBe(0);
+  }, 60_000);
+});
+
 // US-15 (issue #135, 2026-10-12): a fixture's `user_context` reaches the answer as
 // production builds it: the widget payload through resolveChatContext, the system
 // through buildSystemBlocks with the fixture's posture. A payload that would not
