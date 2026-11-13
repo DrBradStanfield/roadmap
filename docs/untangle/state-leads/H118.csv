@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H118,iPhone tests,"No test drives a chart read's joined-read path, and a test's yield loop would hang, not fail",lead,not started,"S31 follow-up: no test drives a chart read's joined-read path (ios/HealthRoadmap/MyData/RecordStore+Charts.swift ~:17-38), and MetricReadTests' yield loop (ios/HealthRoadmapTests/MetricReadTests.swift ~:141) would hang, not fail, if chart() returned early (PR 1733 review).",,no
