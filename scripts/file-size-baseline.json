@@ -34,7 +34,6 @@
     "packages/health-core/src/chat-edits.ts": 586,
     "packages/health-core/src/input-form.ts": 582,
     "ios/engine/my-data.ts": 578,
-    "ios/HealthRoadmap/Onboarding/OnboardingView.swift": 571,
     "ios/HealthRoadmap/AppleHealthMetrics/LiveMetricPage.swift": 549,
     "ios/engine/cloud.ts": 539,
     "app/lib/reminder-v2.server.ts": 536,

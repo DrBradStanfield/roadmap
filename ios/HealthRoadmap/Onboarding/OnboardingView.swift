@@ -14,41 +14,41 @@ struct OnboardingView: View {
     let finish: () -> Void
 
     /// A setting, not health data: the Apple Health screen was answered once.
-    @AppStorage("onboardingHealthAsked") private var healthAsked = false
-    @State private var step: OnboardingStep?
-    @State private var answers = Answers()
+    @AppStorage("onboardingHealthAsked") var healthAsked = false
+    @State var step: OnboardingStep?
+    @State var answers = Answers()
     /// The steps Apple Health filled in, by name only, kept so a relaunch keeps AC3b's guards
     /// (adversary R2); cleared when the flow starts at Apple Health or finishes.
-    @AppStorage("onboardingFromHealth") private var fromHealthNames = ""
-    @State private var fromHealth: Set<OnboardingStep> = []
+    @AppStorage("onboardingFromHealth") var fromHealthNames = ""
+    @State var fromHealth: Set<OnboardingStep> = []
     /// What Apple Health supplied, not asked and listed on the last screen (AC3b): worked out
     /// from the record when it or `fromHealth` changes, not on every draw.
-    @State private var supplied: Set<OnboardingStep> = []
+    @State var supplied: Set<OnboardingStep> = []
     /// Health gave a weight more than a year old (AC3b, guard a): Continue on it saves it as
     /// today's. Once saved it is today's, so no longer stale (adversary R1).
-    private var staleWeight: Bool { fromHealth.contains(.weight) && !supplied.contains(.weight) }
+    var staleWeight: Bool { fromHealth.contains(.weight) && !supplied.contains(.weight) }
     /// A question opened from that list's Edit: answered, it returns to the list.
-    @State private var editing = false
-    @State private var message: String?
-    @State private var connecting = false
+    @State var editing = false
+    @State var message: String?
+    @State var connecting = false
     /// Birth has an answer: from the record, from Apple Health, or a wheel the person
     /// moved. A wheel's starting value is never taken as an answer (AC4). Height and
     /// weight are typed: their answer is a number in the box.
-    @State private var birthAnswered = false
-    @FocusState private var focus: Field?
+    @State var birthAnswered = false
+    @FocusState var focus: Field?
     @Environment(\.dynamicTypeSize) private var typeSize
     /// Today's weight row a changed weight would replace, while the person decides (AC5).
-    @State private var replacing: String?
+    @State var replacing: String?
     /// An answer is being saved: the page waits for it before moving on.
-    @State private var saving = false
+    @State var saving = false
 
-    private var profile: MyData.Profile? { store.myData?.profile }
+    var profile: MyData.Profile? { store.myData?.profile }
     /// The units the engine's edits read: the record's for height, weight's own for weight,
     /// which may differ from the record's (US-25 AC17e, adversary R1).
-    private func recordUnits(_ step: OnboardingStep) -> String {
+    func recordUnits(_ step: OnboardingStep) -> String {
         step == .weight ? store.units(for: "weight") : store.myData?.unitSystem ?? "si"
     }
-    private var weightRow: MyData.Row? { store.myData?.vitals.first { $0.metric == "weight" } }
+    var weightRow: MyData.Row? { store.myData?.vitals.first { $0.metric == "weight" } }
 
     var body: some View {
         NavigationStack {
@@ -97,7 +97,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Self.healthPage(connecting: connecting, allow: { Task { await allowHealth() } })
+            Self.healthPage(connecting: connecting, allow: Self.allowTap { await allowHealth() })
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
@@ -181,57 +181,6 @@ struct OnboardingView: View {
         }
     }
 
-    /// The Apple Health page (AC3), built here so TextSizeLayoutTests lays out the real one.
-    /// One button, Continue, and Apple's sheet always follows (App Review 5.1.1(iv), 2026-11-09):
-    /// a person who does not want to share says so in Apple's sheet.
-    static func healthPage(connecting: Bool, allow: @escaping () -> Void) -> some View {
-        OnboardingPage(symbol: "heart.fill", tint: .pink, title: "Use your Apple Health data",
-             detail: "So you type less. Your sex, birth date, height, weight, waist and blood pressure go only into your record, on this iPhone or in your own cloud. Values you add here are saved back to Apple Health.",
-             progress: nil, spread: true) {
-            VStack(spacing: 12) {
-                HealthFillScene()
-                // US-56's five, named too (adversary R5): the sheet asks for them as well.
-                Text(liveLine).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                AppleAsksNext(inPage: true)
-            }
-        } actions: {
-            AppleAsksNext()
-            primary(connecting ? "Connecting…" : "Continue", id: "onboarding.allow", action: allow)
-                .disabled(connecting)
-        }
-    }
-
-    /// The last thing read before the tap: what Apple's sheet asks next (AC3; words Brad 2026-11-09).
-    /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
-    /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
-    /// 12% wash; the icon in the accent clears 3:1 on it in both modes. Above the buttons,
-    /// except at accessibility sizes, where it would push them off an SE: there it ends the
-    /// scrolling page (US-54 AC8b).
-    private struct AppleAsksNext: View {
-        var inPage = false
-        @Environment(\.dynamicTypeSize) private var textSize
-
-        var body: some View {
-            if textSize.isAccessibilitySize == inPage { hint }
-        }
-
-        private var hint: some View {
-            Label {
-                Text(LocalizedStringKey(OnboardingView.appleAsksNextWords))
-            } icon: {
-                Image(systemName: "hand.tap.fill").foregroundStyle(Color.accentColor)
-            }
-            .font(.subheadline)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .padding(.bottom, 6)
-            .accessibilityElement(children: .combine)
-        }
-    }
-
     /// The number boxes with their unit switch beside them, or under them at accessibility
     /// sizes. The switch is for entry only (AC6): it never writes the record's units.
     private func withUnits<Fields: View>(_ step: OnboardingStep, @ViewBuilder fields: () -> Fields) -> some View {
@@ -282,10 +231,10 @@ struct OnboardingView: View {
         })
     }
 
-    private func answer(_ step: OnboardingStep) -> TypedAnswer { step == .weight ? answers.weight : answers.height }
+    func answer(_ step: OnboardingStep) -> TypedAnswer { step == .weight ? answers.weight : answers.height }
 
     /// The box a typed screen focuses, on arrival and after its unit switch.
-    private func firstField(_ step: OnboardingStep) -> Field {
+    func firstField(_ step: OnboardingStep) -> Field {
         step == .weight ? .weight : answers.height.us ? .feet : .height
     }
 
@@ -306,248 +255,13 @@ struct OnboardingView: View {
         .accessibilityIdentifier("onboarding.\(value)")
     }
 
-    private static func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+    static func primary(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.accent)
             .accessibilityIdentifier(id)
     }
 
-    // MARK: Flow
-
-    private func begin() async {
-        guard step == nil else { return }
-        // An unreadable record: My data says why, so never strand the person here (review R13).
-        guard let data = store.myData else { finish(); return }
-        fromHealth = OnboardingSteps.decode(fromHealthNames)
-        if onlyMissing { healthAsked = true }
-        // A record from the cloud keeps its own units, also on a resumed run (Codex re-check R1),
-        // as does one just erased, whose units the erase kept (US-25 AC16).
-        let ownUnits = onlyMissing || keepUnits || store.cloudErase != nil
-        // A new record takes the phone's region's units (AC6); a record with values keeps its own.
-        let hasValues = data.profile.sex != nil || data.profile.birthYear != nil || data.profile.height != nil
-            || (data.vitals + data.bloodTests + [data.psa]).contains { $0.latest != nil }
-        let engineUnits = hasValues || ownUnits ? nil : await store.regionUnits()
-        if let units = OnboardingSteps.regionUnits(hasValues: hasValues, onlyMissing: ownUnits, current: data.unitSystem, locale: .current, engine: engineUnits) {
-            _ = await store.apply(.units(units))
-            // Gone before the units landed: nothing to pin (onDisappear unpins only a begun run).
-            guard !Task.isCancelled, step == nil else { return }
-        }
-        // Each typed screen starts in the record's units: the region default for a new record.
-        answers.height.us = recordUnits(.height) == "conventional"
-        answers.weight.us = recordUnits(.weight) == "conventional"
-        await prefill(from: HealthCharacteristics.none)
-        // Gone while the engine filled the boxes: nothing to pin.
-        guard !Task.isCancelled, step == nil else { return }
-        noteSupplied()
-        step = onlyMissing
-            ? OnboardingSteps.next(after: .health, profile: data.profile, hasWeight: recordWeight != nil, onlyMissing: true) ?? .weight
-            : OnboardingSteps.start(data.profile, healthAsked: healthAsked, skip: supplied, weightDay: weightRow?.latest?.day)
-        // Each answer is checked against the record its screen showed (US-25 AC11g).
-        store.pinScreen()
-    }
-
-    private func allowHealth() async {
-        connecting = true
-        let heightBefore = profile?.height
-        let weightBefore = recordWeight
-        await health.connect()
-        healthAsked = true
-        let given = health.characteristics()
-        // Label what Apple Health filled in (AC4): what the record lacked and Health gave.
-        if profile?.sex == nil, given.sex != nil { fromHealth.insert(.sex) }
-        if profile?.birthYear == nil, given.birthYear != nil { fromHealth.insert(.birth) }
-        if heightBefore == nil, profile?.height != nil { fromHealth.insert(.height) }
-        if weightBefore == nil, recordWeight != nil { fromHealth.insert(.weight) }
-        await prefill(from: given)
-        // Health's sex and birth are taken as given (AC3b), saved by the same edits a tap or
-        // Continue makes; one the engine refuses is asked. Height and weight came in with the connect.
-        // One edit for both; refused, both are asked (review E3).
-        if let profile, let edit = OnboardingSteps.healthEdit(given, profile: profile), await store.apply(edit) != .saved() {
-            fromHealth.subtract([.sex, .birth])
-        }
-        connecting = false
-        advance(from: .health)
-    }
-
-    /// Fills the answers from the record first, then from Apple Health, else wheels'
-    /// sensible starts and empty boxes.
-    private func prefill(from health: HealthCharacteristics) async {
-        answers.sex = profile?.sex ?? health.sex ?? answers.sex
-        if let year = profile?.birthYear ?? health.birthYear {
-            answers.birthYear = year
-            answers.birthMonth = profile?.birthMonth ?? health.birthMonth ?? answers.birthMonth
-            birthAnswered = true
-        }
-        for (step, path) in [(OnboardingStep.height, \Answers.height), (.weight, \Answers.weight)] where !answers[keyPath: path].edited {
-            let (recorded, recordUnits) = (recorded(step), recordUnits(step))
-            await update(path) { await $0.show(recorded, recordUnits: recordUnits, convert: store.convert) }
-        }
-    }
-
-    /// Works `supplied` out again, from the record as it is now (AC3b).
-    private func noteSupplied() {
-        supplied = profile.map { OnboardingSteps.supplied(fromHealth: fromHealth, profile: $0, weightDay: weightRow?.latest?.day, now: .now) } ?? []
-    }
-
-    /// The summary's lines (AC3b): the record's answers now, so an edit shows; worked out once per draw.
-    private var summaryLines: [(step: OnboardingStep, text: String, spoken: String)] {
-        guard let profile else { return [] }
-        let weight = weightRow.flatMap { row in row.latest.map { (value: $0.value, unit: row.unit) } }
-        return OnboardingStep.questions.filter(supplied.contains).map {
-            let text = OnboardingSteps.summary($0, profile: profile, weight: weight) ?? ""
-            return ($0, text, OnboardingSteps.spoken($0, text: text, profile: profile))
-        }
-    }
-
-    /// The record's height or weight, in `recordUnits(step)`.
-    private func recorded(_ step: OnboardingStep) -> Double? {
-        step == .weight ? recordWeight : profile?.height.flatMap(Double.init)
-    }
-
-    private var recordWeight: Double? { weightRow?.latest.flatMap { Double($0.value) } }
-
-    /// Saves an answer. The page waits (`saving`) while its value is read, converted by
-    /// the engine off the main thread, and written.
-    private func save(_ step: OnboardingStep) {
-        message = nil
-        saving = true
-        Task {
-            defer { saving = false }
-            let edit: RecordEdit
-            switch await change(for: step) {
-            case .stay:
-                return
-            case .unchanged:
-                return settle(.saved(), step)
-            case .edit(let made):
-                edit = made
-            }
-            let result = await store.apply(edit)
-            // Today already holds a weight: ask before replacing it (AC5, US-25 AC5).
-            if step == .weight, case .refused(_, let existingId?) = result {
-                replacing = existingId
-                return
-            }
-            settle(result, step)
-        }
-    }
-
-    private enum Change { case stay, unchanged, edit(RecordEdit) }
-
-    /// What an answer writes: nothing new (`unchanged`, the page moves on), an edit, or
-    /// nothing it can write yet (`stay`).
-    private func change(for step: OnboardingStep) async -> Change {
-        switch step {
-        case .health, .review:
-            return .stay
-        case .sex:
-            guard let sex = answers.sex else { return .stay }
-            return profile?.sex == sex ? .unchanged : .edit(.profile(sex: sex))
-        case .birth:
-            return profile?.birthYear == answers.birthYear && profile?.birthMonth == answers.birthMonth
-                ? .unchanged : .edit(.profile(birthYear: answers.birthYear, birthMonth: answers.birthMonth))
-        // A box the person left alone saves nothing, whatever its units show (AC6). A typed
-        // one that cannot be read or converted stays on its screen.
-        case .height:
-            guard answers.height.edited else { return .unchanged }
-            return await answers.height.edit(recordUnits: recordUnits(.height), convert: store.convert).map(Change.edit) ?? .stay
-        case .weight:
-            // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
-            // row in the row's own kilograms, never the rounded display, never written back (AC3b).
-            if staleWeight, !answers.weight.edited {
-                guard let id = weightRow?.latest?.id, let kg = OnboardingSteps.kilograms(rowId: id, recordJSON: store.recordJSON) else { return .stay }
-                return .edit(OnboardingSteps.confirmedWeight(kilograms: kg, now: .now))
-            }
-            // Otherwise a weight equal to the record's latest, typed or not, writes nothing (AC5).
-            guard answers.weight.edited,
-                  !(await answers.weight.repeats(recordWeight, recordUnits: recordUnits(.weight), convert: store.convert))
-            else { return .unchanged }
-            return await savedValue(.weight).map { .edit(.add(metric: "weight", value: $0, day: DayText.iso(.now))) } ?? .stay
-        }
-    }
-
-    /// A typed answer in the units the engine's edit reads now, converted once; nil when
-    /// the person typed nothing there.
-    private func savedValue(_ step: OnboardingStep) async -> Double? {
-        await answer(step).saved(recordUnits: recordUnits(step), convert: store.convert)
-    }
-
-    /// A typed screen's unit switch, for entry only (AC6): the record's units stay as they
-    /// are. A box left alone shows the record's value again in the new units; a typed one
-    /// is converted. Both through the engine.
-    private func chooseUnits(us: Bool, on step: OnboardingStep) {
-        message = nil
-        let path: WritableKeyPath<Answers, TypedAnswer> = step == .weight ? \.weight : \.height
-        let (recorded, recordUnits) = (recorded(step), recordUnits(step))
-        // Counted in the tap: a quicker later tap wins over this one's conversion.
-        let tapped = answers[keyPath: path].tapped()
-        Task {
-            await update(path, from: tapped) { await $0.switchUnits(toUS: us, recorded: recorded, recordUnits: recordUnits, convert: store.convert) }
-            focus = firstField(step)
-        }
-    }
-
-    /// Changes a typed answer through the engine, off the main thread. Kept only if the
-    /// answer did not move while the engine ran (a keystroke or another switch): the box
-    /// never shows text in units it no longer holds. `start`: the box as a tap left it.
-    private func update(_ path: WritableKeyPath<Answers, TypedAnswer>, from start: TypedAnswer? = nil, _ change: (inout TypedAnswer) async -> Void) async {
-        let before = start ?? answers[keyPath: path]
-        var after = before
-        await change(&after)
-        answers[keyPath: path].land(after, from: before)
-    }
-
-    /// "Replace it": a FHIR correction of today's weight, never a removal.
-    private func replaceWeight() {
-        guard let id = replacing else { return }
-        replacing = nil
-        saving = true
-        Task {
-            defer { saving = false }
-            guard let weight = await savedValue(.weight) else { return }
-            let result = await store.apply(.correct(id: id, value: weight))
-            settle(result, .weight)
-        }
-    }
-
-    private func settle(_ result: RecordStore.ApplyResult, _ step: OnboardingStep) {
-        switch result {
-        case .saved:
-            advance(from: step)
-        case .refused(let words, _):
-            // The engine's words. The record may have moved on (an erase or a unit
-            // change elsewhere): pin the record now shown, so the next try is checked against it.
-            message = words
-            store.repinScreen()
-        }
-    }
-
-    private func advance(from step: OnboardingStep) {
-        // An answer opened from the summary's Edit returns to it (AC3b).
-        if editing { return go(.review) }
-        noteSupplied()
-        guard let profile, let next = OnboardingSteps.next(after: step, profile: profile, hasWeight: recordWeight != nil, onlyMissing: onlyMissing, skip: supplied) else {
-            finish()
-            return
-        }
-        go(next)
-    }
-
-    private func go(_ next: OnboardingStep) {
-        message = nil
-        if next == .review { editing = false }
-        store.repinScreen()
-        withAnimation(.snappy) { step = next }
-    }
-
-    private func previous(_ step: OnboardingStep) -> OnboardingStep? {
-        editing ? .review : OnboardingSteps.previous(before: step, onlyMissing: onlyMissing, skip: supplied)
-    }
-
     /// Built once: the wheels redraw on every tick.
-    static let appleAsksNextWords = "Next, Apple asks which data to share."
-    /// The five US-56 readings, named on the Apple Health page (adversary R5).
-    static let liveLine = "It also shows your resting heart rate, sleep, VO2 max and steps here, never in your record."
     private static let birthYears = DayText.birthYears(now: .now)
 
     /// What each box takes as typed: whole feet, whole inches (centimetres and weight take `.value`).
@@ -567,5 +281,5 @@ struct OnboardingView: View {
         var weight = TypedAnswer(metric: "weight")
     }
 
-    private enum Field: String { case height, feet, inches, weight }
+    enum Field: String { case height, feet, inches, weight }
 }
