@@ -38,32 +38,32 @@ struct MyDataView: View {
     var planShown: () -> Void = {}
     /// The settings sheet closed: a backup offer its saves made due can show now (US-57 AC8).
     var settingsClosed: () -> Void = {}
-    @State private var entry: Entry?
+    @State var entry: Entry?
     /// The metric whose page is pushed.
     @State private var detail: MyData.Row?
-    @State private var showSync = false
-    @State private var showSettings = false
-    @State private var addingLabs = false
+    @State var showSync = false
+    @State var showSettings = false
+    @State var addingLabs = false
     /// Tour tip 3 is due and its heading has come to rest on screen (US-57 AC2).
-    @State private var bloodTestsTipReady = false
+    @State var bloodTestsTipReady = false
     /// "Add blood test", and the test picked in it (round 7).
-    @State private var addingTest = false
+    @State var addingTest = false
     @State private var pickedTest: PickedTest?
     /// The page as last built, and the screen it was built for (`currentPage`).
     @State private var page: HealthPage?
     @State private var pageBuiltFor: Int?
-    @State private var refusal: String?
+    @State var refusal: String?
     @State private var saves = 0
     /// A picker's edit is landing: the pickers wait, so a quick change back is never lost.
-    @State private var picking = false
+    @State var picking = false
     /// US-56: Apple Health's sleep and fitness metrics, read live; the one whose page is pushed.
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(AppleHealthSync.self) private var healthSync: AppleHealthSync?
-    @State private var liveDetail: LiveMetric?
+    @State var liveDetail: LiveMetric?
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.analytics) private var analytics
+    @Environment(\.analytics) var analytics
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.dynamicTypeSize) var typeSize
 
     var body: some View {
         switch layout {
@@ -230,7 +230,7 @@ struct MyDataView: View {
     }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.
-    private static let firstRow = "tour.firstRow"
+    static let firstRow = "tour.firstRow"
 
     /// Once `tip` is due, scrolls its anchor into view (US-57).
     private func bringIntoView(_ tip: some Tip, _ anchor: @autoclosure () -> String?, proxy: ScrollViewProxy, at point: UnitPoint) async {
@@ -239,331 +239,16 @@ struct MyDataView: View {
         }
     }
 
-    /// The title with the person button, lab upload and Sync, as a row so nothing holds space
-    /// under it; then the urgent banner, only when a card is urgent.
-    @ViewBuilder
-    private func top(_ page: HealthPage, proxy: ScrollViewProxy) -> some View {
-        Section {
-            let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
-            let buttons = HStack(spacing: 14) {
-                Button { showSettings = true } label: {
-                    Label("Settings", systemImage: "person.crop.circle")
-                }
-                recordButtons
-            }
-            .buttonStyle(.borderless)
-            .labelStyle(.iconOnly)
-            .font(.title3)
-            // The buttons go under the title when both do not fit: beside them at the largest
-            // sizes, the title broke mid-word ("heal th", TextSizeLayoutTests, US-25 AC26).
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
-                VStack(alignment: .leading, spacing: 8) { title; buttons }
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
-            .listRowSeparator(.hidden)
-            // The jump pills (Brad, round 6): they scroll with the page; equal widths across the cards' width (round 7).
-            // One above another at accessibility sizes, where three across cut each to "Bl…".
-            (typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))) {
-                ForEach(HealthTopic.pills) { topic in
-                    Button {
-                        analytics?.event(.jumpPillTapped)
-                        withAnimation { proxy.scrollTo(topic.anchor, anchor: .top) }
-                    } label: {
-                        // One line, shrunk at the largest sizes rather than cut to "Blood te…" (TextSizeLayoutTests).
-                        Text(topic.title.title).lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.small)
-                    .tint(.primary)
-                }
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-            .listRowSeparator(.hidden)
-            if let urgent = page.urgent {
-                Button {
-                    withAnimation { proxy.scrollTo(urgent.anchor, anchor: .center) }
-                } label: {
-                    Label("Needs attention: \(urgent.title)", systemImage: "exclamationmark.triangle.fill")
-                        .font(.subheadline.weight(.semibold))
-                        // White was hard to read on dark mode's light red; the page background reads on both reds.
-                        .foregroundStyle(Color(.systemBackground))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                }
-                .buttonStyle(PressableStyle())
-                .accessibilityHint("Scrolls to the card")
-                .listRowBackground(RoundedRectangle(cornerRadius: .cardRadius, style: .continuous).fill(Color.status("urgent")).padding(.vertical, 4))
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-            }
-        }
-        .listSectionSpacing(.compact)
-    }
-
-    /// Lab upload and Sync: on the title line and on the Blood tests heading.
-    @ViewBuilder
-    private var recordButtons: some View {
-        Button { addingLabs = true } label: {
-            Label("Add medical records", systemImage: "plus")
-        }
-        .accessibilityHint("Upload a lab report or clinic letter")
-        Button { showSync = true } label: {
-            Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
-        }
-    }
-
-    /// A topic's heading, a row in the list's own flow, so the pills can scroll to it; any
-    /// controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the largest
-    /// sizes a one-word title shrinks to one line and any controls go under it, so no word
-    /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
-    /// Tour tip 3 (US-57 AC7) rides on Blood tests' heading; its action is the lab upload.
-    private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
-        TopicHeading(topic.title, anchor: topic.anchor, tip: topic == .bloodTests && bloodTestsTipReady ? { addingLabs = true } : nil, controls: controls)
-    }
-
-    /// One topic as every section draws it: its heading, its urgent cards over its rows (Brad
-    /// 2026-11-05: an urgent suggestion on a row shows there too), its rows, its other cards
-    /// (with `footer` under them), then anything after (a section's medicines).
-    @ViewBuilder
-    private func topicSection(_ topic: HealthTopic, _ page: HealthPage, footer: String? = nil,
-                              @ViewBuilder controls: () -> some View = { EmptyView() },
-                              @ViewBuilder rows: () -> some View = { EmptyView() },
-                              @ViewBuilder after: () -> some View = { EmptyView() }) -> some View {
-        heading(topic, controls: controls)
-        cardSection(page[topic].urgent, page: page)
-        rows()
-        cardSection(page[topic].cards, page: page, footer: footer)
-        after()
-    }
-
-    /// Sleep or Fitness: the Apple Health cards between the topic's urgent and other cards. The
-    /// section reads Health itself, so a live refresh never rebuilds this list (/simplify, efficiency).
-    private func liveTopic(_ topic: HealthTopic, _ page: HealthPage, bands: [LiveMetric: Vo2MaxBands] = [:]) -> some View {
-        LiveCardsSection(metrics: topic.liveMetrics, bands: bands, keepsReconnect: topic == .fitness, hasCards: !page[topic].isEmpty) {
-            liveDetail = $0
-        } header: {
-            heading(topic)
-            cardSection(page[topic].urgent, page: page)
-        } footer: {
-            cardSection(page[topic].cards, page: page)
-        }
-    }
-
-    /// Why there is no plan yet, when there is none: health-core's PlanError needs sex and
-    /// height, set in Settings; any other failure in the engine's words.
-    @ViewBuilder
-    private var planNotice: some View {
-        switch store.plan {
-        case .needsDetails:
-            Section {
-                Label("Your plan needs a few details", systemImage: "person.text.rectangle").font(.headline)
-                Text(PlanText.needsDetails).foregroundStyle(.secondary)
-                Button("Add your details") { showSettings = true }
-            }
-        case .failed(let reason):
-            Section {
-                Label("Your plan could not be worked out", systemImage: "exclamationmark.triangle").font(.headline)
-                Text(reason).foregroundStyle(.secondary)
-            }
-        case .planned, nil:
-            EmptyView()
-        }
-    }
-
-    /// Plan cards in the plan's own card style. A card on screen is the plan shown, which the
-    /// review prompt waits for (US-25 AC10); the first Weight & diabetes card carries tour tip 2.
-    @ViewBuilder
-    private func cardSection(_ cards: [PlanCard], page: HealthPage, footer: String? = nil) -> some View {
-        if !cards.isEmpty {
-            Section {
-                ForEach(cards, id: \.anchor) { card in
-                    let view = PlanCardView(card: card, askAboutAlcohol: card.asking(alcoholQuestion))
-                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .onAppear(perform: planShown)
-                    if card.anchor == page.firstWeightCard { view.tourTip(FoundationTip()) } else { view }
-                }
-            } footer: {
-                if let footer { Text(footer).accessibilityIdentifier("plan.ownershipLine") }
-            }
-            .listSectionSpacing(.compact)
-        }
-    }
-
-    /// Weight & diabetes (Brad, round 2): waist-to-height, weight with its BMI, HbA1c.
-    private func weightRows(_ page: HealthPage) -> some View {
-        Section {
-            // Tour tip 1 (US-57 AC4) on the first row. The ratio's row opens the waist page, where
-            // waist is added or corrected; with no ratio (no waist yet), the waist row itself.
-            Group {
-                if let ratio = page.whtr, let waist = page.waist {
-                    metric(waist, label: ValueRow(label: ratio.history.label, value: ratio.latest.value, unit: "", day: ratio.latest.day,
-                                                  target: ratio.history.target, previous: ratio.previous, grade: PlanTiles.grade(page.tiles["whtr"]),
-                                                  trend: ratio.trend, tint: MetricChart.colors(for: "waist")[0], column: page.weightColumn))
-                } else if let waist = page.waist {
-                    metric(waist, column: page.weightColumn)
-                }
-            }
-            .tourTip(SnapshotTip())
-            .id(Self.firstRow)
-            if let weight = page.weight {
-                metric(weight, label: ValueRow(label: weight.label, value: weight.latest?.value, unit: weight.unit, day: weight.latest?.day,
-                                               target: page.weightTarget, previous: weight.previous, grade: weight.grade, gradeWords: weight.gradeWords,
-                                               note: weight.note, trend: weight.trend ?? [], tint: MetricChart.colors(for: weight.metric)[0], column: page.weightColumn))
-            }
-            if let hba1c = page.hba1c { metric(hba1c, column: page.weightColumn) }
-        }
-        .listSectionSpacing(.compact)
-    }
-
-    /// ApoB, LDL, total cholesterol, HDL, non-HDL when the plan works it out, triglycerides and Lp(a).
-    private func cholesterolRows(_ page: HealthPage) -> some View {
-        Section {
-            ForEach(page.lipids) { row in
-                metric(row, column: page.lipidColumn)
-                // Non-HDL is total cholesterol less HDL: its row opens total cholesterol's page, which explains it.
-                if row.metric == "hdl", let nonHdl = page.nonHdl {
-                    metric(nonHdl.total, label: ValueRow(label: nonHdl.tile.label, value: nonHdl.tile.value, unit: nonHdl.tile.unit, day: nonHdl.total.latest?.day,
-                                                         target: nonHdl.tile.status?.label, grade: PlanTiles.grade(nonHdl.tile),
-                                                         tint: MetricChart.colors(for: "total_cholesterol")[0], column: page.lipidColumn))
-                }
-            }
-        }
-        .listSectionSpacing(.compact)
-    }
-
-    /// Every blood test, eGFR's one row under creatinine (it stands for the lab's eGFR), then
-    /// "Add blood test".
-    private func bloodTestRows(_ page: HealthPage) -> some View {
-        Section {
-            ForEach(page.bloodTests) { bloodTest($0, column: page.bloodColumn, page: page) }
-            ForEach(page.labs) { lab in
-                metric(lab, label: Self.valueRow(lab, tint: MetricChart.labTint, column: page.bloodColumn))
-            }
-            // A row like "Add another supplement"; a test found by name opens its entry.
-            Button { addingTest = true } label: { Label("Add blood test", systemImage: "plus.circle.fill") }
-        }
-        .listSectionSpacing(.compact)
-    }
-
-    /// A blood test's row; creatinine's has eGFR's one row under it (US-73 AC7): the plan's
-    /// current eGFR, with the series' previous value and trend. It opens the page of its
-    /// source, the lab eGFR's or creatinine's, each linking to the other.
-    @ViewBuilder
-    private func bloodTest(_ row: MyData.Row, column: ValueRow.Column, page: HealthPage) -> some View {
-        metric(row, column: column)
-        if row.metric == "creatinine", let egfr = page.egfr {
-            metric(egfr.page, label: ValueRow(label: egfr.label, value: egfr.value, unit: egfr.unit, day: egfr.day, target: egfr.target,
-                                              previous: egfr.previous, grade: egfr.grade, trend: egfr.trend,
-                                              tint: MetricChart.colors(for: row.metric)[0], column: column))
-        }
-    }
-
-    /// The reduce-alcohol card's question (US-60), as the plan cards ask it: offered unanswered and
-    /// to a drinker. Called at the tap, it checks the answer against the screen then.
-    private var alcoholQuestion: AlcoholQuestion? {
-        AlcoholQuestion(answered: store.myData?.profile.alcohol?.value) { [store, analytics] in
-            let seen = store.screen
-            return { choice in
-                Task {
-                    switch await store.apply(.alcohol(choice), as: seen) {
-                    case .saved: analytics?.event(.alcoholAnswered)
-                    case .refused(let message, _): refusal = message
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: Settings
-
-    private func settingsList(_ data: MyData) -> some View {
-        List {
-            aboutYou(data)
-            RemindersSection()
-            AppleHealthSection()
-            // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
-            if let note = data.unreadableNote {
-                Section {
-                } footer: {
-                    Text(note)
-                }
-            }
-            RecordSection(store: store, sync: sync)
-            Section {
-            } footer: {
-                Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
-                    .frame(maxWidth: .infinity)
-            }
-        }
-        .listStyle(.insetGrouped)
-    }
-
-    private func aboutYou(_ data: MyData) -> some View {
-        Section {
-            Picker("Sex", selection: binding(data.profile.sex ?? "") { .profile(sex: $0) }) {
-                Text(MyData.sexLabel("female")).tag("female")
-                Text(MyData.sexLabel("male")).tag("male")
-            }
-            .pickerStyle(.segmented)
-            .disabled(picking)
-
-            Picker("Birth year", selection: binding(data.profile.birthYear ?? 0) { .birthYear($0, storedMonth: data.profile.birthMonth, now: .now) }) {
-                if data.profile.birthYear == nil { Text("Not set").tag(0) }
-                ForEach(DayText.birthYears(now: .now), id: \.self) { Text(String($0)).tag($0) }
-            }
-            .disabled(picking)
-
-            Picker("Birth month", selection: binding(data.profile.birthMonth ?? 0) { .profile(birthMonth: $0) }) {
-                if data.profile.birthMonth == nil { Text("Not set").tag(0) }
-                ForEach(DayText.birthMonths(year: data.profile.birthYear ?? 0, now: .now, keeping: data.profile.birthMonth), id: \.self) { Text(DayText.monthName($0)).tag($0) }
-            }
-            .disabled(picking)
-
-            Button { entry = .height(store.screen) } label: {
-                ValueRow(label: "Height", value: data.profile.height, unit: data.profile.heightUnit, day: nil, feetInches: data.profile.feetInches)
-            }
-            .tint(.primary)
-            .disabled(store.unitSwitches > 0)
-
-            // US-60: the answer the reduce-alcohol card's Dismiss asks for; "Not answered" clears it.
-            Picker("Alcohol", selection: binding(data.profile.alcohol?.value) { .alcohol($0) }) {
-                Text("Not answered").tag(MyData.Alcohol?.none)
-                ForEach(MyData.Alcohol.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
-            }
-            .disabled(picking)
-
-            LabeledContent("Units") { units(data) }
-        } header: {
-            SectionTitle.aboutYou()
-        }
-    }
-
-    /// Metric or US, compact, a row in About you (AC17).
-    private func units(_ data: MyData) -> some View {
-        Picker("Units", selection: binding(data.unitSystem) { .units($0) }) {
-            Text("Metric").tag("si")
-            Text("US").tag("conventional")
-        }
-        .pickerStyle(.segmented)
-        .disabled(picking)
-        .fixedSize()
-    }
-
     // MARK: Rows
 
     /// `column`: the section's widest reading, which sets every row's value column.
-    private func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
+    func metric(_ row: MyData.Row, card: Bool = false, column: ValueRow.Column? = nil) -> some View {
         metric(row, label: Self.valueRow(row, tint: MetricChart.colors(for: row.metric)[0], card: card, column: column))
     }
 
     /// A row drawn as `label` that opens `page`'s page. A unit switch still landing would open a
     /// sheet on the old choices (AC17e), so it waits.
-    private func metric(_ page: MyData.Row, label: ValueRow) -> some View {
+    func metric(_ page: MyData.Row, label: ValueRow) -> some View {
         Button { open(page) } label: { label }
             .tint(.primary)
             .disabled(store.unitSwitches > 0)
@@ -622,7 +307,7 @@ struct MyDataView: View {
     }
 
     /// A picker's binding: it shows the record's value and saves a change through the engine.
-    private func binding<Value: Equatable>(_ shown: Value, _ edit: @escaping (Value) -> RecordEdit) -> Binding<Value> {
+    func binding<Value: Equatable>(_ shown: Value, _ edit: @escaping (Value) -> RecordEdit) -> Binding<Value> {
         Binding(get: { shown }, set: { picked in
             guard picked != shown else { return }
             picking = true
