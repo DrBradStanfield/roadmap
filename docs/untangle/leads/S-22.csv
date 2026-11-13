@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-22,S2 server,Email capture: check the IP limit first,not started,api.measurements handleKlaviyoCapture checks the per-email limiter before the per-IP limiter. Order them IP first. From the PR 1613 review,,,no

@@ -1,41 +1,50 @@
 /**
- * S-19 (b): every in-memory TTL map has a hard cap on keys (US-52 AC4f, US-59 AC12). When a new key
- * meets a full map, expired entries go first. A limiter never forgets a live count to make room:
- * forgetting it would let that caller start a fresh window early, so the new key is refused instead.
- * The summary cache is only a cache, so it drops its oldest entry and the next read fetches again.
+ * S-19 (b): every in-memory TTL map holds a bounded number of entries (US-52 AC4f, US-59 AC12).
+ * When a new key meets a full map, expired entries go first. Then, by the factory's `whenFull`:
+ * 'evictOldest' (every limiter but one) drops the oldest live entry and admits the new key;
+ * 'refuse' (the spent-challenge set only, US-52 AC1a) keeps every entry and refuses the new key.
+ * A full map says so once an hour, by the map's name alone.
  */
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
+import * as Sentry from '@sentry/react-router';
+
 const T0 = 1_000_000;
 const W = 1000;
 const NEVER = 100 * W; // a sweep interval that never fires in these tests
+const HOUR = 60 * 60_000;
 
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(T0);
+  vi.mocked(Sentry.captureMessage).mockClear();
+  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
-describe('US-52 AC4f: createRateLimiter holds at most its key cap', () => {
-  it('refuses a new key when every tracked key is live, and keeps every block it holds', async () => {
+describe("US-52 AC4f: a full limiter map makes room from its oldest entry ('evictOldest', the default)", () => {
+  it('admits a new caller when every tracked key is live; the others keep their counts', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
-    const limit = createRateLimiter(1, W, NEVER, 3);
+    const limit = createRateLimiter(1, W, NEVER, { name: 'test limiter', maxKeys: 3 });
     for (const key of ['a', 'b', 'c']) {
       expect(limit(key)).toBe(true);
-      expect(limit(key)).toBe(false); // blocked
+      expect(limit(key)).toBe(false); // at its limit
     }
-    expect(limit('d')).toBe(false); // full of live entries: refused, not admitted
-    for (const key of ['a', 'b', 'c']) expect(limit(key)).toBe(false); // no block forgotten
+    expect(limit('d')).toBe(true); // a new caller is served
+    expect(limit('d')).toBe(false); // and counted
+    for (const key of ['b', 'c']) expect(limit(key)).toBe(false); // still in the map: still limited
   });
 
   it('makes room from expired entries first, in expiry order, a renewed key included', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
-    const limit = createRateLimiter(1, W, NEVER, 3);
+    const limit = createRateLimiter(1, W, NEVER, { name: 'test limiter', maxKeys: 3 });
     limit('a'); // T0, expires T0+W
     vi.setSystemTime(T0 + 10);
     limit('b'); // expires T0+W+10
@@ -44,59 +53,92 @@ describe('US-52 AC4f: createRateLimiter holds at most its key cap', () => {
     vi.setSystemTime(T0 + W);
     expect(limit('a')).toBe(true); // a's fresh window, expires T0+2W
     vi.setSystemTime(T0 + W + 10); // b has expired; a, renewed, has not
-    expect(limit('d')).toBe(true); // room made from b
-    expect(limit('a')).toBe(false); // a's renewed window still blocks
-    expect(limit('c')).toBe(false); // c's window still blocks
-    expect(limit('e')).toBe(false); // full again of live entries
+    expect(limit('d')).toBe(true); // room made from b, not from a or c
+    expect(limit('a')).toBe(false);
+    expect(limit('c')).toBe(false);
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled(); // room from expired entries is not full
   });
 
-  it('caps every limiter at 50,000 keys unless told otherwise', async () => {
-    const { createRateLimiter } = await import('./rate-limiter');
-    const limit = createRateLimiter(1, W, NEVER);
-    for (let i = 0; i < 50_000; i++) expect(limit(`ip-${i}`)).toBe(true);
-    expect(limit('one-more')).toBe(false);
-    vi.setSystemTime(T0 + W);
-    expect(limit('one-more')).toBe(true); // the expired ones made room
+  it('a quota keeps a new caller at its normal remaining, and admits it', async () => {
+    const { createQuotaCounter } = await import('./rate-limiter');
+    const quota = createQuotaCounter(5, W, NEVER, { name: 'test quota', maxKeys: 2 });
+    expect(quota.take('a', 5)).toBe(true);
+    expect(quota.take('b', 5)).toBe(true);
+    expect(quota.remaining('c')).toBe(5);
+    expect(quota.reserve('c', 1)).not.toBeNull();
+    expect(quota.remaining('c')).toBe(4);
+    expect(quota.remaining('b')).toBe(0); // b is still in the map: its used-up day holds
+  });
+
+  it('holds every limiter to 50,000 keys unless told otherwise', async () => {
+    const { createRateLimiter, MAX_TRACKED_KEYS } = await import('./rate-limiter');
+    expect(MAX_TRACKED_KEYS).toBe(50_000);
+    const limit = createRateLimiter(1, W, NEVER, { name: 'test limiter' });
+    expect(limit('first')).toBe(true);
+    for (let i = 1; i < 50_000; i++) limit(`ip-${i}`);
+    expect(limit('first')).toBe(false); // the 50,000th key is still held
+    expect(limit('one-more')).toBe(true);
+    expect(limit('first')).toBe(true); // the oldest made room
   });
 });
 
-describe('US-52 AC4f: createQuotaCounter holds at most its key cap', () => {
-  it('refuses take and reserve for a new key when full of live ones, and says it has none left', async () => {
+describe("US-52 AC1a/AC4f: the 'refuse' map keeps every entry", () => {
+  it('refuses a new key when full of live entries, and keeps every spent one', async () => {
     const { createQuotaCounter } = await import('./rate-limiter');
-    const quota = createQuotaCounter(5, W, NEVER, 2);
-    expect(quota.take('a', 1)).toBe(true);
-    expect(quota.take('b', 5)).toBe(true);
-    expect(quota.take('c', 1)).toBe(false);
-    expect(quota.reserve('c', 1)).toBeNull();
-    expect(quota.remaining('c')).toBe(0); // what a take would allow
-    expect(quota.remaining('a')).toBe(4);
-    expect(quota.remaining('b')).toBe(0); // b's used-up day is kept
-    expect(quota.take('a', 1)).toBe(true); // a known key still spends its own window
+    const spent = createQuotaCounter(1, W, NEVER, { name: 'test spent set', whenFull: 'refuse', maxKeys: 2 });
+    expect(spent.take('x', 1)).toBe(true);
+    expect(spent.take('y', 1)).toBe(true);
+    expect(spent.take('z', 1)).toBe(false); // full: refused, nothing forgotten
+    expect(spent.take('x', 1)).toBe(false); // one use holds
+    vi.setSystemTime(T0 + W);
+    expect(spent.take('z', 1)).toBe(true); // expired entries make room
   });
+});
 
-  it('admits a new key once an expired entry can make room', async () => {
-    const { createQuotaCounter } = await import('./rate-limiter');
-    const quota = createQuotaCounter(5, W, NEVER, 2);
-    quota.take('a', 1);
-    vi.setSystemTime(T0 + 10);
-    quota.take('b', 5);
-    vi.setSystemTime(T0 + W); // a has expired, b has not
-    expect(quota.remaining('c')).toBe(5);
-    expect(quota.take('c', 2)).toBe(true);
-    expect(quota.remaining('b')).toBe(0);
+describe('US-52 AC4f: a full map says so, by name only, once an hour', () => {
+  it('warns once per map per hour, with no key, IP or count in it', async () => {
+    const { createRateLimiter } = await import('./rate-limiter');
+    const limit = createRateLimiter(5, 10 * HOUR, 100 * HOUR, { name: 'feedback per IP', maxKeys: 2 });
+    for (const key of ['198.51.100.7', '198.51.100.8', '198.51.100.9', '198.51.100.10']) limit(key);
+    const capture = vi.mocked(Sentry.captureMessage);
+    expect(capture).toHaveBeenCalledTimes(1);
+    const sent = JSON.stringify([capture.mock.calls, vi.mocked(console.error).mock.calls]);
+    expect(sent).toContain('feedback per IP');
+    expect(sent).not.toMatch(/198\.51\.100/);
+    expect(sent).not.toMatch(/\d{3,}/); // no count of anyone
+    vi.setSystemTime(T0 + HOUR - 1);
+    limit('198.51.100.11');
+    expect(capture).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(T0 + HOUR);
+    limit('198.51.100.12');
+    expect(capture).toHaveBeenCalledTimes(2);
   });
+});
 
-  it('a web chat turn refused because the IP map is full spends none of the machine budget', async () => {
-    const { webChatTurns, takeWebChatTurn } = await import('./rate-limiter');
-    webChatTurns.ip.reset();
-    webChatTurns.machine.reset();
-    for (let i = 0; i < 50_000; i++) webChatTurns.ip.take(`ip-${i}`, 1);
-    const before = webChatTurns.machine.remaining('machine');
-    expect(takeWebChatTurn('new-ip')).toBe(false);
-    expect(webChatTurns.machine.remaining('machine')).toBe(before);
-    expect(takeWebChatTurn('ip-0')).toBe(true); // a known IP still has its 199
-    webChatTurns.ip.reset();
-    webChatTurns.machine.reset();
+describe("US-52 AC4f: 'refuse' has one call site, the spent-challenge set", () => {
+  /** Every production .ts file under app/, tests excluded. */
+  function prodFiles(dir: string): string[] {
+    return readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) return prodFiles(path);
+      return /\.tsx?$/.test(name) && !/\.test(-helpers)?\.tsx?$/.test(name) ? [path] : [];
+    });
+  }
+
+  it('lists every limit map and its policy', () => {
+    const sites: string[] = [];
+    for (const file of prodFiles(join(__dirname, '..'))) {
+      const text = readFileSync(file, 'utf8');
+      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)\(/g)) {
+        // The call through its options object, which closes with `})`.
+        const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
+        const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
+        sites.push(`${name}: ${/whenFull: '(\w+)'/.exec(site)?.[1] ?? 'evictOldest'}`);
+      }
+    }
+    expect(sites).toHaveLength(36);
+    expect(sites.filter((s) => !s.endsWith(': evictOldest'))).toEqual(['app spent challenges: refuse']);
+    expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
   });
 });
 

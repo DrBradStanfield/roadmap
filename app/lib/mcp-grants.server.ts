@@ -242,7 +242,7 @@ export function chargeWrites(connection: string, cost: number): string | null {
 }
 
 /** Files extracted per connection today, beside the writes — the same key, the same reset. */
-export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000);
+export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000, { name: 'mcp import files per connection' });
 
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
@@ -263,7 +263,7 @@ export function resetMcpMemory(): void {
 
 /** Per-IP, before any CIMD fetch — the fetch is the expensive, abusable half. */
 export const AUTHORIZE_PER_WINDOW = 20;
-export const allowAuthorize = createRateLimiter(AUTHORIZE_PER_WINDOW, 60_000, 10 * 60_000);
+export const allowAuthorize = createRateLimiter(AUTHORIZE_PER_WINDOW, 60_000, 10 * 60_000, { name: 'mcp authorize' });
 
 /**
  * The brake's own counter, braked. A flood is exactly when the row is written
@@ -272,7 +272,7 @@ export const allowAuthorize = createRateLimiter(AUTHORIZE_PER_WINDOW, 60_000, 10
  * limiter paying the cost it exists to avoid. One row per IP per window says
  * the same thing.
  */
-export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000);
+export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000, { name: 'mcp rate-limit events' });
 
 /**
  * Per-IP at `/token`, and per-connection at `tools/call`. Both are flood
@@ -281,7 +281,7 @@ export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000);
  * it locks out the honest ones. The per-connection one also bounds how often
  * one connection can make us refresh a Dropbox access token.
  */
-export const allowToken = createRateLimiter(300, 60_000, 10 * 60_000);
-export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000);
+export const allowToken = createRateLimiter(300, 60_000, 10 * 60_000, { name: 'mcp token' });
+export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000, { name: 'mcp tool calls per connection' });
 /** search_knowledge and get_article on top of that (US-41 AC11): reads of public text, so a tighter brake on bulk copying. */
-export const allowKnowledgeCall = createRateLimiter(30, 60_000, 10 * 60_000);
+export const allowKnowledgeCall = createRateLimiter(30, 60_000, 10 * 60_000, { name: 'mcp knowledge calls per connection' });

@@ -1,6 +1,9 @@
 // In-memory rate limiter factory
 // Shared across routes (api.measurements, api.ab, etc.)
+import * as Sentry from '@sentry/react-router';
+
 export const DAY_MS = 24 * 60 * 60_000;
+const HOUR_MS = 60 * 60_000;
 
 /**
  * The one expiry rule for the server's in-memory TTL maps (S-19): an entry is
@@ -10,9 +13,8 @@ export const isLive = (expiresAt: number, now: number): boolean => now < expires
 
 /**
  * Keys per limiter map (S-19). An entry measured about 180 bytes (an IPv6 /64
- * key and its count), so a full map is about 9 MB, and the 37 limiter maps all
- * full at once stay near a third of a machine's 1 GB (fly.toml). Five times the
- * largest daily per-machine budget here (WEB_CHAT_DAILY_CAP, 10,000).
+ * key and its count), so a full map is about 9 MB, and the 36 limiter maps all
+ * full at once stay near a third of a machine's 1 GB (fly.toml).
  */
 export const MAX_TRACKED_KEYS = 50_000;
 
@@ -32,25 +34,52 @@ export function sweepExpired<V>(map: Map<string, V>, expiresAt: (entry: V) => nu
 }
 
 /**
- * Room for one more key in a map held to `maxKeys` (S-19). Each map has one TTL
- * and every write deletes its key before setting it, so insertion order is
- * expiry order: expired entries are dropped from the front until there is room.
- * False when every entry left is live. A limiter then refuses the new key, since
- * forgetting a live count would let its caller start a fresh window early.
+ * What a full map does with a new key (S-19). 'evictOldest': the oldest entry
+ * makes room. A caller who can make many keys already gets a fresh count per
+ * key, the machine-wide caps still bind, and refusing would lock real new
+ * callers out. 'refuse': the key is turned away, for a set whose entries must
+ * never be forgotten early (the spent challenges, US-52 AC1a).
  */
-export function makeRoom<V>(map: Map<string, V>, expiresAt: (entry: V) => number, maxKeys: number, now: number): boolean {
-  for (const [key, entry] of map) {
-    if (map.size < maxKeys || isLive(expiresAt(entry), now)) break;
+export type WhenFull = 'evictOldest' | 'refuse';
+
+/** A bounded map's name (the only thing its full-map warning says), its policy and its bound. */
+export interface LimitMapOptions { name: string; whenFull?: WhenFull; maxKeys?: number }
+
+/**
+ * The bound on one TTL map: `room(key, now)` clears `key` and makes room for
+ * it, false only for a 'refuse' map full of live entries. Each map has one TTL
+ * and every write goes through here before its set, so insertion order is
+ * expiry order: expired entries leave from the front first. A map that has to
+ * evict or refuse a live entry warns once an hour, by its name alone.
+ */
+export function boundedMap<V>(map: Map<string, V>, expiresAt: (entry: V) => number, options: LimitMapOptions) {
+  const maxKeys = options.maxKeys ?? MAX_TRACKED_KEYS;
+  let warnedAt = -Infinity;
+  return (key: string, now: number): boolean => {
     map.delete(key);
-  }
-  return map.size < maxKeys;
+    for (const [oldest, entry] of map) {
+      if (map.size < maxKeys || isLive(expiresAt(entry), now)) break;
+      map.delete(oldest);
+    }
+    if (map.size < maxKeys) return true;
+    if (now - warnedAt >= HOUR_MS) {
+      warnedAt = now;
+      // Fixed text and the map's name only: never a key, an IP or anyone's count.
+      console.error(`In-memory limit map full: ${options.name}`);
+      Sentry.captureMessage('In-memory limit map full', { level: 'warning', tags: { feature: 'rate_limit', map: options.name } });
+    }
+    if (options.whenFull === 'refuse') return false;
+    map.delete(map.keys().next().value!);
+    return true;
+  };
 }
 
 const resetAtOf = (entry: { resetAt: number }) => entry.resetAt;
 
-export function createRateLimiter(max: number, windowMs: number, cleanupMs: number, maxKeys = MAX_TRACKED_KEYS) {
+export function createRateLimiter(max: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
+  const room = boundedMap(map, resetAtOf, options);
   // `reset` is a test seam: the map is process-global and would otherwise leak
   // between cases in a suite that drives a limited route many times.
   return Object.assign(
@@ -58,8 +87,7 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
       const now = Date.now();
       const entry = map.get(key);
       if (!entry || !isLive(entry.resetAt, now)) {
-        map.delete(key);
-        if (!makeRoom(map, resetAtOf, maxKeys, now)) return false;
+        if (!room(key, now)) return false;
         map.set(key, { count: 1, resetAt: now + windowMs });
         return true;
       }
@@ -75,22 +103,18 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
  * day"). Same Map+sweep machinery as createRateLimiter, but consumption has a
  * weight and callers can read the remainder without consuming.
  */
-export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number, maxKeys = MAX_TRACKED_KEYS) {
+export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
+  const room = boundedMap(map, resetAtOf, options);
   const live = (key: string) => {
     const entry = map.get(key);
     return entry && isLive(entry.resetAt, Date.now()) ? entry : null;
   };
-  /** Whether `key` could start a window now: false when the map is full of live keys. */
-  const roomFor = (key: string) => {
-    map.delete(key);
-    return makeRoom(map, resetAtOf, maxKeys, Date.now());
-  };
   const charge = (key: string, n: number) => {
     let entry = live(key);
     if (!entry) {
-      if (!roomFor(key)) return null;
+      if (!room(key, Date.now())) return null;
       entry = { count: 0, resetAt: Date.now() + windowMs };
       map.set(key, entry);
     }
@@ -117,10 +141,8 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
       const entry = live(key);
       if (entry) entry.count = Math.max(0, entry.count - n);
     },
-    /** What a take could spend now: 0 for a new key the full map would refuse. */
     remaining(key: string): number {
       const entry = live(key);
-      if (!entry && !roomFor(key)) return 0;
       return Math.max(0, limit - (entry?.count ?? 0));
     },
   };
@@ -135,7 +157,7 @@ const DEFAULT_DAILY_FILE_CAP = 2000;
  * `AI_DAILY_FILE_CAP × machines × 2 apps` and it resets on deploy — an
  * accepted approximation until a shared counter is worth its DDL.
  */
-export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY_FILE_CAP), DAY_MS, 30 * 60_000);
+export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY_FILE_CAP), DAY_MS, 30 * 60_000, { name: 'machine files per day' });
 
 /**
  * AI_DAILY_FILE_CAP as a number. A value that is not a finite number of 0 or
@@ -171,8 +193,8 @@ export function envCap(name: string, raw: string | undefined, fallback: number, 
  * as a test seam.
  */
 export const webChatTurns = {
-  ip: createQuotaCounter(200, DAY_MS, 30 * 60_000),
-  machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000),
+  ip: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'web chat turns per IP' }),
+  machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000, { name: 'web chat turns per machine' }),
 };
 
 /**

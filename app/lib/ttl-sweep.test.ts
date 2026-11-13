@@ -19,6 +19,7 @@ vi.mock('./rate-limiter', async (importOriginal) => {
 });
 
 const T0 = 1_000_000;
+const OPTS = { name: 'test map' };
 const created: Map<unknown, unknown>[] = [];
 class TrackingMap<K, V> extends Map<K, V> {
   constructor(entries?: readonly (readonly [K, V])[] | null) {
@@ -54,7 +55,7 @@ describe('S-5: createRateLimiter', () => {
 
   it('never counts a request against a window at or past its end, between sweeps too (US-52 AC4f)', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
-    const limit = createRateLimiter(1, W, 10 * W); // the sweep never runs in this test
+    const limit = createRateLimiter(1, W, 10 * W, OPTS); // the sweep never runs in this test
     expect(limit('k')).toBe(true);
     expect(limit('k')).toBe(false);
     vi.setSystemTime(T0 + W - 1); // the window's last instant still counts
@@ -65,7 +66,7 @@ describe('S-5: createRateLimiter', () => {
 
   it('sweeps a flood of distinct keys back to the live ones, on the same ticks', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
-    const { value: limit, maps } = await tracked(() => createRateLimiter(5, W, SWEEP));
+    const { value: limit, maps } = await tracked(() => createRateLimiter(5, W, SWEEP, OPTS));
     expect(maps).toHaveLength(1);
     const [map] = maps;
     for (let i = 0; i < 1000; i++) limit(`ip-${i}`);
@@ -81,7 +82,7 @@ describe('S-5: createRateLimiter', () => {
   it("the sweep's timer does not hold the process open", async () => {
     const { createRateLimiter } = await import('./rate-limiter');
     const spy = vi.spyOn(globalThis, 'setInterval');
-    createRateLimiter(1, W, SWEEP);
+    createRateLimiter(1, W, SWEEP, OPTS);
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy.mock.calls[0][1]).toBe(SWEEP);
     expect((spy.mock.results[0].value as NodeJS.Timeout).hasRef()).toBe(false);
@@ -94,7 +95,7 @@ describe('S-5: createQuotaCounter', () => {
 
   it('never serves a used-up window at or past its end, between sweeps too (US-52 AC4f)', async () => {
     const { createQuotaCounter } = await import('./rate-limiter');
-    const quota = createQuotaCounter(3, W, 10 * W);
+    const quota = createQuotaCounter(3, W, 10 * W, OPTS);
     expect(quota.take('k', 3)).toBe(true);
     vi.setSystemTime(T0 + W - 1);
     expect(quota.remaining('k')).toBe(0); // the window's last instant still counts
@@ -105,7 +106,7 @@ describe('S-5: createQuotaCounter', () => {
 
   it('sweeps a flood of distinct keys back to the live ones, on the same ticks', async () => {
     const { createQuotaCounter } = await import('./rate-limiter');
-    const { value: quota, maps } = await tracked(() => createQuotaCounter(10, W, SWEEP));
+    const { value: quota, maps } = await tracked(() => createQuotaCounter(10, W, SWEEP, OPTS));
     expect(maps).toHaveLength(1);
     const [map] = maps;
     for (let i = 0; i < 1000; i++) quota.take(`ip-${i}`, 1);
@@ -120,7 +121,7 @@ describe('S-5: createQuotaCounter', () => {
   it("the sweep's timer does not hold the process open", async () => {
     const { createQuotaCounter } = await import('./rate-limiter');
     const spy = vi.spyOn(globalThis, 'setInterval');
-    createQuotaCounter(1, W, SWEEP);
+    createQuotaCounter(1, W, SWEEP, OPTS);
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy.mock.calls[0][1]).toBe(SWEEP);
     expect((spy.mock.results[0].value as NodeJS.Timeout).hasRef()).toBe(false);

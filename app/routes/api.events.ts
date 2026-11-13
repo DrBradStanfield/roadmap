@@ -6,10 +6,10 @@ import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/loca
 import { parseProductEvent, recordProductEvent } from '../lib/product-events.server';
 
 // 20 events per minute per visitor — a full session emits well under this.
-const checkEventRateLimit = createRateLimiter(20, 60_000, 5 * 60_000);
+const checkEventRateLimit = createRateLimiter(20, 60_000, 5 * 60_000, { name: 'events per visitor' });
 // The visitor id is in the body, so rotating it defeats the limit above. The
 // IP is the one key the caller cannot choose; loose enough for CGNAT.
-const checkEventIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000);
+const checkEventIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000, { name: 'events per IP' });
 
 export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);

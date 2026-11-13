@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-23,S2 server,Bounded maps assume a forward clock (low),not started,"boundedMap in rate-limiter.ts relies on insertion order being expiry order, which holds while Date.now() never steps back. If the clock steps back, an expired entry can sit behind a live one until the next sweep. Low priority. From the PR 1613 review",,,no

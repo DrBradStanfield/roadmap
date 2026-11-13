@@ -38,7 +38,7 @@ const PER_IP_DAILY_LIMIT = IMPORT_LIMITS.websiteFiles;
 
 // Per-IP daily file quota — same shared counter machinery the sibling
 // local-first routes use (rate-limiter.ts), weighted by file count.
-const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000);
+const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000, { name: 'lab upload files per IP' });
 
 /** Consume `count` files against the per-IP quota AND the machine $-cap; all or nothing. */
 function consumeQuota(ip: string, count: number): boolean {

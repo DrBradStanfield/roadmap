@@ -24,7 +24,7 @@
  */
 import crypto from 'crypto';
 import * as Sentry from '@sentry/react-router';
-import { isLive, makeRoom, sweepExpired } from './rate-limiter';
+import { boundedMap, isLive, sweepExpired } from './rate-limiter';
 
 export const SUBSCRIPTION_ACTIONS = ['pause', 'skip', 'cancel'] as const;
 export type SubscriptionActionName = (typeof SUBSCRIPTION_ACTIONS)[number];
@@ -123,11 +123,12 @@ function reportGatewayError(message: string): void {
 // on another one; the gateway's own checks (live Appstle read, token bound to the state) catch any change.
 const SUMMARY_TTL = 60_000;
 // Customers held (S-19): WEB_CHAT_DAILY_CAP's default, since a summary is read only inside a web chat
-// turn, which a machine allows 10,000 a day. A cache, so when full the oldest goes and is fetched again.
+// turn, which a machine allows 10,000 a day. When full the oldest goes and is fetched again.
 const SUMMARY_CACHE_MAX_KEYS = 10_000;
 const summaryCache = new Map<string, { summary: SubscriptionSummary; expiresAt: number }>();
 const expiresAtOf = (entry: { expiresAt: number }) => entry.expiresAt;
 sweepExpired(summaryCache, expiresAtOf, 5 * 60_000);
+const summaryRoom = boundedMap(summaryCache, expiresAtOf, { name: 'subscription summaries', maxKeys: SUMMARY_CACHE_MAX_KEYS });
 
 /** The logged-in customer's subscription summary, or null (off, logged out, or the gateway failed). Never throws. */
 export async function getCachedSubscriptions(request: Request, customerId: string): Promise<SubscriptionSummary | null> {
@@ -142,8 +143,7 @@ export async function getCachedSubscriptions(request: Request, customerId: strin
     ...(typeof data.note === 'string' ? { note: data.note } : {}),
     ...(typeof data.error === 'string' ? { error: data.error } : {}),
   };
-  summaryCache.delete(customerId);
-  if (!makeRoom(summaryCache, expiresAtOf, SUMMARY_CACHE_MAX_KEYS, Date.now())) summaryCache.delete(summaryCache.keys().next().value!);
+  summaryRoom(customerId, Date.now());
   summaryCache.set(customerId, { summary, expiresAt: Date.now() + SUMMARY_TTL });
   return summary;
 }

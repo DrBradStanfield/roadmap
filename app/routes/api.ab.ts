@@ -7,11 +7,11 @@ import { isBotUA } from '../lib/bot-detect';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 // 10 events per minute per visitor (generous, prevents abuse)
-const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000);
+const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000, { name: 'ab per visitor' });
 // The visitor id is in the body, so a script that rotates it has no limit at
 // all. The IP is the one key the caller cannot choose. Loose enough that a
 // whole CGNAT range of real shoppers never notices.
-const checkABIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000);
+const checkABIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000, { name: 'ab per IP' });
 
 const abEventSchema = z.object({
   testId: z.guid(),
