@@ -20,7 +20,7 @@ extension RecordStore {
         /// Drawn, no problem, no later erase: it reads and takes edits.
         case readable
         /// Stored, its draw failed with no problem to show (lead S67): it reads, `redraw` draws it again,
-        /// and it takes no edit until then. Most often an erase held undrawn.
+        /// and it takes no edit until then: a cloud erase, edit or document save whose draw failed (lead H17).
         case heldUndrawn
         /// No record stored: none loaded yet.
         case empty

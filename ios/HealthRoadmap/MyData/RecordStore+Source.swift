@@ -175,14 +175,15 @@ extension RecordStore {
         }.value
     }
 
-    /// What the session made of a cloud edit, onto the screen.
+    /// What the session made of a cloud edit, onto the screen. The session has taken it, so one
+    /// the engine cannot draw is held undrawn (lead H17, US-25 AC16f), never the old record shown as current.
     func shown(_ outcome: EditOutcome, order: Int, of edit: RecordEdit) async -> ApplyResult {
         guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved() }
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
-        await draw(next, order: order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil)
+        await draw(next, order: order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil, holdUndrawn: true)
         onEdit?()
         return .saved(healthRecords: outcome.healthRecords)
     }
