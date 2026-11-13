@@ -453,7 +453,8 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     expect(argv.filter(isNpx)).toEqual([]);
     // npx inside any quoted -c value (another server's command, env, cwd) still fails. A mkdtemp suffix is exactly 6 random [A-Za-z0-9]
     // characters with '-' before and '/', ':' or the end after, so any 'npx' inside it touches a letter or digit and cannot match.
-    expect(joined).not.toMatch(/(^|[^A-Za-z0-9])npx([^A-Za-z0-9]|$)/);
+    // The checkout path is stripped first: worktree folders are named after branches, so it may itself spell npx.
+    expect(joined.split(resolve(__dirname, '..')).join('')).not.toMatch(/(^|[^A-Za-z0-9])npx([^A-Za-z0-9]|$)/);
     const commands = argv.filter((a) => a.startsWith('mcp_servers.health.command='));
     expect(commands).toHaveLength(1);
     expect(JSON.parse(commands[0].slice('mcp_servers.health.command='.length))).toBe(resolve(__dirname, '..', 'node_modules', '.bin', 'tsx'));
