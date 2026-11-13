@@ -79,10 +79,11 @@ const checkUserRateLimit = createRateLimiter(
   USER_RATE_LIMIT_MAX,
   USER_RATE_LIMIT_WINDOW_MS,
   USER_RATE_LIMIT_CLEANUP_MS,
+  { name: 'discord replies per user' },
 );
 // Per-user cooldown: at most 1 response per USER_COOLDOWN_MS. Reuses the
 // rate limiter factory so stale entries auto-evict — avoids an unbounded Map.
-const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000);
+const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000, { name: 'discord cooldown per user' });
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-21,S2 server,One key shape for per-IP limits,not started,"The app routes key their per-IP limits on the /64 bucket (ipBucket in app-gate.server.ts; app-routes.server.ts, api.chat.ts web turns), while other per-IP limiters key on the address as read (api.feedback, api.events, api.ab, api.measurements, api.google-token, api.lab-import-v2). Use one key shape for all. From the PR 1613 review",,,no
