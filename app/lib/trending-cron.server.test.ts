@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // trending-cron.server.ts imports the Shopify app + Supabase singletons at
 // module load; neither is exercised by these tests, so stub them out.
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 
 import {
@@ -323,7 +323,7 @@ describe('trending cron tick — US-28 AC6: a failed run leaves the day open', (
     const cron = await import('./trending-cron.server');
     vi.stubEnv('NODE_ENV', 'production');
     const { unauthenticated } = await import('../shopify.server');
-    const { tryAcquireCronLock } = await import('./supabase.server');
+    const { tryAcquireCronLock } = await import('./supabase-cron-lock.server');
     const Sentry = await import('@sentry/react-router');
     vi.mocked(Sentry.captureException).mockClear();
     okAdmin.graphql.mockClear();

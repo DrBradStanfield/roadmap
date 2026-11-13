@@ -192,14 +192,11 @@ export const BRAND_POSTURE = loadPosture('chat-posture-brand.md');
 
 export interface ChatContext {
   userContextJson: string;
-  /** Full documents for content matching (avoids second DB call) */
-  healthDocuments: Array<{ title: string; document_date: string | null; document_type: string; content_md: string }>;
 }
 
 /** No-data context: chat still answers general questions. */
 export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
   userContextJson: '{}',
-  healthDocuments: [],
 });
 
 /**
@@ -217,51 +214,7 @@ export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
  */
 export function resolveChatContext(guestInputs: unknown): ChatContext {
   const userContextJson = guestInputs ? buildChatContextJson(guestInputs) : null;
-  return userContextJson === null ? EMPTY_CHAT_CONTEXT : { userContextJson, healthDocuments: [] };
-}
-
-// ---------------------------------------------------------------------------
-// Document content matching
-// ---------------------------------------------------------------------------
-
-const DOCUMENT_KEYWORDS = [
-  'colonoscopy', 'mammogram', 'dexa', 'mri', 'ct', 'ultrasound', 'xray', 'x-ray',
-  'echocardiogram', 'scan', 'lab', 'blood test', 'clinic', 'letter', 'discharge',
-  'pathology', 'biopsy', 'vaccination', 'vaccine', 'report',
-];
-
-export function matchDocumentTitle(
-  userMessage: string,
-  documents: Array<{ title: string; documentDate: string | null; documentType: string }>,
-): string | null {
-  if (documents.length === 0) return null;
-
-  const msgLower = userMessage.toLowerCase();
-
-  let bestMatch: { title: string; score: number } | null = null;
-
-  for (const doc of documents) {
-    const titleLower = doc.title.toLowerCase();
-    const typeLower = doc.documentType.toLowerCase().replace('_', ' ');
-    let score = 0;
-
-    for (const kw of DOCUMENT_KEYWORDS) {
-      if (msgLower.includes(kw) && (titleLower.includes(kw) || typeLower.includes(kw))) {
-        score += 2;
-      }
-    }
-
-    const titleWords = titleLower.split(/\W+/).filter(w => w.length > 3);
-    for (const word of titleWords) {
-      if (msgLower.includes(word)) score++;
-    }
-
-    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { title: doc.title, score };
-    }
-  }
-
-  return bestMatch?.title ?? null;
+  return userContextJson === null ? EMPTY_CHAT_CONTEXT : { userContextJson };
 }
 
 /**
@@ -289,7 +242,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; savedChat: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; savedChat: string; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -337,13 +290,6 @@ export function buildSystemBlocks(
   // change (brand surface, while enabled). Per request and uncached, like orders.
   if (opts?.subscriptionBlock) {
     blocks.push({ type: 'text', text: opts.subscriptionBlock });
-  }
-
-  if (opts?.documentContent) {
-    blocks.push({
-      type: 'text',
-      text: `## Referenced Health Document\n\n${opts.documentContent}`,
-    });
   }
 
   if (opts?.blogArticles) {

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sentry = vi.hoisted(() => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('@sentry/react-router', () => sentry);
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 import { verifyGoogleIdToken } from './reminder-v2.server';
 

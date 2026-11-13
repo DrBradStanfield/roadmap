@@ -36,9 +36,9 @@ vi.mock('../lib/supabase.server', () => ({
 // MAX_MESSAGE_LENGTH is the real one, so the length tests below pin the route
 // to the shipped cap (US-15 AC26).
 vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
+  resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
+  loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => { mocks.complete(); return mocks.completion; },
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',

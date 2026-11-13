@@ -22,13 +22,13 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
+  resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
+  loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => ({
     content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },

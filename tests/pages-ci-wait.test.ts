@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 const PAGES = readFileSync(join(__dirname, '..', '.github', 'workflows', 'pages.yml'), 'utf8');
 const STEP = '- name: Wait for CI to pass on the main commit being published';
+const POLLS = 'for _ in $(seq 120); do';
 
 /** The step's `run: |` block, dedented. */
 function stepScript(): string {
@@ -58,20 +59,25 @@ function runStep(repo: Repo, scen: { runs: Record<string, (string | null)[]>; pa
   const bin = join(repo.dir, '.bin');
   mkdirSync(bin, { recursive: true });
   writeFileSync(join(bin, 'gh'), FAKE_GH);
-  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n');
+  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\necho "$1" >> "$SLEEPS"\n');
   chmodSync(join(bin, 'gh'), 0o755);
   chmodSync(join(bin, 'sleep'), 0o755);
   const scenFile = join(repo.dir, '.scen.json');
   const envFile = join(repo.dir, '.github_env');
   writeFileSync(scenFile, JSON.stringify(scen));
   writeFileSync(envFile, '');
-  writeFileSync(join(repo.dir, '.step.sh'), stepScript());
+  const sleepsFile = join(repo.dir, '.sleeps');
+  writeFileSync(sleepsFile, '');
+  // The workflow polls 120 times; here 3, so a never-green case is 3 rounds of fake gh, not 120.
+  const script = stepScript();
+  expect(script.split(POLLS).length).toBe(2);
+  writeFileSync(join(repo.dir, '.step.sh'), script.replace(POLLS, 'for _ in $(seq 3); do'));
   const r = spawnSync('bash', [join(repo.dir, '.step.sh')], {
     cwd: repo.dir,
-    env: { PATH: `${bin}:${process.env.PATH}`, GH_TOKEN: 'x', GITHUB_REPOSITORY: 'o/r', GITHUB_ENV: envFile, SCEN: scenFile },
+    env: { PATH: `${bin}:${process.env.PATH}`, GH_TOKEN: 'x', GITHUB_REPOSITORY: 'o/r', GITHUB_ENV: envFile, SCEN: scenFile, SLEEPS: sleepsFile },
     encoding: 'utf8',
   });
-  return { code: r.status, out: r.stdout + r.stderr, env: readFileSync(envFile, 'utf8') };
+  return { code: r.status, out: r.stdout + r.stderr, env: readFileSync(envFile, 'utf8'), sleeps: readFileSync(sleepsFile, 'utf8') };
 }
 
 /** origin/main at `sha`, as the Pages checkout sees it. */
@@ -165,6 +171,7 @@ describe('pages.yml waits for CI before publishing main (US-64 AC9)', () => {
       const r = runStep(repo, { runs: { [sha]: [null] } });
       expect(r.code).toBe(1);
       expect(r.out).toContain('Timed out');
+      expect(r.sleeps).toBe('10\n10\n10\n'); // one 10 s sleep per poll
       const build = PAGES.slice(PAGES.indexOf(STEP));
       expect(build).toMatch(/- name: Build main → \/\n\s+run: \|\n\s+git checkout --detach "\$\{MAIN_SHA\}"/);
       expect(PAGES).toMatch(/checks: read/);

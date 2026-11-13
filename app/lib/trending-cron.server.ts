@@ -14,7 +14,7 @@
  * tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
 import { unauthenticated } from '../shopify.server';
-import type { CronLockName } from './supabase.server';
+import type { CronLockName } from './supabase-cron-lock.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
 import { dailyCron, MACHINE_LABEL } from './daily-cron.server';

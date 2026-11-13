@@ -21,6 +21,8 @@ vi.mock('../lib/supabase.server', () => ({
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
+}));
+vi.mock('../lib/supabase-client.server', () => ({
   supabaseAdmin: { from: () => ({ insert: async (row: Record<string, unknown>) => { mocks.productEvents.push(row); return { error: null }; } }) },
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({

@@ -4,8 +4,8 @@ import {
   aggregateReminderOptins,
   chatTurnStats,
   type ABCountRow,
-  type ReminderOptinRow,
 } from './supabase.server';
+import type { ReminderOptinRow } from './supabase-dashboard.server';
 import type { ABVariant } from './supabase.server';
 
 describe('aggregateABCounts', () => {

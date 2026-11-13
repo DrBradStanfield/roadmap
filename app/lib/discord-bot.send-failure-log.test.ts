@@ -38,7 +38,7 @@ vi.mock('./discord-bot-send.server', async (importOriginal) => {
   return { ...actual, sendAnswer: (...args: Parameters<typeof actual.sendAnswer>) =>
     (edge.send ? edge.send(...args) : actual.sendAnswer(...args)) };
 });
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {
   from: () => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query,
