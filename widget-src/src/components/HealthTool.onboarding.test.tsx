@@ -15,15 +15,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
-import { openAboutYou, showTables } from '../testing/health-tool-harness';
+import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -56,7 +56,6 @@ const WHY_BIRTH = 'Used to calculate age-based screening suggestions (cancer, bo
 
 let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 const named = (name: string) => sent.filter((e) => e.eventName === name);
-const stops: Array<() => void> = [];
 let phone = false;
 /** 1200px and up: the inline chat column shows (`useIsWideDesktop`). */
 let wide = true;
@@ -81,23 +80,16 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
 

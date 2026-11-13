@@ -3,7 +3,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -18,9 +17,8 @@ vi.mock('../lib/chat-api', async original => ({
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
 import { HealthTool } from './HealthTool';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 const saved = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile;
 /** A profile field, its About you row opened first (a complete record's About you is rows, US-62 AC12). */
 const profileField = <T extends Element>(root: HTMLElement, id: string) => { openAboutYou(root); return root.querySelector<T>(`#${id}`); };
@@ -35,10 +33,7 @@ beforeEach(async () => {
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si' }, {});
   await addMeasurement('weight', 80, '2026-10-01'); // the onboarding done: the birth date shows (US-62 AC13)
@@ -46,7 +41,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

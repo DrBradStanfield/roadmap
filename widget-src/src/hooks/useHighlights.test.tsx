@@ -7,7 +7,7 @@
  * pulses (`held`); once it stops, what is new since the hold began glows.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Suggestion } from '@roadmap/health-core/types';
 import { planOf, transition, useHighlights, type Glow, type GlowEvent } from './useHighlights';
 import { NO_HIGHLIGHTS } from '../components/PlanCards';
@@ -336,4 +336,28 @@ describe('US-07 AC3: transition, phase by event', () => {
   ])('%s: the same state object (no re-render)', (_, state, event) => {
     expect(transition(state, event)).toBe(state);
   });
+});
+
+// Test audit W01 (Fable): the HealthTool suites jump the glow's timers on a fake
+// clock. This one waits them out on the real one, so a glow timer that never
+// fires, or fires early, still fails somewhere. Timers never fire early, so the
+// lower bounds hold under load; waitFor's budgets leave room for a slow runner.
+describe('US-07 AC3: useHighlights on the real clock', () => {
+  beforeEach(() => { vi.useRealTimers(); });
+
+  it('settles after 3 s; a new id then glows for 3 s and is still by 3.5 s', async () => {
+    const h = mount(undefined);
+    const mounted = Date.now();
+    await act(() => new Promise((r) => setTimeout(r, 3100)));
+    h.show([s('a')]);
+    const shown = Date.now();
+    expect(shown - mounted).toBeGreaterThanOrEqual(3000);
+    expect(h.glowing()).toEqual(['a']);
+    // The 0.5 s fade is not polled for: a stalled runner could step over it.
+    await waitFor(() => expect(h.glowing()).toEqual([]), { timeout: 4500 });
+    expect(Date.now() - shown).toBeGreaterThanOrEqual(2990);
+    await waitFor(() => expect(h.result.current.fadingOut).toBe(NO_HIGHLIGHTS), { timeout: 2000 });
+    expect(Date.now() - shown).toBeGreaterThanOrEqual(3490);
+    expect(h.result.current.highlighted).toBe(NO_HIGHLIGHTS);
+  }, 15_000);
 });

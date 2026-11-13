@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import { render, cleanup, fireEvent, waitFor, act, type RenderResult } from '@testing-library/react';
-import { createEmptyFile, CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
@@ -24,7 +24,7 @@ import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, recordOnDisk } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
 
 const chat = vi.hoisted(() => ({
@@ -65,12 +65,6 @@ import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
 
 /** The guest's record as this browser holds it, after every pending save. */
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  // A record nothing was saved to is never written (US-10 AC5a): read it as empty.
-  const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
-  return (body ?? createEmptyFile({ deviceId: 'test', now: new Date().toISOString() })) as RoadmapFile;
-}
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const banner = () => document.body.querySelector('.chat-profile-proposal[role="status"]') as HTMLElement | null;
 /** The plan computed: the empty preview ("Real suggestions appear once you fill in your details") is gone. */

@@ -7,6 +7,7 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
 import { initRoadmapStore, addMeasurement, bulkSaveLabValues, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Extraction and original-file archival are outside this value-save witness.
@@ -14,8 +15,7 @@ vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
-const stops: Array<() => void> = [];
-afterEach(() => { cleanup(); for (const stop of stops.splice(0)) stop(); vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); delete (window as Window & { HealthUpload?: unknown }).HealthUpload; });
+afterEach(() => { cleanup(); stopLiveRefresh(); vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); delete (window as Window & { HealthUpload?: unknown }).HealthUpload; });
 
 // US-12 AC6a, US-13 AC3, US-35 AC8: real ReviewTable → lib → store → fresh read.
 it.each([
@@ -30,8 +30,7 @@ it.each([
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('no external calls'); }));
   const cloud = new MemoryCloud();
   localStorage.clear();
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) { const stop = start.call(this); stops.push(stop); return stop; });
+  trackLiveRefresh();
   const saveSpy = vi.spyOn(RoadmapStore.prototype, lab ? 'bulkSaveLabValues' : 'bulkSaveMeasurements');
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
