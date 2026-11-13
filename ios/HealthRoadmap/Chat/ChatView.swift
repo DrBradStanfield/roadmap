@@ -238,7 +238,8 @@ struct ChatView: View {
         defer { if !Task.isCancelled { turn = nil } }
 
         do {
-            let context = try await engine.chatContext(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+            guard let json = store.readable?.json else { throw ChatClient.ContextRefused() }
+            let context = try await engine.chatContext(recordJSON: json, now: .now, deviceId: store.deviceId)
             // Stopped or erased while the context was built: nothing is sent (review R5).
             guard live() else { return }
             let body = try ChatClient.body(message: question, conversationId: conversation, history: earlier, contextJSON: context)

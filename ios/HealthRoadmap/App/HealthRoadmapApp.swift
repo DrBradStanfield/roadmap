@@ -179,7 +179,8 @@ struct AppParts {
         sync = CloudSync(engine: engine, store: store, oauth: oauth)
         let (engine, store) = (engine, store)
         reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
+            guard let json = store.readable?.json else { throw NoRecord() }
+            return try await engine.reminders(recordJSON: json, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let sync = self.sync
         health = AppleHealthSync(store: store, engine: engine, client: client, live: live) { await sync.syncNow() }
@@ -188,6 +189,9 @@ struct AppParts {
         eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: health, live: live)
     }
 }
+
+/// No record to read reminders from (lead S52): a failed read, so ReminderScheduler schedules none.
+private struct NoRecord: Error {}
 
 /// The launch's file reads, off the main thread: the bundled engine's source, the
 /// downloaded engines' folder, the record's folder and this install's id.

@@ -118,9 +118,9 @@ struct RootView: View {
         // Another record's erase epoch never stands in for this one's (S41): any change to
         // ShownRecord, the drawn epoch included, is a switch for the reminders.
         .onChange(of: shownRecord) { reminders.recordSourceChanged(); recordChanged() }
-        .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
+        .onChange(of: store.readable?.json) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
-        .task(id: store.recordJSON) { await reminders.refresh() }
+        .task(id: store.readable?.json) { await reminders.refresh() }
         .onChange(of: scenePhase) {
             guard scenePhase == .active else { return }
             Task { await reminders.refresh() }
@@ -204,8 +204,8 @@ struct RootView: View {
     }
 
     private func takeCount() {
-        onboardedEpoch = store.myData?.eraseEpoch ?? 0
-        onboardedSource = source
+        guard let data = store.myData else { return }
+        (onboardedEpoch, onboardedSource) = (data.eraseEpoch ?? 0, source)
     }
 
     private func decideFirstRun() {

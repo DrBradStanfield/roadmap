@@ -22,13 +22,8 @@ final class RecordStore {
     private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
     /// My health's rows and the plan, from one engine call, so the two always show the same record
     /// (US-25 AC2); nil while the record cannot be read.
+    /// Read outside the store only through `readable` (RecordStore+Readable.swift).
     private(set) var drawn: HealthEngine.Drawn?
-    /// My health's rows and forms; nil while the record cannot be read.
-    var myData: MyData? { drawn?.myData }
-    /// My health's plan; nil while the record cannot be read.
-    var plan: PlanState? { drawn?.plan }
-    /// The plan's cards by topic, from the same call (US-73 AC3).
-    var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: RecordProblem?
     /// Which record is shown, the phone's file or a cloud's, and the connected cloud's link
@@ -400,12 +395,13 @@ final class RecordStore {
         }
         // An erase held with no drawing (showErased) takes no edit until it is drawn: an Apple Health
         // pass that cannot see the erase without a drawing adds nothing to it (US-25 AC16f).
-        if drawn == nil, problem == nil { return .refused(message: Self.recordChanged, existingId: nil) }
+        // A record an erase replaced, its draw failed, takes none either (lead S52).
+        if predatesErase || (drawn == nil && problem == nil) { return .refused(message: Self.recordChanged, existingId: nil) }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
         // (guarded-edit.ts dependsOnUnits): the master switch landed while the sheet was open.
-        if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
+        if Self.dependsOnUnits(edit), seen.units != (heldData?.unitSystem ?? "si") {
             return .refused(message: "Your units changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
         // Lp(a)'s unit is the record's: a number typed in another is never saved in this one.

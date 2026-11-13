@@ -369,7 +369,8 @@ final class AppleHealthSync {
     /// or, once an erase has disconnected Health, as owed, so the delete covers it (`deleteOwed`).
     /// A pass never writes an owed id; it is written again once its delete is paid.
     private func writeTyped(on pass: Pass) async throws {
-        let writes = try await engine.healthWrites(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId)
+        guard let json = store.readable?.json else { return }
+        let writes = try await engine.healthWrites(recordJSON: json, now: .now, deviceId: store.deviceId)
         memory.learnKinds(writes)
         var refused: Error?
         for write in writes where write.version > memory.writtenVersion(write.syncId) && memory.owed.ids[write.syncId] == nil {
@@ -400,7 +401,7 @@ final class AppleHealthSync {
 
     /// A typed save changes `recordJSON`; the next refresh writes it to Health.
     private func watchRecord() {
-        withObservationTracking { _ = store.recordJSON } onChange: { [weak self] in
+        withObservationTracking { _ = store.readable?.json } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
                 self.watchRecord()

@@ -189,7 +189,7 @@ extension OnboardingView {
             // Health's year-old weight, left as it is, is confirmed as today's: an Apple Health
             // row in the row's own kilograms, never the rounded display, never written back (AC3b).
             if staleWeight, !answers.weight.edited {
-                guard let id = weightRow?.latest?.id, let kg = OnboardingSteps.kilograms(rowId: id, recordJSON: store.recordJSON) else { return .stay }
+                guard let id = weightRow?.latest?.id, let json = store.readable?.json, let kg = OnboardingSteps.kilograms(rowId: id, recordJSON: json) else { return .stay }
                 return .edit(OnboardingSteps.confirmedWeight(kilograms: kg, now: .now))
             }
             // Otherwise a weight equal to the record's latest, typed or not, writes nothing (AC5).

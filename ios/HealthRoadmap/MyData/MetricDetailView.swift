@@ -158,7 +158,7 @@ struct MetricDetailView: View {
     /// Whether the screen last drawn holds a value for this metric; nil when none was drawn, or it
     /// predates an erase whose draw failed (S25, owner's R1 ruling).
     static func screenHasReading(_ row: MyData.Row, in store: RecordStore) -> Bool? {
-        guard let data = store.myData, store.screenErasures == store.erasures else { return nil }
+        guard let data = store.myData else { return nil }
         return live(row, in: data)?.latest != nil
     }
 
