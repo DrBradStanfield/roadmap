@@ -14,6 +14,8 @@ final class RecordStoreTests: XCTestCase {
         // a percent-encoded path once made the app miss its own file and start a new one.
         folder = FileManager.default.temporaryDirectory.appending(path: "Record Store \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // A run killed before its tearDown can leave a per-test unit saved on the simulator.
+        UnitChoices().save()
     }
 
     override func tearDown() async throws {
@@ -245,15 +247,26 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNil(threw.myData)
         XCTAssertFalse(threw.predatesErase, "nothing from before the erase is shown")
 
-        // An older cloud record is drawn; a newer one was handed over but never drawn: it never moved the
-        // stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
+        // An older cloud record is drawn; a newer one at the same erase was handed over but never drawn: it
+        // never moved the stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
         let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
-        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e1", session: 1, order: 5)).value
         let erased = try engine.blocking { try $0.eraseOnPhone(recordJSON: cloud, historyJSON: nil, now: .now, deviceId: "test") }.record
         await undrawn.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
         XCTAssertEqual(undrawn.recordJSON, erased, "the erase landed")
         XCTAssertFalse(undrawn.predatesErase, "a record only handed over never makes an erase stale")
+
+        // The newer one is the session's next erase and cannot be drawn: it is held undrawn and holds the
+        // erase (AC16f's rule, lead S63), so the stamp moves to it and the older erase view behind it is
+        // stale. Nothing older lands over it (PR 1599's scenario re-derived: RemoteEraseTakenInTests).
+        let heldNewer = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await heldNewer.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
+        await heldNewer.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        XCTAssertEqual(heldNewer.hold, .heldUndrawn, "the newer erased record is held")
+        await heldNewer.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
+        XCTAssertEqual(heldNewer.recordJSON, "not a record", "the newer held record stays: it holds the erase")
+        XCTAssertFalse(heldNewer.predatesErase, "nothing from before the erase is shown")
 
         // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
         let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")
