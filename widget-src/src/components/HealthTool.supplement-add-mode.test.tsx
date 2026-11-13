@@ -8,7 +8,7 @@
  * RoadmapStore on jsdom's localStorage, with synthetic records only.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -46,6 +46,21 @@ describe('US-62 AC30c, AC30g: the add row and its search, pinned before the unio
     expect(document.activeElement).toBe(s.search());
     expect(s.list()).not.toBeNull();
     expect(s.row()).toBeNull();
+  });
+
+  it('AC30g: the blur that comes before React renders the press still sees it, and the click adds', async () => {
+    // On an iPhone the blur can land before React re-renders the list's pointerdown. One act holds
+    // that render back, so a handler that read the held press from the last render would close here.
+    const s = await open();
+    const creatine = s.option('Creatine')!;
+    act(() => {
+      fireEvent.pointerDown(creatine, { pointerType: 'mouse', isPrimary: true });
+      fireEvent.blur(s.search()!, { relatedTarget: null });
+    });
+    expect(s.list()).not.toBeNull();
+    fireEvent.click(creatine);
+    expect(s.names()).toContain('Creatine');
+    expect(document.activeElement).toBe(s.row());
   });
 
   it('a press held on the list keeps an empty search open on blur; a pointercancel releases it', async () => {

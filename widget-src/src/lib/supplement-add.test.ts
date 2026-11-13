@@ -18,6 +18,7 @@ const STATES: Record<string, SupplementAdd> = {
   'open, typed, list': open({ query: 'Crea', list: true }),
   'open, blank typed, list': open({ query: '  ', list: true }),
   'open, typed, held': open({ query: 'Crea', list: true, held: true }),
+  'open, typed, no list': open({ query: 'Crea' }),
 };
 
 const EVENTS: Record<string, SupplementAddEvent> = {
@@ -86,10 +87,37 @@ const TABLE: [string, string, SupplementAdd | typeof same][] = [
   ['open, typed, list', 'escaped', CLOSED],
   ['open, typed, list', 'added', CLOSED],
 
+  // Blank is empty: only spaces typed close on leaving, as nothing typed does.
+  ['open, blank typed, list', 'opened', same],
+  ['open, blank typed, list', 'focused', same],
+  ['open, blank typed, list', 'typed Mag', open({ query: 'Mag', list: true })],
+  ['open, blank typed, list', 'pressedList', open({ query: '  ', list: true, held: true })],
+  ['open, blank typed, list', 'pressCancelled', same],
+  ['open, blank typed, list', 'pressedOutside', open({ query: '  ' })],
   ['open, blank typed, list', 'focusLeft', CLOSED],
+  ['open, blank typed, list', 'escaped', CLOSED],
+  ['open, blank typed, list', 'added', CLOSED],
+
+  ['open, typed, held', 'opened', same],
+  ['open, typed, held', 'focused', same],
+  ['open, typed, held', 'typed Mag', open({ query: 'Mag', list: true, held: true })],
+  ['open, typed, held', 'pressedList', same],
   ['open, typed, held', 'pressCancelled', open({ query: 'Crea', list: true })],
+  ['open, typed, held', 'pressedOutside', open({ query: 'Crea' })],
   ['open, typed, held', 'focusLeft', same],
+  ['open, typed, held', 'escaped', CLOSED],
   ['open, typed, held', 'added', CLOSED],
+
+  // Typed, then a press outside hid the list (AC30e): the text keeps it open.
+  ['open, typed, no list', 'opened', same],
+  ['open, typed, no list', 'focused', open({ query: 'Crea', list: true })],
+  ['open, typed, no list', 'typed Mag', open({ query: 'Mag', list: true })],
+  ['open, typed, no list', 'pressedList', open({ query: 'Crea', held: true })],
+  ['open, typed, no list', 'pressCancelled', same],
+  ['open, typed, no list', 'pressedOutside', same],
+  ['open, typed, no list', 'focusLeft', same],
+  ['open, typed, no list', 'escaped', CLOSED],
+  ['open, typed, no list', 'added', CLOSED],
 ];
 
 describe('US-62 AC30c, AC30e, AC30g: the supplement add row transition', () => {
@@ -101,7 +129,10 @@ describe('US-62 AC30c, AC30e, AC30g: the supplement add row transition', () => {
   });
 
   it('the table covers every event from every state the page reaches', () => {
-    const reached = ['closed', 'open, nothing shown', 'open, list', 'open, list, held', 'open, typed, list'];
+    const reached = [
+      'closed', 'open, nothing shown', 'open, list', 'open, list, held', 'open, typed, list',
+      'open, typed, held', 'open, blank typed, list', 'open, typed, no list',
+    ];
     for (const state of reached) {
       for (const event of Object.keys(EVENTS)) {
         expect(TABLE.some(([s, e]) => s === state && e === event), `${state} + ${event}`).toBe(true);
