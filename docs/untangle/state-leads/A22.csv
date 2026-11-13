@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A22,web sync,A real storage failure on a page that closes while a save is in flight is not reported,lead,not started,"packages/health-core/src/record-session.ts persist(): the catch returns before host.report() while deviceClosed() holds (US-09 AC2c), so a device save already past the gate that then fails for a real cause (a full disk) on a page closed meanwhile sends no report (US-09 AC28). Found 2026-11-13",,no
