@@ -14,6 +14,8 @@ final class RecordStoreTests: XCTestCase {
         // a percent-encoded path once made the app miss its own file and start a new one.
         folder = FileManager.default.temporaryDirectory.appending(path: "Record Store \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // A run killed before its tearDown can leave a per-test unit saved on the simulator.
+        UnitChoices().save()
     }
 
     override func tearDown() async throws {

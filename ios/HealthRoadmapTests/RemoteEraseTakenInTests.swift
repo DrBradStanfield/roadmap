@@ -15,6 +15,8 @@ final class RemoteEraseTakenInTests: XCTestCase {
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "Remote Erase \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // A run killed before its tearDown can leave a per-test unit saved on the simulator.
+        UnitChoices().save()
     }
 
     override func tearDown() async throws {
@@ -285,6 +287,28 @@ final class RemoteEraseTakenInTests: XCTestCase {
             XCTAssertFalse(store.predatesErase)
             XCTAssertEqual(store.recordJSON, erased)
         }
+    }
+
+    /// Adversary re-check F3: `land` remembers an erase in `countedErases` only when it counted it.
+    /// From an unreadable phone file (a problem, no epoch, no cloud erase) a cloud record at e2 is no
+    /// evidence of an erase, so nothing is counted or remembered, and the erase's own result then
+    /// counts it. A store-level invariant, not a reachable user path: the session's news reaches the
+    /// store only once its session is shown (`HealthEngine.CloudView.session`: news from any other
+    /// is dropped).
+    func testAnEraseLandNeverCountedIsCountedByItsOwnResult_S63() async throws {
+        let engine = try engine()
+        try Data("null".utf8).write(to: folder.appending(path: "health-roadmap.json"))
+        let store = try store(engine)
+        XCTAssertNotNil(store.problem, "the phone's file is not a record")
+        let erased = try erased(try weighed(engine), engine)
+
+        await store.showCloud(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 1)).value
+        XCTAssertEqual(store.recordJSON, erased)
+        XCTAssertEqual(store.erasures, 0, "no epoch and no cloud erase before: no evidence, nothing counted")
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 2)).value
+
+        XCTAssertEqual(store.erasures, 1, "land never counted e2, so its own result does")
+        XCTAssertFalse(store.predatesErase)
     }
 
     /// A stale own erase result under a later record at ANOTHER erase (its news never landed) is still
