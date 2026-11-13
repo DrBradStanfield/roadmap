@@ -39,10 +39,8 @@ export async function extractOneFile(
       return Response.json({ success: false, error: 'Not read', errorCode: error.code }, { status: 422 });
     }
     console.error('Lab import error (v2):', safeErrorFields(error));
-    Sentry.captureException(error, {
-      tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },
-      extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) },
-    });
+    // The error's name only: no page count or types, which nothing read (US-52 AC7d).
+    Sentry.captureException(error, { tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' } });
     // The phone shows `error` verbatim, and offers Try again on a 5xx (US-52 AC7c).
     const tooSlow = opts.oneDeadline && (error as Error)?.name === 'TimeoutError';
     return Response.json({ success: false, error: tooSlow ? TOO_SLOW : 'Failed to process request' }, { status: 500 });
