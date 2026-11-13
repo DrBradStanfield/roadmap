@@ -33,11 +33,11 @@ function specLine(header: string, prefix: string): string {
 const quotes = (line: string) => [...line.matchAll(/"([^"]*)"/g)].map((m) => m[1]);
 const afterQuotes = (line: string) => quotes(line.slice(line.indexOf('After:')));
 
-// Spec line 94. "(The 3-month sentence ships with Change 4.)": Change 3 ships the After text
-// without that one sentence, so the expected card is built from the spec line with it removed.
+// Spec line 94. "(The 3-month sentence ships with Change 4.)": Change 4 (US-06 AC21) shipped it,
+// so the card is the After text in full.
 const CHANGE_4_SENTENCE = ' Dr Brad suggests repeating the test every 3 months while it stays at 4.0 or higher.';
 const CARD_SPEC = afterQuotes(specLine('**Elevated PSA card**', '- After:'))[0];
-const CARD = CARD_SPEC.replace(CHANGE_4_SENTENCE, '');
+const CARD = CARD_SPEC;
 const card = (shown: string) => CARD.replace('{value} ng/mL', shown);
 // Spec line 105.
 const REASON = afterQuotes(specLine('**evidence.ts `screening-prostate-elevated`**', '- After:'))[0];
@@ -90,7 +90,8 @@ describe('US-07 AC1i: a PSA of 4.0 or above is raised (spec line 90)', () => {
 
   it('a newer PSA below 4.0, no discussion recorded: "Discuss" returns', () => {
     const raised = fileWith([{ value: 6.5, day: '2026-03-01' }]);
-    expect(fileIds(raised)).toEqual(['screening-prostate-elevated']);
+    // 3 months on, "Repeat PSA test" joins it (US-06 AC21); "Discuss" still does not.
+    expect(fileIds(raised)).toEqual(['screening-prostate-repeat', 'screening-prostate-elevated']);
     expect(fileIds(fileWith([{ value: 6.5, day: '2026-03-01' }, { value: 3.2, day: '2026-09-01' }]))).toEqual(['screening-prostate']);
     expect(fileIds(fileWith([{ value: 6.5, day: '2026-03-01' }, { value: 3.2, day: '2026-09-01' }], 'not_yet'))).toEqual(['screening-prostate']);
     // An older PSA below 4.0 does not bring it back: the newest decides.
@@ -99,9 +100,8 @@ describe('US-07 AC1i: a PSA of 4.0 or above is raised (spec line 90)', () => {
 });
 
 describe('US-07 AC1i: the Elevated PSA card and its reason (spec lines 92-106)', () => {
-  it('the card is the approved text without the Change 4 sentence, at attention', () => {
-    expect(CARD_SPEC).toContain(CHANGE_4_SENTENCE.trim());
-    expect(CARD).not.toContain('3 months');
+  it('the card is the approved text, the Change 4 sentence included, at attention', () => {
+    expect(CARD).toContain(CHANGE_4_SENTENCE.trim());
     const [elevated] = plan({ prostatePsaValue: 4.0 });
     expect(elevated).toMatchObject({ title: 'Elevated PSA', priority: 'attention', description: card('4.0 ng/mL') });
     expect(plan({ prostatePsaValue: 6.53 })[0].description).toBe(card('6.5 ng/mL'));
@@ -113,8 +113,9 @@ describe('US-07 AC1i: the Elevated PSA card and its reason (spec lines 92-106)',
   });
 
   it('the reason is the approved text, on the card too', () => {
-    expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason).toBe(REASON);
-    expect(plan({ prostatePsaValue: 4.0 })[0].reason).toBe(REASON);
+    // Change 4 (US-06 AC21) appends its 3-month sentences: screening-psa-interval.test.ts pins them.
+    expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason.slice(0, REASON.length + 1)).toBe(`${REASON} `);
+    expect(plan({ prostatePsaValue: 4.0 })[0].reason).toBe(SUGGESTION_EVIDENCE['screening-prostate-elevated'].reason);
     // The page the reason's claims were checked against (spec line 106; Brad 2026-11-12, PR 1358 R2).
     expect(SUGGESTION_EVIDENCE['screening-prostate-elevated'].references.map((r) => r.url))
       .toContain('https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/tests.html');

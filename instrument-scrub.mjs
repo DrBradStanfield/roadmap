@@ -1010,6 +1010,7 @@ var SCRUB_UNITS = caselessUnique([
   // is English, not a height.
   '"'
 ]);
+var EXTRA_METRIC_NAMES = ["blood pressure", "apo b", "lp(a)", "a1c", "bp", "bmi", "height", "vit"];
 var SCRUB_METRIC_WORDS = [.../* @__PURE__ */ new Set([
   // Every word a metric or catalogued test is known by. 3 is the floor for a
   // word split out of a name: "mg" and "na" are a unit and a word long before
@@ -1019,17 +1020,7 @@ var SCRUB_METRIC_WORDS = [.../* @__PURE__ */ new Set([
   // however short ("Na 140", "Ca 2.4"), and a name ending in a digit keeps the
   // digit while the value goes ("IGF 1 200", "Free T4 15").
   ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
-  // What no name in either list spells: the phrases a person writes, and the
-  // metrics that live in the calculator rather than the catalogue.
-  // "vit" is the typed short form of vitamin ("Vit D 45", US-09 AC7g).
-  "blood pressure",
-  "apo b",
-  "lp(a)",
-  "a1c",
-  "bp",
-  "bmi",
-  "height",
-  "vit"
+  ...EXTRA_METRIC_NAMES
 ])];
 var NUMBER = "\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?";
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

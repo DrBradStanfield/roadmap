@@ -38,7 +38,12 @@
  *   - measurementHistory: metric keys on METRIC_TO_FIELD, YYYY-MM-DD dates,
  *     values that pass their field's schema, HISTORY_CAP_PER_METRIC points a
  *     metric and HISTORY_CAP_TOTAL in all; saved points only (a draft point
- *     lends the creatinine's day, then is dropped).
+ *     lends the creatinine's day, then is dropped). A PSA point's
+ *     `raisedBefore` passes only as `true` (US-06 AC21 item 6): the client
+ *     worked it out from the full record, and the plan takes it as sent; the
+ *     model-facing JSON drops it (the Repeat card states it). It is derived,
+ *     one boolean ("an earlier PSA was 4.0 or above"); no earlier PSA value
+ *     or date is sent for it.
  *   - medications: medicationsToInputs over rows whose key is a MEDICATION_KEY.
  *     A drug name on that key's list (the form's own options) passes; an
  *     empty name drops its key, a non-string name its row (medicationsToInputs
@@ -102,7 +107,7 @@ export function chatContextOf(
   unitSystem: UnitSystem,
   medications: ApiMedication[],
   screenings: ApiScreening[],
-  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string }>,
+  dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
 ): ChatContextPayload {
   const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
@@ -239,8 +244,11 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
   // US-06 AC14: the prostate cards read the newest usable saved PSA, by the plan's own rule; `screenings` stays
   // the answers. A day's points arrive in the plan's order (buildMeasurementHistory), so the later point wins a tie.
-  const psaPoints = (measurementHistory.psa ?? []).map((p, i) =>
-    ({ id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p) }));
+  // US-06 AC21 item 6: its `raisedBefore` is taken as sent, never worked out from this trimmed series.
+  const psaPoints = (measurementHistory.psa ?? []).map((p, i) => ({
+    id: String(i).padStart(4, '0'), metricType: 'psa', value: p.value, recordedAt: p.date, ...comparatorOf(p),
+    ...(p.raisedBefore && { raisedBefore: true as const }),
+  }));
   const planScreenings = withPsaMeasurement(screenings, newestUsablePsa(psaPoints, new Date()));
   // US-07 AC11: a left-out pair turns the blood pressure prompt into "check your reading".
   // US-07 AC7: the eGFR's age is the one on the creatinine's day: a stated value's own
@@ -322,8 +330,8 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
     // or was a blood pressure the wrong way up (US-02 AC8).
     // Without it the model reads the gap as "never entered".
     ...(excludedFields.length > 0 ? { excludedFields } : {}),
-    // Chronological per metric; the LAST entry is the most recent, in SI.
-    ...(hasHistory ? { measurementHistory } : {}),
+    // Chronological per metric; the LAST entry is the most recent, in SI. The plan above read `raisedBefore`; the model never sees it.
+    ...(hasHistory ? { measurementHistory: { ...measurementHistory, ...(measurementHistory.psa && { psa: measurementHistory.psa.map(({ raisedBefore: _, ...p }) => p) }) } } : {}),
     medications,
     screenings,
     ...(results ? {
@@ -469,9 +477,9 @@ function historyOf(raw: unknown): { history: MeasurementHistoryMap; creatinineDr
   for (const [metric, series] of Object.entries(raw as Record<string, unknown>)) {
     if (!own(METRIC_TO_FIELD, metric) || !Array.isArray(series)) continue;
     const field = METRIC_TO_FIELD[metric];
-    const clean: Array<{ date: string; value: number }> = [];
+    const clean: DatedMeasurement[] = [];
     for (const entry of series) {
-      const { date, value, comparator } = fields(entry);
+      const { date, value, comparator, raisedBefore } = fields(entry);
       const valid = typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && shape[field].safeParse(value).success;
       // Any marked point is no saved one; only creatinine's, exact, lends its day.
       if (isDraftPoint(entry)) {
@@ -480,7 +488,8 @@ function historyOf(raw: unknown): { history: MeasurementHistoryMap; creatinineDr
       }
       if (clean.length >= HISTORY_CAP_PER_METRIC || total >= HISTORY_CAP_TOTAL) continue;
       if (valid && (comparator === undefined || isComparator(comparator))) {
-        clean.push({ date, value, ...comparatorOf({ comparator }) });
+        // US-06 AC21 item 6: the flag rides on a PSA point as `true` alone; anything else is no flag.
+        clean.push({ date, value, ...comparatorOf({ comparator }), ...(metric === 'psa' && raisedBefore === true && { raisedBefore }) });
         total++;
       }
     }

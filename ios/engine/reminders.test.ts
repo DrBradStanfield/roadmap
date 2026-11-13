@@ -229,3 +229,98 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
     expect(JSON.stringify(phoneReminders(abnormal(), new Date(NOW), undefined, {}).notifications)).not.toContain('ollow-up');
   });
 });
+
+describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)', () => {
+  /** A 60-year-old man whose newest PSA is `value`, from 10 Apr 2026. */
+  function psa(value: number, discussion?: string): RoadmapFile {
+    const file = record();
+    return {
+      ...file,
+      profile: { ...file.profile, sex: 'male' },
+      screenings: { ...file.screenings, ...(discussion ? { prostateDiscussion: discussion } : {}) } as RoadmapFile['screenings'],
+      measurements: [...file.measurements, {
+        id: 'psa1', metricType: 'psa', value, recordedAt: '2026-04-10T00:00:00.000Z',
+        createdAt: '2026-04-10T00:00:00.000Z', status: 'active',
+      } as RoadmapFile['measurements'][number]],
+    };
+  }
+  const prostate = (file: RoadmapFile) =>
+    phoneReminders(file, new Date(NOW)).upcoming.find((i) => i.category === 'screening_prostate');
+
+  it('names the 4.0-or-above case "Repeat PSA (your last result)" in the app\'s list, whatever the answer', () => {
+    for (const d of [undefined, 'elected_not_to', 'will_screen']) {
+      expect(prostate(psa(4.5, d)), String(d)).toMatchObject({ label: 'Repeat PSA (your last result)', dueAt: '2026-07-01' });
+    }
+  });
+
+  it('a newer "< 5" after 4.5 keeps the item, under the plain label (AC21 item 6, review F4)', () => {
+    for (const d of [undefined, 'elected_not_to', 'will_screen']) {
+      const file = psa(4.5, d);
+      file.measurements = [...file.measurements, { ...file.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+        recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+      expect(prostate(file), String(d)).toMatchObject({ label: 'PSA test', dueAt: '2026-09-01' });
+    }
+  });
+
+  it('first-seen: a repeat already due notifies the morning the app first sees it, raised or vague newest (AC21 item 6, re-check R1)', () => {
+    const vague = psa(4.5, 'elected_not_to');
+    vague.measurements = [...vague.measurements, { ...vague.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+      recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+    const cases: Array<[string, RoadmapFile, string, string, string]> = [
+      ['raised', psa(4.5, 'elected_not_to'), '2026-07-02', '2026-07-03', '2026-09-30'],
+      ['vague', vague, '2026-09-02', '2026-09-03', '2026-12-01'],
+    ];
+    for (const [name, file, day, nextDay, step] of cases) {
+      const days = (seen: Record<string, string>, at: string) => {
+        const out = phoneReminders(file, new Date(`${at}T08:00:00.000`), undefined, seen);
+        return { firstSeen: out.firstSeen, days: out.notifications.filter((n) => n.categories.includes('screening_prostate')).map((n) => n.fireDay) };
+      };
+      const first = days({}, day);
+      expect(first.firstSeen, name).toEqual({ 'screening_prostate:repeat': day });
+      expect(first.days.slice(0, 2), name).toEqual([day, step]);
+      // The next launch keeps the entry and the same days.
+      const next = days(first.firstSeen!, nextDay);
+      expect(next.firstSeen, name).toEqual(first.firstSeen);
+      expect(next.days[0], name).toBe(step);
+    }
+  });
+
+  it('below 4.0 the list keeps the plain label; one who declined has no item', () => {
+    expect(prostate(psa(3.0, 'will_screen'))).toMatchObject({ label: 'PSA test', dueAt: '2027-04-01' });
+    expect(prostate(psa(3.0, 'elected_not_to'))).toBeUndefined();
+  });
+
+  it('outside the prostate ages a raised or vague PSA leaves no item, notification or first-seen entry (AC21, owner\'s check)', () => {
+    // A woman of 60 and a man of 40 (below 45) fall outside; the prostate row has no upper age, so a man of 90 keeps it.
+    const people: Array<[string, Partial<RoadmapFile['profile']>, boolean]> = [
+      ['woman', { sex: 'female' }, false], ['man 40', { birthYear: 1986 }, false], ['man 90', { birthYear: 1936 }, true],
+    ];
+    for (const [who, profile, kept] of people) {
+      for (const vague of [false, true]) {
+        const file = psa(4.5, 'elected_not_to');
+        file.profile = { ...file.profile, ...profile };
+        if (vague) file.measurements = [...file.measurements, { ...file.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+          recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+        const name = `${who}${vague ? ', vague' : ''}`;
+        const out = phoneReminders(file, new Date(NOW), undefined, {});
+        const item = out.upcoming.find((i) => i.category === 'screening_prostate');
+        const notified = out.notifications.some((n) => n.categories.includes('screening_prostate'));
+        const seen = Object.keys(out.firstSeen!).filter((k) => k.startsWith('screening_prostate:'));
+        if (kept) {
+          expect(item, name).toMatchObject({ label: vague ? 'PSA test' : 'Repeat PSA (your last result)' });
+          expect(notified, name).toBe(true);
+          expect(seen, name).toEqual(['screening_prostate:repeat']);
+        } else {
+          expect(item, name).toBeUndefined();
+          expect(notified, name).toBe(false);
+          expect(seen, name).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it('pushes the plain label to the web\'s schedule', () => {
+    expect(computeReminderSchedule(psa(4.5, 'elected_not_to'), new Date(NOW)).find((i) => i.category === 'screening_prostate'))
+      .toEqual({ category: 'screening_prostate', group: 'screening', label: 'PSA test', dueAt: '2026-07-01' });
+  });
+});

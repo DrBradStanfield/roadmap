@@ -1120,7 +1120,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
   });
 
-  it('a page-hide flushSync during a pass that took an edit makes one more pass', async () => {
+  it('a page-hide flushSync during a pass that took an edit makes no extra pass (lead A10, US-10 AC5a)', async () => {
     const store = new TestStore();
     const fake = fakeHost(store, 'device');
     const session = await RecordSession.open(fake.host);
@@ -1135,9 +1135,31 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     held.release();
     await session.flush();
     // The held pass meets the sync write's revision and retries (2 writes),
-    // then one more pass for 'b', though the sync write already landed it.
-    expect(store.writes).toBe(4);
+    // and no more: the sync write already landed 'b'.
+    expect(store.writes).toBe(3);
     expect(ids(stored(store.cloud))).toEqual(['a', 'b']);
+    expect(session.saveStatus).toBe('saved');
+    await session.flush();
+    expect(store.writes).toBe(3);
+  });
+
+  it('an edit after a page-hide flushSync, in the same pass, still makes one more pass (lead A10, US-10 AC5a)', async () => {
+    const store = new TestStore();
+    const fake = fakeHost(store, 'device');
+    const session = await RecordSession.open(fake.host);
+    add(session, 'a');
+    const held = holdNext(store, 'write');
+    fake.timers[0].run(); // the pass starts from 'a'
+    await held.reached;
+    add(session, 'b', 81, '2026-10-02');
+    session.flushSync(); // the synchronous write lands 'a' and 'b'
+    add(session, 'c', 82, '2026-10-03'); // an edit neither write took
+    expect(store.writes).toBe(1);
+    held.release();
+    await session.flush();
+    // The held pass retries (2 writes), then one more pass for 'c'.
+    expect(store.writes).toBe(4);
+    expect(ids(stored(store.cloud))).toEqual(['a', 'b', 'c']);
     await session.flush();
     expect(store.writes).toBe(4);
   });
