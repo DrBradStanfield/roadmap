@@ -8,9 +8,9 @@ extension RecordStore {
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped. Only a
     /// chart that landed is kept: after a failure a second ask reads again (Try again, US-58 AC4c).
     /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
-    /// from a core metric of the same name.
+    /// from a core metric of the same name. Nothing from a record an erase replaced (US-25 AC21).
     func chart(for metric: String, series: String? = nil) async -> ChartData? {
-        guard problem == nil else { return nil }
+        guard problem == nil, !predatesErase else { return nil }
         let stamp = self.stamp(series)
         let key = Self.historyKey(metric, series)
         if let kept = histories[key], kept.stamp == stamp { return kept.chart }
@@ -22,7 +22,9 @@ extension RecordStore {
         reading[key] = (stamp, task)
         let chart = await task.value
         if reading[key]?.stamp == stamp { reading[key] = nil }
-        // The record moved on while the engine ran: a page asks again for the new one.
+        // The record moved on while the engine ran: a page asks again for the new one. An erase
+        // whose draw failed moves no stamp, so it is checked too.
+        guard !predatesErase else { return nil }
         if stamp == self.stamp(series) {
             histories = histories.filter { $0.value.stamp.revision == stamp.revision }
             histories[key] = chart.map { KeptHistory(stamp: stamp, chart: $0) }

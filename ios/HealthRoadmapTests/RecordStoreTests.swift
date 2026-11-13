@@ -210,6 +210,33 @@ final class RecordStoreTests: XCTestCase {
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
         XCTAssertNotNil(store.myData, "the old screen still draws")
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
+        // The app comes back to the front, or midnight passes: the same pre-erase record drawn again
+        // is still from before the erase (checkpoint 1 review, lead 1).
+        await store.redraw().value
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "a redraw of the erased record never catches up")
+        XCTAssertNil(MetricDetailView.screenHasReading(waist, in: store))
+    }
+
+    /// US-25 AC21 (checkpoint 1 review, lead 2): after an erase whose draw failed, a value page opened
+    /// afterwards reads nothing from the erased record: no chart is returned or kept, so its values are
+    /// never drawn again. The page then says only that they could not be read.
+    func testAPageOpenedAfterAFailedEraseDrawNeverChartsTheErasedRecord_US25_AC21() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        _ = await store.chart(for: "weight")
+        XCTAssertNotNil(store.shownChart(for: "weight"), "kept before the erase")
+        await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
+        XCTAssertNotNil(store.myData, "the old screen still draws")
+        XCTAssertNil(store.shownChart(for: "weight"), "the erase dropped it")
+        await store.redraw().value
+        let read = await store.chart(for: "weight")
+        XCTAssertNil(read, "a page opened now reads nothing from the erased record")
+        XCTAssertNil(store.shownChart(for: "weight"), "and nothing is kept for the next page")
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let page = MetricRead.page(MetricRead.transition(.reading(revision: store.revision), .landed(revision: store.revision, read)),
+                                   revision: store.revision, problem: store.problem, kept: store.shownChart(for: "weight"),
+                                   hasReadings: true, screenHasReading: MetricDetailView.screenHasReading(weight, in: store))
+        XCTAssertEqual(MetricReadTests.named(page), "failed: unknown", "no claim either way, and Try again")
     }
 
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is

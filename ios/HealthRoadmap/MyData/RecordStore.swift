@@ -43,8 +43,12 @@ final class RecordStore {
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
     /// The erase count the drawn screen shows: behind `erasures` when an erase's draw failed, so
-    /// its rows predate the erase (a failed metric read's words, S25).
+    /// its rows predate the erase (a failed metric read's words, S25). Caught up only by a record
+    /// newly drawn (`land`), never by a redraw of the one shown (checkpoint 1 review, lead 1).
     private(set) var screenErasures = 0
+    /// The record shown is one an erase has since replaced, its draw failed: nothing is charted
+    /// or kept from it (US-25 AC21).
+    var predatesErase: Bool { screenErasures != erasures }
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
     private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1; forgetCharts() } } }
     /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
@@ -169,7 +173,6 @@ final class RecordStore {
     func display(_ drawn: HealthEngine.Drawn?) {
         self.drawn = drawn
         draws += 1
-        screenErasures = erasures
         if drawn?.plan.planned == true { engine.trial?.confirm() }
     }
 
@@ -190,10 +193,12 @@ final class RecordStore {
         case .show:
             if let record { recordJSON = record }
             display(drawn)
+            screenErasures = erasures
             self.problem = problem
         case .unreadable:
             recordJSON = ""
             display(nil)
+            screenErasures = erasures
             self.problem = problem
         case .none, .drop: break
         }
