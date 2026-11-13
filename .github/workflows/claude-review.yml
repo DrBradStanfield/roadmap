@@ -87,6 +87,8 @@ jobs:
       # create --label hold` adds the label a second after 'opened'. Re-read
       # them live, after a short wait, so a held PR spends no review: the job
       # ends green in seconds. Reads labels only, with the job's own token.
+      # It fails open: a label added more than 5 s after 'opened', or a failed
+      # read, lets the review run (costly, but never a skipped review).
       - id: hold
         env:
           GH_TOKEN: ${{ github.token }}
@@ -94,7 +96,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           sleep 5
-          if gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep -qx hold; then
+          if gh api --paginate "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep -qx hold; then
             echo "held=true" >> "$GITHUB_OUTPUT"
             echo "Review skipped: PR $PR carries the 'hold' label."
           fi
