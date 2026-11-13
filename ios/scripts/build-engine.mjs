@@ -73,37 +73,53 @@ export function bundleFacts(bundlePath) {
 }
 
 // The bundle, run in Node the way the app runs it: global HealthEngine, JSON in and out.
+// Like golden.ts, it takes <now> <device> then <name> <record> pairs and prints name → result.
 const bundleGolden = `
   const vm = require('node:vm');
   const fs = require('node:fs');
   const ctx = vm.createContext({});
   vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);
-  const [, , record, now, device] = process.argv;
-  let result;
-  try {
-    const plan = ctx.HealthEngine.planJson(fs.readFileSync(record, 'utf8'), now, device);
-    result = { plan, error: null, sections: ctx.HealthEngine.sectionsJson(plan) };
-  } catch (error) {
-    result = { plan: null, error: String(error), sections: null };
+  const [, , now, device, ...pairs] = process.argv;
+  const results = {};
+  for (let i = 0; i < pairs.length; i += 2) {
+    try {
+      const plan = ctx.HealthEngine.planJson(fs.readFileSync(pairs[i + 1], 'utf8'), now, device);
+      results[pairs[i]] = { plan, error: null, sections: ctx.HealthEngine.sectionsJson(plan) };
+    } catch (error) {
+      results[pairs[i]] = { plan: null, error: String(error), sections: null };
+    }
   }
-  process.stdout.write(JSON.stringify(result));
+  process.stdout.write(JSON.stringify(results));
 `;
 
 /** Runs every parity fixture through the source and through the bundle, in each
- *  pinned zone, and throws if they differ. Writes the goldens into `goldenDir`. */
+ *  pinned zone, and throws if they differ. Writes the goldens into `goldenDir`.
+ *  One source process and one bundle process per zone, each under that zone's TZ (TA-C02). */
 export function checkParity(bundlePath, goldenDir) {
   const sample = JSON.parse(readFileSync(join(repo, 'docs/examples/health-roadmap.sample.json'), 'utf8'));
   rmSync(goldenDir, { recursive: true, force: true });
   mkdirSync(goldenDir, { recursive: true });
-  let count = 0;
+  const pairs = [];
   for (const [name, record] of Object.entries(parityFixtures(sample))) {
     const recordPath = join(goldenDir, `${name}.record.json`);
     writeFileSync(recordPath, JSON.stringify(record, null, 2));
+    pairs.push(name, recordPath);
+  }
+  const answers = {};
+  for (const [zoneName, tz] of Object.entries(ZONES)) {
+    const env = { ...process.env, TZ: tz };
+    // One zone's goldens (~273 KB, ~69 KB more per fixture) outgrow the 1 MB default; past it, ENOBUFS names no fixture.
+    const maxBuffer = 64 * 1024 * 1024;
+    const fromSource = execFileSync(tsx, [join(ios, 'engine/golden.ts'), PINNED_NOW, PINNED_DEVICE, ...pairs], { env, maxBuffer }).toString();
+    const fromBundle = execFileSync(process.execPath, ['-e', bundleGolden, bundlePath, PINNED_NOW, PINNED_DEVICE, ...pairs], { env, maxBuffer }).toString();
+    answers[zoneName] = { source: JSON.parse(fromSource), bundle: JSON.parse(fromBundle) };
+  }
+  let count = 0;
+  for (let i = 0; i < pairs.length; i += 2) {
+    const name = pairs[i];
     for (const [zoneName, tz] of Object.entries(ZONES)) {
-      const env = { ...process.env, TZ: tz };
-      const fromSource = execFileSync(tsx, [join(ios, 'engine/golden.ts'), recordPath, PINNED_NOW, PINNED_DEVICE], { env }).toString();
-      const fromBundle = execFileSync(process.execPath, ['-e', bundleGolden, bundlePath, recordPath, PINNED_NOW, PINNED_DEVICE], { env }).toString();
-      if (fromSource !== fromBundle) {
+      const fromSource = JSON.stringify(answers[zoneName].source[name]);
+      if (fromSource !== JSON.stringify(answers[zoneName].bundle[name])) {
         throw new Error(`The bundle and the source disagree on ${name} in ${tz}: rebuild, then look at what esbuild changed.`);
       }
       writeFileSync(join(goldenDir, `${name}.${zoneName}.golden.json`), fromSource);

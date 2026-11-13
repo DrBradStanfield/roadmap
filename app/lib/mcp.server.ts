@@ -14,14 +14,17 @@
  * Deep imports into health-core, never `@roadmap/health-core`: the Fly Docker
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
-import { dayOf, daysBetween, latestDayOnEarth } from '../../packages/health-core/src/merge';
+import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { DOCUMENT_TEXT_NOTE, folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { type GuardRefusal, isToolName, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { DOCUMENT_TEXT_NOTE, MAX_APPROVAL_LENGTH, OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
+import { folderNudge } from '../../packages/health-core/src/mcp-import';
+import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
@@ -29,11 +32,12 @@ import { cappedBody } from './capped-body.server';
 import { hostedImporter } from './mcp-import.server';
 import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled, NOTICE } from './mcp-knowledge.server';
 import { type McpConfirmReason, recordServerEvent } from './product-events.server';
-import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
+import { type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
 import { type AccessPayload, allowKnowledgeCall, allowToolCall, chargeWrites, claimProposal, connectionKey, grantLive, grantRefreshToken, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
+import { checkCorrection, checkProfileUpdate, MAX_CORRECTION_AGE_DAYS } from './mcp-corrections.server';
 import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
 import { issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
 
@@ -59,14 +63,6 @@ export const INSTRUCTIONS =
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
   'own yes and carrying their words as approval, does it.' + DOCUMENT_TEXT_NOTE + SI_NOTE + OPEN_SOURCE_NOTE;
-
-/**
- * A correction fixes a recent mistake. A result from three years ago is
- * history, not a typo, so it is permanently out of reach of an agent — which
- * is what puts the bulk of the record beyond the silent-falsification attack
- * of design §3 (mitigation 2).
- */
-export const MAX_CORRECTION_AGE_DAYS = 90;
 
 /**
  * The folder nudge (US-37): a read on Dropbox lists the folder root under its
@@ -117,70 +113,6 @@ const WRITE_COSTS = new Map(
 const TWO_PHASE = new Map(MCP_TOOLS.flatMap((tool) => (tool.twoPhase ? [[tool.name, tool.canonicalArgs ?? ((args: unknown) => args)] as const] : [])));
 /** The reads that visit the folder (US-37), by declaration; a function narrows by arguments. */
 const NUDGED = new Map(MCP_TOOLS.flatMap((tool) => (tool.nudge ? [[tool.name, tool.nudge === true ? () => true : tool.nudge] as const] : [])));
-
-function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
-  return file.measurements.find((m) => m.id === id) ?? file.labValues.find((l) => l.id === id);
-}
-
-/**
- * The two guards the hosted surface adds to `correct_value`, both mandatory
- * (design §3). Neither belongs in the tool layer: the CLI (US-31) keeps
- * `expectedValue` optional, because there a human is watching their own file.
- */
-function checkCorrection(file: RoadmapFile, args: unknown, now: string): GuardRefusal | null {
-  const request = (args ?? {}) as { id?: unknown; expectedValue?: unknown };
-  if (typeof request.expectedValue !== 'number') {
-    return {
-      reason: 'malformed',
-      text:
-        'correct_value needs expectedValue on this server: the value you believe the row holds right now. ' +
-        'Read the record, then correct. Nothing was written.',
-    };
-  }
-  const row = typeof request.id === 'string' ? findRow(file, request.id) : undefined;
-  if (!row) return null; // the tool layer answers "no such row" in its own words
-  // UTC by choice: the server has no user timezone; both sides are calendar days.
-  const age = daysBetween(dayOf(row.recordedAt ?? ''), dayOf(now));
-  if (age > MAX_CORRECTION_AGE_DAYS) {
-    return {
-      reason: 'too-old',
-      text:
-        `That value was recorded ${age} days ago, and this server only corrects values from the last ` +
-        `${MAX_CORRECTION_AGE_DAYS} days. Nothing was written. The user can correct older values in the app.`,
-    };
-  }
-  return null;
-}
-
-/**
- * The same guard for `update_profile` (US-34): every field the call changes
- * must come with the value the agent believes it is replacing. The profile is
- * last-write-wins, so there is no superseded copy to read back — the claim is
- * the only thing standing between a stale read and a silently wrong plan —
- * when there IS a value to replace. Filling a field the record does not hold
- * is an add, and needs no claim about what was there (see below).
- */
-function checkProfileUpdate(args: unknown, file: RoadmapFile): GuardRefusal | null {
-  const request = (args ?? {}) as Record<string, unknown>;
-  const expected = (request.expected ?? {}) as Record<string, unknown>;
-  // Filling a field the record does not hold is an ADD, and the record prices
-  // adds cheaply everywhere else — `add_measurement` needs no expected value
-  // either. `expected` exists to stop an agent overwriting a value it never
-  // read; where there is no value, there is nothing to overwrite and nothing
-  // for the guard to protect. Demanding it here only forced a read_record
-  // before a user could say how tall they are.
-  const missing = PROFILE_FIELDS.filter(
-    (field) => request[field] !== undefined && expected[field] === undefined && file.profile[field] != null,
-  );
-  if (missing.length === 0) return null;
-  return {
-    reason: 'malformed',
-    text:
-      `update_profile needs expected.${missing.join(', expected.')} on this server: the record already holds a value ` +
-      'for each of those, and changing one needs the value you believe is there now. Read the record, then update. ' +
-      'Nothing was written. (A field the record does not hold yet needs no expected value.)',
-  };
-}
 
 /**
  * Everything this surface adds before a tool runs: the two corrections guards

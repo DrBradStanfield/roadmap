@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-18,S2 server,"Server caps: optional ceiling, whitespace values, stale comments",not started,"From PR 1515, US-52 AC4e. (a) Decide whether envCap in app/lib/rate-limiter.ts clamps each cap to a ceiling; Brad picks the number. (b) Trim the raw value before the empty check, so a value of only spaces falls back to the default with a warning. (c) Two comments still name the deleted num(): rate-limiter.ts around :102-104 and rate-limiter.env-cap.test.ts:4; update them",,,yes

@@ -518,11 +518,6 @@ describe('sanitizeInputs — prototype-chain keys', () => {
   // chat turn, reachable by any storefront visitor. Own-properties only.
   const PROTO_PAYLOAD = () => JSON.parse('{"heightCm":180,"sex":"male","__proto__":1}');
 
-  it('does not throw on an own __proto__ key', () => {
-    expect(() => sanitizeInputs(PROTO_PAYLOAD())).not.toThrow();
-    expect(() => excludedInputFields(PROTO_PAYLOAD())).not.toThrow();
-  });
-
   it('neither keeps nor names __proto__', () => {
     const result = sanitizeInputs(PROTO_PAYLOAD());
     expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);

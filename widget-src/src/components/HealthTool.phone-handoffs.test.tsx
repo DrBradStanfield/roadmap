@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -57,6 +57,25 @@ afterEach(async () => {
 });
 
 const tab = (view: ReturnType<typeof render>, name: string) => within(view.getByRole('tablist')).getByRole('tab', { name });
+/** The weight typed beside the height (stage 3), then another device gives the birth date: the
+ *  whole form opens, and About you stays up with the box until its card is focused and left
+ *  (US-62 AC12, D6). The box is the one plain vitals field left since H71. */
+async function weightBoxWithWholeForm() {
+  const before = { sex: 'male' as const, heightCm: 178, unitSystem: 'si' as const };
+  await saveChangedMeasurements(before, {});
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+  const box = await waitFor(() => { const b = view.container.querySelector<HTMLInputElement>('#weightKg'); expect(b).not.toBeNull(); return b!; });
+  fireEvent.change(box, { target: { value: '80' } });
+  fireEvent.blur(box); // left: the box shows the number, not the text typed
+  await saveChangedMeasurements({ ...before, birthYear: 1975, birthMonth: 5 }, before); // the other device
+  await flushRoadmapStore();
+  await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  await waitFor(() => expect(view.container.querySelector('.md-row')).not.toBeNull());
+  return view;
+}
+const weightBox = (view: ReturnType<typeof render>) => view.container.querySelector<HTMLInputElement>('#weightKg')!;
 
 describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it filled', () => {
   it('a chat edit closes an open value page that held typed input, and says it was not saved (US-62 AC11)', async () => {
@@ -81,23 +100,18 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
         matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
       }));
     }
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form; no saved vitals, so the waist is a plain field
-    await flushRoadmapStore();
-    const view = render(<HealthTool />);
-    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
-    const ldlRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('LDL'))!);
-    fireEvent.click(ldlRow);
+    const view = await weightBoxWithWholeForm();
+    const waistRow = await waitFor(() => [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent!.startsWith('Waist'))!);
+    fireEvent.click(waistRow);
     expect(view.container.querySelector('.mh-page-host .md-page')).not.toBeNull();
     if (phone) fireEvent.click(tab(view, 'Chat'));
 
-    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: null }]));
 
     await waitFor(() => expect(view.container.querySelector('.mh-page-host .md-page')).toBeNull());
     if (phone) expect(tab(view, 'My health').getAttribute('aria-selected')).toBe('true');
-    const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
-    expect(waist.value).toBe('90');
-    expect(waist.closest('[hidden]')).toBeNull();
+    expect(weightBox(view).value).toBe('82');
+    expect(weightBox(view).closest('[hidden]')).toBeNull();
     expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
   });
 
@@ -107,24 +121,18 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
         matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
       }));
     }
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01');
-    await flushRoadmapStore();
-    const view = render(<HealthTool />);
-    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
-    await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
+    const view = await weightBoxWithWholeForm();
     // A phone's Settings are its Account tab (US-62 AC34).
     fireEvent.click(phone ? tab(view, 'Account') : view.getByRole('button', { name: 'Settings' }));
     expect(settingsShown(view.container)).toBe(true);
     if (phone) fireEvent.click(tab(view, 'Chat'));
 
-    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: null }]));
 
     await waitFor(() => expect(settingsShown(view.container)).toBe(false)); // a phone keeps them mounted in its hidden Account
     expect(view.container.querySelector('.health-input-panel')!.className).not.toContain('md-page-open');
-    const waist = view.container.querySelector<HTMLInputElement>('#waistCm')!;
-    expect(waist.value).toBe('90');
-    expect(waist.closest('[hidden]')).toBeNull();
+    expect(weightBox(view).value).toBe('82');
+    expect(weightBox(view).closest('[hidden]')).toBeNull();
   });
 
   it('a blood test: My health shows, and the matrix cell holding the value is in view and focused', async () => {
@@ -175,14 +183,9 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     vi.stubGlobal('matchMedia', (q: string) => ({
       matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
     }));
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form, with the first-time vitals fields
-    await flushRoadmapStore();
-    const view = render(<HealthTool />);
-    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
-    await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
-    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 90, unitSystem: 'si', date: null }]));
-    await waitFor(() => expect((view.container.querySelector('#waistCm') as HTMLInputElement).value).toBe('90'));
+    const view = await weightBoxWithWholeForm(); // the whole form, the weight box beside the height
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: null }]));
+    await waitFor(() => expect(weightBox(view).value).toBe('82'));
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect([...view.container.querySelectorAll<HTMLElement>('.md-table')].every(t => t.hidden)).toBe(true);
   });

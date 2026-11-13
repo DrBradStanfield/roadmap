@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * US-11 AC6 with US-09 AC20/AC23: an erase taken in from elsewhere clears
+ * US-11 AC6 with US-09 AC23: an erase taken in from elsewhere clears
  * this device's stored originals only where no live document still names
  * them. A document the erase never saw, or one added after it, keeps its
  * row, so its original must stay readable. One the erase listed goes, even
@@ -57,7 +57,7 @@ async function eraseElsewhere(cloud: MemoryCloud, at: string): Promise<void> {
   for (const [k, v] of Object.entries(mine)) localStorage.setItem(k, v);
 }
 
-it('a stale guest tab that takes in the erase keeps an original uploaded after it (US-11 AC6, US-09 AC20)', async () => {
+it('a stale guest tab that takes in the erase keeps an original uploaded after it (US-11 AC6, US-09 AC23)', async () => {
   const a = await RoadmapStore.create(new LocalStorageAdapter());
   a.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
   await a.flush();

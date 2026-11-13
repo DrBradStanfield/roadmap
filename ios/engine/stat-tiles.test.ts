@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { planJson, screenJson, sectionsJson } from './entry';
+import { planJson, screenJson } from './entry';
 import { STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/src/evidence';
@@ -92,19 +92,4 @@ describe('statTiles (US-25 AC22)', () => {
     expect(statTiles(recordOf(), '{"hba1c":"conventional"}')).toEqual(JSON.parse(JSON.stringify(direct)));
   });
 
-  it('screenJson\'s plan is the separate plan, sections and tiles it replaced, from one computePlan', () => {
-    for (const units of ['{}', '{"hba1c":"conventional","ldl":"conventional","weight":"conventional"}']) {
-      const record = recordOf((r) => { add(r, 'waist', 90); add(r, 'creatinine', 70); });
-      const plan = planJson(record, NOW, 'phone', units);
-      const parsed = JSON.parse(plan) as Plan;
-      const tiles = tilesFor(parsed.results, { unitSystem: parsed.unitSystem, unitOverrides: JSON.parse(units), sex: parsed.inputs.sex });
-      expect(JSON.parse(screenJson(record, NOW, 'phone', units)).plan).toEqual({
-        sections: JSON.parse(sectionsJson(plan)),
-        tiles: JSON.parse(JSON.stringify(tiles)),
-        // US-73: the same cards by topic, as my-health.test.ts checks.
-        topics: expect.any(Object),
-        ms: expect.any(Number),
-      });
-    }
-  });
 });

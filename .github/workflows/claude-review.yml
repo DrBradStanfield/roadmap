@@ -50,22 +50,24 @@ name: Claude Review
 
 on:
   pull_request:
-    # labeled: adding 'hold' cancels a review already running (the lane below).
-    # Removing 'hold' starts nothing, as before.
-    types: [opened, synchronize, labeled]
+    # No label events. Adding 'hold' used to cancel a running review; `gh pr
+    # create --label hold` adds the label a second after 'opened', so the
+    # review on the head sha ended CANCELLED, and merge-gated refused it (exit
+    # 9) until someone re-ran the job. The job's first step re-reads the labels
+    # and ends a held PR's run at once, without reviewing; auto-ship still
+    # never ships a PR that carries 'hold'.
+    types: [opened, synchronize]
 
-# A newer push to the same PR, or adding 'hold', cancels the older review. Auto
-# Ship runs only on a review that ended in success, so a cancelled review ships
-# nothing. Adding any other label gets a lane of its own, so it never cancels a
-# review.
+# A newer push to the same PR cancels the older review. Auto Ship runs only on a
+# review that ended in success, so a cancelled review ships nothing.
 concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && github.event.label.name != 'hold' && github.run_id || 'pr' }}
+  group: claude-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   review:
-    # Only pushes run a review, never a label event. Skipped while the PR
-    # carries 'hold': its owner merges it by hand after a fresh adversary
+    # Only pushes run a review. Skipped when the push's PR already carries
+    # 'hold': its owner merges it by hand after a fresh adversary
     # (and Codex where required), and auto-ship never ships it.
     if: >
       startsWith(github.event.pull_request.head.ref, 'claude/') &&
@@ -81,13 +83,32 @@ jobs:
       id-token: write # claude-code-action's token exchange (first-run failure: "Failed to get OIDC token")
       actions: read
     steps:
-      - uses: actions/checkout@v5
+      # The payload's labels are from the moment the event fired, and `gh pr
+      # create --label hold` adds the label a second after 'opened'. Re-read
+      # them live, after a short wait, so a held PR spends no review: the job
+      # ends green in seconds. Reads labels only, with the job's own token.
+      # It fails open: a label added more than 5 s after 'opened', or a failed
+      # read, lets the review run (costly, but never a skipped review).
+      - id: hold
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          sleep 5
+          if gh api --paginate "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep -qx hold; then
+            echo "held=true" >> "$GITHUB_OUTPUT"
+            echo "Review skipped: PR $PR carries the 'hold' label."
+          fi
+      - if: steps.hold.outputs.held != 'true'
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       # SHA-pinned like flyctl in deploy.yml: this job holds CLAUDE_CODE_OAUTH_TOKEN and
       # write tokens, and a moved tag would run new code with them. This SHA is
       # the commit tag v1 (= v1.0.265) pointed to on 2026-10-30.
-      - uses: anthropics/claude-code-action@6d5ae526d25ce88daa2200be073e1a373167f064 # v1 / v1.0.265
+      - if: steps.hold.outputs.held != 'true'
+        uses: anthropics/claude-code-action@6d5ae526d25ce88daa2200be073e1a373167f064 # v1 / v1.0.265
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Without this the action never creates its PR comment NOR registers

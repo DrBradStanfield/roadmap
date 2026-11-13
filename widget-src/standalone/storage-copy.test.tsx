@@ -269,17 +269,20 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
     noteDevicePage(); // a fallback page for Dropbox
     const shown = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
     expect(shown.container.textContent).toContain('kept in this browser');
-    act(() => {
-      localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
-      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
-    });
-    expect(shown.container.textContent).toContain('Your record is safe in your');
-    expect(shown.container.textContent).not.toContain('kept in this browser');
-    shown.unmount();
+    try {
+      act(() => {
+        localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
+        window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+      });
+      expect(shown.container.textContent).toContain('Your record is safe in your');
+      expect(shown.container.textContent).not.toContain('kept in this browser');
+      shown.unmount();
 
-    const later = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
-    expect(later.container.textContent).not.toContain('kept in this browser');
-    localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+      const later = guest(<SyncControl backend="local" reconnect="google-drive" hasData />);
+      expect(later.container.textContent).not.toContain('kept in this browser');
+    } finally {
+      localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
+    }
   });
 
   it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {

@@ -966,12 +966,14 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   const ldlRow = (view: RenderResult) => Array.from(view.container.querySelectorAll<HTMLElement>('.bt-timeline .bt-row'))
     .find((r) => r.querySelector('.bt-name-label')?.textContent === 'LDL Cholesterol')!;
   const OWN_SAVES: Array<[string, (view: RenderResult) => Promise<void>, (view: RenderResult) => void | Promise<void>]> = [
-    ['the first-time weight field\'s save (useLongitudinalSave)', async (view) => {
-      await saveWeight(view, '72');
+    // Since H71 (2026-11-13) a record with data but no weight shows a Weight row, not a field: its page's Add saves.
+    ['the Weight page\'s Add (useLongitudinalSave)', async (view) => {
+      fireEvent.click(Array.from(view.container.querySelectorAll<HTMLElement>('.md-row')).find((r) => r.querySelector('.md-row-label')?.textContent === 'Weight')!);
+      const page = await waitFor(() => { const p = q(view, '.mh-page-host .md-page'); expect(p).not.toBeNull(); return p as HTMLElement; });
+      fireEvent.change(within(page).getByLabelText(/^Value/), { target: { value: '72' } });
+      fireEvent.click(within(page).getByRole('button', { name: 'Add' }));
       await waitFor(() => expect(mirrorOf('weight')).toBe(72));
-    }, async (view) => {
-      // The save's finish cleared its field: the box is gone, and a later save writes no second weight.
-      expect(q(view, '#weightKg')).toBeNull();
+    }, async () => {
       expect((await activeWeights()).length).toBe(1);
     }],
     ['a correction from the saved-value editor (handleCorrectValue)', async (view) => {
@@ -1037,7 +1039,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     const view = await open();
     await heightOutOfRange(view);
     await heldBirthYear(view);
-    await OWN_SAVES[0][1](view); // the first-time weight field's save, and its re-read
+    await OWN_SAVES[0][1](view); // the Weight page's save, and its re-read
     await settle(50);
     // The page shows the old birth year; the chat mirror (mirrorRecord writes result.inputs) the held one.
     expect(field(view, 'birthYear')).toBe('1980');

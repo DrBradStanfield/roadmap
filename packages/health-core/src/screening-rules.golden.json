@@ -3,7 +3,7 @@
   "now": "2026-10-01T12:00:00.000Z",
   "edgeNow": "2026-09-30T12:00:00.000Z",
   "tz": "Pacific/Auckland",
-  "cases": 2374
+  "cases": 2379
  },
  "constants": {
   "SCREENING_MIN_AGE": {
@@ -1939,7 +1939,10 @@
   "C103": "screening-dexa-followup [info] Dexa screening up to date :: Following your osteoporosis diagnosed — treatment and monitoring required, next screening due Nov 2026.",
   "C104": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Oct 2026. Please schedule your screening.",
   "C105": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Sep 2026. Please schedule your screening.",
-  "C106": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Oct 2027."
+  "C106": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Oct 2027.",
+  "C107": "screening-prostate-repeat [attention] Repeat PSA test :: You chose not to have routine prostate screening, and that choice stands. An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening. Dr Brad suggests repeating it every 3 months while it stays at 4.0 or higher. Discuss with your doctor.",
+  "C108": "screening-prostate-repeat [attention] Repeat PSA test :: An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening. Dr Brad suggests repeating it every 3 months while it stays at 4.0 or higher. Discuss with your doctor.",
+  "C109": "screening-prostate-upcoming [info] PSA test up to date :: Next PSA test due Jun 2027."
  },
  "groups": {
   "G001": [
@@ -37221,6 +37224,74 @@
     "annual_checkin (annual) Annual health check-in 2027-10-01"
    ],
    "form": "F590"
+  },
+  "E m55 prostate:will_screen,psa-rows=4.5@2026-03-10,<5@2026-06-10": {
+   "age": 55,
+   "cards": [
+    "C028",
+    "C078"
+   ],
+   "due": [
+    "screening_prostate (screening) PSA test 2026-09-01"
+   ],
+   "followups": [
+    "screening_prostate repeat PSA test"
+   ],
+   "form": "F062"
+  },
+  "E m55 prostate:elected_not_to,psa-rows=4.5@2026-03-10,<5@2026-06-10": {
+   "age": 55,
+   "cards": [
+    "C028",
+    "C107"
+   ],
+   "due": [
+    "screening_prostate (screening) PSA test 2026-09-01"
+   ],
+   "followups": [
+    "screening_prostate repeat PSA test"
+   ],
+   "form": "F463"
+  },
+  "E m55 prostate:no-discussion,psa-rows=4.5@2026-03-10,<5@2026-06-10": {
+   "age": 55,
+   "cards": [
+    "C028",
+    "C013",
+    "C108"
+   ],
+   "due": [
+    "screening_prostate (screening) PSA test 2026-09-01"
+   ],
+   "followups": [
+    "screening_prostate repeat PSA test"
+   ],
+   "form": "F054"
+  },
+  "E m55 prostate:will_screen,psa-rows=4.5@2026-03-10,<3@2026-06-10": {
+   "age": 55,
+   "cards": [
+    "C028",
+    "C109"
+   ],
+   "due": [
+    "screening_prostate (screening) PSA test 2027-06-01"
+   ],
+   "form": "F062"
+  },
+  "E m55 prostate:will_screen,psa-rows=4.5@2026-03-10,<=4@2026-06-10": {
+   "age": 55,
+   "cards": [
+    "C028",
+    "C078"
+   ],
+   "due": [
+    "screening_prostate (screening) PSA test 2026-09-01"
+   ],
+   "followups": [
+    "screening_prostate repeat PSA test"
+   ],
+   "form": "F062"
   }
  }
 }

@@ -2,9 +2,8 @@
 /**
  * US-02 AC6b: a deferred auto-advance (800 ms, useAutoAdvance) jumps only if
  * the focus is still where the value was typed. Every caller that waits: the
- * first-time systolic box, the US inches box, the weight box and the vitals
- * grid's weight (both report `rested`, US-62 AC25b), and the grid's pressure
- * cell. Synthetic values.
+ * US inches box, the weight box and the vitals grid's weight (both report
+ * `rested`, US-62 AC25b), and the grid's pressure cell. Synthetic values.
  */
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,7 +21,7 @@ beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); });
 
 const DONE = { sex: 'male' as const, heightCm: 180, weightKg: 80, birthYear: 1960, birthMonth: 1 };
-/** First-time fields, the panel holding its own inputs as HealthTool does. */
+/** The onboarding's boxes, the panel holding its own inputs as HealthTool does. */
 function Panel({ start, stage, us = false, rested }: { start: Partial<HealthInputs>; stage: 1 | 4; us?: boolean; rested?: () => void }) {
   const [inputs, setInputs] = useState(start);
   const props = {
@@ -32,7 +31,7 @@ function Panel({ start, stage, us = false, rested }: { start: Partial<HealthInpu
     bloodTestHistory: [], vitalsHistory: [], labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
     medications: [], onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    fieldsSaved: 0, hasApiResponse: true, planBasis: { age: 66 }, grading: {},
+    hasApiResponse: true, planBasis: { age: 66 }, grading: {},
     onboarding: { stage, reached: stage, fullForm: stage === 4, aboutYouLow: stage === 4, rested, left: rested && vi.fn() },
   } as unknown as Parameters<typeof InputPanel>[0];
   return <InputPanel {...props}/>;
@@ -51,10 +50,6 @@ const focused = () => document.activeElement;
 
 /** Each caller that waits: draw it, type a value that could still grow, and say how to tell it jumped. */
 const CALLERS = {
-  'the first-time systolic box, "80"': () => {
-    render(<Panel start={DONE} stage={4}/>); type($('#systolicBp'), '80');
-    return { field: $('#systolicBp'), elsewhere: $('#waistCm'), jumped: () => focused() === $('#diastolicBp') };
-  },
   'US height 5 ft, inches "1"': () => {
     render(<Panel start={{}} stage={1} us/>); type($('#heightFeet'), '5'); wait(20); type($('#heightInches'), '1');
     return { field: $('#heightInches'), elsewhere: $('#heightFeet'), jumped: () => focused() === $('#weightKg') };
@@ -84,12 +79,6 @@ describe('US-02 AC6b: the wait ends in a jump only if the field has the focus', 
     wait(500);
     expect(jumped()).toBe(!away || back);
     if (away && !back) expect(focused()).toBe(elsewhere);
-  });
-  it('the first-time systolic box, "80", the focus moves to nothing (a press on blank page): no jump', () => {
-    render(<Panel start={DONE} stage={4}/>); type($('#systolicBp'), '80');
-    act(() => { $('#systolicBp').blur(); });
-    wait(900);
-    expect(focused()).toBe(document.body);
   });
 });
 
@@ -125,30 +114,11 @@ describe('US-02 AC6b: the wait ends with its field', () => {
 });
 
 describe('US-02 AC6, AC6b: what does not wait, or never jumps, is unchanged', () => {
-  it('first-time boxes: systolic "120" and a cm height of "180" move at once; a diastolic already typed means no hop', () => {
+  it('the height box: a cm height of "180" moves to the weight at once', () => {
     render(<Panel start={{ sex: 'male', birthYear: 1960, birthMonth: 1 }} stage={1}/>);
     type($('#heightCm'), '180');
     wait(20); // focusById: the next frame
     expect(focused()).toBe($('#weightKg'));
-    cleanup();
-    render(<Panel start={DONE} stage={4}/>);
-    type($('#systolicBp'), '120');
-    wait(20);
-    expect(focused()).toBe($('#diastolicBp'));
-    type($('#diastolicBp'), '70');
-    type($('#systolicBp'), '80');
-    wait(900);
-    expect(focused()).toBe($('#systolicBp'));
-  });
-  it('the first-time systolic box: a new digit during the wait starts it again', () => {
-    render(<Panel start={DONE} stage={4}/>);
-    type($('#systolicBp'), '80');
-    wait(400);
-    type($('#systolicBp'), '85');
-    wait(500);
-    expect(focused()).toBe($('#systolicBp'));
-    wait(400);
-    expect(focused()).toBe($('#diastolicBp'));
   });
   it('the grid\'s pressure cell: "120" hops at once; "6", "80" then "6", or a diastolic already typed, means no hop', () => {
     vitals();
