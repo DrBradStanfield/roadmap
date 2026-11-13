@@ -4,7 +4,7 @@
  * `meta.lamport` on by 2 with no change made: on a cloud, a write and a
  * version bump per call (a GitHub commit each time).
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PERSIST_DEBOUNCE_MS } from '../../../packages/health-core/src/record-session';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
@@ -83,54 +83,6 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     expect(adapter.writes).toBe(2); // the failed one and its retry, then nothing
   });
 
-  it('an edit made during a save is written once, and its debounce then writes nothing', async () => {
-    const cloud = new MemoryCloud();
-    const adapter = new CountingAdapter(cloud);
-    const store = await RoadmapStore.create(adapter);
-    let release!: () => void;
-    adapter.gate = new Promise((r) => { release = r; });
-
-    store.markReportEmailCaptured();
-    const saving = store.flush();
-    await new Promise((r) => setTimeout(r, 0)); // the first write is held at the gate
-    store.setLpaUnit('nmol/L'); // lands mid-save: the loop goes round, and a debounce is set
-    adapter.gate = null;
-    release();
-    await saving;
-    expect(adapter.writes).toBe(2);
-    expect(stored(cloud).profile.lpaUnit).toBe('nmol/L');
-
-    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
-    expect(adapter.writes).toBe(2);
-  });
-
-  it('a save that outlasts the debounce is not followed by an empty pass', async () => {
-    const cloud = new MemoryCloud();
-    const adapter = new CountingAdapter(cloud);
-    const store = await RoadmapStore.create(adapter);
-    let release1!: () => void;
-    let release2!: () => void;
-    adapter.gate = new Promise((r) => { release1 = r; });
-
-    store.markReportEmailCaptured();
-    const saving = store.flush();
-    await new Promise((r) => setTimeout(r, 0)); // pass 1 is held at the gate
-    store.setLpaUnit('nmol/L'); // lands mid-save: pass 2 takes it, and a debounce is set
-    adapter.gate = new Promise((r) => { release2 = r; });
-    release1();
-    // Pass 2 is held past the debounce, which fires while it runs (a slow cloud write).
-    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
-    adapter.gate = null;
-    release2();
-    await saving;
-    expect(adapter.writes).toBe(2);
-    expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
-    expect(stored(cloud).profile.lpaUnit).toBe('nmol/L');
-
-    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 200));
-    expect(adapter.writes).toBe(2);
-  });
-
   it('a flush that joins a running save adds no write, and answers when that save ends', async () => {
     const cloud = new MemoryCloud();
     const adapter = new CountingAdapter(cloud);
@@ -150,5 +102,60 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     await Promise.all([saving, joined]);
     expect(adapter.writes).toBe(1);
     expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
+  });
+});
+
+// The debounce runs out on the fake clock here, the same 800 ms + 200 ms jumped
+// at once. The real-clock pin above stays off fake timers.
+describe('RoadmapStore.flush with nothing unsaved, on fake timers (US-10 AC5a)', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('an edit made during a save is written once, and its debounce then writes nothing', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new CountingAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+    let release!: () => void;
+    adapter.gate = new Promise((r) => { release = r; });
+
+    store.markReportEmailCaptured();
+    const saving = store.flush();
+    await vi.advanceTimersByTimeAsync(0); // the first write is held at the gate
+    store.setLpaUnit('nmol/L'); // lands mid-save: the loop goes round, and a debounce is set
+    adapter.gate = null;
+    release();
+    await saving;
+    expect(adapter.writes).toBe(2);
+    expect(stored(cloud).profile.lpaUnit).toBe('nmol/L');
+
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS + 200);
+    expect(adapter.writes).toBe(2);
+  });
+
+  it('a save that outlasts the debounce is not followed by an empty pass', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new CountingAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+    let release1!: () => void;
+    let release2!: () => void;
+    adapter.gate = new Promise((r) => { release1 = r; });
+
+    store.markReportEmailCaptured();
+    const saving = store.flush();
+    await vi.advanceTimersByTimeAsync(0); // pass 1 is held at the gate
+    store.setLpaUnit('nmol/L'); // lands mid-save: pass 2 takes it, and a debounce is set
+    adapter.gate = new Promise((r) => { release2 = r; });
+    release1();
+    // Pass 2 is held past the debounce, which fires while it runs (a slow cloud write).
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS + 200);
+    adapter.gate = null;
+    release2();
+    await saving;
+    expect(adapter.writes).toBe(2);
+    expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
+    expect(stored(cloud).profile.lpaUnit).toBe('nmol/L');
+
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS + 200);
+    expect(adapter.writes).toBe(2);
   });
 });
