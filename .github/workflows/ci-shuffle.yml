@@ -1,0 +1,54 @@
+name: CI shuffle
+
+# The whole suite once, in a random order, every night (TA-X03, Brad 2026-11-13). CI always runs files and tests
+# in one fixed order, so a test that passes only because another ran first goes unnoticed (storage-copy, TA-X02;
+# issue 1333). This run prints its seed; re-run that order with Actions -> CI shuffle -> Run workflow and the seed,
+# or locally: npm run test:all -- --sequence.shuffle --sequence.seed=<seed>.
+#
+# Its own file on purpose, never a job in ci.yml: tools/merge-gated.sh stops the line (exit 18) when main's newest
+# ci.yml run failed, and a red shuffled run should be looked at, not block every merge. It never runs on a pull
+# request and has no job named `test`, so it reaches no PR's checks and nothing that waits on `test` (auto-ship,
+# Pages, Deploy). A failed scheduled run shows red in Actions and GitHub emails it to whoever last changed the cron.
+on:
+  schedule:
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Seed to repeat a shuffled order (digits; empty for a new one)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# One lane: a manual run started while the nightly runs waits for it, never cancels it.
+concurrency:
+  group: ci-shuffle
+  cancel-in-progress: false
+
+jobs:
+  shuffled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Every test file, files and tests in a shuffled order
+        env:
+          SEED_INPUT: ${{ inputs.seed }}
+        run: |
+          case "${SEED_INPUT}" in
+            '') SEED=$(date +%s) ;;
+            *[!0-9]*) echo "::error::seed must be digits only"; exit 2 ;;
+            *) SEED="${SEED_INPUT}" ;;
+          esac
+          echo "Shuffle seed: ${SEED} (repeat: npm run test:all -- --sequence.shuffle --sequence.seed=${SEED})"
+          echo "Shuffle seed: \`${SEED}\`" >> "${GITHUB_STEP_SUMMARY}"
+          npm run test:all -- --sequence.shuffle --sequence.seed="${SEED}"
