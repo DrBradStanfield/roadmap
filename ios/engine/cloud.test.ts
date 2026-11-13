@@ -12,6 +12,8 @@ import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { buildErasedFile } from '../../packages/health-core/src/erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { EDIT } from './contract';
+import { guardedEdit, refuse, type EditTarget } from './guarded-edit';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -1446,4 +1448,61 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
   // re-read, and the engine's re-read retries a failed save first (cloud.ts reread's flushSync),
   // one of the older save paths the owner left as they are (D2, lead A25). The web pins the rule:
   // widget-src/standalone/storage-bar-save-retry.test.tsx.
+});
+
+// I-2 step 4: the guards every edit passes, one table for every target (guarded-edit.ts). The cloud
+// session runs it through cloudEdit, as the app calls it; a target over a plain record runs it
+// through guardedEdit itself. I-1's phone door joins as a third target and must give the same answers.
+describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 AC2; US-66 AC6)', () => {
+  /** On another device since the sheet opened: US units, Lp(a) in mg/dL. A weight, a core LDL,
+   *  a ferritin (a lab row, not core) and a core Lp(a). */
+  async function changedRecord(): Promise<RoadmapFile> {
+    const web = await recordWith(['2026-10-01'], 'web');
+    const lab = (id: string, metricName: string, value: number, unit: string, core: boolean) => ({
+      id, metricName, ...(core ? { core: true } : null), value, unit, referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual', status: 'active', correctsId: null,
+    });
+    return {
+      ...web, profile: { ...web.profile, unitSystem: 'conventional', lpaUnit: 'mg/dL' },
+      labValues: [lab('ldl-1', 'ldl', 3.1, 'mmol/L', true), lab('ferritin-1', 'ferritin', 80, 'µg/L', false), lab('lpa-1', 'lpa', 50, 'nmol/L', true)],
+    } as RoadmapFile;
+  }
+  const metric = { units: 'si', lpaUnit: 'nmol/L' };
+  const us = { units: 'conventional', lpaUnit: 'nmol/L' };
+  // [row, the edit (given the record), what the sheet showed, shown before an erase since, the answer]
+  const ROWS: Array<[string, (file: RoadmapFile) => object, { units: string; lpaUnit: string }, boolean, string]> = [
+    ['a new value after a units change', () => ({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-02' }), metric, false, 'units-changed'],
+    ['a measurement\'s correction after a units change', (file) => ({ kind: 'correct', id: file.measurements[0].id, value: 81 }), metric, false, 'units-changed'],
+    // D2 (owner, review R7): only a measurement or a core lab row depends on the record's units.
+    ['a core lab row\'s correction after a units change', () => ({ kind: 'correct', id: 'ldl-1', value: 3.0 }), metric, false, 'units-changed'],
+    ['a lab row\'s correction after a units change (its own unit)', () => ({ kind: 'correct', id: 'ferritin-1', value: 85 }), metric, false, 'ok'],
+    ['a height after a units change', () => ({ kind: 'profile', height: 170 }), metric, false, 'units-changed'],
+    ['a sex after a units change (no number)', () => ({ kind: 'profile', sex: 'female' }), metric, false, 'ok'],
+    ['a new Lp(a) after its unit changed', () => ({ kind: 'add', metric: 'lpa', value: 50, day: '2026-10-02' }), us, false, 'units-changed'],
+    ['an Lp(a) correction after its unit changed', () => ({ kind: 'correct', id: 'lpa-1', value: 60 }), us, false, 'units-changed'],
+    ['any edit after an erase since', () => ({ kind: 'profile', sex: 'female' }), us, true, 'erased'],
+  ];
+  const answerOf = (out: { ok: boolean; reason?: string }) => (out.ok ? 'ok' : out.reason);
+
+  it.each(ROWS)('the cloud session: %s', async (_row, edit, shown, erased, expected) => {
+    const file = await changedRecord();
+    const dropbox = new FakeDropbox();
+    dropbox.put(file);
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const out = JSON.parse(engine.cloudEdit(JSON.stringify(edit(file)), erased ? 'an earlier erase' : erase, shown.units, NOW, '{}', shown.lpaUnit));
+    expect(answerOf(out)).toBe(expected);
+  });
+
+  it.each(ROWS)('a plain record: %s', async (_row, edit, shown, erased, expected) => {
+    let file = await changedRecord();
+    const target: EditTarget = {
+      get file() { return file; },
+      stale: () => (erased ? refuse('erased', 'erased since') : null),
+      commit: (next) => { file = next; return null; },
+      answer: () => ({ record: JSON.stringify(file) }),
+    };
+    const out = guardedEdit(target, EDIT.parse(edit(file)), { ...shown, choicesJson: '{}' }, NOW);
+    expect(answerOf(out)).toBe(expected);
+  });
 });
