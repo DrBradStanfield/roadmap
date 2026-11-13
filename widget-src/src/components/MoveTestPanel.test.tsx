@@ -56,7 +56,7 @@ function Page({ onMove, unitSystem, bloodTestHistory, labValues }: {
   return <>
     <BloodTestTimeline bloodTestHistory={bloodTestHistory} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={turnFrom(unitSystem)}
       onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} move={move.headers}
-      onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse/>
+      isSaving={false} grading={{}} hasApiResponse/>
     {move.panel}
     <AdditionalLabRows labValues={labValues} move={move.headers}/>
   </>;

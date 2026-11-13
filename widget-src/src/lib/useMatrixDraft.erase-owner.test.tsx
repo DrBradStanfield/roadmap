@@ -58,7 +58,7 @@ function vitals() {
   }];
   const onSave = vi.fn<(tasks: SaveTask[]) => Promise<Refused>>().mockResolvedValue(new Map());
   const view = render(<div>
-    <StartingInfoVitals vitalsHistory={history} unitSystem="si" onSave={onSave} onDraftValue={() => {}} formStage={3}
+    <StartingInfoVitals vitalsHistory={history} unitSystem="si" onSave={onSave} formStage={3}
       plan={null} unitOverrides={{}} onToggleFieldUnit={() => {}}/>
     <button>elsewhere</button>
   </div>);

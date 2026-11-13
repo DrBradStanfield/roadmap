@@ -52,7 +52,7 @@ async function typeWeight(value: string) {
     recordedAt: '2026-09-01T00:00:00.000Z', createdAt: '2026-09-01T00:00:00.000Z', status: 'active',
   }];
   const view = render(<StartingInfoVitals vitalsHistory={history} unitSystem="si"
-    onSave={async () => new Map()} onDraftValue={() => {}} formStage={3} plan={null}
+    onSave={async () => new Map()} formStage={3} plan={null}
     unitOverrides={{}} onToggleFieldUnit={() => {}}/>);
   const row = Array.from(view.container.querySelectorAll<HTMLElement>('.bt-row'))
     .find(r => r.querySelector('.bt-name-label')?.textContent === 'Weight')!;

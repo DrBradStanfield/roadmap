@@ -33,7 +33,7 @@ const history = [
 function timeline() {
   const view = render(
     <BloodTestTimeline bloodTestHistory={history} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={turnFrom('si')}
-      onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')} onDraftValue={() => {}}
+      onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={vi.fn().mockResolvedValue('ok')}
       isSaving={false} grading={{ sex: 'male' }} hasApiResponse/>,
   );
   const rowOf = (label: string) => [...view.container.querySelectorAll('.bt-row')]

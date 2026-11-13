@@ -3,8 +3,8 @@
  * US-07 AC7 (Brad 2026-10-27): the widget's plan, tiles and chat read the
  * lab's printed eGFR when it is newer than the creatinine, or from its day.
  * The whole widget renders over a real RoadmapStore on this browser's
- * localStorage; the form is a stub that hands back HealthTool's handlers, so
- * a test can lend a dated draft value as the blood-test matrix does.
+ * localStorage; the form is a stub that hands back HealthTool's handlers,
+ * or the real form when a test types into its blood-test grid.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, act, fireEvent } from '@testing-library/react';
@@ -29,7 +29,6 @@ const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, resu
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: ({ guestInputs }: { guestInputs: () => ChatContextPayload | null }) => { seen.chat = guestInputs; return null; } }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
-// The form is a stub that hands back HealthTool's handlers, or the real form when a test types into it.
 vi.mock('./InputPanel', async (importOriginal) => {
   const { InputPanel: Real } = await importOriginal<typeof import('./InputPanel')>();
   return { InputPanel: (props: Parameters<typeof Real>[0]) => { seen.panel = props; return seen.realPanel ? <Real {...props}/> : null; } };
@@ -72,21 +71,6 @@ describe('US-07 AC7: the widget reads the lab eGFR', () => {
     expect(results.suggestions.map((s) => s.id)).not.toContain('high-potassium');
     await waitFor(() => expect(seen.chat).toBeTruthy());
     expect(chatEGFR()).toBe(40);
-  });
-
-  it('US-07 AC7: a draft creatinine counts on the day it is dated, not today', async () => {
-    // Saved creatinine before the lab eGFR; a draft dated between them; then one dated after.
-    await seed([[80, '2026-06-01']], [40, '2026-08-01']);
-    render(<HealthTool />);
-    await waitFor(() => expect(seen.results?.eGFR).toBe(40));
-
-    act(() => seen.panel!.onDraftValue('creatinine', 80, '2026-07-01'));
-    await waitFor(() => expect(seen.results?.eGFR).toBe(40));
-
-    act(() => seen.panel!.onDraftValue('creatinine', 80, '2026-08-15'));
-    const age = seen.results!.age!;
-    await waitFor(() => expect(seen.results?.eGFR).toBe(Math.round(calculateEGFR(80, age, 'female'))));
-    expect(seen.results?.eGFRFromLab).toBeUndefined();
   });
 
   it('US-07 AC7: a creatinine typed in the grid moves the eGFR only once saved, dated by its saved day', async () => {

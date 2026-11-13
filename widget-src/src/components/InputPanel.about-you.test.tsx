@@ -22,7 +22,7 @@ const props = (inputs: Partial<HealthInputs>, onChange: (field: keyof HealthInpu
   ...myHealth({ settingsOpen }), // About you, low, sits in Settings (US-62 AC24)
   inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem,
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-  labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+  labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
   onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
   hasApiResponse: true, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 66 }, grading: {},

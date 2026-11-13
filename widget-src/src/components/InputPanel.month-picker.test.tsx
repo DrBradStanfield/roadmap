@@ -36,7 +36,7 @@ function panel(screenings: Record<string, string>, sex: 'female' | 'male' = 'fem
     ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()),
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange,
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,

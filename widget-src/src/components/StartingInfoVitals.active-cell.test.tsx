@@ -25,7 +25,7 @@ describe('US-04 AC1: a vitals editor that closes late leaves the next cell marke
     const onCorrectValue = vi.fn().mockResolvedValue('ok');
     const view = render(
       <StartingInfoVitals vitalsHistory={history} unitSystem="si"
-        onSave={vi.fn()} onCorrectValue={onCorrectValue} onDraftValue={() => {}} formStage={4}
+        onSave={vi.fn()} onCorrectValue={onCorrectValue} formStage={4}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
     const weight = Array.from(view.container.querySelectorAll('.bt-row'))
@@ -49,7 +49,7 @@ describe('US-04 AC1: a typed cell losing the focus clears only its own mark', ()
     const prefillRef: MutableRefObject<VitalsPrefillFn | null> = { current: null };
     const view = render(
       <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
-        onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4} prefillRef={prefillRef}
+        onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={4} prefillRef={prefillRef}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
     const draft = (label: string) => Array.from(view.container.querySelectorAll('.bt-row'))
@@ -76,7 +76,7 @@ describe('US-04 AC1 / US-05 AC2: a unit switch while correcting a weight', () =>
       const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
       return (
         <StartingInfoVitals vitalsHistory={history} unitSystem="si"
-          onSave={vi.fn()} onCorrectValue={onCorrectValue} onDraftValue={() => {}} formStage={4}
+          onSave={vi.fn()} onCorrectValue={onCorrectValue} formStage={4}
           plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={overrides}
           onToggleFieldUnit={(field) => setOverrides((o) => ({ ...o, [field]: o[field] === 'conventional' ? 'si' : 'conventional' }))}/>
       );
