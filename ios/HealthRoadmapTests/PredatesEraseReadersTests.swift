@@ -22,15 +22,19 @@ final class PredatesEraseReadersTests: XCTestCase {
         UnitChoices().save()
     }
 
-    /// EraseHeldUndrawnTests' engine: it counts the cloud session's edits in `__cloudEdits`, and
+    /// EraseHeldUndrawnTests' engine: its screen draw fails while `__screenFails` is set, it counts the cloud session's edits in `__cloudEdits`, and
     /// keeps the record each lab review was given in `__reviewRecords`.
     private func engine() throws -> HealthEngine {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8) + """
 
+        globalThis.__screenFails = false;
         globalThis.__cloudEdits = 0;
         globalThis.__reviewRecords = [];
-        HealthEngine = Object.assign({}, HealthEngine, { cloudEdit: (door => function () {
+        HealthEngine = Object.assign({}, HealthEngine, { screenJson: (door => function () {
+          if (__screenFails) throw new Error('test: the screen draw fails');
+          return door.apply(this, arguments);
+        })(HealthEngine.screenJson), cloudEdit: (door => function () {
           __cloudEdits += 1;
           return door.apply(this, arguments);
         })(HealthEngine.cloudEdit), labReviewJson: (door => function () {
@@ -171,7 +175,9 @@ final class PredatesEraseReadersTests: XCTestCase {
             let memory = try memory()
             let sync = AppleHealthSync(store: w.store, engine: w.engine, client: FakeHealthStore(), memory: memory)
             _ = await sync.erased(wasConnected: false)
-            XCTAssertNil(memory.eraseSeen, "\(way): no erase epoch read from the record the erase replaced")
+            // The erase is still marked as seen (US-72 AC10), with no epoch read from the record it replaced.
+            let seen = way == .noRecord ? EraseSeen(epoch: 0, source: "phone") : nil
+            XCTAssertEqual(memory.eraseSeen, seen, "\(way)")
             let edits = try cloudEdits(w.engine)
             let units = await w.store.apply(.units("conventional"))
             XCTAssertEqual(units, .refused(message: RecordStore.recordChanged, existingId: nil), "\(way)")
@@ -245,6 +251,26 @@ final class PredatesEraseReadersTests: XCTestCase {
             try FileManager.default.removeItem(at: folder)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
+    }
+
+    /// An erase held with no drawing is not the window (predatesErase is false): a lab report or a
+    /// document is still taken there, as US-25 AC16f says, and goes on to the cloud session.
+    func testAnEraseHeldUndrawnStillTakesALabReportAndADocument_US25_AC16f() async throws {
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
+        let erased = try await engine.eraseOnPhone(recordJSON: store.recordJSON, historyJSON: nil, now: .now, deviceId: store.deviceId).record
+        _ = try engine.blocking { try $0.evaluate("__screenFails = true") }
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 1)).value
+        _ = try engine.blocking { try $0.evaluate("__screenFails = false") }
+        XCTAssertFalse(store.predatesErase)
+        XCTAssertNil(store.myData)
+        if case .failure(let refusal) = await store.importLabs(extractionJSON: dated, refs: ["v0"], reportDay: "2026-10-01") {
+            XCTAssertNotEqual(refusal.message, RecordStore.recordChanged, "the store's guard did not refuse it")
+        }
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
+        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
+        XCTAssertNotEqual(filed, .refused(RecordStore.recordChanged), "the store's guard did not refuse it")
     }
 
     // MARK: The window ends
