@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type Set
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
 import { inputRangeFault } from '@roadmap/health-core/validation';
+import { VITALS_INPUT_FIELDS } from '@roadmap/health-core/chat-edits';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -86,6 +87,8 @@ interface Later {
  * The apply runs through refs, not an effect: the page re-reads in the turn
  * it is told, as before this hook.
  */
+/** A chat waist or pressure that waits in the form until it opens (ChatEdits' hand-over, US-16 AC1). */
+const WAITING: readonly string[] = VITALS_INPUT_FIELDS.filter(field => field !== 'weightKg');
 /** A record read that failed, tagged so the strict scrubber strips its text (lib/sentry.ts scrubEvent): it can quote the record. */
 const reportReadFailure = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
 
@@ -134,7 +137,9 @@ export function useRecordApply(args: {
       // fields onto the draft model. The matrices' drafts are not in the
       // form: they stay on screen and drive nothing until saved (US-03 AC6).
       // A value out of range is never in the record (its save refused or
-      // skipped it, US-02 AC5), so it rides through too, with its error.
+      // skipped it, US-02 AC5), so it rides through too, with its error. So
+      // does a chat waist or pressure waiting for the form to open: never
+      // saved, it would be lost (US-16 AC1, F1); it still drives nothing.
       // Only within one record: an erase from another device clears this
       // device's drafts (US-11 AC6, Codex R4).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
@@ -148,7 +153,7 @@ export function useRecordApply(args: {
           : { ...result.inputs };
         if (switched) next.unitSystem = switched;
         for (const [field, value] of Object.entries(prev)) {
-          if (inputRangeFault(field, value)) (next as Record<string, unknown>)[field] = value;
+          if (inputRangeFault(field, value) || WAITING.includes(field)) (next as Record<string, unknown>)[field] = value;
         }
         return next;
       }, sameRecord ? units.offered : units.shown); // another erase's units show at once, never held

@@ -911,6 +911,29 @@ describe('US-03 AC6, US-16 AC1 (Brad 2026-11-13): only a saved value drives the 
     expect(await rowsOf('waist')).toEqual([]);
   });
 
+  // PR 1579 F1: a whole re-read rebuilt the form from the record, so the waiting waist and pressure went.
+  it('US-16 AC1 (F1): a chat waist and pressure waiting before the form opens survive another device\'s change; the grid still receives them, unsaved', async () => {
+    await guest(); // the weight missing: no grid yet
+    const view = render(<HealthTool />);
+    const box = await shown<HTMLInputElement>(view.container, '#weightKg');
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    propose({ waistCm: 90, systolicBp: 120, diastolicBp: 80 });
+
+    await addMeasurement('ldl', 3.0, '2026-09-01'); // another device's write; the page re-reads the whole record
+    await flushRoadmapStore();
+    remoteChange();
+    await waitFor(() => expect(ldlInChat()).toEqual([3, 3]));
+    expect([chat.context?.waistCm, chat.context?.systolicBp]).toEqual([undefined, undefined]); // waiting drives nothing
+
+    await typeAndLeave(box, '84'); // the last answer: the whole form opens
+    const vitals = () => vitalsMatrix(view.container);
+    await waitFor(() => expect(draftInput(vitals(), 'Waist Circumference').value).toBe('90'));
+    expect([bpHalf(vitals(), 'Systolic').value, bpHalf(vitals(), 'Diastolic').value]).toEqual(['120', '80']);
+    await wait(300);
+    expect([...await rowsOf('waist'), ...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')]).toEqual([]);
+    expect(chat.context?.waistCm).toBeUndefined();
+  });
+
   // H72: the fields' save read a waiting chat waist or pressure out of the
   // form and wrote it under today, though the person never confirmed it.
   it('US-16 AC1 (R1): a weight-box save before the form opens writes no waiting chat waist or pressure', async () => {
