@@ -21,8 +21,9 @@ enum Cover: Equatable {
     struct Launch: Equatable {
         var welcomed = false
         var onboarded = false
-        /// Not finished, with a record that lacks sex, birth year or height, or a run already begun.
-        var needsQuestions = false
+        /// Not finished, with a record that lacks sex, birth year or height, or a run already begun;
+        /// nil when the record could not be read at launch (S42).
+        var needsQuestions: Bool? = false
         /// The record was erased on another device since its count was taken (US-54 AC7).
         var erasedElsewhere = false
         var run = Run.fresh
@@ -30,10 +31,10 @@ enum Cover: Equatable {
 
     enum Event: Equatable {
         case launched(Launch)
-        /// The welcome screen's Start; `needs`: the record needs the questions.
-        case started(needs: Bool)
+        /// The welcome screen's Start; `needs`: the record needs the questions, nil while it is unread.
+        case started(needs: Bool?)
         /// The welcome screen connected a cloud that holds the person's record.
-        case connected(needs: Bool)
+        case connected(needs: Bool?)
         /// The questions ended, or there was nothing to ask them with.
         case finished
         /// "Delete all my data", here or on another device.
@@ -63,14 +64,20 @@ enum Cover: Equatable {
             // A launch mid-questions resumes them (AC7); a skipped user lands in needsQuestions.
             case .launched(let l) where l.welcomed && l.onboarded && l.erasedElsewhere: return (.questions(.afterErase), .startOver)
             case .launched(let l) where !l.welcomed: return (.welcome, nil)
-            case .launched(let l): return (l.needsQuestions ? .questions(l.run) : .none, nil)
+            // Past the welcome screen with a full record but never finished (an unread Start, or
+            // before S34): it finishes now, so its saves count (S34, S42). Unread: decide next launch.
+            case .launched(let l) where l.needsQuestions == false && !l.onboarded: return (.none, .finish)
+            case .launched(let l): return (l.needsQuestions == true ? .questions(l.run) : .none, nil)
             case .started, .connected, .finished, .erased: return (cover, nil)
             }
         case .welcome:
             switch event {
+            // An unread record is not a full one: the cover closes unfinished, so `onboarded` stays
+            // false and the next launch decides again (S42). The questions would finish at once.
+            case .started(nil), .connected(nil): return (.none, nil)
             // A record that needs nothing finishes here, so its saves count toward the backup offer (S34).
-            case .started(let needs): return needs ? (.questions(.fresh), nil) : (.none, .finish)
-            case .connected(let needs): return needs ? (.questions(.onlyMissing), nil) : (.none, .finish)
+            case .started(let needs?): return needs ? (.questions(.fresh), nil) : (.none, .finish)
+            case .connected(let needs?): return needs ? (.questions(.onlyMissing), nil) : (.none, .finish)
             case .launched, .finished, .erased: return (cover, nil)
             }
         case .questions:
@@ -135,11 +142,12 @@ struct FirstRunKeys {
     /// A phone that has not finished the questions, with a record that lacks sex, birth year or
     /// height (`needsFlow`), or one that began them (quit at weight resumes there; review R2, AC7).
     /// OnboardingView sets `onboardingHealthAsked` when the first question screen is reached.
-    func needsQuestions(needsFlow: Bool) -> Bool {
-        !onboarded && (defaults.bool(forKey: "onboardingHealthAsked") || needsFlow)
+    /// nil while the record is unread (`needsFlow` nil): it cannot say (S42).
+    func needsQuestions(needsFlow: Bool?) -> Bool? {
+        needsFlow.map { !onboarded && (defaults.bool(forKey: "onboardingHealthAsked") || $0) }
     }
 
-    func launch(needsFlow: Bool, erasedElsewhere: Bool) -> Cover.Launch {
+    func launch(needsFlow: Bool?, erasedElsewhere: Bool) -> Cover.Launch {
         let run: Cover.Run = defaults.bool(forKey: "onboardingOnlyMissing") ? .onlyMissing
             : defaults.bool(forKey: "onboardingAfterErase") ? .afterErase : .fresh
         return .init(welcomed: welcomed, onboarded: onboarded, needsQuestions: needsQuestions(needsFlow: needsFlow),
