@@ -71,9 +71,9 @@ function failingMessage(id: string, kind: 'discord' | 'plain') {
 
 async function deliver(message: ReturnType<typeof failingMessage>) {
   edge.listeners.get('message')!(message);
-  // The 50 ms wait is a margin for any timer or I/O hop the handler may gain;
-  // the microtask drain alone settles it today.
-  await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+  // The one timer hop is a margin for any timer or I/O hop the handler may
+  // gain; the microtask drain alone settles it today.
+  await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
 }
 
 // Every argument of every Sentry call, serialized deep.
