@@ -381,8 +381,9 @@ final class LiveHealthTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: kept), file, "locked: kept")
         store.locked = false
         store.delay = .seconds(10)
+        var begun = store.readsBegun.makeAsyncIterator()
         let refresh = Task { await live.refresh() }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         refresh.cancel()
         await refresh.value
         XCTAssertEqual(try Data(contentsOf: kept), file, "cancelled: kept")
@@ -735,8 +736,9 @@ final class LiveHealthTests: XCTestCase {
         let folder = try folder()
         let history = LiveHistory(folder: folder)
         store.delay = .milliseconds(300)
+        var begun = store.readsBegun.makeAsyncIterator()
         let read = Task { try await history.refreshDays(store, .steps, now: now, calendar: utc) }
-        try await Task.sleep(for: .milliseconds(100))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         await history.removeAll()
         _ = try? await read.value
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "history-steps.json").path(percentEncoded: false)))
@@ -867,8 +869,9 @@ final class LiveHealthTests: XCTestCase {
         store.set(.sleep, segments: [])
         store.empty = [.sleep]
         store.delay = .milliseconds(200)
+        var begun = store.readsBegun.makeAsyncIterator()
         let open = Task { try await live.history.refreshNights(store, now: now, calendar: utc) }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         store.delay = nil
         await live.refresh()
         _ = try? await open.value
@@ -1028,8 +1031,9 @@ final class LiveHealthTests: XCTestCase {
         let store = FakeLiveStore(due: false)
         store.fill(now: now)
         store.delay = .seconds(10)
+        var begun = store.readsBegun.makeAsyncIterator()
         let read = Task { [now, utc] in try await LiveHealth.readDays(store, .steps, reaching: nil, now: now, calendar: utc) }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         read.cancel()
         do {
             _ = try await read.value
@@ -1048,14 +1052,21 @@ final class LiveHealthTests: XCTestCase {
         await live.refresh()
         let drawn = live.cards
         store.delay = .seconds(10)
+        var begun = store.readsBegun.makeAsyncIterator()
         let refresh = Task { await live.refresh() }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         refresh.cancel()
         await refresh.value
         XCTAssertEqual(live.cards, drawn, "the cards stay")
-        let fresh = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        // Its own store: the cancelled refresh may have signalled more than one read, and a
+        // left-over signal would cancel this read before access is checked.
+        let second = FakeLiveStore(due: false)
+        second.fill(now: now)
+        second.delay = .seconds(10)
+        var secondBegun = second.readsBegun.makeAsyncIterator()
+        let fresh = LiveHealth(store: second, now: { [now] in now }, calendar: utc)
         let first = Task { await fresh.refresh() }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await secondBegun.next()
         first.cancel()
         await first.value
         XCTAssertEqual(fresh.access, .granted, "nothing was read")
@@ -1113,8 +1124,9 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         store.delay = .milliseconds(300)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc)
+        var begun = store.readsBegun.makeAsyncIterator()
         let running = Task { await live.refresh() }
-        try await Task.sleep(for: .milliseconds(50))
+        _ = await begun.next() // lead S60: the read is under way, on the fake's signal, not a sleep
         await live.refresh(force: true)
         store.delay = nil
         await running.value

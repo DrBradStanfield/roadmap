@@ -15,6 +15,8 @@ const SIM_RUN = `#!/bin/sh
 echo "$TEST_RUNNER_TZ" >> "$FAKE_LOG"
 echo "sim-run: zone $TEST_RUNNER_TZ"
 [ "$TEST_RUNNER_TZ" = UTC ] && FAKE_EXIT="\${FAKE_EXIT_UTC:-$FAKE_EXIT}"
+# xcodebuild prints an Executed line per suite, then the run's total last.
+case "$FAKE_EXIT" in 0|65) printf '\t Executed 2 tests, with 0 failures (0 unexpected) in 0.1 seconds\n\t Executed 9 tests in %s, with 0 failures (0 unexpected) in 0.5 seconds\n' "$TEST_RUNNER_TZ";; esac
 case "$FAKE_EXIT" in
   0) echo "** TEST SUCCEEDED **";;
   75) echo "sim-run: gave up after 30m (load guard, not the lock): load 20.00 is over 12" >&2;;
@@ -127,6 +129,15 @@ describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
     expect(r.out).toContain('NOT RUN in Pacific/Auckland');
     expect(r.out).not.toContain('FAILED in');
     expect(r.status).toBe(75);
+  });
+
+  // Lead S60: the console filter dropped each zone's count; test.sh prints the total, not each suite's.
+  it.each([[0, 0], [0, 65]])("prints each zone's total Executed line (exit %i, UTC exit %i)", (code, utc) => {
+    const r = run(code, utc);
+    expect(r.out).toContain('Executed 9 tests in UTC, with 0 failures');
+    expect(r.out).toContain('Executed 9 tests in Pacific/Auckland, with 0 failures');
+    expect(r.out).not.toContain('Executed 2 tests');
+    expect(r.out.indexOf('Executed 9 tests in UTC')).toBeLessThan(r.out.indexOf('== tests in Pacific/Auckland'));
   });
 
   it('a pass runs both zones and exits 0', () => {
