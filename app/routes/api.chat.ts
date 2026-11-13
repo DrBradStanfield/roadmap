@@ -19,7 +19,6 @@ import {
   resolveChatContext,
   buildSystemBlocks,
   buildConversationMessages,
-  matchDocumentTitle,
   loadMatchedArticlesFromHandles,
   DOCTOR_POSTURE,
   BRAND_POSTURE,
@@ -582,21 +581,6 @@ async function chatAction(request: Request, app: boolean) {
         }
       }
 
-      // Check for document content match (uses full docs from context, no extra DB call)
-      let documentContent: string | null = null;
-      const docTitles = context.healthDocuments.map(d => ({
-        title: d.title,
-        documentDate: d.document_date,
-        documentType: d.document_type,
-      }));
-      const matchedTitle = matchDocumentTitle(message, docTitles);
-      if (matchedTitle) {
-        const matchedDoc = context.healthDocuments.find(d => d.title === matchedTitle);
-        if (matchedDoc) {
-          documentContent = matchedDoc.content_md;
-        }
-      }
-
       // Load content from the routed handles after AC14's filter — [] when classifier said SKIP (router never ran).
       // The stream names the articles loaded, by their index titles (US-15 AC20).
       const articles = loadMatchedArticlesFromHandles(routed.handles);
@@ -608,7 +592,7 @@ async function chatAction(request: Request, app: boolean) {
       // posture — a config slip can never silently produce a selling bot.
       const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
       const systemBlocks = buildSystemBlocks(context.userContextJson, {
-        surfaceContext, savedChat: savedChatOf(retention), documentContent, orderSummary, blogArticles: articles?.content ?? null,
+        surfaceContext, savedChat: savedChatOf(retention), orderSummary, blogArticles: articles?.content ?? null,
         subscriptionBlock: subscriptions ? formatSubscriptionBlock(subscriptions) : null,
       });
       const conversationMessages = buildConversationMessages(history, message);
