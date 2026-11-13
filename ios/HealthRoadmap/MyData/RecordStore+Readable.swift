@@ -53,8 +53,6 @@ extension RecordStore {
     var plan: PlanState? { readable?.drawn?.plan }
     /// The plan's cards by topic, from the same call (US-73 AC3).
     var topics: TopicLayout? { readable?.drawn?.topics }
-    /// A record held with no drawing (lead S67, US-25 AC16f): `Hold.heldUndrawn`.
-    var heldUndrawn: Bool { hold == .heldUndrawn }
     /// The rows the store holds, read or not: its own sheet pins, marks and units keep reading them.
     var heldData: MyData? { drawn?.myData }
 }
