@@ -3,8 +3,9 @@ import Foundation
 /// A metric page's read of its chart (US-58 AC4b, AC4c; iPhone survey S25): one state, changed
 /// only by `transition`. The page asks once per record revision and again from Try again; the
 /// answer lands for the revision it was asked at, so a late answer for another revision changes
-/// nothing. A failed read is its own state: it never says "No data yet", which invited a
-/// duplicate of a value still in the record. Web twin: none (ValuePage.tsx has no async read).
+/// nothing. A failed read is its own state and always offers Try again; it says "No data yet" only
+/// where the last good screen shows no reading, since over a value still in the record that invited
+/// a duplicate. Web twin: none (ValuePage.tsx has no async read).
 @MainActor
 enum MetricRead {
     enum Read {
@@ -44,10 +45,20 @@ enum MetricRead {
         case noDataYet
         /// Neither: the guide alone, while a metric with readings is read.
         case guideOnly
-        /// The engine failure's words and Try again, for a metric the screen shows values for.
-        case failed
+        /// A failed read: Try again, with what the app can establish about the metric's values.
+        case failed(Failure)
         /// The record did not load: its own heading and words, no Try again.
         case problem(RecordProblem)
+    }
+
+    /// What a failed read's page can say beside Try again (Brad, 14 Nov; US-58 AC4c).
+    enum Failure: Equatable {
+        /// The last good screen shows a reading: sentence A.
+        case stillInRecord
+        /// It positively shows none: "No data yet" and "Add your first value".
+        case noneShown
+        /// No screen, one older than an erase, and no kept chart: the first sentence alone.
+        case unknown
     }
 
     /// The page for `read` at the store's `revision`. A state from an older revision reads as
@@ -64,19 +75,20 @@ enum MetricRead {
         case .chart(revision, let chart) where kept != nil: return .chart(chart)
         case .empty(revision): return .noDataYet
         case .failed(revision):
-            // The words say the values are still in the record, so only when the screen drawn holds
-            // one, never on the failed read's word; with no such screen, only when the store still
-            // keeps values. Else "No data yet" and Add: nothing to duplicate (owner's R1 ruling).
-            let held = screenHasReading ?? (kept.map { !$0.history.rows.isEmpty } ?? false)
-            return held ? .failed : .noDataYet
+            // The screen drawn decides, never the failed read; with no such screen, a chart the
+            // store still keeps; with neither, no claim either way (Brad, 14 Nov).
+            guard let held = screenHasReading ?? kept.map({ !$0.history.rows.isEmpty }) else { return .failed(.unknown) }
+            return .failed(held ? .stillInRecord : .noneShown)
         case .reading, .empty, .failed, .chart:
             if let kept, !kept.history.rows.isEmpty { return .chart(kept) }
             return hasReadings ? .guideOnly : .noDataYet
         }
     }
 
-    /// The engine failure's sentence (awaiting Brad's yes): one line to change.
-    nonisolated static func couldNotRead(_ label: String) -> String {
-        "Your \(label) values could not be read. They are still in your record."
+    /// A failed read's words: sentence A where the screen shows a reading (Brad, 13 Nov), its first
+    /// sentence alone where the app cannot say (Brad, 14 Nov).
+    nonisolated static func couldNotRead(_ label: String, stillInRecord: Bool) -> String {
+        let read = "Your \(label) values could not be read."
+        return stillInRecord ? read + " They are still in your record." : read
     }
 }

@@ -90,7 +90,7 @@ extension AppleHealthSync {
     /// is owed (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
     /// The deadline is its own task, so a cancelled caller still waits for it, never spins.
     func drained(by deadline: ContinuousClock.Instant) async { // internal only for AppleHealthSync+Owed.swift
-        guard running, deadline > .now else { return }
+        guard run.passing, deadline > .now else { return }
         let id = UUID()
         let timer = Task { [weak self] in
             try? await Task.sleep(until: deadline, clock: .continuous)

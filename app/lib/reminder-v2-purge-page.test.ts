@@ -23,7 +23,7 @@ const db = vi.hoisted(() => ({
   failDeleteNo: 0, // 1-based DELETE request that answers 503; 0 = none
 }));
 
-vi.mock('./supabase.server', async () => {
+vi.mock('./supabase-client.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
   const JSONB = new Set(['schedule', 'last_sent']);
   const MAX_ROWS = 1000;

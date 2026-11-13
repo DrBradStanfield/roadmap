@@ -21,6 +21,7 @@ const getReminderIdToken = vi.fn<() => Promise<string | null>>(async () => null)
 vi.mock('../../widget-src/src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
   setReminderOptIn: vi.fn(),
+  getShownErase: () => '[0,null]',
   flushRoadmapStore: vi.fn(async () => {}),
   computeCurrentReminderSchedule: () => [],
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -41,7 +42,8 @@ vi.mock('../../widget-src/src/storage', () => ({
 
 // --- the route's dependencies (the database and the outside world) ---------
 const cancelByToken = vi.fn(async () => {});
-vi.mock('../lib/supabase.server', () => ({ hashClientIp: (ip: string) => `h:${ip}`, supabaseAdmin: null }));
+vi.mock('../lib/supabase-guest.server', () => ({ hashClientIp: (ip: string) => `h:${ip}` }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
 vi.mock('../lib/reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -121,7 +123,7 @@ describe('US-17 AC1b/AC4: every cancel the client sends is one the route accepts
 
   it('"Delete all my data" on Dropbox: 200 and the row is cancelled', async () => {
     getReminderOptIn.mockReturnValue(optIn('dropbox'));
-    await expect(cancelRemindersForErase()).resolves.toBeUndefined();
+    await (await cancelRemindersForErase())(); // prepare inside the erase, commit once it stands
     expect(statuses).toEqual([200]);
     expect(cancelByToken).toHaveBeenCalledWith('cap-token', null);
   });

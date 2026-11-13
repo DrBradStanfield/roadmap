@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-S13,iPhone state,"A value row's shown unit goes stale after a unit change with the same value, so the next change misses its bounce",lead,not started,ios/HealthRoadmap/MyData/ValueRow.swift:46-47 (shownUnit). Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S13,,no
+S13,iPhone state,"A value row's shown unit goes stale after a unit change with the same value, so the next change misses its bounce",lead,not started,"ios/HealthRoadmap/MyData/ValueRow.swift:47,55-58 (shownUnit). Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S13",,no

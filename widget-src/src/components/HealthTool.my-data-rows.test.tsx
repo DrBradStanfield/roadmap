@@ -12,7 +12,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -34,13 +33,13 @@ vi.mock('../lib/chat-api', async original => ({
 import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
 import { openSettings } from '../testing/settings';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 // Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
 // loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
 // failed now and then. A wider wait budget; the assertions are unchanged.
 configure({ asyncUtilTimeout: 5000 });
 
-const stops: Array<() => void> = [];
 let phone = true;
 
 beforeEach(async () => {
@@ -53,10 +52,7 @@ beforeEach(async () => {
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   vi.stubGlobal('scrollTo', vi.fn());
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
@@ -64,7 +60,7 @@ afterEach(async () => {
   // jsdom keeps one history for the file: let a pending back land, then start the next test on a plain entry.
   await new Promise(r => setTimeout(r, 20));
   history.replaceState(null, '');
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
@@ -383,6 +379,33 @@ describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
   });
 });
 
+// W1-3 pin: before H71 a latch read the device's mirror (MIRROR_KEY) at mount and showed the first-time
+// vitals card unless the mirror held a vitals row. Every mirror state now opens the same rows.
+describe('US-62 AC8 (W1-3): the vitals rows show whatever the device mirror held at mount', () => {
+  const rowsOf = (view: ReturnType<typeof render>, topic: string) => [...view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`)]
+    .map(r => r.querySelector('.md-row-label')?.textContent);
+  it.each([
+    ['no mirror (a fresh browser)', false, 1],
+    ['a mirror with no vitals row', false, 2],
+    ['a mirror with vitals rows', true, 2],
+  ] as const)('%s: Waist and Blood Pressure are rows, never first-time fields', async (_, vitals, visits) => {
+    if (vitals) await seed();
+    else {
+      await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+      await addMeasurement('ldl', 3.0, '2026-09-01T00:00:00.000Z');
+      await flushRoadmapStore();
+    }
+    for (let i = 1; i < visits; i++) { await renderTool(); cleanup(); }
+    const mirror = localStorage.getItem('health_roadmap_data');
+    expect(mirror === null).toBe(visits === 1);
+    if (mirror) expect(JSON.parse(mirror).previousMeasurements.some((m: { metricType: string }) => m.metricType === 'weight')).toBe(vitals);
+    const view = await renderTool();
+    expect(rowsOf(view, 'weight')).toContain('Waist');
+    expect(rowsOf(view, 'bloodPressure')).toContain('Blood Pressure');
+    expect(view.container.querySelector('#waistCm, #systolicBp, #diastolicBp')).toBeNull();
+  });
+});
+
 describe('US-62 AC9, AC11 (Brad 2026-11-02): desktop shows the rows too, the grids one click away with the same text', () => {
   it('rows first; "All results as a table" shows the grids, whose hints and targets read exactly as before rowTarget', async () => {
     phone = false;
@@ -629,6 +652,7 @@ describe('US-02 AC6, AC6c: the Blood Pressure page\'s systolic moves on to the d
     expect(document.activeElement).toBe(dia);
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 800 ms auto-advance must fire on its own.
   it('"75" moves after the pause', async () => {
     const { sys, dia } = await systolic();
     fireEvent.change(sys, { target: { value: '75' } });

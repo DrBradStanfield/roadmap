@@ -17,7 +17,7 @@ import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { dailyCron, LOCK_LOST, MACHINE_ID, MACHINE_LABEL } from './daily-cron.server';
-import { stillHoldsLock } from './supabase.server';
+import { stillHoldsLock } from './supabase-cron-lock.server';
 import { utcNowParts } from './cron-helpers.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { stampReminderDay } from './reminder-v2-day-stamp.server';
@@ -26,6 +26,12 @@ import { recordServerEvent } from './product-events.server';
 const TARGET_HOUR_UTC = 8;               // same morning window as the v1 reminder cron
 const BATCH_SIZE = 50;
 const CONCURRENCY_LIMIT = 5;
+/** One send's deadline (US-23 AC16). A healthy send takes about a second
+ *  (cron-day.ts sizes the pass at ~1 s per chunk of 5), so 30 s is far past a
+ *  slow one; and a chunk waits for its slowest send, so even if every send hung,
+ *  the 720 chunks that fit in the 6 h stuck limit (3,600 opt-ins) would still
+ *  finish inside it. */
+export const SEND_TIMEOUT_MS = 30_000;
 
 /** Process items in chunks of `limit`, using Promise.allSettled per chunk,
  *  and start no chunk after one with a result that `stops`.
@@ -104,7 +110,12 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string, holdsLo
   // The fence (US-23 AC15): send only while this pass still holds the lock.
   // A pass that stalled past the stuck limit and was taken over stops here.
   if (!(await holdsLock())) return 'lock-lost';
-  const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder");
+  // The deadline aborts the request itself, so the socket is freed; the
+  // aborted send returns false, as a Resend error does (US-23 AC16).
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), SEND_TIMEOUT_MS);
+  const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder", deadline.signal)
+    .finally(() => clearTimeout(timer));
   if (!sent) return 'email-send-failed';
 
   // US-17 usage signal: the send is the retention engine's core act — count it

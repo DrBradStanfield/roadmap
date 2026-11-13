@@ -17,7 +17,7 @@ extension HealthEngine {
     /// Erases the phone's record. Throws, and nothing is erased, when the record
     /// cannot be read: an erase lists the rows it removes.
     func eraseOnPhone(recordJSON: String, historyJSON: String?, now: Date, deviceId: String) throws -> PhoneErase {
-        try settled(PhoneErase.self, "erasePhoneJson", [recordJSON, historyJSON ?? NSNull(), now.formatted(Self.iso), deviceId])
+        try doorErasePhoneJson(PhoneErase.self, recordText: recordJSON, historyText: historyJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId)
     }
 
     /// What `cloudErase` answers.
@@ -28,8 +28,9 @@ extension HealthEngine {
         let error: String?
         /// The session's working copy is the erased record, sent or not.
         let erased: Bool
-        /// The phone's chat tombstones were made and written (by `keepChat`).
-        let chatErased: Bool
+        /// The phone's chat tombstones were made and written (by `keepChat`). CloudSync
+        /// sets it from Swift's own side once the erase landed (US-25 AC16h).
+        var chatErased: Bool
         /// The website's chat history in the cloud was tombstoned (or there was none).
         let cloudChatErased: Bool
         /// Why not, when the step ran and failed: "unreadable" or "unreachable".
@@ -44,6 +45,25 @@ extension HealthEngine {
         }
         /// The erased record to show, when `erased`.
         var view: CloudView?
+
+        private enum CodingKeys: String, CodingKey {
+            case success, error, erased, chatErased, cloudChatErased, cloudChatProblem, warning, view
+        }
+
+        /// Only `success` and `erased` must read (US-25 AC16h): the engine has already erased
+        /// when it answers, so an unreadable `view` is held as an erase with no record, and the
+        /// other fields fall back to their failure values.
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            success = try c.decode(Bool.self, forKey: .success)
+            erased = try c.decode(Bool.self, forKey: .erased)
+            error = try? c.decode(String.self, forKey: .error)
+            chatErased = (try? c.decode(Bool.self, forKey: .chatErased)) ?? false
+            cloudChatErased = (try? c.decode(Bool.self, forKey: .cloudChatErased)) ?? false
+            cloudChatProblem = try? c.decode(String.self, forKey: .cloudChatProblem)
+            warning = try? c.decode(String.self, forKey: .warning)
+            view = try? c.decode(CloudView.self, forKey: .view)
+        }
     }
 
     /// Erases the open cloud record: the cloud file is read first, and one that
@@ -55,7 +75,7 @@ extension HealthEngine {
         let block: @convention(block) (String) -> String = { text in
             keepChat(text) ? "" : "The chat history could not be written."
         }
-        let (json, order) = try await callAsync("cloudErase", [historyJSON ?? NSNull(), now.formatted(Self.iso), unsafeBitCast(block, to: AnyObject.self)], read: stamped)
+        let (json, order) = try await doorCloudErase(historyText: historyJSON, nowIso: now.formatted(Self.iso), keepChat: unsafeBitCast(block, to: AnyObject.self), read: stamped)
         var answer = try JSONDecoder().decode(CloudErase.self, from: Data(json.utf8))
         answer.view?.order = order
         return answer

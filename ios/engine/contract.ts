@@ -20,7 +20,7 @@ export interface Door {
   args: readonly Arg[];
   /** What the door answers, in words: hashed for a contract door. */
   returns: string;
-  /** The answer's wire type; left out (opaque) until the door's answer is typed. */
+  /** The answer's wire type, for the generated Swift; left out (opaque text) until it is typed. */
   result?: z.ZodType;
   /** A whole door outside the hashed file (bridge-optional.json optionalDoors). */
   optionalDoor?: true;
@@ -36,8 +36,128 @@ const nullableText = z.string().nullable();
 const number = z.number();
 const flag = z.boolean();
 const provider = z.enum(['dropbox', 'google-drive']);
-const nullableBytes = z.custom<ArrayBuffer>((v) => v instanceof ArrayBuffer).nullable();
-const callback = z.custom<(...args: never[]) => unknown>((v) => typeof v === 'function');
+// An ArrayBuffer from any context: JavaScriptCore's own, or Node's vm in the tests.
+const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').meta({ wire: 'bytes' }).nullable();
+// An argument entry.ts declares optional (`unitsJson?`): the app sends it, the engine's own
+// callers and tests may leave it out, and the door answers as before without it.
+const maybeText = text.optional();
+const maybeFlag = flag.optional();
+const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
+
+// --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
+// Wire shapes only; `.meta({ id })` names one for the generated Swift (contract-swift.ts). A field
+// the engine checks with words of its own (units, alcohol, Lp(a)'s unit, a supplement's status,
+// the chat part) is plain text here, so those words stay the answer.
+
+/** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
+export const PRESSURE_EDIT = z.object({
+  kind: z.literal('bloodPressure'),
+  systolic: z.number(),
+  diastolic: z.number(),
+  /** YYYY-MM-DD */
+  day: z.string(),
+  /** The user agreed to replace what the day holds: each changed half becomes a correction. */
+  replace: z.boolean().optional(),
+  /** With `replace`: the ids of the day's active halves the user saw. Any other set refuses. */
+  seenIds: z.array(z.string()).optional(),
+});
+
+/** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
+export const FORM_EDIT = z.discriminatedUnion('kind', [
+  /** One answer to a medication question (`field` is a key of `medications`). */
+  z.object({ kind: z.literal('medicationField'), field: z.string(), value: z.string() }),
+  /** One screening answer; '' clears it. */
+  z.object({ kind: z.literal('screening'), key: z.string(), value: z.string() }),
+  /** A supplement typed by name, not on the list. */
+  z.object({ kind: z.literal('customSupplement'), name: z.string() }),
+]);
+
+/** A medication row as the chat's change and its Undo read it (health-core ChatMedicationRow). */
+const chatMedicationRow = z.object({ medicationKey: z.string(), drugName: z.string(), doseValue: z.number().nullable().default(null), doseUnit: z.string().nullable().default(null) })
+  .meta({ id: 'ChatMedicationRow' });
+
+/** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson (chat-edits.ts). */
+export const CHAT_EDIT = z.discriminatedUnion('kind', [
+  /** One part ('medications' or 'review') of a reply's `proposedEdits`, exactly as the server sent
+   *  them. `today`: the phone's day, YYYY-MM-DD. `seen`: the review preview's `seen`, passed back as it
+   *  came; when the record no longer holds what the banner named, the review part is refused (US-67 AC3). */
+  z.object({ kind: z.literal('chatEdits'), part: z.string(), edits: z.unknown(), today: z.string(), seen: z.unknown().optional() }),
+  /** The medications part's Undo: each row as it was, written in order (chatEditsPreview's `undo`). */
+  z.object({ kind: z.literal('chatUndo'), medications: z.array(chatMedicationRow) }),
+]);
+
+/** One reading from Apple Health (health-core DeviceSample): in SI, at an instant with its zone's offset.
+ *  `pairId`: shared by the two halves of one blood pressure, which land together or not at all. */
+const healthSample = z.object({ externalId: z.string(), metricType: z.string(), value: z.number(), measuredAt: z.string(), pairId: z.string().optional() })
+  .meta({ id: 'HealthSample' });
+/** One Health Records resource as HealthKit gave it (health-core ClinicalRecordInput). */
+const healthRecord = z.object({ sourceId: z.string(), resourceType: z.string(), fhirVersion: z.string(), json: z.string() }).meta({ id: 'HealthRecord' });
+
+const dose = { doseValue: z.number().nullable().optional(), doseUnit: z.string().nullable().optional() };
+
+/** Every change the tab can ask for. Numbers are in the user's units. */
+export const EDIT = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('profile'), sex: z.enum(['male', 'female']).optional(), birthYear: z.number().optional(), birthMonth: z.number().optional(),
+    height: z.number().optional(), heightFeet: z.number().optional(), heightInches: z.number().optional(),
+  }),
+  PRESSURE_EDIT,
+  /** 'si' or 'conventional'. */
+  z.object({ kind: z.literal('units'), unitSystem: z.string() }),
+  /** "Do you drink alcohol?" (US-60): set from the plan card or About you; null clears it. */
+  z.object({ kind: z.literal('alcohol'), alcohol: z.string().nullable() }),
+  /** Lp(a)'s unit, written to the record as the web writes it (US-05 AC2). */
+  z.object({ kind: z.literal('lpaUnit'), unit: z.string() }),
+  z.object({ kind: z.literal('add'), metric: z.string(), value: z.number(), day: z.string().optional() }),
+  z.object({ kind: z.literal('correct'), id: z.string(), value: z.number() }),
+  /** A medication's current state (US-06): the web's write, history row included. */
+  z.object({ kind: z.literal('medication'), medicationKey: z.string(), drugName: z.string(), ...dose }),
+  /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
+  z.object({ kind: z.literal('supplement'), supplementKey: z.string(), supplementName: z.string(), ...dose, status: z.string(), startedAt: z.string().optional() }),
+  /** Readings from Apple Health (US-25 AC13), in SI, each at an instant with its zone's offset:
+   *  health-core's device-import decides what lands. */
+  z.object({
+    kind: z.literal('appleHealth'),
+    samples: z.array(healthSample),
+  }),
+  /** Lab results from Health Records (US-72): health-core's health-records-import decides what lands. */
+  z.object({ kind: z.literal('healthRecords'), records: z.array(healthRecord) }),
+  ...FORM_EDIT.options,
+  /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
+  z.object({ kind: z.literal('labImport'), extractionJson: z.string(), refs: z.array(z.string()), reportDay: z.string() }),
+  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
+   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
+  z.object({ kind: z.literal('labAdd'), series: z.string(), value: z.number(), day: z.string().optional(), unit: z.string().optional() }),
+  /** The add sheet's add (US-73 AC8): any test by name, in the unit typed, as the web's general add
+   *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
+  z.object({ kind: z.literal('labAddName'), name: z.string(), value: z.number(), unit: z.string(), day: z.string().optional() }),
+  ...CHAT_EDIT.options,
+]).meta({ id: 'EngineEdit' });
+
+// --- Answers the app decodes (typed; every other door's answer is still opaque) -------------
+
+/** What a Health Records batch did (US-72), counts only. */
+const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int() })
+  .meta({ id: 'HealthRecordCounts' });
+
+/** applyEditJson's and cloudEdit's answer: the new record, or why it refused. `reason`: the engine's
+ *  code ("out-of-range", "slot-occupied", "invalid-edit"); `message`: its words for the person;
+ *  `existingId`: the row holding the day; `erase`: in the cloud, the erase the new record is at. */
+export const EDIT_OUTCOME = z.object({
+  ok: z.boolean(), record: z.string().optional(), reason: z.string().optional(), message: z.string().optional(),
+  existingId: z.string().optional(), erase: z.string().optional(), healthRecords: healthRecordCounts.optional(),
+}).meta({ id: 'EditOutcome' });
+
+/** convertJson's answer: `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height. */
+export const CONVERSION = z.object({
+  value: z.number(), text: z.string(),
+  feetInches: z.object({ feet: z.int(), inches: z.int() }).meta({ id: 'HeightFeetInches' }).nullable(),
+}).meta({ id: 'UnitConversion' });
+
+export type Edit = z.infer<typeof EDIT>;
+export type PressureEdit = z.infer<typeof PRESSURE_EDIT>;
+export type FormEdit = z.infer<typeof FORM_EDIT>;
+export type ChatEdit = z.infer<typeof CHAT_EDIT>;
 
 export const CONTRACT_ABOUT = "The contract between the native app and its JavaScript engine (ios/architecture.md D3, US-25 AC18). The app's bridge id is the first 16 hex digits of this file's SHA-256 (EngineRelease.bridge in Swift); a downloaded engine is accepted only for the same id. Any change here is a new bridge, so an engine that needs it waits for an app update. bridge.test.ts and EngineBridgeContractTests.swift fail if either side drifts from this file.";
 
@@ -72,7 +192,8 @@ export const VALUES: Record<string, string> = {
 export const DOORS = {
   applyEditJson: {
     kind: 'sync',
-    args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    result: EDIT_OUTCOME,
+    args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-72), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it",
   },
   chatContextJson: {
@@ -82,7 +203,7 @@ export const DOORS = {
   },
   chatEditsJson: {
     kind: 'sync',
-    args: [['recordJson', text], ['editsJson', text], ['nowIso', text], ['deviceId', text], ['today', text], ['unitsJson', text]],
+    args: [['recordJson', text], ['editsJson', text], ['nowIso', text], ['deviceId', text], ['today', text], ['unitsJson', maybeText]],
     returns: "{medications: {lines: [{text}], undo: Edit} | null, review: {lines: [{text, replaces}], refusal} | null} JSON: what the chat's proposedEdits would do, in the phone's units (US-67 AC3); apply with the chatEdits and chatUndo edits through applyEditJson or cloudEdit",
     optionalAt: 2,
     optionalReturns: "review.seen: opaque JSON, what the record held for each review line (US-67 AC3). The app passes it back as `seen` on the review part's chatEdits edit, and the engine refuses that Save when the record has changed since. An engine before it sends none, and the app sends no seen; an edit without seen saves as before. Also medications.refusal (string or null; with a refusal, lines is [] and undo is null): the reply's medication change could not be read, so nothing is saved and the app says so. An engine before it sends medications null instead, and an app before it ignores the field.",
@@ -114,12 +235,13 @@ export const DOORS = {
   },
   cloudEdit: {
     kind: 'sync',
-    args: [['editJson', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text], ['shownLpaUnit', text]],
+    result: EDIT_OUTCOME,
+    args: [['editJson', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', maybeText], ['shownLpaUnit', maybeText]],
     returns: "JSON outcome; for a healthRecords edit it adds healthRecords, as applyEditJson's",
   },
   cloudErase: {
     kind: 'promise',
-    args: [['historyText', nullableText], ['nowIso', text], ['keepChat', callback]],
+    args: [['historyText', nullableText], ['nowIso', text], ['keepChat', maybeCallback]],
     returns: "Promise of JSON",
   },
   cloudFlush: {
@@ -169,10 +291,10 @@ export const DOORS = {
   },
   historyJson: {
     kind: 'sync',
-    args: [['recordJson', text], ['metric', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    args: [['recordJson', text], ['metric', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "MetricHistory JSON",
     optionalAt: 0,
-    optionalArgs: [['series', text]],
+    optionalArgs: [['series', maybeText]],
     optionalReturns: "rows[].bound and rows[].note (US-12 AC20): a lab result printed as a limit carries bound, its number in the row's unit, and its value reads \"> 60\"; the chart plots it at bound, hollow and out of the line. note is the plan's word on an active limit the shared rule (row-grade.ts limitUngraded) leaves ungraded, shown in place of \"Used in your plan\"; since US-12 AC21 also on weight, waist and blood pressure rows. An engine before them sends neither, so the app draws every point from value as before; an app before them finds no number in a limit's value, so it leaves that point off the chart and still lists it with its symbol. Also, for series \"lab\" (US-25 AC25): metric is a lab test's series key and the answer is that test's history (labHistory), the same shape; every row carries unit (its own, as displayed) and an exact row number (its value unrounded, for the chart; a limit has bound instead); unitsNote (health-core mixedUnitsNote) is present only for a series reported in more than one unit, so the page draws no chart. An engine before it takes no series and answers a lab key as no core metric (the read fails), so the app shows no history; an app before it sends none. Also, for series \"egfr\" and \"whtr\" (US-73 AC7): the worked-out series of that name, metric unread, in the same shape, one row a day, newest first, each row's id \"<series>:<source row id>\" (read only: a correction by it finds no row) and its number; an egfr row carries source (\"lab\" or \"calculated\"), and the whtr answer carries target (\"Normal <0.5\", health-core WHTR_TARGET). The egfr answer also carries plan {day, source}: the day and source (\"lab\" or \"calculated\") of the eGFR the plan uses now, a lab limit included (no point in the series), left out when the plan has none; an engine before it sends none, and the app draws the series' newest point as before. An engine before them answers these two series as a core metric of that name, an empty or failed history, so the app shows none; an app before them sends none. Also, for blood_pressure, rows[].systolicLimit and rows[].diastolicLimit (US-12 AC20a, #922): a half printed as a limit, as read (\"< 125\"), absent for an exact half; the chart draws that half hollow and out of its line. An engine before them sends neither, so the app draws every half as an exact point; an app before them ignores both.",
   },
   labReviewJson: {
@@ -202,12 +324,13 @@ export const DOORS = {
   },
   convertJson: {
     kind: 'sync',
+    result: CONVERSION,
     args: [['metric', text], ['value', number], ['from', text], ['to', text]],
     returns: "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)",
   },
   planJson: {
     kind: 'sync',
-    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "Plan JSON",
   },
   remindersJson: {
@@ -215,15 +338,15 @@ export const DOORS = {
     args: [['recordJson', text], ['nowIso', text], ['deviceId', text]],
     returns: "PhoneReminders JSON",
     optionalAt: 3,
-    optionalArgs: [['firstSeenJson', text]],
+    optionalArgs: [['firstSeenJson', maybeText]],
     optionalReturns: "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin|repeat>:<due day>, so a moved due date starts a new reminder, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged.",
   },
   screenJson: {
     kind: 'sync',
-    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "{myData: MyData, plan: {sections: [PlanSection], tiles: [StatTile], ms} or {error, planError}} JSON from one read and one computePlan: My data and the Plan tab's layout and summary tiles, the web's Quick Stats (US-25 AC2, AC22), each tile with its required `about` line (US-57 AC5); tiles [] when they cannot be drawn; myData.vo2Bands is the VO2 max bands row {sex, fromAge, toAge, p20, p50, p80} or null (US-56 AC8), where p20 is the Low line: FRIEND's P20, or from age 60 Apple's Low Cardio Fitness alert line, which can exceed p50 (men 80 to 89), so an app that assumes p20 < p50 must not receive it; ms the whole milliseconds from computePlan through the tiles and the layout; planError true for health-core's PlanError; throws when My data cannot be drawn",
     optionalAt: 1,
-    optionalArgs: [['isUS', flag]],
+    optionalArgs: [['isUS', maybeFlag]],
     optionalReturns: "plan.usProducts: us-products.ts's usProductSections, the [PlanSection] ready to draw, for isUS true (the App Store storefront USA) and a known adult: on the Supplements section each product card's suggestion carries usProduct {product, name, line, url} and its US description and references, and the section carries ownershipLine. Left out when no block shows (US-61). An app before it sends no isUS, so it gets none; an engine before it sends no usProducts, so the app draws the plain sections. Its first shape (2026-10-31, {blocks, ownershipLine}) was read by no shipped app, so the change is safe for builds 3 and 4. Also myData.vitals[], bloodTests[] and psa rows' target (health-core rowTarget(...).bare, or null) and previous (the newest earlier day's value in the row's units, or null), US-62 AC8/AC9: an engine before them sends neither, and the app draws the row with its date alone and no bracketed value; an app before them ignores both. Also every such row's status (health-core row-grade.ts valueStatus or pressureStatus: \"ok\", \"warn\", \"bad\" or null) and gradeWords (gradeWords: the words a screen reader says after an off-target value, or null), US-62 AC8 / US-25 AC17, and myData.labTests, the lab tests beyond the core ones as rows of the same shape (lab-series.ts groupLabValues, the web's MyDataRows.tsx labRows): an engine before them sends none, and the app draws every value plain, speaks no grade and lists no lab test row; an app before them ignores all three. Also every such row's note (US-12 AC21): \"Printed as a limit, so the plan cannot grade it against its cutoff.\" for a latest value printed as a limit the rule leaves ungraded, else null, which the app says where the grade would be; an engine before it sends none, and the app says nothing there; an app before it ignores it. Also myData.labTests rows' series: \"lab\" (US-25 AC25): the app opens, reads and adds to a lab test by it, never by name, so a lab test named like a core metric keeps its own page; an engine before it sends no labTests at all. Also movedRecord (US-66 AC14): the record as text when reading recordJson moved its blood tests into one table; the app opening the phone's file writes it there once. An engine before it sends none, so the file stays in the old shape until the next edit, as before; an app before it ignores it. Also plan.topics (US-73 AC3): health-core topicSections over usProducts when it shows, else sections, placed against myData's medication and screening questions: {sections: [{topic, title, cards, ownershipLine?}], medicines: [{key, suggestions}], screenings: [{group, suggestions}]}; every suggestion is in a card or a row, an urgent one in both; topic ids are weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests, supplements and other, and the app draws an id it does not know under Other. Left out when the plan cannot be laid out by topic. An engine before it sends none, and the app draws the sections; an app before it ignores it. Also myData.supplements' active and stopped rows' stoppedDay (US-73 AC10b): a stopped one's latest stop, YYYY-MM-DD on the phone, null when active or no stop is recorded; the app says \"Stopped <day>\" on a stopped row. An engine before it sends none, and the app says \"Stopped\" alone; an app before it ignores it. Also myData.documents (US-73 AC12, documents.ts documentShelf): {scans, others}, each [{id, title, typeLabel, day (YYYY-MM-DD or null), content (the extracted markdown), sourceFileName (or null), original ({name, mimeType}, null for a text-only row)}], newest first and an undated one last; live rows only and never a lab report's archive row, as the web's Documents list. An engine before it sends none, and the app lists no documents; an app before it ignores it.",
   },
   sectionsJson: {
@@ -268,3 +391,15 @@ export const DOORS = {
 } satisfies Record<string, Door>;
 
 export type DoorName = keyof typeof DOORS;
+
+/**
+ * Refuses a call whose arguments are not the door's wire types (I-2 step 2): each door's first
+ * line, `checkArgs('name', arguments)`, so a malformed call stops where it enters. Never the
+ * value in the message: it may be health data.
+ */
+export function checkArgs(name: DoorName, values: ArrayLike<unknown>): void {
+  const door: Door = DOORS[name];
+  [...door.args, ...(door.optionalArgs ?? [])].forEach(([arg, type], at) => {
+    if (!type.safeParse(values[at]).success) throw new TypeError(`${name}: ${arg} is not the contract's type`);
+  });
+}

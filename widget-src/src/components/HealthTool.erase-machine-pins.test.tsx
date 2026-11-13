@@ -21,7 +21,12 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+
+/** The harness's drain and settle on the fake clock: twenty macrotask hops,
+ *  each running the timers due now, and `ms` jumped at once. */
+const drain = async () => { for (let i = 0; i < 20; i++) await vi.advanceTimersByTimeAsync(0); };
+const settle = async (ms = 0) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); await drain(); }); };
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -37,8 +42,6 @@ import { HealthTool } from './HealthTool';
 const FILE_KEY = 'health_roadmap_file_v2';
 const PROFILE = { sex: 'male' as const, heightCm: 180, birthYear: 1974, birthMonth: 1 };
 
-const drain = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0)); };
-const settle = async (ms = 0) => { await act(async () => { await new Promise(r => setTimeout(r, ms)); await drain(); }); };
 
 type File = ReturnType<typeof migrateFile>;
 /** Another tab writes the record, as its own store would, and this tab hears the storage event. */
@@ -46,7 +49,13 @@ async function anotherTabWrites(change: (file: File, now: string) => File) {
   const adapter = new LocalStorageAdapter();
   const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
   const now = new Date(Date.now() + 1000).toISOString();
-  await adapter.write(ROADMAP_FILE_NAME, change(migrateFile(body, { deviceId: 'other-device', now }), now), version);
+  const file = change(migrateFile(body, { deviceId: 'other-device', now }), now);
+  // Its store stamps the file's last write too. Without it, a seed that ran
+  // inside one millisecond (always, on the fake clock) leaves the new stamp
+  // clamped back to a tie with the old one (migrate.ts sanitizeStamp).
+  // Why: a real store's save sets meta.updatedAt with the write; without it the profile stamp is newer than the file's last write, merge.ts/migrate.ts sanitizeStamp clamps it back, and the stamps tie.
+  file.meta = { ...file.meta, updatedAt: now };
+  await adapter.write(ROADMAP_FILE_NAME, file, version);
   window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
 }
 /** Another writer's erase, as its deleteUserData writes it (HealthTool.erase-event-pins anotherWriterErases). */
@@ -63,19 +72,17 @@ function erased(prior: File, now: string): File {
 let alerts: string[];
 /** Every write the page asked of the store: each write method asks `refuses` first (roadmap-store.ts). */
 let asks: ReturnType<typeof vi.spyOn>;
-const stops: Array<() => void> = [];
-useHealthToolLifecycle();
+// Fake timers that move with the clock: settle(ms) jumps the saves and re-reads
+// at once, with the same durations, and its 20-hop drain still runs.
+useHealthToolLifecycle({ fakeTimers: true });
 beforeEach(() => {
   alerts = [];
   vi.stubGlobal('alert', (m: string) => { alerts.push(m); });
   vi.stubGlobal('confirm', () => true);
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   asks = vi.spyOn(RoadmapStore.prototype as unknown as { refuses: (erase?: string) => boolean }, 'refuses');
 });
-afterEach(() => { for (const stop of stops.splice(0)) stop(); });
+afterEach(() => { stopLiveRefresh(); });
 
 async function openPage() {
   await seedGuest(PROFILE, [['weight', 82]]);

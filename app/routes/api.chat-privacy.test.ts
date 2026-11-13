@@ -13,17 +13,19 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: mocks.auth,
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('../lib/supabase.server', () => ({
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(), getOrCreateGuestSession: vi.fn(), GuestRateLimitError: class extends Error {},
 }));
-vi.mock('../lib/chat.server', () => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
-  loadMatchedArticlesFromHandles: () => null,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', async (o) => ({ ...await o<object>(), createUserClient: supa.createUserClient }));
+// A fixed 4000-character limit, and the real module never loads.
+vi.mock('../lib/chat.server', async () => (await import('../lib/chat-server.test-helpers')).chatServerStub({ MAX_MESSAGE_LENGTH: 4000 }, {
+  buildConversationMessages: mocks.buildConversationMessages,
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false }),
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 4000,
 }));
 vi.mock('../lib/chat-router.server', () => ({ sanitizeForRouter: (text: string) => text, reportRouterFailure: vi.fn(), ROUTER_VERSION: 'test' }));
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));

@@ -68,7 +68,7 @@ vi.mock('./youtube-bot-store.server', async (orig) => ({
   persistYouTubeTurn: async (p: Record<string, unknown>) => { persisted.push(p); },
 }));
 
-vi.mock('./supabase.server', async () => {
+vi.mock('./supabase-client.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
   const json = (v: unknown, status = 200, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(v), { status, headers: { 'content-type': 'application/json', ...headers } });
@@ -220,13 +220,13 @@ async function googleFetch(input: RequestInfo | URL, init?: RequestInit): Promis
 // Harness
 // ---------------------------------------------------------------------------
 
-type Bot = typeof import('./youtube-bot.server');
+type Bot = typeof import('./youtube-bot.server') & Pick<typeof import('./youtube-bot-store.server'), 'readPostingCaps'>;
 let machines: Bot[] = [];
 
 /** A fresh process on the shared table: a new module instance, which auto-starts on import. */
 async function bootMachine(): Promise<Bot> {
   vi.resetModules();
-  const m = await import('./youtube-bot.server');
+  const m = { ...(await import('./youtube-bot.server')), readPostingCaps: (await import('./youtube-bot-store.server')).readPostingCaps };
   machines.push(m);
   return m;
 }
@@ -420,6 +420,31 @@ describe('US-27 AC5: the posting mark comes before the post', () => {
       expect(row('c1')).toBeUndefined(); // released, so a later tick retries
     });
   }
+
+  it('US-27 AC5a (H50): a failed mark unclaims its own claim row only, never a fresh claim another machine made after the release', async () => {
+    g.threads = ['c1'];
+    let fresh: Row | undefined;
+    db.fail = (r) => {
+      // The mark lands but its read-back fails: A deletes its marked row, then unclaims.
+      if (r.method === 'GET' && r.params.get('posted_at')?.startsWith('eq.')) {
+        return new Response(JSON.stringify({ message: 'synthetic outage' }), { status: 500 });
+      }
+      // Between A's release and A's unclaim, machine B sees the comment free and claims it.
+      if (!fresh && r.method === 'DELETE' && r.params.get('posted') === 'eq.false') {
+        fresh = { id: db.nextId++, youtube_comment_id: 'c1', posted: false, video_id: null, posted_at: null,
+          posted_youtube_id: null, user_channel: null, user_comment: null, reply_text: null };
+        db.table.push(fresh);
+      }
+      return null;
+    };
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(fresh).toBeDefined();
+    expect(g.posts).toHaveLength(0);
+    // B's claim survives A's unclaim, so B's mark can find it.
+    expect(db.table.filter((r) => r.youtube_comment_id === 'c1')).toEqual([fresh]);
+  });
 });
 
 describe('US-27 AC5: a definite refusal releases the mark (Q3)', () => {
@@ -769,7 +794,7 @@ describe('condition 3: a crash between the mark and the post', () => {
     expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: null, video_id: 'v1' });
     const b = await bootMachine(); // the restarted process
     const store = await import('./youtube-bot-store.server');
-    await store.unclaimComment('c1');
+    await store.unclaimComment('c1', row('c1')!.id);
     await store.cleanupSkippedRows();
     expect(row('c1')).toBeDefined();
     expect(await b.readPostingCaps()).toMatchObject({ dailyCount: 1, videoPostCounts: new Map([['v1', 1]]) });

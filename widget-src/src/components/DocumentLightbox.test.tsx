@@ -7,8 +7,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { DocumentLightbox } from './DocumentLightbox';
-import { readDocumentFile } from '../lib/roadmap-data';
+import { DocumentLightbox, deleteTransition, originalTransition, type DeleteStep, type OriginalView } from './DocumentLightbox';
+import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import type { ApiDocument } from '../lib/api-types';
 
 vi.mock('../lib/roadmap-data', () => ({ readDocumentFile: vi.fn(), deleteDocument: vi.fn() }));
@@ -67,5 +67,71 @@ describe('US-14 AC3: View original never opens an active type', () => {
     expect(open).toHaveBeenCalledWith('blob:x', '_blank', 'noopener');
     expect(opened[0].type).toBe('application/pdf');
     expect(click).not.toHaveBeenCalled();
+  });
+});
+
+// US-14 AC9 (A7): delete and "View original file" each run on one named state, and an answer
+// that throws gives the button back instead of leaving it on "Deleting..." or "Opening…".
+describe('US-14 AC9: delete and view original never stick', () => {
+  const button = (name: string) => screen.getByRole('button', { name }) as HTMLButtonElement;
+
+  it('the transition tables: each state x event names the state that follows', () => {
+    const deleteRows: Array<[DeleteStep, 'press' | 'settled', DeleteStep]> = [
+      ['idle', 'press', 'confirming'], ['confirming', 'press', 'deleting'], ['deleting', 'press', 'deleting'],
+      ['idle', 'settled', 'idle'], ['confirming', 'settled', 'confirming'], ['deleting', 'settled', 'idle'],
+    ];
+    for (const [s, e, n] of deleteRows) expect([s, e, deleteTransition(s, e)]).toEqual([s, e, n]);
+    const originalRows: Array<[OriginalView, 'open' | 'opened' | 'missing', OriginalView]> = [
+      ['idle', 'open', 'opening'], ['opening', 'open', 'opening'], ['failed', 'open', 'opening'],
+      ['idle', 'opened', 'idle'], ['opening', 'opened', 'idle'], ['failed', 'opened', 'failed'],
+      ['idle', 'missing', 'idle'], ['opening', 'missing', 'failed'], ['failed', 'missing', 'failed'],
+    ];
+    for (const [s, e, n] of originalRows) expect([s, e, originalTransition(s, e)]).toEqual([s, e, n]);
+  });
+
+  it('delete asks once, then deletes and closes', async () => {
+    vi.mocked(deleteDocument).mockResolvedValue(true);
+    const onClose = vi.fn();
+    const onDeleted = vi.fn();
+    render(<DocumentLightbox doc={doc('')} onClose={onClose} onDeleted={onDeleted} />);
+    fireEvent.click(button('Delete Document'));
+    expect(deleteDocument).not.toHaveBeenCalled();
+    fireEvent.click(button('Confirm Delete'));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onDeleted).toHaveBeenCalledWith('d1');
+  });
+
+  it('a delete the record refuses goes back to the first press', async () => {
+    vi.mocked(deleteDocument).mockResolvedValue(false);
+    const onClose = vi.fn();
+    render(<DocumentLightbox doc={doc('')} onClose={onClose} />);
+    fireEvent.click(button('Delete Document'));
+    fireEvent.click(button('Confirm Delete'));
+    await waitFor(() => expect(button('Delete Document').disabled).toBe(false));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('a delete that throws gives the button back', async () => {
+    vi.mocked(deleteDocument).mockRejectedValue(new Error('store gone'));
+    render(<DocumentLightbox doc={doc('')} onClose={() => {}} />);
+    fireEvent.click(button('Delete Document'));
+    fireEvent.click(button('Confirm Delete'));
+    await waitFor(() => expect(button('Delete Document').disabled).toBe(false));
+  });
+
+  it('a missing original says so and gives the button back', async () => {
+    vi.mocked(readDocumentFile).mockResolvedValue(null);
+    render(<DocumentLightbox doc={doc('Lab reports/2024-06-01 Panel.pdf')} onClose={() => {}} />);
+    fireEvent.click(button('View original file'));
+    expect(await screen.findByText('Could not load the original file from your cloud storage.')).toBeTruthy();
+    expect(button('View original file').disabled).toBe(false);
+  });
+
+  it('a read that throws says so and gives the button back', async () => {
+    vi.mocked(readDocumentFile).mockRejectedValue(new Error('network'));
+    render(<DocumentLightbox doc={doc('Lab reports/2024-06-01 Panel.pdf')} onClose={() => {}} />);
+    fireEvent.click(button('View original file'));
+    expect(await screen.findByText('Could not load the original file from your cloud storage.')).toBeTruthy();
+    expect(button('View original file').disabled).toBe(false);
   });
 });

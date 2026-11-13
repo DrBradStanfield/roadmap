@@ -29,9 +29,10 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 
 import { HealthTool } from '../src/components/HealthTool';
 import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
-import { RoadmapStore } from '../src/storage/roadmap-store';
+import { bootSignIn } from '../src/storage/sign-in-state';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
+import { trackLiveRefresh, stopLiveRefresh } from '../src/testing/health-tool-harness';
 
 const FULL_LINE = 'Could not save on this device (local storage may be full).';
 
@@ -54,7 +55,6 @@ class ByteBudgetStorage implements Storage {
 }
 
 const PROFILE = { sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 } as const;
-const stops: Array<() => void> = [];
 let storage: ByteBudgetStorage;
 
 beforeEach(async () => {
@@ -67,17 +67,14 @@ beforeEach(async () => {
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements(PROFILE, {});
   await flushRoadmapStore();
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   storage.limit = Number.POSITIVE_INFINITY;
   await flushRoadmapStore(); // a save that lands clears the refusal for the next file
   vi.restoreAllMocks(); vi.unstubAllGlobals();
@@ -127,12 +124,13 @@ describe('US-01 AC5 on a phone: the alert is atop My health and atop Chat, which
 // says so atop My health too, through app.tsx's `syncAlert` (the same StorageBar, problemsOnly).
 describe('US-62 AC34 on a phone: a reconnect shows atop My health, not only in Account', () => {
   it('the reconnect button is in My health\'s header and on the page', async () => {
+    bootSignIn({ kind: 'unreachable', provider: 'dropbox' }); // the load's answer (US-09 AC48)
     const view = render(
       <HealthTool
-        storageBar={<StorageBar backend="local" reconnect="dropbox" />}
+        storageBar={<StorageBar backend="local" />}
         saveAlert={<LocalSaveAlert backend="local" />}
-        syncAlert={<StorageBar backend="local" reconnect="dropbox" problemsOnly />}
-        syncControl={({ hasData, attention }) => <SyncControl backend="local" reconnect="dropbox" hasData={hasData} attention={attention} />}
+        syncAlert={<StorageBar backend="local" problemsOnly />}
+        syncControl={({ hasData, attention }) => <SyncControl backend="local" hasData={hasData} attention={attention} />}
       />,
     );
     const retry = await waitFor(() => {

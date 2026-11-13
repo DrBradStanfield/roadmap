@@ -15,6 +15,7 @@
  * client.
  */
 import { ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { TRANSFER_DEADLINE_MS } from './transfer-deadline';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
@@ -99,9 +100,11 @@ function pathArg(ref: string): string {
   return ref.startsWith('id:') ? ref : `/${ref}`;
 }
 
-/** One `files/download`. The two readers below parse its body their own way. */
-function download(accessToken: string, ref: string, signal?: AbortSignal): Promise<Response> {
+/** One `files/download`. The two readers below parse its body their own way;
+ *  a document gets the document deadline, the record the call bound. */
+function download(accessToken: string, ref: string, signal?: AbortSignal, timeoutMs?: number): Promise<Response> {
   return request(DOWNLOAD_URL, {
+    timeoutMs,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -141,7 +144,7 @@ export async function dropboxRead(accessToken: string, fileName: string, signal?
  * supplied only ever SELECTS from the listing and never forms a path.
  */
 export async function dropboxDownload(accessToken: string, ref: string, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
-  const res = await download(accessToken, ref, signal);
+  const res = await download(accessToken, ref, signal, TRANSFER_DEADLINE_MS.document);
   if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
   return new Uint8Array(await res.arrayBuffer());
 }
@@ -156,7 +159,7 @@ export async function dropboxDownload(accessToken: string, ref: string, signal?:
 export async function dropboxUploadDocument(accessToken: string, ref: string, bytes: Blob | Uint8Array<ArrayBuffer>): Promise<void> {
   const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
   const res = await request(UPLOAD_URL, {
-    timeoutMs: 300_000,
+    timeoutMs: TRANSFER_DEADLINE_MS.document,
     mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d)
     method: 'POST',
     headers: {

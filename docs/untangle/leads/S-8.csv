@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-S-8,S2 server,Retire leftover commerce writes nothing reads,not started,"Inferred, unverified (the audit lane file was not available): webhooks.orders-paid.ts message-credit writes still present",,,yes
+S-8,S2 server,Retire leftover commerce writes nothing reads,not started,"Checked 2026-11-13: webhooks.orders-paid.ts:12,38 still writes message credits through addMessageCredits (supabase-account.server.ts:57); nothing in app, packages or widget-src reads message_credits (only the DbProfile type, supabase-account.server.ts:23). Was: Inferred, unverified (the audit lane file was not available): webhooks.orders-paid.ts message-credit writes still present",,,yes

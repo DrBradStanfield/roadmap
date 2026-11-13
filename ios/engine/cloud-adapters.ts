@@ -9,6 +9,7 @@ import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -61,14 +62,29 @@ function accessToken(provider: Provider, force: boolean): Promise<string> {
   });
 }
 
+/** 401s refreshOn401 did not retry: no fresh token was tried, so the next call starts on one (S57b). */
+const REFRESH_SKIPPED = new WeakSet<object>();
+
 /** A call the provider refused with 401 runs once more on a forced token refresh. */
 async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T> {
   try {
     return await call(false);
   } catch (error) {
     if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError) throw error;
+    // Not after an upload that may have landed (Drive's verify read): the retry's own answer
+    // would replace that mark, and an erase could be put back over a cloud that holds it (S57).
+    if (mayHaveLanded(error)) {
+      REFRESH_SKIPPED.add(error);
+      throw error;
+    }
     return call(true);
   }
+}
+
+/** True when `error`, or an error it wraps (SyncManager rewraps), is a 401 refreshOn401 did not retry. */
+function refreshSkipped(error: unknown): boolean {
+  for (let e = error, depth = 0; e instanceof Error && depth < 8; e = e.cause, depth++) if (REFRESH_SKIPPED.has(e)) return true;
+  return false;
 }
 
 /**
@@ -84,6 +100,8 @@ export class PhoneCloudAdapter implements StorageAdapter {
   readonly id: Provider;
   readonly label: string;
   private current: { token: string; adapter: StorageAdapter } | null = null;
+  /** A 401 went unretried (refreshOn401): the next call asks for a fresh token first (S57b). */
+  private refreshNext = false;
   /** Drive's record copies, kept across token refreshes (US-10 AC4a). */
   private readonly recordIds = new Set<string>();
 
@@ -125,13 +143,20 @@ export class PhoneCloudAdapter implements StorageAdapter {
     return this.run((cloud) => cloud.writeDocument(ref, bytes));
   }
 
-  private run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
-    return refreshOn401(async (force) => call(await this.adapter(force)));
+  private async run<T>(call: (cloud: StorageAdapter) => Promise<T>): Promise<T> {
+    try {
+      return await refreshOn401(async (force) => call(await this.adapter(force)));
+    } catch (error) {
+      // The failed write is not retried; the same error goes on, its mark intact.
+      if (refreshSkipped(error)) this.refreshNext = true;
+      throw error;
+    }
   }
 
   /** One adapter per token, so Drive's file-id cache lives as long as the token. */
   private async adapter(force: boolean): Promise<StorageAdapter> {
-    const token = await accessToken(this.provider, force);
+    const token = await accessToken(this.provider, force || this.refreshNext);
+    this.refreshNext = false;
     if (this.current?.token !== token) {
       const options = { documents: 'write' } as const;
       // No oldest-first chat lookup: EngineHTTP.swift allows no orderBy (US-10 AC4a).
@@ -221,7 +246,9 @@ export class PhoneFileAdapter implements StorageAdapter {
 /** What went wrong, as one word Swift turns into plain words (SyncProblem.swift). */
 function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | 'unreachable' {
   if (error instanceof SignInError) return 'sign-in';
-  if (error instanceof StorageError && error.status === 401) return 'sign-in';
+  // A 401 after an upload that may have landed was never retried on a fresh token, so signing
+  // in again is not yet known to be needed: the next call refreshes first (S57b).
+  if (error instanceof StorageError && error.status === 401) return refreshSkipped(error) ? 'unreachable' : 'sign-in';
   // A 403 is a refusal of access, except Drive's limits, read from the body's
   // reason: a rate or daily limit passes (retry later), a full Drive needs space.
   // Neither is fixed by signing in again.

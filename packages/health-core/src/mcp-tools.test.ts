@@ -12,46 +12,43 @@ import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-
 import * as z from './zod';
 import {
   addLabValues,
+  addMeasurement,
+  callTool,
+  runToolOverSync,
+  RECORD_FREE_TOOLS,
+  correctValueTool,
+  getPlan,
+  OUTPUTS,
+  readRecord,
+  redactRecord,
+} from './mcp-tools';
+import { updateProfile } from './profile-edits';
+import {
   addLabValuesInput,
   importDocumentsInput,
   fileResultRow,
   fileResultsInput,
-  addMeasurement,
   addMeasurementInput,
-  callTool,
   FEEDBACK_REPO,
   OPEN_SOURCE_NOTE,
   correctValueInput,
-  fileFeedback,
-  folderNudge,
-  FOLDER_NUDGE_HINT,
-  FOLDER_NUDGE_MAX,
-  runToolOverSync,
   MAX_FILE_NAME_LENGTH,
   MAX_NAME_LENGTH,
-  type FeedbackFiler,
-  type FeedbackIssue,
-  RECORD_FREE_TOOLS,
-  correctValueTool,
-  getPlan,
   getPlanInput,
   labValueInput,
   MAX_LAB_ROWS_PER_CALL,
-  MCP_TOOLS,
   MAX_FEEDBACK_URL_LENGTH,
-  OUTPUTS,
-  readRecord,
   readRecordInput,
   readRecordOutput,
   SI_NOTE,
-  redactRecord,
-  reportFeedback,
   reportFeedbackInput,
-  updateProfile,
   updateProfileInput,
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
-} from './mcp-tools';
+} from './mcp-tool-contract';
+import { fileFeedback, type FeedbackFiler, type FeedbackIssue, reportFeedback } from './mcp-feedback';
+import { folderNudge, FOLDER_NUDGE_HINT, FOLDER_NUDGE_MAX } from './mcp-import';
+import { MCP_TOOLS } from './mcp-tool-catalogue';
 import { ageOnDay, calculateEGFR } from './calculations';
 import { computePlan, renderJson, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
@@ -105,11 +102,12 @@ function ok(outcome: { status: string; text: string; file?: RoadmapFile }) {
  * The tool layer as it loads with `REPO_PUBLIC` set either way (US-32 AC39),
  * so both states are pinned whichever one ships.
  */
-async function withRepoPublic(isPublic: boolean): Promise<typeof import('./mcp-tools')> {
+type ToolLayer = typeof import('./mcp-tools') & typeof import('./mcp-tool-contract') & typeof import('./mcp-feedback') & typeof import('./mcp-tool-catalogue');
+async function withRepoPublic(isPublic: boolean): Promise<ToolLayer> {
   vi.resetModules();
   vi.doMock('./plan', async (importOriginal) => ({ ...(await importOriginal<typeof import('./plan')>()), REPO_PUBLIC: isPublic }));
   try {
-    return await import('./mcp-tools');
+    return { ...(await import('./mcp-tools')), ...(await import('./mcp-tool-contract')), ...(await import('./mcp-feedback')), ...(await import('./mcp-tool-catalogue')) };
   } finally {
     vi.doUnmock('./plan');
     vi.resetModules();
@@ -1198,7 +1196,7 @@ describe('US-32 — the dispatcher', () => {
 describe('US-32 AC9 — report_feedback prepares an issue the user submits', () => {
   const GOOD = { kind: 'bug', title: 'correct_value refused a row it should accept', detail: 'It said the row was superseded.' } as const;
   // US-32 AC39: the prefilled link is handed over only while the repository is public.
-  let reportFeedback: typeof import('./mcp-tools').reportFeedback;
+  let reportFeedback: ToolLayer['reportFeedback'];
   beforeAll(async () => { ({ reportFeedback } = await withRepoPublic(true)); });
 
   /** The URL a call prepared, or a failed expectation naming the refusal. */
@@ -1456,24 +1454,47 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   // length. Each row is the worst case for one pattern: a long run of its own
   // characters with nothing that completes a match. None holds contact details
   // or a value, so the guard passes it and the URL cap refuses it as too long.
-  it('US-32 AC58 — judges the worst long run for each guard pattern quickly', () => {
-    for (const [name, detail] of [
-      ['plain letters', 'a'.repeat(200_000)],
-      ['email', 'a'.repeat(100_000) + '@' + 'a'.repeat(100_000)],
-      ['file name', 'a.'.repeat(100_000)],
-      ['value with unit', '1'.repeat(200_000)],
-      ['value with unit, decimal', '1.' + '2'.repeat(199_998)],
-      ['url with query', 'http://'.repeat(28_572)],
-      ['phone', '1' + ' '.repeat(199_998) + 'x'],
-    ] as const) {
-      const started = performance.now();
-      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
-      expect(performance.now() - started, name).toBeLessThan(1000);
+  // The test times growth, not speed: a linear guard takes about 4x as long on
+  // 4x the text on any machine, a quadratic one about 16x. An absolute budget
+  // failed on a loaded Mac and in CI (docs/gotchas.md). Each size is the
+  // fastest of a few runs, so a load spike on one run does not count.
+  it('US-32 AC58 — judges the worst long run for each guard pattern in linear time', () => {
+    const SIZES = [12_500, 50_000, 200_000];
+    const GROWTH_LIMIT = 10; // per 4x step: linear ~4, quadratic ~16
+    const FLOOR_MS = 1; // below this a timer reading is noise, not a cost
+    const HANG_MS = 10_000; // last-resort backstop, whatever the machine
+    const fastest = (detail: string) => {
+      let best = Infinity;
+      for (let run = 0; run < 3; run += 1) {
+        const started = performance.now();
+        reportFeedback({ ...GOOD, detail }, NOW);
+        best = Math.min(best, performance.now() - started);
+      }
+      return best;
+    };
+    for (const [name, make] of [
+      ['plain letters', (n) => 'a'.repeat(n)],
+      ['email', (n) => 'a'.repeat(n / 2) + '@' + 'a'.repeat(n / 2)],
+      ['file name', (n) => 'a.'.repeat(n / 2)],
+      ['value with unit', (n) => '1'.repeat(n)],
+      ['value with unit, decimal', (n) => '1.' + '2'.repeat(n - 2)],
+      ['url with query', (n) => 'http://'.repeat(Math.ceil(n / 7))],
+      ['phone', (n) => '1' + ' '.repeat(n - 2) + 'x'],
+    ] as const satisfies ReadonlyArray<readonly [string, (n: number) => string]>) {
+      let previous = fastest(make(SIZES[0]));
+      for (const size of SIZES.slice(1)) {
+        const took = fastest(make(size));
+        expect(took, `${name} at ${size}`).toBeLessThan(HANG_MS);
+        expect(took / Math.max(previous, FLOOR_MS), `${name}: growth from ${size / 4} to ${size} characters`)
+          .toBeLessThan(GROWTH_LIMIT);
+        previous = took;
+      }
+      const outcome = reportFeedback({ ...GOOD, detail: make(SIZES[SIZES.length - 1]) }, NOW);
       expect(outcome, name).toMatchObject({ status: 'rejected' });
       expect(outcome, name).not.toHaveProperty('reason');
       expect(outcome.text, name).toContain('too long');
     }
-  });
+  }, 60_000);
 
   it('US-32 AC58 — the linear patterns refuse what they refused before', () => {
     for (const detail of [
@@ -1841,7 +1862,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
   const UNAVAILABLE = 'Feedback could not be filed right now. Nothing was posted. Try again later.';
   /** A permanent refusal, not a transient one: retrying cannot help while the repository is hidden. */
   const HIDDEN = 'This server cannot file reports while the project\'s GitHub is not public. Nothing was posted.';
-  const description = (mod: typeof import('./mcp-tools')) => mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.description;
+  const description = (mod: ToolLayer) => mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.description;
   const filer: FeedbackFiler = async () => ({ ok: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 });
 
   it('while public, the description, the proposal and the tokenless link read as published (2026-10-12)', async () => {
@@ -1888,7 +1909,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
   });
 
   it('never hands a proposal a structured url, only the tokenless answer, and says so in the published schema', async () => {
-    const urlDescription = (mod: typeof import('./mcp-tools')) =>
+    const urlDescription = (mod: ToolLayer) =>
       (mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.outputSchema.properties as Record<string, { description?: string }>).url.description;
     const shown = await withRepoPublic(true);
     // A proposal's link, submitted beside the confirm, would file a second issue under the user's own account.
@@ -2001,19 +2022,17 @@ describe('US-32 — the counter\u2019s tool names and the tools themselves', () 
 // ---------------------------------------------------------------------------
 // US-35 — import_documents: extract never writes, commit applies a selection
 // ---------------------------------------------------------------------------
+import { importDocumentsOutput, MAX_DOCUMENT_TEXT, MAX_UNRECOGNIZED_LINES } from './mcp-tool-contract';
 import {
   IMPORT_HOSTED_ONLY,
   importDocumentsCommit,
-  importDocumentsOutput,
   isAlreadyImported,
   dedupFileName,
-  MAX_DOCUMENT_TEXT,
-  MAX_UNRECOGNIZED_LINES,
   prepareImport,
   type ExtractedFile,
   type ImportPayload,
   type ImportSurface,
-} from './mcp-tools';
+} from './mcp-import';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
@@ -3100,7 +3119,8 @@ describe('US-37 AC1 — the nudge names folder files no live document row names'
 // US-36 — file_results: the assistant read the file, the server checks every row
 // ---------------------------------------------------------------------------
 import { CORE_METRIC_ALIASES, resolveCoreMetricName, UNIFIED_SYSTEM_PROMPT } from './lab-extraction';
-import { fileResultsBundle, type FileResultsRequest, type FileResultsSource, type ImportBundle } from './mcp-tools';
+import { type FileResultsRequest, type FileResultsSource } from './mcp-tool-contract';
+import { fileResultsBundle, type ImportBundle } from './mcp-import';
 import { reportedToCanonical } from './units';
 
 /** One row as the assistant would send it; the report's own spelling, the core key it thinks it is. */
@@ -3659,7 +3679,7 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   });
 });
 
-import { importCommitInput, MAX_APPROVAL_LENGTH, MAX_RECEIPT_LENGTH } from './mcp-tools';
+import { importCommitInput, MAX_APPROVAL_LENGTH, MAX_RECEIPT_LENGTH } from './mcp-tool-contract';
 
 describe('US-35 AC7 / US-36 AC9 — a receipt is UUID-sized, and every published receipt field says so', () => {
   it('caps receipt and confirm at 64 characters in the schemas the tool layer parses and the ones tools/list publishes', () => {

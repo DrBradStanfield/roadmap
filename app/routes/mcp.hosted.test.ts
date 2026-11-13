@@ -28,8 +28,11 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
+import { MAX_RECEIPT_LENGTH, SERVER_VERSION } from '../../packages/health-core/src/mcp-tool-contract';
+import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
+import type { Extractor } from '../lib/mcp-import.server';
 import { MAX_CORRECTION_AGE_DAYS } from '../lib/mcp-corrections.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -59,7 +62,7 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
+  makeAdapter = () => new MemoryAdapter(cloud);
   // Dropbox's token endpoint is the only network call the server makes here.
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
@@ -69,7 +72,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
+  extractor = undefined;
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -170,6 +173,11 @@ async function redeem(form: Record<string, string>) {
   return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number; scope: string };
 }
 
+/** The model call an import case passes to the endpoint; undefined is the real one (this file's own state, reset after each case). */
+let extractor: Extractor | undefined;
+/** The folder every case's endpoint opens: the in-memory cloud, set before each case (this file's own state). */
+let makeAdapter: AdapterFactory;
+
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
   const res = await mcpEndpoint(
     new Request(`${ISSUER}/mcp`, {
@@ -178,6 +186,7 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     }),
     now,
+    { extract: extractor, makeAdapter },
   );
   expect(res.status).toBe(200);
   return (await res.json()) as {
@@ -541,6 +550,7 @@ describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () =
         body: JSON.stringify({ jsonrpc: '2.0', method, params }),
       }),
       NOW,
+      { makeAdapter },
     );
     return { status: res.status, body: await res.text() };
   }
@@ -1221,7 +1231,7 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
 describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
   /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
   function refuseReadsAfterUpload(status: 401 | 403): void {
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       const read = adapter.read.bind(adapter);
       const write = adapter.write.bind(adapter);
@@ -1236,7 +1246,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
         return read(...args);
       };
       return adapter;
-    });
+    };
   }
 
   for (const status of [401, 403] as const) {
@@ -1261,11 +1271,11 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
       seedRecord();
       const { access } = await connect();
-      setAdapterFactory(() => {
+      makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
         adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
         return adapter;
-      });
+      };
       const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
       expect(storedRecord().measurements).toEqual([]);
       expect(answer.isError).toBe(true);
@@ -1414,7 +1424,6 @@ describe('OpenAI domain verification is gone (its review ended 2026-10-29; Brad 
 // US-35 — import_documents over a folder, end to end
 // ---------------------------------------------------------------------------
 import JSZip from 'jszip';
-import { setImportSeams } from '../lib/mcp-import.server';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
 import { StorageError } from '../../packages/health-core/src/adapter';
@@ -1450,16 +1459,14 @@ function stubImport(files: Record<string, Uint8Array>, answer: (name: string) =>
   const extracted: string[] = [];
   const names = Object.keys(files);
   for (const name of names) cloud.docs.set(name, new Blob([files[name] as Uint8Array<ArrayBuffer>]));
-  setImportSeams({
-    extract: async (pages) => {
-      // The extractor sees base64 bytes; find which file they were.
-      const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
-      extracted.push(name);
-      const result = answer(name);
-      if (result instanceof Error) throw result;
-      return result;
-    },
-  });
+  extractor = async (pages) => {
+    // The extractor sees base64 bytes; find which file they were.
+    const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
+    extracted.push(name);
+    const result = answer(name);
+    if (result instanceof Error) throw result;
+    return result;
+  };
   return extracted;
 }
 
@@ -1468,8 +1475,6 @@ function pendingFiles(): string[] {
 }
 
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
-  afterEach(() => setImportSeams(null));
-
   it('extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
@@ -1691,7 +1696,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       for (const [path, bytes] of Object.entries(files)) zip.file(path, bytes);
       cloud.docs.set(zipName, new Blob([await zip.generateAsync({ type: 'uint8array' })]));
     }
-    setImportSeams({ extract: async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!) });
+    extractor = async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!);
   }
 
   it('US-35 AC2/AC6, US-12 AC9 — a ZIP member is named zip/member, as the website names it: two ZIPs holding one path are two files, the same bytes in a third are its twin, and the same ZIP again is already imported by hash', async () => {
@@ -1744,11 +1749,11 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     seedRecord();
     const { access } = await connect();
     stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
       return adapter;
-    });
+    };
     const answer = await callTool(access, 'import_documents', {});
     expect(answer.isError).toBe(true);
     expect(answer.text).toMatch(/refused this connection’s access to the record.*reconnect the connector/);
@@ -1776,7 +1781,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 // US-37 — the folder nudge on a read
 // ---------------------------------------------------------------------------
 import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
-import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
+import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-import';
 
 function importEvents(): unknown[] {
   return serverEvents((name) => name === 'mcp_import').map(([, meta]) => meta);
@@ -1797,7 +1802,6 @@ describe('US-07 AC6 — the hosted get_plan is built for adults', () => {
 });
 
 describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   /** A record `get_plan` can compute from; the nudge rides on a successful read. */
   const withProfile = (file: RoadmapFile): RoadmapFile => ({ ...file, profile: { ...file.profile, sex: 'male', birthYear: 1971, heightCm: 178 } });
 
@@ -1853,7 +1857,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
     const broken = new MemoryAdapter(cloud);
     broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
-    setAdapterFactory(() => broken);
+    makeAdapter = () => broken;
     const { access } = await connect();
     const failed = await callTool(access, 'get_plan', {});
     expect(failed.isError).toBe(false);
@@ -1861,7 +1865,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
 
     const slow = new MemoryAdapter(cloud);
     slow.list = (_folder, signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(signal.reason)));
-    setAdapterFactory(() => slow);
+    makeAdapter = () => slow;
     const started = Date.now();
     const timedOut = await callTool(access, 'read_record', {});
     expect(Date.now() - started).toBeGreaterThanOrEqual(FOLDER_LIST_TIMEOUT_MS - 50);
@@ -1878,7 +1882,6 @@ import { type AccessPayload, connectionKey, spendWrites, WRITES_PER_HOUR as HOUR
 import { seal, unpackSealed } from '../lib/mcp-seal.server';
 
 describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   const rows = (day = LAB_DAY) => ({
     sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: day,
     values: [
@@ -2024,7 +2027,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
 // US-32 AC28/AC29 — the open-source note, and why a refusal was refused
 // ---------------------------------------------------------------------------
 import { INSTRUCTIONS } from '../lib/mcp.server';
-import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tools';
+import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC, REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 

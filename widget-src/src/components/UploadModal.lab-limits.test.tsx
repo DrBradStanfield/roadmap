@@ -10,14 +10,14 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
 import { initRoadmapStore, flushRoadmapStore, bulkSaveMeasurements, loadAllHistory } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async r => r), synthesizeLabArchiveEntries: () => [] }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
-const stops: Array<() => void> = [];
-afterEach(() => { cleanup(); for (const stop of stops.splice(0)) stop(); vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); delete (window as Window & { HealthUpload?: unknown }).HealthUpload; });
+afterEach(() => { cleanup(); stopLiveRefresh(); vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); delete (window as Window & { HealthUpload?: unknown }).HealthUpload; });
 
 it.each([
   { edit: null, saved: { value: 10, comparator: '<' } },
@@ -25,8 +25,7 @@ it.each([
 ])('US-12 AC20: an uploaded "< 10" Lp(a), edited to $edit, saves $saved', async ({ edit, saved }) => {
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('no external calls'); }));
   const cloud = new MemoryCloud();
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) { const stop = start.call(this); stops.push(stop); return stop; });
+  trackLiveRefresh();
   await initRoadmapStore(new MemoryAdapter(cloud));
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue({ result: {
@@ -72,8 +71,7 @@ it.each([
 it('US-12 AC20: a held exact value and an uploaded limit of the same number offer Replace, and replacing writes the limit', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('no external calls'); }));
   const cloud = new MemoryCloud();
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) { const stop = start.call(this); stops.push(stop); return stop; });
+  trackLiveRefresh();
   await initRoadmapStore(new MemoryAdapter(cloud));
   await bulkSaveMeasurements([{ metricType: 'lpa', value: 10, recordedAt: '2024-06-01', source: 'manual' }]);
   const held = (await loadAllHistory()).find(r => r.metricType === 'lpa')!;

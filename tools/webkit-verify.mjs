@@ -1,4 +1,5 @@
 // US-20: exercise real WebKit against the storefront, using disposable synthetic data.
+// A new probe is advisory (advisory() below) until it has passed on one production deploy.
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { webkit, devices } from 'playwright';
@@ -14,6 +15,9 @@ export function assertMatrixLayout(data) {
     assert.equal(value.boxSizing, 'border-box', 'WebKit result cell box sizing regressed');
   }
 }
+
+// The blood table behind "All results as a table". The vitals rows above it are a .bt-timeline too (H71).
+export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card)';
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectMatrixLayout(root) {
@@ -91,6 +95,9 @@ export function assertTabBar(data) {
   assert.equal(data.accountFirstPart, 'storage', `a guest's Account does not open with the storage card (${data.accountFirstPart})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
+  // US-62 AC29 (Fable 2026-11-13): at 390 wide the card ends 12px above the bar, on purpose.
+  const chatGap = data.barTopOnChat - data.chatCardBottom;
+  assert(data.chatViewportWidth !== 390 || (chatGap >= 11 && chatGap <= 13), `chat card does not end 12px above the tab bar (gap ${chatGap})`);
 }
 
 // Design re-check 2026-11-06: a value page's top clears the theme's header, its tile words are
@@ -102,6 +109,28 @@ export function assertValuePage(data) {
   assert(data.wrappedLabels.length === 0, `tile labels wrap: ${data.wrappedLabels}`);
   assert(data.baselines.length > 0 && data.baselines.every(d => Math.abs(d) <= 2), `history value and date off one baseline (${data.baselines})`);
   assert(data.dayFont < data.valueFont, `the date is not quieter than the value (${data.dayFont} vs ${data.valueFont})`);
+}
+
+// US-62 AC10b (H78): a box reached by keyboard draws the Value box's ring, a visible outline
+// or box-shadow. WebKit never matches :focus-visible on a date input, so it drew none.
+export function assertFocusRing({ date, value }) {
+  const ring = (s) => (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none';
+  assert(value.active && ring(value), `the Value box shows no focus ring (${JSON.stringify(value)})`);
+  assert(date.active, `Shift+Tab from Value did not reach the date box (${JSON.stringify(date)})`);
+  assert(ring(date), `the date box shows no focus ring on keyboard focus (${JSON.stringify(date)})`);
+  assert.equal(`${date.outlineStyle} ${date.outlineWidth} ${date.outlineColor} ${date.outlineOffset}`,
+    `${value.outlineStyle} ${value.outlineWidth} ${value.outlineColor} ${value.outlineOffset}`, 'the date box ring differs from the Value box ring');
+}
+
+// A probe not yet passed on a production deploy: its result is printed, a failure never fails the run.
+export async function advisory(check, { passed, failed }, log = console.log) {
+  try { log(passed(await check())); } catch (error) { log(`${failed} FAILED (advisory): ${error.message}`); }
+}
+
+// Passed directly to Playwright's evaluate: the focus styles of one box.
+export function collectFocus(el) {
+  const s = getComputedStyle(el);
+  return { active: document.activeElement === el, outlineStyle: s.outlineStyle, outlineWidth: s.outlineWidth, outlineColor: s.outlineColor, outlineOffset: s.outlineOffset, boxShadow: s.boxShadow };
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -374,12 +403,24 @@ async function inspect(browser, deviceName, viewport) {
     const valuePage = await page.evaluate(collectValuePage);
     assertValuePage(valuePage);
     console.log(`${deviceName ?? `desktop ${viewport.width}`}: value page verified`, JSON.stringify(valuePage));
+    // The Value box by keyboard, then Shift+Tab back into the date box (US-62 AC10b).
+    // TODO(H90): enforcing (no advisory wrapper) after one green production deploy.
+    const where = deviceName ?? `desktop ${viewport.width}`;
+    await advisory(async () => {
+      const valueBox = page.locator('.md-page:not(.mh-settings) .md-add input[inputmode]').first();
+      await valueBox.focus({ timeout: 5000 });
+      const value = await valueBox.evaluate(collectFocus);
+      await page.keyboard.press('Shift+Tab');
+      const date = await page.locator('.md-page:not(.mh-settings) .md-add input[type="date"]').first().evaluate(collectFocus, null, { timeout: 5000 });
+      assertFocusRing({ date, value });
+      return date;
+    }, { passed: (date) => `${where}: focus rings verified ${JSON.stringify(date)}`, failed: `${where}: focus ring probe` });
     const back = page.locator('.md-page .md-back').first();
     await (deviceName ? back.tap() : back.click());
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
-    const matrix = page.locator('.bt-timeline').first();
+    const matrix = page.locator(BLOOD_TABLE).first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();
     const data = await matrix.evaluate(collectMatrixLayout);
@@ -395,6 +436,7 @@ async function inspect(browser, deviceName, viewport) {
       Object.assign(tabBar, await page.evaluate(() => ({
         chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
         barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
+        chatViewportWidth: window.innerWidth,
       })));
       await bar.getByRole('tab', { name: 'Account' }).tap();
       tabBar.shownAfterAccountTap = await bar.evaluate(shownPanels);

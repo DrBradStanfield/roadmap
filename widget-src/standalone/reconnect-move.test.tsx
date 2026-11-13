@@ -15,15 +15,16 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 const lift = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved' }));
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved', flushRoadmapStore: async () => undefined, copyRecordToDevice: async () => undefined, getBackendKind: () => 'cloud' }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', async (importOriginal) => ({ ...(await importOriginal<typeof import('./connect')>()), liftLocalInto: lift }));
 
 import { SyncControl } from './sync-control';
 import { GoogleDriveAdapter } from '../src/storage';
-import { dispatch, getSwitchFlow, resetSwitchFlow } from './switch-flow';
+import { dispatch, getSwitchFlow, HAND_OFF_MS, resetSwitchFlow } from './switch-flow';
 import { openBackendPicker } from '../src/lib/storage-notice';
+import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 
 const BACKEND_KEY = 'health_roadmap_backend';
 const DRIVE_TOKENS = 'health_roadmap_gdrive_tokens';
@@ -67,7 +68,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const mount = () => render(<SyncControl backend="local" reconnect="google-drive" hasData />);
+/** A load whose Drive sign-in could not be used, as boot seeds it (US-09 AC48). */
+const mount = () => {
+  resetSignIn();
+  bootSignIn({ kind: 'signedOut', provider: 'google-drive' });
+  return render(<SyncControl backend="local" hasData />);
+};
 const button = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === name);
 const reconnectButton = () => document.querySelector<HTMLButtonElement>('button.hr-sync-btn')!;
 const option = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button.hr-opt')].find((b) => b.textContent?.startsWith(name))!;
@@ -205,6 +211,40 @@ describe('US-09 AC45: once the popup answer is saved, the reconnect runs to its 
     expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
     expect(lift).not.toHaveBeenCalled();
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('US-09 AC45 (lead C27): the panel and the picker share one move', () => {
+  it('while a picker move is mid-flight, Reconnect is disabled and a click opens no popup', () => {
+    mount();
+    act(() => { dispatch({ type: 'start', to: 'dropbox', step: 'list' }); });
+    expect(reconnectButton().disabled).toBe(true);
+    expect(button('Use this browser only')!.disabled).toBe(true);
+    fireEvent.click(reconnectButton());
+    expect(popupsOpened).toBe(0);
+    expect(getSwitchFlow()).toEqual({ kind: 'switching', run: 1, to: 'dropbox', step: 'list' });
+  });
+});
+
+describe('US-09 AC45a: a reconnect whose reload never happens frees the panel and the picker', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('after the wait, Reconnect works again, and so does the picker, with nothing closed or reopened', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mount();
+    fireEvent.click(reconnectButton());
+    await answerPopup();
+    expect(reload).toHaveBeenCalledTimes(1); // the reload the browser never carries out
+    expect(reconnectButton().disabled).toBe(true);
+    act(() => { vi.advanceTimersByTime(HAND_OFF_MS); });
+
+    expect(reconnectButton().disabled).toBe(false);
+    expect(reconnectButton().textContent).toBe('Reconnect Google Drive');
+    expect(button('Use this browser only')!.disabled).toBe(false);
+    act(() => openBackendPicker());
+    expect(option('Dropbox').disabled).toBe(false);
+    fireEvent.click(reconnectButton());
+    expect(popupsOpened).toBe(2);
   });
 });
 

@@ -651,9 +651,11 @@ describe('Apple Health (AC13, AC14)', () => {
     expect(again).toEqual({ ok: true, file });
   });
 
+  // I-2 step 2: the edit is read where it enters, so a batch that is not a list never reaches a write.
   it('refuses a batch that is not a list', () => {
-    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
-    expect(applyEdit(file, { kind: 'appleHealth', samples: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
+    expect(JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'appleHealth', samples: 'nope' }), NOW, 'phone')))
+      .toEqual({ ok: false, reason: 'invalid-edit', message: 'This change could not be read, so it was not saved.' });
   });
 
   it('lists a typed weight as a write to Apple Health, and an imported one not', () => {
@@ -698,9 +700,11 @@ describe('Health Records (US-72)', () => {
     expect(metricHistory(withdrawn, 'ldl', LATER).rows.map((row) => [row.value, row.status])).toEqual([['2.6', 'entered-in-error']]);
   });
 
+  // I-2 step 2: the edit is read where it enters, so a batch that is not a list never reaches a write.
   it('refuses a batch that is not a list', () => {
-    const file = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
-    expect(applyEdit(file, { kind: 'healthRecords', records: 'nope' } as never, NOW)).toMatchObject({ ok: false, reason: 'invalid-value' });
+    const recordJson = JSON.stringify(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
+    expect(JSON.parse(applyEditJson(recordJson, JSON.stringify({ kind: 'healthRecords', records: 'nope' }), NOW, 'phone')))
+      .toEqual({ ok: false, reason: 'invalid-edit', message: 'This change could not be read, so it was not saved.' });
   });
 
   it('applyEditJson passes the counts to the app; other edits answer as before', () => {

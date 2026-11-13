@@ -28,8 +28,10 @@ const db = vi.hoisted(() => ({
   lock: null as null | import('./cron-lock-fake.test-helpers').FakeLockDb,
 }));
 
-vi.mock('./supabase.server', () => {
-  function from(table: string) {
+// The fake reminder_optin_v2 table: the client mock below answers every table
+// but cron_lock with it.
+const reminderTable = vi.hoisted(() => {
+  return function from(table: string) {
     if (table !== 'reminder_optin_v2') throw new Error(`fake: unexpected table ${table}`);
     const calls: string[] = [];
     db.builders.push(calls);
@@ -69,13 +71,14 @@ vi.mock('./supabase.server', () => {
       then: (ok: (v: unknown) => unknown, fail: (e: unknown) => unknown) => run().then(ok, fail),
     };
     return b;
-  }
-  return { supabaseAdmin: { from }, tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) };
+  };
 });
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) }));
 // The real lock module (vi.importActual below) reads this fake cron_lock table.
 vi.mock('./supabase-client.server', async () => {
   const helpers = await import('./cron-lock-fake.test-helpers');
   db.lock ??= helpers.makeFakeLockDb();
+  db.lock.other = reminderTable;
   return { supabaseAdmin: helpers.fakeAdmin(db.lock) };
 });
 vi.mock('./reminder-v2.server', async (importOriginal) => ({
@@ -227,7 +230,7 @@ describe('US-23 AC15 with US-28 AC9: a busy answer, then a takeover (mocked lock
     const cron = await import('./reminder-v2-cron.server'); // NODE_ENV=test: self-start is a no-op
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('RUN_SHARED_CRONS', 'true');
-    const lock = vi.mocked((await import('./supabase.server')).tryAcquireCronLock)
+    const lock = vi.mocked((await import('./supabase-cron-lock.server')).tryAcquireCronLock)
       .mockReset().mockResolvedValueOnce('busy').mockResolvedValueOnce('busy').mockResolvedValue('won');
     stop = cron.stopReminderV2Cron;
     cron.startReminderV2Cron();

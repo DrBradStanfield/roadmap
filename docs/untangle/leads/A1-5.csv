@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A1-5,S3 cloud storage and sync,Connection lifecycle leaves the shared StorageAdapter,not started,adapter.ts:189-191 connect/isConnected/disconnect still on StorageAdapter,,,no
+A1-5,S3 cloud storage and sync,Connection lifecycle leaves the shared StorageAdapter,not started,adapter.ts:202-204 connect/isConnected/disconnect still on StorageAdapter,,,no

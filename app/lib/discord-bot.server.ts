@@ -11,8 +11,8 @@
  * discord-bot-messages.server.ts (channel exclusion, replies, splitting),
  * discord-bot-history.server.ts (stored and thread history) and
  * discord-bot-persist.server.ts (chat-table writes). This file keeps the
- * start/stop and the message handler, and re-exports every name it exported
- * before the split.
+ * start/stop and the message handler; import the split names from their own
+ * module.
  */
 import {
   Client,
@@ -27,7 +27,7 @@ import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { createRateLimiter } from './rate-limiter';
 import {
   DISCORD_BOT_TOKEN,
@@ -65,9 +65,6 @@ import { persistConversation } from './discord-bot-persist.server';
 import { sendAnswer, sentText } from './discord-bot-send.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
-export { splitForDiscord } from './discord-bot-messages.server';
-export { persistConversation } from './discord-bot-persist.server';
-
 const ERROR_REPLY = 'Something went wrong on my end. Please try again in a moment.';
 
 // ---------------------------------------------------------------------------
@@ -82,10 +79,11 @@ const checkUserRateLimit = createRateLimiter(
   USER_RATE_LIMIT_MAX,
   USER_RATE_LIMIT_WINDOW_MS,
   USER_RATE_LIMIT_CLEANUP_MS,
+  { name: 'discord replies per user' },
 );
 // Per-user cooldown: at most 1 response per USER_COOLDOWN_MS. Reuses the
 // rate limiter factory so stale entries auto-evict — avoids an unbounded Map.
-const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000);
+const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000, { name: 'discord cooldown per user' });
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown

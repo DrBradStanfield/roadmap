@@ -34,10 +34,12 @@ export interface PageContent {
  * `truncated`: the PDF had more pages than the website reads (US-12 AC9), or
  * a page's text ran past the server's text-page cap and was cut (AC13).
  */
-export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]; truncated: boolean }> {
+export async function extractFromPdf(file: File, signal?: AbortSignal): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();
-  // pdf.js starts a worker for each document: release it once read or failed (AC7a).
+  if (signal?.aborted) throw new Error('stopped'); // not throwIfAborted: Safari before 15.4 lacks it
+  // pdf.js starts a worker for each document: release it once read or failed (AC7a), or when the read is stopped (AC7b).
   const task = pdfjsLib.getDocument({ data: arrayBuffer });
+  signal?.addEventListener('abort', () => void task.destroy(), { once: true });
   try {
     return await readPdf(await task.promise);
   } finally {

@@ -29,7 +29,7 @@ import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO
 import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import { cappedBody } from './capped-body.server';
-import { hostedImporter } from './mcp-import.server';
+import { hostedImporter, type HostedWiring } from './mcp-import.server';
 import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled, NOTICE } from './mcp-knowledge.server';
 import { type McpConfirmReason, recordServerEvent } from './product-events.server';
 import { type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
@@ -89,11 +89,8 @@ export type AdapterFactory = (provider: McpProvider, accessToken: string) => Sto
 const REAL_ADAPTER: AdapterFactory = (provider, token) =>
   provider === 'google' ? new DriveAdapter(token) : new DropboxAdapter(token);
 
-let makeAdapter: AdapterFactory = REAL_ADAPTER;
-
-export function setAdapterFactory(factory: AdapterFactory | null): void {
-  makeAdapter = factory ?? REAL_ADAPTER;
-}
+/** What the endpoint takes from tests: their own folder and model call. The routes pass none. */
+type EndpointWiring = HostedWiring & { makeAdapter?: AdapterFactory };
 
 // ---------------------------------------------------------------------------
 // One tool call
@@ -155,10 +152,7 @@ function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
  * resurrecting a record the user erased (design §7).
  */
 async function callHostedTool(
-  token: AccessPayload,
-  name: string,
-  args: unknown,
-  now: string,
+  token: AccessPayload, name: string, args: unknown, now: string, wiring: EndpointWiring,
 ): Promise<ToolAnswer & { confirmReason?: McpConfirmReason }> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
@@ -197,7 +191,7 @@ async function callHostedTool(
     accessToken = minted;
   }
 
-  const adapter = makeAdapter(token.provider, accessToken);
+  const adapter = (wiring.makeAdapter ?? REAL_ADAPTER)(token.provider, accessToken);
   // The folder listing for the nudge (US-37) starts now and overlaps the record
   // read: it depends on nothing the tool produces. Only on Dropbox — Drive's
   // `drive.file` scope cannot see files the user dropped in (US-35 AC3).
@@ -222,7 +216,7 @@ async function callHostedTool(
       // The import reads files through the user's own folder and parks its
       // candidates there (US-35). Built per call and holding nothing, so it
       // is built for every call; which tool uses it is the tool's declaration.
-      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
+      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS, extract: wiring.extract }),
     });
     if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
     const listed = listing && !answer.isError ? await listing : null;
@@ -428,7 +422,7 @@ function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined 
  * switch, the envelopes, the error codes — is the same code the stdio server
  * runs, so the two cannot answer differently.
  */
-function hostedSurface(token: AccessPayload, now: string) {
+function hostedSurface(token: AccessPayload, now: string, wiring: EndpointWiring) {
   // Off, the surface is exactly what it was before the knowledge tools (US-41 AC6).
   const knowledge = knowledgeToolsEnabled();
   return {
@@ -453,7 +447,7 @@ function hostedSurface(token: AccessPayload, now: string) {
       // already words by here; what lands in this catch is ours.
       try {
         // The knowledge tools open no record and mint no provider token: bundled files only.
-        const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
+        const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now, wiring);
         countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer, stepOf(name, args));
         return { answer };
       } catch {
@@ -503,9 +497,9 @@ function bearer(request: Request): string | null {
 /**
  * The whole `/mcp` endpoint. GET and DELETE are 405 — we have no event stream
  * and no session to delete — and `Mcp-Session-Id` is never minted; an incoming
- * one, like `Last-Event-ID`, is ignored.
+ * one, like `Last-Event-ID`, is ignored. `wiring` is for tests: the routes pass none.
  */
-export async function mcpEndpoint(request: Request, now = new Date().toISOString()): Promise<Response> {
+export async function mcpEndpoint(request: Request, now = new Date().toISOString(), wiring: EndpointWiring = {}): Promise<Response> {
   if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
   if (originRejected(request)) return new Response('Forbidden', { status: 403 });
   if (request.method !== 'POST') {
@@ -532,7 +526,7 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
     return Response.json(rpcFailure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
   }
 
-  const answer = await dispatchRpc(body, hostedSurface(token, now));
+  const answer = await dispatchRpc(body, hostedSurface(token, now, wiring));
   if (!answer) return new Response(null, { status: 202 });
   return Response.json(answer);
 }

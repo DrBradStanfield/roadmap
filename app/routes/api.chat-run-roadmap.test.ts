@@ -16,12 +16,19 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: mocks.auth,
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('../lib/supabase.server', () => ({
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
+}));
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', () => ({
   supabaseAdmin: { from: () => ({ insert: async (row: Record<string, unknown>) => { mocks.productEvents.push(row); return { error: null }; } }) },
+  createUserClient: supa.createUserClient,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),
@@ -117,6 +124,10 @@ describe('US-15 AC33: a run_roadmap turn keeps the tool\'s data out of every log
     await Sentry.flush();
     const timing = JSON.parse(consoleCalls().match(/\{\\"evt\\":\\"chat_timing\\".*?\}(?=")/)![0].replace(/\\"/g, '"'));
     expect(timing.roadmapRun).toBe(true);
+    // This turn sends Sentry nothing (S-16). withoutIds strips ids but not the SDK's timestamps, so a
+    // captured event could hide a value or fake a leak: if one is ever expected here, blank its clock
+    // and id fields by path first, as widget-src/src/lib/chat-edits-sentry-envelope.test.ts does.
+    expect(envelopes).toHaveLength(0);
     for (const leak of [...TOOL_INPUT, ...TOOL_OUTPUT]) {
       expect(withoutIds(consoleCalls())).not.toContain(leak);
       expect(withoutIds(JSON.stringify(envelopes))).not.toContain(leak);

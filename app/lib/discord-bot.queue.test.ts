@@ -20,7 +20,7 @@ vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete
 vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: vi.fn(), CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
 vi.mock('./cron-helpers.server', () => ({ sleep: edge.sleep }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {
   from: () => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query, maybeSingle: async () => ({ data: null, error: null }),

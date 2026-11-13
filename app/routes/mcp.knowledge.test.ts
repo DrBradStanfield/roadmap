@@ -16,11 +16,11 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
-import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, INSTRUCTIONS, mcpEndpoint } from '../lib/mcp.server';
 import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { routerView } from '../lib/router-view';
-import { buildIndex, search } from '../../tools/search-knowledge';
+import { buildIndex, search } from '../lib/search-knowledge';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
@@ -57,6 +57,9 @@ const B_VITAMINS = 'b-vitamins-benefits-forms-dosing-and-side-effects';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 let connections = 0;
+let cloud: MemoryCloud;
+/** The folder every call opens: this case's in-memory cloud. */
+const makeAdapter: AdapterFactory = () => new MemoryAdapter(cloud);
 
 beforeEach(() => {
   serveClientMetadata();
@@ -67,9 +70,8 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   delete process.env.MCP_KNOWLEDGE_TOOLS;
   resetMcpMemory();
-  const cloud = new MemoryCloud();
+  cloud = new MemoryCloud();
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' })), version: 1 });
-  setAdapterFactory(() => new MemoryAdapter(cloud));
   fetchMock = vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
     access_token: 'dropbox-access-token',
@@ -79,7 +81,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
   delete process.env.MCP_KNOWLEDGE_TOOLS;
@@ -138,7 +139,7 @@ async function rawRpc(access: string, method: string, params: unknown = {}): Pro
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), NOW);
+  }), NOW, { makeAdapter });
   expect(res.status).toBe(200);
   return res.text();
 }
@@ -325,15 +326,17 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
     const source = readFileSync(new URL('../lib/mcp-knowledge.server.ts', import.meta.url), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.sort()).toEqual([
+      '../../packages/health-core/src/mcp-tool-catalogue', // type-only
       '../../packages/health-core/src/mcp-tools', // type-only
       '../../packages/health-core/src/zod', // zod, jitless
-      '../../tools/search-knowledge',
       './blog-index.server',
       './frontmatter',
       './matched-content',
       './router-view',
+      './search-knowledge',
     ]);
-    expect(source).toMatch(/import type \{ McpToolDefinition, ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
+    expect(source).toMatch(/import type \{ ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
+    expect(source).toMatch(/import type \{ McpToolDefinition \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tool-catalogue'/);
     // ChatGPT's two `_meta` keys are the only place the word may appear.
     expect(source.replaceAll("'openai/toolInvocation/", '')).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic|openai|API_KEY|process\.env\.(?!MCP_KNOWLEDGE_TOOLS\b)\w+)\b/i);
   });

@@ -1,7 +1,7 @@
 /**
  * The next PSA test, by level (US-06 AC21; screening Change 4, D15 and D21, Brad 2026-11-12),
  * from the newest usable PSA (US-06 AC14): 24 months below 2.5 ng/mL and 12 months from 2.5
- * for men who will screen (ACS); 3 months at 4.0 or above for every man in the prostate
+ * for men who will screen (Dr Brad's suggestion, after earlier ACS guidance); 3 months at 4.0 or above for every man in the prostate
  * ages, whatever he answered, until a newer PSA below 4.0 is saved (Dr Brad's suggestion).
  * A newer limit that does not decide ("< 5") keeps the 3-month rule (item 6, Brad 2026-11-13).
  * The plan's cards and the reminder schedule both read it here.
@@ -10,7 +10,7 @@ import { bandDecides, formatGradedOrLimit } from './lab-limits';
 import { PSA_THRESHOLDS } from './units';
 import { getScreeningNextDueDate, type ScreeningInputs, type Suggestion } from './types';
 
-/** Below this, a man who will screen is retested every 2 years (ACS); from it, every year. */
+/** Below this, a man who will screen is retested every 2 years (Dr Brad, after earlier ACS guidance); from it, every year. */
 export const PSA_BIENNIAL_BELOW = 2.5;
 /** At 4.0 or above: every 3 months, whatever the screening answer. */
 export const PSA_RAISED_MONTHS = 3;

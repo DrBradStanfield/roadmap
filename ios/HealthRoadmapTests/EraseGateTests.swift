@@ -70,7 +70,7 @@ final class EraseGateTests: XCTestCase, CloudFixtures {
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
         let lastStep = lastStep!
-        let reminders = ReminderScheduler(center: FakeNotificationCenter(), folder: folder) { firstSeen in
+        let reminders = ReminderScheduler(center: FakeNotificationCenter(), folder: folder, erasures: { store.erasures }) { firstSeen in
             await lastStep.pass()
             return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }

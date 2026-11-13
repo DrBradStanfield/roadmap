@@ -123,6 +123,11 @@ extension RecordStore {
             }
         }
 
+        /// The session of the cloud record shown; nil on the phone's file and while leaving it.
+        var session: Int? {
+            if case .cloud(let cloud) = self { cloud.session } else { nil }
+        }
+
         /// The connected cloud, in any state.
         var link: Link? {
             switch self {
@@ -133,7 +138,7 @@ extension RecordStore {
     }
 
     var screen: Screen {
-        Screen(erase: source.erase, epoch: myData?.eraseEpoch, erasures: erasures, units: myData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: myData?.lpaUnit ?? "")
+        Screen(erase: source.erase, epoch: heldData?.eraseEpoch, erasures: erasures, units: heldData?.unitSystem ?? "si", choices: unitChoices.json, lpaUnit: heldData?.lpaUnit ?? "")
     }
 
     /// While a cloud record is shown (US-25 AC11): the erase the screen shows. Nil: the record is
@@ -149,6 +154,15 @@ extension RecordStore {
         chain { await self.draw(view) }
     }
 
+    /// An erase's record onto the screen, inside showErased's step (US-25 AC16g). Once CloudSync
+    /// no longer shows its session (`stillShown` false), it lands only on that session's record:
+    /// another one shown, a newer session's or the phone's, is kept, but nothing proves it was read
+    /// after the erase, so it is marked as predating it (`failed`), as one held with no record is.
+    func drawErased(_ view: HealthEngine.CloudView?, stillShown: Bool) async -> DrawResult {
+        guard let view, stillShown || source.session == view.session else { return .failed }
+        return await draw(view, in: UnitChoices(), holdUndrawn: true)
+    }
+
     /// The cloud handover (CloudSync's open), as one step in line: every edit asked for
     /// before it has landed on the phone's file and been counted when `decide` runs.
     /// `decide` answers whether to show `view` (no edit came in while the open ran);
@@ -162,13 +176,13 @@ extension RecordStore {
     }
 
     /// What the session made of a cloud edit, onto the screen.
-    func shown(_ outcome: EditOutcome, of edit: RecordEdit) async -> ApplyResult {
+    func shown(_ outcome: EditOutcome, order: Int, of edit: RecordEdit) async -> ApplyResult {
         guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
         if next == recordJSON { return .saved() }
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
-        await draw(next, order: outcome.order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil)
+        await draw(next, order: order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil)
         onEdit?()
         return .saved(healthRecords: outcome.healthRecords)
     }

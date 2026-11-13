@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H18c,composition,A reminders 404 clean-up carries no erase: it rides on the store's erase mark,hidden link,not started,"standalone/reminders.ts:441 setReminderOptIn({ ...optIn, status: 'cancelled' }) with no erase, guarded by sameOptIn(getReminderOptIn(), optIn) at :439-440. Found by the types-only trial in docs/drafts/h18-h24-erase-by-type-design.md. Same end state as H18",,no

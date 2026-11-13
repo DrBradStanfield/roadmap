@@ -40,7 +40,7 @@ function makeQuery(): Record<string, unknown> {
   return q;
 }
 
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: makeQuery(),
 }));
 

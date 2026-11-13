@@ -12,7 +12,8 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
 vi.mock('../lib/product-events.server', () => ({ recordServerEvent: mocks.recordServerEvent }));
-vi.mock('../lib/supabase.server', () => {
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) query[method] = () => query;
   query.then = (resolve: any, reject: any) =>
@@ -22,20 +23,17 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
-vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  loadMatchedArticlesFromHandles: () => null,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
+vi.mock('../lib/chat.server', async (original) => (await import('../lib/chat-server.test-helpers')).chatServerStub(await original<typeof import('../lib/chat.server')>(), {
   getChatCompletion: async () => ({
     content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
     isFallback: false, stopReason: 'end_turn', roadmapRun: { applied: 2, rejected: 1 },
   }),
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),

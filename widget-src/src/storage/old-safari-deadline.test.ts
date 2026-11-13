@@ -250,7 +250,7 @@ describe('US-09 AC13g: on a browser without AbortSignal.timeout (Safari 14/15)',
     await vi.advanceTimersByTimeAsync(5_000);
     const resolved = await startup;
     expect(resolved.backend).toBe('local');
-    expect(resolved.reconnect).toBe('google-drive');
+    expect(resolved.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
     expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
   });
 

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-23,S2 server,Bounded maps: clock order and refused-charge entries (low),not started,"(1) boundedMap in rate-limiter.ts relies on insertion order being expiry order, which holds while Date.now() never steps back. If the clock steps back, an expired entry can sit behind a live one until the next sweep. (2) createQuotaCounter's charge creates a count-0 entry for a new key even when the request is over the limit and refused; it stays until it expires (as on main). Low priority. From the PR 1613 review",,,no

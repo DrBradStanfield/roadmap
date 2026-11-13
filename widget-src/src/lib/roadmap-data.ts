@@ -177,6 +177,7 @@ export function isKnownMinorNow(): boolean {
 }
 
 // --- reads ---
+// Each async read below is `async () => xSync()` on purpose: a store throw becomes a rejection, which email-landing.tsx and useRecordReads.ts catch (US-09 AC16; lead W2-13 closed).
 export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
   return loadLatestMeasurementsSync();
 }
@@ -327,14 +328,16 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
 }
 
 /**
- * Teardown that must run BEFORE the erase, registered by the standalone entry.
- * `src/` must never import `standalone/`, so the dependency is injected rather
- * than imported. Today it is the reminders row on Brad's server: "delete all my
- * data" has to include the one copy that isn't on the device, and the token
- * authorising that delete lives inside the file the erase is about to wipe.
+ * Teardown for the erase, registered by the standalone entry. `src/` must
+ * never import `standalone/`, so the dependency is injected rather than
+ * imported. Today it is the reminders row on Brad's server: "delete all my
+ * data" has to include the one copy that isn't on the device. The token that
+ * authorises it is gone from the erased file, so the hook (prepare) reads it
+ * inside the erase, before the swap, and returns the step that sends it
+ * (commit), run only once the erase stands (US-11 AC4c).
  */
-let preEraseHook: (() => Promise<void>) | null = null;
-export function setPreEraseHook(fn: () => Promise<void>): void {
+let preEraseHook: (() => Promise<(() => Promise<void>) | null>) | null = null;
+export function setPreEraseHook(fn: () => Promise<(() => Promise<void>) | null>): void {
   preEraseHook = fn;
 }
 
@@ -354,7 +357,13 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
     chatUnread = true;
     throw error;
   });
-  const result = await store.deleteAllData({ teardown: preEraseHook ?? undefined, chat });
+  const prepare = preEraseHook;
+  let commit = null as (() => Promise<void>) | null;
+  const before = store.eraseIdentity;
+  const result = await store.deleteAllData({ teardown: prepare ? async () => { commit = await prepare(); } : undefined, chat });
+  // The erased copy stands, landed or held for a retry (useErase's signal): only
+  // then does the server step run, once. A refused erase cancels nothing (S59).
+  if (store.eraseIdentity !== before) await commit?.();
   return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;
 }
 

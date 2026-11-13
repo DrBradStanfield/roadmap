@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S35,iPhone state,A save or connect landing after the onboarding cover's onDisappear could unpin the screen twice,lead,not started,"Lead F3 from the review of PR 1570. ios/HealthRoadmap/Onboarding/OnboardingView.swift:88 onDisappear unpins when mode.pinned; a later landing in OnboardingView+Flow.swift:76 (.unpin effect) could unpin again. No live sequence found: the cover closes only through finishOnboarding. Fix if needed: a .gone event in the onboarding state union, so a landing after it does nothing",1570,no

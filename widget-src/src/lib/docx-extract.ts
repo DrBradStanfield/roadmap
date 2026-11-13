@@ -244,7 +244,7 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
  * `picturesOnly`: no text, but pictures. Throws when it is not a .docx or
  * its XML passes MAX_XML_BYTES.
  */
-export async function docxToText(data: ArrayBuffer): Promise<{ text: string; truncated: boolean; picturesOnly: boolean }> {
+export async function docxToText(data: ArrayBuffer, signal?: AbortSignal): Promise<{ text: string; truncated: boolean; picturesOnly: boolean }> {
   const zip = await JSZip.loadAsync(data);
   const body = zip.file('word/document.xml');
   if (!body) throw new Error('not a docx');
@@ -257,6 +257,7 @@ export async function docxToText(data: ArrayBuffer): Promise<{ text: string; tru
   let budget = MAX_XML_BYTES;
   let stopped = false;
   for (const part of [...headers, body, ...footers]) {
+    if (signal?.aborted) throw new Error('stopped'); // the upload's time limit (US-12 AC7b); not throwIfAborted, absent before Safari 15.4
     const bytes = await inflateCapped(part, budget);
     if (!bytes) throw new Error('docx too large');
     budget -= bytes.byteLength;

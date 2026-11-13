@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,9 @@ import type {
 // and main's full output on one synthetic corpus. Invented text only; the one fixture is tools/fixtures/condition-guide.
 // No network (fetch is stubbed), no model calls, the clock fixed.
 const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = join(HERE, '..');
+/** The CLI guard pin's argv: it runs on the real checkout, so it must be read-only (T20). */
+const PROBE = ['--init-state', '--probe'];
 type TypeNames = [AllowEntry, DueItem, Entry, EntryType, Finding, LinkId, LintInputs, LintResult, LintState, MasterPlace, MastersConfig, RuleId, Topic];
 export type { TypeNames };
 
@@ -117,9 +120,20 @@ describe('US-64 AC23 pins for the knowledge-lint split', () => {
   });
   it('the CLI guard runs main with the repo root (it finds the real lint-state.json and refuses --init-state)', () => {
     const tsx = join(HERE, '..', 'node_modules', '.bin', 'tsx');
+    const status = () => execFileSync('git', ['status', '--porcelain', '--', 'docs/loops/chat-health'], { cwd: REPO }).toString();
+    const before = status();
     let out = '', code = 0;
-    try { out = execFileSync(tsx, [join(HERE, 'knowledge-lint.ts'), '--init-state'], { stdio: 'pipe', cwd: tmpdir() }).toString(); }
+    try { out = execFileSync(tsx, [join(HERE, 'knowledge-lint.ts'), ...PROBE], { stdio: 'pipe', cwd: tmpdir() }).toString(); }
     catch (e) { const x = e as { status: number; stdout: Buffer }; code = x.status; out = x.stdout.toString(); }
     expect({ code, out }).toEqual({ code: 1, out: 'docs/loops/chat-health/lint-state.json exists; --init-state writes only the first one.\n' });
+    expect(status()).toBe(before);
+  });
+  // T20: the probe above runs on the real checkout, so it must write nothing even with no lint-state.json there.
+  it('the CLI guard probe writes nothing, even where lint-state.json is missing', async () => {
+    rmSync(join(root, 'docs/loops/chat-health/lint-state.json'));
+    const files = () => (readdirSync(root, { recursive: true }) as string[]).sort().map(f => `${f}:${statSync(join(root, f)).mtimeMs}`);
+    const before = files();
+    expect(await run(PROBE)).toBe('exit 0\ndocs/loops/chat-health/lint-state.json missing; --init-state would write 8 entries. --probe wrote nothing.');
+    expect(files()).toEqual(before);
   });
 });

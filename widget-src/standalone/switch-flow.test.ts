@@ -5,7 +5,8 @@
  * reports that name an older move.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { dispatch, getSwitchFlow, isCurrentRun, resetSwitchFlow, transition, type SwitchEvent, type SwitchFlow } from './switch-flow';
+import { dispatch, getSwitchFlow, isCurrentRun, resetSwitchFlow, runMove, transition, type SwitchEvent, type SwitchFlow } from './switch-flow';
+import { askBeforeExit, bootSignIn, currentSignIn, resetSignIn, type SignIn } from '../src/storage/sign-in-state';
 
 const IDLE: SwitchFlow = { kind: 'idle', run: 1, error: null };
 const FAILED: SwitchFlow = { kind: 'idle', run: 1, error: 'Dropbox could not be reached.' };
@@ -40,6 +41,9 @@ const EVENTS = {
   restored: { type: 'restored' },
   // The picker opens again on this page.
   reopened: { type: 'reopened' },
+  // US-09 AC45a: the page is still here long after its move handed it off.
+  stayed: { type: 'stayed', run: 2 },
+  stayedOld: { type: 'stayed', run: 1 },
 } satisfies Record<string, SwitchEvent>;
 
 const NEW_GITHUB: SwitchFlow = { kind: 'switching', run: 2, to: 'github', step: 'github' };
@@ -58,18 +62,21 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
     navigating: S(IDLE), navigatingOld: S(IDLE), settled: S(IDLE), settledOld: S(IDLE),
     failed: S(IDLE), failedOld: S(IDLE), clearError: S(IDLE), cancel: S(IDLE), cancelOld: S(IDLE), restored: S(IDLE), reopened: S(IDLE),
     saved: S(IDLE), savedOld: S(IDLE),
+    stayed: S(IDLE), stayedOld: S(IDLE),
   },
   FAILED: {
     start: [NEW_GITHUB, true], logOff: [NEW_LOG_OFF, true], forget: [NEW_LOCAL, true], reconnect: [NEW_RECONNECT, true],
     navigating: S(FAILED), navigatingOld: S(FAILED), settled: S(FAILED), settledOld: S(FAILED),
     failed: S(FAILED), failedOld: S(FAILED), clearError: S(IDLE), cancel: S(FAILED), cancelOld: S(FAILED), restored: S(FAILED), reopened: S(FAILED),
     saved: S(FAILED), savedOld: S(FAILED),
+    stayed: S(FAILED), stayedOld: S(FAILED),
   },
   TO_DRIVE: {
     start: S(TO_DRIVE), logOff: S(TO_DRIVE), forget: S(TO_DRIVE), reconnect: S(TO_DRIVE),
     navigating: S(LEAVING), navigatingOld: S(TO_DRIVE), settled: S(LEAVING), settledOld: S(TO_DRIVE),
     failed: S(ERROR_2), failedOld: S(TO_DRIVE), clearError: S(TO_DRIVE), cancel: S(TO_DRIVE), cancelOld: S(TO_DRIVE), restored: S(TO_DRIVE), reopened: S(TO_DRIVE),
     saved: S(TO_DRIVE), savedOld: S(TO_DRIVE),
+    stayed: S(TO_DRIVE), stayedOld: S(TO_DRIVE),
   },
   TO_GITHUB: {
     start: S(TO_GITHUB), logOff: S(TO_GITHUB), forget: S(TO_GITHUB), reconnect: S(TO_GITHUB),
@@ -77,6 +84,7 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
     settled: S({ kind: 'navigating', run: 2, step: 'github' }), settledOld: S(TO_GITHUB),
     failed: S(ERROR_2), failedOld: S(TO_GITHUB), clearError: S(TO_GITHUB), cancel: S(TO_GITHUB), cancelOld: S(TO_GITHUB), restored: S(TO_GITHUB), reopened: S(TO_GITHUB),
     saved: S(TO_GITHUB), savedOld: S(TO_GITHUB),
+    stayed: S(TO_GITHUB), stayedOld: S(TO_GITHUB),
   },
   LOGGING_OFF: {
     start: S(LOGGING_OFF), logOff: S(LOGGING_OFF), forget: S(LOGGING_OFF), reconnect: S(LOGGING_OFF),
@@ -84,18 +92,21 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
     settled: S({ kind: 'navigating', run: 2, step: 'log-off' }), settledOld: S(LOGGING_OFF),
     failed: S(ERROR_2), failedOld: S(LOGGING_OFF), clearError: S(LOGGING_OFF), cancel: S(LOGGING_OFF), cancelOld: S(LOGGING_OFF), restored: S(LOGGING_OFF), reopened: S(LOGGING_OFF),
     saved: S(LOGGING_OFF), savedOld: S(LOGGING_OFF),
+    stayed: S(LOGGING_OFF), stayedOld: S(LOGGING_OFF),
   },
   LEAVING: {
     start: S(LEAVING), logOff: S(LEAVING), forget: S(LEAVING), reconnect: S(LEAVING),
     navigating: S(LEAVING), navigatingOld: S(LEAVING), settled: S(LEAVING), settledOld: S(LEAVING),
     failed: S(ERROR_2), failedOld: S(LEAVING), clearError: S(LEAVING), cancel: S(LEAVING), cancelOld: S(LEAVING), restored: S(IDLE_2), reopened: S(IDLE_2),
     saved: S(LEAVING), savedOld: S(LEAVING),
+    stayed: S(IDLE_2), stayedOld: S(LEAVING),
   },
   RECONNECTING: {
     start: S(RECONNECTING), logOff: S(RECONNECTING), forget: S(RECONNECTING), reconnect: S(RECONNECTING),
     navigating: S(LEAVING), navigatingOld: S(RECONNECTING), settled: S(LEAVING), settledOld: S(RECONNECTING),
     failed: S(ERROR_2), failedOld: S(RECONNECTING), clearError: S(RECONNECTING), cancel: S(IDLE_2), cancelOld: S(RECONNECTING), restored: S(RECONNECTING), reopened: S(RECONNECTING),
     saved: S(RECONNECTED), savedOld: S(RECONNECTING),
+    stayed: S(RECONNECTING), stayedOld: S(RECONNECTING),
   },
   // The grant is saved: nothing but its own failure or its reload ends it.
   RECONNECTED: {
@@ -103,6 +114,7 @@ const TABLE: Record<keyof typeof STATES, Record<keyof typeof EVENTS, Cell>> = {
     navigating: S(LEAVING), navigatingOld: S(RECONNECTED), settled: S(LEAVING), settledOld: S(RECONNECTED),
     failed: S(ERROR_2), failedOld: S(RECONNECTED), clearError: S(RECONNECTED), cancel: S(RECONNECTED), cancelOld: S(RECONNECTED), restored: S(RECONNECTED), reopened: S(RECONNECTED),
     saved: S(RECONNECTED), savedOld: S(RECONNECTED),
+    stayed: S(RECONNECTED), stayedOld: S(RECONNECTED),
   },
 };
 
@@ -112,7 +124,7 @@ const ROWS = Object.entries(TABLE).flatMap(([stateName, row]) =>
   ] as const));
 
 describe('US-09 AC45: switch-flow transition, every state against every event', () => {
-  it('covers 8 states by 17 events', () => expect(ROWS).toHaveLength(136));
+  it('covers 8 states by 19 events', () => expect(ROWS).toHaveLength(152));
 
   it.each(ROWS)('%s', (_name, state, event, next, run) => {
     expect(transition(state, event)).toEqual({ next, run });
@@ -211,5 +223,29 @@ describe('US-09 AC45: a popup answer is kept only while its reconnect still runs
     for (const event of [EVENTS.start, EVENTS.forget, EVENTS.logOff, EVENTS.reconnect]) expect(dispatch(event)).toBe(false);
     dispatch({ type: 'navigating', run: 1 });
     expect(getSwitchFlow()).toEqual({ kind: 'navigating', run: 1, step: 'list' });
+  });
+});
+
+describe('US-09 AC51: the claim answers any exit question the reconnect panel asked', () => {
+  const LOST = { kind: 'signedOut', provider: 'google-drive' } as const;
+  const ASKING: SignIn = { kind: 'confirmingExit', lost: LOST, question: 'stale' };
+  beforeEach(() => { resetSwitchFlow(); resetSignIn(); bootSignIn(LOST); askBeforeExit('stale'); });
+
+  it.each([
+    ['a reconnect', EVENTS.reconnect],
+    ['a picker move', EVENTS.start],
+    ['a log-off', EVENTS.logOff],
+    ['"Use this browser only"', EVENTS.forget],
+  ] as const)('%s: once it claims the flow, the question is gone', (_name, event) => {
+    expect(currentSignIn()).toEqual(ASKING);
+    void runMove(event as SwitchEvent, () => new Promise<void>(() => undefined));
+    expect(getSwitchFlow().kind).not.toBe('idle');
+    expect(currentSignIn()).toEqual(LOST);
+  });
+
+  it('a claim refused because a move runs leaves the panel as it was', () => {
+    dispatch(EVENTS.start); // a move already runs
+    void runMove(EVENTS.reconnect, () => new Promise<void>(() => undefined));
+    expect(currentSignIn()).toEqual(ASKING);
   });
 });

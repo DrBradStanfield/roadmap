@@ -23,6 +23,7 @@ export const ALLOWED_ORIGINS = new Set([
 
 import crypto from 'node:crypto';
 import { cappedBody, SMALL_BODY_CAP } from './capped-body.server';
+import { countForwardedShape } from './forwarded-shape.server';
 
 /** Proxied requests older than this are rejected as replay (Shopify standard). */
 const PROXY_TIMESTAMP_WINDOW_SECONDS = 10 * 60;
@@ -149,6 +150,12 @@ export function refuseAppProxyRequest(request: Request): void {
  * (the index and admin routes refuse `signature`, `refuseAppProxyRequest`).
  */
 export function getClientIp(request: Request, trust: 'fly' | 'shopify'): string {
+  const ip = readClientIp(request, trust);
+  if (trust === 'shopify') countForwardedShape(request, ip); // numbers only (US-52 AC4h)
+  return ip;
+}
+
+function readClientIp(request: Request, trust: 'fly' | 'shopify'): string {
   const flyIp = request.headers.get('fly-client-ip')?.trim() || '';
   if (trust === 'shopify') {
     const hops = (request.headers.get('x-forwarded-for') ?? '')

@@ -13,19 +13,22 @@ import {
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
+  StorageError,
   type GitHubAdapter,
   type StorageAdapter,
   type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
+import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
+import { deviceRecordStored, FULL } from '../src/storage/local-storage-adapter';
 import { trackProductEvent } from '../src/lib/server-api';
-import { copyRecordToDevice } from '../src/lib/roadmap-data';
+import { copyRecordToDevice, currentSaveStatus, flushRoadmapStore, getBackendKind } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
@@ -40,8 +43,24 @@ export interface ResolvedBackend {
   /** The remembered cloud is unusable this session (token gone, or the provider
    * refused the record): the session runs on-device and the UI names this
    * provider, so the user is never shown the guest "choose where to save"
-   * pitch for a record they have already placed (US-09 AC13). */
-  reconnect?: Exclude<Backend, 'local'>;
+   * pitch for a record they have already placed (US-09 AC13). Boot seeds the
+   * page's sign-in state with it (US-09 AC48); the UI reads only that state. */
+  reconnect?: LostSignIn;
+}
+
+/** The sign-in state a load ends in (US-09 AC48), for boot to seed once. */
+export function signInAtBoot({ backend, reconnect }: ResolvedBackend): SignIn {
+  return reconnect ?? (backend === 'local' ? { kind: 'none' } : { kind: 'signedIn', provider: backend });
+}
+
+/** Why the remembered cloud is unusable at load (US-09 AC48). Google Drive's panel always offers its
+ *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token, named by the error
+ *  itself (a 401, or a sign-in only a new one mends). Any other failure, and every GitHub and WebDAV one,
+ *  is retried by a reload (AC13). */
+function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
+  const refused = error instanceof StorageError && (error.status === 401 || error.reason === 'reconnect');
+  if (provider === 'google-drive' || (provider === 'dropbox' && refused)) return { kind: 'signedOut', provider };
+  return { kind: 'unreachable', provider };
 }
 
 /** A Google grant refused at connect (US-09 AC15) is the user's move, not a
@@ -57,9 +76,9 @@ export function connectRefusal(error: unknown): string | null {
  *  next good cloud session merge this session's edits up (US-09 AC13), whether
  *  the user clicks Reconnect or the next load simply succeeds; against an
  *  erased cloud file they survive because no erase listed them (AC23). */
-function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
+function onDeviceFallback(reconnect: LostSignIn): ResolvedBackend {
   markSyncPending();
-  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend };
+  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect };
 }
 
 /**
@@ -81,7 +100,7 @@ export async function startOnBackend(
     const failure = recordFailure(error, 'Cloud record could not be loaded');
     console.warn(failure.message);
     Sentry.captureException(failure, { tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend } });
-    const fallback = onDeviceFallback(resolved.backend);
+    const fallback = onDeviceFallback(lostAtLoad(resolved.backend, error));
     await init(fallback.adapter, true);
     return fallback;
   }
@@ -92,8 +111,8 @@ export async function startOnBackend(
  *  "guest, no provider" means. */
 export type StorageState = 'reconnect' | 'cloud' | 'guest';
 
-export function storageState(backend: Backend, reconnect?: Exclude<Backend, 'local'>): StorageState {
-  if (reconnect) return 'reconnect';
+export function storageState(backend: Backend, signIn: SignIn = currentSignIn()): StorageState {
+  if (lostSignIn(signIn)) return 'reconnect';
   return backend === 'local' ? 'guest' : 'cloud';
 }
 
@@ -211,7 +230,7 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
     }
     // Endpoint unreachable or refresh token revoked. A popup can't open at
     // page load: run on-device, offer Reconnect, KEEP the remembered choice.
-    return onDeviceFallback('google-drive');
+    return onDeviceFallback({ kind: 'signedOut', provider: 'google-drive' });
   }
   if (remembered) forgetBackend(); // creds gone → fall back, will re-prompt
 
@@ -283,6 +302,7 @@ export async function logOff(backend: Backend): Promise<void> {
  * cloud file itself is never touched.
  */
 export async function prepareSwitch(current: Backend): Promise<void> {
+  await flushBeforeExit(); // a guest's too: its connect lifts the device copy (US-09 AC48, owner order 1)
   if (current === 'local') return;
   const adapter = adapterFor(current);
   if (!adapter) return;
@@ -301,6 +321,44 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   }
   await adapter.disconnect();
   preparedFrom = current;
+}
+
+/** Every exit from the reconnect panel saves the session before it lifts or leaves (US-09 AC48, R1): an
+ *  edit still on the save debounce reaches this device's copy, which the lift or the next load reads. The
+ *  page's departure save stays as the second line. A save that fails has put the session on the device
+ *  copy (US-09 AC4), so its failure does not stop the exit. */
+export async function flushBeforeExit(): Promise<void> {
+  await flushRoadmapStore().catch(() => undefined);
+}
+
+/** "Use this browser only" from a cloud page copies its record to this device before it signs out, a clean
+ *  session's too: a cloud session keeps no device copy until a save fails (US-09 AC48, Codex R1). A load-time
+ *  fallback's copy is its own save, which must land (Codex re-check R1). After a log-off this device must hold
+ *  no record, so its refusal is nothing to copy and the exit goes on, unreported (re-check F1). Any other
+ *  failure is reported and stops the exit, in the device-save words (US-09 AC45). */
+export async function copySessionToDevice(provider: CloudBackend): Promise<void> {
+  try {
+    await (getBackendKind() === 'local' ? flushRoadmapStore() : copyRecordToDevice());
+  } catch (error) {
+    if (!healthWritesAllowed()) return; // a log-off refused it: a WritesStoppedError, or a flush it failed
+    console.warn('Copy to this browser before leaving the cloud failed');
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-to-device', backend: provider } });
+    throw new Error(FULL);
+  }
+}
+
+/** What "Use this browser only" does first (US-09 AC49, AC50). A cloud store opens only on a cloud it read,
+ *  and the page opens one store, so a lost sign-in on a cloud store ended mid-session: its record is
+ *  current, and the exit runs. A session that fell back to this browser at load never read its cloud: over a
+ *  stored copy or an unsaved edit it asks whether that copy may be out of date; over nothing it asks before
+ *  starting empty. After another tab's log-off this browser keeps nothing, so that is asked. The defaults
+ *  read the page as it is now. */
+export function exitChoice(
+  cloudRead = getBackendKind() === 'cloud',
+  holdsHere = healthWritesAllowed() && (currentSaveStatus() !== 'saved' || deviceRecordStored()),
+): 'exit' | 'askEmpty' | 'askStale' {
+  if (cloudRead) return 'exit';
+  return holdsHere ? 'askStale' : 'askEmpty';
 }
 
 /** The cloud this page has already copied down and signed out of. A switch

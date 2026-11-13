@@ -17,12 +17,9 @@ const send = vi.fn();
 vi.mock('resend', () => ({ Resend: class { emails = { send }; } }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn(async () => {}) }));
-vi.mock('./supabase.server', () => ({
-  supabaseAdmin: null,
-  tryAcquireCronLock: vi.fn(async () => 'won' as const),
-  endCronLock: vi.fn(),
-  hashClientIp: () => 'synthetic-ip',
-}));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(async () => 'won' as const), endCronLock: vi.fn() }));
+vi.mock('./supabase-guest.server', () => ({ hashClientIp: () => 'synthetic-ip' }));
 // The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
 // today or later skips the row. It outlives a module reload, as the column does.
 const stamps = vi.hoisted(() => new Map<string, string>());

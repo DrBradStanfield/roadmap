@@ -39,11 +39,11 @@ vi.mock('./ChatSection', () => ({
   },
 }));
 import { HealthTool } from './HealthTool';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 const CHAT_FILE = 'chat-history.json';
 const TODAY = localDay(new Date());
 const OLD_TITLE = 'My LDL of 4.9 and my statin';
-const stops: Array<() => void> = [];
 let cloud: MemoryCloud;
 
 beforeEach(async () => {
@@ -58,10 +58,7 @@ beforeEach(async () => {
   vi.stubGlobal('confirm', () => true);
   vi.stubGlobal('alert', () => {});
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   vi.spyOn(RoadmapStore, 'create');
   cloud = new MemoryCloud();
   // One saved conversation in the user's cloud chat file.
@@ -75,7 +72,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

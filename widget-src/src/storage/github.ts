@@ -16,16 +16,14 @@
  * dev/privacy audience can live with that; the Git Data blob API would lift the
  * cap later if needed. See the implementation build log.
  */
-import { ConflictError, StorageError, fetchOrFail, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 export const CONFIG_KEY = 'health_roadmap_github';
 const API = 'https://api.github.com';
-/** A document read or upload gets Drive's upload cap: a large original on a
- *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
-const DOCUMENT_TIMEOUT_MS = 300_000;
 
 export interface GitHubConfig {
   /** Fine-grained PAT, scoped to one repo, Contents read+write. Stored locally only. */
@@ -66,7 +64,7 @@ export class GitHubAdapter implements StorageAdapter {
    */
   async accountEmail(): Promise<string | null> {
     if (!this.config?.token) throw new StorageError('GitHub is not connected.');
-    const deadline = timeoutDeadline(10_000);
+    const deadline = timeoutDeadline(TRANSFER_DEADLINE_MS.accountEmail);
     try {
       const res = await fetch(`${API}/user/emails`, { headers: this.headers(), signal: deadline.signal });
       if (res.status === 403 || res.status === 404) return null;
@@ -151,9 +149,9 @@ export class GitHubAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const url = this.contentsUrl(ref);
-    let res = await fetchOrFail('GitHub', url, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
+    let res = await fetchOrFail('GitHub', url, { headers: this.headers(), timeoutMs: TRANSFER_DEADLINE_MS.document });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.contentsUrl(''), ref) : null;
-    if (legacy) res = await fetchOrFail('GitHub', legacy, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
+    if (legacy) res = await fetchOrFail('GitHub', legacy, { headers: this.headers(), timeoutMs: TRANSFER_DEADLINE_MS.document });
     if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`, undefined, undefined, res.status);
     const json = (await res.json()) as { content?: string };
     if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB).`);
@@ -168,7 +166,8 @@ export class GitHubAdapter implements StorageAdapter {
         method: 'PUT',
         headers: this.headers(),
         body: JSON.stringify(sha ? { message: `Update ${ref}`, content, sha } : { message: `Update ${ref}`, content }),
-        timeoutMs: DOCUMENT_TIMEOUT_MS,
+        timeoutMs: TRANSFER_DEADLINE_MS.document,
+        mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d, AC53)
       });
     // Documents use write-once ids, so the create usually succeeds without a
     // sha; only on an overwrite conflict do we fetch the sha and retry once.

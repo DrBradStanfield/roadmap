@@ -476,17 +476,38 @@ describe('free-text scrub parity', () => {
   });
 
   // The value and email rules backtracked from every position inside a long
-  // run: about 0.8 s for 40,000 digits or letters. Linear now; the bound is
-  // generous for a slow CI runner.
-  it('US-09 AC7f — 40,000 digits or letters scrub in well under a second, on both copies', () => {
+  // run: about 0.8 s for 40,000 digits or letters. Linear now. The test times
+  // growth, not speed (an absolute budget fails on a loaded machine,
+  // docs/gotchas.md): 4x the run must take under 10x the time (linear about 4x,
+  // quadratic about 16x), each size the fastest of three runs.
+  it('US-09 AC7f — long runs of digits or letters scrub in linear time, on both copies', () => {
+    const SIZES = [10_000, 40_000, 160_000];
+    const GROWTH_LIMIT = 10; // per 4x step: linear ~4, quadratic ~16
+    const FLOOR_MS = 1; // below this a timer reading is noise, not a cost
+    const HANG_MS = 10_000; // last-resort backstop, whatever the machine
     for (const impl of [source, copy]) {
-      for (const run of ['1'.repeat(40_000), 'a'.repeat(40_000)]) {
-        const start = performance.now();
-        expect(impl.scrubText(run)).toBe(run);
-        expect(performance.now() - start, `${impl === copy ? 'copy' : 'source'} ${run[0]}`).toBeLessThan(300);
+      for (const char of ['1', 'a']) {
+        const name = `${impl === copy ? 'copy' : 'source'} ${char}`;
+        const fastest = (run: string) => {
+          let best = Infinity;
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const start = performance.now();
+            expect(impl.scrubText(run), name).toBe(run);
+            best = Math.min(best, performance.now() - start);
+          }
+          return best;
+        };
+        let previous = fastest(char.repeat(SIZES[0]));
+        for (const size of SIZES.slice(1)) {
+          const took = fastest(char.repeat(size));
+          expect(took, `${name} at ${size}`).toBeLessThan(HANG_MS);
+          expect(took / Math.max(previous, FLOOR_MS), `${name}: growth from ${size / 4} to ${size} characters`)
+            .toBeLessThan(GROWTH_LIMIT);
+          previous = took;
+        }
       }
     }
-  });
+  }, 60_000);
 
   it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
     const event = copy.scrubServerEvent({

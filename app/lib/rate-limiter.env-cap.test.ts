@@ -1,10 +1,10 @@
 // SE-4: machineFiles read AI_DAILY_FILE_CAP with a bare Number(), so a value
 // that does not parse ("2,000", or one that kept an inline comment) was NaN,
 // `count + n > NaN` was always false, and the per-machine $-cap on extraction
-// never refused. app-gate.server.ts reads the same variable through num(),
-// which falls back to 2000; now both do. Synthetic env values only.
+// never refused. app-gate.server.ts reads the same variable through the same
+// envCap rule (US-52 AC4e), which falls back to 2000. Synthetic env values only.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dailyFileCap } from './rate-limiter';
+import { dailyFileCap, envCap } from './rate-limiter';
 
 describe('SE-4: an AI_DAILY_FILE_CAP that is not a number', () => {
   afterEach(() => {
@@ -48,5 +48,32 @@ describe('SE-4: an AI_DAILY_FILE_CAP that is not a number', () => {
     expect(machineFiles.take('machine', 5)).toBe(true);
     expect(machineFiles.take('machine', 1)).toBe(false);
     expect(machineFiles.remaining('machine')).toBe(0);
+  });
+});
+
+// US-52 AC4e (untangle S-18 b): Number('   ') is 0, so a value of only spaces or a tab
+// turned a cap off silently. It is a bad value like any other: the default, and a warning.
+describe('US-52 AC4e: a cap value of only whitespace', () => {
+  for (const raw of ['   ', '\t', ' \n ']) {
+    it(`falls back to the default with a warning for ${JSON.stringify(raw)}`, () => {
+      const warn = vi.fn();
+      expect(envCap('WEB_CHAT_DAILY_CAP', raw, 10_000, warn)).toBe(10_000);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe('WEB_CHAT_DAILY_CAP is not a number of 0 or more, so the default 10000 applies.');
+    });
+  }
+
+  it('still reads a number with spaces around it as that number, silently', () => {
+    const warn = vi.fn();
+    expect(envCap('APP_CHAT_DAILY_CAP', ' 750 ', 500, warn)).toBe(750);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('keeps the machine file cap when AI_DAILY_FILE_CAP is only spaces', async () => {
+    vi.stubEnv('AI_DAILY_FILE_CAP', '   ');
+    vi.resetModules();
+    const { machineFiles } = await import('./rate-limiter');
+    machineFiles.reset();
+    expect(machineFiles.remaining('machine')).toBe(2000);
   });
 });

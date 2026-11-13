@@ -15,22 +15,24 @@ const mocks = vi.hoisted(() => ({
   rootPem: '',
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('./supabase.server', () => ({
-  supabaseAdmin: null,
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guest,
   GuestRateLimitError: class extends Error {},
 }));
-vi.mock('./chat.server', async (original) => ({
+vi.mock('./supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('./supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('./supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('./chat.server', async (original) => (await import('./chat-server.test-helpers')).chatServerStub(await original<typeof import('./chat.server')>(), {
   resolveChatContext: (inputs: unknown) => ({ userContextJson: JSON.stringify(inputs ?? null) }),
-  buildSystemBlocks: () => [],
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
   loadMatchedArticlesFromHandles: () => ({ content: 'x', titles: ['ApoB explained'], skipped: [], reduced: [] }),
   DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
   getChatCompletion: mocks.getChatCompletion,
-  reportChatFallback: vi.fn(), generateTitle: () => 't', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('./chat.server')>()).MAX_MESSAGE_LENGTH,
+  generateTitle: () => 't',
 }));
 vi.mock('./chat-router.server', async (original) => ({
   ...await original<typeof import('./chat-router.server')>(),
@@ -56,7 +58,7 @@ import { appChallenge, appChat, appLabImport, appRegister as register } from './
 import { appLimits, ipBucket, type KeyStore, type UseOutcome } from './app-gate.server';
 import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
-import { machineFiles } from './rate-limiter';
+import { MAX_TRACKED_KEYS, machineFiles } from './rate-limiter';
 
 const APP_ID = 'TEAM123456.com.drstanfield.healthroadmap';
 const device = fakeDevice(APP_ID);
@@ -547,6 +549,48 @@ describe('US-52 AC1b: only failing registrations spend the IP\'s attempts', () =
     expect((await good()).status).toBe(429);
     expect(store.rows.size).toBe(0);
     expect(appLimits.register.remaining(ipBucket(IP))).toBe(9);
+  });
+});
+
+describe('US-52 AC4f: the gate with its limit maps full of other callers', () => {
+  /** Fill a map to its bound with other callers' live entries. */
+  const fill = (map: { take: (key: string, n: number) => boolean }, n = MAX_TRACKED_KEYS) => { for (let i = 0; i < n; i++) map.take(`other-${i}`, 1); };
+  const reg = (challenge: string, attestation: string, ip: string) => register(new Request(`${BASE}/api/app/v1/attest/register`, {
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ keyId: device.keyId, attestation, challenge }),
+  }), store);
+  const fresh = async () => (await appChallenge(new Request(`${BASE}/api/app/v1/attest/challenge`, { method: 'POST' })).json()).challenge as string;
+
+  it('a new IP is served though the failure map is full; an IP at its 200 stays limited while in the map', async () => {
+    await registered();
+    appLimits.failures.take('198.51.100.88', 200); // at its backstop
+    fill(appLimits.failures, MAX_TRACKED_KEYS - 1);
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { ip: '198.51.100.88' }), store)).status).toBe(429);
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { ip: '198.51.100.77' }), store)).status).toBe(200);
+  });
+
+  it('a new IP registers though the registration map is full', async () => {
+    fill(appLimits.register);
+    expect((await registered()).status).toBe(200);
+  });
+
+  it('the machine cap still refuses at its number with the failure map full', async () => {
+    await registered();
+    fill(appLimits.failures);
+    appLimits.machine.chat.take('machine', appLimits.machine.chat.remaining('machine'));
+    expect((await appChat(signed('/api/app/v1/chat', chatBody, { ip: '198.51.100.66' }), store)).status).toBe(429);
+    expect(mocks.getChatCompletion).not.toHaveBeenCalled();
+  });
+
+  it('a spent challenge stays spent however many are spent after it in its life (US-52 AC1a)', async () => {
+    const spent = await fresh();
+    expect((await reg(spent, 'AA==', '198.51.100.30')).status).toBe(401); // spends it
+    fill(appLimits.challenges, MAX_TRACKED_KEYS + 1); // more than any bounded map holds
+    const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
+    expect(again.status).toBe(401);
+    expect((await again.json()).reason).toBe('bad_challenge');
+    expect(store.rows.size).toBe(0);
+    const challenge = await fresh(); // a new challenge still registers
+    expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.33')).status).toBe(200);
   });
 });
 

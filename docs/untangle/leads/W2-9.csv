@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-W2-9,"S7 web data layer, upload, standalone",Remove dead A/B client tracking,not started,"server-api.ts:96-128; calls at HealthTool.tsx:197, PlanPdf.tsx:240, useLongitudinalSave.ts:151",,,yes
+W2-9,"S7 web data layer, upload, standalone",Remove dead A/B client tracking,not started,"server-api.ts:93-126 (nothing sets localStorage hr_ab, so trackABEvent loops over no assignments); calls at HealthTool.tsx:195, PlanPdf.tsx:263, useLongitudinalSave.ts:148",,,yes

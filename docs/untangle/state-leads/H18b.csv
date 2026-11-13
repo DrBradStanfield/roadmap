@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H18b,composition,A reminders opt-in sync carries no erase: it rides on the store's erase mark,hidden link,not started,"standalone/reminders.ts:305 setReminderOptIn({ ...current, provider: backend }) with no erase, after re-reading the opt-in (:300-301). Found by the types-only trial in docs/drafts/h18-h24-erase-by-type-design.md. Same end state as H18: every writer's erase argument is required by the type, then the mark leaves health-core",,no

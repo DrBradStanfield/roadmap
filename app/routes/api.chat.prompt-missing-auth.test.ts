@@ -56,8 +56,8 @@ vi.mock('../lib/supabase-client.server', () => ({
   supabaseAdmin: { from: (table: string) => builder('admin', table), auth: { admin: { createUser: h.createUser, deleteUser: vi.fn() } } },
   createUserClient: (userId: string) => { h.principal = userId; return { from: (table: string) => builder('user', table) }; },
 }));
-vi.mock('../lib/supabase.server', async (original) => {
-  const real = await original<typeof import('../lib/supabase.server')>();
+vi.mock('../lib/supabase-guest.server', async (original) => {
+  const real = await original<typeof import('../lib/supabase-guest.server')>();
   return { ...real, getOrCreateGuestSession: vi.fn(real.getOrCreateGuestSession) };
 });
 vi.mock('../lib/chat-dedup.server', async (original) => {
@@ -117,7 +117,7 @@ async function send(read: () => string, method: 'POST' | 'DELETE', body: Record<
   return action({ request, params: {} } as unknown as Parameters<typeof action>[0]);
 }
 async function spies() {
-  const { getOrCreateGuestSession } = await import('../lib/supabase.server');
+  const { getOrCreateGuestSession } = await import('../lib/supabase-guest.server');
   const { claimChatTurn } = await import('../lib/chat-dedup.server');
   return { guestSession: vi.mocked(getOrCreateGuestSession), claim: vi.mocked(claimChatTurn) };
 }

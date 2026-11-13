@@ -24,9 +24,11 @@ enum DemoRecord {
 
     static let suite = "demo-record"
     /// UserDefaults.app in demo mode: welcome and questions done, every settings write kept here.
+    /// Set in this suite, never registered: the registration domain is the whole process's, so
+    /// every other suite would read them too (FirstRunTests failed after DemoRecordTests).
     static var defaults: UserDefaults {
         let defaults = UserDefaults(suiteName: suite)!
-        defaults.register(defaults: ["welcomed": true, "onboarded": true])
+        for key in ["welcomed", "onboarded"] where defaults.object(forKey: key) == nil { defaults.set(true, forKey: key) }
         return defaults
     }
 

@@ -15,7 +15,8 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: vi.fn(async () => null),
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('../lib/supabase.server', () => {
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) query[method] = () => query;
   query.then = (resolve: any, reject: any) =>
@@ -25,9 +26,12 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
 vi.mock('../lib/chat-classifier.server', () => ({
   classifyMessage: async () => ({ classification: 'SKIP', routerSkipped: true, latencyMs: 0, error: null }),
   shouldFireRouter: () => false,

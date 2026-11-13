@@ -114,7 +114,7 @@ final class UnreadableRecordTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let center = FakeNotificationCenter()
         // As AppParts makes it: the engine reads the store's record text.
-        let reminders = ReminderScheduler(center: center, folder: remindersFolder) { firstSeen in
+        let reminders = ReminderScheduler(center: center, folder: remindersFolder, erasures: { store.erasures }) { firstSeen in
             try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let cloud = try cloudRecord(from: store.recordJSON, engine: engine)

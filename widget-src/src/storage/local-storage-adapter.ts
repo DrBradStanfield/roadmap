@@ -228,7 +228,12 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-const FULL = 'Could not save on this device (local storage may be full).';
+export const FULL = 'Could not save on this device (local storage may be full).';
+
+/** This browser stores a copy of the record (US-09 AC49); unreadable storage stores none. */
+export function deviceRecordStored(): boolean {
+  return safeGetItem(FILE_KEY) !== null;
+}
 
 /** US-01 AC5: the last write of the record on this device was refused and
  *  left none of its change stored. Set and cleared here, at the write, the

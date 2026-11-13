@@ -183,6 +183,20 @@ final class LabSaveAllTests: XCTestCase {
         XCTAssertEqual(SaveAllStop.recordChanged.words, "Your record changed while this was open, so this was not saved.")
     }
 
+    /// The phone's own record was erased after the review opened on it (checkpoint 1 review, lead 3):
+    /// both sides have no cloud erase, so only the mark tells it. The run stops at the first refusal
+    /// with "record changed", never refusing each report one by one.
+    func testSaveAllStopsAfterAPhoneErase_US52_AC8b() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        store.pinScreen()  // the review opens on the phone's record
+        defer { store.unpinScreen() }
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let labs = LabResult(name: "Labs.pdf", truncated: false, extractionJSON: dated, failure: nil)
+        let refused = await LabReportSave.saveWaiting(labs, held: nil, engine: engine, store: store)
+        XCTAssertEqual(refused, .failure(.recordChanged))
+    }
+
     /// The cloud disconnected after the review opened on it: the stop says so.
     func testSaveAllStopsWhenTheCloudIsGone_US52_AC8b() async throws {
         let engine = try HealthEngine()

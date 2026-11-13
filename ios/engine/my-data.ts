@@ -11,15 +11,15 @@ import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
-import { updateProfile } from '../../packages/health-core/src/mcp-tools';
+import { updateProfile } from '../../packages/health-core/src/profile-edits';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { compareReadings, latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
-import { importDeviceSamples, type DeviceSample } from '../../packages/health-core/src/device-import';
-import { importHealthRecords, type ClinicalRecordInput, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
-import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormEdit, type FormsView } from './my-data-forms';
+import { importDeviceSamples } from '../../packages/health-core/src/device-import';
+import { importHealthRecords, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
+import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
@@ -35,8 +35,9 @@ import {
   cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, getDisplayLabel, LPA_UNITS, toCanonicalValue, UNIT_DEFS,
   type LpaUnit, type MetricType, type UnitSystem,
 } from '../../packages/health-core/src/units';
-import { applyPressure, BLOOD_PRESSURE, pressureHistory, type PressureEdit } from './blood-pressure';
-import { applyChatEdit, type ChatEdit } from './chat-edits';
+import { applyPressure, BLOOD_PRESSURE, pressureHistory } from './blood-pressure';
+import { applyChatEdit } from './chat-edits';
+import { EDIT, type Edit } from './contract';
 import { cellUnitFor, lpaUnitOf, SWITCHABLE, unitsOf, type UnitChoices } from './unit-choices';
 import { cellFromSI, cellLabel, cellRange, isLpaUnit, labRangeMessage, type CellUnit } from '../../packages/health-core/src/cell-unit';
 import { LIMIT_NOT_GRADED, comparatorOf, isComparator } from '../../packages/health-core/src/lab-limits';
@@ -114,38 +115,20 @@ export interface MyData {
   inputRanges: Record<string, Record<string, { min: number; max: number }>>;
 }
 
-/** Every change the tab can ask for. Numbers are in the user's units. */
-export type Edit =
-  | { kind: 'profile'; sex?: 'male' | 'female'; birthYear?: number; birthMonth?: number; height?: number; heightFeet?: number; heightInches?: number }
-  /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
-  | PressureEdit
-  | { kind: 'units'; unitSystem: UnitSystem }
-  /** "Do you drink alcohol?" (US-60): set from the plan card or About you; null clears it. */
-  | { kind: 'alcohol'; alcohol: AlcoholAnswer | null }
-  /** Lp(a)'s unit, written to the record as the web writes it (US-05 AC2). */
-  | { kind: 'lpaUnit'; unit: LpaUnit }
-  | { kind: 'add'; metric: string; value: number; day?: string }
-  | { kind: 'correct'; id: string; value: number }
-  /** A medication's current state (US-06): the web's write, history row included. */
-  | { kind: 'medication'; medicationKey: string; drugName: string; doseValue?: number | null; doseUnit?: string | null }
-  /** A supplement's current state; `status: 'stopped'` is the soft stop (US-06). */
-  | { kind: 'supplement'; supplementKey: string; supplementName: string; doseValue?: number | null; doseUnit?: string | null; status: 'active' | 'stopped'; startedAt?: string }
-  /** Readings from Apple Health (US-25 AC13): health-core's device-import decides what lands. */
-  | { kind: 'appleHealth'; samples: DeviceSample[] }
-  /** Lab results from Health Records (US-72): health-core's health-records-import decides what lands. */
-  | { kind: 'healthRecords'; records: ClinicalRecordInput[] }
-  /** Medication and screening answers and a typed supplement (my-data-forms.ts, US-25 AC8). */
-  | FormEdit
-  /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
-  | { kind: 'labImport'; extractionJson: string; refs: string[]; reportDay: string }
-  /** A new value for a lab test the record holds, on a day, in the unit the sheet showed (US-25 AC25):
-   *  health-core's `addLabValue`, the web's lab add too, named by its series key (`labSlotKey`). */
-  | { kind: 'labAdd'; series: string; value: number; day?: string; unit?: string }
-  /** The add sheet's add (US-73 AC8): any test by name, in the unit typed, as the web's general add
-   *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
-  | { kind: 'labAddName'; name: string; value: number; unit: string; day?: string }
-  /** What the chat proposed, and its medications' Undo (US-67, chat-edits.ts). */
-  | ChatEdit;
+/** Every change the tab can ask for: contract.ts's EDIT, the one source (I-2). */
+export type { Edit } from './contract';
+
+/** The words for an edit that is not JSON or not an Edit (I-2 step 2). */
+const UNREADABLE_EDIT = 'This change could not be read, so it was not saved.';
+
+/** The app's edit, read where it enters: the Edit, or a refusal when it is not JSON or not an
+ *  Edit, so nothing malformed reaches a write (I-2 step 2). */
+export function parseEdit(editJson: string): { ok: true; edit: Edit } | { ok: false; reason: string; message: string } {
+  let raw: unknown;
+  try { raw = JSON.parse(editJson); } catch { return { ok: false, reason: 'invalid-edit', message: UNREADABLE_EDIT }; }
+  const parsed = EDIT.safeParse(raw);
+  return parsed.success ? { ok: true, edit: parsed.data } : { ok: false, reason: 'invalid-edit', message: UNREADABLE_EDIT };
+}
 
 /** A refusal leaves the record as it was. `existingId` names the row holding the day. */
 export type EditOutcome =
@@ -423,12 +406,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     }
     case 'bloodPressure':
       return applyPressure(file, edit, now);
-    case 'appleHealth': {
-      if (!Array.isArray(edit.samples)) return { ok: false, reason: 'invalid-value', message: 'Apple Health readings come as a list.' };
+    case 'appleHealth':
       return { ok: true, file: importDeviceSamples(file, edit.samples, { now, source: 'apple_health' }).file };
-    }
     case 'healthRecords': {
-      if (!Array.isArray(edit.records)) return { ok: false, reason: 'invalid-value', message: 'Health Records results come as a list.' };
       const { file: next, counts } = importHealthRecords(file, edit.records, { now });
       return { ok: true, file: next, healthRecords: counts };
     }

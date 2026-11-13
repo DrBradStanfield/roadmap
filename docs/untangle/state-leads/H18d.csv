@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H18d,composition,The open's blood-table move edits with no erase: it rides on the store's erase mark,hidden link,not started,"storage/roadmap-store.ts:177 this.session.edit(() => {}) in writeMovedRecord passes none; the engine passes session.eraseIdentity for the same move (ios/engine/cloud.ts:173). Found by the types-only trial in docs/drafts/h18-h24-erase-by-type-design.md. Same end state as H18",,no

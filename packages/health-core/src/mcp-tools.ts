@@ -14,19 +14,18 @@
 import { deadlineSignal } from './adapter';
 import { isCoreRow, labRowSlot } from './blood-tests';
 import { dayOf, localDay } from './merge';
-import { stampProfile } from './state-edits';
 import { labSlotKey } from './lab-catalog';
 import { latestActivePerMetric } from './measurement-history';
 import { resolveCoreMetricName } from './lab-extraction';
 import { computePlan, oneLine, PlanError, planPayload } from './plan';
 import { appendLabValue, appendMeasurement, type EditContext, correctValue, type EditRejection } from './record-edits';
-import type { FileLabValue, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import type { FileLabValue, RoadmapFile } from './roadmap-file';
 import { CORE_BLOOD_UNITS } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { CANONICAL_UNITS } from './units';
 import { IMPORT_REFUSALS } from './import-hints';
 import { type McpRefusalReason } from './product-events';
-import { BIRTH_IN_FUTURE, birthInFuture, healthInputSchema, zod3Message } from './validation';
+import { zod3Message } from './validation';
 import * as z from './zod';
 import { readableView } from './readable-rows';
 import {
@@ -43,7 +42,6 @@ import {
   type ImportCommit,
   importDocumentsInput,
   importDocumentsOutput,
-  PROFILE_FIELDS,
   readableSlotRow,
   readRecordInput,
   readRecordOutput,
@@ -58,84 +56,7 @@ import {
 import { type FeedbackFiler, fileFeedback, reportFeedback } from './mcp-feedback';
 import { extractNext, fitReceipt, importDocumentsCommit, type ImportSurface, type ImportTool, prepareImport } from './mcp-import';
 import { MCP_TOOLS } from './mcp-tool-catalogue';
-
-// Moved out for size (issue #429); every importer keeps reading them from here.
-export {
-  addLabValuesInput,
-  addLabValuesOutput,
-  addMeasurementInput,
-  addMeasurementOutput,
-  correctValueInput,
-  correctValueOutput,
-  DOCUMENT_TEXT_NOTE,
-  FEEDBACK_REPO,
-  fileResultRow,
-  fileResultsInput,
-  folderNudgeOutput,
-  getPlanInput,
-  getPlanOutput,
-  importCommitInput,
-  importDocumentsInput,
-  importDocumentsOutput,
-  labRowOutput,
-  labValueInput,
-  MAX_APPROVAL_LENGTH,
-  MAX_DOCUMENT_TEXT,
-  MAX_FEEDBACK_URL_LENGTH,
-  MAX_FILE_NAME_LENGTH,
-  MAX_ID_LENGTH,
-  MAX_IMPORT_CANDIDATES,
-  MAX_IMPORT_FILES_PER_CALL,
-  MAX_LAB_ROWS_PER_CALL,
-  MAX_NAME_LENGTH,
-  MAX_RECEIPT_LENGTH,
-  MAX_UNRECOGNIZED_LINE_LENGTH,
-  MAX_UNRECOGNIZED_LINES,
-  OFF_CATALOGUE_NOTE,
-  OPEN_SOURCE_NOTE,
-  PROFILE_FIELDS,
-  readRecordInput,
-  readRecordOutput,
-  RECEIPT_LIFETIME_SECONDS,
-  reportFeedbackInput,
-  reportFeedbackOutput,
-  SERVER_VERSION,
-  SI_NOTE,
-  TOOL_LAYER_VERSION,
-  ToolContractError,
-  updateProfileInput,
-  updateProfileOutput,
-} from './mcp-tool-contract';
-export type { FileResultsRequest, FileResultsSource, ImportCommit, ImportRequest, ToolOutcome } from './mcp-tool-contract';
-export { canonicalFeedback, FEEDBACK_HIDDEN, FEEDBACK_UNAVAILABLE, fileFeedback, reportFeedback } from './mcp-feedback';
-export type { FeedbackFiler, FeedbackIssue } from './mcp-feedback';
-export {
-  dedupFileName,
-  fileResultsBundle,
-  FOLDER_NUDGE_HINT,
-  FOLDER_NUDGE_MAX,
-  folderNudge,
-  IMPORT_HOSTED_ONLY,
-  importableFileName,
-  importDocumentsCommit,
-  isAlreadyImported,
-  prepareImport,
-} from './mcp-import';
-export type {
-  ExtractedFile,
-  ImportBundle,
-  ImportCandidate,
-  ImportDocument,
-  ImportedMatch,
-  ImportFileStatus,
-  ImportPayload,
-  ImportRefusal,
-  ImportRoute,
-  ImportSurface,
-  ImportTool,
-} from './mcp-import';
-export { MCP_PROMPTS, MCP_TOOLS } from './mcp-tool-catalogue';
-export type { McpPrompt, McpToolDefinition, ToolCost, ToolInputSchema } from './mcp-tool-catalogue';
+import { updateProfile } from './profile-edits';
 
 /** Per-row sync bookkeeping and device identifiers: the merge's, never what the record says. */
 const BOOKKEEPING = ['createdAt', 'updatedAt', 'lamport', 'fieldStamps', 'externalId'] as const;
@@ -352,90 +273,6 @@ export function correctValueTool(
       correctsId: request.id,
       metric: 'metricType' in row ? row.metricType : row.metricName,
       ...rowValue(row),
-    },
-  };
-}
-
-/**
- * The first profile value a person at the form could not type, in plain words
- * ending with a full stop: the app's own ranges, then a birth month after this
- * one (US-54 AC5b, `birthInFuture`). A year alone is judged with the stored
- * month, and a month alone with the stored year.
- */
-function profileFault(
-  file: RoadmapFile,
-  request: Partial<Record<(typeof PROFILE_FIELDS)[number], unknown>>,
-  now: string,
-): { field: (typeof PROFILE_FIELDS)[number]; message: string } | undefined {
-  for (const field of PROFILE_FIELDS) {
-    if (request[field] === undefined) continue;
-    const parsed = healthInputSchema.shape[field].safeParse(request[field], { error: zod3Message });
-    if (!parsed.success) return { field, message: `${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}.` };
-  }
-  if (request.birthYear === undefined && request.birthMonth === undefined) return undefined;
-  const year = (request.birthYear ?? file.profile.birthYear) as number | undefined;
-  const month = (request.birthMonth ?? file.profile.birthMonth ?? 1) as number;
-  if (year === undefined || !birthInFuture(year, month, now)) return undefined;
-  return { field: request.birthMonth === undefined ? 'birthYear' : 'birthMonth', message: BIRTH_IN_FUTURE };
-}
-
-/**
- * Change who the record is about: sex, birth year, birth month, height (US-34).
- *
- * Each profile field is last-write-wins: `mergeFiles` picks each field's
- * newest write (US-10 AC6), and this stamps only the fields it changes. It is
- * a read-modify-write of the object the record already holds, so every field
- * it carries survives, named or not, known to this version or not. What makes
- * that safe against a second writer is `expected`: the agent states what it
- * believes it is replacing, and a mismatch writes nothing. Optional here (a
- * person watching their own file); on the hosted server it is required to
- * CHANGE a field the record holds, and not to fill one it does not — there is
- * no earlier value to protect.
- */
-export function updateProfile(
-  file: RoadmapFile,
-  request: z.infer<typeof updateProfileInput>,
-  now: string,
-): ToolOutcome {
-  const named = PROFILE_FIELDS.filter((field) => request[field] !== undefined);
-  if (named.length === 0) {
-    return { status: 'rejected', text: `Name at least one of ${PROFILE_FIELDS.join(', ')}. Nothing was written.` };
-  }
-
-  const stored = file.profile;
-  for (const field of PROFILE_FIELDS) {
-    const claim = request.expected?.[field] ?? undefined;
-    if (request.expected && field in request.expected && claim !== (stored[field] ?? undefined)) {
-      // The refusal must not become a read: an agent that guessed wrong learns
-      // nothing about what the record actually holds (design §3).
-      return { status: 'rejected', text: `The record does not hold the ${field} you expected. Read the record, then update. Nothing was written.` };
-    }
-  }
-
-  // After the expectations: the future-month rule reads stored fields (US-32 AC5/AC22).
-  // The agent gets the field key and tail; the iPhone shows `message` as it is (US-54 AC5c).
-  const fault = profileFault(file, request, now);
-  if (fault) return { status: 'rejected', text: `${fault.field}: ${fault.message} Nothing was written.`, message: fault.message };
-
-  const changed = named.filter((field) => request[field] !== stored[field]);
-  if (changed.length === 0) {
-    return { status: 'ok', text: 'The record already says that. Nothing was written.', data: { changed: [] } };
-  }
-
-  // The app's own write rule: the changed fields alone take a new stamp, one
-  // past the copy it read. Jumping to the FILE's clock instead would make every
-  // connector write beat a concurrent one made in the app, whenever it was
-  // made. The merge reads wall-clock time first (US-10 AC8), the honest
-  // answer to "who wrote last".
-  // A stored value no reader can read is never echoed (US-65 AC3): `from` is null, the text says so.
-  const shown = readableView(file).file.profile;
-  const hidden = (field: (typeof PROFILE_FIELDS)[number]) => stored[field] != null && shown[field] === undefined;
-  return {
-    status: 'ok',
-    file: stampProfile(file, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now),
-    text: changed.map((field) => `${field}: ${hidden(field) ? 'a value this app cannot read' : shown[field] ?? 'not set'} → ${request[field]}`).join('\n'),
-    data: {
-      changed: changed.map((field) => ({ field, from: hidden(field) ? null : shown[field] ?? null, to: request[field] as string | number })),
     },
   };
 }

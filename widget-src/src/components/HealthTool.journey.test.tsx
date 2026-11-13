@@ -42,7 +42,7 @@ import {
 } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
-import { openAboutYou, showTables } from '../testing/health-tool-harness';
+import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
 import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { SAME_SLOT, SAVE_ERRORS } from './BloodTestTimeline';
 
@@ -99,10 +99,6 @@ const localToday = () => localDay(new Date());
 const RIGHT_DAY = '2026-08-15';
 
 /** The guest's record as this browser holds it, after every pending save. */
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 // A blood test is a core lab row (US-66), read here as the measurement it was.
 const rowsOf = async (metric: string) => toOldShape(await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
 const active = <T extends { status: string }>(rows: T[]) => rows.filter((r) => r.status === 'active');
@@ -295,19 +291,8 @@ async function printedLdl(view: RenderResult) {
   return ldlTile(new DOMParser().parseFromString(printed, 'text/html').body);
 }
 
-/** Each page's live re-read, stopped when its test ends, as a closed page's
- *  is. A guest page's listener stays on while hidden (US-34 AC6), so a page an
- *  earlier test left behind would otherwise take in, and announce, every later
- *  test's other-tab save. */
-const stops: Array<() => void> = [];
-
 beforeEach(() => {
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this);
-    stops.push(stop);
-    return stop;
-  });
+  trackLiveRefresh();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   localStorage.clear();
   sessionStorage.clear();
@@ -322,7 +307,7 @@ beforeEach(() => {
   upload.onComplete = null;
 });
 afterEach(async () => {
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   cleanup();
   showPage();
   await flushRoadmapStore();
@@ -1770,14 +1755,14 @@ describe('US-11: an erase made here', () => {
   // alert is the normal one.
   it('the reminder cancel succeeds: the alert says the record is deleted', async () => {
     await returningGuest();
-    setPreEraseHook(async () => {});
+    setPreEraseHook(async () => null);
     try {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       fireEvent.click(deleteButton());
       await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
       expect(await loadAllHistory()).toEqual([]);
     } finally {
-      setPreEraseHook(async () => {});
+      setPreEraseHook(async () => null);
     }
   });
 });

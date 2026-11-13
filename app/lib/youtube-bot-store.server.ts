@@ -5,7 +5,7 @@
  * youtube-bot.server.ts (issue #429), which re-exports its public names.
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
 import { generateTitle } from './chat.server';
 import { COMMENT_MAX_AGE_DAYS, PLATFORM_YOUTUBE, BOT_PROFILE_ID } from './youtube-bot-config.server';
@@ -43,12 +43,14 @@ export async function claimComment(commentId: string): Promise<number | null> {
 /** Release the claim row when the pipeline failed before producing a decision
  *  (e.g. transient Anthropic 529 / network blip). Next tick will see the
  *  comment as unseen again and retry. Only deletes UNposted rows — never
- *  removes a successful post. */
-export async function unclaimComment(commentId: string): Promise<void> {
+ *  removes a successful post — and only this claim's row, so a fresh claim
+ *  another machine made after ours was released stays (H50). */
+export async function unclaimComment(commentId: string, claimRowId: number): Promise<void> {
   if (!supabaseAdmin) return;
   const { error } = await supabaseAdmin
     .from('youtube_bot_log')
     .delete()
+    .eq('id', claimRowId)
     .eq('youtube_comment_id', commentId)
     .eq('posted', false);
   if (error) {

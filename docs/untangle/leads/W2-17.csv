@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W2-17,"S7 web data layer, upload, standalone",Storage line: ' It will upload automatically.' while a retry is due awaits Brad's approval; restore it in one line when approved (PR 1596),not started,"widget-src/standalone/sync-control.tsx:340 comment, the waiting line's two sentences; facts.retry (currentRetryDue) kept in SaveFacts for the one-line restore; storage-bar-save-retry.test.tsx asserts the sentence absent",1596,none,yes

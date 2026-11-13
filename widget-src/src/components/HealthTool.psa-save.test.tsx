@@ -19,7 +19,7 @@ import { toOldShape } from '@roadmap/health-core/blood-tests';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
@@ -45,7 +45,9 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
 import { HealthTool } from './HealthTool';
 
-useHealthToolLifecycle();
+// Fake timers that move with the clock: wait(ms) jumps the 500 ms field save
+// at once, with the same durations, so the rules stay pinned.
+useHealthToolLifecycle({ fakeTimers: true });
 
 const MAN = { sex: 'male' as const, heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' as const };
 /** The page once the PSA row shows. */
@@ -114,8 +116,6 @@ function depart(event: 'beforeunload' | 'pagehide' | 'visibilitychange') {
   });
 }
 
-const pause = (ms: number) => act(async () => { await new Promise(r => setTimeout(r, ms)); });
-
 function type(field: HTMLInputElement, value: string) {
   act(() => field.focus());
   fireEvent.change(field, { target: { value } });
@@ -131,7 +131,7 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     pick(day, '2025-01-14');
     type(psa(), '6.5');
     act(() => psa().blur());
-    await pause(700); // past the 500 ms field save
+    await wait(700); // past the 500 ms field save
 
     await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-01-14']]));
     // What was saved leaves the field, and the saved value shows under it.
@@ -147,12 +147,12 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     const { view, psa, day } = await page();
     type(psa(), '6.5');
     act(() => day.focus()); // from the number to the date beside it
-    await pause(700);
+    await wait(700);
     expect(await active('psa')).toEqual([]);
 
     pick(day, '2025-03-20');
     act(() => day.blur()); // out of the row
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
     view.unmount();
   });
@@ -207,7 +207,7 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
       window.dispatchEvent(new Event('pagehide'));
     });
     view.unmount();
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await all('psa')).toEqual([[2.8, '2025-04-30', 'active']]));
     expect(writes.filter(metric => metric === 'psa')).toEqual(['psa']); // one write reaches the store
   });
@@ -218,12 +218,12 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     Object.defineProperty(psa(), 'validity', { configurable: true, value: { ...psa().validity, badInput: true } });
     fireEvent.change(psa(), { target: { value: '' } }); // what a browser hands over for "6,,5"
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     expect(await active('psa')).toEqual([]);
 
     act(() => psa().focus()); // and the tab closed while it still has focus
     act(() => { window.dispatchEvent(new Event('pagehide')); });
-    await pause(700);
+    await wait(700);
     expect(await active('psa')).toEqual([]);
     view.unmount();
   });
@@ -233,7 +233,7 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     const { view, day, weight } = await pageWithWeight('82');
     pick(day, '2025-01-14');
     act(() => weight.blur());
-    await pause(700);
+    await wait(700);
     const today = localDay(new Date());
     await waitFor(async () => expect(await active('weight')).toEqual([[82, today]]));
     expect(await active('psa')).toEqual([]);
@@ -245,7 +245,7 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     pick(day, '2099-01-01');
     type(psa(), '6.5');
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     expect(await active('psa')).toEqual([]);
     expect(psa().value).toBe('6.5');
     expect(note()).toContain('Choose a day up to today.');
@@ -259,7 +259,7 @@ describe('after a save the date box goes back to today (US-06 AC15)', () => {
     pick(day, '2025-03-20');
     type(psa(), '6.5');
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
     await waitFor(() => expect(day.value).toBe(localDay(new Date())));
     expect(note()).not.toContain('Replaces');
@@ -272,7 +272,7 @@ describe('after a save the date box goes back to today (US-06 AC15)', () => {
     pick(day, '2099-01-01');
     type(psa(), '6.5');
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     expect(day.value).toBe('2099-01-01');
     view.unmount();
   });
@@ -287,7 +287,7 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
     type(psa(), '3.2');
     await waitFor(() => expect(note()).toContain('Replaces 6.5 ng/mL'));
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     // Both rows stay, in no set order on disk: the old one flipped, the new one active.
     await waitFor(async () => expect(await all('psa')).toEqual(expect.arrayContaining([
       [6.5, '2025-01-14', 'entered-in-error'], [3.2, '2025-01-14', 'active'],
@@ -302,7 +302,7 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
     type(psa(), '3.2');
     expect(note()).not.toContain('Replaces');
     act(() => psa().blur());
-    await pause(700);
+    await wait(700);
     // Order on disk is not the point: both readings are active, each on its own day.
     await waitFor(async () => expect((await active('psa')).sort((x, y) => String(x[1]).localeCompare(String(y[1])))).toEqual([[6.5, '2025-01-14'], [3.2, '2025-01-28']]));
     view.unmount();
@@ -314,7 +314,7 @@ describe('a PSA saves only once its row is committed (US-06 AC15, Codex R2)', ()
     const { view, psa, day, weight } = await pageWithWeight('82');
     act(() => weight.blur()); // the weight's 500 ms save starts
     type(psa(), '6.5'); // focus now in the PSA row, its day not yet chosen
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await active('weight')).toEqual([[82, localDay(new Date())]]));
     expect(await active('psa')).toEqual([]);
     expect(psa().value).toBe('6.5');
@@ -322,7 +322,7 @@ describe('a PSA saves only once its row is committed (US-06 AC15, Codex R2)', ()
     act(() => day.focus()); // from the number to the date: still in the row
     pick(day, '2025-03-20');
     act(() => day.blur()); // out of the row: now it saves, under the day chosen
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await active('psa')).toEqual([[6.5, '2025-03-20']]));
     view.unmount();
   });
@@ -356,7 +356,8 @@ describe('departure puts the save on disk before the page goes (US-06 AC15, Brad
     const { view, weight } = await pageWithWeight('82');
     act(() => weight.blur()); // its 500 ms timer starts
     // Set after the save's timer, for the same 500 ms: it runs in the task right after the timer fires.
-    await act(async () => { await new Promise<void>(r => setTimeout(() => { window.dispatchEvent(new Event('pagehide')); r(); }, 500)); });
+    setTimeout(() => { window.dispatchEvent(new Event('pagehide')); }, 500);
+    await wait(500);
     expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
     view.unmount();
   });
@@ -375,7 +376,7 @@ describe('"Replaces" shows only while a value is typed (US-06 AC15, Codex R6)', 
     const { view, psa, note } = await page();
     type(psa(), '4.2');
     act(() => psa().blur()); // the date box untouched: today
-    await pause(700);
+    await wait(700);
     await waitFor(async () => expect(await active('psa')).toEqual([[4.2, localDay(new Date())]]));
     await waitFor(() => expect(psa().value).toBe(''));
     expect(note()).not.toContain('Replaces');

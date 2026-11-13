@@ -91,7 +91,7 @@ interface StartingInfoVitalsProps {
    *  fromUnit, date)` so the chatbot can inject a vitals value into the
    *  draft/backfill cell (highlighted, for the user to Save). Mirrors
    *  BloodTestTimeline's prefillRef seam — its presence also signals to the
-   *  parent that the vitals matrix (not the legacy form) is mounted, so chat
+   *  parent that the vitals matrix is mounted (the whole form shows), so chat
    *  edits should flash a cell here rather than silently set a plain field. */
   prefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   /** Filled with the matrix's commit, so a lab upload commits the draft

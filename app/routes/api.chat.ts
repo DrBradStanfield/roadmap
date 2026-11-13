@@ -7,14 +7,16 @@
  * DELETE /api/chat { conversationId }    — Delete conversation
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
-import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, getCustomerId } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
 import { ipBucket } from '../lib/app-gate.server';
 import { authenticate } from '../shopify.server';
-import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
+import { createUserClient } from '../lib/supabase-client.server';
+import { logAudit } from '../lib/supabase-identity.server';
+import { getOrCreateGuestSession, GuestRateLimitError } from '../lib/supabase-guest.server';
+import { getProfile } from '../lib/supabase-account.server';
 import {
   resolveChatContext,
   buildSystemBlocks,
@@ -31,7 +33,8 @@ import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } f
 import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
-import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
+import { reportChatError, validConversationId, readClientHistory, streamTurn, type Turn } from '../lib/chat-turn-io.server';
+import { getCachedOrders, refreshSubscriptionIfStale } from '../lib/chat-customer-cache.server';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { claimChatTurn, CHAT_BUSY_REPLY, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
@@ -39,62 +42,6 @@ import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
-
-// Only fixed operation descriptions enter diagnostics. Database errors can echo
-// conversation contents even when every identifier passed validation.
-function reportChatError(message: string): void {
-  console.error(message);
-  Sentry.captureException(new Error(message), { tags: { feature: 'chat' } });
-}
-
-function validConversationId(value: unknown): value is string {
-  return typeof value === 'string' && isValidUuid(value.toLowerCase());
-}
-
-type Turn = { role: 'user' | 'assistant'; content: string };
-
-/**
- * The widget's earlier turns, sent from its own chat-history.json (US-15 AC7:
- * the server stores none). Whitelisted roles, non-empty strings, the same
- * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (no
- * shorter than a question may be), and never starting on an assistant turn — the Messages API 400s on that,
- * which would surface as a fallback.
- */
-function readClientHistory(value: unknown): Turn[] {
-  if (!Array.isArray(value)) return [];
-  const turns = value.slice(-MAX_HISTORY_MESSAGES).filter((t): t is Turn =>
-    !!t && typeof t === 'object' && (t.role === 'user' || t.role === 'assistant')
-    && typeof t.content === 'string' && t.content.length > 0)
-    .map((t) => ({ role: t.role, content: cutText(t.content, MAX_HISTORY_TURN_CHARS) }));
-  return turns.slice(Math.max(0, turns.findIndex((t) => t.role === 'user')));
-}
-
-/**
- * An NDJSON reply (US-15 AC16): one JSON object per line, written as `run`
- * produces them. The status is sent before the answer exists, so a failure
- * inside `run` ends the stream with an error `done` line instead. A reader
- * that went away does not stop the turn: `run` still finishes and persists.
- * `no-transform` keeps proxies from buffering the stream to compress it.
- */
-function streamTurn(run: (write: (line: object) => void) => Promise<void>): Response {
-  const encoder = new TextEncoder();
-  const body = new ReadableStream<Uint8Array>({
-    start(controller) {
-      const write = (line: object) => {
-        try { controller.enqueue(encoder.encode(JSON.stringify(line) + '\n')); } catch { /* reader gone */ }
-      };
-      void run(write)
-        .catch(() => {
-          reportChatError('Chat: Action failed');
-          write({ type: 'done', success: false, error: 'Failed to process message' });
-        })
-        .finally(() => { try { controller.close(); } catch { /* reader gone */ } });
-    },
-  });
-  return new Response(body, {
-    headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -140,53 +87,6 @@ async function getAuthOrGuest(
     isGuest: true,
     sessionToken: session.sessionToken,
   };
-}
-
-// Order cache — orders change infrequently, no need to re-fetch every message
-const ORDER_CACHE_TTL = 10 * 60_000; // 10 minutes
-const orderCache = new Map<string, { summary: string; expiresAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of orderCache) {
-    if (now > entry.expiresAt) orderCache.delete(key);
-  }
-}, 5 * 60_000);
-
-async function getCachedOrders(admin: any, customerId: string): Promise<string> {
-  const cached = orderCache.get(customerId);
-  if (cached && Date.now() < cached.expiresAt) return cached.summary;
-
-  const summary = await getCustomerOrders(admin, customerId);
-  // Cache both successful and empty results (shorter TTL for empty to retry sooner)
-  const ttl = summary ? ORDER_CACHE_TTL : 2 * 60_000;
-  orderCache.set(customerId, { summary, expiresAt: Date.now() + ttl });
-  return summary;
-}
-
-// Lazy subscription check — at most once per 24 hours
-async function refreshSubscriptionIfStale(
-  auth: { admin: any; customerId: string; userId: string },
-  profile: Pick<DbProfile, 'subscription_plan' | 'subscription_checked_at'>,
-): Promise<string> {
-  const checkedAt = profile.subscription_checked_at
-    ? new Date(profile.subscription_checked_at).getTime()
-    : 0;
-  const staleThreshold = Date.now() - 24 * 60 * 60_000;
-
-  if (checkedAt > staleThreshold) {
-    return profile.subscription_plan ?? 'free';
-  }
-
-  // Refresh from Shopify tags
-  if (!auth.admin) return profile.subscription_plan ?? 'free';
-
-  const plan = await checkSubscriptionFromTags(auth.admin, auth.customerId);
-  // Fire-and-forget update
-  updateSubscriptionPlan(auth.userId, plan).catch(() => {
-    reportChatError('Chat: Failed to update subscription plan');
-  });
-  return plan;
 }
 
 // A guest's 404 hands back its session, which a changed IP may just have

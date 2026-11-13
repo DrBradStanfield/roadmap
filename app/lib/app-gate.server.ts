@@ -5,10 +5,12 @@
  * the body is read, so a script with no key never makes us buffer its upload.
  * Fails closed: no config or no key store is a 503, never a pass.
  */
+import { isIP } from 'node:net';
 import { readCappedBytes } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 import { getClientIp } from './local-first-route.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
   requestClientData, validKeyId, CHALLENGE_TTL_MS, type AttestEnvironment, type AttestedKey,
@@ -60,18 +62,33 @@ export const supabaseKeyStore: KeyStore = {
  * The per-IP bucket. IPv6 is keyed on its /64, which one subscriber holds
  * whole (adversary R4); IPv4 on the address, so many phones behind one
  * carrier NAT share a bucket, the price of having one at all.
+ *
+ * Total (US-52 AC4g): every spelling of one address is one key. Brackets, a
+ * port and an IPv6 zone are dropped; IPv4-mapped IPv6, dotted or hex, is its
+ * IPv4 address. Anything `isIP` does not take (IPv4 with leading zeros
+ * included) is the one key `unknown`, `getClientIp`'s own fallback, so no
+ * value becomes its own key. Never through `new URL`: it rewrites the dotted
+ * mapped form to hex.
  */
-export function ipBucket(ip: string): string {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
-  if (mapped) return mapped[1];
-  if (!ip.includes(':')) return ip;
-  const [head] = ip.split('%');
-  const halves = head.split('::');
-  const left = halves[0] ? halves[0].split(':') : [];
-  const right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
-  const groups = halves.length > 1 ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left;
-  return groups.slice(0, 4).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+export function ipBucket(raw: string | undefined): string {
+  let ip = (raw ?? '').trim();
+  if (ip.length > 64) return UNKNOWN_IP;
+  const hostPort = /^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(ip) ?? /^(\d+\.\d+\.\d+\.\d+):(\d{1,5})$/.exec(ip);
+  if (hostPort && Number(hostPort[2] ?? 0) > 65535) return UNKNOWN_IP;
+  if (hostPort) ip = hostPort[1];
+  const zone = ip.indexOf('%');
+  if (zone >= 0 && isIP(ip.slice(0, zone)) === 6) ip = ip.slice(0, zone);
+  const family = isIP(ip);
+  if (family === 4) return hostPort?.[0].startsWith('[') ? UNKNOWN_IP : ip;
+  const g = family === 6 ? parseIpv6(ip) : null;
+  if (!g) return UNKNOWN_IP;
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
+    return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join('.');
+  }
+  return g.slice(0, 4).map((x) => x.toString(16)).join(':') + '::/64';
 }
+
+const UNKNOWN_IP = 'unknown';
 
 /** The app's routes run on the education app only: on the brand surface they answer 503 (AC2, adversary R13). */
 export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -80,24 +97,25 @@ export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
 
 /** Per IP per day, and per machine per day: in memory (D8 says why). */
 export const appLimits = {
-  ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000) },
+  ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app chat per IP' }), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app lab per IP' }) },
   machine: {
-    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000),
+    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000, { name: 'app chat per machine' }),
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
-    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000),
+    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000, { name: 'app lab per machine' }),
   },
   /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
-  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000),
+  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app failures per IP' }),
   /** A verified key's refused requests (stale counter, key gone) per day, so one broken device stops only itself (US-52 AC4c). */
-  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000),
+  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000, { name: 'app failures per key' }),
   /** Registration attempts per IP per day, counted before verifying (R11); a success hands its attempt back (AC1b). */
-  register: createQuotaCounter(10, DAY_MS, 30 * 60_000),
+  register: createQuotaCounter(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
   /** Successful registrations per IP per day (US-52 AC1b). */
-  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000),
-  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines. */
-  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000),
+  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000, { name: 'app registrations per IP' }),
+  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines.
+   *  One-use must hold for a challenge's whole life, so this set never evicts and never refuses; its 6-minute life bounds it. */
+  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges', maxKeys: Infinity }),
   /** The dev bypass's per-key count, since no key row exists for it. */
-  dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000) },
+  dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000, { name: 'app dev chat per key' }), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000, { name: 'app dev lab per key' }) },
 };
 
 const refuse = (status: number, reason: string, error: string) =>

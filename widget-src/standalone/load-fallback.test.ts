@@ -49,14 +49,15 @@ describe('startOnBackend (US-09 AC13)', () => {
   });
 
   it.each([
-    ['google-drive', 'google-drive'],
-    ['dropbox', 'dropbox'],
-    ['github', 'github'],
+    // Drive's panel always offers its sign-in; a 403 is no sign-in refusal, so the others retry (US-09 AC48).
+    ['google-drive', { kind: 'signedOut', provider: 'google-drive' }],
+    ['dropbox', { kind: 'unreachable', provider: 'dropbox' }],
+    ['github', { kind: 'unreachable', provider: 'github' }],
   ] as const)('a %s record the provider refuses at load runs on-device, marker set, reported once', async (backend, reconnect) => {
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend }, init);
     expect(started.backend).toBe('local');
     expect(started.adapter).toBeInstanceOf(LocalStorageAdapter);
-    expect(started.reconnect).toBe(reconnect); // US-09 AC13: the provider is named, never the guest pitch
+    expect(started.reconnect).toEqual(reconnect); // US-09 AC13: the provider is named, never the guest pitch
     expect(isSyncPending()).toBe(true); // the next good cloud session merges this one's edits up
     expect(captureException).toHaveBeenCalledTimes(1);
     const [error, context] = captureException.mock.calls[0] as [Error, { tags: Record<string, string> }];
@@ -140,7 +141,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     const started = await page.connect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
       fallback = await page.store.RoadmapStore.create(adapter);
     });
-    expect(started.reconnect).toBe('github');
+    expect(started.reconnect).toEqual({ kind: 'unreachable', provider: 'github' });
     expect(page.lib.healthWritesAllowed()).toBe(true);
     fallback.addMeasurement('weight', 80, '2026-06-01');
     await fallback.flush();
@@ -230,11 +231,11 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   it('US-09 AC23: an erase in a fallback session is refused before the reminders hook and the chat erase, and changes nothing', async () => {
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'google-drive' }, data.initRoadmapStore);
-    expect(started.reconnect).toBe('google-drive');
+    expect(started.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
     await data.addMeasurement('weight', 80, '2026-06-01');
     await data.flushRoadmapStore();
     const before = localStorage.getItem('health_roadmap_file_v2');
-    const hook = vi.fn(async () => {});
+    const hook = vi.fn(async () => null);
     data.setPreEraseHook(hook);
 
     expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });

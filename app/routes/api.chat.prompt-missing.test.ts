@@ -31,7 +31,8 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   ...await original<typeof import('../lib/route-helpers.server')>(),
   getAuthenticatedUser: vi.fn(async () => null),
 }));
-vi.mock('../lib/supabase.server', () => {
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) {
     query[method] = (...args: unknown[]) => { spies.dbCalls.push(`${method}(${args.map(String).join(',')})`); return query; };
@@ -42,9 +43,12 @@ vi.mock('../lib/supabase.server', () => {
     createUserClient: vi.fn(() => ({ from: () => query })),
     getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
     GuestRateLimitError: class extends Error {},
-    supabaseAdmin: null,
   };
 });
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
 vi.mock('../lib/anthropic.server', async (original) => ({
   ...await original<typeof import('../lib/anthropic.server')>(),
   callAnthropicWithUsage: spies.callAnthropic,

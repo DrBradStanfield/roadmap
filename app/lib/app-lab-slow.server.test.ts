@@ -136,7 +136,7 @@ describe('US-52 AC7d: one Sentry event for a slow or timed-out phone import, fix
     const slow = await slowEvents();
     expect(slow).toHaveLength(1);
     expectOnlyFixedTags(slow[0], { feature: 'app-lab-import', outcome: 'timeout', duration: '90+', retry: 'no' });
-    // The timeout's own exception (page count and types, unchanged) is not linked to it by trace.
+    // The timeout's own exception (the error's name) is not linked to it by trace.
     const [exception] = (await events()).filter((e) => e.tags?.feature === 'lab_import_v2');
     expect(exception.headerTrace).toBeTruthy();
     expect(slow[0].headerTrace).not.toBe(exception.headerTrace);
@@ -206,5 +206,27 @@ describe('US-52 AC7d: one Sentry event for a slow or timed-out phone import, fix
     expect((await extractOneFile(body as never, () => ({ remaining: 1 }))).status).toBe(500);
     // The transport works: the timeout's own exception arrives, and nothing else.
     expect((await events()).map((e) => e.tags?.feature)).toEqual(['lab_import_v2']);
+  });
+
+  it('US-52 AC7d: a failed read\'s own exception names the error, never the page count or page types, on either route', async () => {
+    // Each route's call the way it fails in production, a new error each (the SDK drops a repeat of the last one).
+    const failures = [
+      () => phoneImport(),
+      () => extractOneFile(body as never, () => ({ remaining: 1 })),
+    ];
+    const exceptions = [];
+    for (const [i, fail] of failures.entries()) {
+      answersAfter(95_000, { fail: new DOMException(`signal timed out ${i}`, 'TimeoutError') });
+      await fail();
+      exceptions.push(...(await events()).filter((e) => e.tags?.feature === 'lab_import_v2'));
+      envelopes.length = 0;
+    }
+    expect(exceptions).toHaveLength(2);
+    for (const e of exceptions) {
+      expect(e.tags).toMatchObject({ feature: 'lab_import_v2', errorName: 'TimeoutError' });
+      expect(Object.keys(e.extra ?? {})).not.toContain('pageCount');
+      expect(Object.keys(e.extra ?? {})).not.toContain('pageTypes');
+      expect(JSON.stringify(e)).not.toMatch(/pageCount|pageTypes/);
+    }
   });
 });

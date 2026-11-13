@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-S8,iPhone state,The sleep page may say no sleep before Health is read; a metric page with no ticket draws a blank chart,lead,not started,"ios/HealthRoadmap/AppleHealthMetrics/SleepPage.swift:17-31,74-83 (read true on the cache, readFor only on success); LiveMetricPage.swift:41-55,92,142. Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S8",,no
+S8,iPhone state,The sleep page may say no sleep before Health is read; a metric page with no ticket draws a blank chart,lead,not started,"ios/HealthRoadmap/AppleHealthMetrics/SleepPage.swift:18-31,63-85 (read true on the cache, readFor only on success); LiveMetricPage.swift:92 (no ticket: nothing loads). Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S8",,no
