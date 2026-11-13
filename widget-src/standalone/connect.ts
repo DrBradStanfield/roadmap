@@ -351,10 +351,11 @@ export async function copySessionToDevice(provider: CloudBackend): Promise<void>
  *  and the page opens one store, so a lost sign-in on a cloud store ended mid-session: its record is
  *  current, and the exit runs. A session that fell back to this browser at load never read its cloud: over a
  *  stored copy or an unsaved edit it asks whether that copy may be out of date; over nothing it asks before
- *  starting empty. The defaults read the page as it is now. */
+ *  starting empty. After another tab's log-off this browser keeps nothing, so that is asked. The defaults
+ *  read the page as it is now. */
 export function exitChoice(
   cloudRead = getBackendKind() === 'cloud',
-  holdsHere = currentSaveStatus() !== 'saved' || deviceRecordStored(),
+  holdsHere = healthWritesAllowed() && (currentSaveStatus() !== 'saved' || deviceRecordStored()),
 ): 'exit' | 'askEmpty' | 'askStale' {
   if (cloudRead) return 'exit';
   return holdsHere ? 'askStale' : 'askEmpty';

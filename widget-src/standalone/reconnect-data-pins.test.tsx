@@ -260,6 +260,9 @@ const LABEL = { 'google-drive': 'Google Drive', dropbox: 'Dropbox' } as const;
 /** US-09 AC50 (Brad, 13 Nov 2026): asked before an exit onto a copy here the cloud was never read into. */
 const staleQuestion = (cloud: Cloud) =>
   `This browser's copy of your record may be out of date. Your full record stays safe in your ${LABEL[cloud]}. Continue with this browser's copy?`;
+/** US-09 AC49: asked before an exit that keeps nothing here. */
+const emptyQuestion = (cloud: Cloud) =>
+  `This browser has no copy of your record yet. It stays safe in your ${LABEL[cloud]}. Start empty in this browser?`;
 /** "Use this browser only" from a load-time panel over a copy here: asked first (AC50), then confirmed. */
 function useThisBrowserOnlyConfirmed(cloud: Cloud): void {
   fireEvent.click(button('Use this browser only')!);
@@ -356,14 +359,17 @@ describe('US-09 AC48 (Codex re-check R1, owner): exit (a) from a load-time fallb
     expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Could not save on this device (local storage may be full).');
   });
 
-  it('google-drive: after another tab logs off, the refused save is nothing to copy and the exit finishes', async () => {
+  it('google-drive: after another tab logs off, the refused save is nothing to copy: asked the no-copy question (AC49), and the exit finishes empty', async () => {
     await openReconnectPanel('google-drive');
     await edit(PANEL_EDIT);
     localStorage.setItem('health_roadmap_log_off_id', 'id-after');
     window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
     const { healthWritesAllowed } = await import('../src/lib/storage');
     expect(healthWritesAllowed()).toBe(false);
-    useThisBrowserOnlyConfirmed('google-drive');
+    fireEvent.click(button('Use this browser only')!);
+    expect(shown(staleQuestion('google-drive'))).toBe(false); // this browser will keep nothing: never "this browser's copy"
+    expect(shown(emptyQuestion('google-drive'))).toBe(true);
+    fireEvent.click(button('Use this browser only')!);
     await reloaded();
     expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
     expect(await deviceWeights()).toEqual({}); // nothing written after the log-off
@@ -519,8 +525,7 @@ describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this b
     localStorage.removeItem('health_roadmap_file_v2');
   }
 
-  const question = (cloud: Cloud) =>
-    `This browser has no copy of your record yet. It stays safe in your ${LABEL[cloud]}. Start empty in this browser?`;
+  const question = emptyQuestion;
 
   /** A later load whose sign-in is dead: Drive's token expired and its exchange is unreachable; Dropbox's content API refuses. */
   async function loadWithDeadSignIn(cloud: Cloud): Promise<Page> {
@@ -680,6 +685,27 @@ describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this b
       expect(await deviceWeights()).toEqual(GUEST); // this browser's copy, as the question said
       expect(cloudBody(cloud)).toBe(cloudBefore); // the full record stays in the cloud
       expect(cloudWeights(cloud)).toEqual({ ...GUEST, ...SAVED });
+    });
+
+    it.each(['google-drive', 'dropbox'] as const)('%s: another tab logs off while the question shows: the yes asks again in the no-copy words, and the exit keeps nothing', async (cloud) => {
+      await guestConnectThenDeadSignIn(cloud);
+      const cloudBefore = cloudBody(cloud);
+      fireEvent.click(button('Use this browser only')!);
+      expect(shown(staleQuestion(cloud))).toBe(true);
+      // Another tab's log-off: it wipes this browser's file and signals.
+      localStorage.removeItem(DEVICE_FILE);
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
+      fireEvent.click(button('Use this browser only')!);
+      await turns();
+      expect(reload).not.toHaveBeenCalled();
+      expect(shown(staleQuestion(cloud))).toBe(false);
+      expect(shown(question(cloud))).toBe(true);
+      fireEvent.click(button('Use this browser only')!);
+      await reloaded();
+      expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+      expect(await deviceWeights()).toEqual({});
+      expect(cloudBody(cloud)).toBe(cloudBefore);
     });
   });
 });
