@@ -72,6 +72,18 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     expect(hook.result.current.state.messages).toEqual([question]);
   });
 
+  // PR 1745 R1: the timer runs on the monotonic clock, the expiry on the wall clock. A wall clock that lags
+  // (an NTP slew, a step back) must not leave the wait in place with no timer left to end it.
+  it('US-15 AC17a: the wait still ends when the wall clock lags the timer', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true);
+    act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS - 1); });
+    vi.setSystemTime(Date.now() - 1);
+    act(() => { vi.advanceTimersByTime(1); });
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('US-15 AC17a: a later word from the sending tab starts the wait again', () => {
     const hook = renderHook(() => useChatState({ isLoggedIn: true }));
     fromOtherTab(true);

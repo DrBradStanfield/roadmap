@@ -31,7 +31,8 @@ export function useChatBusy() {
   const until = nextExpiry(state);
   useEffect(() => {
     if (until === null) return;
-    const timer = setTimeout(() => apply({ type: 'expired', now: Date.now() }), Math.max(0, until - Date.now()));
+    // The timer runs on the monotonic clock: a wall clock that lags it must still end the wait (PR 1745 R1).
+    const timer = setTimeout(() => apply({ type: 'expired', now: Math.max(Date.now(), until) }), Math.max(0, until - Date.now()));
     return () => clearTimeout(timer);
   }, [until, apply]);
   return {

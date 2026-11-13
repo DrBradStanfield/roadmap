@@ -45,6 +45,7 @@ export function transition(s: BusyState, e: BusyEvent): BusyState {
     case 'post': {
       const { [e.from]: _was, ...rest } = s.sends;
       const mirror = e.shown ? { local: e.local, from: e.from, key: e.shown } : null;
+      // `until` is on this tab's own clock (the hook's `now` as it heard the post), so skew between tabs cannot matter.
       const until = e.now + REMOTE_PENDING_MS;
       if (e.sending ?? e.shows) {
         const send: RemoteSend = e.sending === undefined ? { phase: 'legacy', until } : { phase: 'sending', asked: e.asked ?? null, until };
