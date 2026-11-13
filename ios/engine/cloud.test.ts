@@ -12,6 +12,7 @@ import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { buildErasedFile } from '../../packages/health-core/src/erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { stampCount, stampedRecord, stampsAheadOfMeta } from '../../packages/health-core/src/stamp-anchor.test-helpers';
 import { EDIT } from './contract';
 import { guardedEdit, refuse, type EditTarget } from './guarded-edit';
 
@@ -1519,4 +1520,52 @@ describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 
       expect(file).toBe(before);
     }
   });
+});
+
+// Lead TA-2: the cloud doors save no last-write-wins stamp later than the saved
+// record's own meta.updatedAt (migrate.ts clamps one, and it can lose a tie,
+// US-10 AC8). The record sits in the future so the session's own save clock
+// (the real Date in this context) is behind it, and each edit's clock is an hour
+// ahead of the record or an hour behind it. Both the cloud's bytes and the
+// phone's copy are walked raw (stamp-anchor.test-helpers.ts); the phone file's
+// door and every Edit kind are in stamp-anchor.test.ts.
+describe('TA-2: cloudEdit, cloudFlush and cloudErase stamp nothing past meta.updatedAt', () => {
+  const T0 = '2030-01-01T09:00:00.000Z';
+  const clocks = { ahead: '2030-01-01T10:00:00.000Z', behind: '2030-01-01T08:00:00.000Z' } as const;
+  const clean = (text: string | null) => {
+    const written = JSON.parse(text!) as unknown;
+    expect(stampCount(written)).toBeGreaterThan(0);
+    expect(stampsAheadOfMeta(written)).toEqual([]);
+  };
+  const edits = [
+    { kind: 'profile', height: 181 },
+    { kind: 'units', unitSystem: 'conventional' },
+    { kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' },
+    { kind: 'screening', key: 'colorectal_last_date', value: '2025-03' },
+  ];
+
+  for (const [clock, now] of Object.entries(clocks)) {
+    it(`four edits saved to the cloud, edit clock ${clock} of the record`, async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(stampedRecord(T0));
+      const { engine, state } = await phone(dropbox);
+      const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+      for (const edit of edits) expect(JSON.parse(engine.cloudEdit(JSON.stringify(edit), erase, 'si', now)).ok).toBe(true);
+      expect(await engine.cloudFlush()).toBe('saved');
+      expect(dropbox.record.medications[0].drugName).toBe('rosuvastatin');
+      clean(dropbox.file!.text);
+      clean(state.phoneText);
+    });
+
+    it(`cloudErase, erase clock ${clock} of the record`, async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(stampedRecord(T0));
+      const { engine, state } = await phone(dropbox);
+      await engine.cloudOpen('dropbox', 'ios-1', false, false);
+      expect(JSON.parse(await engine.cloudErase(null, now, () => ''))).toMatchObject({ success: true });
+      expect(dropbox.record.meta.eraseEpoch).toBe(1);
+      clean(dropbox.file!.text);
+      clean(state.phoneText);
+    });
+  }
 });
