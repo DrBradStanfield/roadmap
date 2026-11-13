@@ -156,7 +156,8 @@ export class SyncManager<T extends SyncedFile> {
         const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, status === 401 || status === 403
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status);
+        // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
+        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined);
       }
     }
     throw new StorageError(

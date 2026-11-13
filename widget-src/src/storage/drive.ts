@@ -684,9 +684,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /** Valid cached token → server refresh → otherwise interaction is needed. */
   private async getToken(): Promise<string> {
-    if (this.hasValidToken()) return this.tokens!.accessToken;
-    if (await this.tryServerRefresh()) return this.tokens!.accessToken;
-    throw new StorageError('Google Drive needs to be reconnected.');
+    const refreshed = this.hasValidToken() ? 'ok' : await this.refresh(); // 'none': no grant to refresh with; 'transient' may pass
+    if (refreshed === 'ok') return this.tokens!.accessToken;
+    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined); // US-09 AC30
   }
 
   /** FALLBACK reconnect: a GIS popup grant (~1 h token, no refresh token), which

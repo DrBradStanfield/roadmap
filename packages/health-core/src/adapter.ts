@@ -62,9 +62,10 @@ export class LostUpdateError extends ConflictError {
  * the provider's HTTP status when there was one, so a surface can tell a
  * rejected token (401/403) from an unreachable folder without reading the
  * message text. `reason`, likewise, names a failure a caller acts on (#979):
- * a full store, or a document that is not there.
+ * a full store, a document that is not there, or a grant the provider revoked
+ * (`reconnect`: only a new sign-in mends it, so a failed save is not retried, US-09 AC30).
  */
-export type StorageFailureReason = 'storage-full' | 'not-found';
+export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect';
 export class StorageError extends Error {
   constructor(message: string, readonly hint?: string, readonly cause?: unknown, readonly status?: number, readonly reason?: StorageFailureReason) {
     super(message);

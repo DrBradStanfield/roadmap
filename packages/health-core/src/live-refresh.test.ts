@@ -17,7 +17,8 @@ function rig(opts: { tier?: 'device' | 'cloud'; watch?: boolean; revision?: () =
   let nextId = 0;
   let watching = 0;
   let onChange: (() => void) | null = null;
-  const session = { lastRefreshAt: 0, seenRevision: 'r1' as string | null };
+  // Nothing owed: these tests pin the re-read; live-refresh.retry.test.ts pins the retry (US-09 AC30).
+  const session = { lastRefreshAt: 0, seenRevision: 'r1' as string | null, retry: () => null };
   const reread = vi.fn(async () => { session.lastRefreshAt = now; });
   const base = {
     store: new MemoryAdapter(),

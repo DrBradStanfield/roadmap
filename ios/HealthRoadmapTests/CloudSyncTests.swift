@@ -115,6 +115,16 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         return (store, sync, engine)
     }
 
+    /// US-09 AC30: only a satisfied path after one that was not is the network coming back;
+    /// the first report at start, and a satisfied path that stays so, are not.
+    func testNetworkReturnIsASatisfiedPathAfterOneThatWasNot() {
+        XCTAssertTrue(NetworkReturn.isReturn(previous: false, now: true))
+        XCTAssertFalse(NetworkReturn.isReturn(previous: nil, now: true))
+        XCTAssertFalse(NetworkReturn.isReturn(previous: true, now: true))
+        XCTAssertFalse(NetworkReturn.isReturn(previous: true, now: false))
+        XCTAssertFalse(NetworkReturn.isReturn(previous: false, now: false))
+    }
+
     func testAnEditWhoseFirstWriteConflictsEndsWithBothRows() async throws {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, _) = try app()

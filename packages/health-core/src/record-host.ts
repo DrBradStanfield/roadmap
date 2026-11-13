@@ -11,6 +11,7 @@ import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveStatus } from './save-state';
+import type { SaveRetry } from './save-retry-words';
 import type { SyncContext } from './sync-manager';
 
 /** What failed, in a host's `report`. */
@@ -30,17 +31,40 @@ export function announce(host: RecordHost, change: RemoteChange | null): void {
   if (change) host.remoteChanged(change);
 }
 
-/** Tell the host a save status it was not told last (US-09 AC30); answer the
- *  status now told. A callback that throws never stops the save: the status
- *  stays untold, and the next change tells it again. */
-export function tellSaveStatus(host: RecordHost, told: SaveStatus, now: SaveStatus): SaveStatus {
-  if (now === told) return told;
+/** What a status line shows of the save: its status, and whether a retry of a
+ *  failed save will come (`RecordSession.retryDue`, US-09 AC30). */
+export interface SaveTold { status: SaveStatus; retry: boolean }
+
+/** Tell the host a save status, or a retry owed, it was not told last (US-09
+ *  AC30); answer what is now told. A callback that throws never stops the
+ *  save: the change stays untold, and the next change tells it again. */
+export function tellSaveStatus(host: RecordHost, told: SaveTold, now: SaveTold): SaveTold {
+  if (now.status === told.status && now.retry === told.retry) return told;
   try {
-    host.saveStatusChanged?.(now);
+    host.saveStatusChanged?.(now.status, now.retry);
     return now;
   } catch {
     return told;
   }
+}
+
+/** Report a failed save (`persist`). Only the device tier names its refusal
+ *  (6M): a cloud failure's cause is the transport, which the host's report
+ *  already classifies. A device refuses every retry the same way, and each
+ *  hide retries a refused save, so each kind of refusal is reported once per
+ *  session (`reported` holds the kinds). The kind includes what the error
+ *  wrapped: `other` pools refusals the browser did not name, and the host
+ *  tells them apart by it (US-09 AC28). */
+export function reportSaveFailure(host: RecordHost, error: unknown, reported: Set<string>): void {
+  const cause = host.tier === 'device' ? host.failureCause(error) : undefined;
+  let repeat = false;
+  if (cause) {
+    const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
+    const kind = `${error instanceof Error ? error.name : ''}/${cause}/${wrapped instanceof Error ? wrapped.name : ''}`;
+    repeat = reported.has(kind);
+    reported.add(kind);
+  }
+  host.report(error, { op: 'persist', cause, repeat });
 }
 
 /**
@@ -181,9 +205,14 @@ interface HostBase {
    *  `erase`: the erase identity it moved the record to, when it carried
    *  another writer's erase; null for any other change. */
   remoteChanged(change: RemoteChange): void;
-  /** The save status a status line shows changed (US-09 AC30); told once per
-   *  change, once the session holds it. Leave it out when nothing shows it. */
-  saveStatusChanged?(status: SaveStatus): void;
+  /** The save status a status line shows changed, or whether a retry of a
+   *  failed save will come (`retry`, US-09 AC30); told once per change, once
+   *  the session holds it. Leave it out when nothing shows it. */
+  saveStatusChanged?(status: SaveStatus, retry: boolean): void;
+  /** A retry of a failed save (LiveRefresh, US-09 AC30) started a pass, and
+   *  ended so: once per such retry, its trigger and outcome only. Leave it out
+   *  when the client counts nothing (the iPhone engine has no product events). */
+  saveRetried?(retry: SaveRetry): void;
   /** Why a device store refused a write, as one word from a closed set
    *  ('other' when it cannot say). Asked only on the device tier. */
   failureCause(error: unknown): string;
