@@ -454,7 +454,7 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
   });
 
-  it('google-drive: a copy that fails for another reason (a full disk) stops "Use this browser only"; the panel stays as it was', async () => {
+  it('google-drive: a copy that fails for another reason (a full disk) stops "Use this browser only" and says so in the device-save words', async () => {
     await revokeCleanSession('google-drive');
     const setItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
@@ -468,7 +468,7 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
     expect(localStorage.getItem(DRIVE_CONFIG)).not.toBeNull(); // not disconnected
     expect(status()).toBe(panelText('google-drive'));
-    expect(document.querySelector('.hr-sync-error')).toBeNull(); // no new words
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe('Could not save on this device (local storage may be full).'); // the existing device-save words
   });
 
   it('google-drive: after another tab logs off, "Use this browser only" finishes: nothing to copy, no record on the device, no report (re-check F1)', async () => {

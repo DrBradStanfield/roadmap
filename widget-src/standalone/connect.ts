@@ -25,7 +25,8 @@ import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
-import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
+import { failureTags, recordFailure, WritesStoppedError } from '../src/lib/error-diagnostics';
+import { FULL } from '../src/storage/local-storage-adapter';
 import { trackProductEvent } from '../src/lib/server-api';
 import { copyRecordToDevice, flushRoadmapStore } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
@@ -331,15 +332,17 @@ export async function flushBeforeExit(): Promise<void> {
 }
 
 /** "Use this browser only" from a cloud page copies its record to this device before it signs out, a clean
- *  session's too: a cloud session keeps no device copy until a save fails (US-09 AC48, Codex R1). A copy this
- *  browser refuses is reported and stops the exit with a wordless error, so the panel stays as it was. */
+ *  session's too: a cloud session keeps no device copy until a save fails (US-09 AC48, Codex R1). After a
+ *  log-off this device must hold no record, so its refusal is nothing to copy and the exit goes on, unreported
+ *  (re-check F1). Any other failure is reported and stops the exit, in the device-save words (US-09 AC45). */
 export async function copySessionToDevice(provider: CloudBackend): Promise<void> {
   try {
     await copyRecordToDevice();
   } catch (error) {
+    if (error instanceof WritesStoppedError) return;
     console.warn('Copy to this browser before leaving the cloud failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-to-device', backend: provider } });
-    throw new Error('');
+    throw new Error(FULL);
   }
 }
 
