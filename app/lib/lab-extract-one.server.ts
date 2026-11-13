@@ -38,7 +38,7 @@ export async function extractOneFile(
       reportExtractionStop(error.code, error.refusalCategory, 'single');
       return Response.json({ success: false, error: 'Not read', errorCode: error.code }, { status: 422 });
     }
-    reportLabImportError(error, pages);
+    reportLabImportError(error, { errorName: true });
     // The phone shows `error` verbatim, and offers Try again on a 5xx (US-52 AC7c).
     const tooSlow = opts.oneDeadline && (error as Error)?.name === 'TimeoutError';
     return Response.json({ success: false, error: tooSlow ? TOO_SLOW : 'Failed to process request' }, { status: 500 });
@@ -47,13 +47,13 @@ export async function extractOneFile(
 
 /**
  * The one report of a failed lab import: the error's class and code, never its
- * message. The one-file extraction passes its `pages` to add the error's name
- * and the page count and kinds, never their text.
+ * message. The one-file extraction adds the error's name; no report carries a
+ * page count or page types, which nothing read (US-52 AC7d).
  */
-export function reportLabImportError(error: unknown, pages?: LabImportRequest['pages']): void {
+export function reportLabImportError(error: unknown, { errorName }: { errorName?: true } = {}): void {
   console.error('Lab import error (v2):', safeErrorFields(error));
-  Sentry.captureException(error, pages
-    ? { tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' }, extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) } }
+  Sentry.captureException(error, errorName
+    ? { tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' } }
     : { tags: { feature: 'lab_import_v2' } });
 }
 
