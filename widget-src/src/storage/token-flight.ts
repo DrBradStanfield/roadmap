@@ -10,7 +10,18 @@
  * decides what to keep or clear, so a joiner judges the answer exactly as the
  * caller that started it does.
  */
+import { getSignIn, setSignIn, type LogOffId } from '../lib/storage';
+
 export type TokenProvider = 'google-drive' | 'dropbox';
+
+/** An access token the provider answered with a 401, spent for every adapter in this browser, a later
+ *  one included: its stored copy is saved expired, so each goes to the refresh (US-09 AC50). A grant
+ *  saved since under `key` (a reconnect) is a different token and stays as it is. */
+export function spendToken<T extends { accessToken: string }>(key: string, tokens: T, gen: LogOffId): T {
+  const spent = { ...tokens, expiresAt: 0 };
+  if (getSignIn<T>(key)?.accessToken === tokens.accessToken) setSignIn(key, spent, gen);
+  return spent;
+}
 
 /** The refreshes in flight on this page, by provider and refresh token. */
 const flights = new Map<string, Promise<unknown>>();
