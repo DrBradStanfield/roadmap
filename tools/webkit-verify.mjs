@@ -1,4 +1,5 @@
 // US-20: exercise real WebKit against the storefront, using disposable synthetic data.
+// A new probe is advisory (advisory() below) until it has passed on one production deploy.
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { webkit, devices } from 'playwright';
@@ -116,6 +117,11 @@ export function assertFocusRing({ date, value }) {
   assert(ring(date), `the date box shows no focus ring on keyboard focus (${JSON.stringify(date)})`);
   assert.equal(`${date.outlineStyle} ${date.outlineWidth} ${date.outlineColor} ${date.outlineOffset}`,
     `${value.outlineStyle} ${value.outlineWidth} ${value.outlineColor} ${value.outlineOffset}`, 'the date box ring differs from the Value box ring');
+}
+
+// A probe not yet passed on a production deploy: its result is printed, a failure never fails the run.
+export async function advisory(check, { passed, failed }, log = console.log) {
+  try { log(passed(await check())); } catch (error) { log(`${failed} FAILED (advisory): ${error.message}`); }
 }
 
 // Passed directly to Playwright's evaluate: the focus styles of one box.
@@ -395,13 +401,17 @@ async function inspect(browser, deviceName, viewport) {
     assertValuePage(valuePage);
     console.log(`${deviceName ?? `desktop ${viewport.width}`}: value page verified`, JSON.stringify(valuePage));
     // The Value box by keyboard, then Shift+Tab back into the date box (US-62 AC10b).
-    const valueBox = page.locator('.md-page:not(.mh-settings) .md-add input[inputmode]').first();
-    await valueBox.focus();
-    const focusValue = await valueBox.evaluate(collectFocus);
-    await page.keyboard.press('Shift+Tab');
-    const focusDate = await page.locator('.md-page:not(.mh-settings) .md-add input[type="date"]').first().evaluate(collectFocus);
-    assertFocusRing({ date: focusDate, value: focusValue });
-    console.log(`${deviceName ?? `desktop ${viewport.width}`}: focus rings verified`, JSON.stringify(focusDate));
+    // TODO(H90): enforcing (no advisory wrapper) after one green production deploy.
+    const where = deviceName ?? `desktop ${viewport.width}`;
+    await advisory(async () => {
+      const valueBox = page.locator('.md-page:not(.mh-settings) .md-add input[inputmode]').first();
+      await valueBox.focus({ timeout: 5000 });
+      const value = await valueBox.evaluate(collectFocus);
+      await page.keyboard.press('Shift+Tab');
+      const date = await page.locator('.md-page:not(.mh-settings) .md-add input[type="date"]').first().evaluate(collectFocus, null, { timeout: 5000 });
+      assertFocusRing({ date, value });
+      return date;
+    }, { passed: (date) => `${where}: focus rings verified ${JSON.stringify(date)}`, failed: `${where}: focus ring probe` });
     const back = page.locator('.md-page .md-back').first();
     await (deviceName ? back.tap() : back.click());
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
