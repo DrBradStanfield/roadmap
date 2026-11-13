@@ -17,8 +17,8 @@ import { dayOf, localDay } from './merge';
 import { labSlotKey } from './lab-catalog';
 import { latestActivePerMetric } from './measurement-history';
 import { resolveCoreMetricName } from './lab-extraction';
-import { computePlan, oneLine, PlanError, planPayload } from './plan';
-import { appendLabValue, appendMeasurement, type EditContext, correctValue, type EditRejection } from './record-edits';
+import { computePlan, PlanError, planPayload } from './plan';
+import { appendLabValue, appendMeasurement, type EditContext, correctValue } from './record-edits';
 import type { FileLabValue, RoadmapFile } from './roadmap-file';
 import { CORE_BLOOD_UNITS } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
@@ -42,7 +42,6 @@ import {
   type ImportCommit,
   importDocumentsInput,
   importDocumentsOutput,
-  readableSlotRow,
   readRecordInput,
   readRecordOutput,
   reportFeedbackInput,
@@ -56,6 +55,7 @@ import {
 import { type FeedbackFiler, fileFeedback, reportFeedback } from './mcp-feedback';
 import { extractNext, fitReceipt, importDocumentsCommit, type ImportSurface, type ImportTool, prepareImport } from './mcp-import';
 import { MCP_TOOLS } from './mcp-tool-catalogue';
+import { batchRejection, rejection } from './mcp-refusals';
 import { updateProfile } from './profile-edits';
 
 /** Per-row sync bookkeeping and device identifiers: the merge's, never what the record says. */
@@ -150,28 +150,6 @@ export function getPlan(file: RoadmapFile, now: string): ToolOutcome {
 }
 
 /**
- * A refusal in the agent's own terms. A taken slot is the one rejection with a
- * next move, so it names the row holding the day and sends the agent to
- * `correct_value` — the same hint `tools/edit-record.ts` prints, because an
- * agent that improvises around a slot clash writes a second active row.
- */
-function rejection(result: EditRejection): ToolOutcome {
-  const held = result.existing;
-  if (result.reason === 'slot-occupied' && held) {
-    // A value no reader can read is never echoed (US-65 AC3): it may be anything.
-    const holds = readableSlotRow(held) ? oneLine(String(held.value)) : 'a value this app cannot read';
-    return {
-      status: 'rejected',
-      reason: result.reason,
-      text: `${oneLine(result.message)}. That day already holds ${holds} in row ${oneLine(held.id)}. ` +
-        'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
-    };
-  }
-  // One full stop, though a person's words (a typed correction's, US-21 AC26) already end in one.
-  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message).replace(/\.$/, '')}. Nothing was written.` };
-}
-
-/**
  * What a surface's own guard refuses with: the words the assistant reads, and
  * the word the counter files it under.
  */
@@ -225,10 +203,7 @@ export function addLabValues(
   const rows: FileLabValue[] = [];
   for (const [index, value] of request.values.entries()) {
     const result = appendLabValue(next, { ...value, ...ctx });
-    if (!result.ok) {
-      const refusal = rejection(result);
-      return { ...refusal, text: `values[${index}] (${oneLine(value.metricName)}): ${refusal.text} No row from this call was written.` };
-    }
+    if (!result.ok) return batchRejection(result, index, value.metricName, rows);
     next = result.file;
     rows.push(result.row);
   }
