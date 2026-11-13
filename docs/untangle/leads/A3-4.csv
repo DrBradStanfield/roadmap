@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A3-4,S4 privacy scrub and vocabularies,MCP tool inputSchema generated from its zod schema,not started,"mcp-tool-catalogue.ts:344,372,391 hand-written inputSchema objects",,,no
+A3-4,S4 privacy scrub and vocabularies,MCP tool inputSchema generated from its zod schema,in progress,"claude/a3-4-mcp-input-schema-from-zod: mcp-tool-catalogue.ts inputSchemaOf() generates every tool's inputSchema from mcp-tool-contract.ts; hand-written objects deleted. Open: one key-order move in file_results.values awaits a ruling",,"packages/health-core/src/mcp-tools-list.golden.test.ts, app/lib/mcp-freeze.test.ts, mcp-tools.test.ts parity walk",no

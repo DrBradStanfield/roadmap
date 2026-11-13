@@ -12,7 +12,7 @@ import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file'
 import { CANONICAL_UNITS, type MetricType } from './units';
 import { COMPARATORS } from './lab-limits';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
-import { DOCUMENT_TYPES } from './validation';
+import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import * as z from './zod';
 import { isReadableRow } from './readable-rows';
 
@@ -93,28 +93,37 @@ export const TOOL_LAYER_VERSION = 3;
 /** ISO calendar day — the only date shape a tool takes. */
 const DAY = z.string().regex(ISO_DATE, 'Use a calendar day, YYYY-MM-DD');
 
+/*
+ * Each `describe` below is published: `tools/list` shows these schemas as JSON Schema generated
+ * from them (mcp-tool-catalogue.ts, US-32 AC51b), so a field's bounds and its words live in one place.
+ */
 export const readRecordInput = z.object({
-  metric: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
-  since: DAY.optional(),
+  metric: z.string().min(1).max(MAX_NAME_LENGTH).describe('One metric or test name, e.g. "ldl" or "ferritin". Omit for everything.').optional(),
+  since: DAY.describe('Only rows recorded on or after this day.').optional(),
 }).strict();
 
 export const getPlanInput = z.object({}).strict();
 
+/** The words every dated write publishes for its day. */
+const LOCAL_DAY = 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.';
+
 export const addMeasurementInput = z.object({
-  metricType: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number(),
-  unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
-  recordedAt: DAY,
+  // The one deliberate divergence: the client is shown the closed list so it picks a real metric, while
+  // zod stays an open string so health-core owns the refusal and says which metric. `enum` is published only.
+  metricType: z.string().min(1).max(MAX_NAME_LENGTH).meta({ enum: [...METRIC_TYPES], description: 'The core metric.' }),
+  value: z.number().describe('The number, in SI units unless `unit` says otherwise.'),
+  unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit `value` is in, e.g. "mg/dL". Omit if it is already SI.').optional(),
+  recordedAt: DAY.describe(LOCAL_DAY),
 }).strict();
 
 /** One row of a panel. Exported so the parity test can read the nested shape. */
 export const labValueInput = z.object({
-  metricName: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number(),
-  unit: z.string().min(1).max(MAX_NAME_LENGTH),
-  referenceLow: z.number().nullable().optional(),
-  referenceHigh: z.number().nullable().optional(),
-  recordedAt: DAY,
+  metricName: z.string().min(1).max(MAX_NAME_LENGTH).describe('The test name, e.g. "ferritin".'),
+  value: z.number().describe('The lab’s number, as printed.'),
+  unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit as the lab printed it.'),
+  referenceLow: z.number().nullable().describe('Lower reference bound, if the report gives one.').optional(),
+  referenceHigh: z.number().nullable().describe('Upper reference bound, if the report gives one.').optional(),
+  recordedAt: DAY.describe(LOCAL_DAY),
 }).strict();
 
 export const addLabValuesInput = z.object({
@@ -136,7 +145,7 @@ export const addLabValuesInput = z.object({
 export const MAX_RECEIPT_LENGTH = 64;
 /** How long a parked import waits for its commit, on either server. */
 export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
-const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).optional();
+const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).describe('Hosted server, second call only: the receipt the first call returned, after the user’s own yes.').optional();
 /**
  * The user's own words approving a permanent step, quoted beside its receipt
  * (US-35 AC7, US-36 AC9). ChatGPT's safety layer judges the CALL, so the call
@@ -144,12 +153,13 @@ const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).optional();
  * request, and never stores, logs, hashes or echoes it; stdio ignores it.
  */
 export const MAX_APPROVAL_LENGTH = 200;
+/** Published bare to fit tools/list (US-36 AC11): its name and the descriptions say what it carries; the hosted server refuses a blank one. */
 const APPROVAL = z.string().max(MAX_APPROVAL_LENGTH).optional();
 
 export const correctValueInput = z.object({
-  id: z.string().min(1).max(MAX_ID_LENGTH),
-  newValue: z.number(),
-  unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
+  id: z.string().min(1).max(MAX_ID_LENGTH).describe('The id of the active row to correct.'),
+  newValue: z.number().describe('The corrected number.'),
+  unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit `newValue` is in. Omit when it already is the row’s stored unit.').optional(),
   expectedValue: z.number().optional(),
   confirm: CONFIRM,
   approval: APPROVAL,
@@ -171,24 +181,24 @@ export const PROFILE_FIELDS = ['sex', 'birthYear', 'birthMonth', 'heightCm'] as 
  * for this yet", the only way to state one about a field that is unset.
  */
 export const updateProfileInput = z.object({
-  sex: z.enum(['male', 'female']).optional(),
-  birthYear: z.number().int().optional(),
-  birthMonth: z.number().int().optional(),
-  heightCm: z.number().optional(),
+  sex: z.enum(['male', 'female']).describe('The sex the plan is computed for.').optional(),
+  birthYear: z.number().int().describe('Year of birth, e.g. 1971.').optional(),
+  birthMonth: z.number().int().describe('Month of birth, 1–12.').optional(),
+  heightCm: z.number().describe('Height in centimetres.').optional(),
   expected: z.object({
     sex: z.enum(['male', 'female']).nullable().optional(),
     birthYear: z.number().int().nullable().optional(),
     birthMonth: z.number().int().nullable().optional(),
     heightCm: z.number().nullable().optional(),
-  }).strict().optional(),
+  }).strict().describe('What you believe the record holds now, per field you are changing. `null` claims the field is unset.').optional(),
   confirm: CONFIRM,
   approval: APPROVAL,
 }).strict();
 
 export const reportFeedbackInput = z.object({
-  kind: z.enum(['bug', 'feature']),
-  title: z.string().min(1).max(MAX_NAME_LENGTH),
-  detail: z.string().min(1).max(2000),
+  kind: z.enum(['bug', 'feature']).describe('Something broken, or something missing.'),
+  title: z.string().min(1).max(MAX_NAME_LENGTH).describe('One line naming the problem.'),
+  detail: z.string().min(1).max(2000).describe('What happened, what you expected, and the steps — no names, contact details or values.'),
   confirm: CONFIRM,
   approval: APPROVAL,
 }).strict();
@@ -210,12 +220,17 @@ export const importCommitInput = z.object({
 
 /** `commit` stands alone; the tool refuses it beside a source in its own words. */
 export const importDocumentsInput = z.object({
-  fileNames: z.array(z.string().min(1).max(MAX_FILE_NAME_LENGTH)).max(MAX_IMPORT_FILES_PER_CALL).optional(),
+  fileNames: z.array(z.string().min(1).max(MAX_FILE_NAME_LENGTH)).max(MAX_IMPORT_FILES_PER_CALL)
+    .describe('Folder route: the file names to read, as listed. Omit to read every importable file in the folder root.').optional(),
   /** The user's own answer to "what date was this test?" for a file that printed none (AC13); it wins over the file's date. */
-  fileDates: z.array(z.object({ file: z.string().min(1).max(MAX_FILE_NAME_LENGTH), date: z.string().regex(ISO_DATE) }).strict()).max(MAX_IMPORT_FILES_PER_CALL).optional(),
-  commit: importCommitInput.optional(),
+  fileDates: z.array(z.object({
+    file: z.string().min(1).max(MAX_FILE_NAME_LENGTH).describe('The file name as listed in files.'),
+    date: z.string().regex(ISO_DATE).describe('The date the test was taken, YYYY-MM-DD.'),
+  }).strict()).max(MAX_IMPORT_FILES_PER_CALL)
+    .describe('For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.').optional(),
   /** US-37: this extract answers a read's folder nudge; carried on the extract's counter, nothing else. */
-  fromNudge: z.boolean().optional(),
+  fromNudge: z.boolean().describe('True when this import answers the folder list a read returned. Counted, nothing else.').optional(),
+  commit: importCommitInput.describe('Second step, on its own: the receipt from the extract and the user’s selection.').optional(),
 }).strict();
 
 export type ImportRequest = z.infer<typeof importDocumentsInput>;
@@ -227,13 +242,13 @@ export type ImportCommit = z.infer<typeof importCommitInput>;
  * verbatim, and the server checks the two against each other (AC3, AC4).
  */
 export const fileResultRow = z.object({
-  metric: z.string().min(1).max(MAX_NAME_LENGTH),
-  printedName: z.string().min(1).max(MAX_NAME_LENGTH),
-  value: z.number(),
-  unit: z.string().min(1).max(MAX_NAME_LENGTH),
+  metric: z.string().min(1).max(MAX_NAME_LENGTH).describe('The core key, the catalogue test name, or the printed name.'),
+  printedName: z.string().min(1).max(MAX_NAME_LENGTH).describe('The test name exactly as the report prints it.'),
+  value: z.number().describe('The number as printed.'),
+  unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit exactly as printed beside the number.'),
   referenceLow: z.number().nullable().optional(),
   referenceHigh: z.number().nullable().optional(),
-  recordedAt: DAY.optional(),
+  recordedAt: DAY.describe('Only when this line’s date differs from collectedOn.').optional(),
   /** A result printed as a limit ("> 60" is value 60, comparator ">"); the four codes only (US-12 AC20). */
   comparator: z.enum(COMPARATORS).optional(),
 }).strict();
@@ -244,19 +259,19 @@ export const fileResultRow = z.object({
  * refused in words by `runImport`, never as a schema message.
  */
 export const fileResultsInput = z.object({
-  sourceFileName: z.string().min(1).max(MAX_FILE_NAME_LENGTH).optional(),
-  classification: z.enum(DOCUMENT_CLASSIFICATIONS).optional(),
-  collectedOn: DAY.optional(),
-  values: z.array(fileResultRow).max(MAX_LAB_ROWS_PER_CALL).optional(),
+  sourceFileName: z.string().min(1).max(MAX_FILE_NAME_LENGTH).describe('The file’s own name, as the user gave it.').optional(),
+  classification: z.enum(DOCUMENT_CLASSIFICATIONS).describe('lab_report for results; otherwise what the document is.').optional(),
+  collectedOn: DAY.describe('The sample/collection date, YYYY-MM-DD. Required for a lab report; ask the user if it is not printed.').optional(),
+  values: z.array(fileResultRow).max(MAX_LAB_ROWS_PER_CALL).describe('Every measured result line, as printed.').optional(),
   document: z.object({
     title: z.string().min(1).max(MAX_DOCUMENT_TEXT),
     type: z.enum(DOCUMENT_TYPES),
-    date: DAY.nullable(),
-    summary: z.string().max(MAX_DOCUMENT_TEXT).optional(),
+    date: DAY.nullable().describe('The document’s own date, or null.'),
+    summary: z.string().max(MAX_DOCUMENT_TEXT).describe('One line on what it is about.').optional(),
     /** Hex SHA-256 of the file's bytes, when the client can compute it: the record's own document key, so the website's archive hand-off survives (AC5). A claim. */
-    sha256: z.string().regex(/^[0-9a-f]{64}$/).optional(),
-  }).strict().optional(),
-  commit: importCommitInput.optional(),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/).describe('Hex SHA-256 of the file bytes, when you can compute it.').optional(),
+  }).strict().describe('For a letter, scan or other document: what to file. Optional beside lab values.').optional(),
+  commit: importCommitInput.describe('Second step, on its own: the receipt from the first call and the user’s selection.').optional(),
 }).strict();
 
 export type FileResultsRequest = z.infer<typeof fileResultsInput>;
