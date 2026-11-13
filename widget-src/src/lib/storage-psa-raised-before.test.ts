@@ -27,12 +27,13 @@ const RAISED = row('raised', 4.5, '2026-04-10');
 const VAGUE = row('vague', 5, '2026-06-01', '<');
 
 /** A man born 1962 with `answer`, his record `rows`, mirrored as the page mirrors it; the chat's prostate cards. */
-async function chat(answer: string, rows: ApiMeasurement[]) {
+async function chat(answer: string, rows: ApiMeasurement[], oldAnswers: Record<string, string> = {}) {
   record.rows = rows;
   await mirrorRecord({
     inputs: { sex: 'male', heightCm: 178, birthYear: 1962, birthMonth: 1, unitSystem: 'si' },
     previousMeasurements: [rows.at(-1)!], medications: [], supplements: [],
-    screenings: [{ id: 's', screeningKey: 'prostate_discussion', value: answer, updatedAt: '2026-01-01T00:00:00.000Z' }],
+    screenings: [{ id: 's', screeningKey: 'prostate_discussion', value: answer, updatedAt: '2026-01-01T00:00:00.000Z' },
+      ...Object.entries(oldAnswers).map(([screeningKey, value]) => ({ id: screeningKey, screeningKey, value, updatedAt: '2026-01-01T00:00:00.000Z' }))],
   } as never);
   const payload = loadGuestInputs();
   const context = JSON.parse(buildChatContextJson(payload)!);
@@ -65,6 +66,14 @@ describe('the mirror carries the flag (US-06 AC21 item 6)', () => {
     const got = await chat('elected_not_to', [row('low', 3.0, '2026-04-10'), VAGUE]);
     expect(got.cards).toEqual([]);
     expect(got.psa[0]).not.toHaveProperty('raisedBefore');
+  });
+
+  it('the old answers take their place in the flag (US-06 AC14): raised answer then "< 5" holds; a newer answer below 4.0 ends it', async () => {
+    const holds = await chat('elected_not_to', [VAGUE], { prostate_psa_value: '6.5', prostate_last_date: '2026-03' });
+    expect(holds.cards.map(c => c.id)).toEqual(['screening-prostate-repeat']);
+    const ends = await chat('elected_not_to', [row('raised', 4.5, '2026-01-10'), VAGUE], { prostate_psa_value: '3.0', prostate_last_date: '2026-03' });
+    expect(ends.cards).toEqual([]);
+    expect(ends.sent[0]).not.toHaveProperty('raisedBefore');
   });
 
   it('a mirror flag that is not `true` is no flag', async () => {
