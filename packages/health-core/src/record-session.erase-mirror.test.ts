@@ -153,6 +153,36 @@ describe('RecordSession.erase when neither the cloud nor the device takes it (le
     expect(session.file.measurements).toEqual([]);
   });
 
+  it('S69 R2, US-09 AC30: a save that fails while an erase still reads, its device write storing nothing, never says the changes are on the device', async () => {
+    const { host, cloud } = setup();
+    const device = new DeviceStore(new MemoryCloud());
+    if (host.tier === 'cloud') Object.assign(host.mirror, { adapter: device, sync: device });
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    cloud.failWrites = true;
+    device.failWrites = true;
+    // Another tab moves the device copy's revision; this write stores nothing (a full record write).
+    device.failure = () => {
+      device.cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(ROADMAP_DOC.migrate(null, { deviceId: 'tab', now: new Date(clock).toISOString() })), version: 50 });
+      return new StorageError(FULL, undefined, quota());
+    };
+    // The erase's read of the cloud waits until the save has failed, then fails: the erase stops before its swap.
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const read = cloud.read.bind(cloud);
+    let reads = 0;
+    cloud.read = async (name: string) => { if (++reads === 2) { await gate; throw new StorageError('unreachable'); } return read(name); };
+    add(session, 'b');
+    const saving = session.flush();
+    const erasing = session.erase();
+    await expect(saving).rejects.toThrow();
+    release();
+    expect((await erasing).success).toBe(false);
+    expect(ids(session.file)).toEqual(['a', 'b']);
+    expect(session.saveStatus).toBe('not-saved');
+  });
+
   it('keeps the erased copy when the cloud write landed and only the re-read after it failed, the device refusing too', async () => {
     const { host, cloud, device } = setup();
     const session = await RecordSession.open(host);

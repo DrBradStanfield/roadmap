@@ -488,9 +488,9 @@ export class RecordSession {
           this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
-          // Memory-only; under an erase, held when the copy's revision moved or reads '0' (a key a failed put-back removed) (S69 R2).
+          // Memory-only; past an erase's swap, held when the copy's revision moved or reads '0' (a key a failed put-back removed) (S69 R2).
           const after = deviceCopyRevision(this.host);
-          if (this.saveMode === 'erasing' && (after !== seen || after === '0')) this.dispatch({ type: 'mirrored', changes: held });
+          if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && (after !== seen || after === '0')) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
       reportSaveFailure(this.host, error, this.refusalsReported);
