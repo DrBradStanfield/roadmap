@@ -15,6 +15,7 @@
  * client.
  */
 import { ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { TRANSFER_DEADLINE_MS } from './transfer-deadline';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
@@ -156,7 +157,7 @@ export async function dropboxDownload(accessToken: string, ref: string, signal?:
 export async function dropboxUploadDocument(accessToken: string, ref: string, bytes: Blob | Uint8Array<ArrayBuffer>): Promise<void> {
   const arg = { path: `/${ref}`, mode: { '.tag': 'overwrite' }, autorename: false, mute: true };
   const res = await request(UPLOAD_URL, {
-    timeoutMs: 300_000,
+    timeoutMs: TRANSFER_DEADLINE_MS.document,
     mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d)
     method: 'POST',
     headers: {

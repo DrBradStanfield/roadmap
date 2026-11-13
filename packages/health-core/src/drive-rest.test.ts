@@ -403,6 +403,10 @@ describe('a document upload gets more than the 30 s a record save does', () => {
     expect(await boundFor(new Blob([new Uint8Array(10 * 1024 * 1024)]))).toBe(300_000);
     expect(await boundFor(new Blob([new Uint8Array(600 * 1024)]))).toBeGreaterThan(80_000);
   });
+
+  it('A1-6: a 1 MB document still gets exactly 130 s (30 s + 1 s per 10 KB)', async () => {
+    expect(await boundFor(new Blob([new Uint8Array(1_000_000)]))).toBe(130_000);
+  });
 });
 
 describe('a caller’s signal reaches `fetch` on every call the import makes (US-35 AC5)', () => {

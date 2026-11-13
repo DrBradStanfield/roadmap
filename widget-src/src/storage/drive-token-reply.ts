@@ -7,7 +7,8 @@
  * here too.
  */
 import * as z from '@roadmap/health-core/zod';
-import { StorageError, timeoutDeadline } from '@roadmap/health-core/adapter';
+import { StorageError } from '@roadmap/health-core/adapter';
+import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 
 const codeGrantSchema = z.object({
   accessToken: z.string().min(1),
@@ -39,7 +40,7 @@ type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string }
  * are not read; a 2xx whose body is JSON `null` comes back with `json: null`.
  */
 export async function postRefreshGrant(url: string, refreshToken: string): Promise<{ status: number; json?: RefreshGrant | null; error?: unknown } | null> {
-  const deadline = timeoutDeadline(5000);
+  const deadline = timeoutDeadline(TRANSFER_DEADLINE_MS.tokenRefresh);
   try {
     const res = await fetch(url, {
       method: 'POST',

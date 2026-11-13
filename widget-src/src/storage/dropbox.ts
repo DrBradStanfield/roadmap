@@ -18,7 +18,8 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
-import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, timeoutDeadline, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 import { refreshOnce } from './token-flight';
@@ -296,7 +297,7 @@ export class DropboxAdapter implements StorageAdapter {
    * caller retries next visit) — a Dropbox account always has an email.
    */
   async accountEmail(): Promise<string> {
-    const deadline = timeoutDeadline(10_000);
+    const deadline = timeoutDeadline(TRANSFER_DEADLINE_MS.accountEmail);
     let account: { email?: string; email_verified?: boolean };
     try {
       account = (await (await this.rpc(ACCOUNT_URL, null, deadline.signal, true)).json()) as typeof account;
@@ -337,7 +338,7 @@ export class DropboxAdapter implements StorageAdapter {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
-      timeoutMs: 5000,
+      timeoutMs: TRANSFER_DEADLINE_MS.tokenRefresh,
     })).then((shared) => shared.clone(), (error: unknown) => {
       this.dropIfGrantMoved(startedFrom);
       throw error;
