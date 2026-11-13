@@ -18,8 +18,8 @@ export function assertMatrixLayout(data) {
   }
 }
 
-// The blood table behind "All results as a table". The vitals rows above it are a .bt-timeline too (H71).
-export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card)';
+// The blood table behind "All results as a table". The vitals rows (H71) and the additional labs (.alr-matrix, H89) are .bt-timelines too.
+export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card):not(.alr-matrix)';
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectMatrixLayout(root) {

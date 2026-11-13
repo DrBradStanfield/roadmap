@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-H101,tests,"Give the date-box focus-ring probe one retry on a locator timeout",lead,not started,"From PR 1704's review (R5, Fable). Not now: only if the probe in tools/webkit-verify.mjs (probeFocusRing) ever goes red on a locator timeout while the ring is in fact right. Then retry the step once before failing verify-live. (H101)",,no
+H101,tests,"Give the date-box focus-ring probe one retry on a locator timeout",lead,not started,"From PR 1704's review (R5, Fable). Not now: only if the probe in tools/webkit-focus-probes.mjs (probeFocusRing, run by tools/webkit-verify.mjs) ever goes red on a locator timeout while the ring is in fact right. Then retry the step once before failing verify-live. (H101)",,no

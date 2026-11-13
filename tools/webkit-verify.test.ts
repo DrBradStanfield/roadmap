@@ -31,6 +31,13 @@ describe('US-20: WebKit deployment gate', () => {
       <div class="bt-timeline" id="blood"></div>`).window;
     expect(document.querySelector(BLOOD_TABLE)?.id).toBe('blood');
   });
+  // H89: the seeded Ferritin draws the additional labs' .bt-timeline; the gate reads the blood table, whatever the order.
+  it('reads the blood table, not the additional labs table', () => {
+    const { document } = new JSDOM(`
+      <div class="bt-timeline alr-matrix" id="labs"></div>
+      <div class="bt-timeline" id="blood"></div>`).window;
+    expect(document.querySelector(BLOOD_TABLE)?.id).toBe('blood');
+  });
 });
 
 describe('US-20 AC6: WebKit tab bar gate', () => {
