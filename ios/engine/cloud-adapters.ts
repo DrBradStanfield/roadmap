@@ -9,6 +9,7 @@ import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -66,7 +67,9 @@ async function refreshOn401<T>(call: (force: boolean) => Promise<T>): Promise<T>
   try {
     return await call(false);
   } catch (error) {
-    if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError) throw error;
+    // Not after an upload that may have landed (Drive's verify read): the retry's own answer
+    // would replace that mark, and an erase could be put back over a cloud that holds it (S57).
+    if (!(error instanceof StorageError) || error.status !== 401 || error instanceof SignInError || mayHaveLanded(error)) throw error;
     return call(true);
   }
 }

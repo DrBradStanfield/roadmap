@@ -18,9 +18,10 @@ export function uncertainWrite<E extends object>(error: E): E {
   return error;
 }
 
-/** True for a failure marked by `uncertainWrite`. */
+/** True for a failure marked by `uncertainWrite`, and for a thrown value that is not an
+ *  object: it cannot carry the mark, and an unknown failure is never a refusal. */
 export function mayHaveLanded(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && MAY_HAVE_LANDED.has(error);
+  return typeof error !== 'object' || error === null || MAY_HAVE_LANDED.has(error);
 }
 
 /**
@@ -35,7 +36,7 @@ export function mayHaveLanded(error: unknown): boolean {
  * - 409: Dropbox answers 409 for every UploadError, the write not done
  *   (dropbox-rest.ts uploadRefusal); GitHub's sha conflict and WebDAV's missing
  *   parent collection are 409s too.
- * - 412: a failed precondition (Drive If-Match, WebDAV If-Match / If-None-Match).
+ * - 412: a failed precondition (WebDAV If-Match / If-None-Match).
  * - 413: the body was too large to accept.
  * - 422: GitHub's sha mismatch or "already exists" on create.
  * Not here, so "may have landed":
@@ -43,9 +44,11 @@ export function mayHaveLanded(error: unknown): boolean {
  * - 429: too many requests. No adapter here cites a provider promise that a
  *   rate-limited upload was never applied, so it is not called a refusal.
  * - 5xx (507 included): the server failed partway, or a gateway gave up waiting.
- * Google Drive: its adapter marks every failure after it sent the upload
- * (drive-rest.ts `uncertain`), so only its 412 (a ConflictError) and failures
- * before the upload are refusals.
+ * Google Drive: it offers no precondition; its adapter checks every copy's
+ * version itself before the upload (a ConflictError) and marks every failure
+ * after it sent the upload (drive-rest.ts `uncertain`), so only that check and
+ * failures before the upload are refusals. The iPhone's token retry
+ * (ios/engine/cloud-adapters.ts refreshOn401) never retries a marked failure.
  */
 const REFUSED_STATUSES: ReadonlySet<number> = new Set([400, 401, 403, 404, 409, 412, 413, 422]);
 

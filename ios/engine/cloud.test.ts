@@ -1098,6 +1098,24 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
   });
 
+  it('an erase that reached Google Drive, whose check then met an expired sign-in, is kept: the token retry never replaces the landed mark (lead S57)', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    // The PATCH lands the erase; then the sign-in lapses, so the verify read answers 401 and a forced refresh asks to sign in.
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      drive.expired = true;
+      state.signedOut = true;
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(result).toMatchObject({ success: false, erased: true });
+  });
+
   it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
@@ -1126,6 +1144,10 @@ class FakeDrive implements Server {
   /** Runs at the version read that comes right before an upload. */
   beforeVersionCheck: (() => void) | null = null;
   private versionReads = 0;
+  /** Runs right after each PATCH lands, until it answers true. */
+  afterPatch: ((body: string) => boolean) | null = null;
+  /** True: every call answers 401, the token expired. */
+  expired = false;
 
   put(record: RoadmapFile): void {
     this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
@@ -1136,6 +1158,7 @@ class FakeDrive implements Server {
 
   answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
     const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
+    if (this.expired) return { status: 401, headers: {}, body: 'expired' };
     expect(headers.authorization).toBe('Bearer token-1');
     const u = new URL(url);
     const q = u.searchParams.get('q') ?? '';
@@ -1171,6 +1194,7 @@ class FakeDrive implements Server {
     }
     if (method === 'PATCH' && u.pathname === '/upload/drive/v3/files/file-1') {
       this.file = { text: body!, version: (this.file?.version ?? 0) + 1 };
+      if (this.afterPatch?.(body!)) this.afterPatch = null;
       return ok({ id: 'file-1', version: String(this.file.version) });
     }
     throw new Error(`FakeDrive has no ${method} ${url}`);

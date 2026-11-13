@@ -244,6 +244,11 @@ describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner
     expect(isDefiniteRefusal(error)).toBe(refused);
   });
 
+  it('a thrown value that is not an object cannot carry the mark, so it counts as may have landed', () => {
+    for (const thrown of ['oops', undefined, null, 42]) expect(mayHaveLanded(thrown)).toBe(true);
+    expect(mayHaveLanded(new Error('plain, unmarked'))).toBe(false);
+  });
+
   it('SyncManager marks a write that threw unless it was a definite refusal, and keeps its words', async () => {
     const ctx = { deviceId: 'phone', now: new Date(clock).toISOString() };
     const store = new FailingStore();
