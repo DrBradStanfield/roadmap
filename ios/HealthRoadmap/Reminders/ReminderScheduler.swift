@@ -177,12 +177,11 @@ final class ReminderScheduler {
 /// bumps the reminders' token on any change to it (S41): a read between the open and the draw is
 /// the phone's copy, and the draw moving the epoch ends it.
 struct ShownRecord: Equatable {
-    var source: String; var open: Bool; var epoch: Int?
-}
+    let source: String, open: Bool, epoch: Int?
 
-extension ShownRecord {
-    /// RootView's key: the drawn record's erase epoch, nil while none is drawn.
+    /// RootView's key: the drawn record's erase epoch, nil while none is drawn. The only way to
+    /// build one, so no caller can leave the epoch out (as PR 1608's key did).
     @MainActor init(source: String, open: Bool, store: RecordStore) {
-        self.init(source: source, open: open, epoch: store.myData?.eraseEpoch)
+        (self.source, self.open, epoch) = (source, open, store.myData?.eraseEpoch)
     }
 }

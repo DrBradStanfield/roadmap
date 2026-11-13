@@ -593,16 +593,21 @@ final class ReminderSchedulerTests: XCTestCase {
         let store = try RecordStore(folder: records, engine: engine, deviceId: "ios-test")
         XCTAssertEqual(store.myData?.eraseEpoch, 5, "fixture: the drawn record is at epoch 5")
 
-        XCTAssertEqual(ShownRecord(source: "google-drive", open: true, store: store),
-                       ShownRecord(source: "google-drive", open: true, epoch: 5), "the drawn epoch, open and source are carried")
-        XCTAssertEqual(ShownRecord(source: "", open: false, store: store),
-                       ShownRecord(source: "", open: false, epoch: 5), "the phone's record: no source, not open")
+        let cloud = ShownRecord(source: "google-drive", open: true, store: store)
+        XCTAssertEqual(cloud.epoch, 5, "the drawn epoch is carried")
+        XCTAssertEqual(cloud.source, "google-drive")
+        XCTAssertTrue(cloud.open)
+        let phone = ShownRecord(source: "", open: false, store: store)
+        XCTAssertEqual(phone.epoch, 5)
+        XCTAssertEqual(phone.source, "", "the phone's record: no source, not open")
+        XCTAssertFalse(phone.open)
 
         try FileManager.default.removeItem(at: records)
         await store.showPhone().value // the phone's file cannot be read: nothing is drawn
         XCTAssertNil(store.myData, "fixture: no drawn record")
-        XCTAssertEqual(ShownRecord(source: "dropbox", open: false, store: store),
-                       ShownRecord(source: "dropbox", open: false, epoch: nil), "no drawn record gives no epoch")
+        let undrawn = ShownRecord(source: "dropbox", open: false, store: store)
+        XCTAssertNil(undrawn.epoch, "no drawn record gives no epoch")
+        XCTAssertEqual(undrawn.source, "dropbox")
     }
 
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch

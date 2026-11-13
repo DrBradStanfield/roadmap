@@ -1231,8 +1231,9 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   neither of which drew (the key's epoch stays nil while the text the scheduler reads changes); it
   also needs the new record's epoch to be lower, with no known path. The key is built by
   `ShownRecord(source:open:store:)` (Reminders/ReminderScheduler.swift); a test pins that it carries
-  the drawn record's epoch (nil when none is drawn), the open and the source. RootView's onChange,
-  its use of that init and the inputs it passes are checked by reading. Known lead (S39):
+  the drawn record's epoch (nil when none is drawn), the open and the source. It is ShownRecord's
+  only init, so no caller can leave the epoch out; only RootView's onChange and the source and open
+  it passes are checked by reading. Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:
