@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fields } from './untangle-progress.mjs';
+import { fields, LEDGERS as TOOL_LEDGERS } from './untangle-progress.mjs';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'untangle');
 const LEDGERS = {
@@ -31,6 +31,15 @@ describe('untangle ledgers: one file per row (US-64 AC31)', () => {
         expect(row, `${name}/${f}: field count`).toHaveLength(header.split(',').length);
         expect(row[0], `${name}/${f}`).toBe(f.replace(/\.csv$/, ''));
       }
+    });
+
+    it(`${name}/: every status is a word from the README's list, so a typo never counts as done`, () => {
+      const allowed: string[] = TOOL_LEDGERS[name as keyof typeof TOOL_LEDGERS].statuses;
+      const at = header.split(',').indexOf('status');
+      const bad = readdirSync(join(DIR, name)).filter((f) => !f.startsWith('.'))
+        .map((f) => [f, fields(readFileSync(join(DIR, name, f), 'utf8').split('\n')[1])[at]])
+        .filter(([, s]) => !allowed.includes(s));
+      expect(bad, 'status outside docs/untangle/README.md vocabulary').toEqual([]);
     });
 
     it(`the single docs/untangle/${name}.csv does not come back`, () => {

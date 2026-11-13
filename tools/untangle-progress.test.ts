@@ -30,6 +30,8 @@ beforeEach(() => {
   lead('leads', 'B-2', 'B-2,S2 bugs,Four,blocked on vendor,ev,,none,no');
   lead('state-leads', 'H1', 'H1,composition,One,lead,done,ev,,no');
   lead('state-leads', 'H2', 'H2,composition,Two,lead,not started,ev,,no');
+  lead('state-leads', 'H3', 'H3,composition,Three,lead,closed,"decided: leave, Brad",,no');
+  lead('state-leads', 'H4', 'H4,composition,Four,lead,in progress,PR 1,,no');
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
@@ -47,17 +49,32 @@ describe('untangle-progress (US-64)', () => {
     expect(r.leads.notStartedNeedsBrad).toBe(1);
     expect(r.leads.sections['S1 sync']).toEqual({ total: 2, byStatus: { done: 1, partial: 1 }, percentDone: 75 });
     expect(r.leads.sections['S2 bugs'].percentDone).toBe(0);
-    expect(r['state-leads']).toMatchObject({ total: 2, percentDone: 50, notStartedNeedsBrad: 0 });
     expect(Object.keys(r['state-leads'].sections)).toEqual(['composition']);
+  });
+
+  it('counts closed as finished, in progress as 0, and adds a combined total across both ledgers', () => {
+    const r = progress(root);
+    // done 1 + closed 1 over 4 leads
+    expect(r['state-leads']).toMatchObject({ total: 4, percentDone: 50, notStartedNeedsBrad: 0 });
+    expect(r['state-leads'].byStatus).toEqual({ done: 1, 'in progress': 1, 'not started': 1, closed: 1 });
+    // (done 2 + closed 1 + partial 0.5) / 8 = 43.75
+    expect(r.combined).toEqual({
+      total: 8,
+      byStatus: { done: 2, partial: 1, 'in progress': 1, 'not started': 2, closed: 1, 'blocked on vendor': 1 },
+      percentDone: 44,
+    });
   });
 
   it('prints text lines, then the same numbers as one JSON line last', () => {
     const res = run();
     expect(res.status).toBe(0);
     const lines = res.stdout.trim().split('\n');
-    expect(lines[0]).toBe('leads: 4 leads, 38% done (done 1, partial 1, not started 1, blocked on vendor 1)');
+    expect(lines[0]).toBe('leads: 4 leads, 38% done or closed (done 1, closed 0, partial 1)');
+    expect(lines[1]).toBe('  by status: done 1, partial 1, not started 1, blocked on vendor 1');
     expect(lines).toContain('  not started with needs_brad=yes: 1');
     expect(lines).toContain('  S1 sync: 2, 75% (done 1, partial 1)');
+    expect(lines).toContain('state-leads: 4 leads, 50% done or closed (done 1, closed 1, partial 0)');
+    expect(lines[lines.length - 2]).toBe('combined: 8 leads, 44% done or closed (done 2, closed 1, partial 1)');
     expect(JSON.parse(lines[lines.length - 1])).toEqual(progress(root));
   });
 
@@ -70,7 +87,7 @@ describe('untangle-progress (US-64)', () => {
   });
 
   it('exits non-zero on an unclosed quote', () => {
-    lead('state-leads', 'H3', 'H3,composition,"open quote,lead,done,ev,,no');
+    lead('state-leads', 'H5', 'H5,composition,"open quote,lead,done,ev,,no');
     const res = run();
     expect(res.status).toBe(2);
     expect(res.stderr).toContain('unclosed quote');
