@@ -190,8 +190,11 @@ async function loadPage(resolve?: () => Promise<{ resolved: import('./connect').
 }
 
 const turns = async (n = 20) => { for (let i = 0; i < n; i++) await act(async () => { await new Promise<void>((r) => setImmediate(r)); }); };
+/** Waits by the real clock, not a count of turns: a Dropbox redirect waits on crypto.subtle's
+ *  SHA-256, which runs off the main thread, so a busy CI runner can take more turns than any count. */
+const UNTIL_MS = 10_000;
 async function until(done: () => boolean, what: string): Promise<void> {
-  for (let i = 0; i < 400; i++) {
+  for (const deadline = performance.now() + UNTIL_MS; performance.now() < deadline;) {
     if (done()) return;
     await act(async () => { await new Promise<void>((r) => setImmediate(r)); });
   }

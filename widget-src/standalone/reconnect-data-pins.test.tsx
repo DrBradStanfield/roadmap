@@ -181,8 +181,11 @@ async function loadPage(): Promise<Page> {
 }
 
 /** Real macrotask turns (fetch bodies, the departure), with the fake clock held still. */
+/** Waits by the real clock, not a count of turns: off-main-thread work (crypto.subtle) can take
+ *  more turns than any count on a busy CI runner. */
+const UNTIL_MS = 10_000;
 async function until(done: () => boolean, what: string): Promise<void> {
-  for (let i = 0; i < 400; i++) {
+  for (const deadline = performance.now() + UNTIL_MS; performance.now() < deadline;) {
     if (done()) return;
     await act(async () => { await new Promise<void>((r) => setImmediate(r)); });
   }
