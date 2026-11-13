@@ -17,6 +17,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
 import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
+import { Sentry } from '../lib/sentry';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
@@ -263,6 +264,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [readFailed, setReadFailed] = useState(false);
   const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
   // Selected metrics (initialized after first fetch)
@@ -275,8 +277,11 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    // A failed read shows the empty state, as the main form does (US-06 AC4c).
-    loadAllHistory().then(setMeasurements, () => {}).finally(() => setLoading(false));
+    // A failed read ends the wait and claims nothing (US-06 AC4c); reported as the main form's first read is.
+    loadAllHistory().then(setMeasurements, error => {
+      setReadFailed(true);
+      Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } });
+    }).finally(() => setLoading(false));
     loadLabValues().then(rows => { if (rows) setLabVals(rows); });
     loadMedicationHistory().then(setMedHistory);
   }, []);
@@ -371,7 +376,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
 
       {loading && measurements.length === 0 ? (
         <p className="history-loading">Loading history...</p>
-      ) : metricTypes.length === 0 && labMetricNames.length === 0 ? (
+      ) : readFailed ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (
         <>

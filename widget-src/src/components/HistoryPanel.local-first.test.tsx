@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 
-const mocks = vi.hoisted(() => ({ loadAllHistory: vi.fn(), chart: vi.fn() }));
+const mocks = vi.hoisted(() => ({ loadAllHistory: vi.fn(), chart: vi.fn(), captureException: vi.fn() }));
+vi.mock('../lib/sentry', () => ({ Sentry: { captureException: mocks.captureException } }));
 vi.mock('../lib/roadmap-data', () => ({
   loadAllHistory: mocks.loadAllHistory,
   loadLabValues: async () => [],
@@ -38,13 +39,17 @@ describe('US-07 — complete local history', () => {
   });
 });
 
-// US-06 AC4c: a history read that fails ends the wait. Before, the load had no
-// catch, so a rejected read left "Loading history..." on screen for good.
+// US-06 AC4c: a history read that fails ends the wait and claims nothing. Before,
+// the load had no catch, so a rejected read left "Loading history..." on screen for good.
 describe('US-06 AC4c — a failed history read', () => {
-  it('stops showing Loading history and shows the empty state', async () => {
-    mocks.loadAllHistory.mockRejectedValue(new Error('read failed'));
+  it('ends Loading history, never says there are no measurements, and reports tags only', async () => {
+    const error = new Error('read failed');
+    mocks.loadAllHistory.mockRejectedValue(error);
     const view = render(<HistoryPanel />);
-    await waitFor(() => expect(view.getByText('No measurements recorded yet.')).toBeTruthy());
-    expect(view.queryByText('Loading history...')).toBeNull();
+    await waitFor(() => expect(view.queryByText('Loading history...')).toBeNull());
+    expect(view.queryByText('No measurements recorded yet.')).toBeNull();
+    expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health History');
+    expect(mocks.captureException).toHaveBeenCalledOnce();
+    expect(mocks.captureException).toHaveBeenCalledWith(error, { tags: { area: 'cloud-sync', op: 'load' } });
   });
 });
