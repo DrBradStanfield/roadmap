@@ -40,6 +40,7 @@ import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
+import { withClaim } from '../lib/sync-claim';
 import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
 import { BackfillCell } from './MatrixInputCells';
 import { NumericInputCell } from './NumericInputCell';
@@ -314,9 +315,9 @@ export function StartingInfoVitals({
   const bpTaken = taken('sys') || taken('dia');
 
   const [saving, setSaving] = useState(false);
-
-  const commit = async () => {
-    if (saving || ready.length === 0) return;
+  const claim = useRef(false); // seen by a second commit in the same render, as `saving` is not
+  const commit = () => withClaim(claim, async () => {
+    if (ready.length === 0) return;
     setSaving(true);
     try {
       // The cells that can be saved, each on its day with the rows it
@@ -339,7 +340,7 @@ export function StartingInfoVitals({
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   // Committed as the blood-test matrix commits: on leaving the matrix or on
   // Enter; never while the user is still in it, and never because the page
@@ -347,7 +348,6 @@ export function StartingInfoVitals({
   const rootRef = useRef<HTMLDivElement>(null);
   useSaveOnLeave(rootRef, commit);
   usePrefillRef(commit, flushRef);
-  const saveNow = () => { void commit(); };
 
   return (
     <div ref={rootRef} className="bt-timeline bt-vitals-card">
@@ -414,7 +414,7 @@ export function StartingInfoVitals({
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)} inputRef={row.metric === 'weight' ? weightRef : undefined}
-                            onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
+                            onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); void commit(); } }}
                           />
                         );
                       }
@@ -439,7 +439,7 @@ export function StartingInfoVitals({
                             onChange={val => { setBackfill(c.col.date, row.metric, val); if (row.metric === 'weight') onWeightAnswered?.(true); }}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)}
-                            onEnter={saveNow}
+                            onEnter={commit}
                           />
                         );
                       }
@@ -491,7 +491,7 @@ export function StartingInfoVitals({
                           previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), bpSysTarget)}
                           onSysChange={v => setBpDraft('sys', v)}
                           onDiaChange={v => setBpDraft('dia', v)}
-                          onEnter={saveNow}
+                          onEnter={commit}
                         />
                       );
                     }
@@ -515,7 +515,7 @@ export function StartingInfoVitals({
                           backfill
                           onSysChange={v => setBackfill(c.col.date, 'sys', v)}
                           onDiaChange={v => setBackfill(c.col.date, 'dia', v)}
-                          onEnter={saveNow}
+                          onEnter={commit}
                         />
                       );
                     }
