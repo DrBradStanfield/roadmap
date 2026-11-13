@@ -42,6 +42,9 @@ final class RecordStore {
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
+    /// The erase count the drawn screen shows: behind `erasures` when an erase's draw failed, so
+    /// its rows predate the erase (a failed metric read's words, S25).
+    private(set) var screenErasures = 0
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
     private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1; forgetCharts() } } }
     /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
@@ -166,6 +169,7 @@ final class RecordStore {
     func display(_ drawn: HealthEngine.Drawn?) {
         self.drawn = drawn
         draws += 1
+        screenErasures = erasures
         if drawn?.plan.planned == true { engine.trial?.confirm() }
     }
 
@@ -298,9 +302,10 @@ final class RecordStore {
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
                 let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.source.link?.pending, deviceId: self.deviceId)
-                self.land(.phoneWritten, record: result.record, drawn: shown)
+                let drawnErase = self.land(.phoneWritten, record: result.record, drawn: shown) == .show
                 self.publish(UnitChoices())
                 self.erasures += 1
+                if drawnErase { self.screenErasures = self.erasures }
                 self.onEdit?()
                 return .erased(chatErased: chatErased)
             } catch {
@@ -314,8 +319,9 @@ final class RecordStore {
     func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain {
             // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
-            await self.draw(view, in: UnitChoices())
+            let drawnErase = await self.draw(view, in: UnitChoices())
             self.erasures += 1
+            if drawnErase { self.screenErasures = self.erasures }
         }
     }
 

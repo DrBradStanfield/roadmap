@@ -73,14 +73,14 @@ final class MetricReadTests: XCTestCase {
         let kept = try Self.chart(["3.1"])
         let none = try Self.chart([])
         let page = { (read: Read, kept: ChartData?, hasReadings: Bool, problem: RecordProblem?) in
-            Self.named(MetricRead.page(read, revision: 1, problem: problem, kept: kept, hasReadings: hasReadings))
+            Self.named(MetricRead.page(read, revision: 1, problem: problem, kept: kept, hasReadings: hasReadings, screenHasReading: hasReadings))
         }
         XCTAssertEqual(page(.chart(revision: 1, kept), kept, true, nil), "chart 3.1")
         // US-25 AC21: an erase drops the kept charts, sometimes without moving the revision.
         XCTAssertEqual(page(.chart(revision: 1, kept), nil, true, nil), "guide only", "never a chart the store dropped")
         XCTAssertEqual(page(.empty(revision: 1), nil, true, nil), "No data yet", "the read came back with no values")
         XCTAssertEqual(page(.failed(revision: 1), nil, true, nil), "failed")
-        XCTAssertEqual(page(.failed(revision: 1), nil, false, nil), "failed", "even when My data has no reading")
+        XCTAssertEqual(page(.failed(revision: 1), nil, false, nil), "No data yet", "no value to duplicate: Add stays (R1)")
         XCTAssertEqual(page(.reading(revision: 1), nil, true, nil), "guide only", "no flash of No data yet before the chart")
         XCTAssertEqual(page(.reading(revision: 1), nil, false, nil), "No data yet", "nothing to read")
         XCTAssertEqual(page(.reading(revision: 1), kept, true, nil), "chart 3.1", "the older chart while the read runs")
@@ -94,6 +94,24 @@ final class MetricReadTests: XCTestCase {
         for read: Read in [.reading(revision: 1), .empty(revision: 1), .failed(revision: 1), .chart(revision: 1, kept)] {
             XCTAssertEqual(page(read, kept, true, problem), "problem: \(problem.heading)", Self.named(read))
         }
+    }
+
+    /// The owner's R1 ruling: a failed read says its values are still in the record only when the
+    /// screen last drawn holds one; else "No data yet" and Add, as for an empty metric.
+    func testAFailedReadSaysItsValuesAreKeptOnlyWhenTheScreenHoldsOne_US58_AC4c() throws {
+        let kept = try Self.chart(["3.1"])
+        let failed = { (screen: Bool?, kept: ChartData?, hasReadings: Bool) in
+            Self.named(MetricRead.page(.failed(revision: 1), revision: 1, problem: nil, kept: kept, hasReadings: hasReadings, screenHasReading: screen))
+        }
+        XCTAssertEqual(failed(true, nil, true), "failed", "the screen holds a reading")
+        XCTAssertEqual(failed(false, nil, false), "No data yet", "the screen holds none")
+        // Condition A: the screen drawn decides, never the failed read (which kept nothing) or the page's own row.
+        XCTAssertEqual(failed(true, nil, false), "failed", "the drawn screen's reading, though the read kept nothing")
+        XCTAssertEqual(failed(false, kept, true), "No data yet", "the drawn screen holds none, whatever else says so")
+        // Condition B: no screen, or one from before an erase: only values the store still keeps count.
+        XCTAssertEqual(failed(nil, kept, true), "failed", "the store still keeps values")
+        XCTAssertEqual(failed(nil, nil, true), "No data yet", "nothing kept")
+        XCTAssertEqual(failed(nil, try Self.chart([]), true), "No data yet", "kept, with no values")
     }
 
     /// The engine failure's words, in one place (awaiting Brad's yes on the sentence).

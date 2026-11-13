@@ -107,19 +107,21 @@ final class FormEditTests: XCTestCase {
         XCTAssertEqual(SupplementSheet.doseText(.infinity), "inf")
     }
 
-    /// US-58 AC4b, AC4c (S25): a failed read says so and never "No data yet", which invited a
-    /// duplicate of a value still in the record. A read that came back empty still says it, and
-    /// "No data yet" never flashes on a metric with readings while its chart is read.
+    /// US-58 AC4b, AC4c (S25): a failed read never says "No data yet" over values still in the
+    /// record, which invited a duplicate; it says so and offers Try again. With no value drawn there
+    /// is nothing to duplicate, so it keeps "No data yet" and Add (owner's R1 ruling). A read that
+    /// came back empty still says it, and it never flashes on a metric with readings while read.
     func testAFailedReadNeverSaysNoDataYet_US58() throws {
         let page = { (read: MetricRead.Read, hasReadings: Bool) in
-            MetricReadTests.named(MetricRead.page(MetricRead.transition(read, .landed(revision: 1, nil)), revision: 1, problem: nil, kept: nil, hasReadings: hasReadings))
+            MetricReadTests.named(MetricRead.page(read, revision: 1, problem: nil, kept: nil, hasReadings: hasReadings, screenHasReading: hasReadings))
         }
-        XCTAssertEqual(page(.reading(revision: 1), true), "failed", "the engine threw")
-        XCTAssertEqual(page(.reading(revision: 1), false), "failed", "even when My data has no reading")
+        let failed = MetricRead.transition(.reading(revision: 1), .landed(revision: 1, nil))
+        XCTAssertEqual(page(failed, true), "failed", "the engine threw on a metric with values")
+        XCTAssertEqual(page(failed, false), "No data yet", "no value drawn: nothing to duplicate")
         let empty = MetricRead.transition(.reading(revision: 1), .landed(revision: 1, try MetricReadTests.chart([])))
-        XCTAssertEqual(MetricReadTests.named(MetricRead.page(empty, revision: 1, problem: nil, kept: nil, hasReadings: true)), "No data yet", "the read came back empty")
-        XCTAssertEqual(MetricReadTests.named(MetricRead.page(.reading(revision: 1), revision: 1, problem: nil, kept: nil, hasReadings: true)), "guide only", "reading: the guide only")
-        XCTAssertEqual(MetricReadTests.named(MetricRead.page(.reading(revision: 1), revision: 1, problem: nil, kept: nil, hasReadings: false)), "No data yet", "nothing to read")
+        XCTAssertEqual(page(empty, true), "No data yet", "the read came back empty")
+        XCTAssertEqual(page(.reading(revision: 1), true), "guide only", "reading: the guide only")
+        XCTAssertEqual(page(.reading(revision: 1), false), "No data yet", "nothing to read")
     }
 
     func testHistoryKeepsTheCorrectedValueStruckNotRemoved() throws {

@@ -197,6 +197,21 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.revision, revision, "all at one revision")
     }
 
+    /// S25, owner's R1 ruling (US-58 AC4c): whether a failed read's page says its values are kept
+    /// rests on the screen last drawn, and never on one from before an erase whose draw failed.
+    func testAScreenFromBeforeAFailedEraseDrawSaysNothing_US58() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let waist = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "waist" })
+        XCTAssertEqual(MetricDetailView.screenHasReading(weight, in: store), true)
+        XCTAssertEqual(MetricDetailView.screenHasReading(waist, in: store), false)
+        // An erased cloud view handed over before the screen shown: its draw fails, the erase counts.
+        await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
+        XCTAssertNotNil(store.myData, "the old screen still draws")
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
+    }
+
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
     /// never current, and a correction's "Now" hint comes only from a history in the sheet's
     /// own unit. Lp(a) at 100 nmol/L, the unit moves to mg/dL, a tap before the history is

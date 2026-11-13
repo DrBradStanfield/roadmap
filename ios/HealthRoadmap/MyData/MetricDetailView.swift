@@ -58,7 +58,7 @@ struct MetricDetailView: View {
     var body: some View {
         List {
             switch MetricRead.page(chartRead, revision: store.revision, problem: store.problem, kept: store.shownChart(for: row.metric, series: row.series),
-                                   hasReadings: (Self.live(row, in: store) ?? row).latest != nil) {
+                                   hasReadings: (Self.live(row, in: store) ?? row).latest != nil, screenHasReading: Self.screenHasReading(row, in: store)) {
             case .chart(let chart):
                 chartSection(chart)
                 Section {
@@ -144,6 +144,13 @@ struct MetricDetailView: View {
         chartRead = MetricRead.transition(chartRead, .asked(revision: revision))
         let chart = await store.chart(for: row.metric, series: row.series)
         chartRead = MetricRead.transition(chartRead, .landed(revision: revision, chart)) // the state as it is now, after the await
+    }
+
+    /// Whether the screen last drawn holds a value for this metric; nil when none was drawn, or it
+    /// predates an erase whose draw failed (S25, owner's R1 ruling).
+    static func screenHasReading(_ row: MyData.Row, in store: RecordStore) -> Bool? {
+        guard let data = store.myData, store.screenErasures == store.erasures else { return nil }
+        return live(row, in: data)?.latest != nil
     }
 
     /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).

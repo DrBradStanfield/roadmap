@@ -44,7 +44,7 @@ enum MetricRead {
         case noDataYet
         /// Neither: the guide alone, while a metric with readings is read.
         case guideOnly
-        /// The engine failure's words and Try again.
+        /// The engine failure's words and Try again, for a metric the screen shows values for.
         case failed
         /// The record did not load: its own heading and words, no Try again.
         case problem(RecordProblem)
@@ -53,14 +53,22 @@ enum MetricRead {
     /// The page for `read` at the store's `revision`. A state from an older revision reads as
     /// reading until the page asks: the store's `kept` chart if it has values, else "No data yet"
     /// only when My data has no reading, so it never flashes before a chart (US-58 AC4b).
-    nonisolated static func page(_ read: Read, revision: Int, problem: RecordProblem?, kept: ChartData?, hasReadings: Bool) -> Page {
+    /// `screenHasReading`: whether the screen last drawn holds a value for the metric; nil when
+    /// none was drawn or it predates an erase (`MetricDetailView.screenHasReading`).
+    nonisolated static func page(_ read: Read, revision: Int, problem: RecordProblem?, kept: ChartData?, hasReadings: Bool,
+                                 screenHasReading: Bool?) -> Page {
         if let problem { return .problem(problem) }
         switch read {
         // Only while the store still keeps a chart: an erase that drops them without moving the
         // revision never leaves the erased values drawn (US-25 AC21, S25 adversary R2).
         case .chart(revision, let chart) where kept != nil: return .chart(chart)
         case .empty(revision): return .noDataYet
-        case .failed(revision): return .failed
+        case .failed(revision):
+            // The words say the values are still in the record, so only when the screen drawn holds
+            // one, never on the failed read's word; with no such screen, only when the store still
+            // keeps values. Else "No data yet" and Add: nothing to duplicate (owner's R1 ruling).
+            let held = screenHasReading ?? (kept.map { !$0.history.rows.isEmpty } ?? false)
+            return held ? .failed : .noDataYet
         case .reading, .empty, .failed, .chart:
             if let kept, !kept.history.rows.isEmpty { return .chart(kept) }
             return hasReadings ? .guideOnly : .noDataYet
