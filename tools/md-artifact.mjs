@@ -45,6 +45,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { escapeHtml as esc } from './escape-html.mjs';
+import { linkHook } from './md-artifact-links.mjs';
 
 const MARKED = 'https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js';
 const MERMAID = 'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js';
@@ -259,16 +260,9 @@ window.__LINKS__ = JSON.parse(${linksJson});</script>
   // Relative links: the build mapped each target path to a URL (see header).
   // Only Markdown link tokens change, so code, code spans, images and raw HTML
   // (including <a href>) keep exactly what the .md says.
-  var links = window.__LINKS__;
-  var own = function (p) { return Object.prototype.hasOwnProperty.call(links, p); };
-  var mapHref = function (href) {
-    var i = (href + '#').indexOf('#'), p = href.slice(0, i), d = p;
-    try { d = decodeURI(p); } catch (e) {}
-    return own(p) ? links[p] + href.slice(i) : own(d) ? links[d] + href.slice(i) : null;
-  };
-  window.marked.use({ walkTokens: function (t) {
-    if (t.type === 'link') t.href = mapHref(t.href) || t.href;
-  } });
+  // linkHook: tools/md-artifact-links.mjs, inlined as source.
+  var linkHook = ${linkHook};
+  window.marked.use(linkHook(window.__LINKS__));
   doc.innerHTML = window.marked.parse(window.__MD__, { gfm: true });
 
   doc.querySelectorAll('table').forEach(function (t) {

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H81,copy,"Sentence case: the ""Blood Pressure"" row and page title, ""Waist Circumference"" in the grid, and the ""Blood Test Results"" heading",lead,not started,"Seen in the PR 1508 shots: the row and value-page title say ""Blood Pressure"" under the ""Blood pressure"" section; the grid says ""Waist Circumference"" while the row says ""Waist""; the heading ""Blood Test Results"" is title case. The rest of the UI uses sentence case. (H81)",,no

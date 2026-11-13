@@ -3,21 +3,19 @@
  * tools/md-artifact.mjs embeds the .md unchanged plus a build-time map
  * {relative target path -> URL} (the linked doc's Artifact, else GitHub; else
  * left out with a warning). The page's marked walkTokens hook applies the map
- * to Markdown link tokens only, so the real parser decides what is a link: the
- * e2e test renders the built page in WebKit and checks code, images and raw HTML
- * (including <a href>) are untouched.
+ * to Markdown link tokens only, so the real parser decides what is a link. The
+ * hook (tools/md-artifact-links.mjs) is tested here as a pure function.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { linkHook } from './md-artifact-links.mjs';
 
 const TOOL = resolve(__dirname, 'md-artifact.mjs');
 const ART = 'https://claude.ai/artifact/abc123';
 const GH = 'https://github.com/acme/widgets';
-const MARKED = 'https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js';
 const SOURCE = `---
 title: Main
 ---
@@ -148,56 +146,47 @@ describe('md-artifact link map (build time)', () => {
   });
 });
 
-// The page itself, rendered by the real marked in WebKit (every iPhone browser).
-describe('md-artifact rendered page (WebKit e2e)', () => {
-  it('rewrites Markdown link tokens only: code, raw HTML and images keep what the .md says', async (ctx) => {
-    const online = await fetch(MARKED, { method: 'HEAD', signal: AbortSignal.timeout(5000) }).then(r => r.ok, () => false);
-    if (!online) {
-      console.warn(`SKIPPED md-artifact e2e: cannot reach ${MARKED} (the page loads marked from cdnjs)`);
-      return ctx.skip();
+// The page's rewrite (linkHook, inlined into the page) as a pure function, fed the tokens marked
+// hands its walkTokens hook, with the map this file's build made. No network, no browser (test audit T21).
+// Which spans marked calls a link (code and raw HTML are not) is marked's own parsing, not checked here.
+describe('md-artifact page link rewrite (linkHook)', () => {
+  const walk = (token: Record<string, string>) => { linkHook(links).walkTokens(token); return token; };
+  const href = (h: string) => walk({ type: 'link', href: h }).href;
+
+  it('the page runs exactly this function on the build map', () => {
+    // The module's source text, as node's toString inlines it (vitest's transform would reformat linkHook.toString()).
+    const source = readFileSync(resolve(__dirname, 'md-artifact-links.mjs'), 'utf8');
+    expect(html).toContain(`var linkHook = ${source.slice(source.indexOf('function linkHook')).trimEnd()};`);
+    expect(html).toContain('window.marked.use(linkHook(window.__LINKS__));');
+  });
+
+  it('maps a link href found in the map, keeping its #fragment', () => {
+    expect({
+      plan: href('sub/plan.md#goals'), bare: href('sub/plan.md'),
+      notes: href('notes.txt#L3'), dir: href('sub/'), spaced: href('my%20file.txt'), spacedRaw: href('my file.txt'),
+      parens: href('notes(1).md'), colon: href('notes:x.md'),
+      // marked's hrefs after a CRLF / bare CR, and the __proto__ key (Codex)
+      crlf: href('crlf.txt'), cr: href('cr.txt'), crref: href('crref.txt'), proto: href('__proto__'),
+    }).toEqual({
+      plan: `${ART}#goals`, bare: ART,
+      notes: `${GH}/blob/main/notes.txt#L3`, dir: `${GH}/tree/main/sub`, spaced: `${GH}/blob/main/my%20file.txt`, spacedRaw: `${GH}/blob/main/my%20file.txt`,
+      parens: `${GH}/blob/main/notes(1).md`, colon: `${GH}/blob/main/notes%3Ax.md`,
+      crlf: `${GH}/blob/main/crlf.txt`, cr: `${GH}/blob/main/cr.txt`, crref: `${GH}/blob/main/crref.txt`, proto: `${GH}/blob/main/__proto__`,
+    });
+  });
+
+  it('leaves a link outside the map as written: missing, untracked, ignored, scheme, anchor, absolute, malformed %', () => {
+    for (const h of ['nope.md#x', 'constructor', 'stray.txt', 'output/draft.txt', 'https://example.com/a.md', '#main', '/etc/hosts', 'mailto:a@b.c', 'notes%zz.txt']) {
+      expect(href(h), h).toBe(h);
     }
-    const { webkit } = await import('playwright');
-    let browser;
-    try { browser = await webkit.launch(); } catch (e) {
-      console.warn(`SKIPPED md-artifact e2e: Playwright WebKit will not launch (${(e as Error).message.split('\n')[0]})`);
-      return ctx.skip();
-    }
-    try {
-      const page = await browser.newPage();
-      await page.goto(pathToFileURL(join(repo, '.artifacts', 'main.html')).href);
-      await page.waitForFunction(() => document.querySelector('#doc h1'), null, { timeout: 15000 });
-      const got = await page.evaluate(() => {
-        const doc = document.getElementById('doc')!;
-        const a: Record<string, string | null> = {};
-        doc.querySelectorAll('a').forEach(el => { a[el.textContent!.trim()] = el.getAttribute('href'); });
-        const img: Record<string, string | null> = {};
-        doc.querySelectorAll('img').forEach(el => { img[el.getAttribute('alt')!] = el.getAttribute('src'); });
-        const pre = [...doc.querySelectorAll('pre')].find(p => !p.querySelector('code'));
-        return { a, img, code: [...doc.querySelectorAll('code')].map(c => c.textContent), pre: pre?.textContent };
-      });
-      expect(got.a).toMatchObject({
-        plan: `${ART}#goals`, bare: ART,
-        notes: `${GH}/blob/main/notes.txt#L3`, dir: `${GH}/tree/main/sub`, spaced: `${GH}/blob/main/my%20file.txt`,
-        parens: `${GH}/blob/main/notes(1).md`, escaped: `${GH}/blob/main/notes(1).md`,
-        colon: `${GH}/blob/main/notes%3Ax.md`, see: `${GH}/blob/main/my%20file.txt`,
-        crlf: `${GH}/blob/main/crlf.txt`, cr: `${GH}/blob/main/cr.txt`, crref: `${GH}/blob/main/crref.txt`, proto: `${GH}/blob/main/__proto__`, // CRLF before the destination; __proto__ key (Codex)
-        reflink: `${GH}/blob/main/notes.txt`, incode: `${GH}/blob/main/notes.txt`, quoted: `${GH}/blob/main/notes.txt`, listprose: `${GH}/blob/main/notes.txt`,
-        gone: 'nope.md#x', ctor: 'constructor', stray: 'stray.txt', ignored: 'output/draft.txt',
-        web: 'https://example.com/a.md', anchor: '#main', abs: '/etc/hosts', mail: 'mailto:a@b.c',
-        // raw HTML <a href> is left as written, wherever it sits (Codex: a <div> nesting a <pre>)
-        rawhtml: 'sub/plan.md#top', preanchor: 'notes.txt', divpre: 'notes.txt', divplain: 'sub/plan.md',
-      });
-      for (const t of ['span', 'span2', 'codegone', 'listfence', 'fencegone', 'fenced', 'indented', 'pre']) {
-        expect(Object.hasOwn(got.a, t)).toBe(false);
-      }
-      expect(got.img).toEqual({ pic: 'notes.txt', 'an [example]': 'image.png', lost: 'missing.png', logo: 'notes.txt', both: 'my%20file.txt' });
-      expect(got.code).toEqual(expect.arrayContaining([
-        '[span](sub/plan.md)', '[span2](notes.txt)', '[codegone](in-code.md)',
-        '[listfence](notes.txt) [fencegone](fence-gone.md)\n', '[fenced](sub/plan.md)\n', '[indented](notes.txt)\n',
-      ]));
-      expect(got.pre).toContain('[pre](notes.txt)\n    preanchor indented');
-    } finally {
-      await browser.close();
-    }
-  }, 60000);
+  });
+
+  it('never touches a token that is not a link: images, code spans, code blocks, raw HTML', () => {
+    const tokens: Record<string, string>[] = [
+      { type: 'image', href: 'notes.txt', text: 'pic' }, { type: 'image', href: 'my%20file.txt', text: 'both' },
+      { type: 'codespan', text: '[span](sub/plan.md)' }, { type: 'code', text: '[fenced](sub/plan.md)' },
+      { type: 'html', text: '<a href="sub/plan.md#top">rawhtml</a>' },
+    ];
+    for (const t of tokens) expect(walk({ ...t })).toEqual(t);
+  });
 });
