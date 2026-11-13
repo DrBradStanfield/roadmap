@@ -3,7 +3,9 @@
 // (exclusive, random name) and renames it over --out: a rename replaces the directory entry and never follows a link.
 // Refusals come first, with nothing written. The rule is ownership, not names: only an empty file or a report this tool
 // wrote is ever replaced. Overlap with a reviewed input is judged by (dev, ino), never by spelling, so letter case,
-// Unicode form and symlink aliases cannot slip past it. Then the exit listener goes in, then "incomplete: run started"
+// Unicode form and symlink aliases cannot slip past it. An input the run reads that does not exist yet fences off its
+// nearest existing folder by the same identity: an --out anywhere inside it is refused (on purpose, under any name).
+// Then the exit listener goes in, then "incomplete: run started"
 // replaces the old file, so a crash leaves "incomplete", never the old verdict.
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -49,10 +51,22 @@ function writeStopReport(code) {
   try { replaceOut(incomplete(state.why ?? `E_STOPPED: exit ${code}`)); } catch (e) { console.error(`codex-review: ${cannot(e)}`); }
 }
 
-/** The first reviewed input that IS `out` or one of the folders above it, by identity, or null. Inputs that do not stat are skipped. */
+/** The first reviewed input that IS `out` or one of the folders above it, by identity, or null. Inputs that do not stat are skipped (fenced() judges those). */
 export function overlap(out, inputs) {
   const mine = new Set([out, ...ancestors(dirname(out))].map(identity).filter(Boolean));
   return inputs.find((p) => mine.has(identity(p))) ?? null;
+}
+
+/** The first of `read` that does not stat and whose nearest existing folder holds `out` at any depth, or null. No names compared. */
+export function fenced(out, read) {
+  const mine = new Set(ancestors(dirname(out)).map(identity).filter(Boolean));
+  const isDir = (d) => { try { return statSync(d).isDirectory(); } catch { return false; } };
+  return read.find((p) => {
+    if (identity(p)) return false;
+    let d = dirname(resolve(p));
+    while (!isDir(d) && dirname(d) !== d) d = dirname(d);
+    return mine.has(identity(d));
+  }) ?? null;
 }
 
 /** True when the regular file at `out` is empty or a report this tool wrote; read without following a link, under a cap. */
@@ -71,14 +85,16 @@ function ours(out) {
   } catch { return false; } finally { closeSync(fd); }
 }
 
-/** Why --out may not be written, or null. `out` sits in the real folder `parent`; `inputs` are the raw paths this run reviews. */
-function refusal(out, parent, given, inputs) {
+/** Why --out may not be written, or null. `out` sits in the real folder `parent`; `inputs` are the raw paths this run names, `read` those it reads. */
+function refusal(out, parent, given, inputs, read) {
   const said = `--out ${JSON.stringify(given)}`;
   let st = null;
   try { st = lstatSync(out); } catch (e) { if (e.code !== "ENOENT") return `${said} cannot be checked (${e.code})`; }
   if (st && !st.isFile()) return `${said} is not a regular file (a link, folder or other)`;
   const input = overlap(out, inputs);
   if (input) return `${said} is inside a reviewed input (${JSON.stringify(input)})`;
+  const missing = fenced(out, read);
+  if (missing) return `--out: ${missing} does not exist yet and --out is inside the same folder; nothing written`;
   const checkout = inCheckout(out, parent, said);
   if (checkout) return checkout;
   if (st && !ours(out)) return `${said} holds something this tool did not write (only an empty file or an earlier report is replaced)`;
@@ -105,12 +121,12 @@ function inCheckout(out, parent, said) {
 }
 
 /** Claims --out for this run: null when claimed, else why not (the caller stops with E_USAGE). */
-export function claimOut(given, inputs) {
+export function claimOut(given, inputs, read = inputs) {
   let parent = null;
   try { parent = realpathSync.native(dirname(resolve(given))); } catch { /* checked below */ }
   if (!parent || !statSync(parent).isDirectory()) return `--out ${JSON.stringify(given)}: its folder does not exist`;
   const out = join(parent, basename(resolve(given)));
-  const why = refusal(out, parent, given, inputs);
+  const why = refusal(out, parent, given, inputs, read);
   if (why) return why;
   state.path = out;
   process.on("exit", writeStopReport);

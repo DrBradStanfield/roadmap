@@ -2730,4 +2730,41 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(readdirSync(join(home, '.codex-review'))).toEqual(['scratch-record.json']);
     expect(started).toBe(false);
   });
+  // An input the run reads that does not exist yet fences off its nearest existing folder, by identity (owner's ruling
+  // 2026-11-13). Before, overlap() skipped it, so "run started" landed at the input's own path and became the input.
+  const fencedOut = (r: { status: number | null; stderr: string }, input: string) =>
+    refusedOut(r, `codex-review: --out: ${input} does not exist yet and --out is inside the same folder; nothing written`);
+  it('a missing --subject equal to --out is refused before any write', () => {
+    const dir = freshRepo({ '.gitignore': 'codex-drafts/\n' });
+    mkdirSync(join(dir, 'codex-drafts'));
+    const { r, started } = go(dir, ['--subject', 'codex-drafts/missing.md', '--baseline', 'none', '--out', 'codex-drafts/missing.md']);
+    fencedOut(r, 'codex-drafts/missing.md');
+    expect(readdirSync(join(dir, 'codex-drafts'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('--record with no scratch record yet and --out at its path is refused (a temp HOME)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    const { r, started } = go(repo, ['--record', '--out', record], childEnv({ HOME: home }));
+    fencedOut(r, record);
+    expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('an absent gitignored --context equal to --out is refused before any write', () => {
+    const dir = freshRepo({ '.gitignore': 'notes.md\n' });
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', 'notes.md', '--out', 'notes.md']);
+    fencedOut(r, 'notes.md');
+    expect(readdirSync(dir).filter((n) => n.includes('notes.md'))).toEqual([]); // nor a temp file beside it
+    expect(started).toBe(false);
+  });
+  it('--record with no scratch record yet and --out elsewhere still runs: nothing to review ends before the record is read', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    const { r } = go(freshRepo(), ['--record', '--out', out], childEnv({ HOME: home }));
+    expect(r.status).toBe(0);
+    expect(readOut(out).status).toBe('nothing');
+    expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
+  });
 });

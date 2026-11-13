@@ -254,9 +254,9 @@ const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_US
 /** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
 const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
 const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
-const RECORD_INPUT = has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []; // the default scratch record is reviewed too
-const REVIEWED_INPUTS = ["--subject", "--baseline", "--context", "--include", "--record-file"].flatMap(many).concat(RECORD_INPUT).filter((p) => p && p !== "none");
-const outRefused = OUT ? claimOut(OUT, REVIEWED_INPUTS) : null;
+// What the run reads (the default scratch record too, under --record); a --record-file without --record is named, never read.
+const READ_INPUTS = ["--subject", "--baseline", "--context", "--include"].flatMap(many).concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter((p) => p && p !== "none");
+const outRefused = OUT ? claimOut(OUT, READ_INPUTS.concat(many("--record-file").filter(Boolean)), READ_INPUTS) : null;
 if (outRefused) usage(outRefused);
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
