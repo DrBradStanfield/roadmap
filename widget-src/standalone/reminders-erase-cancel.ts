@@ -6,10 +6,12 @@
  * (a re-read while the prepare waits on the Drive proof, or on the chat
  * erase), even one that brings another erase with it. So from the prepare's
  * first read until the commit, every distinct active token seen while this
- * tab's erase runs is kept, in memory only, to be cancelled. Once the swap is
- * behind it the working copy holds the erased opt-in, which has no token, so
- * nothing more is kept. The listener on hr:remote-changed is attached while
- * the state is `watching`, and only then: the transition says when.
+ * tab's erase runs is kept, in memory only, to be cancelled. While the erased
+ * copy uploads, a merge can still bring in an opt-in that survives the erase
+ * (another device erased to the same epoch, then turned reminders on): the
+ * commit leaves the one the record still holds active (`toCancel`). The
+ * listener on hr:remote-changed is attached while the state is `watching`,
+ * and only then: the transition says when.
  */
 import { eraseRunsHere, getEraseIdentity, getReminderOptIn } from '../src/lib/roadmap-data';
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
@@ -64,6 +66,15 @@ export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEven
     case 'failed':
       return moved(state, { kind: 'unprepared' });
   }
+}
+
+/** What the commit cancels: every token kept but one the record still holds
+ *  active once the erase stands. That one came in after the swap and survived
+ *  the erase's save (another device erased to the same epoch, then turned
+ *  reminders on), so it is live consent, not a pre-erase row. */
+export function toCancel(state: EraseCancel, standing: FileReminderOptIn | undefined): { token: string; idToken: string | null }[] {
+  if (state.kind !== 'watching') return [];
+  return state.cancels.filter(({ token }) => !(standing?.status === 'active' && standing.token === token));
 }
 
 let eraseCancel: EraseCancel = { kind: 'done' };

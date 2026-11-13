@@ -975,17 +975,18 @@ describe('US-17 AC1b, US-11 AC4c — erasing your data reaches the server row to
   });
 
   it('is not counted as an opt-out — they erased everything, they did not judge reminders', async () => {
-    getReminderOptIn.mockReturnValue(ACTIVE);
-    mockFetchOk({ ok: true });
+    getReminderOptIn.mockReturnValueOnce(ACTIVE).mockReturnValue(undefined); // the erased record holds no token
+    const f = mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
 
     await (await cancelRemindersForErase())();
 
+    expect(f).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
   it('reports a refused delete by its status alone, rather than swallowing it (an orphaned row still emails)', async () => {
-    getReminderOptIn.mockReturnValue(ACTIVE);
+    getReminderOptIn.mockReturnValueOnce(ACTIVE).mockReturnValue(undefined); // the erased record holds no token
     vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
     const { cancelRemindersForErase } = await loadReminders();
 
@@ -1048,6 +1049,21 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
     const { eraseCancelTransition } = await import('./reminders-erase-cancel');
     expect(eraseCancelTransition(state, event)).toEqual({ state: next, effects });
   });
+
+  // What the commit sends: never the token the record still holds active (it survived the erase).
+  const sends: [string, State, FileReminderOptIn | undefined, { token: string; idToken: string | null }[]][] = [
+    ['every token kept, the record erased', watching(A, B), undefined, [A, B]],
+    ['every token kept, the record holding a cancelled opt-in', watching(A, B), on('test-token-b', 'cancelled'), [A, B]],
+    ['not the token the record still holds active', watching(A, B), on('test-token-b'), [A]],
+    ['an active token the teardown never kept changes nothing', watching(A), on('test-token-c'), [A]],
+    ['nothing from done', { kind: 'done' }, undefined, []],
+    ['nothing from unprepared', { kind: 'unprepared' }, undefined, []],
+  ];
+  it.each(sends)('toCancel: %s', async (_name, state, standing, out) => {
+    await loadReminders();
+    const { toCancel } = await import('./reminders-erase-cancel');
+    expect(toCancel(state, standing)).toEqual(out);
+  });
 });
 
 // US-11 AC4c (lead S59b): the prepare's listener on hr:remote-changed is
@@ -1069,6 +1085,7 @@ describe('US-11 AC4c — the erase watcher follows the state', () => {
     getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox', token: 'test-token-b' });
     remoteChanged();
     expect(removed()).toBe(0);
+    getReminderOptIn.mockReturnValue(undefined); // the erased record holds no token
     await commit();
 
     expect(removed()).toBe(1);

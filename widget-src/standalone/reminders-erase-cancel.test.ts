@@ -159,12 +159,12 @@ async function eraseSetUp() {
     return page.refreshFromRemote();
   };
   /** Another device erases first, then turns reminders on; this page re-reads both in. */
-  const otherDeviceErasesThenTurnsOn = async () => {
+  const otherDeviceErasesThenTurnsOn = async (reread = true) => {
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect((await other.deleteAllData()).success).toBe(true);
     expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.eraseIdentity)).toBe(true);
     await other.flush();
-    return page.refreshFromRemote();
+    return reread ? page.refreshFromRemote() : false;
   };
   /** Another device turns reminders on, written straight to the cloud, with no re-read here. */
   const otherDeviceWrites = async () => {
@@ -292,6 +292,26 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
     window.removeEventListener(REMOTE, announcer);
     expect(t.listening.size).toBe(0);
+  });
+
+  // Re-check F1 / Codex R1: a token merged in after the swap, while the
+  // erased copy uploads, can survive the erase (another device erased to the
+  // same epoch, then turned reminders on: the newer opt-in wins the merge).
+  // The record keeps it active, so its row is not cancelled.
+  it('a token the erased record still holds active once the erase lands is not cancelled', async () => {
+    const t = await eraseSetUp();
+    let raced = false;
+    t.held.hold = async (body) => {
+      if (raced || (body.meta.eraseEpoch ?? 0) !== 1) return;
+      raced = true; // the erased copy's first upload: B erases and turns on before it lands
+      await t.otherDeviceErasesThenTurnsOn(false);
+    };
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(raced).toBe(true);
+    expect(t.data.getReminderOptIn()).toMatchObject({ status: 'active', token: TOKEN_B });
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
   });
 
   it('a refused erase posts nothing, and its listener goes at the next re-read', async () => {

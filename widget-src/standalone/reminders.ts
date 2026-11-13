@@ -37,7 +37,7 @@ import {
   stillShown,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
-import { eraseCancelState, stepEraseCancel } from './reminders-erase-cancel';
+import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
 import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
@@ -396,7 +396,7 @@ export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
     safeRemoveItem(SWITCH_CANCELLED_KEY);
     const held = eraseCancelState();
     stepEraseCancel({ type: 'committed' });
-    const failed = held.kind === 'unprepared' ? ['unprepared'] : held.kind === 'done' ? [] : await Promise.all(held.cancels.map(
+    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, getReminderOptIn()).map(
       ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
     ));
     for (const status of failed) {
