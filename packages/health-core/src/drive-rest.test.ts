@@ -217,10 +217,11 @@ describe('step 1: read with fields=version (US-32 phase 2)', () => {
     const drive = new FakeDrive();
     drive.install();
     const legacy = drive.create(DRIVE_LEGACY_FOLDER_NAME, '', FOLDER_MIME);
-    drive.create(ROADMAP_FILE_NAME, JSON.stringify(record()), 'application/json', [legacy.id]);
+    const made = drive.create(ROADMAP_FILE_NAME, JSON.stringify(record()), 'application/json', [legacy.id]);
 
     const read = await new DriveAdapter('access-token').read(ROADMAP_FILE_NAME);
-    expect(read.body).not.toBeNull();
+    expect(read.body).toEqual(record());
+    expect(read.version).toBe(JSON.stringify([made.id, String(made.version)]));
   });
 
   it('creates the record inside the app folder the browser adapter uses', async () => {

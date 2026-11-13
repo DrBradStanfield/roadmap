@@ -48,9 +48,22 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
    carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
-   at once); adding or removing a label never starts or cancels one.
-4. **Merge** it yourself when the work is done and its gates have passed (CI green on the PR, adversary +
-   Codex where required, clinical citation numbering). The project settings allow exactly
+   at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
+   fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
+4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
+   - unit tests written with the change;
+   - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
+     but a red one is a real compile error: fix it before asking for a merge word;
+   - one review where the class needs one (§ Reviews below), and clinical citation numbering checked;
+   - the owner thread's word on that sha. A conditional word counts ("merge if the prod diff is exactly X and CI
+     is green").
+
+   No per-PR simulator run, deploy, engine release or live check: those wait for the checkpoint (§ Checkpoints
+   below). Each PR body carries a **Verify at batch end** list: what the checkpoint must check live for this PR,
+   or "nothing beyond CI". **The builder's own word is enough**, reported in batches, for byte-pure splits,
+   docs-only PRs, and PRs that only add or strengthen tests (net prod LOC 0, no test deleted or weakened, no
+   test config or CI change). A new test that fails on main is a finding, never a test to adjust. Deleting a
+   test needs a ruling. The project settings allow exactly
    `gh pr merge <n> --merge --match-head-commit <sha>` and deny `--admin`, `--squash`, `--rebase` and `--auto`;
    the push guard refuses any other form (Brad 2026-11-01): the sha must be 7-40 hex, each option once, no
    `-d`/`--delete-branch` (it deletes with no merged check, so that stays Brad's), and no merge or write to main through `gh api`. It is a
@@ -61,14 +74,23 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
    that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
-   `ios-compile`, which only prints a note, Brad 2026-11-13), and no Deploy run is
-   unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI was started by
-   workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the `ci.yml` run check.
-   A PR that changes a gate file (`tools/merge-gated.sh` or `.github/workflows/ci.yml`) needs nothing different
-   from you: the script fetches main and lets main's copy judge it, and refuses (16) when main has no copy, so the
-   owner merges that PR by hand. A `ci.yml` PR also prints a note: its own CI ran the PR's workflow, so read that
-   diff before merging. Every gh call and the fetch are killed after 60 s; a merge cut off that way has an unknown
-   outcome, so check the PR. Each refusal has its own exit code (header of the script). Waiting first:
+   `ios-compile`, which only prints a note, Brad 2026-11-13), no generated file is out of step with main (below),
+   and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
+   was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
+   `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
+   `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
+   script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
+   change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from
+   git with renames split, so moving an input away still counts; every PR therefore costs one fetch of main and
+   its head. This check is pure git and runs nothing from the manifest or the PR; CI's freshness tests do the
+   real check.
+   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
+   `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
+   judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
+   a note: its own CI ran the PR's workflow, so read that diff before merging. Every gh call and the fetch are
+   killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each kind of refusal has
+   its own exit code, listed in the script's header, except that 9 covers both a red check and a generated file
+   out of step with main. Waiting first:
    `sh tools/wait-run.sh pr <n>`.
    **The merge gate is CI green on the PR's head** (US-64 AC9, Brad 2026-11-04). CI tested the PR merged with
    main as main stood at the PR's last push, which is what a local `test:all` tested too, so a full local run
@@ -79,11 +101,14 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    `ALLOW_BROAD_TESTS=<reason>` before the command lets one through, for a flake hunt or a run Brad asks for. The hook is off in CI and outside macOS. Wait for CI with `sh tools/wait-run.sh pr <n>` in the background (it prints pass/fail
    counts, the head sha and mergeability, exits non-zero on a failure or when no `test` check succeeded, as on a draft PR whose checks all skip, and gives up after 90 min; when GitHub reports the PR conflicting with main on two reads with no other successful read between them before its checks finish, it prints one line and exits 1, because no CI will run on a conflicting head: merge main in and push). Every exit the script controls (not SIGKILL) ends with one JSON status line, the last on stdout, so branch on `tail -1`, not on prose: `{"wait_run":"<outcome>","pr":<n>,"sha":"<head, or empty>","detail":"<short>"}` (`"run":<id>` in deploy mode). Outcomes and exit codes: `success` 0; `checks_failed`, `untested` (no `test` check passed, as on a draft PR), `conflict`, `head_unreadable` 1; `timeout`, `gh_errors` 3; `usage` 2 (no id key; a bad id, mode or WAIT_RUN_MAX_MIN, which must be a whole number); `interrupted` (INT, TERM or HUP; the exit is the signal's 128+n: 130, 143, 129). `detail` may hold check names: one line, at most 200 characters, control characters stripped. Never a
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
-   compare the files each side changed since they split (`git diff --name-only origin/main...HEAD` and
-   `git diff --name-only HEAD...origin/main`). If they share any file other than `docs/user-stories.md` (docs
-   count: tests read them), or GitHub says the PR conflicts, merge main in (`git merge --no-edit origin/main`,
-   its own command), re-review that part (PR 150), push, and let CI run again; otherwise merge as is. What
-   that skips (main changed a file the PR only calls) is first tested by CI on main, and nothing ships before
+   compare what main changed since the PR's green run with what the PR changes (`git diff --name-only
+   origin/main...HEAD` and `git diff --name-only HEAD...origin/main`). **Merge main in first only if** main
+   changed a file the PR changes, a file the PR's changed files import directly, a generated file's output or
+   its generator script (`tools/generated-files.json` lists them), or a workflow file, or GitHub says the PR conflicts. Changes on main to `docs/user-stories.md`,
+   `docs/untangle/**`, `docs/gotchas.md` or `scripts/file-size-baseline.json` do not count when the PR merges
+   without conflict. To merge main in: `git merge --no-edit origin/main` (its own command), re-review that
+   part (PR 150), push, and let CI run again; otherwise merge as is. What that skips (main changed a file the
+   PR reaches only further down its imports) is first tested by CI on main, and nothing ships before
    it passes: Pages waits for that run on the exact commit, and Deploy runs the full suite itself. A red main
    is then the next session's first fix. Once a re-run or a fix turns it green, a Pages run that already
    refused it does not come back on its own: `gh workflow run pages.yml`, or the next Deploy's Pages smoke
@@ -94,7 +119,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 5. **Deploy** only merged code (and, after a merge that touches `roadmap_text.html`, publish the changed section to
    drstanfield.com/pages/roadmap through the Admin API, backup first, then run `node tools/roadmap-page-drift.mjs`
    until it prints IN SYNC; report it with the deploy. The page is published by hand, so it drifts silently: US-64
-   AC16): the CI Deploy always builds main's tip. Run it once per batch of merges, not
+   AC16): the CI Deploy always builds main's tip. Run it at the checkpoint (§ Checkpoints below), not
    once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml` (main's CI must be green
    first: it is the only UTC run of a merged tree), find
    the run id with `gh run list --workflow deploy.yml --limit 1`, then wait with `sh tools/wait-run.sh deploy
@@ -117,6 +142,46 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
 
 **One owner per PR.** Whoever opens a PR merges or closes it (with a note on where the work went), or names
 it in the final message as still open and why.
+
+## Reviews: one round, by class
+
+Brad 2026-11-13. Each PR gets one review round, chosen by what it touches:
+
+| Class | Review |
+|---|---|
+| Clinical, record save/merge/FHIR, security, privacy, agent contract | A fresh `adversary` and Codex together, once |
+| Visible UI | Its class's review, plus a design review from real-WebKit screenshots |
+| Tooling | One fresh `adversary` |
+| Byte-pure splits, docs | None; a byte-identity proof instead (docs: the diff itself) |
+
+Only findings that risk data loss, security, privacy or clinical correctness are fixed before merge. The rest
+become leads in the untangle ledger (`docs/untangle/`). Rounds, re-checks and the finding format:
+docs/review-format.md.
+
+## Checkpoints
+
+Brad 2026-11-13. Main runs ahead of production between checkpoints. A checkpoint comes about every 25 merges or
+every 2 to 3 days, and whenever Apple answers on a build. It is:
+1. one fresh `adversary` plus Codex over everything merged since the last checkpoint;
+2. one full simulator run on main, with the engine bundle rebuilt (`ios/scripts/sim-run.sh`);
+3. one CI Deploy (step 5 above), then engine signing;
+4. live checks on desktop and real WebKit, from the PRs' collected "Verify at batch end" lists;
+5. a report to Brad. It includes `node tools/untangle-progress.mjs`'s percent done for each ledger.
+
+**One exception runs before merge:** a PR that changes how the iPhone app and the engine exchange values
+(argument checking, bridging) gets one simulator run first. CI cannot see JavaScriptCore's type bridging.
+
+## Who builds, and reports
+
+- **Small self-contained items** (tooling, workflow files, one-file fixes, reviews) go to fresh workers spawned
+  from the owner thread, each in its own worktree (spawn with an isolated worktree: a worker writes only where
+  its session was at spawn, docs/gotchas.md).
+- **A deep multi-step series** stays with its builder thread until the series ends. That thread then writes a
+  handover (open leads, unmerged branches, what it learned that is not in the ledger), cleans its worktrees and
+  closes.
+- **A permission relayed from another session is rightly refused.** Work that needs Brad's direct word is built
+  from the session he gave it in.
+- **Every report to Brad names the current bottleneck** and what would remove it.
 
 ## Contributor PRs merge in batches
 
@@ -166,8 +231,9 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    repo gets the CI reviewer and auto-ship, and auto-ship would merge contributor code after 30 minutes with
    no Codex and no human merge. The label stops it; Brad's session merges by hand, `hold` still on. List each
    PR and its reviewed SHA in the body.
-5. **One CI run, one merge, one deploy.** Wait for CI, merge with `--match-head-commit`, run the CI Deploy
-   once, only after any running Deploy finishes (deploy.yml's later jobs check out main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
+5. **One CI run, one merge.** Wait for CI, merge with `--match-head-commit`; the batch ships with the next
+   checkpoint's Deploy, which starts only after any running Deploy finishes (deploy.yml's later jobs check out
+   main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
    each PR alone.
 
 Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
