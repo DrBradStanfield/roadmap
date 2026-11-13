@@ -30,7 +30,7 @@ describe('MyDataRows: a target alone carries its unit (H83)', () => {
 
   it('a record with only limit waists ("<80") shows the value and a bare target: no doubled cm', () => {
     const waist = coreRow('waist', [value('waist', 80, '<')], si);
-    expect(waist.latest).toMatch(/80/);
+    expect(waist.latest).toBe('< 80'); // a limit reads with its symbol (US-12 AC20)
     expect(waist).toMatchObject({ unit: 'cm', target: 'Target <89' });
   });
 });

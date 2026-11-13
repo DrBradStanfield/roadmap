@@ -46,7 +46,7 @@ describe('myData rows: a target alone carries its unit (H83)', () => {
     const file = edited(person('en-NZ', 'Pacific/Auckland'), { kind: 'add', metric: 'waist', value: 80, day: '2026-10-01' });
     const limited: RoadmapFile = { ...file, measurements: file.measurements.map((row) => (row.metricType === 'waist' ? { ...row, comparator: '<' } : row)) };
     const waist = rows(limited).get('waist')!;
-    expect(waist.latest?.value).toMatch(/80/);
+    expect(waist.latest?.value).toBe('< 80'); // a limit reads with its symbol (US-12 AC20)
     expect(waist).toMatchObject({ unit: 'cm', target: 'Target <90' });
   });
 });
