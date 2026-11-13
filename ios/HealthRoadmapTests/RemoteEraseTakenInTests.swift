@@ -251,6 +251,39 @@ final class RemoteEraseTakenInTests: XCTestCase {
         }
     }
 
+    /// Codex R1 / adversary F2 on PR 1768: during this phone's cloud erase, the session's save loop
+    /// sends the erased record as news, which lands and is counted. The erase's own result then
+    /// arrives stale (`showErased`, `.stale`): it holds that same erase, so it counts nothing more.
+    func testAnOwnCloudEraseCountsOnceWhenItsNewsLandsFirst_S63() async throws {
+        let engine = try engine()
+        let (store, before) = try await charted(engine)
+        let erased = try erased(before, engine)
+
+        await store.showCloud(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 3)).value
+        XCTAssertEqual(store.erasures, 1, "the news lands the erase and counts it")
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 2)).value
+
+        XCTAssertEqual(store.erasures, 1, "the erase's own stale result counts nothing more")
+        XCTAssertFalse(store.predatesErase)
+        XCTAssertEqual(store.recordJSON, erased)
+    }
+
+    /// A stale own erase result under a later record at ANOTHER erase (its news never landed) is still
+    /// counted: the later record proves it was read after the erase, not that the erase was counted.
+    func testAStaleOwnEraseUnderALaterEraseIsStillCounted_S63() async throws {
+        let engine = try engine()
+        let (store, before) = try await charted(engine)
+        let first = try erased(before, engine), second = try erased(first, engine)
+
+        await store.showCloud(HealthEngine.CloudView(record: second, erase: "e3", session: 1, order: 3)).value
+        XCTAssertEqual(store.erasures, 1, "e3 landed and counted")
+        await store.showErased(HealthEngine.CloudView(record: first, erase: "e2", session: 1, order: 2)).value
+
+        XCTAssertEqual(store.erasures, 2, "e2 was never counted: its own result counts it")
+        XCTAssertFalse(store.predatesErase)
+        XCTAssertEqual(store.recordJSON, second)
+    }
+
     // MARK: Behaviour changes
 
     /// Behaviour change (a): the open chat drops on a remote erase. ChatView drops its transcript on

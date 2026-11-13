@@ -92,6 +92,7 @@ final class RecordStore {
     @ObservationIgnored private var shownOrder = 0
     /// The stamp on the record actually drawn; nil for one with none (the phone's file).
     @ObservationIgnored private var drawnOrder: Int?
+    @ObservationIgnored private var countedErases: Set<String?> = []  // each erase `land` counted (Codex R1)
 
     /// What `draw` did. `held`: landed with no drawing (an erase, `holdUndrawn`).
     /// `stale`: refused only because a record the engine stamped later is drawn.
@@ -199,7 +200,10 @@ final class RecordStore {
             self.problem = problem
         case .none, .drop: break
         }
-        if before.erased(by: mark) { (erasures, screenErasures) = (erasures + 1, erasures + 1) }  // landed, on evidence (S70, S63)
+        if before.erased(by: mark) {  // landed, on evidence (S70, S63)
+            (erasures, screenErasures) = (erasures + 1, erasures + 1)
+            countedErases.insert(cloudErase)
+        }
         return effect
     }
 
@@ -329,10 +333,10 @@ final class RecordStore {
     func showErased(_ view: HealthEngine.CloudView?, stillShown: @escaping @MainActor () -> Bool = { true }) -> Task<Void, Never> {
         chain {
             // A fresh start: no per-test choice, published only with the erase held (adversary R4).
-            // Stale: the record drawn was stamped after the erase, so it holds it (owner's ruling b).
+            // Stale: the record drawn was stamped after the erase, so it holds it (ruling b); counted once, here or by land.
             let counted = self.erasures
             let shown = await self.drawErased(view, stillShown: stillShown())
-            if self.erasures == counted { self.erasures += 1 }  // once, if land has not counted it
+            if self.erasures == counted, !(shown == .stale && self.countedErases.contains(view?.erase)) { self.erasures += 1 }
             if shown != .failed { self.screenErasures = self.erasures }
         }
     }
