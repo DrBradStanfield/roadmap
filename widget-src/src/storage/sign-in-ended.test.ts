@@ -15,6 +15,7 @@ import { DropboxAdapter } from './dropbox';
 import { bootSignIn, currentSignIn, resetSignIn, subscribeSignIn } from './sign-in-state';
 import { pkceEntry } from './pkce';
 import { sweepStaleSignIns } from '../lib/storage';
+import { savePopupGrant } from './drive-popup-grant';
 
 const BACKEND_KEY = 'health_roadmap_backend';
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
@@ -31,7 +32,7 @@ const FIVE_MINUTES = 5 * 60_000;
 const EXPIRED = { accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: 0 };
 const LIVE = () => ({ accessToken: 'test-token-live', refreshToken: 'test-refresh-old', expiresAt: Date.now() + 3_600_000 });
 
-let calls: Array<{ url: string; method: string }>;
+let calls: Array<{ url: string; method: string; auth?: string | null }>;
 /** Answers a call; a test sets it. */
 let answer: (url: string, init?: RequestInit) => Response | Promise<Response>;
 const reply = (status: number, body: unknown = {}) =>
@@ -50,7 +51,7 @@ beforeEach(() => {
   unsubscribe = subscribeSignIn(() => { raises += 1; });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
-    calls.push({ url, method: init?.method ?? 'GET' });
+    calls.push({ url, method: init?.method ?? 'GET', auth: new Headers(init?.headers).get('Authorization') });
     init?.signal?.throwIfAborted();
     return answer(url, init);
   }));
@@ -424,5 +425,74 @@ describe('US-09 AC48 (lead A3, Codex R3): a Dropbox sign-in from before the conf
     localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ ...LIVE(), gen: 'gen-2' }));
     new DropboxAdapter(DROPBOX, 'gen-1');
     expect(localStorage.getItem(DROPBOX_CONFIG)).toBeNull();
+  });
+});
+
+describe('US-09 AC50 (lead A29): a Drive access token Drive turned down is used by no adapter again', () => {
+  const POPUP = () => ({ accessToken: 'test-token-old', expiresAt: Date.now() + 3_600_000 });
+  const NEW_GRANT = () => ({ accessToken: 'test-token-new', expiresAt: Date.now() + 3_600_000 });
+  const sentWith = (token: string) => calls.filter((c) => c.auth === `Bearer ${token}`).length;
+  const bearer = (init?: RequestInit) => new Headers(init?.headers).get('Authorization');
+  /** Drive turns down the old token and accepts any other. */
+  const driveRefusesOld = () => { answer = (_url, init) => (bearer(init) === 'Bearer test-token-old' ? reply(401, { error: { code: 401 } }) : reply(200, { files: [] })); };
+
+  it('after the 401, an adapter built later sends no request with the old token, and the page is signed out', async () => {
+    chosen('google-drive', POPUP());
+    driveRefusesOld();
+    expect((await failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME)))?.status).toBe(401);
+    expect(sentWith('test-token-old')).toBe(1);
+    const later = new GoogleDriveAdapter(DRIVE); // the picker's copy-down, or a reminder, builds one
+    expect((await failure(later.read(ROADMAP_FILE_NAME)))?.reason).toBe('reconnect');
+    expect(sentWith('test-token-old')).toBe(1);
+    expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'google-drive' });
+  });
+
+  it('once the page is signed out, an adapter built then sends no request with the old token', async () => {
+    chosen('google-drive', POPUP());
+    driveRefusesOld();
+    const live = new GoogleDriveAdapter(DRIVE);
+    await failure(live.read(ROADMAP_FILE_NAME));
+    await failure(live.read(ROADMAP_FILE_NAME)); // the call after the 401 ends the sign-in
+    expect(currentSignIn()).toEqual({ kind: 'signedOut', provider: 'google-drive' });
+    expect((await failure(new GoogleDriveAdapter(DRIVE).write(ROADMAP_FILE_NAME, {}, null)))?.reason).toBe('reconnect');
+    expect(sentWith('test-token-old')).toBe(1);
+  });
+
+  it('a reload after the 401 sends no request with the old token and offers the reconnect, choice kept', async () => {
+    chosen('google-drive', POPUP());
+    driveRefusesOld();
+    await failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME));
+    resetSignIn(); // a fresh page
+    vi.stubGlobal('location', { origin: 'https://example.test', pathname: '/roadmap' });
+    const { resolveRemembered } = await import('../../standalone/connect');
+    const resolved = await resolveRemembered();
+    expect(resolved.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
+    expect(sentWith('test-token-old')).toBe(1);
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+  });
+
+  it('a new popup sign-in after the refusal works at once, for the adapter the reconnect builds', async () => {
+    chosen('google-drive', POPUP());
+    driveRefusesOld();
+    const live = new GoogleDriveAdapter(DRIVE);
+    await failure(live.read(ROADMAP_FILE_NAME));
+    await failure(live.read(ROADMAP_FILE_NAME));
+    expect(savePopupGrant(NEW_GRANT(), null)).toBe(true);
+    expect(await new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME)).toEqual({ body: null, version: null });
+    expect(sentWith('test-token-new')).toBeGreaterThan(0);
+  });
+
+  it('a 401 that lands after a new sign-in was saved keeps the new sign-in', async () => {
+    chosen('google-drive', POPUP());
+    let land: ((r: Response) => void) | undefined;
+    answer = (_url, init) => (bearer(init) === 'Bearer test-token-old' ? new Promise<Response>((done) => { land = done; }) : reply(200, { files: [] }));
+    const pending = failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME));
+    await vi.waitFor(() => expect(land).toBeTypeOf('function'));
+    expect(savePopupGrant(NEW_GRANT(), null)).toBe(true);
+    land!(reply(401, { error: { code: 401 } }));
+    expect((await pending)?.status).toBe(401);
+    expect(JSON.parse(localStorage.getItem(DRIVE_TOKENS)!).accessToken).toBe('test-token-new');
+    expect(await new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME)).toEqual({ body: null, version: null });
+    expect(sentWith('test-token-new')).toBeGreaterThan(0);
   });
 });
