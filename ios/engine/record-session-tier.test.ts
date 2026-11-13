@@ -13,7 +13,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const sources = readdirSync(here)
+const sources = readdirSync(here, { recursive: true, encoding: 'utf8' })
+  .filter((name) => !name.includes('node_modules'))
   .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts') && !name.endsWith('.d.ts'))
   .map((name) => ({ name, text: readFileSync(join(here, name), 'utf8') }));
 const withMatch = (pattern: RegExp) => sources.filter((s) => pattern.test(s.text)).map((s) => s.name);
@@ -34,11 +35,11 @@ describe('S69: the iPhone runs no device-tier RecordSession', () => {
     const cloud = sources.find((s) => s.name === 'cloud.ts')!.text;
     expect(cloud).toMatch(/type CloudHost = Extract<RecordHost, \{ tier: 'cloud' \}>/);
     expect(cloud).toMatch(/return \{\s*tier: 'cloud',/);
-    expect(cloud).not.toMatch(/tier: 'device'/);
+    expect(cloud).not.toMatch(/['"`]device['"`]/);
   });
 
   it("the only device-tier host is app-doors.ts's chat-history host, which never reaches a RecordSession", () => {
-    expect(withMatch(/tier: 'device'/)).toEqual(['app-doors.ts']);
+    expect(withMatch(/tier:\s*['"`]device['"`]/)).toEqual(['app-doors.ts']);
     const doors = sources.find((s) => s.name === 'app-doors.ts')!.text;
     expect(doors).not.toMatch(/record-session|RecordSession|eraseSession|deleteAllDataSession/);
   });
