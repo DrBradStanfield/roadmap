@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS } from '../packages/health-core/src/mcp-tool-catalogue';
 
 const README = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'README.md'), 'utf8').replace(/\s+/g, ' ');
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import type { UnifiedExtractionResult } from './lab-extraction';
-import { MAX_IMPORT_CANDIDATES, prepareImport, runToolOverSync, type ExtractedFile, type ImportBundle, type ImportPayload, type ImportSurface } from './mcp-tools';
+import { runToolOverSync } from './mcp-tools';
+import { MAX_IMPORT_CANDIDATES } from './mcp-tool-contract';
+import { prepareImport, type ExtractedFile, type ImportBundle, type ImportPayload, type ImportSurface } from './mcp-import';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';

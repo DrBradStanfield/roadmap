@@ -325,6 +325,7 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
     const source = readFileSync(new URL('../lib/mcp-knowledge.server.ts', import.meta.url), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.sort()).toEqual([
+      '../../packages/health-core/src/mcp-tool-catalogue', // type-only
       '../../packages/health-core/src/mcp-tools', // type-only
       '../../packages/health-core/src/zod', // zod, jitless
       '../../tools/search-knowledge',
@@ -333,7 +334,8 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
       './matched-content',
       './router-view',
     ]);
-    expect(source).toMatch(/import type \{ McpToolDefinition, ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
+    expect(source).toMatch(/import type \{ ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
+    expect(source).toMatch(/import type \{ McpToolDefinition \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tool-catalogue'/);
     // ChatGPT's two `_meta` keys are the only place the word may appear.
     expect(source.replaceAll("'openai/toolInvocation/", '')).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic|openai|API_KEY|process\.env\.(?!MCP_KNOWLEDGE_TOOLS\b)\w+)\b/i);
   });

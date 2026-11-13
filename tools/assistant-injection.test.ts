@@ -23,7 +23,7 @@ import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { createCoreRow } from '../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
 import { EXTRACTION_MODEL, modelParams } from '../packages/health-core/src/models';
-import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS } from '../packages/health-core/src/mcp-tool-catalogue';
 import { resetMcpMemory } from '../app/lib/mcp-grants.server';
 import { mcpEndpoint, setAdapterFactory } from '../app/lib/mcp.server';
 import { action, loader } from '../app/routes/mcp.$';

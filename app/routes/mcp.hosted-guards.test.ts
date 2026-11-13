@@ -38,7 +38,7 @@ import { createCoreRow } from '../../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
-import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
+import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
