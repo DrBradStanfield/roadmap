@@ -11,8 +11,9 @@ import UserNotifications
 ///
 /// The opt-in is this phone's: a small file beside the record, in the folder backups
 /// leave out (D5), holding the record's erase epoch at the time. A restored phone
-/// starts a new record, so it starts with reminders off. An erase moves the epoch,
-/// which ends the opt-in and cancels every reminder, so an erased record never
+/// starts a new record, so it starts with reminders off. An erase moves the epoch, or on
+/// this phone the store's erase count (`ReminderEvent.erased`, even when its record cannot
+/// be read, S52), which ends the opt-in and cancels every reminder, so an erased record never
 /// notifies (US-11). It is not written to the
 /// record: the record's `reminderOptIn` is the web's email enrolment, with a server
 /// token and an address, and a phone's notification permission is not one (D7).
@@ -98,6 +99,9 @@ final class ReminderScheduler {
     /// A tap while an ask is out asks nothing more (AC12b).
     func optIn() async -> Bool {
         attempts += 1
+        // Off, an erase before this tap is one the person opts in after: the next refresh must not
+        // end it. On ("Allow notifications"), an unseen erase must still end the opt-in.
+        if case .off = mode { seenErasures = erasures() }
         await run(send(.tappedOn(attempt: attempts)))
         return optedIn
     }

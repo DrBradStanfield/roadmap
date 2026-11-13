@@ -1215,8 +1215,11 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   schema (a merge and schema call, so the orchestrator's).
 - **The switch is one mode (2026-11-13, US-25 AC12b, iPhone survey S7).** `ReminderMode` is
   off, `asking(attempt:)` or `on(epoch:)`, changed only by the pure `ReminderMode.transition`
-  (3 modes by 4 events, no default arm, `ReminderModeTests`), which also names the effect:
-  ask iOS, or refresh. Each tap mints an attempt (a counter, a token, not a mode). A tap while
+  (3 modes by 5 events, no default arm, `ReminderModeTests`), which also names the effect:
+  ask iOS, or refresh. `erased` (S52) ends the opt-in from any mode: the scheduler sends it when
+  the store's erase count moved since it last looked (at a refresh or a tap on), so an erase held
+  with no record to read still ends reminders. A kill before that refresh resets the count; the
+  next good read's moved epoch ends them then. A remote erase does not move the count (lead S63). Each tap mints an attempt (a counter, a token, not a mode). A tap while
   asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
   before, a double tap asked iOS twice, and the second grant could turn reminders back on
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if

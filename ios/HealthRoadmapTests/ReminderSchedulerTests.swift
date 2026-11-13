@@ -340,6 +340,35 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 1)
     }
 
+    /// US-25 AC12b (S52, adversary finding 1): an erase moves the count, and the person turns
+    /// reminders on before any refresh has seen it. That opt-in is made after the erase, under
+    /// the new record: the next refresh must not take it for the erase and end it.
+    func testAnOptInBeforeTheRefreshThatSeesTheEraseHolds_US25_AC12b() async {
+        let scheduler = scheduler()
+        erasureCount = 1
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        let on = await scheduler.optIn()
+        XCTAssertTrue(on)
+        await scheduler.refresh()
+        XCTAssertTrue(scheduler.optedIn, "the erase came before the opt-in; it ends nothing")
+        XCTAssertTrue(optInKept)
+        XCTAssertEqual(center.pending.count, 1)
+    }
+
+    /// US-25 AC12b (S52): already on, "Allow notifications" tapped after a held erase the
+    /// scheduler has not seen yet. The tap is not an opt-in after the erase: the erase still ends it.
+    func testAllowNotificationsAfterAnUnseenHeldEraseStillEndsReminders_US25_AC12b() async {
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        erasureCount = 1
+        engineFails = true
+        _ = await scheduler.optIn()
+        await scheduler.refresh()
+        XCTAssertFalse(scheduler.optedIn)
+        XCTAssertFalse(optInKept)
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
     /// Owner pin 1a (S52): an erase made on another device reaches this phone as a record whose
     /// erase epoch moved. This phone's erase count does not move for it (only RecordStore's
     /// own erases count), so the epoch rule ends the opt-in, and both files go the same way.
