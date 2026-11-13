@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { labEgfrOf } from '@roadmap/health-core/plan';
 import { planPsa } from '@roadmap/health-core/measurement-history';
+import { screeningsToInputs } from '@roadmap/health-core/mappings';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { loadAllHistory, loadAllHistorySync, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
 import { loadFromLocalStorage, patchMirror, saveToLocalStorage } from '../lib/storage';
@@ -13,7 +14,7 @@ type RecordSetters = Pick<ReturnType<typeof useRecordState>, 'setPreviousMeasure
  *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6). */
 export async function mirrorRecord(result: LatestMeasurementsResult): Promise<void> {
   saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined,
-    labEgfrOf(await loadLabValues() ?? []), planPsa(loadAllHistorySync(), new Date()));
+    labEgfrOf(await loadLabValues() ?? []), planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(result.screenings)));
 }
 
 /**
