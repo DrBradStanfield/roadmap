@@ -257,7 +257,7 @@ export async function docxToText(data: ArrayBuffer, signal?: AbortSignal): Promi
   let budget = MAX_XML_BYTES;
   let stopped = false;
   for (const part of [...headers, body, ...footers]) {
-    signal?.throwIfAborted(); // stopped at the upload's time limit (US-12 AC7b)
+    if (signal?.aborted) throw new Error('stopped'); // the upload's time limit (US-12 AC7b); not throwIfAborted, absent before Safari 15.4
     const bytes = await inflateCapped(part, budget);
     if (!bytes) throw new Error('docx too large');
     budget -= bytes.byteLength;

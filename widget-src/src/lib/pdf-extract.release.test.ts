@@ -100,6 +100,9 @@ describe('US-12 AC7a: a PDF read by the upload releases its pdf.js worker', () =
   });
 });
 
+/** A signal as Safari before 15.4 has it: no `throwIfAborted`. */
+const oldSafariSignal = (stop = new AbortController()) => Object.defineProperty(stop.signal, 'throwIfAborted', { value: undefined });
+
 describe('US-12 AC7b (U15): a PDF read stopped at the upload\'s time limit releases its worker then', () => {
   it('an abort during the read stops it and destroys the loading task', async () => {
     const stop = new AbortController();
@@ -115,6 +118,14 @@ describe('US-12 AC7b (U15): a PDF read stopped at the upload\'s time limit relea
     stop.abort();
     await expect(extractFromPdf(textPdf(), stop.signal)).rejects.toThrow();
     expect(tasks).toHaveLength(0);
+  });
+
+  it('a signal without throwIfAborted (Safari before 15.4) still reads, and still stops when aborted', async () => {
+    const { pages } = await extractFromPdf(textPdf(), oldSafariSignal());
+    expect(pages).toEqual([expect.objectContaining({ type: 'text', content: expect.stringContaining('LDL 3.1 mmol/L') })]);
+    const stop = new AbortController();
+    stop.abort();
+    await expect(extractFromPdf(textPdf(), oldSafariSignal(stop))).rejects.toThrow('stopped');
   });
 
   it('a signal that never fires changes nothing', async () => {

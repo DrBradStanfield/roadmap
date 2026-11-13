@@ -36,7 +36,7 @@ export interface PageContent {
  */
 export async function extractFromPdf(file: File, signal?: AbortSignal): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();
-  signal?.throwIfAborted();
+  if (signal?.aborted) throw new Error('stopped'); // not throwIfAborted: Safari before 15.4 lacks it
   // pdf.js starts a worker for each document: release it once read or failed (AC7a), or when the read is stopped (AC7b).
   const task = pdfjsLib.getDocument({ data: arrayBuffer });
   signal?.addEventListener('abort', () => void task.destroy(), { once: true });
