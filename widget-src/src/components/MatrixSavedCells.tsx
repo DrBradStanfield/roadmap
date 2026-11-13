@@ -318,6 +318,10 @@ export function ValueCell({
           if (e.key === 'Enter') { e.preventDefault(); void submit(); }
           if (e.key === 'Escape') { e.preventDefault(); cancel(); }
         }}
+        // Back within the click-away window: the pending save, timed or
+        // waiting on a release, is cancelled; Enter or the next leave saves
+        // the text as it is then (US-04 AC1, H40).
+        onFocus={clearBlurTimer}
         onBlur={e => {
           // The focus going to this row's own unit control (Tab): never arm
           // the save. A press closed the editor already.
