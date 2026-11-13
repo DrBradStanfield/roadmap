@@ -20,7 +20,7 @@ import { INSTRUCTIONS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server'
 import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { routerView } from '../lib/router-view';
-import { buildIndex, search } from '../../tools/search-knowledge';
+import { buildIndex, search } from '../lib/search-knowledge';
 import { parseFrontmatter } from '../lib/frontmatter';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
@@ -328,11 +328,11 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
       '../../packages/health-core/src/mcp-tool-catalogue', // type-only
       '../../packages/health-core/src/mcp-tools', // type-only
       '../../packages/health-core/src/zod', // zod, jitless
-      '../../tools/search-knowledge',
       './blog-index.server',
       './frontmatter',
       './matched-content',
       './router-view',
+      './search-knowledge',
     ]);
     expect(source).toMatch(/import type \{ ToolAnswer \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tools'/);
     expect(source).toMatch(/import type \{ McpToolDefinition \} from '\.\.\/\.\.\/packages\/health-core\/src\/mcp-tool-catalogue'/);

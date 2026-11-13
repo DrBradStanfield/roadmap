@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
 import { evaluate, half, loadSnapshot, recallFixtures, skipCounts, snapshotOf } from './search-knowledge-eval';
-import { BEST, VARIANTS } from './search-knowledge';
+import { BEST, VARIANTS } from '../app/lib/search-knowledge';
 
 // Measured 2026-09-29 on the 254-fixture snapshot: top-3 204 (80.3%), top-8
 // 218 (85.8%). Re-frozen 2026-10-22 when the pathways left (US-15 AC39): 72

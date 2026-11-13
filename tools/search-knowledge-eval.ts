@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
-import { buildIndex, MAX_K, search, VARIANTS, type Entry, type Weights } from './search-knowledge';
+import { buildIndex, MAX_K, search, VARIANTS, type Entry, type Weights } from '../app/lib/search-knowledge';
 
 /** The live Sonnet 5.5 router on 2026-09-29, over all 304 routed fixtures (13b53de). */
 const ROUTER = { passed: 297, of: 304 };
