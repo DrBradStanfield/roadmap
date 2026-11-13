@@ -65,7 +65,7 @@ export interface Erase {
   loaded: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
-  /** Another writer's erase is heard and its last read failed (H39): saves are refused until a read lands. */
+  /** Another writer's erase is heard and its last read failed (H39): saves are refused until a read lands (after a failed first read, L2, until a reload). */
   unreachable: boolean;
   /** Read that erase again; nothing unless `unreachable`. */
   retry: () => void;
