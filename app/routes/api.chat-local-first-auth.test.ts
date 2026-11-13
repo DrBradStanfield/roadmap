@@ -17,15 +17,14 @@ vi.mock('../lib/local-first-route.server', async (original) => ({
   ...await original<typeof import('../lib/local-first-route.server')>(),
   verifyAppProxySignature: () => true,
 }));
-vi.mock('../lib/supabase.server', () => ({
-  logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
-  createUserClient: vi.fn(() => ({ from: mocks.from })),
+// api.chat.ts and getAuthenticatedUser (route-helpers) import these from their own modules.
+vi.mock('../lib/supabase-identity.server', () => ({ getOrCreateSupabaseUser: mocks.getOrCreateSupabaseUser, logAudit: vi.fn() }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: vi.fn(() => ({ from: mocks.from })) }));
+vi.mock('../lib/supabase-guest.server', () => ({
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
 }));
-// getAuthenticatedUser (route-helpers) reads these two from their own modules.
-vi.mock('../lib/supabase-identity.server', () => ({ getOrCreateSupabaseUser: mocks.getOrCreateSupabaseUser }));
-vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: vi.fn(() => ({ from: mocks.from })) }));
+vi.mock('../lib/supabase-account.server', () => ({ getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn() }));
 vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],

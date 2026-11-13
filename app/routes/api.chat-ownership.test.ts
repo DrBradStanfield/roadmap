@@ -27,12 +27,17 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
 // localFirst forces the guest path (api.chat.ts getAuthOrGuest), so the
 // widget's rows are always guest-owned; give it a session to land on.
-vi.mock('../lib/supabase.server', () => ({
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guestSession,
   GuestRateLimitError: mocks.GuestRateLimitError,
 }));
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', async (o) => ({ ...await o<object>(), createUserClient: supa.createUserClient }));
 // MAX_MESSAGE_LENGTH is the real one, so the length tests below pin the route
 // to the shipped cap (US-15 AC26).
 vi.mock('../lib/chat.server', async (original) => ({
