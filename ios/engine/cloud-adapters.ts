@@ -60,7 +60,7 @@ function accessToken(provider: Provider, force: boolean): Promise<string> {
       else {
         const failure = new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT);
         // Only Swift's words say the token endpoint never answered (OAuthClient.post's catch):
-        // a Keychain that will not save, or another status, is no outage (S50b; lead H128).
+        // a Keychain that will not save, or another status, is no outage (S50b; lead H129).
         if (error !== null && / did not answer\./.test(error)) NO_ANSWER.add(failure);
         reject(failure);
       }
@@ -73,7 +73,7 @@ const NO_ANSWER = new WeakSet<object>();
 
 /** What EngineNatives.swift answers in place of a request it never sent: the allow-list's
  *  refusal and a missing token. The shim rejects both as a TypeError, as it does a real network
- *  failure, and only these words tell them apart (lead H128: give them their own error). */
+ *  failure, and only these words tell them apart (lead H129: give them their own error). */
 const NATIVE_REFUSALS: readonly string[] = ['This app does not send that request.', 'Not signed in.'];
 
 /** 401s refreshOn401 did not retry: no fresh token was tried, so the next call starts on one (S57b). */
