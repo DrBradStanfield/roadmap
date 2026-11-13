@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A1-7,S3 cloud storage and sync,Drive multiple-copy reconciliation moves up into the sync layer,not started,drive-rest.ts:307 onward still reconciles copies inside the adapter,,,yes
+A1-7,S3 cloud storage and sync,Drive multiple-copy reconciliation moves up into the sync layer,not started,drive-rest.ts:326 (discoverRecord) onward still reconciles copies inside the adapter,,,yes

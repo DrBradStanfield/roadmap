@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-T-5,"S1 tools, scripts, CI",Chat harness builds its system prompt only via buildSystemBlocks,not started,tools/test-chatbot-matching.ts:557-565 still hand-builds the system string when no user context is set (same as baseline),,,no
+T-5,"S1 tools, scripts, CI",Chat harness builds its system prompt only via buildSystemBlocks,not started,"tools/test-chatbot-matching-calls.ts:141-148 still hand-builds the system string when no user context is set (moved there from test-chatbot-matching.ts by 14e3f1dc0, a pure move). Was: tools/test-chatbot-matching.ts:557-565 still hand-builds the system string when no user context is set (same as baseline)",,,no

@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A1-4,S3 cloud storage and sync,Build the record sync one way,not started,"Inferred, unverified (the audit lane file was not available): SyncManager built separately at roadmap-doc.ts:87, record-session.ts:117,184, record-transfer.ts:61",,,yes
+A1-4,S3 cloud storage and sync,Build the record sync one way,not started,"Checked 2026-11-13: SyncManager built separately at roadmap-doc.ts:87, record-session.ts:51,107, record-transfer.ts:61 (chat-session.ts:165-166 builds its own for the chat history). Was: Inferred, unverified (the audit lane file was not available): SyncManager built separately at roadmap-doc.ts:87, record-session.ts:117,184, record-transfer.ts:61",,,yes
