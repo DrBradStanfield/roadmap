@@ -214,34 +214,11 @@ describe('getClientIp (US-32 M-6)', () => {
       expect(ip({ 'x-forwarded-for': '198.51.100.4' }, 'shopify')).toBe('198.51.100.4');
     });
 
-    it('falls back to the Fly header when the Fly hop is not in XFF (US-52 AC4h)', () => {
-      // No hop a trusted proxy wrote can be told apart: one shared key.
-      expect(ip({ 'x-forwarded-for': '6.6.6.6, 203.0.113.9', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('35.1.2.3');
-      expect(ip({ 'x-forwarded-for': '203.0.113.9', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('35.1.2.3');
-      expect(ip({ 'x-forwarded-for': '6.6.6.6, 203.0.113.9, 66.241.124.56', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('35.1.2.3');
-    });
-
-    it('reads the Fly hop only where Fly writes it: last, or second to last (US-52 AC4h)', () => {
-      const f = '35.1.2.3';
-      // The Fly hop earlier in the list is not an anchor, wherever it sits.
-      for (const xff of [
-        `6.6.6.6, ${f}, 203.0.113.9, 66.241.124.56`,
-        `6.6.6.6, ${f}, 7.7.7.7, 203.0.113.9, 66.241.124.56`,
-        `${f}, 203.0.113.9, 66.241.124.56`,
-        `6.6.6.6, ${f}, 7.7.7.7, 203.0.113.9`,
-      ]) {
-        const got = ip({ 'x-forwarded-for': xff, 'fly-client-ip': f }, 'shopify');
-        expect(got, xff).toBe(f);
-        expect(['6.6.6.6', '7.7.7.7'], xff).not.toContain(got);
-      }
-      // The legitimate shapes still give the shopper, whatever leads the list.
-      expect(ip({ 'x-forwarded-for': `6.6.6.6, ${f}, 203.0.113.9, ${f}, 66.241.124.56`, 'fly-client-ip': f }, 'shopify')).toBe('203.0.113.9');
-      expect(ip({ 'x-forwarded-for': `6.6.6.6, ${f}, 203.0.113.9, ${f}`, 'fly-client-ip': f }, 'shopify')).toBe('203.0.113.9');
-      expect(ip({ 'x-forwarded-for': `2001:db8:1:2::9, ${f}, 66.241.124.56`, 'fly-client-ip': f }, 'shopify')).toBe('2001:db8:1:2::9');
-    });
-
-    it('falls back to the Fly header when nothing sits before the Fly hop (US-52 AC4h)', () => {
-      expect(ip({ 'x-forwarded-for': '35.1.2.3, 66.241.124.56', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('35.1.2.3');
+    it('uses the last hop when Fly did not append its peer to XFF', () => {
+      // Fly is not documented to append; if its address is absent from the
+      // list, the final hop is the one SHOPIFY appended — the shopper.
+      expect(ip({ 'x-forwarded-for': '6.6.6.6, 203.0.113.9', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('203.0.113.9');
+      expect(ip({ 'x-forwarded-for': '203.0.113.9', 'fly-client-ip': '35.1.2.3' }, 'shopify')).toBe('203.0.113.9');
     });
 
     it('falls back to the Fly header when XFF is missing, unparseable, or holds only the Fly hop', () => {

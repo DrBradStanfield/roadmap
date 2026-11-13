@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-21b,S2 server,Remove the forwarded-header shape count,not started,"PR 1665 (US-52 AC4h) added a per-process count of the forwarded header's shape, logged hourly as numbers only (app/lib/forwarded-shape.server.ts, called from getClientIp in app/lib/local-first-route.server.ts). It exists to inform PR 1667 (AC4j). Once that has been read and 1667 merged or closed, delete the module, its test and the call, and mark AC4h removed",,,no
