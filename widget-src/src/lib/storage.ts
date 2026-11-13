@@ -138,8 +138,9 @@ interface StoredData {
   reminderPreferences?: ApiReminderPreference[];
   /** The saved lab eGFR candidate (US-07 AC7): the other chats hold no lab rows. */
   labEgfr?: LabEgfr | null;
-  /** The newest usable saved PSA (US-06 AC14): the newest row per metric may be one the plan cannot use. */
-  psa?: ApiMeasurement | null;
+  /** The newest usable saved PSA (US-06 AC14): the newest row per metric may be one the plan cannot use.
+   *  `raisedBefore` (US-06 AC21 item 6): planPsa's flag from the full record; the device keeps it. */
+  psa?: MirrorPsa | null;
   savedAt: string;
 }
 
@@ -150,15 +151,17 @@ export interface LoadedData {
   screenings: ApiScreening[];
   reminderPreferences: ApiReminderPreference[];
   labEgfr: LabEgfr | null;
-  psa: ApiMeasurement | null;
+  psa: MirrorPsa | null;
 }
+
+type MirrorPsa = ApiMeasurement & { raisedBefore?: true };
 
 /**
  * Write the mirror: the saved profile as `inputs`, the newest saved row per
  * metric, the medications and screenings on record, and the saved lab eGFR
  * (labEgfrOf over the record's lab rows). Tells the page.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: ApiMeasurement | null): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: MirrorPsa | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
   // (patchMirror too) and would put the health copy back (US-09 AC2e).
   if (!healthWritesAllowed()) return;
@@ -244,10 +247,10 @@ export function loadFromLocalStorage(): LoadedData | null {
         : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,
       // An untrusted copy: a PSA row only with a number (this field was only ever
       // written as one, so null, "" or text is no PSA, never a 0), a real day and
-      // a readable comparator.
+      // a readable comparator. Its `raisedBefore` counts only as `true` (US-06 AC21 item 6).
       psa: data.psa && typeof data.psa.value === 'number' && Number.isFinite(data.psa.value) && isClinicalDay(data.psa.recordedAt)
         && (data.psa.comparator === undefined || isComparator(data.psa.comparator))
-        ? { ...data.psa, metricType: 'psa' } : null,
+        ? (({ raisedBefore, ...row }) => ({ ...row, metricType: 'psa', ...(raisedBefore === true && { raisedBefore }) }))(data.psa) : null,
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
