@@ -59,11 +59,14 @@ final class RecordStore {
     let engine: HealthEngine  // not private: RecordStore+Documents.swift reads it
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
-    /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
-    /// so a value typed there is checked against the record the user saw, not
-    /// one a sync brought in since (US-25 AC11; review R1, R2).
+    /// phone's file), its eraseEpoch, this phone's erase count and its units. A sheet
+    /// pins it as it opens (`pinsRecord`), so a value typed there is checked against
+    /// the record the user saw, not one a sync or an erase brought in since (US-25
+    /// AC11, AC11g; review R1, R2).
     struct Screen: Equatable {
         let erase: String?
+        let epoch: Int?
+        let erasures: Int
         let units: String
         /// The per-test units it showed (US-25 AC17e): a typed value is read in them.
         let choices: String
@@ -72,7 +75,7 @@ final class RecordStore {
 
         /// The same screen once its sheet has chosen Lp(a)'s unit (US-25 AC20).
         func showing(lpaUnit: String) -> Screen {
-            Screen(erase: erase, units: units, choices: choices, lpaUnit: lpaUnit)
+            Screen(erase: erase, epoch: epoch, erasures: erasures, units: units, choices: choices, lpaUnit: lpaUnit)
         }
     }
     private(set) var pinned: Screen?  // read by save all's stop rule (US-52 AC8b)
@@ -363,11 +366,12 @@ final class RecordStore {
     static let recordChanged = "Your record changed while this was open, so this was not saved. Close this and enter the value again."
 
     func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
-        // An erase taken in, or sync turned on or off, since the sheet opened.
+        // An erase taken in or made here, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
-        // in a record or units it never showed (re-check R1).
-        guard seen.erase == cloudErase else {
+        // in a record or units it never showed (re-check R1). On the phone both
+        // erases are nil: the epoch and erase count tell an erase apart (AC11g).
+        guard seen.erase == cloudErase, seen.mark.holds(at: mark) else {
             return .refused(message: Self.recordChanged, existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
