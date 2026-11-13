@@ -8,6 +8,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { dispatchRpc, type RpcSurface } from './mcp-rpc';
+import { KEY_ORDER_EXCEPTIONS, MCP_TOOLS } from './mcp-tool-catalogue';
 
 const PATH = `${__dirname}/mcp-tools-list.golden.json`;
 
@@ -24,5 +25,12 @@ describe('US-32 AC51a: tools/list is pinned byte for byte', () => {
     const actual = `${JSON.stringify(answer.result.tools, null, 1)}\n`;
     if (process.env.UPDATE_TOOLS_LIST_GOLDEN) writeFileSync(PATH, actual);
     expect(actual).toBe(readFileSync(PATH, 'utf8'));
+  });
+
+  // US-32 AC51b: the generator writes one key order; this is the only node published otherwise (lead A3-4c).
+  it('keeps exactly one key-order exception, file_results values, and it names a real node in that order', () => {
+    expect(KEY_ORDER_EXCEPTIONS).toEqual({ 'file_results.properties.values': ['type', 'maxItems', 'description', 'items'] });
+    const values = MCP_TOOLS.find((tool) => tool.name === 'file_results')!.inputSchema.properties.values as object;
+    expect(Object.keys(values)).toEqual(['type', 'maxItems', 'description', 'items']);
   });
 });

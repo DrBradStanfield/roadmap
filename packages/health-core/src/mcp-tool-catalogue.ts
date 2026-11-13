@@ -8,6 +8,7 @@ import { COMPARATORS } from './lab-limits';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS } from './import-hints';
 import { METRIC_TYPES } from './validation';
 import * as z from './zod';
+import { PROFILE_FIELDS } from './profile-fields';
 import {
   addLabValuesInput,
   addMeasurementInput,
@@ -19,7 +20,6 @@ import {
   importDocumentsInput,
   MAX_LAB_ROWS_PER_CALL,
   OFF_CATALOGUE_NOTE,
-  PROFILE_FIELDS,
   readRecordInput,
   reportFeedbackInput,
   SLOT_STATES,
@@ -107,8 +107,17 @@ export interface McpToolDefinition {
  */
 const KEY_ORDER = ['type', 'enum', 'minItems', 'maxItems', 'items', 'pattern', 'maxLength', 'description', 'properties', 'required', 'additionalProperties'];
 
-/** One zod-emitted JSON Schema node, in the shape tools/list has always published. */
-function publishedNode(node: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Nodes published in an order of their own, by path. The hand-written schemas disagreed: this array put
+ * `description` before `items`, the other two after. Kept so tools/list stays byte-identical while its pins
+ * are a tripwire (mcp-freeze.test.ts); lead A3-4c drops it the next time those pins are re-taken.
+ */
+export const KEY_ORDER_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  'file_results.properties.values': ['type', 'maxItems', 'description', 'items'],
+};
+
+/** One zod-emitted JSON Schema node at `path`, in the shape tools/list has always published. */
+function publishedNode(node: Record<string, unknown>, path: string): Record<string, unknown> {
   let out: Record<string, unknown> = { ...node };
   delete out.$schema;
   // `x.nullable()` comes out as `anyOf: [x, {type: 'null'}]`; tools/list says `type: [x, 'null']`.
@@ -125,19 +134,20 @@ function publishedNode(node: Record<string, unknown>): Record<string, unknown> {
     if (out.maximum === Number.MAX_SAFE_INTEGER) delete out.maximum;
   }
   if (out.minLength === 1) delete out.minLength;
-  if (out.items) out.items = publishedNode(out.items as Record<string, unknown>);
+  if (out.items) out.items = publishedNode(out.items as Record<string, unknown>, `${path}.items`);
   if (out.properties) {
     out.properties = Object.fromEntries(Object.entries(out.properties as Record<string, Record<string, unknown>>)
-      .map(([key, child]) => [key, publishedNode(child)]));
+      .map(([key, child]) => [key, publishedNode(child, `${path}.properties.${key}`)]));
   }
+  const order = KEY_ORDER_EXCEPTIONS[path] ?? KEY_ORDER;
   const keys = Object.keys(out);
-  const ordered = [...KEY_ORDER.filter((key) => key in out), ...keys.filter((key) => !KEY_ORDER.includes(key))];
+  const ordered = [...order.filter((key) => key in out), ...keys.filter((key) => !order.includes(key))];
   return Object.fromEntries(ordered.map((key) => [key, out[key]]));
 }
 
-/** A tool's `inputSchema`, generated from the zod schema that validates its arguments: one source (US-32 AC51b). */
-function inputSchemaOf(schema: z.ZodObject): ToolInputSchema {
-  return publishedNode(z.toJSONSchema(schema, { io: 'input' }) as Record<string, unknown>) as unknown as ToolInputSchema;
+/** Tool `name`'s `inputSchema`, generated from the zod schema that validates its arguments: one source (US-32 AC51b). */
+function inputSchemaOf(name: string, schema: z.ZodObject): ToolInputSchema {
+  return publishedNode(z.toJSONSchema(schema, { io: 'input' }) as Record<string, unknown>, name) as unknown as ToolInputSchema;
 }
 
 /** The two ChatGPT strings, in one line per tool instead of four. */
@@ -377,7 +387,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged `core`. Values ' +
       'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in. ' +
       'A `comparator` marks a limit, not the number.',
-    inputSchema: inputSchemaOf(readRecordInput),
+    inputSchema: inputSchemaOf('read_record', readRecordInput),
     outputSchema: {
       type: 'object',
       properties: RECORD_SECTIONS,
@@ -398,7 +408,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'raw values, history and row ids. Fill `missingInputs` from the user via add_measurement ' +
       'or update_profile. "> 60" is a limit, not the number. ' +
       'This is the app’s own protocol, computed offline from the file; it is educational, not medical advice.',
-    inputSchema: inputSchemaOf(getPlanInput),
+    inputSchema: inputSchemaOf('get_plan', getPlanInput),
     outputSchema: {
       type: 'object',
       properties: PLAN_SECTIONS,
@@ -417,7 +427,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       '`unit` with the unit it was reported in and it is converted. One value per metric per day: if that day ' +
       'already holds a value the call is refused and you should use correct_value instead. Only when the user ' +
       'asked to add a value; a failed correction is never turned into an add.',
-    inputSchema: inputSchemaOf(addMeasurementInput),
+    inputSchema: inputSchemaOf('add_measurement', addMeasurementInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -440,7 +450,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
       'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
       'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',
-    inputSchema: inputSchemaOf(addLabValuesInput),
+    inputSchema: inputSchemaOf('add_lab_values', addLabValuesInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -476,7 +486,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'row’s stored unit. Read the record first: you need the row id, and `expectedValue` — the value you believe ' +
       'the row holds right now. On the hosted server it is required and the call is refused without it; ' +
       'everywhere, a mismatch refuses the call and writes nothing.',
-    inputSchema: inputSchemaOf(correctValueInput),
+    inputSchema: inputSchemaOf('correct_value', correctValueInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -502,7 +512,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'is there now, read from the record first — a mismatch refuses the call and writes nothing. This ' +
       'overwrites: the profile is one last-write-wins object with no earlier version to read back. ' +
       'Display preferences (units) are not yours to change.',
-    inputSchema: inputSchemaOf(updateProfileInput),
+    inputSchema: inputSchemaOf('update_profile', updateProfileInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -541,7 +551,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'they want to track, or a result looks wrong.' +
       // US-32 AC39: while hidden the tokenless link would 404, so that path refuses and says so itself.
       (REPO_PUBLIC ? ' Without a GitHub token it returns a link for them to submit; the answer says which.' : ''),
-    inputSchema: inputSchemaOf(reportFeedbackInput),
+    inputSchema: inputSchemaOf('report_feedback', reportFeedbackInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -593,7 +603,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'the receipt, `accept` (ids to file), `replace` (held_different ids the user wants overwritten; ' +
       'permanent, so name only what they asked for) and `approval` (the user’s own words, quoted). ' +
       'A file with no values (a clinic letter) is listed under `documents`; empty `accept` and `replace` file the documents alone.',
-    inputSchema: inputSchemaOf(importDocumentsInput),
+    inputSchema: inputSchemaOf('import_documents', importDocumentsInput),
     outputSchema: IMPORT_OUTPUT_SCHEMA,
     // Not read-only (the commit writes), destructive (a replace flips a row for
     // good), not idempotent (a second commit of a spent receipt is refused),
@@ -624,7 +634,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Step 2: show all of it and WAIT for the user’s own yes, then call again with commit: accept ids, replace only the ids ' +
       'the user asked to overwrite (permanent), and approval: the user’s own words, quoted. ' +
       'A letter with no values is filed from document by an empty commit.',
-    inputSchema: inputSchemaOf(fileResultsInput),
+    inputSchema: inputSchemaOf('file_results', fileResultsInput),
     outputSchema: IMPORT_OUTPUT_SCHEMA,
     // Not read-only (the commit writes), destructive (a replace flips a row for
     // good), not idempotent (a spent receipt is refused), CLOSED-world: nothing
