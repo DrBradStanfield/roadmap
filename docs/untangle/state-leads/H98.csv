@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H98,tests,Pin the none-to-one step of the value page's correct-it hint,lead,not started,"From PR 1571 (H82, US-62 AC10a): 'Tap a value to correct it.' shows only when the history holds a value (widget-src/src/components/ValuePage.tsx:193). widget-src/src/components/ValuePage.hint.test.tsx pins an empty history (line 25) and one value then none (line 31), but not none then one: render an empty history, rerender with one value, and the hint appears. (H98)",,no
