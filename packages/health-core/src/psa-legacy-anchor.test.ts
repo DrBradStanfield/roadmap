@@ -70,6 +70,36 @@ describe('the finding: a raised old answer, then a newer vague result (US-06 AC2
   });
 });
 
+describe('an old answer outside the PSA range decides nothing, as an unusable row (US-06 AC14; Codex R2)', () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(NOW); });
+  afterEach(() => { vi.useRealTimers(); });
+  const flagSent = (file: RoadmapFile) => chatContextOf(
+    { sex: 'male', heightCm: 175, weightKg: 75, birthYear: 1966, birthMonth: 1 }, 'si', [],
+    fileScreeningRows(file.screenings), currentValueRows(file),
+  ).measurementHistory!.psa.at(-1)!.raisedBefore === true;
+
+  it.each([['-1 (below 0)', '-1'], ['10001 (above 10000)', '10001']])('raised row, answer %s, then vague: the raised row still anchors', (_what, value) => {
+    const file = fileWith([{ value: 4.5, day: '2026-01-10' }, VAGUE], { prostatePsaValue: value, prostateLastDate: '2026-03' });
+    expect(cards(file).map((c) => c.id)).toContain('screening-prostate-repeat');
+    expect(reminders(file)).toEqual(['2026-09-01']);
+    expect(flagSent(file)).toBe(true);
+  });
+
+  it('low row, answer 10001 (above 10000), then vague: the answer does not start the rule', () => {
+    const file = fileWith([{ value: 3.0, day: '2026-01-10' }, VAGUE], { prostatePsaValue: '10001', prostateLastDate: '2026-03' });
+    expect(cards(file)).toEqual([]);
+    expect(reminders(file)).toEqual([]);
+    expect(flagSent(file)).toBe(false);
+  });
+
+  it('an answer of 0 is in range and below 4.0: it ends the rule', () => {
+    const file = fileWith([{ value: 4.5, day: '2026-01-10' }, VAGUE], { prostatePsaValue: '0', prostateLastDate: '2026-03' });
+    expect(cards(file)).toEqual([]);
+    expect(reminders(file)).toEqual([]);
+    expect(flagSent(file)).toBe(false);
+  });
+});
+
 describe('the old answer takes its place in the chronology (US-06 AC14, AC21 item 6)', () => {
   const holds = (file: RoadmapFile, dueAt: string) => {
     expect(reminders(file)).toEqual([dueAt]);
@@ -108,6 +138,17 @@ describe('the old answer takes its place in the chronology (US-06 AC14, AC21 ite
 
   it('a raised answer in the vague row\'s own month: the row counts as newer (AC14), so the answer anchors; holds', () => {
     holds(fileWith([VAGUE], { prostatePsaValue: '6.5', prostateLastDate: '2026-06' }), '2026-09-01');
+  });
+
+  it('a raised answer newer than the vague row: the answer is the PSA read (AC14); "Elevated PSA" and 3 months from it', () => {
+    const file = fileWith([VAGUE], { prostatePsaValue: '6.5', prostateLastDate: '2026-07' });
+    expect(cards(file).map((c) => c.id)).toEqual(['screening-prostate-repeat', 'screening-prostate-elevated']);
+    expect(reminders(file)).toEqual(['2026-10-01']);
+  });
+
+  it('an answer given as a full day on the same day as a deciding row: the row wins (AC14)', () => {
+    ends(fileWith([{ value: 3.0, day: '2026-04-10' }, VAGUE], { prostatePsaValue: '6.5', prostateLastDate: '2026-04-10' }));
+    holds(fileWith([{ value: 4.5, day: '2026-04-10' }, VAGUE], { prostatePsaValue: '3.0', prostateLastDate: '2026-04-10' }), '2026-09-01');
   });
 
   it('a raised answer with no date gives way to any dated row (AC14) and anchors nothing: no rule, as before', () => {

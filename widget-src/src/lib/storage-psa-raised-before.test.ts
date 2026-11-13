@@ -76,6 +76,32 @@ describe('the mirror carries the flag (US-06 AC21 item 6)', () => {
     expect(ends.sent[0]).not.toHaveProperty('raisedBefore');
   });
 
+  it('the mirror\'s flag is final, never re-derived from its one-row slice: raised answer, real 3.0, then "< 5" gives no repeat (adversary F1)', async () => {
+    const got = await chat('elected_not_to', [row('low', 3.0, '2026-04-10'), VAGUE], { prostate_psa_value: '6.5', prostate_last_date: '2026-03' });
+    expect(got.cards).toEqual([]);
+    expect(got.sent[0]).not.toHaveProperty('raisedBefore');
+  });
+
+  it('a mirror written before this change (no flag), raised answer then "< 5": no rule, as on main', async () => {
+    await chat('elected_not_to', [VAGUE], { prostate_psa_value: '6.5', prostate_last_date: '2026-03' });
+    const stored = JSON.parse(localStorage.getItem(MIRROR_KEY)!);
+    const { raisedBefore: _, ...psa } = stored.psa;
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ ...stored, psa }));
+    const context = JSON.parse(buildChatContextJson(loadGuestInputs())!);
+    expect((context.currentSuggestions as Array<{ id: string }>).filter(s => s.id.startsWith('screening-prostate'))).toEqual([]);
+  });
+
+  it('a mirror holding a null and a numeric screening value still builds a chat payload and never throws (Codex R3)', async () => {
+    await chat('elected_not_to', [VAGUE]);
+    const stored = JSON.parse(localStorage.getItem(MIRROR_KEY)!);
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ ...stored, screenings: [...stored.screenings,
+      { id: 'a', screeningKey: 'prostate_psa_value', value: null, updatedAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'b', screeningKey: 'lung_pack_years', value: 12, updatedAt: '2026-01-01T00:00:00.000Z' }] }));
+    const payload = loadGuestInputs();
+    expect(payload?.measurementHistory?.psa).toEqual([{ date: '2026-06-01', value: 5, comparator: '<' }]);
+    expect(() => buildChatContextJson(payload)).not.toThrow();
+  });
+
   it('a mirror flag that is not `true` is no flag', async () => {
     await chat('elected_not_to', [RAISED, VAGUE]);
     const stored = JSON.parse(localStorage.getItem(MIRROR_KEY)!);

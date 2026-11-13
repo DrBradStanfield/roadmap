@@ -87,8 +87,8 @@ export function buildMeasurementHistory(
     if (r.metricType === 'psa') [newestPsa, anchor] = [r, psaGrade(r) === null ? anchor : r];
   }
   // US-06 AC21 item 6: the flag from every usable PSA, before the cap trims the series. A row
-  // that carries it (the chat mirror's, planPsa's over the full record) keeps it.
-  if (newestPsa && raisedBeforeOf(newestPsa, anchor, answers, newestPsa.raisedBefore === true)) out.psa.at(-1)!.raisedBefore = true;
+  // that carries it as true or false (the chat mirror's, planPsa's over the full record) keeps it.
+  if (newestPsa && raisedBeforeOf(newestPsa, anchor, answers, newestPsa.raisedBefore)) out.psa.at(-1)!.raisedBefore = true;
   for (const k of Object.keys(out)) {
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
@@ -103,9 +103,13 @@ export function buildMeasurementHistory(
 const latestDayOnEarth = (now: Date) => new Date(now.getTime() + 14 * 3600_000).toISOString().slice(0, 10);
 
 /** A PSA point the plan can use: in the PSA range, on a real day not after `latestDay`. */
-const usablePsa = (r: { value: number; recordedAt?: string | null }, latestDay: string) => {
+const usablePsa = (r: { value: number; recordedAt?: string | null }, latestDay: string) =>
+  inPsaRange(r.value) && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= latestDay;
+
+/** In the PSA range (0 to 10,000 ng/mL), the one a row and an old answer must both meet. */
+const inPsaRange = (value: number | undefined): value is number => {
   const { min, max } = UNIT_DEFS.psa.validationRange.si;
-  return r.value >= min && r.value <= max && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= latestDay;
+  return value !== undefined && value >= min && value <= max;
 };
 
 /**
@@ -133,19 +137,20 @@ export type PsaAnswers = Pick<ScreeningInputs, 'prostatePsaValue' | 'prostateLas
 /**
  * US-06 AC21 item 6, the one rule for `raisedBefore`: `newest`, the newest usable PSA, is a
  * limit that does not decide against 4.0 ("< 5", "<= 4.0"), and the newest PSA that does
- * decide is 4.0 or above (or the flag was `carried` from the full record). That is `anchor`,
+ * decide is 4.0 or above (or `carried`, the full record's answer, true or false, says so). That is `anchor`,
  * the newest usable deciding row, or the old answer when it is newer by date, by
- * `withPsaMeasurement`'s rule (US-06 AC14): an answer with no date is never newer.
+ * `withPsaMeasurement`'s rule (US-06 AC14): an answer with no date is never newer, and one
+ * outside the PSA range decides nothing, as an unusable row.
  */
 const raisedBeforeOf = (
   newest: { value: number; comparator?: unknown },
   anchor?: { value: number; comparator?: unknown; recordedAt?: string | null },
   answers?: PsaAnswers,
-  carried = false,
+  carried?: boolean,
 ) => {
   const { prostatePsaValue: value, prostateLastDate: day } = answers ?? {};
-  const decider = value !== undefined && day && day > (anchor?.recordedAt ?? '').slice(0, 10) ? { value } : anchor;
-  return psaGrade(newest) === null && (carried || (!!decider && psaGrade(decider)! >= PSA_THRESHOLDS.normal));
+  const decider = inPsaRange(value) && day && day > (anchor?.recordedAt ?? '').slice(0, 10) ? { value } : anchor;
+  return psaGrade(newest) === null && (carried ?? (!!decider && psaGrade(decider)! >= PSA_THRESHOLDS.normal));
 };
 
 /**

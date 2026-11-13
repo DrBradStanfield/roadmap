@@ -110,7 +110,7 @@ export function chatContextOf(
   dated: Array<{ metricType: string; value: number; recordedAt?: string | null; comparator?: Comparator; id?: string; createdAt?: string; raisedBefore?: boolean }>,
 ): ChatContextPayload {
   const screeningRowsSent = screenings.flatMap(r => (r && typeof r === 'object' ? [{ screeningKey: r.screeningKey, value: r.value }] : []));
-  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated, HISTORY_CAP_PER_METRIC, new Date(), screeningsToInputs(screeningRowsSent)), inputs);
+  const measurementHistory = withCreatinineDraft(buildMeasurementHistory(dated, HISTORY_CAP_PER_METRIC, new Date(), screeningsToInputs(screeningRows(screeningRowsSent))), inputs);
   // A limit travels as `limits` alone (US-12 AC20): its field's representative
   // stays home, so a client allow-list that strips `limits` (an older phone)
   // cannot pass it off as an exact value. The builder grades `limits` again.
