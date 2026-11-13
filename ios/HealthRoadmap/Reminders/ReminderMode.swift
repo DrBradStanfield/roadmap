@@ -18,11 +18,12 @@ enum ReminderMode: Equatable {
 
         case (.asking, .tappedOn): (mode, nil)
         case (.asking, .tappedOff): (.off, .refresh)
-        case (.asking(let current), .asked(let attempt, let granted, let epoch, let askedAt)):
+        case (.asking(let current), .asked(let attempt, let granted, let epoch, let askedAt, let lastRead)):
             if attempt != current { (mode, nil) }
             // An erase while iOS answered moved the epoch: the grant was for the record before
-            // it (US-11). A failed read before the ask (nil) cannot tell, so the grant counts.
-            else if granted, let epoch, (askedAt ?? epoch) >= epoch { (.on(epoch: epoch), .refresh) }
+            // it (US-11). A failed read before the ask falls back to the last good read; with
+            // none ever, an erase cannot be told, so the grant does not count.
+            else if granted, let epoch, let before = askedAt ?? lastRead, before >= epoch { (.on(epoch: epoch), .refresh) }
             else { (.off, .refresh) }
         case (.asking, .read): (mode, nil)
 
@@ -40,9 +41,10 @@ enum ReminderEvent: Equatable {
     /// The switch turned on, or "Allow notifications"; the attempt is the scheduler's token.
     case tappedOn(attempt: Int)
     case tappedOff
-    /// iOS's answer to an attempt, with the record's erase epoch read after a grant and the one
-    /// read as the ask began (nil when the record could not be read).
-    case asked(attempt: Int, granted: Bool, epoch: Int?, askedAt: Int?)
+    /// iOS's answer to an attempt, with the record's erase epoch read after a grant, the one
+    /// read as the ask began (nil when the record could not be read), and the last good read's
+    /// before the ask (nil when the record was never read).
+    case asked(attempt: Int, granted: Bool, epoch: Int?, askedAt: Int?, lastRead: Int?)
     /// A refresh read the record: its erase epoch, or nil when it could not be read.
     case read(epoch: Int?)
 }

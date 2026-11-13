@@ -21,6 +21,8 @@ import UserNotifications
 final class ReminderScheduler {
     /// What the engine last said; nil when the record could not be read.
     private(set) var reminders: PhoneReminders?
+    /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
+    private var lastEpoch: Int?
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?
     /// Off, asking iOS, or on under the record's erase epoch at the time (AC12b). Stored, so
@@ -104,9 +106,10 @@ final class ReminderScheduler {
         switch effect {
         case .askPermission(let attempt):
             let askedAt = (try? await compute(firstSeen()))?.eraseEpoch
+            let lastRead = lastEpoch
             let granted = (try? await center.requestPermission()) ?? false
             let epoch = granted ? (try? await compute(firstSeen()))?.eraseEpoch : nil
-            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt)))
+            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt, lastRead: lastRead)))
         case .refresh: await refresh()
         case nil: break
         }
@@ -115,6 +118,7 @@ final class ReminderScheduler {
     private func reschedule() async {
         let next = try? await compute(firstSeen())
         reminders = next
+        if let next { lastEpoch = next.eraseEpoch }
         // An erase since the opt-in ends it. A failed read is not an erase: it only
         // cancels this round, and the next good read schedules again.
         _ = send(.read(epoch: next?.eraseEpoch))

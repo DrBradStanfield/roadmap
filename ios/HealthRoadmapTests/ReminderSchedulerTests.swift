@@ -384,6 +384,60 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
     }
 
+    /// US-25 AC12b, US-11 (lead R1): the read before the ask fails, an erase lands while iOS
+    /// answers, then the grant arrives. The last good read tells the erase: reminders stay off.
+    func testAFailedReadBeforeTheAskStillCatchesAnEraseDuringIt_US25_AC12b() async {
+        let scheduler = scheduler()
+        await scheduler.refresh() // a good read at epoch 0
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh() // the erase's refresh
+        center.releaseAll()
+        _ = await ask.value
+        XCTAssertFalse(scheduler.optedIn, "no reminders for the erased record")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
+    /// US-25 AC12b (lead R1): the read before the ask fails with nothing erased; the last good
+    /// read stands in, so the grant turns reminders on.
+    func testAFailedReadBeforeTheAskFallsBackToTheLastGoodRead_US25_AC12b() async {
+        let scheduler = scheduler()
+        await scheduler.refresh() // a good read at epoch 0
+        center.holdsAnswers = true
+        engineFails = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertTrue(on, "the last good read matches the record after the grant")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b, US-11 (lead R1): with no good read before the ask, an erase during it cannot
+    /// be told, so the grant does not turn reminders on. A later tap, with the record read, does.
+    func testAGrantWithNoGoodReadBeforeTheAskLeavesRemindersOff_US25_AC12b() async {
+        engineFails = true
+        let scheduler = scheduler()
+        center.holdsAnswers = true
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineFails = false
+        center.releaseAll()
+        let on = await ask.value
+        XCTAssertFalse(on, "never read: fail safe")
+        XCTAssertEqual(center.pending.count, 0)
+        center.holdsAnswers = false
+        let again = await scheduler.optIn()
+        XCTAssertTrue(again, "the next tap, with the record read, turns reminders on")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
     /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.
     private func until(_ done: () -> Bool) async {
         for _ in 0..<200 where !done() { await Task.yield() }
