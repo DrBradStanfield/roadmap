@@ -46,13 +46,19 @@ case "$*" in
 esac
 `);
   chmodSync(join(S, 'gh'), 0o755);
-  // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none.
+  // git plays origin/main: `show` prints $MAIN_COPY (main's merge-gated.sh) or fails as git does when main has none,
+  // and prints the real tools/generated-files.json (US-64 AC34). Step 6 (AC34) finds the PR head, a merge base and a
+  // diff that lists no generated file, so it never refuses here.
   writeFileSync(join(S, 'git'), `#!/bin/sh
 printf 'git\\t%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 case "$1" in
   fetch) [ -z "\${GIT_FETCH_FAIL:-}" ] || { echo "fatal: unable to access origin" >&2; exit 128; } ;;
-  show) [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
+  show) [ "$2" = origin/main:tools/generated-files.json ] && { cat "${join(dirname(SCRIPT), 'generated-files.json')}"; exit; }
+    [ "$2" = origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
     cat "$MAIN_COPY" ;;
+  cat-file) ;;
+  merge-base) echo ${'b'.repeat(40)} ;;
+  diff) echo tools/wait-run.sh ;;
   *) echo "unexpected git call: $*" >&2; exit 1 ;;
 esac
 `);
@@ -138,15 +144,19 @@ describe('US-64 AC32 merge-gated.sh', () => {
       writeFileSync(f, `echo "main copy: marker=$MERGE_GATED_FROM_MAIN args=$*" >&2; exit ${code}\n`);
       return f;
     };
-    it('a plain PR never touches git', () => {
-      expect(gate(['123', SHA]).gits).toEqual([]);
+    it("a plain PR never shows main's copy; step 6 fetches main by an explicit refspec and the PR head", () => {
+      const r = gate(['123', SHA]);
+      expect(r.status).toBe(0);
+      expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'cat-file', 'merge-base', 'diff']);
+      // The stub logs `git` before each argument.
+      expect(r.gits[0].filter((_, i) => i % 2)).toEqual(['fetch', '-q', 'origin', '+refs/heads/main:refs/remotes/origin/main', 'refs/pull/123/head']);
     });
     it("fetches main, runs main's copy with the marker and the same arguments, and exits with its code", () => {
       for (const code of [0, 9]) {
         const r = gate(['123', SHA, '--commit-checks'], { files: self }, { MAIN_COPY: fakeMain(code) });
         expect(r.status).toBe(code);
         expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA} --commit-checks`);
-        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show']);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
         expect(r.merges).toEqual([]);
       }
     });
@@ -174,6 +184,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.stderr.match(NOTE)).toHaveLength(1);
       expect(r.merges).toEqual([MERGE_ARGV]);
       expect(gate(['123', SHA], { files: ciPr }).status).toBe(16);
+      expect(gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: 'tools/generated-files.json' }] } }).status).toBe(16);
       expect(gate(['123', SHA]).stderr).not.toMatch(NOTE);
     });
     it('refuses a PR whose file list gh truncated at 100 (17), or 16 if the part it sees holds the script', () => {

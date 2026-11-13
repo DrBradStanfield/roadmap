@@ -39,14 +39,14 @@ function build(now: string, extra: string[] = [], env: Record<string, string> = 
 }
 
 /** The build, with every child process it starts logged (fixtures/spawn-probe.mjs).
- *  `built` is true when it started esbuild or tsx: a refusal must cost no build (TA-C01). */
+ *  A refusal must start no process at all, so it costs no build (TA-C01, PR 1527 review R2). */
 function probedBuild(now: string, extra: string[] = []) {
   const log = join(work, `spawns-${now.replace(/:/g, '')}.log`);
   writeFileSync(log, '');
   const probe = pathToFileURL(join(__dirname, 'fixtures/spawn-probe.mjs')).href;
   const run = build(now, extra, { NODE_OPTIONS: `--import ${probe}`, SPAWN_PROBE_LOG: log });
   const spawned = readFileSync(log, 'utf8');
-  return { run, spawned, built: /esbuild|tsx/.test(spawned) };
+  return { run, spawned };
 }
 
 /** Step 2, the signer, with `key` as ENGINE_SIGNING_KEY. */
@@ -192,7 +192,7 @@ export async function resolve(specifier, context, next) {
     const lower = probedBuild('2026-10-22T07:00:00Z', ['--min-version', '1']);
     expect(lower.run.status).not.toBe(0);
     expect(lower.run.stderr).toContain('The floor only rises');
-    expect(lower.built, lower.spawned).toBe(false);
+    expect(lower.spawned).toBe('');
   }, 120_000);
 
   // PR 1218 (US-72 AC10): an engine without the erasedAt checks must never reach a build
@@ -205,10 +205,10 @@ export async function resolve(specifier, context, next) {
     const carried = probedBuild('2026-10-22T08:00:00Z', ['--floor', committed]);
     expect(carried.run.status).not.toBe(0);
     expect(carried.run.stderr).toContain('--min-app-build 3 is below the floor 11');
-    expect(carried.built, carried.spawned).toBe(false);
+    expect(carried.spawned).toBe('');
     const low = probedBuild('2026-10-22T08:01:00Z', ['--floor', committed, '--min-app-build', '10']);
     expect(low.run.status).not.toBe(0);
-    expect(low.built, low.spawned).toBe(false);
+    expect(low.spawned).toBe('');
     expect(manifestBytes().equals(before)).toBe(true);
 
     const at = build('2026-10-22T08:02:00Z', ['--floor', committed, '--min-app-build', '11']);
@@ -223,30 +223,30 @@ export async function resolve(specifier, context, next) {
     for (const [i, bad] of [{}, { minAppBuild: '11' }, { minAppBuild: 11.5 }, { minAppBuild: null }, { minAppBuild: 0 }].entries()) {
       const file = join(work, `bad-floor-${i}.json`);
       writeFileSync(file, JSON.stringify(bad));
-      const { run, built, spawned } = probedBuild(`2026-10-22T09:0${i}:00Z`, ['--floor', file, '--min-app-build', '11']);
+      const { run, spawned } = probedBuild(`2026-10-22T09:0${i}:00Z`, ['--floor', file, '--min-app-build', '11']);
       expect(run.status, JSON.stringify(bad)).not.toBe(0);
       expect(run.stderr).toContain('must hold minAppBuild as a whole number');
-      expect(built, spawned).toBe(false);
+      expect(spawned).toBe('');
       expect(manifestBytes().equals(before)).toBe(true);
     }
   }, 480_000);
 
-  // TA-C01: the option checks run before the build, so a bad option costs no esbuild or tsx.
+  // TA-C01: the option checks run before the build, so a bad option starts no process at all.
   it('refuses a --min-version above this release, before building', () => {
     const before = manifestBytes();
-    const { run, built, spawned } = probedBuild('2026-10-22T10:00:00Z', ['--min-version', '999999999999']);
+    const { run, spawned } = probedBuild('2026-10-22T10:00:00Z', ['--min-version', '999999999999']);
     expect(run.status).not.toBe(0);
     expect(run.stderr).toContain('--min-version must be a version at or below 202610221000');
-    expect(built, spawned).toBe(false);
+    expect(spawned).toBe('');
     expect(manifestBytes().equals(before)).toBe(true);
   }, 120_000);
 
   it('refuses a --min-app-build below 1, before building', () => {
     const before = manifestBytes();
-    const { run, built, spawned } = probedBuild('2026-10-22T10:01:00Z', ['--min-app-build', '0']);
+    const { run, spawned } = probedBuild('2026-10-22T10:01:00Z', ['--min-app-build', '0']);
     expect(run.status).not.toBe(0);
     expect(run.stderr).toContain('--min-app-build must be a whole number of at least 1');
-    expect(built, spawned).toBe(false);
+    expect(spawned).toBe('');
     expect(manifestBytes().equals(before)).toBe(true);
   }, 120_000);
 

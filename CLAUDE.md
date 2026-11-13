@@ -174,9 +174,9 @@ test. Miss a step = the value silently fails to round-trip.
 
 - **Every change: its own worktree, `claude/` branch and PR (HARD, Brad 2026-10-31)**: `sh tools/worktree-new.sh <name>`,
   EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
-  Merge gate = CI green on the PR (no full local `test:all`); merge main in only if it changed a file you changed
-  (PR 150); reviews by class; citation numbering. Merge only `gh pr merge <n> --merge --match-head-commit <sha>`
-  (or auto-ship), then CI Deploy. Contributor PRs: Brad's sessions merge them by hand in batches, `hold` on.
+  Merge gate per PR = CI green on its head sha, one review by class, citation numbering, the owner's word on that
+  sha; merge main in only as docs/git-workflow.md step 4 says (PR 150). Only `gh pr merge <n> --merge --match-head-commit <sha>`
+  (or auto-ship). Deploy, simulator run and live checks wait for the checkpoint. Contributor PRs: Brad's sessions, batches, `hold` on.
   Live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted
@@ -201,7 +201,7 @@ test. Miss a step = the value silently fails to round-trip.
 - **Chatbot regressions:** every real miss becomes a router or tool-use fixture (files, command: docs/reference.md).
 - **Verify beyond tests:** UI/CSS/Liquid via Chrome DevTools MCP AND real
   WebKit (`tools/webkit-verify.mjs` — Chrome mobile emulation is Blink and
-  misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/gotchas.md.
+  misses iOS bugs; theme CSS only reproduces LIVE), live at the checkpoint (docs/git-workflow.md). Traps: docs/gotchas.md.
 - **If an approach is failing, stop and re-plan.**
 - **Every gotcha gets archived, same commit as the fix** — symptom / root
   cause / fix / evidence commit, in the docs/gotchas.md archive. Promote to
@@ -216,7 +216,7 @@ test. Miss a step = the value silently fails to round-trip.
   a fix fails twice, a review still refutes the fix after the re-check, or the main session is unsure of a
   clinical, merge/FHIR or security call. Brief it with the evidence (failing output, diff, file paths), not your
   theory; it reads the code itself and returns a diagnosis and a plan, which Opus carries out. Say in one line
-  why you called it. Review rounds capped: one full review + one fix-scoped re-check, then `helper`, then Brad
+  why you called it. Review rounds capped: one round by class + one fix-scoped re-check, then `helper`, then Brad
   (docs/review-format.md). Full 1M context kept (Brad 2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn agents by name, never with a per-call
   `model`; never set `CLAUDE_CODE_SUBAGENT_MODEL`. The newest Haiku is allowed (2026-10-12; first use: customer-service
   email triage). Loops: docs/loops/LOOP.md.

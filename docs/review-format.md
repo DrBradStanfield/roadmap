@@ -108,9 +108,14 @@ The author records one status per finding:
 
 A disputed BLOCKING finding stays blocking until the reviewer withdraws it,
 a verified fix lands, or Brad resolves it. Disputed optional findings need no
-further round. Review rounds are capped (Brad, 2026-10-19, usage audit): one full review, then at most ONE
-re-check scoped to the fix diff and the findings it answers. Anything still unresolved after the
-re-check goes to Brad with both positions; never a third round or a fresh full re-review, with the evidence.
+further round. **One round, by class** (Brad 2026-11-13; the class table: docs/git-workflow.md § Reviews):
+clinical, record save/merge/FHIR, security, privacy and agent-contract changes get a fresh adversary and Codex
+together, once; visible UI adds a design review from real-WebKit screenshots; tooling gets one adversary;
+byte-pure splits and docs get none, a byte-identity proof instead. Only findings that risk data loss,
+security, privacy or clinical correctness are fixed before merge; the rest become leads in the untangle
+ledger (`docs/untangle/`). A fix for such a finding gets at most ONE re-check scoped to the fix diff and the
+findings it answers (Brad, 2026-10-19). Anything still unresolved after the re-check goes to Brad with both
+positions; never a third round or a fresh full re-review, with the evidence.
 
 **Value-interpretation paths** (Brad 2026-11-10): code that decides what a typed or stored number means (its
 unit, conversion, rounding, or which row and day it lands on). There, review rounds continue while each round

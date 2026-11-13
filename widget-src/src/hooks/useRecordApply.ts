@@ -14,7 +14,7 @@ import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
 
 /** Why the page re-reads the record: its own upload, another writer's change (US-34), a save the store refused,
- *  or the page's own save (the first-time fields', a correction, a moved test). */
+ *  or the page's own save (the weight box's, a correction, a moved test). */
 export type ReadReason = 'upload' | 'remote' | 'refused' | 'left' | 'own-save'; // left: a refused save of a record no longer shown
 
 /** What one re-read does. `record`: the whole record, through the relay (`arrive` may hold it, `reread` ends a hold);

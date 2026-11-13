@@ -608,3 +608,40 @@ describe('US-62 AC10 review re-check: Back on another tab', () => {
     expect(view.container.querySelector('.mh-page-host .md-page')).not.toBeNull();
   });
 });
+
+// Codex R2 (H71): with the first-time box gone, the Blood Pressure page's form is where a pressure is typed
+// first, and its systolic never moved on. It now follows the grid's pressure cell (bpSysAdvance, useAutoAdvance).
+describe('US-02 AC6, AC6c: the Blood Pressure page\'s systolic moves on to the diastolic', () => {
+  async function systolic() {
+    await seed();
+    const view = await renderTool();
+    fireEvent.click(row(view, 'Blood Pressure'));
+    const page = await waitFor(() => { const p = view.container.querySelector<HTMLElement>('.mh-page-host .md-page'); expect(p).not.toBeNull(); return p!; });
+    const sys = within(page).getByLabelText('Systolic (top number)');
+    act(() => sys.focus());
+    return { sys, dia: within(page).getByLabelText('Diastolic (bottom number)') };
+  }
+  const pause = () => act(async () => { await new Promise(r => setTimeout(r, 900)); });
+
+  it('"120" moves at once', async () => {
+    const { sys, dia } = await systolic();
+    fireEvent.change(sys, { target: { value: '120' } });
+    expect(document.activeElement).toBe(dia);
+  });
+
+  it('"75" moves after the pause', async () => {
+    const { sys, dia } = await systolic();
+    fireEvent.change(sys, { target: { value: '75' } });
+    expect(document.activeElement).toBe(sys);
+    await pause();
+    expect(document.activeElement).toBe(dia);
+  });
+
+  it('"75" edited to "7" during the pause cancels it: no move', async () => {
+    const { sys } = await systolic();
+    fireEvent.change(sys, { target: { value: '75' } });
+    fireEvent.change(sys, { target: { value: '7' } });
+    await pause();
+    expect(document.activeElement).toBe(sys);
+  });
+});
