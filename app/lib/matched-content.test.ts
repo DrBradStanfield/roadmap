@@ -311,6 +311,32 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     vi.resetModules();
   });
 
+  // The memo is used, not just correct: the same raw text builds a master's
+  // reduced forms once (two reducedMaster calls), and changed text rebuilds
+  // (review R1 on PR 1526).
+  it('a repeat input reuses its forms; changed text rebuilds', async () => {
+    vi.resetModules();
+    let calls = 0;
+    vi.doMock('./youtube-context', async importOriginal => {
+      const real = await importOriginal<typeof import('./youtube-context')>();
+      return { ...real, reducedMaster: (...a: Parameters<typeof real.reducedMaster>) => { calls++; return real.reducedMaster(...a); } };
+    });
+    try {
+      const { contentForms, loadBlogArticle } = await import('./matched-content');
+      const raw = loadBlogArticle(K)!;
+      const first = contentForms(K, raw);
+      expect(calls).toBe(2);
+      const again = contentForms(K, raw);
+      expect(calls).toBe(2);
+      expect(again).toBe(first);
+      contentForms(K, `${raw}\n\nEdited for the test.\n`);
+      expect(calls).toBe(4);
+    } finally {
+      vi.doUnmock('./youtube-context');
+      vi.resetModules();
+    }
+  });
+
   it('a reduced master logs what it dropped once, and a whole one logs nothing (review S2)', async () => {
     const loadMatchedContent = await loaderWith((handle, raw) => (handle === K ? raw.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`) : bigD(handle, raw)));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
