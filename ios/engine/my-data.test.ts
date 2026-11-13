@@ -174,8 +174,8 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     expect(shown.get('ldl')?.target).toBe('Optimal <1.4');
     expect(shown.get('hba1c')?.target).toBe('Normal <39');
     expect(shown.get('blood_pressure')?.target).toBe('Target <120/80');
-    expect(shown.get('weight')?.target).toBe('Target 78.0');
-    expect(shown.get('waist')?.target).toBe('Target <90');
+    expect(shown.get('weight')?.target).toBe('Target 78.0 kg');
+    expect(shown.get('waist')?.target).toBe('Target <90 cm');
     expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')?.target).toBe('Optimal <55');
   });
 
@@ -183,10 +183,10 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
     expect(minor.get('ldl')?.target).toBeNull();
     expect(minor.get('blood_pressure')?.target).toBeNull();
-    expect(minor.get('waist')?.target).toBe('Target <90');
+    expect(minor.get('waist')?.target).toBe('Target <90 cm');
     const noHeight = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970 }), NOW));
     expect(noHeight.get('weight')?.target).toBeNull();
-    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4');
+    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4 mmol/L');
   });
 
   const idOf = (file: RoadmapFile, metric: string, day: string) =>
