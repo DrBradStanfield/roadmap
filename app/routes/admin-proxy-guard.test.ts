@@ -63,8 +63,6 @@ const ENTRY_POINTS: [string, string, Handler | undefined, 'GET' | 'POST'][] = [
 ];
 
 describe.each(ENTRY_POINTS)('%s', (_name, url, handler, method) => {
-  it('exists', () => { expect(typeof handler).toBe('function'); });
-
   it('a signed proxy request gets a 404 with no Location, before authenticate.admin', async () => {
     const res = await call(handler!, `${url}${SIGNED}`, method);
     expect(res.status).toBe(404);

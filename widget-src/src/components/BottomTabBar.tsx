@@ -1,4 +1,4 @@
-import { useLayoutEffect, type KeyboardEvent, type ReactNode } from 'react';
+import { useLayoutEffect, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { CHAT_BUBBLES } from './icons';
 
 export type TabId = 'health' | 'chat' | 'account';
@@ -34,10 +34,12 @@ export const panelDomId = (prefix: string, tab: TabId) => `${prefix}-panel-${tab
  * fixed to the viewport: a sticky child cannot leave its container, so it never
  * floats over the page around the widget.
  */
-export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
+export function BottomTabBar({ activeTab, onTabChange, idPrefix, barRef }: {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   idPrefix: string;
+  /** The bar, which a tab switch measures (hooks/useTabs). */
+  barRef?: RefObject<HTMLDivElement>;
 }) {
   // US-62 AC35c: the page knows the tab, so the hero above the widget tops My health only. Before
   // the tab's scroll restore (a parent's layout effect), so it measures the page as it will stand.
@@ -56,7 +58,7 @@ export function BottomTabBar({ activeTab, onTabChange, idPrefix }: {
     document.getElementById(tabDomId(idPrefix, tab))?.focus();
   };
   return (
-    <div className="hr-tabbar no-print" role="tablist" aria-label="Sections" onKeyDown={onKeyDown}>
+    <div ref={barRef} className="hr-tabbar no-print" role="tablist" aria-label="Sections" onKeyDown={onKeyDown}>
       {TABS.map(({ id, label, icon }) => (
         <button
           key={id}

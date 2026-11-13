@@ -52,6 +52,7 @@ import {
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
+import { ageOnDay, calculateEGFR } from './calculations';
 import { computePlan, renderJson, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { scrubText } from './sentry-scrub';
@@ -534,7 +535,10 @@ describe('US-32 — get_plan', () => {
     const parsed = JSON.parse(ok(getPlan(file, NOW)).text);
 
     expect(parsed.missingInputs).not.toContain('creatinine');
-    expect(parsed.profile.eGFR).not.toBeNull();
+    // The eGFR the plan works out from that creatinine, at the age on its day.
+    const expected = Math.round(calculateEGFR(78, ageOnDay(1971, undefined, '2026-07-14'), 'male'));
+    expect(Number.isFinite(parsed.profile.eGFR)).toBe(true);
+    expect(parsed.profile.eGFR).toBe(expected);
   });
 
   it('US-32 AC35: states the SI unit of every input field, keyed the way inputs are', () => {

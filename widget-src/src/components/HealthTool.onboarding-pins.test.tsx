@@ -12,7 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
-import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { localDay } from '@roadmap/health-core/merge';
@@ -412,10 +412,11 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await open();
     type(q(view, '#weightKg'), '25'); // ends the onboarding; may become 250: the wait starts
     cross(); // the focused box unmounts with no blur
-    await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
+    // Built again, the whole form has no box beside the height: the weight is the matrix's (H71).
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     await settle(900);
     expect(landed()).toBe(false);
-    type(q(view, '#weightKg'), '82');
+    type(matrixWeight(view), '82');
     await settle(300);
     expect(landed()).toBe(false);
   });
@@ -675,6 +676,20 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     expect(landed()).toBe(false);
   });
 
+  // Codex R1 (H71): the removed weight field was the only caller of the onboarding's answer for this record.
+  it('US-62 AC13, AC31 (Codex R1): the weight added on the Weight value page, the last answer, sends the completion and shows the card', async () => {
+    const view = await matrixWeightLast();
+    fireEvent.click(Array.from(view.container.querySelectorAll<HTMLElement>('.md-row')).find((r) => r.querySelector('.md-row-label')?.textContent === 'Weight')!);
+    const page = await waitFor(() => { const p = q(view, '.mh-page-host .md-page'); expect(p).not.toBeNull(); return p as HTMLElement; });
+    fireEvent.change(within(page).getByLabelText(/^Value/), { target: { value: '80' } });
+    fireEvent.click(within(page).getByRole('button', { name: 'Add' }));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]), { timeout: 3000 });
+    await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+    expect(calls('onboarding_done')).toHaveLength(1);
+    fireEvent.click(within(page).getByRole('button', { name: /Back/ }));
+    await waitFor(() => expect(q(view, '.mh-ready')).toBeTruthy());
+  });
+
   it('US-62 AC25b (R5): the matrix weight\'s rest heard before the commit that ends the onboarding still lands', async () => {
     const view = await matrixWeightLast();
     const frames = heldFrames();
@@ -832,5 +847,61 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
     });
+  });
+});
+
+// R1 (owner's ruling, option a; US-16 AC1): a chat waist or pressure that came before the whole form waited
+// in the form's inputs, where nothing showed it, and a later weight blur saved it under today. When the whole
+// form opens it moves into the vitals grid, shown and flashed, unsaved until the person confirms it.
+describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form moves into the grid when it opens', () => {
+  const vitalsRow = (view: RenderResult, label: string) => Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+    .find((r) => r.querySelector('.bt-name-label')?.textContent === label);
+  const rowsOn = async (metric: string) => (await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
+
+  it.each([
+    ['a waist', [{ field: 'waistCm', displayValue: 91 }], 'Waist Circumference', ['91'], ['waist']],
+    ['a blood pressure pair', [{ field: 'systolicBp', displayValue: 120 }, { field: 'diastolicBp', displayValue: 80 }], 'Blood Pressure', ['120', '80'], ['systolic_bp', 'diastolic_bp']],
+  ])('%s from the chat at stage 2: the open form shows it in the grid, unsaved, and a weight blur saves none of it', async (_what, edits, label, shownValues, metrics) => {
+    const view = await open();
+    await measurements(view); // stage 2: the sex question
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!(edits.map((e) => ({ kind: 'field', ...e, unitSystem: 'si', date: null }) as ProposedEdit)));
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view, '5', '1975');
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const cells = () => Array.from(vitalsRow(view, label)!.querySelectorAll<HTMLInputElement>('.bt-cell-draft input'));
+    await waitFor(() => expect(cells().map((c) => c.value)).toEqual(shownValues));
+    expect(cells().some((c) => c.classList.contains('bt-input-active'))).toBe(true); // flashed, as a chat edit is
+    type(q(view, '#weightKg'), '81');
+    leave(q(view, '#weightKg'));
+    await waitFor(async () => expect(await activeWeights()).toContainEqual([81, localToday()]), { timeout: 2000 });
+    await settle(300);
+    for (const metric of metrics) expect(await rowsOn(metric)).toEqual([]);
+    expect(cells().map((c) => c.value)).toEqual(shownValues); // still waiting for the person's Save
+  });
+
+  // D3 (owner's ruling, H71): the hand-over moves the value but never the focus. On a phone the guest's last
+  // answer lands on "Your plan is ready."; the grid's flash and the "Unsaved values: review" cue carry the value.
+  it('D3: on a phone, the last answer opens the form with a chat waist waiting: the focus stays on the landing', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    const view = await open();
+    await measurements(view);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50); // the sex answer's reveal focuses the month, as a person's next tap would follow it
+    birth(view, '5', '1975'); // the last answer
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const cell = () => vitalsRow(view, 'Waist Circumference')!.querySelector<HTMLInputElement>('.bt-cell-draft input')!;
+    await waitFor(() => expect(cell().value).toBe('91'));
+    const focus = () => (document.activeElement === cell() ? 'the grid cell'
+      : document.activeElement?.matches('.mh-ready-title') ? 'the landing' : document.activeElement?.tagName);
+    await waitFor(() => expect(focus()).toBe('the landing'));
+    await settle(300);
+    expect(focus()).toBe('the landing');
+    expect(view.getByRole('button', { name: 'Unsaved values: review' })).toBeTruthy(); // the table stays shut; the cue says so
+    expect(await rowsOn('waist')).toEqual([]); // unsaved
   });
 });

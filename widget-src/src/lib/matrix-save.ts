@@ -1,5 +1,5 @@
 // The one routing rule for typed values (US-03 AC2, AC3), stated here and
-// nowhere else. The first-time vitals fields and both matrices
+// nowhere else. The onboarding's weight box and both matrices
 // (BloodTestTimeline, StartingInfoVitals) save through HealthTool, which
 // routes every cell here against the store's own rows, read as it writes:
 //   - each cell names the row it expects under each slot: the one the page

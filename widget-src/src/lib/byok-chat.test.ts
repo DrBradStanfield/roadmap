@@ -65,6 +65,9 @@ async function contextSent(snapshot: Record<string, unknown> | null): Promise<Ch
   return system.includes(marker) ? JSON.parse(system.slice(system.indexOf(marker) + marker.length)) : null;
 }
 
+// The Sentry mock is file-level: clear it so no test sees an earlier test's reports.
+beforeEach(() => vi.mocked(Sentry.captureException).mockClear());
+
 describe('BYOK chat context — per-field sanitizing', () => {
   beforeEach(() => {
     const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
@@ -399,7 +402,6 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
       recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal'))),
       eraseMarks: () => [],
     };
-    vi.mocked(Sentry.captureException).mockClear();
   });
 
   it('returns the answer, and the report names no chat text', async () => {

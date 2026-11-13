@@ -46,8 +46,7 @@ export interface FormSlots {
   planReady: boolean;
   pageOpen: boolean;
   renderPage: (tiles: StatTile[]) => ReactNode;
-  rows: { ctx: RowContext; open: (s: ValueSubject, from?: Element) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; vitalsAsRows: boolean; withoutWeight: boolean };
-  legacyVitals: ReactNode;
+  rows: { ctx: RowContext; open: (s: ValueSubject, from?: Element) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; withoutWeight: boolean };
   vitalsCue: ReactNode;
   bloodCue: ReactNode;
   tableShown: boolean;
@@ -99,6 +98,9 @@ export interface MyHealthProps {
   setShowUploadModal?: (show: boolean) => void;
   /** US-62 AC31: set while "Your plan is ready." shows; its Got it calls it. */
   onPlanReadyDismiss?: () => void;
+  /** The page's title and "Your plan is ready."'s heading: HealthTool moves the focus to them (US-62 AC24, AC25, AC31). */
+  titleRef?: RefObject<HTMLHeadingElement>;
+  readyTitleRef?: RefObject<HTMLHeadingElement>;
 }
 
 /** A topic's parts beyond its cards: rows, what follows (its medicines), its heading's action. */
@@ -118,13 +120,13 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
 });
 
 export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
-  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss }: MyHealthProps) {
+  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
   openRef.current = form.rows.open;
   const onOpen = useCallback((s: ValueSubject, from?: Element) => openRef.current(s, from), []);
 
-  const { ctx, vitals, blood, labs: labValues, vitalsAsRows, withoutWeight } = form.rows;
+  const { ctx, vitals, blood, labs: labValues, withoutWeight } = form.rows;
   // Rows (US-62 AC21), worked out only when their data changes (one long page, 40+ labs).
   const rows = useMemo(() => {
     const tileOf = (key: string) => tiles.find(t => t.key === key);
@@ -134,16 +136,16 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const creatinine = row('creatinine');
     const total = row('total_cholesterol');
     return {
-      weight: [vitalsAsRows ? whtrRow(series.whtr, tileOf('whtr')) ?? coreRow('waist', vitals, ctx) : null,
-        vitalsAsRows && !withoutWeight ? weightRow(vitals, ctx, tileOf('bmi')) : null, row('hba1c')],
-      pressure: [vitalsAsRows ? pressureRow(vitals, ctx) : null, creatinine, egfr],
+      weight: [whtrRow(series.whtr, tileOf('whtr')) ?? coreRow('waist', vitals, ctx),
+        !withoutWeight ? weightRow(vitals, ctx, tileOf('bmi')) : null, row('hba1c')],
+      pressure: [pressureRow(vitals, ctx), creatinine, egfr],
       lipids: (['apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const)
         .flatMap(m => (m === 'total_cholesterol' ? [total] : m === 'hdl' ? [row('hdl'), nonHdlRow(tileOf('nonHdl'), total)] : [row(m)])),
       // The lab's own eGFR row leaves Blood tests while the eGFR row stands for it (US-73 AC7).
       blood: [...BLOOD_ROWS.flatMap(m => (m === 'creatinine' ? [creatinine, egfr] : [row(m)])),
         ...(egfr ? labs.filter(r => !isLabEgfr(r.subject)) : labs)],
     };
-  }, [tiles, blood, vitals, labValues, ctx, series, egfrCurrent, vitalsAsRows, withoutWeight]);
+  }, [tiles, blood, vitals, labValues, ctx, series, egfrCurrent, withoutWeight]);
 
   const placedMedicines = useMemo(() => new Map(plan.layout.medicines.map(m => [m.key, m.suggestions])), [plan.layout]);
   const placedScreenings = useMemo(() => new Map(plan.layout.screenings.map(g => [g.group, g.suggestions])), [plan.layout]);
@@ -167,7 +169,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const screening = form.screening(place);
     const bone = form.boneDensity(place);
     return {
-      weight: { rows: <>{form.legacyVitals}<RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/></>, after: form.weightMedications(place) },
+      weight: { rows: <RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/>, after: form.weightMedications(place) },
       bloodPressure: { rows: <RowsCard rows={rows.pressure} onOpen={onOpen}/> },
       cholesterol: { rows: <RowsCard rows={rows.lipids} onOpen={onOpen}/>, after: form.lipidMedications(place) },
       screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
@@ -250,7 +252,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   return (
     <div ref={form.panelRef} className={`health-input-panel mh-page${form.pageOpen || settingsOpen ? ' md-page-open' : ''}`}>
       <div className="mh-header">
-        <h2 className="mh-title" tabIndex={-1}>My health</h2>
+        <h2 ref={titleRef} className="mh-title" tabIndex={-1}>My health</h2>
         {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
         {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
@@ -261,7 +263,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       <div className="mh-page-host" hidden={settingsOpen}>{form.renderPage(tiles)}</div>
       {form.messages}
       {/* Where Starting info was, once the onboarding ends here (US-62 AC31). */}
-      {onPlanReadyDismiss && <PlanReadyCard onDismiss={onPlanReadyDismiss} settled={form.aboutYouLow}/>}
+      {onPlanReadyDismiss && <PlanReadyCard onDismiss={onPlanReadyDismiss} settled={form.aboutYouLow} titleRef={readyTitleRef}/>}
       {/* The onboarding, as before, until About you goes low (US-62 AC25); then About you sits in Settings. */}
       {!form.aboutYouLow && form.aboutCard}
       {/* Under the onboarding, the plan's tiles as they come (US-62 AC13, AC25); with no plan yet, what it will look like. */}
@@ -303,7 +305,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
 
 /** "Your plan is ready." (US-62 AC31, Brad's words): shown once the onboarding ends in this tab,
  *  until Got it. Once Starting info has gone (`settled`), it scrolls only if it is out of view. */
-function PlanReadyCard({ onDismiss, settled }: { onDismiss: () => void; settled: boolean }) {
+function PlanReadyCard({ onDismiss, settled, titleRef }: { onDismiss: () => void; settled: boolean; titleRef?: RefObject<HTMLHeadingElement> }) {
   const ref = useRef<HTMLElement>(null);
   // Counted once it is on screen: never in a hidden tab (a phone on Chat), never scrolled off.
   useEffect(() => {
@@ -321,7 +323,7 @@ function PlanReadyCard({ onDismiss, settled }: { onDismiss: () => void; settled:
   }, [settled]);
   return (
     <section ref={ref} className="section-card mh-ready" aria-labelledby="mh-ready-title">
-      <h3 id="mh-ready-title" className="mh-ready-title" tabIndex={-1}>Your plan is ready.</h3>
+      <h3 ref={titleRef} id="mh-ready-title" className="mh-ready-title" tabIndex={-1}>Your plan is ready.</h3>
       <p className="mh-ready-text">
         Each section below shows where you stand and one next step to discuss with your doctor. Add more numbers,
         like blood pressure or blood tests, and the suggestions get more specific.

@@ -339,7 +339,7 @@ export const DOORS = {
     returns: "PhoneReminders JSON",
     optionalAt: 3,
     optionalArgs: [['firstSeenJson', maybeText]],
-    optionalReturns: "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin>, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged.",
+    optionalReturns: "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin|repeat>:<due day>, so a moved due date starts a new reminder, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged.",
   },
   screenJson: {
     kind: 'sync',

@@ -132,7 +132,8 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
   // masters their room too (the re-check: 197 of 1,140 pairs with one between,
   // 42 with it first, dropped a master whole).
   const LITHIUM = 'lithium-benefits-forms-dosing-and-side-effects';
-  // US-50 masters-new-7 (2026-10-25): probiotics became a master; masters-new-13 (2026-10-26): weight loss did too; masters-resource-1 (2026-11-10): beetroot did too, so the largest non-master post (about 36K) stands in.
+  // A large non-master post (about 36K), which the tests need. When it becomes a
+  // master, swap in the largest non-master left.
   const BIG_POST = 'breaking-reduce-dementia-risk-45-percent';
   const warfarin = (content: string | null) => {
     expect(content).toMatch(/^#+ Warfarin and Vitamin K Antagonists$/m);
@@ -165,7 +166,7 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
     expect(content!.length).toBeLessThanOrEqual(MAX_BLOG_CHARS);
   });
 
-  // US-50 masters-new-1 (2026-10-23): vitamin A became a master; masters-new-17 (2026-10-26): mangosteen did too; masters-resource-1 (2026-11-10): l-citrulline did too, so the big post stands in.
+  // The post between the masters must be a non-master (the first assertion checks), so it has no smaller form.
   it('[vitamin K, big post, lithium]: a master shrinks so the post after it loads too (review S1)', async () => {
     const A = BIG_POST;
     expect(index.find(e => e.handle === A) && isMaster(index.find(e => e.handle === A)!)).toBe(false);
@@ -289,7 +290,52 @@ describe('a master over the cap loads reduced, safety kept (US-50 AC13)', () => 
         expect(content!.length, order.join(' + ')).toBeLessThanOrEqual(MAX_BLOG_CHARS);
       }
     }
-  }, 300_000); // 3 x masters² loads: ~40 s alone at 48 masters, grows with each batch
+  }, 300_000); // 3 x 2 x masters² loads; the count grows with each masters batch
+
+  // contentForms builds each entry's forms once; a changed article must never
+  // get the old forms back. Within one module loadBlogArticle's cache never
+  // changes; a fresh module (a reload) reads the file again.
+  it('a changed article gets new forms, never the old ones', async () => {
+    const { contentForms, loadBlogArticle } = await import('./matched-content');
+    const raw = loadBlogArticle(K)!;
+    const before = contentForms(K, raw);
+    const edited = raw.replace(/^(## Current view.*)$/m, '$1\n\nEdited for the test.');
+    expect(edited).not.toBe(raw);
+    const after = contentForms(K, edited);
+    expect(after).not.toEqual(before);
+    for (const form of after) expect(form).toContain('Edited for the test.');
+    expect(contentForms(K, raw)).toEqual(before);
+    // A reload that reads a changed file serves the new text.
+    const reloaded = await loaderWith((handle, r) => (handle === K ? r.replace(/^(## Current view.*)$/m, '$1\n\nReloaded for the test.') : r));
+    expect(reloaded([K]).content).toContain('Reloaded for the test.');
+    vi.resetModules();
+  });
+
+  // The memo is used, not just correct: the same raw text builds a master's
+  // reduced forms once (two reducedMaster calls), and changed text rebuilds
+  // (review R1 on PR 1526).
+  it('a repeat input reuses its forms; changed text rebuilds', async () => {
+    vi.resetModules();
+    let calls = 0;
+    vi.doMock('./youtube-context', async importOriginal => {
+      const real = await importOriginal<typeof import('./youtube-context')>();
+      return { ...real, reducedMaster: (...a: Parameters<typeof real.reducedMaster>) => { calls++; return real.reducedMaster(...a); } };
+    });
+    try {
+      const { contentForms, loadBlogArticle } = await import('./matched-content');
+      const raw = loadBlogArticle(K)!;
+      const first = contentForms(K, raw);
+      expect(calls).toBe(2);
+      const again = contentForms(K, raw);
+      expect(calls).toBe(2);
+      expect(again).toBe(first);
+      contentForms(K, `${raw}\n\nEdited for the test.\n`);
+      expect(calls).toBe(4);
+    } finally {
+      vi.doUnmock('./youtube-context');
+      vi.resetModules();
+    }
+  });
 
   it('a reduced master logs what it dropped once, and a whole one logs nothing (review S2)', async () => {
     const loadMatchedContent = await loaderWith((handle, raw) => (handle === K ? raw.replace(/^(## Current view.*)$/m, `$1\n\n${'v'.repeat(6_000)}`) : bigD(handle, raw)));

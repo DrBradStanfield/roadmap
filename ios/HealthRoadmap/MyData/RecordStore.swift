@@ -42,6 +42,9 @@ final class RecordStore {
     /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
     /// so a view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
+    /// The erase count the drawn screen shows: behind `erasures` when an erase's draw failed, so
+    /// its rows predate the erase (a failed metric read's words, S25).
+    private(set) var screenErasures = 0
     /// Per-test units (US-25 AC17e): this phone's preference, as the web's are its browser's.
     private(set) var unitChoices = UnitChoices.saved() { didSet { if unitChoices != oldValue { revision += 1; forgetCharts() } } }
     /// The person's own saves (US-57 AC9): a sheet's edit or a lab report's values that
@@ -59,11 +62,14 @@ final class RecordStore {
     let engine: HealthEngine  // not private: RecordStore+Documents.swift reads it
 
     /// What the screen showed when an edit began: the erase it was at (nil on the
-    /// phone's file) and its units. A sheet pins it as it opens (`pinsRecord`),
-    /// so a value typed there is checked against the record the user saw, not
-    /// one a sync brought in since (US-25 AC11; review R1, R2).
+    /// phone's file), its eraseEpoch, this phone's erase count and its units. A sheet
+    /// pins it as it opens (`pinsRecord`), so a value typed there is checked against
+    /// the record the user saw, not one a sync or an erase brought in since (US-25
+    /// AC11, AC11g; review R1, R2).
     struct Screen: Equatable {
         let erase: String?
+        let epoch: Int?
+        let erasures: Int
         let units: String
         /// The per-test units it showed (US-25 AC17e): a typed value is read in them.
         let choices: String
@@ -72,7 +78,7 @@ final class RecordStore {
 
         /// The same screen once its sheet has chosen Lp(a)'s unit (US-25 AC20).
         func showing(lpaUnit: String) -> Screen {
-            Screen(erase: erase, units: units, choices: choices, lpaUnit: lpaUnit)
+            Screen(erase: erase, epoch: epoch, erasures: erasures, units: units, choices: choices, lpaUnit: lpaUnit)
         }
     }
     private(set) var pinned: Screen?  // read by save all's stop rule (US-52 AC8b)
@@ -96,7 +102,7 @@ final class RecordStore {
 
     struct KeptHistory {
         let stamp: Stamp
-        let chart: ChartData?
+        let chart: ChartData
     }
     var histories: [String: KeptHistory] = [:]
     /// A history the engine is reading, for the stamp it was asked at.
@@ -163,6 +169,7 @@ final class RecordStore {
     func display(_ drawn: HealthEngine.Drawn?) {
         self.drawn = drawn
         draws += 1
+        screenErasures = erasures
         if drawn?.plan.planned == true { engine.trial?.confirm() }
     }
 
@@ -295,9 +302,10 @@ final class RecordStore {
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
                 let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.source.link?.pending, deviceId: self.deviceId)
-                self.land(.phoneWritten, record: result.record, drawn: shown)
+                let drawnErase = self.land(.phoneWritten, record: result.record, drawn: shown) == .show
                 self.publish(UnitChoices())
                 self.erasures += 1
+                if drawnErase { self.screenErasures = self.erasures }
                 self.onEdit?()
                 return .erased(chatErased: chatErased)
             } catch {
@@ -311,8 +319,9 @@ final class RecordStore {
     func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain {
             // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
-            await self.draw(view, in: UnitChoices())
+            let drawnErase = await self.draw(view, in: UnitChoices())
             self.erasures += 1
+            if drawnErase { self.screenErasures = self.erasures }
         }
     }
 
@@ -363,11 +372,12 @@ final class RecordStore {
     static let recordChanged = "Your record changed while this was open, so this was not saved. Close this and enter the value again."
 
     func applyInTurn(_ edit: RecordEdit, as seen: Screen) async -> ApplyResult {
-        // An erase taken in, or sync turned on or off, since the sheet opened.
+        // An erase taken in or made here, or sync turned on or off, since the sheet opened.
         // The sheet keeps refusing until it closes: it still shows the old record,
         // its unit and the typed number, so a second Save would store that number
-        // in a record or units it never showed (re-check R1).
-        guard seen.erase == cloudErase else {
+        // in a record or units it never showed (re-check R1). On the phone both
+        // erases are nil: the epoch and erase count tell an erase apart (AC11g).
+        guard seen.erase == cloudErase, seen.mark.holds(at: mark) else {
             return .refused(message: Self.recordChanged, existingId: nil)
         }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }

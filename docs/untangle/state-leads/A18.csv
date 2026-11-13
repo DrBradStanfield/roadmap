@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-A18,test hygiene,"Sentry calls from earlier tests leak into later ones: clear the file-level Sentry mock in one top-level beforeEach",lead,"not started","widget-src/src/lib/byok-chat.test.ts never clears its file-level captureException mock; PR claude/writes-stopped-error added a mockClear to one describe only (2026-11-13)",,no
+A18,test hygiene,"Sentry calls from earlier tests leak into later ones: clear the file-level Sentry mock in one top-level beforeEach",lead,done,"widget-src/src/lib/byok-chat.test.ts never clears its file-level captureException mock; PR claude/writes-stopped-error added a mockClear to one describe only (2026-11-13)",1510,no

@@ -47,19 +47,10 @@ import { HealthTool } from './HealthTool';
 
 useHealthToolLifecycle();
 
-/**
- * A man born 1960, height on record, one saved HbA1c (so the whole form shows
- * while the weight is still a first-time field), who said he will screen,
- * plus any PSA rows given as [value, day].
- */
-async function page(psaRows: Array<[number, string]> = []) {
-  await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 40]]);
-  await saveScreening('prostate_discussion', 'will_screen');
-  for (const [value, day] of psaRows) await addMeasurement('psa', value, `${day}T00:00:00.000Z`);
-  await flushRoadmapStore();
-  const view = render(<HealthTool />);
+const MAN = { sex: 'male' as const, heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' as const };
+/** The page once the PSA row shows. */
+async function shownWithPsa(view: ReturnType<typeof render>) {
   await waitFor(() => expect(view.container.querySelector('#psa-input')).not.toBeNull());
-  await waitFor(() => expect(view.container.querySelector('#weightKg')).not.toBeNull());
   const row = view.container.querySelector<HTMLElement>('.psa-inline-row')!;
   return {
     view,
@@ -67,6 +58,33 @@ async function page(psaRows: Array<[number, string]> = []) {
     day: row.querySelector<HTMLInputElement>('input[type="date"]')!,
     note: () => view.container.querySelector('.psa-inline-row')!.parentElement!.textContent ?? '',
   };
+}
+
+/**
+ * A man born 1960, height on record, one saved HbA1c (so the whole form
+ * shows), who said he will screen, plus any PSA rows given as [value, day].
+ */
+async function page(psaRows: Array<[number, string]> = []) {
+  await seedGuest(MAN, [['hba1c', 40]]);
+  await saveScreening('prostate_discussion', 'will_screen');
+  for (const [value, day] of psaRows) await addMeasurement('psa', value, `${day}T00:00:00.000Z`);
+  await flushRoadmapStore();
+  return shownWithPsa(render(<HealthTool />));
+}
+
+/**
+ * The same man with nothing but his profile: the weight is the onboarding's
+ * box beside the height (US-62 AC13). Typed there, it is the last answer, so
+ * the whole form opens and the box stays while typed in; then he says he
+ * will screen, and the PSA row shows.
+ */
+async function pageWithWeight(value: string) {
+  await seedGuest(MAN);
+  const view = render(<HealthTool />);
+  const weight = await waitFor(() => { const w = view.container.querySelector<HTMLInputElement>('#weightKg'); expect(w).not.toBeNull(); return w!; });
+  type(weight, value);
+  fireEvent.change(await waitFor(() => { const s = view.container.querySelector('#prostate-discussion'); expect(s).not.toBeNull(); return s!; }), { target: { value: 'will_screen' } });
+  return { ...await shownWithPsa(view), weight };
 }
 
 // A PSA is a core blood test, stored as a core lab row since US-66; read here as the measurement it was.
@@ -210,20 +228,14 @@ describe('a PSA typed into the prostate section is saved (US-06 AC15)', () => {
     view.unmount();
   });
 
-  it('control: a weight, a waist and a blood pressure typed into their first-time fields and left are saved under today, whatever day the PSA date shows, and no PSA row appears', async () => {
-    const { view, day } = await page();
+  // Since H71 (2026-11-13) the weight box is the one first-time vitals field: waist and blood pressure save on their value pages.
+  it('control: a weight typed into its box and left is saved under today, whatever day the PSA date shows, and no PSA row appears', async () => {
+    const { view, day, weight } = await pageWithWeight('82');
     pick(day, '2025-01-14');
-    const box = (id: string) => view.container.querySelector<HTMLInputElement>(`#${id}`)!;
-    for (const [id, value] of [['weightKg', '82'], ['waistCm', '90'], ['systolicBp', '128'], ['diastolicBp', '82']]) {
-      type(box(id), value);
-      act(() => box(id).blur());
-    }
+    act(() => weight.blur());
     await pause(700);
     const today = localDay(new Date());
     await waitFor(async () => expect(await active('weight')).toEqual([[82, today]]));
-    expect(await active('waist')).toEqual([[90, today]]);
-    expect(await active('systolic_bp')).toEqual([[128, today]]);
-    expect(await active('diastolic_bp')).toEqual([[82, today]]);
     expect(await active('psa')).toEqual([]);
     view.unmount();
   });
@@ -299,9 +311,7 @@ describe('a second PSA on a day that already holds one (US-06 AC15, Brad 2026-11
 
 describe('a PSA saves only once its row is committed (US-06 AC15, Codex R2)', () => {
   it('a weight left first, then a PSA typed with focus still in its row: the weight\'s save does not take the PSA under today', async () => {
-    const { view, psa, day } = await page();
-    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
-    type(weight, '82');
+    const { view, psa, day, weight } = await pageWithWeight('82');
     act(() => weight.blur()); // the weight's 500 ms save starts
     type(psa(), '6.5'); // focus now in the PSA row, its day not yet chosen
     await pause(700);
@@ -330,9 +340,7 @@ describe('departure puts the save on disk before the page goes (US-06 AC15, Brad
   });
 
   it.each(['beforeunload', 'pagehide', 'visibilitychange'] as const)('%s inside the 500 ms wait after a weight was left: the weight is on disk at once', async event => {
-    const { view } = await page();
-    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
-    type(weight, '82');
+    const { view, weight } = await pageWithWeight('82');
     act(() => weight.blur());
     depart(event);
     expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
@@ -345,9 +353,7 @@ describe('departure puts the save on disk before the page goes (US-06 AC15, Brad
   // so the write lands before a departure in the next task. It does not cover
   // a slow earlier save on the chain: a real save cannot be held open here.
   it("the weight's timer fired and the tab closed in the next task: the weight is on disk", async () => {
-    const { view } = await page();
-    const weight = view.container.querySelector<HTMLInputElement>('#weightKg')!;
-    type(weight, '82');
+    const { view, weight } = await pageWithWeight('82');
     act(() => weight.blur()); // its 500 ms timer starts
     // Set after the save's timer, for the same 500 ms: it runs in the task right after the timer fires.
     await act(async () => { await new Promise<void>(r => setTimeout(() => { window.dispatchEvent(new Event('pagehide')); r(); }, 500)); });

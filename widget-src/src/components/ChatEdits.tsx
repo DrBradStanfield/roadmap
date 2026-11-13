@@ -2,7 +2,7 @@
 // a field fills its matrix cell or form field as a draft, a medication
 // change saves at once with a one-shot Undo, and a sex or height waits in a
 // banner for Save. HealthTool owns the form; this owns what the chat asked.
-import { useCallback, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { ApiMedication } from '@roadmap/health-core/mappings';
@@ -30,10 +30,11 @@ function replyStanding(asked: string, stayed: boolean): 'shown' | 'erasing' | 'r
 }
 
 /** Decide where a chatbot vitals edit should land. When the vitals matrix is
- *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
- *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
- *  the plain form field (fresh users, no flash). Pure, so the routing is
- *  unit-testable without rendering. */
+ *  mounted (`matrixMounted`, i.e. its prefill ref is registered: the whole
+ *  form) the value routes to the matrix cell so it pre-fills AND flashes;
+ *  otherwise it goes to the form's inputs: a weight to the box beside the
+ *  height, a waist or pressure to wait, unshown, for the hand-over below.
+ *  Pure, so the routing is unit-testable without rendering. */
 export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
   return matrixMounted ? 'matrix' : 'field';
 }
@@ -65,11 +66,13 @@ interface ChatEditsDeps {
   reveal: (cell: { field: string; grid: boolean }) => void;
   /** The chat's weight, to the box or the grid: the onboarding's answer while the record's weight step is open (US-62 AC31a). */
   chatWeight: () => void;
+  /** The whole form, with the vitals grid, is open (US-62 AC13). */
+  fullForm: boolean;
 }
 
 export function useChatEdits({
   medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing, handleInputChange, handleMedicationChange,
-  medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal, chatWeight,
+  medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal, chatWeight, fullForm,
 }: ChatEditsDeps) {
   // A one-shot undo for a medication change the chat just applied (meds
   // auto-save, so the chat states the change; only this banner offers Undo): every row the
@@ -98,12 +101,12 @@ export function useChatEdits({
   const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
     if (!metric) return false;
-    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
-    // users), route into its draft/backfill cell so it pre-fills AND flashes —
+    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (the whole
+    // form), route into its draft/backfill cell so it pre-fills AND flashes —
     // exactly like the blood-test matrix. The matrix only registers its prefill
     // ref while mounted, so a non-null ref is the "matrix is shown" signal.
-    // Fresh users (legacy plain fields, ref null) fall back to setting the form
-    // input directly — no flash, unchanged behaviour.
+    // Before the whole form (ref null) the edit sets the form's inputs: the
+    // weight box shows a weight; a waist or pressure waits for the hand-over.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
       if (edit.field === 'weightKg') chatWeightRef.current();
       // The matrix refuses a weight it does not show (the weight beside the
@@ -116,6 +119,23 @@ export function useChatEdits({
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
     return (bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date) ?? null) !== null;
   }, [handleInputChange, vitalsPrefillRef, bloodTestPrefillRef]);
+
+  // The hand-over (US-16 AC1, R1): a chat waist or pressure sent before the whole form waited in `inputs`.
+  // This effect is the moment: the commit in which `fullForm` turns true (the grid mounts in it, and its
+  // effect registers the prefill before this one runs), or the mount of a page whose form is already open.
+  // Each waiting value moves into the grid's draft, flashed and unsaved, and leaves `inputs`. So once the
+  // form is open no waist or pressure lives in `inputs`, and no field save, PSA commit, PDF or upload can
+  // save one under today. It moves no focus (D3): the landing keeps it, and the flash and the "Unsaved
+  // values: review" cue show the value.
+  useEffect(() => {
+    const prefill = vitalsPrefillRef.current;
+    if (!fullForm || !prefill) return;
+    const waiting = VITALS_INPUT_FIELDS.filter(field => field !== 'weightKg' && inputsRef.current[field] !== undefined);
+    for (const field of waiting) {
+      prefill(FIELD_TO_METRIC[field] as MetricType, inputsRef.current[field] as number, 'si', null); // canonical: cm, mmHg
+      handleInputChange(field, undefined);
+    }
+  }, [fullForm, inputsRef, vitalsPrefillRef, handleInputChange]);
 
   /** Apply one chat medication edit; returns the rows it wrote, as they were
    *  before, for Undo, or null when it replaces a row this build cannot read

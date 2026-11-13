@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+T-12,"S1 tools, scripts, CI",merge-gated finds its manifest from any working folder,not started,"After PR 1528: tools/merge-gated.sh reads ${0%/*}/generated-files.json. Run as sh merge-gated.sh from inside tools/, ${0%/*} has no slash, so every PR fails with exit 4. Resolve the script folder robustly",,,no
