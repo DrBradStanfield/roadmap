@@ -16,7 +16,6 @@
     "packages/health-core/src/lab-catalog.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 785,
     "widget-src/src/components/StartingInfoVitals.tsx": 735,
-    "packages/health-core/src/drive-rest.ts": 730,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,
     "app/routes/api.chat.ts": 698,
