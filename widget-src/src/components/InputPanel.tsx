@@ -34,6 +34,7 @@ import { useLpaUnit } from '../lib/lpa-unit';
 import { useValuePage, type RevealCell } from '../lib/useValuePage';
 import { type RowContext } from './MyDataRows';
 import { ValuePage } from './ValuePage';
+import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './WeightStillCounts';
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
@@ -399,11 +400,9 @@ export function InputPanel({
     return savedText(field, measurement);
   };
 
-  /** The line over an open field whose metric holds a saved value: "Previous:
-   *  82 kg · 3 Sep", or "Replaces 82 kg" when that value is today's, since one
-   *  day holds one value and what is typed here corrects it (US-03 AC3). */
-  const previousReference = (shown: string, recordedAt: string): string =>
-    dayOf(recordedAt) === localDay(new Date()) ? `Replaces ${shown}` : `Previous: ${shown} · ${formatShortDate(recordedAt)}`;
+  /** A field's latest saved value, and its text in the person's unit: "82 kg". */
+  const savedOf = (field: string) => { const metric = FIELD_METRIC_MAP[field], previous = metric ? previousMeasurements.find(m => m.metricType === metric) : undefined;
+    return { previous, shown: metric && previous ? `${savedText(field, previous)} ${getDisplayLabel(metric, fieldUnit(field))}` : '' }; };
 
   // Blood-test fields are committed via BloodTestTimeline's own Save button,
   /** Check if a field has a previous saved measurement. */
@@ -465,9 +464,7 @@ export function InputPanel({
     const { field, name, step } = config;
     const effectiveHint = resolveHint(config);
     const r = range(field);
-    const metric = FIELD_METRIC_MAP[field];
-    const previous = metric && previousMeasurements.find(m => m.metricType === metric);
-    const shown = metric && previous ? `${savedText(field, previous)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
+    const { previous, shown } = savedOf(field);
     const previousLabel = previous && !box ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
@@ -497,7 +494,7 @@ export function InputPanel({
           <input
             type="number"
             id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel}
+            onWheel={blurOnWheel} aria-describedby={box && previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
             onChange={(e) => {
               const raw = e.target.value;
@@ -518,7 +515,8 @@ export function InputPanel({
             onBlur={() => {
               rangeWait.settle();
               if (unreadable[field]) return;
-              setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
+              // A saved weight cleared stays cleared when left (US-62 AC38).
+              if (!box || !previous || rawInputs[field] !== '') setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
             }}
             onKeyDown={onNumericEnter}
@@ -751,6 +749,7 @@ export function InputPanel({
                 {weightInProfile && renderLongitudinalField(WEIGHT_FIELD, true)}
                 {sexInRow && sexField}
               </div>
+              {weightInProfile && rawInputs.weightKg === '' && <WeightStillCounts {...savedOf('weightKg')} onOpen={openPage}/>}
               {!sexInRow && valueShown && <div className="stage-reveal profile-step">{sexField}</div>}
               {birthShown && <div className="stage-reveal profile-step">{birthFields}</div>}
             </>
