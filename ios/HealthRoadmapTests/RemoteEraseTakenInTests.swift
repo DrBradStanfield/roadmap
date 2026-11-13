@@ -268,6 +268,25 @@ final class RemoteEraseTakenInTests: XCTestCase {
         XCTAssertEqual(store.recordJSON, erased)
     }
 
+    /// Codex R1 on 73a7b728, adversary re-check F1: the news can be stamped BEFORE the erase's own
+    /// result (the flush announces it, the door stamps its answer later). The result then lands
+    /// (drawn or held) on the same erase land already counted: it counts nothing more.
+    func testAnOwnCloudEraseCountsOnceWhenItsNewsIsStampedFirst_S63() async throws {
+        for drawable in [true, false] {
+            let engine = try engine()
+            let (store, before) = try await charted(engine)
+            let erased = try erased(before, engine)
+            await store.showCloud(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 2)).value
+            XCTAssertEqual(store.erasures, 1, "the news lands the erase and counts it")
+            try screenFails(!drawable, engine)
+            await store.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 3)).value
+
+            XCTAssertEqual(store.erasures, 1, "the erase's own later result counts nothing more (\(drawable ? "drawn" : "held"))")
+            XCTAssertFalse(store.predatesErase)
+            XCTAssertEqual(store.recordJSON, erased)
+        }
+    }
+
     /// A stale own erase result under a later record at ANOTHER erase (its news never landed) is still
     /// counted: the later record proves it was read after the erase, not that the erase was counted.
     func testAStaleOwnEraseUnderALaterEraseIsStillCounted_S63() async throws {

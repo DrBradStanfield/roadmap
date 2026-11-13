@@ -333,10 +333,10 @@ final class RecordStore {
     func showErased(_ view: HealthEngine.CloudView?, stillShown: @escaping @MainActor () -> Bool = { true }) -> Task<Void, Never> {
         chain {
             // A fresh start: no per-test choice, published only with the erase held (adversary R4).
-            // Stale: the record drawn was stamped after the erase, so it holds it (ruling b); counted once, here or by land.
+            // Landed, or stale (a record stamped after it, so holding it, is drawn): counted unless land counted it.
             let counted = self.erasures
             let shown = await self.drawErased(view, stillShown: stillShown())
-            if self.erasures == counted, !(shown == .stale && self.countedErases.contains(view?.erase)) { self.erasures += 1 }
+            if self.erasures == counted, !(shown != .failed && self.countedErases.contains(view?.erase)) { self.erasures += 1 }
             if shown != .failed { self.screenErasures = self.erasures }
         }
     }
