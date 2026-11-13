@@ -217,6 +217,14 @@ final class FirstRunTests: XCTestCase {
         check(decide(keys, needsFlow: false), .none, nil, "the launch after: no second finish")
     }
 
+    /// F6: a launch mid-questions with the record unread shows the tabs, unfinished. Before PR 1608
+    /// it resumed the questions, which finished at once on an unread record (accepted change).
+    func testAMidRunLaunchWithAnUnreadRecordDecidesNothing_US57_AC9() {
+        let keys = Self.keys(["welcomed": true, "onboardingHealthAsked": true])
+        check(decide(keys, needsFlow: nil), .none, nil, "unread: no questions, no finish; the next launch decides")
+        XCTAssertFalse(keys.onboarded)
+    }
+
     /// Entering a run writes why it runs, and the welcome screen is done.
     func testEnteringARunWritesItsPair_US54() {
         let keys = Self.keys()
