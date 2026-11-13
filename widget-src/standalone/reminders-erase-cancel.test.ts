@@ -72,3 +72,194 @@ describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased rec
     expect(JSON.stringify(stored)).not.toContain('test-token-good');
   });
 });
+
+// US-11 AC4c (lead S59b): an erase cancels every active reminders token it
+// sees, from its first read of the opt-in until the swap. Another device's
+// Turn on (its own row, token B) can be merged in while the erase waits on
+// the Drive proof (W1) or on the chat erase (W2); that row was left live,
+// still emailing a person whose record is erased.
+const TOKEN_A = 'test-token-good';
+const TOKEN_B = 'test-token-b';
+const PROOF = 'test-proof-good';
+const REMOTE = 'hr:remote-changed';
+
+type Posted = { op: string; token?: string; idToken?: string };
+
+async function eraseSetUp() {
+  const data = await import('../src/lib/roadmap-data');
+  const reminders = await import('./reminders');
+  const { RoadmapStore } = await import('../src/storage/roadmap-store');
+  const { GoogleDriveAdapter } = await import('../src/storage');
+  const { ChatSession } = await import('@roadmap/health-core/chat-session');
+  const { Sentry } = await import('../src/lib/sentry');
+  const { trackProductEvent } = await import('../src/lib/server-api');
+  // The page's own store, so the test can run its re-read as the poll would.
+  let page!: import('../src/storage/roadmap-store').RoadmapStore;
+  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: import('../src/storage/roadmap-store').RoadmapStore) {
+    page = this;
+    return () => {};
+  });
+  const cloud = new MemoryCloud();
+  await data.initRoadmapStore(new MemoryAdapter(cloud));
+  data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
+  expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' })).toBe(true);
+  await data.flushRoadmapStore();
+
+  const posts: Posted[] = [];
+  const keepalive: boolean[] = [];
+  const refuse = new Set<string>();
+  vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as Posted;
+    posts.push(body);
+    keepalive.push(init?.keepalive === true);
+    return new Response('{}', { status: body.token && refuse.has(body.token) ? 500 : 200 });
+  }));
+
+  // The page's hr:remote-changed listeners, as added and removed.
+  const listening = new Set<unknown>();
+  const add = window.addEventListener.bind(window);
+  const remove = window.removeEventListener.bind(window);
+  vi.spyOn(window, 'addEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
+    if (type === REMOTE) listening.add(fn);
+    add(type, fn, opts);
+  }) as typeof window.addEventListener);
+  vi.spyOn(window, 'removeEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | EventListenerOptions) => {
+    if (type === REMOTE) listening.delete(fn);
+    remove(type, fn, opts);
+  }) as typeof window.removeEventListener);
+
+  /** Another device turns reminders on with its own row, and this page re-reads the cloud. */
+  const otherDeviceTurnsOn = async (token = TOKEN_B) => {
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(other.setReminderOptIn({ status: 'active', token, email: ADDRESS, provider: 'dropbox' })).toBe(true);
+    await other.flush();
+    return page.refreshFromRemote();
+  };
+  const proof = vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken');
+  proof.mockResolvedValue(PROOF);
+  return { data, posts, keepalive, refuse, listening, otherDeviceTurnsOn, proof, ChatSession, Sentry, trackProductEvent };
+}
+
+describe('US-11 AC4c: an erase cancels every active reminders token it sees (lead S59b)', () => {
+  beforeEach(() => vi.clearAllMocks()); // the Sentry and event mocks outlive resetModules
+  afterEach(() => vi.restoreAllMocks());
+
+  it('W1: token B, merged in while the erase waits on the Drive proof, is cancelled too', async () => {
+    const t = await eraseSetUp();
+    let adopted = false;
+    t.proof.mockImplementation(async () => {
+      adopted = await t.otherDeviceTurnsOn();
+      return PROOF;
+    });
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(adopted).toBe(true);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_A, idToken: PROOF },
+      { op: 'cancel', token: TOKEN_B },
+    ]);
+    expect(t.keepalive).toEqual([true, true]);
+  });
+
+  it('W2: token B, merged in while the erase waits on the chat erase, is cancelled too', async () => {
+    const t = await eraseSetUp();
+    let adopted = false;
+    const eraseChat = t.ChatSession.prototype.eraseAll;
+    vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
+      adopted = await t.otherDeviceTurnsOn();
+      return eraseChat.call(this);
+    });
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(adopted).toBe(true);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_A, idToken: PROOF },
+      { op: 'cancel', token: TOKEN_B },
+    ]);
+  });
+
+  it('a refused erase posts nothing, and its listener goes at the next re-read', async () => {
+    const erase = await import('@roadmap/health-core/erase');
+    const t = await eraseSetUp();
+    vi.spyOn(erase, 'buildErasedFile').mockImplementation(() => { throw new Error('build failed'); });
+    const before = t.data.getEraseIdentity();
+
+    expect((await t.data.deleteUserData()).success).toBe(false);
+    expect(t.data.getEraseIdentity()).toBe(before);
+    expect(t.listening.size).toBe(1); // still watching: nothing has told it the erase was refused
+    expect(await t.otherDeviceTurnsOn()).toBe(true);
+
+    expect(t.posts).toEqual([]);
+    expect(t.listening.size).toBe(0);
+  });
+
+  it('an erase that lands leaves no listener behind: the commit removes it', async () => {
+    const t = await eraseSetUp();
+    let during = 0;
+    const eraseChat = t.ChatSession.prototype.eraseAll;
+    vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
+      during = t.listening.size;
+      return eraseChat.call(this);
+    });
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(during).toBe(1); // it watched while the erase ran
+    expect(t.listening.size).toBe(0);
+  });
+
+  it('a prepare that throws leaves no listener behind, and posts nothing', async () => {
+    const t = await eraseSetUp();
+    // Thrown before any promise exists, so it escapes the lookup's own catch.
+    t.proof.mockImplementation(() => { throw new Error('proof lookup broke'); });
+    let during = -1;
+    const eraseChat = t.ChatSession.prototype.eraseAll;
+    vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
+      during = t.listening.size;
+      return eraseChat.call(this);
+    });
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(during).toBe(0);
+    expect(t.listening.size).toBe(0);
+    expect(t.posts).toEqual([]);
+  });
+
+  it('no token or proof reaches the console, Sentry or a product event during the erase', async () => {
+    const t = await eraseSetUp();
+    t.proof.mockImplementation(async () => {
+      await t.otherDeviceTurnsOn();
+      return PROOF;
+    });
+    t.refuse.add(TOKEN_A).add(TOKEN_B); // both cancels fail, so both are reported
+    const consoleCalls = (['log', 'info', 'warn', 'error', 'debug'] as const).map((level) => vi.spyOn(console, level));
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    expect(t.posts.filter((p) => p.op === 'cancel')).toHaveLength(2);
+    const said = JSON.stringify([
+      ...consoleCalls.flatMap((spy) => spy.mock.calls),
+      ...vi.mocked(t.Sentry.captureException).mock.calls,
+      ...vi.mocked(t.trackProductEvent).mock.calls,
+    ], (_key, value: unknown) => (value instanceof Error ? `${value.message} ${value.stack}` : value));
+    for (const secret of [TOKEN_A, TOKEN_B, PROOF, ADDRESS]) expect(said).not.toContain(secret);
+  });
+
+  it('an extra token whose cancel fails is reported by its HTTP status alone', async () => {
+    const t = await eraseSetUp();
+    t.proof.mockImplementation(async () => {
+      await t.otherDeviceTurnsOn();
+      return PROOF;
+    });
+    t.refuse.add(TOKEN_B);
+
+    expect((await t.data.deleteUserData()).success).toBe(true);
+
+    const reports = vi.mocked(t.Sentry.captureException).mock.calls
+      .filter(([, at]) => (at as { tags?: { op?: string } } | undefined)?.tags?.op === 'erase-cancel');
+    expect(reports.map(([e]) => (e as Error).message)).toEqual(['Reminder row delete failed (500).']);
+  });
+});
