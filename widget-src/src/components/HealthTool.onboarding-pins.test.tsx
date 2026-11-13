@@ -40,6 +40,8 @@ vi.mock('../lib/server-api', async original => {
 });
 // The profile save refuses once when asked, as the store refuses a write (US-16 AC2a).
 const refuse = vi.hoisted(() => ({ next: false }));
+// The next single-value add waits for `held.release()` when armed (H96: a grid save resolving after its blur).
+const held = vi.hoisted(() => ({ gate: null as null | Promise<void>, calls: 0 }));
 vi.mock('../lib/roadmap-data', async original => {
   const real = await original<typeof import('../lib/roadmap-data')>();
   return {
@@ -47,6 +49,12 @@ vi.mock('../lib/roadmap-data', async original => {
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       return real.saveChangedMeasurements(...args);
+    },
+    addMeasurement: async (...args: Parameters<typeof real.addMeasurement>) => {
+      const gate = held.gate;
+      held.gate = null;
+      if (gate) { held.calls++; await gate; }
+      return real.addMeasurement(...args);
     },
   };
 });
@@ -92,6 +100,8 @@ beforeEach(async () => {
   sent = [];
   tracked.calls = [];
   refuse.next = false;
+  held.gate = null;
+  held.calls = 0;
   chat.proposeEdit = null;
   chat.unmuted = null;
   upload.complete = null;
@@ -728,6 +738,31 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     commit(cell);
     await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
     expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  // H96 (PR 1579 R1): commit() calls rested() for a saved New weight. Left by the focus, the cell's blur sends
+  // `left` before the save it starts can resolve, so that rested() finds the landing spent and lands nothing.
+  it('US-62 AC25b (H96): the last weight committed by leaving its cell, its save resolving after the blur, lands nothing', async () => {
+    const view = await matrixWeightLast();
+    const cell = weightRow(view)!.querySelector('.bt-cell-draft input')!;
+    fireEvent.pointerDown(cell); // the person taps into the grid
+    type(cell, '84.5'); // a decimal: no typing rest, so only the commit can call rested()
+    await wait(1000);
+    expect(landed()).toBe(false);
+    let release!: () => void;
+    held.gate = new Promise<void>((r) => { release = r; });
+    const outside = document.body.appendChild(document.createElement('button'));
+    act(() => { outside.focus(); }); // leaving the grid: the cell's blur, then the commit on leave
+    await waitFor(() => expect(held.calls).toBe(1)); // the save started, and waits
+    await wait(100);
+    expect(landed()).toBe(false);
+    await act(async () => { release(); });
+    await wait(2000);
+    expect(await activeWeights()).toEqual([[84.5, localToday()]]);
+    expect(calls('onboarding_done')).toHaveLength(1); // the onboarding ended on this save
+    expect(landed()).toBe(false);
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
   });
 
   it('US-62 AC25b (R4): "72" ends it, cleared, "72" again with its rest before its commit: lands', async () => {

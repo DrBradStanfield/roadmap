@@ -248,5 +248,38 @@ describe('US-62 AC10b (H78): WebKit focus ring gate', () => {
     expect(run.status).not.toBe(0);
     expect(run.stderr).toContain('the date box shows no focus ring on keyboard focus');
   });
+  // H100: webkit-verify.mjs run as itself, its 'playwright' swapped for a fake browser whose value page
+  // passes and whose date box has no ring. inspect() must stop at the focus step and the run fail: a
+  // try/catch round probeFocusRing would go on to press Back, which the fake prints.
+  it('H100: inspect() lets a focus-ring failure end the run before its next step, and the run exits non-zero', () => {
+    const fake = `const say = (m) => process.stdout.write(m + '\\n');
+      const results = ${JSON.stringify({
+        collectRows: { viewportWidth: 390, documentWidth: 390, rows: [{ label: 'HbA1c', value: '36 (35)', right: 380, height: 58 }] },
+        collectPhoneLayout: { gaps: [16, 16], pillRows: 1, smallTargets: [], header: { height: 0, controls: 0 } },
+        topOf: 72,
+        collectValuePage: { headerBottom: 60, backTop: 72, tileFonts: [13], wrappedLabels: [], baselines: [0], dayFont: 13, valueFont: 16 },
+      })};
+      const focus = (sel) => sel.includes('type="date"') ? ${JSON.stringify(noRing)} : ${JSON.stringify(teal)};
+      const locator = (sel) => { const l = {
+        first: () => l, locator: () => l, waitFor: async () => {}, focus: async () => {},
+        tap: async () => say('fake pressed ' + sel), click: async () => say('fake pressed ' + sel),
+        evaluate: async (fn) => fn.name === 'collectFocus' ? focus(sel) : results[fn.name],
+      }; return l; };
+      const page = { locator, getByRole: (role, o) => locator(role + ' ' + o.name), evaluate: async (fn) => results[fn.name],
+        keyboard: { press: async () => {} }, mouse: { move: async () => {}, wheel: async () => {} },
+        waitForTimeout: async () => {}, waitForLoadState: async () => {}, addInitScript: async () => {}, goto: async () => {}, screenshot: async () => {} };
+      export const devices = { 'iPhone 13': {}, 'iPhone SE': {} };
+      export const webkit = { launch: async () => ({ close: async () => {},
+        newContext: async () => ({ route: async () => {}, newPage: async () => page, close: async () => {} }) }) };`;
+    const dataUrl = (code: string) => `data:text/javascript,${encodeURIComponent(code)}`;
+    const hooks = `export async function resolve(spec, ctx, next) {
+      return spec === 'playwright' ? { url: ${JSON.stringify(dataUrl(fake))}, shortCircuit: true } : next(spec, ctx); }`;
+    const loader = `import { register } from 'node:module'; register(${JSON.stringify(dataUrl(hooks))});`;
+    const run = spawnSync(process.execPath, ['--import', dataUrl(loader), new URL('./webkit-verify.mjs', import.meta.url).pathname], { encoding: 'utf8' });
+    expect(run.stdout).toContain('iPhone 13: value page verified'); // the fake reached the focus step
+    expect(run.stdout).not.toContain('fake pressed .md-page .md-back');
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('the date box shows no focus ring on keyboard focus');
+  });
 });
 
