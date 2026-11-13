@@ -208,14 +208,15 @@ final class RecordStore {
 
     /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
     /// False when it was not drawn: nothing on screen moved, the units included.
+    /// `holdUndrawn`: one the engine cannot draw is held all the same, with no drawing (showErased).
     @discardableResult
-    func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil) async -> Bool {
-        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices)
+    func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> Bool {
+        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices, holdUndrawn: holdUndrawn)
     }
 
     /// A cloud record onto the screen: `event` says whether the session sent it or an edit made it.
     @discardableResult
-    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil) async -> Bool {
+    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> Bool {
         // One the engine handed over before the record now shown is stale: the screen
         // keeps the newer one (a re-read that crossed an edit).
         if let order {
@@ -223,9 +224,8 @@ final class RecordStore {
             shownOrder = order
         }
         let choices = choices ?? unitChoices
-        guard let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json),
-              land(event, record: record, drawn: shown) == .show
-        else { return false }
+        let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json)
+        guard shown != nil || holdUndrawn, land(event, record: record, drawn: shown) == .show else { return false }
         publish(choices)
         return true
     }
@@ -314,14 +314,17 @@ final class RecordStore {
         }.value
     }
 
-    /// The cloud record, erased by the engine's session: shown like any record it sends.
+    /// The cloud record, erased by the engine's session: shown like any record it sends. The store
+    /// holds it even when the engine cannot draw it, with no drawing, so nothing that reads the
+    /// store's record or rows reads the one it replaced. Only a stale one is dropped: a later
+    /// record of the same session is shown, which holds the erase (CloudSync.erase).
     @discardableResult
     func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
         chain {
-            // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
-            let drawnErase = await self.draw(view, in: UnitChoices())
+            // A fresh start: no per-test choice, published only with the erase held (adversary R4).
+            let held = await self.draw(view, in: UnitChoices(), holdUndrawn: true)
             self.erasures += 1
-            if drawnErase { self.screenErasures = self.erasures }
+            if held { self.screenErasures = self.erasures }
         }
     }
 
