@@ -225,7 +225,13 @@ describe('US-09 AC31: a stalled provider is abandoned at the deadline', () => {
   });
 
   describe('the YouTube bot tick', () => {
-    beforeEach(() => { process.env.YOUTUBE_BOT_FORCE_START = 'true'; sentry.captureException.mockClear(); });
+    beforeEach(() => {
+      // A fresh bot module per case: youtube-bot-api caches the access token one
+      // case fetched, so the next would skip the token call (T7, shuffle seed 3).
+      vi.resetModules();
+      process.env.YOUTUBE_BOT_FORCE_START = 'true';
+      sentry.captureException.mockClear();
+    });
     afterEach(async () => { (await import('./youtube-bot.server')).stopYouTubeBot(); delete process.env.YOUTUBE_BOT_FORCE_START; });
 
     /** Starts the bot, runs its first tick (30 s after start) and reports
