@@ -415,7 +415,7 @@ final class FakeHealthStore: HealthStoreClient {
     var saved: [HealthWrite] = []
     private var served: [HealthKind: Int] = [:]
 
-    let isAvailable = true
+    var isAvailable = true
     /// Runs before an import's read returns: a test holds the import here (US-56 AC4).
     var hold: (@MainActor () async -> Void)?
 
