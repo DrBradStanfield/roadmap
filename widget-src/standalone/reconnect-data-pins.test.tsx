@@ -483,7 +483,7 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (c) the reconnect puts every edit 
 
 // ---------------------------------------------------------------- (a) with nothing to copy
 
-describe('US-09 AC48 (owner question): exit (a) at load time when this browser holds no copy', () => {
+describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this browser holds no copy asks first', () => {
   const SAVED = { '2026-05-01': 80, '2026-05-02': 79 };
   const cloudWeights = (cloud: Cloud) => (cloud === 'dropbox' ? weightsIn(dropboxFile?.body) : driveWeights());
 
@@ -508,18 +508,59 @@ describe('US-09 AC48 (owner question): exit (a) at load time when this browser h
     localStorage.removeItem('health_roadmap_file_v2');
   }
 
+  const LABEL = { 'google-drive': 'Google Drive', dropbox: 'Dropbox' } as const;
+  const question = (cloud: Cloud) =>
+    `This browser has no copy of your record yet. It stays safe in your ${LABEL[cloud as 'google-drive' | 'dropbox']}. Start empty in this browser?`;
+  const shown = (text: string) => document.body.textContent?.includes(text) ?? false;
+
+  /** A fully saved cloud, then a load whose sign-in is dead: the panel over an empty tool. */
+  async function arriveSignedOut(cloud: Cloud, keepDeviceCopy = false): Promise<Page> {
+    await seedFullySavedCloud(cloud);
+    // An earlier visit's copy of the same record, as a failed save leaves one.
+    const cloudBody = cloud === 'dropbox' ? dropboxFile!.body : driveFiles.find((f) => f.name === ROADMAP_FILE_NAME)!.content;
+    if (keepDeviceCopy) localStorage.setItem('health_roadmap_file_v2', cloudBody);
+    // The sign-in dies: Drive's token expired and its exchange is unreachable; Dropbox's content API refuses.
+    if (cloud === 'dropbox') dropboxDown = true;
+    else localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() - 1_000 }));
+    const p = await loadPage();
+    expect(p.backend).toBe('local');
+    expect(p.reconnect?.provider).toBe(cloud);
+    if (!keepDeviceCopy) expect(p.data.loadAllHistorySync()).toEqual([]); // the cloud was never read: the tool is empty
+    render(<p.sync.SyncControl backend={p.backend} hasData={false} />);
+    return p;
+  }
+
+  it.each(['google-drive', 'dropbox'] as const)('%s: "Use this browser only" asks first, naming the cloud; Cancel changes nothing', async (cloud) => {
+    await arriveSignedOut(cloud);
+    fireEvent.click(button('Use this browser only')!);
+    expect(shown(question(cloud))).toBe(true);
+    await turns();
+    expect(reload).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);
+    fireEvent.click(button('Cancel')!);
+    expect(shown(question(cloud))).toBe(false);
+    expect(button('Use this browser only')).toBeDefined(); // back on the panel
+    await turns();
+    expect(reload).not.toHaveBeenCalled();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);
+    expect(localStorage.getItem(cloud === 'dropbox' ? DROPBOX_TOKENS : DRIVE_TOKENS)).not.toBeNull();
+  });
+
+  it.each(['google-drive', 'dropbox'] as const)('%s: a browser that holds a copy is not asked', async (cloud) => {
+    await arriveSignedOut(cloud, true);
+    fireEvent.click(button('Use this browser only')!);
+    expect(shown(question(cloud))).toBe(false);
+    await reloaded();
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(await deviceWeights()).toEqual(SAVED); // the copy here is kept, as before
+  });
+
   it.each(['google-drive', 'dropbox'] as const)(
-    '%s: TODAY (lead for Brad: load-time exit with nothing to copy) the exit leaves this browser empty and forgets the cloud; the record is only in the cloud file',
+    '%s: confirmed, the exit leaves this browser empty and forgets the cloud; the record is only in the cloud file',
     async (cloud) => {
-      await seedFullySavedCloud(cloud);
-      // The sign-in dies: Drive's token expired and its exchange is unreachable; Dropbox's content API refuses.
-      if (cloud === 'dropbox') dropboxDown = true;
-      else localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() - 1_000 }));
-      const p = await loadPage();
-      expect(p.backend).toBe('local');
-      expect(p.reconnect?.provider).toBe(cloud);
-      expect(p.data.loadAllHistorySync()).toEqual([]); // the cloud was never read: the tool is empty
-      render(<p.sync.SyncControl backend={p.backend} hasData={false} />);
+      await arriveSignedOut(cloud);
+      fireEvent.click(button('Use this browser only')!);
+      expect(shown(question(cloud))).toBe(true);
       fireEvent.click(button('Use this browser only')!);
       await reloaded();
       expect(localStorage.getItem(BACKEND_KEY)).toBeNull();

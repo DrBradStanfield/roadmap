@@ -17,8 +17,8 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
-import { currentSignIn, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
+import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, holdsCopyHere, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
@@ -265,6 +265,8 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
       forgetBackend();
       location.reload();
     });
+  // With no copy here, the exit would start an empty record: ask first (US-09 AC49, owner ruling).
+  const chooseThisBrowserOnly = (provider: LostSignIn['provider']): void => (holdsCopyHere() ? forgetProvider(provider) : askBeforeExit());
 
   const state = storageState(backend, signIn);
   const provider = backend === 'local' ? '' : PROVIDERS[backend].label;
@@ -297,7 +299,15 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
             : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => forgetProvider(reconnect.provider)}>Use this browser only</button>
+          {signIn.kind === 'confirmingExit' ? (
+            <>
+              <span className="hr-sync-detail">This browser has no copy of your record yet. It stays safe in your {label}. Start empty in this browser?</span>
+              <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => { exitAnswered(); forgetProvider(reconnect.provider); }}>Use this browser only</button>
+              <button type="button" className="hr-sync-link" onClick={exitAnswered}>Cancel</button>
+            </>
+          ) : (
+            <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => chooseThisBrowserOnly(reconnect.provider)}>Use this browser only</button>
+          )}
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>

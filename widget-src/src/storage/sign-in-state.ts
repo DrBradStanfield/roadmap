@@ -3,7 +3,8 @@
  * one named state for the page's life, changed only through `transition`.
  * Boot seeds it once from the load: signed in to the cloud it opened, signed
  * out of a Drive or Dropbox whose sign-in it could not use, or unreachable
- * when the remembered cloud did not answer (a reload tries again). A Drive or
+ * when the remembered cloud did not answer (a reload tries again); a lost one
+ * may ask before its exit and go back (US-09 AC49). A Drive or
  * Dropbox adapter raises `ended` where it names the grant dead; only a page
  * signed in to that provider moves to signed out. Nothing moves a page back:
  * the way back is a saved sign-in and the reload or redirect after it, which
@@ -26,17 +27,23 @@ export type SignIn =
   /** The provider refused the sign-in: only a new sign-in mends it. Drive and Dropbox only. */
   | { kind: 'signedOut'; provider: TokenProvider }
   /** The remembered cloud did not answer at load: the page runs on this browser's copy. */
-  | { kind: 'unreachable'; provider: SignInProvider };
+  | { kind: 'unreachable'; provider: SignInProvider }
+  /** US-09 AC49: "Use this browser only" with no copy of the record here asks first; either answer goes back. */
+  | { kind: 'confirmingExit'; lost: LostSignIn };
 
 /** The states that show the reconnect panel. */
 export type LostSignIn = Extract<SignIn, { kind: 'signedOut' | 'unreachable' }>;
 
 export type SignInEvent =
   | { type: 'booted'; state: SignIn }
-  | { type: 'ended'; provider: TokenProvider };
+  | { type: 'ended'; provider: TokenProvider }
+  | { type: 'exitAsked' }
+  | { type: 'exitAnswered' };
 
 export function transition(state: SignIn, event: SignInEvent): SignIn {
   if (event.type === 'booted') return state.kind === 'none' ? event.state : state;
+  if (event.type === 'exitAsked') return state.kind === 'signedOut' || state.kind === 'unreachable' ? { kind: 'confirmingExit', lost: state } : state;
+  if (event.type === 'exitAnswered') return state.kind === 'confirmingExit' ? state.lost : state;
   return state.kind === 'signedIn' && state.provider === event.provider ? { kind: 'signedOut', provider: event.provider } : state;
 }
 
@@ -71,13 +78,23 @@ export function signInEnded(provider: TokenProvider, gen: LogOffId): void {
   if (safeGetItem(BACKEND_KEY) === provider && logOffId() === gen && healthWritesAllowed()) dispatch({ type: 'ended', provider });
 }
 
+/** The panel asks before "Use this browser only" (US-09 AC49), and hears the answer. */
+export function askBeforeExit(): void {
+  dispatch({ type: 'exitAsked' });
+}
+export function exitAnswered(): void {
+  dispatch({ type: 'exitAnswered' });
+}
+
 /** This page knows `provider`'s sign-in is dead: its adapters post no refresh and its watch stops. */
 export function isSignedOut(provider: TokenProvider): boolean {
-  return signIn.kind === 'signedOut' && signIn.provider === provider;
+  const lost = lostSignIn();
+  return lost?.kind === 'signedOut' && lost.provider === provider;
 }
 
 /** The sign-in the reconnect panel names, or undefined. */
 export function lostSignIn(state: SignIn = signIn): LostSignIn | undefined {
+  if (state.kind === 'confirmingExit') return state.lost;
   return state.kind === 'signedOut' || state.kind === 'unreachable' ? state : undefined;
 }
 
