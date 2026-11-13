@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A24,web sync,record-session.ts holds at its line cap with two packed comments,lead,not started,"packages/health-core/src/record-session.ts is 770 lines, over the 500 cap, so it may not grow (CLAUDE.md). To hold its count, the US-09 AC2c change packed two comments: the one-line mirrorOurs doc at line 542, and the sentence ""Only while the copy is this page's."" appended to the lift comment at open, line 183. The split PR restores both to honest lines. Found 2026-11-13",,no
