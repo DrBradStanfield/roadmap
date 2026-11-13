@@ -425,11 +425,9 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
     if (typeof value !== 'string') return [];
-    // A number is read as the plan reads it, whatever its length (US-06 AC14), and passed on as that number.
-    if (screeningRange(screeningKey)) {
-      const n = screeningNumber(screeningKey, value);
-      return n === undefined ? [] : [{ screeningKey, value: String(n) }];
-    }
+    // A number is checked as the plan reads it, whatever its length (US-06 AC14), and kept as typed,
+    // so screeningsToInputs reads the same text the plan reads.
+    if (screeningRange(screeningKey)) return screeningNumber(screeningKey, value) === undefined ? [] : [{ screeningKey, value }];
     return value.length > MAX_SCREENING_VALUE ? [] : [{ screeningKey, value }];
   });
 }
