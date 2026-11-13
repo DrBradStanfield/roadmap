@@ -15,7 +15,8 @@ enum ReminderMode: Equatable {
         switch (mode, event) {
         // An erase on this phone, even one held with no record to read: the opt-in ends (US-11).
         case (_, .erased): (.off, nil)
-        case (.off, .tappedOn(let attempt)): (.asking(attempt: attempt), .askPermission(attempt: attempt))
+        // An erase before this tap is one the person opts in after: the next refresh must not end it.
+        case (.off, .tappedOn(let attempt)): (.asking(attempt: attempt), .resnapshotAndAsk(attempt: attempt))
         case (.off, .tappedOff), (.off, .asked), (.off, .read): (.off, nil)
 
         case (.asking, .tappedOn): (mode, nil)
@@ -29,7 +30,8 @@ enum ReminderMode: Equatable {
             else { (.off, .refresh) }
         case (.asking, .read): (mode, nil)
 
-        // "Allow notifications" asks again; the answer only changes what is scheduled.
+        // "Allow notifications" asks again; the answer only changes what is scheduled. No
+        // resnapshot: an unseen erase must still end the opt-in.
         case (.on, .tappedOn(let attempt)): (mode, .askPermission(attempt: attempt))
         case (.on, .tappedOff): (.off, .refresh)
         case (.on, .asked): (mode, .refresh)
@@ -55,6 +57,8 @@ enum ReminderEvent: Equatable {
 
 enum ReminderEffect: Equatable {
     case askPermission(attempt: Int)
+    /// Take the store's erase count afresh, then ask: a tap from off.
+    case resnapshotAndAsk(attempt: Int)
     /// Rebuild the pending notifications from the mode: add when on and allowed, else only remove.
     case refresh
 }
