@@ -19,6 +19,7 @@
 import { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
+import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
 import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeeded, remindersSupported } from './reminders';
 import type { Backend } from './connect';
 
@@ -39,11 +40,16 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   const [, setVersion] = useState(0);
 
   // The load-time schedule push clears a stale opt-in when the user
-  // unsubscribed from an email link (404) — re-render when that happens.
+  // unsubscribed from an email link (404), and another device's choice is
+  // merged in (US-17 AC17) — re-render when either happens.
   useEffect(() => {
     const onChange = () => setVersion((v) => v + 1);
     window.addEventListener('hr:reminders-changed', onChange);
-    return () => window.removeEventListener('hr:reminders-changed', onChange);
+    window.addEventListener(REMOTE_CHANGED_EVENT, onChange);
+    return () => {
+      window.removeEventListener('hr:reminders-changed', onChange);
+      window.removeEventListener(REMOTE_CHANGED_EVENT, onChange);
+    };
   }, []);
 
   if (!remindersSupported(backend)) return null;

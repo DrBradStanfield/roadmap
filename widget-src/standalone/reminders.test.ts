@@ -1022,6 +1022,47 @@ describe('US-17 — turning reminders off is counted', () => {
   });
 });
 
+// US-17 AC17 (H18e/f/g): a Turn off acts only on the opt-in it read. `asked`
+// is the opt-in read when Turn off is asked; `now` is the record when the
+// cancel answers. Rows 4 and 6 are US-11 AC4b's erase cases.
+describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
+  const T1: FileReminderOptIn = { ...ACTIVE, provider: 'dropbox' };
+  const ERASED: FileReminderOptIn = { ...T1, status: 'cancelled', token: '', email: '', lamport: 9 };
+  type Row = {
+    asked: FileReminderOptIn | undefined; now?: FileReminderOptIn | undefined; status?: number; refused?: boolean;
+    posts: boolean; writes: boolean; counts: boolean; throws?: string;
+  };
+  const rows: [string, Row][] = [
+    ['1 the same opt-in: post, write cancelled, count', { asked: T1, now: T1, posts: true, writes: true, counts: true }],
+    ['2 another device turned on (T2) meanwhile: no write, no count [H18e]', { asked: T1, now: { ...T1, token: 'test-token-new', lamport: 5 }, posts: true, writes: false, counts: false }],
+    ['3 another device turned it off meanwhile: no write, no second count', { asked: T1, now: { ...T1, status: 'cancelled', lamport: 5 }, posts: true, writes: false, counts: false }],
+    ['4 an erase landed meanwhile (cancelled, no token): no write', { asked: T1, now: ERASED, posts: true, writes: false, counts: false }],
+    ['5 the opt-in is gone meanwhile: no write', { asked: T1, now: undefined, posts: true, writes: false, counts: false }],
+    ['6 the write is refused (an erase runs): ERASE_IN_PROGRESS, no count [H18f]', { asked: T1, now: T1, refused: true, posts: true, writes: true, counts: false, throws: 'Your data is being deleted. Try again in a moment.' }],
+    ['7 already cancelled: no post, no write, no count [H18g]', { asked: { ...T1, status: 'cancelled' }, posts: false, writes: false, counts: false }],
+    ['8 an erased file (cancelled, token \'\'): no post, so no 400 [H18g]', { asked: ERASED, posts: false, writes: false, counts: false }],
+    ['9 nothing enrolled: no post', { asked: undefined, posts: false, writes: false, counts: false }],
+    ['10 the server answers 500: throws, no write, no count', { asked: T1, now: T1, status: 500, posts: true, writes: false, counts: false, throws: 'Could not turn reminders off (500). Please retry.' }],
+  ];
+  it.each(rows)('%s', async (_name, row) => {
+    getReminderOptIn.mockReturnValueOnce(row.asked).mockReturnValue('now' in row ? row.now : row.asked);
+    if (row.refused) setReminderOptIn.mockReturnValueOnce(false);
+    const f = vi.fn(async () => new Response('{}', { status: row.status ?? 200 }));
+    vi.stubGlobal('fetch', f);
+    const { cancelReminders } = await loadReminders();
+
+    const done = cancelReminders();
+    if (row.throws) await expect(done).rejects.toThrow(row.throws);
+    else await done;
+
+    expect(f).toHaveBeenCalledTimes(row.posts ? 1 : 0);
+    if (row.writes) expect(setReminderOptIn).toHaveBeenCalledWith({ ...T1, status: 'cancelled' }, '[0,null]');
+    else expect(setReminderOptIn).not.toHaveBeenCalled();
+    if (row.counts) expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'dropbox' });
+    else expect(trackProductEvent).not.toHaveBeenCalled();
+  });
+});
+
 // US-07 AC6 (amended 2026-10-14): the plan is built for adults, and so are its
 // reminders. The server holds no age, and it refills any pushed schedule with
 // its annual check-in, so the browser is the only place a known minor can be

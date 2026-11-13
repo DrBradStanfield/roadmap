@@ -35,6 +35,7 @@ import {
   setReminderOptIn,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
+import { ERASE_IN_PROGRESS } from '@roadmap/health-core/erase';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
@@ -397,7 +398,8 @@ export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
  *  away, so the cancel leaves at once, unproven (a tombstone), as an update does. */
 export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
   const optIn = getReminderOptIn();
-  if (!optIn) return;
+  // Already off (an erased file's '' token among them): nothing to cancel or count (US-17 AC17).
+  if (optIn?.status !== 'active') return;
   // The record this Turn off was asked for: an erase that lands during the
   // cancel leaves reminders off already, and the old opt-in (its address and
   // token) is refused, not written into the erased record (US-11 AC4b).
@@ -405,7 +407,11 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
-  setReminderOptIn({ ...optIn, status: 'cancelled' }, erase);
+  // The opt-in changed while the cancel was out (another device's Turn on or
+  // off, an erase): that later decision stands, and nothing is counted (US-17 AC17).
+  if (!sameOptIn(getReminderOptIn(), optIn)) return;
+  // Refused while an erase runs: say so, and the switch stays on (US-11 AC4b).
+  if (!setReminderOptIn({ ...optIn, status: 'cancelled' }, erase)) throw new Error(ERASE_IN_PROGRESS);
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per
