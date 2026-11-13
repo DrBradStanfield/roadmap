@@ -15,12 +15,11 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, movedBloodTests, parseEdit, type Edit, type EditOutcome } from './my-data';
-import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
+import { movedBloodTests, parseEdit, type Edit } from './my-data';
+import { guardedEdit, refuse, type EditTarget, type Refusal } from './guarded-edit';
 import { checkArgs } from './contract';
 
 declare const __native: CloudNatives;
@@ -176,30 +175,6 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
   return view(at);
 }
 
-/** Only edits whose number is read in the user's units can be misread after a
- *  unit change: a value, a correction, a height. */
-export function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
-  // A lab value's correction is in the unit its row is stored in, whatever the record's units (review R7);
-  // a core blood test's is read in the record's units, like a vital's, though it is a lab row (US-66 AC6).
-  if (edit.kind === 'correct') {
-    return file.measurements.some((row) => row.id === edit.id) || file.labValues.some((row) => row.id === edit.id && isCoreRow(row));
-  }
-  return edit.kind === 'add' || (edit.kind === 'profile' && edit.height !== undefined);
-}
-
-/** A value or correction of Lp(a), read in Lp(a)'s own unit, which the record holds (US-05 AC2). */
-function dependsOnLpaUnit(edit: Edit, file: RoadmapFile): boolean {
-  if (edit.kind === 'add') return edit.metric === 'lpa';
-  // Lp(a) is a core lab row (US-66 AC9).
-  return edit.kind === 'correct' && file.labValues.some((row) => row.id === edit.id && isCoreRow(row) && row.metricName === 'lpa');
-}
-
-export type Refusal = Extract<EditOutcome, { ok: false }>;
-
-export function refuse(reason: string, message: string): Refusal {
-  return { ok: false, reason, message };
-}
-
 export const NOT_OPEN = 'The cloud record is not open.';
 export const ERASED = 'Your record was erased on another device, so this was not saved.';
 
@@ -233,35 +208,21 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   return JSON.stringify(read.ok ? editSession(read.edit, erase, shownUnits, nowIso, unitsJson, shownLpaUnit) : read);
 }
 
+/** The open session as an edit's target (guarded-edit.ts), at the erase the screen showed. */
+function cloudTarget(at: Open, erase: string, nowIso: string): EditTarget {
+  return {
+    get file() { return at.session.file; },
+    stale: () => (at.session.refuses(erase) ? refuse('erased', `${ERASED} Close this and enter the value again.`) : null),
+    commit: (next) => commit(at, next, erase, nowIso),
+    answer: () => ({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity }),
+  };
+}
+
 /** cloudEdit's work, answering an object, so cloudLabImport adds its summary without a JSON round trip of the record. */
 function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: string, unitsJson?: string, shownLpaUnit?: string) {
   const at = open;
   if (!at) return refuse('not-open', NOT_OPEN);
-  const { session } = at;
-  // A number is read in the units the screen showed. If another device has
-  // changed the units since, the same number would be stored in the wrong ones.
-  if (dependsOnUnits(edit, session.file) && shownUnits !== unitsOf(session.file)) {
-    return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
-  }
-  // Lp(a)'s unit is the record's too (US-05 AC2): a number typed in the old one is never
-  // saved in the new one.
-  if (shownLpaUnit !== undefined && dependsOnLpaUnit(edit, session.file) && shownLpaUnit !== lpaUnitOf(session.file)) {
-    return refuse('units-changed', 'Your Lp(a) unit changed on another device, so this was not saved. Close this and enter the value again.');
-  }
-  if (session.refuses(erase)) {
-    return refuse('erased', `${ERASED} Close this and enter the value again.`);
-  }
-  // Read in the per-test units the sheet showed (AC17e), as the phone's own file is.
-  const outcome = applyEdit(session.file, edit, nowIso, readUnitChoices(unitsJson));
-  if (!outcome.ok) return outcome;
-  // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
-  // Any other goes on the phone first, marked for the cloud: only then is it taken.
-  if (outcome.file !== session.file) {
-    const refusal = commit(at, outcome.file, erase, nowIso);
-    if (refusal) return refusal;
-  }
-  const { file: _edited, ok, ...extra } = outcome;
-  return { ok, record: JSON.stringify(session.file), erase: session.eraseIdentity, ...extra };
+  return guardedEdit(cloudTarget(at, erase, nowIso), edit, { units: shownUnits, lpaUnit: shownLpaUnit, choicesJson: unitsJson }, nowIso);
 }
 
 /**
