@@ -313,6 +313,40 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     expect(g.merges).toEqual([]);
   });
 
+  it("T-13: a PR that renames the manifest away (gh lists only the new path) is judged by main's rows", () => {
+    const r = repos();
+    git(r.work, 'checkout', '-q', '-b', 'pr');
+    writeFileSync(join(r.work, 'in.txt'), 'b\n');
+    git(r.work, 'mv', 'tools/generated-files.json', 'tools/old manifest é.json');
+    git(r.work, 'commit', '-q', '-am', 'rename the manifest');
+    const sha = git(r.work, 'rev-parse', 'HEAD');
+    pushPr(r.work, sha);
+    git(r.work, 'checkout', '-q', 'main');
+    moveMain(r, { 'out.txt': 'o2\n' });
+    // The caller runs a copy whose manifest beside it has no rows, so only main's copy can refuse.
+    writeFileSync(join(r.caller, 'tools', 'generated-files.json'), '{"rows":[]}');
+    const g = gate(r, sha, ['in.txt', 'tools/old manifest é.json']);
+    expect(g.stderr).toContain("main's copy judges it");
+    expect(g.status).toBe(REFUSED);
+    expect(g.merges).toEqual([]);
+    expect(g.untouched).toBe(true);
+  });
+
+  it("T-13: a PR that renames tools/merge-gated.sh away is judged by main's copy (git's paths, not gh's)", () => {
+    const r = repos();
+    git(r.work, 'checkout', '-q', '-b', 'pr');
+    git(r.work, 'mv', 'tools/merge-gated.sh', 'tools/merge gated (old).sh');
+    git(r.work, 'commit', '-q', '-m', 'rename the gate');
+    const sha = git(r.work, 'rev-parse', 'HEAD');
+    pushPr(r.work, sha);
+    git(r.work, 'checkout', '-q', 'main');
+    const g = gate(r, sha, ['tools/merge gated (old).sh']);
+    expect(g.stderr).toContain("main's copy judges it");
+    expect(g.status).toBe(0);
+    expect(g.merges).toHaveLength(1);
+    expect(g.untouched).toBe(true);
+  });
+
   it('runs nothing in step 6 but gh, git, jq and perl: no node, npx, sh -c or manifest command', () => {
     const r = repos();
     const sha = openPr(r, { 'in.txt': 'b\n' });
