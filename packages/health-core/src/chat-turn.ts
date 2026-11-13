@@ -42,8 +42,9 @@ export type Turn =
   | { phase: 'sending'; turn: number; nonce: string; asked: Asked; convId: string | null; question: Msg; before: Msg[] }
   | { phase: 'streaming'; turn: number; nonce: string; asked: Asked; convId: string | null; question: Msg; before: Msg[]; pending: Pending }
   | { phase: 'orphaned'; turn: number; asked: Asked; by: 'own' | 'remote' };
-/** `autoOpen`: a guest's first read, which opens the latest thread on landing unless the person moved first (Q7). */
-export type List = { phase: 'unread' } | { phase: 'waiting'; autoOpen: boolean } | { phase: 'reading'; read: number; autoOpen: boolean } | { phase: 'read' };
+/** `autoOpen`: a guest's first read, which opens the latest thread on landing unless the person moved first (Q7).
+ *  `failed`: the last read answered nothing; the next open reads again (C26, US-15 AC64a). */
+export type List = { phase: 'unread' } | { phase: 'waiting'; autoOpen: boolean } | { phase: 'reading'; read: number; autoOpen: boolean } | { phase: 'read' } | { phase: 'failed' };
 /** `failed`: the shown thread's turns could not be read (not a 404). Send stays locked: a send must never carry a history it failed to read (N2). */
 export type Load = { phase: 'none' } | { phase: 'loading'; opening: number; id: string } | { phase: 'failed'; opening: number; id: string };
 
@@ -241,8 +242,9 @@ function eraseShown(s: ChatState, e: Extract<ChatEvent, { type: 'erase-shown' }>
 
 function listLanded(s: ChatState, e: Extract<ChatEvent, { type: 'list-landed' }>): Step {
   if (s.list.phase !== 'reading' || s.list.read !== e.read) return same(s);
-  const next: ChatState = { ...s, list: { phase: 'read' }, conversations: e.conversations ?? s.conversations };
-  const latest = e.conversations?.[0];
+  if (!e.conversations) return same({ ...s, list: { phase: 'failed' } }); // the old titles stay
+  const next: ChatState = { ...s, list: { phase: 'read' }, conversations: e.conversations };
+  const latest = e.conversations[0];
   if (!s.list.autoOpen || !latest) return same(next);
   const opened = openThread(next, latest.id); // Decision Q7: a guest's first read opens the latest thread
   return { state: { ...opened, load: { phase: 'loading', opening: opened.shown.opening, id: latest.id } }, effects: [{ type: 'read-turns', opening: opened.shown.opening, id: latest.id }] };
@@ -307,7 +309,7 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     }
     case 'erase-shown': return eraseShown(s, e);
     case 'list-wanted': {
-      if (s.list.phase !== 'unread') return same(s);
+      if (s.list.phase !== 'unread' && s.list.phase !== 'failed') return same(s);
       const autoOpen = e.guest && untouched(s);
       return s.erase.moving !== 'none' ? same({ ...s, list: { phase: 'waiting', autoOpen } }) : readList(s, autoOpen);
     }
