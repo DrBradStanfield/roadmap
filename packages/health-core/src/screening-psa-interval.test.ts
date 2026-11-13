@@ -342,6 +342,24 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
     ]);
   });
 
+  it('followupKinds names the prostate follow-up only inside the prostate ages, as the schedule gates it (owner\'s ruling)', () => {
+    // A woman of 60 and a man of 40 (below 45) fall outside; the prostate row has no upper age, so a man of 90 keeps it.
+    const people: Array<[string, Partial<RoadmapFile['profile']>, boolean]> = [
+      ['woman 60', { sex: 'female' }, false], ['man 40', { birthYear: 1986 }, false],
+      ['man 60', {}, true], ['man 90', { birthYear: 1936 }, true],
+    ];
+    for (const [who, profile, kept] of people) {
+      for (const vague of [false, true]) {
+        const file = fileWith(vague ? [RAISED, VAGUE_ROW] : [RAISED], 'elected_not_to');
+        file.profile = { ...file.profile, ...profile };
+        const kind = followupKinds(file, NOW).screening_prostate;
+        const name = `${who}${vague ? ', vague' : ''}`;
+        if (kept) expect(kind, name).toEqual({ kind: 'repeat', name: vague ? EMAIL_LABEL : PHONE_NAME });
+        else expect(kind, name).toBeUndefined();
+      }
+    }
+  });
+
   it('the algorithm doc states the rule', () => {
     expect(ALGO).toContain(`\n- ${outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific'))}\n`);
   });

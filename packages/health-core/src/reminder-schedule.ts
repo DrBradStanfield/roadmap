@@ -313,13 +313,21 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
   return valid;
 }
 
-function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+/** The age and sex the reminder gates read; none without a birth year. */
+function ageSexOf(file: RoadmapFile, now: Date): { age: number; sex: 'male' | 'female' | undefined } | null {
   const { birthYear, birthMonth } = file.profile;
-  if (!birthYear) return []; // no age → no eligibility rules can run
+  if (!birthYear) return null; // no age → no eligibility rules can run
   // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
   const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
   let age = now.getUTCFullYear() - birthYear;
   if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
+  return { age, sex };
+}
+
+function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+  const person = ageSexOf(file, now);
+  if (!person) return [];
+  const { age, sex } = person;
 
   const measurementDates: MeasurementDates = {};
   // Vitals from `measurements`, blood tests from their core rows (US-66 AC7).
@@ -376,7 +384,10 @@ export function followupKinds(file: RoadmapFile, now: Date): Partial<Record<Remi
     if (kind) kinds[`screening_${type}` as ReminderCategory] = { kind, name: info?.followupName ?? 'follow-up' };
   }
   // A repeat while the rule holds (first-seen); its name only for a newest PSA of 4.0 or above, else plain (AC21 item 6, F4).
-  if (psaRuleHolds(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: psaRaised(s) ? PSA_REPEAT_NAME : ruleOf('prostate').reminder!.label };
+  // Only where the schedule takes the prostate row (its cardAges), so the name never outruns the item.
+  const person = ageSexOf(file, now);
+  const prostate = ruleOf('prostate');
+  if (person && ruleTakes(prostate, prostate.cardAges, person.age, person.sex) && psaRuleHolds(s) && psaNextDue(s)) kinds.screening_prostate = { kind: 'repeat', name: psaRaised(s) ? PSA_REPEAT_NAME : prostate.reminder!.label };
   return kinds;
 }
 
