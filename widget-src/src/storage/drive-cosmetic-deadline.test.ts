@@ -1,5 +1,5 @@
 /**
- * US-09 AC51 (A1-6, owner's answer 5): the Drive adapter's cosmetic calls,
+ * US-09 AC53 (A1-6, owner's answer 5): the Drive adapter's cosmetic calls,
  * the folder's self-healing rename (AC40) and the one-time move of a pre-folder
  * file into the app folder, get the 30-second call bound. Before, each was a
  * bare `fetch` with no deadline, so a request Drive never answered stayed open
@@ -69,7 +69,7 @@ async function abortedAtCallBound(count: number): Promise<void> {
   expect(stalled.map((s) => s.aborted)).toEqual(Array(count).fill(true));
 }
 
-describe('US-09 AC51: the cosmetic Drive calls have the 30-second call bound', () => {
+describe('US-09 AC53: the cosmetic Drive calls have the 30-second call bound', () => {
   it('a folder rename Drive never answers is aborted at 30 s, and the save it rode on is not held', async () => {
     drive((url, init) => init.method === 'PATCH' && url.endsWith(`/files/${FOLDER}`));
     const adapter = new GoogleDriveAdapter(CONFIG);

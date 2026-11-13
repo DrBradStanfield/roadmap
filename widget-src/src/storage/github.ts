@@ -167,7 +167,7 @@ export class GitHubAdapter implements StorageAdapter {
         headers: this.headers(),
         body: JSON.stringify(sha ? { message: `Update ${ref}`, content, sha } : { message: `Update ${ref}`, content }),
         timeoutMs: TRANSFER_DEADLINE_MS.document,
-        mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d, AC51)
+        mayHaveWritten: true, // an upload with no answer may have landed (US-09 AC13d, AC53)
       });
     // Documents use write-once ids, so the create usually succeeds without a
     // sha; only on an overwrite conflict do we fetch the sha and retry once.

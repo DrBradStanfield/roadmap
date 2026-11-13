@@ -213,7 +213,7 @@ export async function driveUploadDocument(accessToken: string, name: string, byt
 }
 
 /** The bytes of the document named `name` inside `parentId`, under the
- *  document deadline and the caller's own signal (US-09 AC51). */
+ *  document deadline and the caller's own signal (US-09 AC53). */
 export async function driveDownloadDocument(accessToken: string, name: string, parentId: string, signal?: AbortSignal): Promise<Blob> {
   const id = await driveFindFileId(accessToken, name, parentId, signal);
   if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
@@ -673,7 +673,7 @@ export class DriveAdapter implements StorageAdapter {
   private async docTarget(ref: string, verb: 'read' | 'write', signal?: AbortSignal): Promise<{ name: string; parentId: string }> {
     if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`);
     const { folder, name } = splitDocumentRef(ref);
-    return { name, parentId: await untilAborted(PROVIDER, this.documentFolder(folder), signal) };
+    return { name, parentId: await untilAborted(PROVIDER, this.documentFolder(folder), signal) }; // ends the wait, not the shared lookup: lead A1-6b
   }
 
   /** Find-or-create a document's folder ('Lab results') inside the app

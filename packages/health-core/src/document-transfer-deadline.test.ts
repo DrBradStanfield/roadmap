@@ -1,5 +1,5 @@
 /**
- * US-09 AC51 (A1-6, owner's answers 2026-11-13): every document download gets
+ * US-09 AC53 (A1-6, owner's answers 2026-11-13): every document download gets
  * the `document` deadline (5 minutes), as GitHub and WebDAV reads already do
  * (AC13e). The Drive download had none and dropped the caller's signal; the
  * Dropbox download had the 30-second call bound. A stalled upload on every
@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe('US-09 AC51: a Drive document download has the 5-minute document deadline', () => {
+describe('US-09 AC53: a Drive document download has the 5-minute document deadline', () => {
   it('a download that gets no answer is aborted at 5 minutes, not before', async () => {
     const { signals } = provider('stall');
     const failure = await outcomeAt(driveDownloadDocument('token', 'a.pdf', 'folder'), DOCUMENT_MS);
@@ -82,7 +82,7 @@ describe('US-09 AC51: a Drive document download has the 5-minute document deadli
   });
 });
 
-describe("US-09 AC51, US-35 AC5: the caller's signal also ends the Drive folder discovery before the download (Codex R1)", () => {
+describe("US-09 AC53, US-35 AC5: the caller's signal also ends the Drive folder discovery before the download (Codex R1)", () => {
   it('with every request stalled, a fresh adapter fails at the caller\'s 1 s, not at 30 s', async () => {
     const signals: AbortSignal[] = [];
     vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit = {}) => {
@@ -101,7 +101,7 @@ describe("US-09 AC51, US-35 AC5: the caller's signal also ends the Drive folder 
   });
 });
 
-describe('US-09 AC51: a Dropbox document download has the 5-minute document deadline (was 30 s)', () => {
+describe('US-09 AC53: a Dropbox document download has the 5-minute document deadline (was 30 s)', () => {
   it('a download that gets no answer is aborted at 5 minutes, not at 30 s', async () => {
     const { signals } = provider('stall');
     const failure = await outcomeAt(dropboxDownload('token', 'id:one'), DOCUMENT_MS);
@@ -118,7 +118,7 @@ describe('US-09 AC51: a Dropbox document download has the 5-minute document dead
   });
 });
 
-describe('US-09 AC13d, AC51: a stalled document upload says it may have landed (Dropbox, Drive)', () => {
+describe('US-09 AC13d, AC53: a stalled document upload says it may have landed (Dropbox, Drive)', () => {
   it('Dropbox', async () => {
     provider('stall');
     const failure = await outcomeAt(dropboxUploadDocument('token', 'Lab results/a.pdf', new Uint8Array([1])), DOCUMENT_MS);

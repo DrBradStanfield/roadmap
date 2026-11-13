@@ -138,7 +138,7 @@ export async function fetchOrFail(
  * Waits on `work` until the caller's `signal` aborts, then fails as a call
  * with no answer, in `fetchOrFail`'s words. The work itself runs on under its
  * own request bounds: it is shared and cached (Drive's document-folder lookup),
- * so one caller's deadline must not cancel it for the others (US-09 AC51).
+ * so one caller's deadline must not cancel it for the others (US-09 AC53).
  */
 export function untilAborted<T>(provider: string, work: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return work;

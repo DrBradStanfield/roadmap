@@ -165,10 +165,10 @@ describe('WebDAV documents and connect (US-09 AC13e)', () => {
   });
 });
 
-// US-09 AC13d, AC51 (A1-6): the bytes went out, so a stalled upload may have
+// US-09 AC13d, AC53 (A1-6): the bytes went out, so a stalled upload may have
 // landed. GitHub and WebDAV say so in the same words Dropbox and Drive use
 // (packages/health-core/src/document-transfer-deadline.test.ts).
-describe('US-09 AC13d, AC51: a stalled document upload says it may have landed (GitHub, WebDAV)', () => {
+describe('US-09 AC13d, AC53: a stalled document upload says it may have landed (GitHub, WebDAV)', () => {
   const LANDED = 'The change may have landed. Read the record again before trying it a second time.';
 
   async function stalledHint(work: () => Promise<unknown>): Promise<string | undefined> {
