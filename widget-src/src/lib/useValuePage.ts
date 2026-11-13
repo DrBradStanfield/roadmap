@@ -83,9 +83,16 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   };
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
+  // The vitals grid scrolls whole date columns, so no clipped sliver shows beside its names (H79).
+  // Only where Trend scrolls with the data (a phone): a sticky Trend (desktop) would cover New.
   useEffect(() => {
     if (!tableShown) return;
-    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; });
+    panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => {
+      const trend = el.querySelector('.bt-header-row .bt-cell-trend');
+      const snap = el.closest('.bt-vitals-card') && trend && getComputedStyle(trend).position !== 'sticky';
+      const colW = snap ? el.querySelector<HTMLElement>('.bt-header-row .bt-cell-value')?.offsetWidth : 0;
+      el.scrollLeft = colW ? Math.floor((el.scrollWidth - el.clientWidth) / colW) * colW : el.scrollWidth;
+    });
   }, [tableShown]);
 
   // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
