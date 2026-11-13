@@ -77,7 +77,7 @@ function setup(loaded = true) {
     const erase = useErase({
       clearDrafts: () => {}, forget: () => {},
       reread: reason => { void Promise.resolve(page.signal(reason)).catch(() => {}); },
-      shows: () => page.shows(),
+      shows: id => page.shows(id),
       spend: () => fx.later.clearAnswered(true),
     } as Parameters<typeof useErase>[0]);
     const page = useRecordApply({
@@ -265,15 +265,96 @@ describe('fix 4 (2b-3), Fable: L1, a heard erase whose read fails, is never left
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(alerts()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true); // H39: B's latest read failed
     await announced(C);
     const before = page.reads();
     expect(before).toBe(3); // B's read, the refusal's, C's: each failed
+    expect(page.now().erase.unreachable).toBe(true); // C's read failed too
     page.fx.fail = false;
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(page.reads()).toBe(before + 1); // the re-read
     expect(page.now().erase.shownErase).toBe(C); // and it showed C
+    expect(page.now().erase.unreachable).toBe(false); // the read landed
     // Q4: one alert per erase a save was asked under; A was said already.
     expect(alerts()).toBe(1);
+  });
+});
+
+describe('US-16 AC2g (H39): the machine tracks the latest read of a heard erase', () => {
+  /** The next read held until its release; it then lands, or fails when `fails`. */
+  function held(page: ReturnType<typeof setup>, fails: boolean) {
+    let release!: () => void;
+    const gate = new Promise<void>(r => { release = r; });
+    page.fx.reloadValues.mockImplementationOnce(async () => {
+      log.push('read');
+      await gate;
+      if (fails) throw new Error('read failed (test)');
+      return RESULT;
+    });
+    return async () => { await act(async () => { release(); }); await settle(); };
+  }
+
+  it('US-16 AC2g (H39): another writer\'s erase whose read fails: unreachable until a read lands; no new alert (Q4)', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B);
+    expect(page.reads()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true);
+    // A refusal under the old erase: said once, re-read (Q3); that read fails too, so it still holds.
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(alerts()).toBe(1); // no new alert (Q4)
+    expect(page.reads()).toBe(3);
+    expect(page.now().erase.unreachable).toBe(true);
+    // The next refusal's read lands: B shown, reachable, still one alert.
+    page.fx.fail = false;
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(page.reads()).toBe(4);
+    expect(page.now().erase.shownErase).toBe(B);
+    expect(page.now().erase.unreachable).toBe(false);
+    expect(alerts()).toBe(1);
+  });
+
+  it('US-16 AC2g (H39, F1): an older erase\'s read failing after a newer erase arrived leaves the newer one reachable', async () => {
+    const page = setup();
+    const failB = held(page, true);
+    const failC = held(page, true);
+    await announced(B); // B's read, held open
+    await announced(C); // C's read, held open
+    await failB();
+    expect(page.now().erase.unreachable).toBe(false); // B's failure is not C's: C's read is still in flight
+    await failC();
+    expect(page.now().erase.unreachable).toBe(true); // C's own read failed
+    expect(page.reads()).toBe(2);
+  });
+
+  it('US-16 AC2g (H39, F2): an arrival\'s read dropped inside this tab\'s erase, then own-failed\'s read fails: unreachable', async () => {
+    const page = setup();
+    const landB = held(page, false);
+    await announced(B); // B's read, held open
+    const erase = ownErase(page, { success: false, error: 'not saved (test)' });
+    await landB(); // it lands inside the erase: dropped, B still heard
+    expect(page.now().erase.shownErase).toBe(A);
+    page.fx.fail = true;
+    await erase.finish(); // nothing moved: own-failed reads B again, and that read fails
+    expect(page.reads()).toBe(2);
+    expect(page.now().erase.unreachable).toBe(true);
+  });
+
+  it('US-16 AC2g (H39, F4): the stale echo of the shown erase lands its read: heard cleared, reachable', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B); // heard; its read fails
+    expect(page.now().erase.unreachable).toBe(true);
+    page.fx.fail = false;
+    rec.identity = A; // the store reports the erase the screen shows
+    await announced(A, false); // its late echo: a plain remote change, whose read lands at A
+    expect(page.now().erase.shownErase).toBe(A);
+    expect(page.now().erase.store.getSnapshot().heard).toBeNull();
+    expect(page.now().erase.unreachable).toBe(false);
   });
 });

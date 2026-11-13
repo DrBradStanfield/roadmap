@@ -144,7 +144,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
   const { store: eraseStore, shownErase, loaded, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
     clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
-    shows: () => showErase(), spend: () => clearAnswered(true),
+    shows: id => showErase(id), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadShown, firstReadFailed } = useRecordApply({

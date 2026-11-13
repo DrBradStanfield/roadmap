@@ -68,7 +68,7 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
 
     it('arrived, then its read', () => {
       const step = transition(idle(before), { type: 'arrived', identity: store });
-      expect(step.effects).toEqual([{ type: 'read' }]);
+      expect(step.effects).toEqual([{ type: 'read', id: 1 }]);
       expect(run(step.state, [{ type: 'read', identity: store }]).shown).toBe(store);
     });
 

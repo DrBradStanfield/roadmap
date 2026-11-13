@@ -127,6 +127,12 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(alerts).toEqual([WRITE_REFUSED]);
     expect(doors.shows).toHaveBeenCalledTimes(2); // one for the refusal: the machine's, not a second from the page
     expect(doors.reread).not.toHaveBeenCalled();
+    // US-16 AC2g (H39): each read carries its id; only the latest one's failure makes the heard erase unreachable.
+    expect(doors.shows.mock.calls).toEqual([[1], [2]]);
+    act(() => { result.current.store.dispatch({ type: 'read-failed', id: 1 }); });
+    expect(result.current.unreachable).toBe(false);
+    act(() => { result.current.store.dispatch({ type: 'read-failed', id: 2 }); });
+    expect(result.current.unreachable).toBe(true);
   });
 
   it('Fable Q3 (2b-3): a refusal says WRITE_REFUSED before its re-read starts, heard erase or not', () => {
