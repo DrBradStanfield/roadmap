@@ -345,14 +345,16 @@ describe('US-07 AC3: transition, phase by event', () => {
 describe('US-07 AC3: useHighlights on the real clock', () => {
   beforeEach(() => { vi.useRealTimers(); });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the glow's settle, glow and fade timers must fire on their own.
   it('settles after 3 s; a new id then glows for 3 s and is still by 3.5 s', async () => {
     const h = mount(undefined);
-    const mounted = Date.now();
-    await act(() => new Promise((r) => setTimeout(r, 3100)));
-    h.show([s('a')]);
+    await act(() => new Promise((r) => setTimeout(r, 2000)));
+    h.show([s('a')]); // 2 s in, still settling: the baseline, no glow
+    expect(h.glowing()).toEqual([]);
+    await act(() => new Promise((r) => setTimeout(r, 1100)));
+    h.show([s('a'), s('b')]); // past 3 s: settled, so the new id glows
     const shown = Date.now();
-    expect(shown - mounted).toBeGreaterThanOrEqual(3000);
-    expect(h.glowing()).toEqual(['a']);
+    expect(h.glowing()).toEqual(['b']);
     // The 0.5 s fade is not polled for: a stalled runner could step over it.
     await waitFor(() => expect(h.glowing()).toEqual([]), { timeout: 4500 });
     expect(Date.now() - shown).toBeGreaterThanOrEqual(2990);

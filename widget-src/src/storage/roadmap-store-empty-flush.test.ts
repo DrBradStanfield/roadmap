@@ -41,6 +41,20 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     expect(stored(cloud).meta.lamport).toBe(lamport);
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers and manual flushes; it is the one place the store's 800 ms write debounce must fire on its own.
+  it('a change with no flush is written once the debounce runs out, on the real clock', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new CountingAdapter(cloud);
+    const store = await RoadmapStore.create(adapter);
+
+    store.markReportEmailCaptured();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(adapter.writes).toBe(0); // not yet: the debounce holds it
+    await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 300));
+    expect(adapter.writes).toBe(1);
+    expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
+  });
+
   it('still writes a change made after an empty flush, exactly once', async () => {
     const cloud = new MemoryCloud();
     const adapter = new CountingAdapter(cloud);

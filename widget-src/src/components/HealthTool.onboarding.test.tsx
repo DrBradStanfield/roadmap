@@ -150,6 +150,7 @@ describe('US-62 AC13: each step reveals the next', () => {
     expect(view.queryByText(/Skip/)).toBeNull();
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 500 ms field save must fire on its own.
   it('height and weight show the BMI tile with no sex, then ask sex with its why-text', async () => {
     const view = await open();
     await measurements(view);

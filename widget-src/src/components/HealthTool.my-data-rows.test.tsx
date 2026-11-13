@@ -625,6 +625,7 @@ describe('US-02 AC6, AC6c: the Blood Pressure page\'s systolic moves on to the d
     expect(document.activeElement).toBe(dia);
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 800 ms auto-advance must fire on its own.
   it('"75" moves after the pause', async () => {
     const { sys, dia } = await systolic();
     fireEvent.change(sys, { target: { value: '75' } });

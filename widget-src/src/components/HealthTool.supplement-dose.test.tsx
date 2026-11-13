@@ -251,6 +251,7 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
   }
 
   for (const origin of ['this page', 'another device']) {
+    // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the store's 5 s re-read throttle must run out on its own (the 5100 ms sleep below).
     it(`drops the rejected draft after ${origin} erases, before a remote same-key row arrives`, async () => {
       const { adapter, store, view, panel } = await cloudPage();
       if (origin === 'this page') {
