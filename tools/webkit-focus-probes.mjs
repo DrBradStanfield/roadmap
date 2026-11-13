@@ -54,7 +54,8 @@ export async function probeLabFocusRing(page, where, log = console.log, tap = (l
 export async function probeDateCellRing(matrix, where, log = console.log) {
   try {
     await matrix.locator('.bt-cell-draft-date input[type="date"]').first().focus({ timeout: 5000 });
-    const cell = await matrix.locator('.bt-cell-draft-date').first().evaluate(collectFocus);
+    const button = matrix.locator('.bt-cell-draft-date').first();
+    const cell = { ...await button.evaluate(collectFocus), within: await button.evaluate((el) => el.matches(':focus-within')) };
     const want = 'solid 2px rgb(0, 124, 106) -2px';
     const got = `${cell.outlineStyle} ${cell.outlineWidth} ${cell.outlineColor} ${cell.outlineOffset}`;
     assert(cell.within && got === want, `the New date cell shows no teal ring (${JSON.stringify(cell)})`);
@@ -67,5 +68,5 @@ export async function probeDateCellRing(matrix, where, log = console.log) {
 // Passed directly to Playwright's evaluate: the focus styles of one box.
 export function collectFocus(el) {
   const s = getComputedStyle(el);
-  return { active: document.activeElement === el, within: el.matches(':focus-within'), outlineStyle: s.outlineStyle, outlineWidth: s.outlineWidth, outlineColor: s.outlineColor, outlineOffset: s.outlineOffset, boxShadow: s.boxShadow };
+  return { active: document.activeElement === el, outlineStyle: s.outlineStyle, outlineWidth: s.outlineWidth, outlineColor: s.outlineColor, outlineOffset: s.outlineOffset, boxShadow: s.boxShadow };
 }

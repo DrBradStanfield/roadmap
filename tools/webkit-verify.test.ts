@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { spawnSync } from 'node:child_process';
-import { BLOOD_TABLE, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, probeDateCellRing, probeFocusRing, probeLabFocusRing, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { BLOOD_TABLE, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, probeFocusRing, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { probeDateCellRing, probeLabFocusRing } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -261,7 +262,8 @@ describe('H89 (US-62 AC10b): the lab focus ring probes, advisory until one produ
       first: () => loc(sel),
       locator: (sub: string) => loc(`${sel} ${sub}`),
       focus: async () => { if (formMissing && sel.includes('alr-add-value')) throw new Error('locator.focus: Timeout 5000ms exceeded.'); },
-      evaluate: async () => (sel.includes('date') ? date : teal),
+      // collectFocus's reading; any other read (the date cell's :focus-within) is true.
+      evaluate: async (fn: { name: string }) => (fn.name !== 'collectFocus' ? true : sel.includes('date') ? date : teal),
       count: async () => (sel.includes('md-back') ? 1 : 0),
       waitFor: async () => {},
     });
