@@ -13,9 +13,19 @@ struct OnboardingView: View {
     let keepUnits: Bool
     let finish: () -> Void
 
+    /// Only these: the flow's state is its own, so no caller starts it on a step (PR 1512 review R3).
+    init(store: RecordStore, health: AppleHealthSync, onlyMissing: Bool, keepUnits: Bool, finish: @escaping () -> Void) {
+        self.store = store
+        self.health = health
+        self.onlyMissing = onlyMissing
+        self.keepUnits = keepUnits
+        self.finish = finish
+    }
+
     /// A setting, not health data: the Apple Health screen was answered once.
     @AppStorage("onboardingHealthAsked") var healthAsked = false
-    @State var step: OnboardingStep?
+    /// The flow's one named state (S6): starting, connecting, a page with its save, finished.
+    @State var mode = OnboardingFlow.Mode.starting
     @State var answers = Answers()
     /// The steps Apple Health filled in, by name only, kept so a relaunch keeps AC3b's guards
     /// (adversary R2); cleared when the flow starts at Apple Health or finishes.
@@ -27,20 +37,12 @@ struct OnboardingView: View {
     /// Health gave a weight more than a year old (AC3b, guard a): Continue on it saves it as
     /// today's. Once saved it is today's, so no longer stale (adversary R1).
     var staleWeight: Bool { fromHealth.contains(.weight) && !supplied.contains(.weight) }
-    /// A question opened from that list's Edit: answered, it returns to the list.
-    @State var editing = false
-    @State var message: String?
-    @State var connecting = false
-    /// Birth has an answer: from the record, from Apple Health, or a wheel the person
-    /// moved. A wheel's starting value is never taken as an answer (AC4). Height and
-    /// weight are typed: their answer is a number in the box.
-    @State var birthAnswered = false
     @FocusState var focus: Field?
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Today's weight row a changed weight would replace, while the person decides (AC5).
-    @State var replacing: String?
+    /// The engine's words for the last try, shown under the question.
+    private var message: String? { mode.save?.message }
     /// An answer is being saved: the page waits for it before moving on.
-    @State var saving = false
+    private var busy: Bool { mode.save?.busy ?? false }
 
     var profile: MyData.Profile? { store.myData?.profile }
     /// The units the engine's edits read: the record's for height, weight's own for weight,
@@ -53,12 +55,12 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let step {
+                if let step = mode.step {
                     page(step)
-                        .disabled(saving)
+                        .disabled(busy)
                         .id(step)
                         .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)).combined(with: .opacity))
-                } else {
+                } else if mode == .starting {
                     ProgressView()
                 }
             }
@@ -67,10 +69,10 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
             .toolbar {
-                if let step, let back = previous(step) {
+                if let page = mode.page, let back = previous(page) {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button("Back", systemImage: "chevron.left") { go(back) }
-                            .disabled(saving)
+                        Button("Back", systemImage: "chevron.left") { send(.moved(back)) }
+                            .disabled(busy)
                             .accessibilityIdentifier("onboarding.back")
                     }
                 }
@@ -81,15 +83,16 @@ struct OnboardingView: View {
         // Kept by name only, so a relaunch keeps AC3b's guards (adversary R2).
         .onChange(of: fromHealth) { fromHealthNames = OnboardingSteps.encode(fromHealth); noteSupplied() }
         .onChange(of: store.revision) { noteSupplied() }
-        // Pinned in begin(); a run that never began never pinned.
-        .onDisappear { if step != nil { store.unpinScreen() } }
-        .confirmationDialog("Today already has a weight", isPresented: Binding(get: { replacing != nil }, set: { if !$0 { replacing = nil } }), titleVisibility: .visible) {
-            Button("Replace it") { replaceWeight() }
+        // Pinned when the first page showed and given back on finishing; a run that never began never pinned.
+        .onDisappear { if mode.pinned { store.unpinScreen() } }
+        .confirmationDialog("Today already has a weight", isPresented: Binding(get: { mode.save?.held != nil }, set: { if !$0 { send(.declined) } }),
+                            titleVisibility: .visible, presenting: mode.save?.held) { replace in
+            Button("Replace it") { send(.confirmed(replace)) }
             Button("Cancel", role: .cancel) {}
-        } message: {
+        } message: { _ in
             Text("Replace today's weight with this one? The old value stays in your history, marked as replaced.")
         }
-        .sensoryFeedback(.selection, trigger: step)
+        .sensoryFeedback(.selection, trigger: mode.step) { _, step in step != nil }
     }
 
     // MARK: Pages
@@ -97,7 +100,7 @@ struct OnboardingView: View {
     @ViewBuilder private func page(_ step: OnboardingStep) -> some View {
         switch step {
         case .health:
-            Self.healthPage(connecting: connecting, allow: Self.allowTap { await allowHealth() })
+            Self.healthPage(connecting: mode == .connecting) { send(.allowTapped) }
         case .sex:
             // A tap is the answer: it saves and moves on, so the step has no Continue (Brad 2026-10-23).
             OnboardingPage(symbol: "person.fill", tint: .accentColor, title: "What is your sex?",
@@ -121,12 +124,12 @@ struct OnboardingView: View {
                 }
                 .pickerStyle(.wheel)
                 .onChange(of: [answers.birthMonth, answers.birthYear]) {
-                    birthAnswered = true
+                    answers.birthAnswered = true
                     // This year's wheel stops at this month (US-54 AC5b): a later month moves back to it.
                     answers.birthMonth = min(answers.birthMonth, DayText.latestBirthMonth(year: answers.birthYear, now: .now))
                 }
             } actions: {
-                Self.primary("Continue", id: "onboarding.continue") { save(.birth) }.disabled(!birthAnswered)
+                Self.primary("Continue", id: "onboarding.continue") { send(.tapped) }.disabled(!answers.birthAnswered)
             }
         case .height:
             OnboardingPage(symbol: "ruler", tint: .teal, title: "How tall are you?",
@@ -140,7 +143,7 @@ struct OnboardingView: View {
                     }
                 }
             } actions: {
-                Self.primary("Continue", id: "onboarding.continue") { save(.height) }
+                Self.primary("Continue", id: "onboarding.continue") { send(.tapped) }
                     .disabled(answers.height.value == nil)
             }
         case .weight:
@@ -151,7 +154,7 @@ struct OnboardingView: View {
                     numberField(.weight)
                 }
             } actions: {
-                Self.primary("Continue", id: "onboarding.continue") { save(.weight) }
+                Self.primary("Continue", id: "onboarding.continue") { send(.tapped) }
                     .disabled(answers.weight.value == nil)
             }
         case .review:
@@ -166,7 +169,7 @@ struct OnboardingView: View {
                         LabelValue.layout(typeSize).callAsFunction {
                             Text(line.text).font(.title3).accessibilityLabel(line.spoken)
                             Spacer(minLength: 0)
-                            Button("Edit") { editing = true; go(line.step) }
+                            Button("Edit") { send(.moved(.init(step: line.step, fromSummary: true))) }
                                 .accessibilityLabel("Edit \(line.step.name)")
                                 .accessibilityIdentifier("onboarding.edit.\(line.step)")
                         }
@@ -176,7 +179,7 @@ struct OnboardingView: View {
                 .padding(.horizontal, 16)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             } actions: {
-                Self.primary("Continue", id: "onboarding.continue") { advance(from: .review) }
+                Self.primary("Continue", id: "onboarding.continue") { send(.reviewAccepted) }
             }
         }
     }
@@ -227,7 +230,7 @@ struct OnboardingView: View {
             guard text != answers[keyPath: answer][keyPath: path] else { return }
             answers[keyPath: answer][keyPath: path] = text
             answers[keyPath: answer].edited = true
-            message = nil
+            send(.wordsStale)
         })
     }
 
@@ -241,7 +244,8 @@ struct OnboardingView: View {
     private func choice(_ label: String, value: String) -> some View {
         let selected = answers.sex == value
         let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-        return Button { answers.sex = value; save(.sex) } label: {
+        // The tap that claims the save picks the answer; one while it saves changes nothing.
+        return Button { if !busy { answers.sex = value }; send(.tapped) } label: {
             Text(label)
                 .font(.title3.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 64)
@@ -279,6 +283,10 @@ struct OnboardingView: View {
         var birthMonth = 1
         var height = TypedAnswer(metric: "height")
         var weight = TypedAnswer(metric: "weight")
+        /// Birth has an answer: from the record, from Apple Health, or a wheel the person
+        /// moved. A wheel's starting value is never taken as an answer (AC4). Height and
+        /// weight are typed: their answer is a number in the box.
+        var birthAnswered = false
     }
 
     enum Field: String { case height, feet, inches, weight }

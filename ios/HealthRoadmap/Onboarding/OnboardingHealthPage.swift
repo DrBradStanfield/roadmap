@@ -23,12 +23,6 @@ extension OnboardingView {
         }
     }
 
-    /// Allow's tap: the connect runs in a Task, so `connecting` is set only once it runs and a
-    /// second tap before then starts a second connect (S6 bug D1, pinned in OnboardingLandingTests).
-    static func allowTap(_ connect: @escaping @MainActor () async -> Void) -> () -> Void {
-        { Task { await connect() } }
-    }
-
     /// The last thing read before the tap: what Apple's sheet asks next (AC3; words Brad 2026-11-09).
     /// A hint, never a switch: no app can turn that sheet's switches on. In the accent
     /// green, not pink: red read as something wrong (Brad 2026-10-25). Primary text on the
