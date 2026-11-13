@@ -1,9 +1,9 @@
 /**
- * S-19 (b): every in-memory TTL map holds a bounded number of entries (US-52 AC4f, US-59 AC12).
- * When a new key meets a full map, expired entries go first. Then, by the factory's `whenFull`:
- * 'evictOldest' (every limiter but one) drops the oldest live entry and admits the new key;
- * 'refuse' (the spent-challenge set only, US-52 AC1a) keeps every entry and refuses the new key.
- * A full map says so once an hour, by the map's name alone.
+ * S-19 (b): the limiter maps and the subscription summary cache hold a bounded number of entries
+ * (US-52 AC4f, US-59 AC12). When a new key meets a full map, expired entries go first, then the
+ * oldest live entry, and the new key is admitted. A full map says so once an hour, by its name
+ * alone. The in-memory maps left unbounded on purpose are a named list below; the spent-challenge
+ * set is one of them, unchanged, so one-use holds for a challenge's whole life (US-52 AC1a).
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -82,19 +82,6 @@ describe("US-52 AC4f: a full limiter map makes room from its oldest entry ('evic
   });
 });
 
-describe("US-52 AC1a/AC4f: the 'refuse' map keeps every entry", () => {
-  it('refuses a new key when full of live entries, and keeps every spent one', async () => {
-    const { createQuotaCounter } = await import('./rate-limiter');
-    const spent = createQuotaCounter(1, W, NEVER, { name: 'test spent set', whenFull: 'refuse', maxKeys: 2 });
-    expect(spent.take('x', 1)).toBe(true);
-    expect(spent.take('y', 1)).toBe(true);
-    expect(spent.take('z', 1)).toBe(false); // full: refused, nothing forgotten
-    expect(spent.take('x', 1)).toBe(false); // one use holds
-    vi.setSystemTime(T0 + W);
-    expect(spent.take('z', 1)).toBe(true); // expired entries make room
-  });
-});
-
 describe('US-52 AC4f: a full map says so, by name only, once an hour', () => {
   it('warns once per map per hour, with no key, IP or count in it', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
@@ -115,30 +102,53 @@ describe('US-52 AC4f: a full map says so, by name only, once an hour', () => {
   });
 });
 
-describe("US-52 AC4f: 'refuse' has one call site, the spent-challenge set", () => {
-  /** Every production .ts file under app/, tests excluded. */
-  function prodFiles(dir: string): string[] {
+describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
+  /** Every .ts and .tsx file under app/. */
+  function appFiles(dir: string): string[] {
     return readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
-      if (statSync(path).isDirectory()) return prodFiles(path);
-      return /\.tsx?$/.test(name) && !/\.test(-helpers)?\.tsx?$/.test(name) ? [path] : [];
+      if (statSync(path).isDirectory()) return appFiles(path);
+      return /\.tsx?$/.test(name) ? [path] : [];
     });
   }
+  const app = join(__dirname, '..');
+  const prod = appFiles(app).filter((file) => !/\.test(-helpers)?\.tsx?$/.test(file));
 
-  it('lists every limit map and its policy', () => {
+  /** In-memory maps with an expiry that are not size-bounded, on purpose (lead S-24). */
+  const UNBOUNDED_TTL = ['activeBatches', 'guestIpRateMap', 'orderCache', 'spentCodes', 'spentProposals', 'spentWrites', 'undeletedBatches'];
+  /** Module maps with no expiry: lookups, in-flight work and content caches. */
+  const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'creatingBatches', 'formsCache', 'handleCache', 'inFlight'];
+
+  it('names no other policy anywhere in app/', () => {
+    const banned = new RegExp(['when' + 'Full', "'re" + "fuse'"].join('|'));
+    expect(appFiles(app).filter((file) => banned.test(readFileSync(file, 'utf8')))).toEqual([]);
+  });
+
+  it('names every limit map, and only the spent-challenge set is unbounded', () => {
     const sites: string[] = [];
-    for (const file of prodFiles(join(__dirname, '..'))) {
+    for (const file of prod) {
       const text = readFileSync(file, 'utf8');
       for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)\(/g)) {
         // The call through its options object, which closes with `})`.
         const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
         const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
-        sites.push(`${name}: ${/whenFull: '(\w+)'/.exec(site)?.[1] ?? 'evictOldest'}`);
+        sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}`);
       }
     }
     expect(sites).toHaveLength(36);
-    expect(sites.filter((s) => !s.endsWith(': evictOldest'))).toEqual(['app spent challenges: refuse']);
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
+    expect(sites.filter((s) => s.endsWith(': unbounded'))).toEqual(['app spent challenges: unbounded']);
+  });
+
+  it('every other module-level Map is bounded or on a named list', () => {
+    const unbounded: string[] = [];
+    for (const file of prod) {
+      const text = readFileSync(file, 'utf8');
+      for (const [, name] of text.matchAll(/^(?:export )?const (\w+)(?::[^=]+)? = new Map\b/gm)) {
+        if (!text.includes(`${name}.size`) && !text.includes(`boundedMap(${name}`)) unbounded.push(name);
+      }
+    }
+    expect(unbounded.sort()).toEqual([...UNBOUNDED_TTL, ...NOT_TTL].sort());
   });
 });
 

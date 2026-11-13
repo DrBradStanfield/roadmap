@@ -94,8 +94,9 @@ export const appLimits = {
   register: createQuotaCounter(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
   /** Successful registrations per IP per day (US-52 AC1b). */
   registered: createQuotaCounter(50, DAY_MS, 30 * 60_000, { name: 'app registrations per IP' }),
-  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines. */
-  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges', whenFull: 'refuse' }),
+  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines.
+   *  One-use must hold for a challenge's whole life, so this set never evicts and never refuses; its 6-minute life bounds it. */
+  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges', maxKeys: Infinity }),
   /** The dev bypass's per-key count, since no key row exists for it. */
   dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000, { name: 'app dev chat per key' }), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000, { name: 'app dev lab per key' }) },
 };

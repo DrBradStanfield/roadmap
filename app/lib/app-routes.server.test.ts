@@ -579,17 +579,16 @@ describe('US-52 AC4f: the gate with its limit maps full of other callers', () =>
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
-  it('the spent-challenge set refuses when full, and a spent challenge stays spent (US-52 AC1a)', async () => {
+  it('a spent challenge stays spent however many are spent after it in its life (US-52 AC1a)', async () => {
     const spent = await fresh();
     expect((await reg(spent, 'AA==', '198.51.100.30')).status).toBe(401); // spends it
-    fill(appLimits.challenges, MAX_TRACKED_KEYS - 1);
-    const challenge = await fresh();
-    const full = await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.31');
-    expect(full.status).toBe(401);
-    expect((await full.json()).reason).toBe('bad_challenge');
+    fill(appLimits.challenges, MAX_TRACKED_KEYS + 1); // more than any bounded map holds
     const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
+    expect(again.status).toBe(401);
     expect((await again.json()).reason).toBe('bad_challenge');
     expect(store.rows.size).toBe(0);
+    const challenge = await fresh(); // a new challenge still registers
+    expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.33')).status).toBe(200);
   });
 });
 
