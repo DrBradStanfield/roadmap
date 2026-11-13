@@ -1,13 +1,12 @@
 /**
- * Message pack configuration — single source of truth for pack sizes, prices, and variant IDs.
- * Used by webhooks.orders-paid.ts (credit amounts). buildPackUrls has no caller since the
- * per-user chat limits were removed (893c71b9); it was kept for a future limit.
+ * Message pack configuration — single source of truth for pack sizes and variant IDs.
+ * Used by webhooks.orders-paid.ts (credit amounts).
  */
 
 const PACK_CONFIG = [
-  { envKey: 'MESSAGE_PACK_25_VARIANT_ID', amount: 25, name: '25 Messages', price: '$5' },
-  { envKey: 'MESSAGE_PACK_60_VARIANT_ID', amount: 60, name: '60 Messages', price: '$10' },
-  { envKey: 'MESSAGE_PACK_150_VARIANT_ID', amount: 150, name: '150 Messages', price: '$20' },
+  { envKey: 'MESSAGE_PACK_25_VARIANT_ID', amount: 25 },
+  { envKey: 'MESSAGE_PACK_60_VARIANT_ID', amount: 60 },
+  { envKey: 'MESSAGE_PACK_150_VARIANT_ID', amount: 150 },
 ] as const;
 
 /** Variant ID → credit amount map (for webhook handler). */
@@ -20,16 +19,4 @@ for (const pack of PACK_CONFIG) {
 // Warn at startup if no packs are configured (env vars missing)
 if (Object.keys(VARIANT_CREDIT_MAP).length === 0 && process.env.NODE_ENV === 'production') {
   console.warn('WARNING: No MESSAGE_PACK_*_VARIANT_ID env vars configured — message packs disabled');
-}
-
-/** Pack info with cart URLs (for chat API 429 response). */
-export function buildPackUrls(): Array<{ name: string; price: string; amount: number; url: string }> {
-  return PACK_CONFIG
-    .filter(p => process.env[p.envKey])
-    .map(p => ({
-      name: p.name,
-      price: p.price,
-      amount: p.amount,
-      url: `/cart/${process.env[p.envKey]}:1`,
-    }));
 }
