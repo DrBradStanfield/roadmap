@@ -398,6 +398,9 @@ final class RecordStore {
         guard shows(seen) else {
             return .refused(message: Self.recordChanged, existingId: nil)
         }
+        // An erase held with no drawing (showErased) takes no edit until it is drawn: an Apple Health
+        // pass that cannot see the erase without a drawing adds nothing to it (US-25 AC16f).
+        if drawn == nil, problem == nil { return .refused(message: Self.recordChanged, existingId: nil) }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it

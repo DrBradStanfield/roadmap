@@ -19,16 +19,21 @@ final class EraseHeldUndrawnTests: XCTestCase {
         UnitChoices().save()
     }
 
-    /// The bundled engine, whose screen draw fails while `__screenFails` is set.
+    /// The bundled engine, whose screen draw fails while `__screenFails` is set, and which counts
+    /// the cloud session's edits in `__cloudEdits`.
     private func engine() throws -> HealthEngine {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8) + """
 
         globalThis.__screenFails = false;
+        globalThis.__cloudEdits = 0;
         HealthEngine = Object.assign({}, HealthEngine, { screenJson: (door => function () {
           if (__screenFails) throw new Error('test: the screen draw fails');
           return door.apply(this, arguments);
-        })(HealthEngine.screenJson) });
+        })(HealthEngine.screenJson), cloudEdit: (door => function () {
+          __cloudEdits += 1;
+          return door.apply(this, arguments);
+        })(HealthEngine.cloudEdit) });
 
         """
         return try HealthEngine(source: source, sourceURL: url)
@@ -126,6 +131,19 @@ final class EraseHeldUndrawnTests: XCTestCase {
         XCTAssertEqual(store.recordJSON, erased, "the erase is held, not dropped as stale")
         XCTAssertNil(store.myData?.vitals.first { $0.metric == "weight" }?.latest)
         XCTAssertEqual(store.screenErasures, store.erasures)
+    }
+
+    /// Codex R1 on the merge: an Apple Health pass cannot see an erase held with no drawing (its gate
+    /// reads the drawing), so the held record takes no edit until it is drawn; none reaches the session.
+    func testAnEraseHeldUndrawnTakesNoEdit_US25_AC16f() async throws {
+        let erased = try await erasedUndrawn()
+        let store = erased.store
+        let before = try erased.engine.blocking { try $0.evaluate("__cloudEdits").toInt32() }
+        let sample = HealthSample(id: UUID(), metric: "weight", value: 70, at: .now, timeZone: .gmt)
+        guard case .refused = await store.applyNow(.appleHealth([sample])) else { return XCTFail("an import landed in the held erase") }
+        guard case .refused = await store.applyNow(.add(metric: "weight", value: 70, day: "2026-11-13")) else { return XCTFail("an edit landed") }
+        XCTAssertEqual(try erased.engine.blocking { try $0.evaluate("__cloudEdits").toInt32() }, before, "nothing reached the session")
+        XCTAssertEqual(store.recordJSON, erased.record)
     }
 
     func testMyDataDrawsNoRowFromBeforeTheErase_US25_AC16f() async throws {
