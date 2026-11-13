@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   CLOSED, SAVE_ERRORS, UNIT_CHANGED, UNIT_FIRST, isOpen, messageOf, transition,
-  type ValueCellEvent, type ValueCellState, type Step,
+  type ValueCellEvent, type ValueCellState, type Step, type Verdict,
 } from './value-cell-state';
 
 const at = { row: 'r1', unit: 'si' as const, typed: '3.4' };
@@ -131,6 +131,25 @@ describe('value-cell-state transition: every state x event', () => {
         }
       });
     }
+  }
+});
+
+describe('every leave from blurPending judges the text as a leave', () => {
+  const leaves: [ValueCellState, (verdict: Verdict) => ValueCellEvent][] = [
+    [STATES.delay, verdict => ({ type: 'delayDue', pressed: false, verdict })],
+    [STATES.press, verdict => ({ type: 'pressCapDue', verdict })],
+    [STATES.release, verdict => ({ type: 'releaseDue', verdict })],
+    [STATES.delay, verdict => ({ type: 'pageHidden', verdict })],
+  ];
+  for (const [state, make] of leaves) {
+    const type = make('unusable').type;
+    it(`${state.kind}(${'wait' in state ? state.wait : ''}) x ${type}: text it cannot save closes the editor, never a half-open form`, () => {
+      expect(transition(state, make('unusable'))).toEqual(to(CLOSED));
+    });
+    it(`${state.kind}(${'wait' in state ? state.wait : ''}) x ${type}: a unit changed since the open saves nothing and says so`, () => {
+      expect(transition(state, make('unitChanged'))).toEqual(closedWith(UNIT_CHANGED));
+      expect(transition(state, make('unchanged'))).toEqual(to(CLOSED));
+    });
   }
 });
 
