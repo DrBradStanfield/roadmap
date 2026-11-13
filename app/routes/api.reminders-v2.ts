@@ -126,7 +126,8 @@ export async function action({ request }: ActionFunctionArgs) {
       enrolment = await upsertVerifiedOptin(email, input.schedule);
     } else {
       email = input.email.toLowerCase();
-      if (!allowOptinEmail(emailLimiterKey(email)) || !allowOptinIp(ipHash)) {
+      // IP first, as the capture route: an IP-refused request never reaches the email map (S-22).
+      if (!allowOptinIp(ipHash) || !allowOptinEmail(emailLimiterKey(email))) {
         return Response.json({ error: 'Too many requests' }, { status: 429, headers });
       }
       enrolment = await enrolByEmail(email, input.provider, input.schedule);

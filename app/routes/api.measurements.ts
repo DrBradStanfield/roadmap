@@ -50,7 +50,9 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
       return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
     const { email, schedule } = parsed.data;
-    if (!checkGuestReportLimit(emailLimiterKey(email)) || !checkCaptureIpLimit(clientIp)) {
+    // IP first: a request the IP limit refuses never reaches the email map, so it cannot
+    // push another address's used-up day out of that bounded map (S-22).
+    if (!checkCaptureIpLimit(clientIp) || !checkGuestReportLimit(emailLimiterKey(email))) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
     // Email only: the address goes to the guest list and nothing else. Fire-and-
