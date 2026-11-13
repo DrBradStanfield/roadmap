@@ -37,10 +37,14 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 describe('US-12 AC5b: the batch deadline stops the BYOK queue', () => {
   it('after the timeout no further model call is made on the person\'s key', async () => {
     let settled: unknown;
-    processBatch(upload, queue, new AbortController(), () => {}, [] as FileNotice[])
+    const caller = new AbortController();
+    processBatch(upload, queue, caller, () => {}, [] as FileNotice[])
       .then(() => { settled = 'resolved'; }, (error: unknown) => { settled = error; });
     await vi.advanceTimersByTimeAsync(10 * 60_000 + 10_000);
     expect(settled).toMatchObject({ code: 'timeout' });
+    // The caller's own signal stays live: aborted, useUploadFlow would swallow
+    // "Processing took too long" as if the person had cancelled.
+    expect(caller.signal.aborted).toBe(false);
     const atDeadline = modelCalls;
     expect(atDeadline).toBeLessThan(N); // files were still queued
     // Long enough for the whole queue to drain if nothing stopped it.
