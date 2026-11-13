@@ -154,4 +154,48 @@ final class EraseHeldUndrawnTests: XCTestCase {
         XCTAssertNil(store.plan)
         XCTAssertEqual(store.screenErasures, store.erasures, "the screen no longer shows a record from before the erase")
     }
+
+    /// US-25 AC16g (lead S46): an erase that finished after CloudSync moved on to another session
+    /// is counted, but never drawn over the record the store holds now, which is not the one erased.
+    func testAnEraseFromASessionNoLongerShownIsCountedAndReplacesNothing_US25_AC16g() async throws {
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
+        let (filled, deviceId) = (store.recordJSON, store.deviceId)
+        let erased = try await engine.eraseOnPhone(recordJSON: filled, historyJSON: nil, now: .now, deviceId: deviceId).record
+        await store.showCloud(HealthEngine.CloudView(record: filled, erase: "e2", session: 2, order: 1)).value
+        let erasures = store.erasures
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 2), stillShown: { false }).value
+        XCTAssertEqual(store.erasures, erasures + 1, "the erase is counted")
+        XCTAssertEqual(store.recordJSON, filled, "session 2's record stays")
+        XCTAssertEqual(store.cloudErase, "e2")
+        XCTAssertEqual(store.screenErasures, store.erasures, "read after the erase, as a stale erase's newer record is")
+    }
+
+    /// US-25 AC16g: the same session, still held by the store, takes the erase even after
+    /// CloudSync moved on (a Disconnect whose phone read has not landed yet).
+    func testAnEraseOfTheSessionTheStoreStillHoldsIsHeld_US25_AC16g() async throws {
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
+        let (filled, deviceId) = (store.recordJSON, store.deviceId)
+        let erased = try await engine.eraseOnPhone(recordJSON: filled, historyJSON: nil, now: .now, deviceId: deviceId).record
+        await store.showCloud(HealthEngine.CloudView(record: filled, erase: "e0", session: 1, order: 1)).value
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 2), stillShown: { false }).value
+        XCTAssertEqual(store.recordJSON, erased)
+        XCTAssertNil(store.myData?.vitals.first { $0.metric == "weight" }?.latest)
+    }
+
+    /// US-25 AC16g: an erase that came back with no record still counts; the record held is
+    /// marked as predating it, so nothing is charted from it.
+    func testAnEraseWithNoRecordIsCountedAndMarksTheRecordHeld_US25_AC16g() async throws {
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
+        let (filled, erasures) = (store.recordJSON, store.erasures)
+        await store.showErased(nil).value
+        XCTAssertEqual(store.erasures, erasures + 1)
+        XCTAssertEqual(store.recordJSON, filled, "no record to put in its place")
+        XCTAssertTrue(store.predatesErase)
+    }
 }

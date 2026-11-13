@@ -522,6 +522,33 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertNotNil(text("sync-pending"), "though the erase waits on the phone")
     }
 
+    /// US-25 AC16g (lead S46): an erase that finishes after its session stopped being shown still
+    /// reaches the store, so it is counted. Here a Disconnect starts while the erase reads; no
+    /// DataEraser is built, so AC16e's wait is not wired. Either order of the two endings counts it.
+    func testAnEraseWhoseSessionClosedMeanwhileStillReachesTheStore_US25_AC16g() async throws {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        let (store, sync, _) = try app()
+        await sync.start()
+        let erasures = store.erasures
+        let gate = StubHTTP.Gate()
+        dropbox.downloadGate = gate
+        let read = nextDownload()
+        let erase = Task { try await sync.erase(chatHistory: nil) { _ in true } }
+        await arrive(read)
+        let disconnect = Task { await sync.disconnect() }
+        let deadline = Date.now.addingTimeInterval(10)
+        while sync.status != .disconnecting {
+            guard Date.now < deadline else { return XCTFail("the Disconnect never started") }
+            await Task.yield()
+        }
+        gate.open()
+        let result = try await erase.value
+        XCTAssertEqual(result?.erased, true, "the session erased the record")
+        XCTAssertEqual(store.erasures, erasures + 1, "the erase reached the store")
+        _ = await disconnect.value
+        XCTAssertEqual(store.erasures, erasures + 1, "counted once")
+    }
+
     // MARK: 9 · syncNow
 
     func testSyncNowWithNoCloudDoesNothingAndWithNoSessionOpens() async throws {
