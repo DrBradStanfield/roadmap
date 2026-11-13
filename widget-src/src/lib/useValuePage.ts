@@ -9,16 +9,20 @@
 //        if it lands before the page unmounts, closes as Back does)
 // Back is ignored while My data's tab is hidden; with Settings over the page,
 // Back closes Settings and the page keeps its entry. A reload drops a stale entry.
-// The table is a separate toggle beside it, not a third state: showTable opens
-// and closes it, and a chat edit to a grid cell shows it too.
+// The view is one named state (lib/value-view-machine): rows or a page, each
+// carrying the table toggle; showTable opens and closes it, and a chat edit to
+// a grid cell shows it too.
 // A page is a history entry (a state marker, no URL change), so the phone's
 // back gesture closes it. Typed, unsaved input is not dropped silently:
 // leaving asks first, and a chat reveal that drops it says so. An erase
 // drops it as it drops everything else (US-16 AC2a).
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useReducer, useRef, type RefObject } from 'react';
 import { DRAFTS_CLEARED_EVENT } from './storage';
 import { useLiveRegion } from '../components/BloodTestTimeline';
 import type { ValueSubject } from '../components/MyDataRows';
+import { ROWS, shown, transition, type CameFrom, type RevealCell } from './value-view-machine';
+
+export type { RevealCell };
 
 /** The history-state key a phone value page's entry carries (US-62 AC10). */
 const VALUE_PAGE_STATE = 'hrValuePage';
@@ -26,42 +30,30 @@ const LEAVE_UNSAVED = 'Leave without saving the value you typed?';
 /** Said when a chat edit closes a page that held typed input. */
 const TYPED_NOT_SAVED = 'Your typed value was not saved.';
 
-/** The field a chat edit filled, for My data to show (US-16 AC2). */
-export type RevealCell = { field: string; grid: boolean } | null;
-
 const onPageEntry = () => !!window.history.state?.[VALUE_PAGE_STATE];
 const pushPageEntry = () => window.history.pushState({ ...window.history.state, [VALUE_PAGE_STATE]: true }, '');
 
 export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDivElement | null>) {
-  const [valuePage, setValuePage] = useState<ValueSubject | null>(null);
-  const [tableOpen, setTableOpen] = useState(false);
-  const [seenReveal, setSeenReveal] = useState<RevealCell>(null);
+  const [view, send] = useReducer(transition, ROWS);
   // A chat reveal closes the value page; only a filled grid cell opens the table (adversary R6).
-  const revealing = !!revealCell && revealCell !== seenReveal;
-  const tableShown = tableOpen || (revealing && revealCell.grid);
-  const pageShown = !revealing ? valuePage : null;
-  const cameFrom = useRef<{ el: Element | null; y: number }>({ el: null, y: 0 });
-  /** Set by the open page's form while it holds typed, unsaved input. */
+  const { revealing, page: pageShown, table: tableShown } = shown(view, revealCell);
+  const open = view.kind === 'page' ? view : null;
+  /** Written by the open page's form as it renders, while it holds typed, unsaved input. */
   const pageDirty = useRef(false);
-  const valuePageRef = useRef(valuePage);
-  valuePageRef.current = valuePage;
   const mayLeave = () => !pageDirty.current || window.confirm(LEAVE_UNSAVED);
 
   // `from` is the row pressed: WebKit does not focus a button on a tap, so the active element is stale.
   const openPage = (subject: ValueSubject, from?: Element) => {
-    cameFrom.current = { el: from ?? document.activeElement, y: window.scrollY };
-    setSeenReveal(revealCell);
-    setValuePage(subject);
+    send({ type: 'open', subject, from: { el: from ?? document.activeElement, y: window.scrollY }, reveal: revealCell });
     if (!onPageEntry()) pushPageEntry();
   };
   /** From one page to another: asks first if the page holds typed input. */
   const switchPage = (subject: ValueSubject) => { if (mayLeave()) openPage(subject); };
   /** Back to the rows, the focus on the row the page opened from. */
-  const finishClose = () => {
+  const finishClose = ({ el, y }: CameFrom) => {
     pageDirty.current = false;
-    setValuePage(null);
+    send({ type: 'close' });
     requestAnimationFrame(() => {
-      const { el, y } = cameFrom.current;
       if (el instanceof HTMLElement && el.isConnected) {
         el.scrollIntoView({ behavior: 'instant', block: 'center' });
         el.focus({ preventScroll: true });
@@ -70,7 +62,7 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   };
   /** Closed from outside (an erase, a chat reveal): what it held goes, with its entry. */
   const drop = () => {
-    setValuePage(null);
+    send({ type: 'close' });
     pageDirty.current = false;
     if (onPageEntry()) window.history.back();
   };
@@ -79,9 +71,9 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
     if (!mayLeave()) return;
     pageDirty.current = false;
     if (onPageEntry()) window.history.back();
-    else finishClose();
+    else if (open) finishClose(open.from);
   };
-  const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
+  const showTable = (show: boolean) => send({ type: 'table', open: show, reveal: revealCell });
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
   // The vitals grid scrolls whole date columns, so no clipped sliver shows beside its names (H79).
   // Only where Trend scrolls with the data (a phone): a sticky Trend (desktop) would cover New.
@@ -99,8 +91,10 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   useEffect(() => {
     if (onPageEntry()) window.history.replaceState({ ...window.history.state, [VALUE_PAGE_STATE]: undefined }, '');
   }, []);
+  // While a page is open it answers Back, and an erase, here or on another device,
+  // closes it and drops what it held (US-16 AC2a).
   useEffect(() => {
-    if (!valuePage) return;
+    if (!open) return;
     const onPop = () => {
       // A page left open on My data while another tab shows does not answer Back.
       if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
@@ -108,26 +102,22 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
       if (panelRef.current?.querySelector('.mh-page-host[hidden]')) { pushPageEntry(); return; }
       // Back from a page holding typed input, declined: stay, and keep the entry.
       if (!mayLeave()) { pushPageEntry(); return; }
-      finishClose();
+      finishClose(open.from);
     };
     window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [valuePage]);
-  // An erase, here or on another device, closes an open page and drops what it held (US-16 AC2a).
-  useEffect(() => {
-    const onErase = () => { if (valuePageRef.current) drop(); };
-    window.addEventListener(DRAFTS_CLEARED_EVENT, onErase);
-    return () => window.removeEventListener(DRAFTS_CLEARED_EVENT, onErase);
-  }, []);
+    window.addEventListener(DRAFTS_CLEARED_EVENT, drop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener(DRAFTS_CLEARED_EVENT, drop);
+    };
+  }, [open]);
   const [sayPanel, panelMessages] = useLiveRegion('md-panel-messages');
   // A chat edit closes any open page, so the field it filled shows (US-16 AC2).
   // Read as the reveal renders: the page unmounts in this commit, and its form clears the mark as it goes.
-  const revealDropsTyping = useRef(false);
-  if (revealing && valuePage && pageDirty.current) revealDropsTyping.current = true;
+  const revealDropsTyping = revealing && !!open && pageDirty.current;
   useEffect(() => {
-    if (!revealing || !valuePage) return;
-    if (revealDropsTyping.current) sayPanel(TYPED_NOT_SAVED);
-    revealDropsTyping.current = false;
+    if (!revealing || !open) return;
+    if (revealDropsTyping) sayPanel(TYPED_NOT_SAVED);
     drop();
   }, [revealing]);
 
