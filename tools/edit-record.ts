@@ -118,9 +118,9 @@ export function parseArgs(argv: string[]): Args {
  * A number the user typed, or a refusal naming the flag. Matched against a
  * plain decimal rather than handed to `Number`, which reads '' as 0, '0x10'
  * as 16 and ' ' as 0 — none of them a value anybody typed on purpose, and the
- * first of them lands a zero on a clinical row. A decimal past the largest
- * number JavaScript holds reads as Infinity, and an `--expect` of Infinity
- * matches every finite row.
+ * first of them lands a zero on a clinical row. A decimal too large for a
+ * JavaScript number reads as Infinity, and an `--expect` of Infinity matches
+ * every row holding a finite value.
  */
 const DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/;
 

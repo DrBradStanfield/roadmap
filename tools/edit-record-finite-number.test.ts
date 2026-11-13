@@ -1,9 +1,9 @@
 /**
  * US-32 AC5a: `correct --expect` holds only for the value the row holds now.
  *
- * A decimal past the largest number JavaScript holds reads as Infinity, and
+ * A decimal too large for a JavaScript number reads as Infinity, and
  * Infinity sits "within float noise" of every finite stored value, so
- * `--expect` passed for any such row. The shell refuses a number it cannot
+ * `--expect` passed for any active row holding one. The shell refuses a number it cannot
  * hold, as it refuses '0x10' and ''.
  */
 import { describe, it, expect, vi } from 'vitest';
