@@ -159,10 +159,8 @@ async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?:
  *  birth date on record that weight finishes the onboarding, and leaving it
  *  moves About you low, the weight joining the vitals (US-62 AC12); with none,
  *  the weight box stays beside the height. */
-async function firstWeight(value: string, { born = true, opened = false } = {}): Promise<RenderResult> {
+async function firstWeight(value: string, { born = true } = {}): Promise<RenderResult> {
   await guest({ born });
-  // A saved blood test opens the whole form, the first-time vitals with it (US-62 AC13).
-  if (opened) await addMeasurement('ldl', 3.0, '2026-09-01');
   const view = render(<HealthTool />);
   await typeAndLeave(await shown<HTMLInputElement>(view.container, '#weightKg'), value);
   await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), localToday()]]));
@@ -170,12 +168,7 @@ async function firstWeight(value: string, { born = true, opened = false } = {}):
 }
 /** Today's saved weight in its first-time field: the onboarding's weight box,
  *  beside the height, holds it (US-62 AC13). */
-async function openToday(view: RenderResult): Promise<HTMLInputElement> {
-  // In the vitals, today's saved weight shows collapsed: a tap opens its field.
-  const collapsed = view.container.querySelector<HTMLElement>('.collapsed-field-value');
-  if (!view.container.querySelector('#weightKg') && collapsed) fireEvent.click(collapsed);
-  return shown<HTMLInputElement>(view.container, '#weightKg');
-}
+const openToday = (view: RenderResult) => shown<HTMLInputElement>(view.container, '#weightKg');
 /** The line a typed weight shows under the box: what saving it replaces. */
 const weightReference = (view: RenderResult) =>
   view.container.querySelector('label[for="weightKg"]')!.closest('.health-field')!.querySelector('.previous-reference')?.textContent ?? null;
@@ -699,67 +692,6 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect((await rowsOf('weight')).map((m) => [m.value, m.status])).toEqual([[84, 'active']]);
   });
 
-  // Round 7: a blood pressure has no unit to keep; mmHg is mmHg in both.
-  it('US-03 AC3: in the first-time fields, a blood pressure saves as a pair, and the same pair typed again writes nothing across a unit switch', async () => {
-    await guest();
-    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
-    const view = render(<HealthTool />);
-    async function typePair(sys: string, dia: string) {
-      const systolic = await shown<HTMLInputElement>(view.container, '#systolicBp');
-      fireEvent.change(systolic, { target: { value: sys } });
-      fireEvent.blur(systolic);
-      const diastolic = view.container.querySelector('#diastolicBp') as HTMLInputElement;
-      fireEvent.change(diastolic, { target: { value: dia } });
-      fireEvent.blur(diastolic); // the two blurs make one save
-    }
-    const bpRows = async () => [...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')].map((m) => [m.value, m.status, day(m)]);
-
-    await typePair('120', '80');
-    await wait(600);
-    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active', localToday()], [80, 'active', localToday()]]));
-
-    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value')); // open today's 120/80
-    await typePair('120', '80');
-    fireEvent.click(view.getByRole('button', { name: /Switch units/ })); // to US units, before the save runs
-    await wait(600);
-    await waitFor(() => expect(view.container.querySelector('#systolicBp')).toBeNull()); // the save closed the pair
-    expect(await bpRows()).toEqual([[120, 'active', localToday()], [80, 'active', localToday()]]);
-  });
-
-  // US-02 AC8 (review R2): the first-time fields say why a pair the wrong way
-  // up is not saved, once, and the record is left as it was.
-  it('US-02 AC8: in the first-time fields, 80/120 shows the rule and saves nothing; so does one half against today\'s saved half', async () => {
-    await guest();
-    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
-    const view = render(<HealthTool />);
-    const rule = 'The top number (systolic) must be higher than the bottom number (diastolic).';
-    const shownRule = () => [...view.container.querySelectorAll('.error-message')].filter((e) => e.textContent === rule);
-    const bpRows = async () => [...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')].map((m) => [m.value, m.status]);
-    const enter = async (id: string, value: string) => {
-      const field = await shown<HTMLInputElement>(view.container, id);
-      fireEvent.change(field, { target: { value } });
-      fireEvent.blur(field);
-    };
-
-    await enter('#systolicBp', '80');
-    await enter('#diastolicBp', '120');
-    await wait(600);
-    await waitFor(() => expect(shownRule()).toHaveLength(1));
-    expect(await bpRows()).toEqual([]);
-
-    await enter('#systolicBp', '120');
-    await enter('#diastolicBp', '80');
-    await wait(600);
-    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]));
-    expect(shownRule()).toHaveLength(0);
-
-    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value')); // open today's 120/80
-    await enter('#diastolicBp', '130');
-    await wait(600);
-    await waitFor(() => expect(shownRule()).toHaveLength(1));
-    expect(await bpRows()).toEqual([[120, 'active'], [80, 'active']]);
-  });
-
   // US-54 AC5b now covers the web: the plan leaves a future birth month out and says why.
   it('US-54 AC5b: a birth month after this one shows the rule under the month; this month does not', async () => {
     vi.setSystemTime(new Date('2026-09-01T09:00:00.000Z'));
@@ -796,7 +728,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // Cleanup review of 2026-09-25: a save took each field it saved out of the
   // form by name, so a number typed there while the save ran went with it.
   it('US-03 AC3: a weight typed into its first-time field while that field\'s save runs stays in the form, and is saved next', async () => {
-    const view = await firstWeight('82', { born: false, opened: true }); // About you stays at the top: the first-time fields
+    const view = await boxWithWholeForm(); // the weight box beside the height, and the whole form's "Saving…"
     const field = await openToday(view);
     const release = holdNextCorrection();
     await typeAndLeave(field, '84'); // its save starts, and holds as it writes
@@ -1190,43 +1122,51 @@ describe('leftover form state never writes a value', () => {
 // the new form shows the vitals as a matrix, and a first-time value typed but
 // not yet left is on screen nowhere. The user typed it, so the next save of
 // the fields writes it (2026-09-25; it was never written before).
-describe('US-03 AC3: a first-time value the form was built again without', () => {
-  it('is written under today by the next save of the fields', async () => {
+/** The onboarding's weight typed beside the height (stage 3), then another
+ *  device's blood test opens the whole form: the box stays for the visit. */
+async function boxWithWholeForm(): Promise<RenderResult> {
+  const view = await firstWeight('82', { born: false });
+  await addMeasurement('ldl', 3.0, RIGHT_DAY);
+  remoteChange();
+  await shown(view.container, '.bt-timeline-title');
+  return view;
+}
+
+describe('US-03 AC3: a weight typed in the box the form was built again without', () => {
+  // Since H71 (2026-11-13) the onboarding's weight box is the one first-time field.
+  it('is written under today by the next save of the box', async () => {
     const turnPhone = rotatablePhone();
-    const view = await firstWeight('82', { born: false, opened: true }); // saved: the next form built shows the vitals as a matrix
-    typeInto(await shown<HTMLInputElement>(view.container, '#waistCm'), '90'); // not left
-    await turnPhone(); // portrait: the form is built again
+    const view = await boxWithWholeForm();
+    typeInto(await openToday(view), '84'); // not left
+    await turnPhone(); // portrait: the form is built again, the weight a row
     await shown(view.container, '.bt-vitals-card');
+    expect(view.container.querySelector('#weightKg')).toBeNull();
     await wait(600);
-    expect(await rowsOf('waist')).toEqual([]);
+    expect(await activeOn('weight')).toEqual([[82, localToday()]]);
 
     // Save as PDF sits at the foot of My health, the tab already shown (US-62 AC26).
     savePdf(view);
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, localToday()]]));
   });
 
-  // Only the fields' own save takes a value out of the form. A matrix's save
+  // Only the box's own save takes a value out of the form. A matrix's save
   // of the same number, for another day, is not the value typed there.
-  it('survives a matrix saving the same number for another day, and is written by the next save of the fields', async () => {
+  it('survives a matrix saving the same number for another day, and is written by the next save of the box', async () => {
     const turnPhone = rotatablePhone();
-    await guest();
-    await addMeasurement('ldl', 3.0, RIGHT_DAY); // a saved blood test opens the whole form: the first-time fields (US-62 AC13)
-    const view = render(<HealthTool />);
-    await typeAndLeave(await shown<HTMLInputElement>(view.container, '#waistCm'), '90');
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
-    typeInto(view.container.querySelector('#weightKg') as HTMLInputElement, '84'); // not left
-    await turnPhone(); // portrait: the form is built again, the vitals as a matrix
+    const view = await boxWithWholeForm();
+    typeInto(await openToday(view), '84'); // not left
+    await turnPhone(); // portrait: the form is built again, the weight in the matrix
     await shown(view.container, '.bt-vitals-card');
     await wait(600);
-    expect(await rowsOf('weight')).toEqual([]);
+    expect(await activeOn('weight')).toEqual([[82, localToday()]]);
 
     pickDraftDate(vitalsMatrix(view.container), '2026-09-10');
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
     leaveVitals(view.container);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10']]));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [82, localToday()]].sort()));
 
-    await uploadStarts(); // saves the fields
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [84, localToday()]]));
+    await uploadStarts(); // saves the box's value
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [84, localToday()]].sort()));
   });
 });
 

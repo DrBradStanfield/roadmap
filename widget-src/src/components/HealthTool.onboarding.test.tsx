@@ -23,7 +23,7 @@ import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, showTables } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -259,9 +259,7 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
   it('saves on leaving, with no Save button, and a second weight the same day corrects it', async () => {
     const view = await open();
     await measurements(view, '178', '80');
-    // Leave the page now: the weight is already on record.
-    const field = view.container.querySelector('.collapsed-field-value') as HTMLElement | null;
-    if (field) fireEvent.click(field); // the saved weight, clicked open to type today's again
+    // The box beside the height holds the saved weight: type today's again.
     type(q(view, '#weightKg'), '79');
     leave(q(view, '#weightKg'));
     await waitFor(async () => expect(await activeWeights()).toEqual([[79, localToday()]]), { timeout: 2000 });
@@ -282,7 +280,6 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     await measurements(view, '185', '90');
     const boxes = q(view, '.sex-height-row')!;
     expect([...boxes.querySelectorAll('input')].map(i => [i.id, i.value])).toEqual([['heightCm', '185'], ['weightKg', '90']]);
-    expect(boxes.querySelector('.collapsed-field-row')).toBeNull();
     expect(boxes.children).toHaveLength(2);
   });
 
@@ -524,8 +521,8 @@ function seedMatrixMirror() {
     inputs: {}, previousMeasurements: [{ id: 'm', metricType: 'waist', value: 85, recordedAt: now, createdAt: now }],
   }));
 }
-/** Every place the weight shows as a field, a saved value or a matrix row. */
-const weightPlaces = (view: RenderResult) => Array.from(view.container.querySelectorAll('.collapsed-field-label, .bt-name-label, label[for="weightKg"]'))
+/** Every place the weight shows as a field or a matrix row. */
+const weightPlaces = (view: RenderResult) => Array.from(view.container.querySelectorAll('.bt-name-label, label[for="weightKg"]'))
   .filter((l) => l.textContent?.trim().startsWith('Weight'));
 async function completeRecord(extra: Parameters<typeof saveChangedMeasurements>[0] = {}) {
   await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, ...extra }, {});
@@ -914,7 +911,6 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     const labels = (topic: string) => Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row-label`)).map((l) => l.textContent);
     await waitFor(() => expect(labels('weight')).toEqual(['Waist', 'Weight', 'HbA1c']));
     expect(labels('bloodPressure')[0]).toBe('Blood Pressure');
-    expect(q(view, '#waistCm, .collapsed-field-row')).toBeNull();
     expect(q(view, '.md-table[hidden] .bt-vitals-card')).toBeTruthy();
     openSettings(view.container);
     const about = q(view, '.mh-settings .md-about-you')!;
@@ -923,24 +919,6 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     closeSettings(view.container);
     fireEvent.click(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row')).find((r) => r.textContent?.startsWith('Waist'))!);
     await waitFor(() => expect(within(q(view, '.mh-page-host .md-page') as HTMLElement).getByRole('heading', { name: 'Waist' })).toBeTruthy());
-  });
-
-  it('the focus going from the birth year into the waist field keeps that field until the vitals card is left', async () => {
-    const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(fullForm(view)).toBe(true));
-    const year = q(view, '#birthYear') as HTMLElement;
-    act(() => { year.focus(); });
-    const waist = q(view, '#waistCm') as HTMLElement;
-    act(() => { waist.focus(); }); // Tab: the profile card is left, into the vitals
-    await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    expect(q(view, '#waistCm')).toBe(waist);
-    expect(document.activeElement).toBe(waist);
-    leave(waist);
-    await waitFor(() => expect(q(view, '#waistCm')).toBeNull());
-    expect(Array.from(view.container.querySelectorAll('[data-topic="weight"] .md-row-label')).map((l) => l.textContent)).toContain('Waist');
   });
 
   it('a stage short of four moves nothing when the card is left', async () => {
@@ -952,22 +930,6 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     act(() => { male.blur(); });
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(aboutLow(view)).toBeNull();
-  });
-
-  it('the vitals are their own card, never inside Starting Info or About you', async () => {
-    const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(fullForm(view)).toBe(true));
-    const vitalsCard = (q(view, '#waistCm') as HTMLElement).closest('.section-card')!;
-    expect(vitalsCard.querySelector('#birthYear, #heightCm')).toBeNull();
-    expect(vitalsCard.querySelector('h3')?.textContent).toBe('Vitals');
-    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
-    leave(q(view, '#birthYear'));
-    await waitFor(() => expect(aboutLow(view)).toBeTruthy());
-    openSettings(view.container);
-    expect(q(view, '.md-about-you')!.querySelector('#waistCm, .md-section-title')).toBeNull();
   });
 });
 
@@ -1069,23 +1031,8 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
   });
 });
 
-describe('US-02 AC5: an out-of-range first-time value stays in its field, its error shown, and is never written', () => {
+describe('US-02 AC5: an out-of-range value stays in its field, its error shown, and is never written', () => {
   const shown = (view: RenderResult) => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
-
-  it('a systolic of 5, left: kept, "Systolic BP must be at least 60 mmHg", no row', async () => {
-    const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(q(view, '#systolicBp')).toBeTruthy());
-    const sys = q(view, '#systolicBp') as HTMLInputElement;
-    type(sys, '5');
-    leave(sys);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the fields' 500 ms save
-    expect(sys.value).toBe('5');
-    expect(shown(view)).toContain('Systolic BP must be at least 60 mmHg');
-    expect(((await recordOnDisk())?.measurements ?? []).filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
-  });
 
   it('a birth year of 1850, left: kept, its error shown, not written', async () => {
     const view = await open();
@@ -1101,6 +1048,20 @@ describe('US-02 AC5: an out-of-range first-time value stays in its field, its er
     expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
   });
 });
+
+/** The whole form, the four answers given with no landing, and the grids shown (US-62 AC11). */
+async function completeWithGrids(view: RenderResult) {
+  await measurements(view);
+  fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+  birthWithoutJump(view);
+  await waitFor(() => expect(fullForm(view)).toBe(true));
+  showTables(view.container);
+}
+/** A row's New cell in the vitals grid. */
+const gridDraft = (view: RenderResult, name: string) => Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+  .find((r) => r.querySelector('.bt-name-label')?.textContent === name)!.querySelector('.bt-cell-draft input') as HTMLInputElement;
+const gridSystolic = (view: RenderResult) => q(view, '.bt-vitals-card .bt-cell-draft input[aria-label="Systolic blood pressure"]') as HTMLInputElement;
+const gridErrors = (view: RenderResult) => Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-input-error-text')).map((e) => e.textContent);
 
 describe('PR 518 review: refused and erased records', () => {
   it('Codex R1 (US-02 AC5, US-34 AC4): a remote change arriving before an out-of-range birth year is refused stays held; the year and its error survive', async () => {
@@ -1124,23 +1085,21 @@ describe('PR 518 review: refused and erased records', () => {
     expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
   });
 
-  it('adversary R2 (US-02 AC5): a first-time waist of 3, skipped by the save, survives another device\'s change re-read', async () => {
+  // Moved to the vitals grid with H71 (2026-11-13): the first-time waist field is gone.
+  it('adversary R2 (US-02 AC5): a waist of 3 in the vitals grid, never saved, survives another device\'s change re-read', async () => {
     const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
-    const waist = q(view, '#waistCm') as HTMLInputElement;
+    await completeWithGrids(view);
+    const waist = gridDraft(view, 'Waist Circumference');
     type(waist, '3');
     leave(waist);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the fields' save skips it
+    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the grid's commit on leaving skips it
     await saveChangedMeasurements({ alcohol: 'none' }, {}); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
-    const shownWaist = q(view, '#waistCm') as HTMLInputElement | null;
-    expect(shownWaist?.value).toBe('3');
-    expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).toContain('Waist must be at least 40 cm');
+    expect(gridDraft(view, 'Waist Circumference').value).toBe('3');
+    expect(gridErrors(view)).toContain('Min 40 cm');
+    expect((await recordOnDisk()).measurements.filter((m) => m.metricType === 'waist')).toEqual([]);
   });
 
   it('adversary R3 (US-62 AC12): a press inside the card, then a focusout with no next target (Safari), moves nothing', async () => {
@@ -1157,31 +1116,6 @@ describe('PR 518 review: refused and erased records', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(q(view, '.about-card')).not.toBeNull();
     expect(q(view, '#birthYear')).toBe(year);
-  });
-
-  it('Codex R2 (US-62 AC12): complete, erase, complete again: Tab from the birth year into Waist keeps the waist field', async () => {
-    vi.stubGlobal('confirm', () => true);
-    vi.stubGlobal('alert', () => {});
-    const view = await open();
-    const finish = async () => {
-      await measurements(view);
-      fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-      birthWithoutJump(view);
-      await waitFor(() => expect(fullForm(view)).toBe(true));
-    };
-    await finish();
-    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
-    leave(q(view, '#birthYear'));
-    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
-    fireEvent.click(deleteButton());
-    await waitFor(() => expect(fullForm(view)).toBe(false));
-    await finish();
-    act(() => { (q(view, '#birthYear') as HTMLElement).focus(); });
-    const waist = q(view, '#waistCm') as HTMLElement;
-    act(() => { waist.focus(); }); // Tab out of the profile card, into the vitals
-    await waitFor(() => expect(q(view, '.about-card')).toBeNull());
-    expect(q(view, '#waistCm')).toBe(waist);
-    expect(document.activeElement).toBe(waist);
   });
 });
 
@@ -1221,13 +1155,11 @@ describe('PR 518 Codex re-check', () => {
     expect(errorsShown(view).filter((t) => /^Height/.test(t))).toEqual([]);
   });
 
-  it('R4: a first-time waist of 3 left in the form goes when another device erases the record', async () => {
+  // Moved to the vitals grid with H71 (2026-11-13): the first-time waist field is gone.
+  it('R4: a waist of 3 left in the vitals grid goes when another device erases the record', async () => {
     const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
-    const waist = q(view, '#waistCm') as HTMLInputElement;
+    await completeWithGrids(view);
+    const waist = gridDraft(view, 'Waist Circumference');
     type(waist, '3');
     leave(waist);
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
@@ -1246,12 +1178,9 @@ describe('PR 518 Codex re-check', () => {
     await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
     await waitFor(() => expect(fullForm(view)).toBe(false), { timeout: 3000 });
     // The erased record's onboarding again: the old draft must not come back.
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(q(view, '#waistCm')).toBeTruthy());
-    expect((q(view, '#waistCm') as HTMLInputElement).value).toBe('');
-    expect(errorsShown(view)).not.toContain('Waist must be at least 40 cm');
+    await completeWithGrids(view);
+    expect(gridDraft(view, 'Waist Circumference').value).toBe('');
+    expect(gridErrors(view)).not.toContain('Min 40 cm');
   });
 });
 
@@ -1315,18 +1244,15 @@ describe('PR 518 adversary re-check', () => {
     await waitFor(() => expect(document.activeElement?.id).toBe('heightCm'));
   });
 
-  it('N7 (US-02 AC9): a systolic "6" held back, then the chat fills 5 into it: judged at once', async () => {
+  // Moved to the vitals grid with H71 (2026-11-13): the first-time systolic field is gone.
+  it('N7 (US-02 AC9): a systolic "6" held back in the vitals grid, then the chat fills 5 into it: judged at once', async () => {
     const view = await open();
-    await measurements(view);
-    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    birthWithoutJump(view);
-    await waitFor(() => expect(q(view, '#systolicBp')).toBeTruthy());
-    type(q(view, '#systolicBp'), '6');
-    const shown = () => Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent);
-    expect(shown()).not.toContain('Systolic BP must be at least 60 mmHg');
+    await completeWithGrids(view);
+    type(gridSystolic(view), '6');
+    expect(gridErrors(view)).not.toContain('Min 60 mmHg');
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'systolicBp', displayValue: 5, unitSystem: 'si', date: null }]));
-    await waitFor(() => expect((q(view, '#systolicBp') as HTMLInputElement).value).toBe('5'));
-    expect(shown()).toContain('Systolic BP must be at least 60 mmHg');
+    await waitFor(() => expect(gridSystolic(view).value).toBe('5'));
+    expect(gridErrors(view)).toContain('Min 60 mmHg');
   });
 });
 
@@ -1386,11 +1312,12 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
 
     openRow(view, 'weight', 'Waist');
     await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Waist' })).toBeTruthy());
-    fireEvent.change(within(page(view)).getByLabelText('Value'), { target: { value: '90' } });
+    fireEvent.change(within(page(view)).getByLabelText(/^Value/), { target: { value: '90' } });
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
     await waitFor(() => expect(tiles(view)).toContain('Waist-to-Height'));
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
+    await waitFor(() => expect(page(view)).toBeNull()); // Back goes through history: wait for it
 
     openRow(view, 'bloodPressure', 'Blood Pressure');
     await waitFor(() => expect(within(page(view)).getByLabelText('Systolic (top number)')).toBeTruthy());
@@ -1421,7 +1348,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
 
     openRow(view, 'weight', 'Weight');
     await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Weight' })).toBeTruthy());
-    fireEvent.change(within(page(view)).getByLabelText('Value'), { target: { value: '80' } });
+    fireEvent.change(within(page(view)).getByLabelText(/^Value/), { target: { value: '80' } });
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]));
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));

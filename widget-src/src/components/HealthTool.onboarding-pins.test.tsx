@@ -412,10 +412,11 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const view = await open();
     type(q(view, '#weightKg'), '25'); // ends the onboarding; may become 250: the wait starts
     cross(); // the focused box unmounts with no blur
-    await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
+    // Built again, the whole form has no box beside the height: the weight is the matrix's (H71).
+    await waitFor(() => expect(matrixWeight(view)).toBeTruthy());
     await settle(900);
     expect(landed()).toBe(false);
-    type(q(view, '#weightKg'), '82');
+    type(matrixWeight(view), '82');
     await settle(300);
     expect(landed()).toBe(false);
   });

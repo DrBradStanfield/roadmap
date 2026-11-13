@@ -98,12 +98,12 @@ export function useChatEdits({
   const applyFieldEdit = useCallback((edit: ProposedFieldEdit): boolean => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
     if (!metric) return false;
-    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
-    // users), route into its draft/backfill cell so it pre-fills AND flashes —
+    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (the whole
+    // form), route into its draft/backfill cell so it pre-fills AND flashes —
     // exactly like the blood-test matrix. The matrix only registers its prefill
     // ref while mounted, so a non-null ref is the "matrix is shown" signal.
-    // Fresh users (legacy plain fields, ref null) fall back to setting the form
-    // input directly — no flash, unchanged behaviour.
+    // Before the whole form (ref null) the edit sets the form input directly:
+    // no flash.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
       if (edit.field === 'weightKg') chatWeightRef.current();
       // The matrix refuses a weight it does not show (the weight beside the
