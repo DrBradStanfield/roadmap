@@ -258,25 +258,9 @@ final class PredatesEraseReadersTests: XCTestCase {
         }
     }
 
-    /// An erase held with no drawing is not the window (predatesErase is false): a lab report or a
-    /// document is still taken there, as US-25 AC16f says, and goes on to the cloud session.
-    func testAnEraseHeldUndrawnStillTakesALabReportAndADocument_US25_AC16f() async throws {
-        let engine = try engine()
-        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
-        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
-        let erased = try await engine.eraseOnPhone(recordJSON: store.recordJSON, historyJSON: nil, now: .now, deviceId: store.deviceId).record
-        _ = try engine.blocking { try $0.evaluate("__screenFails = true") }
-        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 1)).value
-        _ = try engine.blocking { try $0.evaluate("__screenFails = false") }
-        XCTAssertFalse(store.predatesErase)
-        XCTAssertNil(store.myData)
-        if case .failure(let refusal) = await store.importLabs(extractionJSON: dated, refs: ["v0"], reportDay: "2026-10-01") {
-            XCTAssertNotEqual(refusal.message, RecordStore.recordChanged, "the store's guard did not refuse it")
-        }
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
-        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
-        XCTAssertNotEqual(filed, .refused(RecordStore.recordChanged), "the store's guard did not refuse it")
-    }
+    // An erase held with no drawing is not the window: RedrawHeldEraseTests'
+    // testAnEraseHeldUndrawnStillTakesALabReportAndADocument_US25_AC16f shows a lab report and a
+    // document land there, on a real cloud session (lead S56).
 
     // MARK: The window ends
 
