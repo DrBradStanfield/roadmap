@@ -397,8 +397,8 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
-  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
-  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. `raisedBefore`: it does not decide and an earlier PSA was 4.0 or above (`planPsa`, US-06 AC21 item 6). Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number; raisedBefore?: true };
   prostateLastDate?: string;
 
   // Endometrial
@@ -460,13 +460,13 @@ export function isScreeningEligible(
 }
 
 /**
- * Calculate the next-due date for a screening based on last date and method interval.
+ * Calculate the next-due date for a screening based on last date and method interval (or months: PSA's, psa-schedule.ts).
  * Shared by suggestions.ts (screeningStatus) and reminders.ts (isScreeningOverdue).
  * Returns null if inputs are invalid or missing.
  */
-export function getScreeningNextDueDate(lastDate: string | undefined, method: string | undefined): Date | null {
+export function getScreeningNextDueDate(lastDate: string | undefined, method: string | number | undefined): Date | null {
   if (!lastDate || !method) return null;
-  const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
+  const intervalMonths = typeof method === 'number' ? method : SCREENING_INTERVALS[method] ?? 12;
   const [year, month] = lastDate.split('-').map(Number);
   if (!year || !month) return null;
   return new Date(year, month - 1 + intervalMonths);

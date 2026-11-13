@@ -14,6 +14,8 @@ import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/h
 import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { DropboxAdapter, TOKEN_KEY as DROPBOX_TOKENS } from './dropbox';
 import { CONFIG_KEY as DRIVE_CONFIG, GoogleDriveAdapter, TOKENS_KEY as DRIVE_TOKENS } from './drive';
+import { GitHubAdapter } from './github';
+import { WebDavAdapter } from './webdav';
 
 let local: Map<string, string>;
 function storage(s: Map<string, string>): Storage {
@@ -72,17 +74,20 @@ function host(store: StorageAdapter): RecordHost {
   };
 }
 
-/** Open a session, edit, hand the store to `real`, and fail the save; answer what retry() gives. */
-async function retryAfterFailedSave(real: StorageAdapter): Promise<Promise<boolean> | null> {
+/** Open a session, edit, hand the store to `real`, and fail the save; answer what retry() gives
+ *  and whether Settings would promise an upload. */
+async function afterFailedSave(real: StorageAdapter): Promise<{ run: Promise<boolean> | null; due: boolean }> {
   const store = new Handover(new MemoryCloud());
   const session = await RecordSession.open(host(store));
   session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })));
   store.real = real;
   await expect(session.flush()).rejects.toThrow();
+  const due = session.retryDue;
   const run = session.retry();
   await run; // a retry that started runs out before the test ends
-  return run;
+  return { run, due };
 }
+const retryAfterFailedSave = async (real: StorageAdapter) => (await afterFailedSave(real)).run;
 
 /** As retryAfterFailedSave, but the write lands and the save's verify read fails (the save
  *  rewraps that error, US-09 AC13d). Answers retry() and whether Settings would promise an upload. */
@@ -97,6 +102,13 @@ async function retryAfterVerifyFails(real: StorageAdapter): Promise<{ run: Promi
   const run = session.retry();
   await run;
   return { run, due };
+}
+
+/** The error the adapter's own write throws. */
+async function writeError(adapter: StorageAdapter): Promise<StorageError> {
+  const error = await adapter.write(ROADMAP_FILE_NAME, {}, null).then(() => null, (e: unknown) => e);
+  expect(error).toBeInstanceOf(StorageError);
+  return error as StorageError;
 }
 
 /** The error the adapter's own read throws: the first call a save makes. */
@@ -220,5 +232,56 @@ describe('a revoked grant after the write landed (US-09 AC30)', () => {
     local.set(DRIVE_CONFIG, JSON.stringify({ accountEmail: 'a@example.com' }));
     vi.stubGlobal('fetch', vi.fn(async () => reply(401, { error: 'invalid_grant' })));
     expect(await retryAfterVerifyFails(new GoogleDriveAdapter(DRIVE))).toEqual({ run: null, due: false });
+  });
+});
+
+// PR 1458 N1: GitHub and WebDAV put the HTTP status on a refused sign-in, so a revoked
+// token or rejected credentials are a refused sign-in: never retried, and Settings promises nothing.
+describe('GitHub and WebDAV: a refused sign-in carries its status (US-09 AC30)', () => {
+  const GITHUB = { token: 'test-token-good', owner: 'synthetic', repo: 'health' };
+  const DAV = { url: 'https://synthetic.invalid/dav', username: 'synthetic', password: 'test-password' };
+  const SECONDARY = { message: 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.' };
+  const answerAll = (status: number, body: unknown = {}) => vi.stubGlobal('fetch', vi.fn(async () => reply(status, body)));
+  /** The repo check passes (a private repo); the record PUT answers `status`. */
+  /** The record GET answers 404 (a first save, so a save goes on to write), the record PUT
+   *  answers `put`, and anything else (GitHub's repo check) answers `other`. */
+  const writeFails = (put: number, putBody: unknown, other: number, otherBody: unknown) => () =>
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) =>
+      init?.method === 'PUT' ? reply(put, putBody)
+        : url.includes('/contents/') || url.startsWith(`${DAV.url}/`) ? reply(404, {}) : reply(other, otherBody)));
+  const github = () => new GitHubAdapter(GITHUB);
+  const dav = () => new WebDavAdapter(DAV);
+
+  // Each row: the adapter's own error carries the status, and a save that meets it is retried
+  // (and Settings promises an upload) only when the cause is not a refused sign-in.
+  it.each([
+    ['a GitHub read refused 401', 401, false, () => answerAll(401, { message: 'Bad credentials' }), github, readError],
+    ['a GitHub write refused 401 (the repo check)', 401, false, writeFails(201, {}, 401, { message: 'Bad credentials' }), github, writeError],
+    ['a GitHub write met by a secondary limit (403)', 403, true, writeFails(403, SECONDARY, 200, { private: true }), github, writeError],
+    ['a WebDAV read refused 401', 401, false, () => answerAll(401), dav, readError],
+    ['a WebDAV write refused 401', 401, false, writeFails(401, {}, 500, {}), dav, writeError],
+  ] as const)('%s: status %i, retried %s', async (_name, status, retried, stub, adapter, adapterError) => {
+    stub();
+    expect((await adapterError(adapter())).status).toBe(status);
+    const { run, due } = await afterFailedSave(adapter());
+    expect(run !== null).toBe(retried);
+    expect(due).toBe(retried);
+  });
+
+  it('a GitHub save refused 401 is never retried, and Settings promises nothing', async () => {
+    answerAll(401, { message: 'Bad credentials' });
+    expect(await afterFailedSave(new GitHubAdapter(GITHUB))).toEqual({ run: null, due: false });
+  });
+
+  it('a WebDAV save refused 401 is never retried', async () => {
+    answerAll(401);
+    expect(await retryAfterFailedSave(new WebDavAdapter(DAV))).toBeNull();
+  });
+
+  it('a GitHub save met by a secondary limit is retried', async () => {
+    // The save reads first: a 404 there is a first save, so it goes on to the PUT.
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) =>
+      init?.method === 'PUT' ? reply(403, SECONDARY) : url.includes('/contents/') ? reply(404, {}) : reply(200, { private: true })));
+    expect(await retryAfterFailedSave(new GitHubAdapter(GITHUB))).not.toBeNull();
   });
 });
