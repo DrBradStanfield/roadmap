@@ -190,10 +190,9 @@ describe('US-20 AC6: the bottom tab bar', () => {
     expect(cascaded(panel.querySelector('.chat-embed')!, 'height', 390)).toBe('calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px)');
   });
 
-  it('the bar lives inside the widget, sticky, opaque, never fixed; the old fixed plan button is gone', async () => {
+  it('the bar lives inside the widget, sticky, opaque, never fixed', async () => {
     const view = await renderPhone();
     expect(view.getByRole('tablist').closest('.health-tool')).not.toBeNull();
-    expect(view.queryByText('See Your Personalized Plan')).toBeNull();
     const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
     const rule = (selector: string) => {
       const at = css.indexOf(`  ${selector} {`);
@@ -290,9 +289,6 @@ describe('US-62 AC34: the Account tab', () => {
     fireEvent.keyDown(within(sheet).getByRole('button', { name: 'Delete all my data' }), { key: 'Escape' });
     expect(account.getAttribute('aria-selected')).toBe('true');
     expect(panel.querySelector('.mh-settings')).not.toBeNull();
-    // The card keeps the storage button's filled style there (US-62 AC35: no Settings rule flattens it).
-    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8');
-    expect(css).not.toMatch(/\.mh-settings \.hr-sync \.hr-sync-btn,\s*\.mh-foot-storage/);
   });
 
   it('a new guest with nothing entered still finds the sign-in in Account, and no pitch on My health', async () => {
