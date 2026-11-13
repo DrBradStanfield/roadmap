@@ -333,7 +333,7 @@ export function BloodTestTimeline({
   });
 
   // The upload flow commits the draft before its own save (flushRef).
-  usePrefillRef<() => Promise<unknown>>(handleSave, flushRef);
+  usePrefillRef(handleSave, flushRef);
 
   // The draft is committed when the user leaves the matrix, presses Enter or
   // the tick; never while the user is still in it, and never because the page

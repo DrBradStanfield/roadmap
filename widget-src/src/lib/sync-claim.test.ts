@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { withClaim } from './sync-claim';
 
-/** A run that waits until it is let go. */
+/** A run that waits until it is let go, counting its calls. */
 function held() {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => { release = resolve; });
@@ -18,10 +18,10 @@ describe('withClaim (US-03 AC2a)', () => {
     const one = withClaim(claim, first.run);
     expect(claim.current).toBe(true); // taken synchronously, before any await
     const other = held();
-    expect(await withClaim(claim, other.run)).toBe(false);
+    await withClaim(claim, other.run);
     expect(other.calls()).toBe(0);
     first.release();
-    expect(await one).toBe(true);
+    await one;
     expect(first.calls()).toBe(1);
     expect(claim.current).toBe(false);
   });
@@ -32,7 +32,7 @@ describe('withClaim (US-03 AC2a)', () => {
     await expect(withClaim(claim, async () => { throw boom; })).rejects.toBe(boom);
     expect(claim.current).toBe(false);
     let ran = 0;
-    expect(await withClaim(claim, async () => { ran += 1; })).toBe(true);
+    await withClaim(claim, async () => { ran += 1; });
     expect(ran).toBe(1);
   });
 

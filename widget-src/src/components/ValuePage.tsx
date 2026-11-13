@@ -291,20 +291,22 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     const values = parse();
     if (typeof values === 'string') { setError(values); return; }
     setError(null);
+    // From here until the save ends, a throw anywhere still gives the Add button back.
     setSaving(true);
-    const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
-    // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
-    const unchanged = held.every((row, i) => {
-      if (!row) return false;
-      const m = metrics[i];
-      return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
-        : Math.round(row.value) === values[m];
-    });
-    // Before the save, as the weight box answers as it is typed: the step is counted when the save's
-    // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
-    if (metric === 'weight') onWeightAnswered?.();
+    let unchanged: boolean;
     let refused: Refused;
     try {
+      const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
+      // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
+      unchanged = held.every((row, i) => {
+        if (!row) return false;
+        const m = metrics[i];
+        return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
+          : Math.round(row.value) === values[m];
+      });
+      // Before the save, as the weight box answers as it is typed: the step is counted when the save's
+      // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
+      if (metric === 'weight') onWeightAnswered?.();
       refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     } finally {
       setSaving(false);

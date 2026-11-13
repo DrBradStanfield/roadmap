@@ -4,14 +4,13 @@
  * and a tap outside, two presses of Add) would both start a save. A ref is
  * seen at once: `withClaim` runs `run` only while no other run holds the
  * claim, and frees it when the run ends, a throw too (which it rethrows).
- * Resolves true when `run` ran, false when the claim was already held.
+ * A call made while the claim is held does nothing.
  */
-export async function withClaim(claim: { current: boolean }, run: () => Promise<unknown>): Promise<boolean> {
-  if (claim.current) return false;
+export async function withClaim(claim: { current: boolean }, run: () => Promise<unknown>): Promise<void> {
+  if (claim.current) return;
   claim.current = true;
   try {
     await run();
-    return true;
   } finally {
     claim.current = false;
   }

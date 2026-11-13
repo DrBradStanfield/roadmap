@@ -347,7 +347,7 @@ export function StartingInfoVitals({
   // hides (US-03 AC5). A lab upload commits it too (flushRef).
   const rootRef = useRef<HTMLDivElement>(null);
   useSaveOnLeave(rootRef, commit);
-  usePrefillRef<() => Promise<unknown>>(commit, flushRef);
+  usePrefillRef(commit, flushRef);
 
   return (
     <div ref={rootRef} className="bt-timeline bt-vitals-card">
