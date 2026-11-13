@@ -20,7 +20,9 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build']);
 const SOURCE = /\.(?:[cm]?[jt]s|tsx|jsx)$/;
 const OWN = /^packages\/health-core\/src\/record-session[^/]*\.ts$/;
 /** Names no other code uses: a read off any receiver fails. */
-const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'cloudUnreachable', 'tryClear', 'replaceUnreadable', 'saveMode'];
+const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'cloudUnreachable', 'tryClear', 'replaceUnreadable', 'saveMode',
+  // The mirror split (record-session-mirror.ts) gave these up the same way.
+  'deviceCopySeen', 'mirrorOurs', 'coveredCopy'];
 /** Names other code uses on its own objects (React refs' `current`, a store's
  *  `host`, a reducer's `dispatch`): only a session-named receiver fails. */
 const GENERIC = ['current', 'host', 'sync', 'ctx', 'dispatch'];

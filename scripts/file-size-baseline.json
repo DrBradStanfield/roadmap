@@ -29,7 +29,6 @@
     "widget-src/src/storage/drive.ts": 631,
     "widget-src/src/storage/roadmap-store.ts": 607,
     "app/lib/mcp-import.server.ts": 604,
-    "packages/health-core/src/record-session.ts": 589,
     "packages/health-core/src/chat-edits.ts": 586,
     "packages/health-core/src/input-form.ts": 582,
     "ios/engine/my-data.ts": 558,
