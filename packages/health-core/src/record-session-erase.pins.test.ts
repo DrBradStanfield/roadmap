@@ -29,19 +29,27 @@ const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'tryClear', 'repl
 const GENERIC = ['current', 'host', 'sync', 'ctx', 'dispatch', 'cloudUnreachable'];
 const INTERNAL = [...DISTINCT, ...GENERIC];
 const SESSION = /sessions?$/i;
+/** Array methods whose callback is handed each element: a destructured parameter there reads off a session. */
+const ITERATE = new Set(['map', 'forEach', 'filter', 'some', 'every', 'find', 'flatMap', 'reduce']);
 
 /** Lines that read an @internal name, found in the syntax tree, so comments and strings never count:
- *  `.x` (across lines too), `['x']`, and a destructuring (`const { x } = ...`, typed, defaulted, nested, a
- *  parameter, a for-of, an assignment). A DISTINCT name fails off any receiver; a GENERIC one only off a session,
- *  seen through parentheses, casts, `!` and `await`.
+ *  `.x` (across lines too), `['x']`, a type (`typeof session.x`, `RecordSession['x']`), and a destructuring
+ *  (`const { x } = ...` or `{ ['x']: y }`, typed, defaulted, nested, a parameter, a for-of, an assignment). A
+ *  DISTINCT name fails off any receiver; a GENERIC one only off a session, seen through parentheses, casts, `!`,
+ *  `await` and either side of `??` or `||`. `clean` is false when the file did not parse: the tree is then partial.
  *  Out of scope (no type checker runs here, so the receiver is known only by its name or annotation):
- *  - a GENERIC read off a session under another name, `const s = session; s.current`, or `store.host`;
- *  - a GENERIC name destructured from a session's sub-object or array, `const { a: { current } } = session`,
- *    `const [{ current }] = sessions`, or in a callback that is not a method call on the sessions;
- *  - a computed key that is not a literal, `s[key]`, and reads through `Reflect.get`, `Object.entries` or a spread;
+ *  - a GENERIC read off a session under another name, `const s = session; s.current`, `store.host`, or `this` in
+ *    a function typed `function (this: RecordSession) { this.host }`;
+ *  - a GENERIC name destructured from a session's sub-object, element or derived list,
+ *    `const { a: { current } } = session`, `const [{ current }] = sessions`, `= session[0]`,
+ *    `of Object.values(sessions)`, or in a callback not handed to an array method on the sessions;
+ *  - a key that is not written as a literal, `s[key]` or `{ [key]: v }`, and reads through `Reflect.get`,
+ *    `Object.entries` or a spread;
  *  - JavaScript source outside the DIRS walk. */
-function internalReads(code: string, fileName = 'probe.ts'): number[] {
+function internalReads(code: string, fileName = 'probe.ts'): { lines: number[]; clean: boolean } {
   const file = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true);
+  // createSourceFile never throws: it recovers into a partial tree and records why here.
+  const clean = ((file as ts.SourceFile & { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics ?? []).length === 0;
   const lines: number[] = [];
   const hit = (node: ts.Node) => lines.push(file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1);
   const unwrap = (e: ts.Expression): ts.Expression =>
@@ -57,14 +65,23 @@ function internalReads(code: string, fileName = 'probe.ts'): number[] {
     if (ts.isCallExpression(u)) return nameOf(u.expression);
     return undefined;
   };
-  const isSession = (e: ts.Expression | undefined, type?: ts.TypeNode) =>
-    SESSION.test(nameOf(e) ?? '') || (type !== undefined && /\bRecordSession\b/.test(type.getText(file)));
+  const isSession = (e: ts.Expression | undefined, type?: ts.TypeNode): boolean => {
+    const u = e && unwrap(e);
+    if (u && ts.isBinaryExpression(u) && (u.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+      || u.operatorToken.kind === ts.SyntaxKind.BarBarToken)) return isSession(u.left) || isSession(u.right);
+    return SESSION.test(nameOf(e) ?? '') || (type !== undefined && /\bRecordSession\b/.test(type.getText(file)));
+  };
+  /** `typeof this.session.x`'s receiver: the last name left of the dot. */
+  const entityName = (n: ts.EntityName): string => ts.isIdentifier(n) ? n.text : n.right.text;
   const flags = (key: string | undefined, session: boolean) =>
     key !== undefined && (DISTINCT.includes(key) || (session && GENERIC.includes(key)));
-  const keyOf = (n: ts.PropertyName | ts.BindingName | undefined) =>
-    n && (ts.isIdentifier(n) || ts.isStringLiteralLike(n)) ? n.text : undefined;
+  const keyOf = (n: ts.PropertyName | ts.BindingName | undefined): string | undefined => {
+    if (n && ts.isComputedPropertyName(n)) return ts.isStringLiteralLike(n.expression) ? n.expression.text : undefined;
+    return n && (ts.isIdentifier(n) || ts.isStringLiteralLike(n)) ? n.text : undefined;
+  };
   /** Is a binding pattern's source a session? Its initializer or annotation, the for-of's iterable, or the receiver
-   *  of the method a callback parameter is handed to (`sessions.map(({ current }) => ...)`). */
+   *  of the array method a callback parameter is handed to (`sessions.map(({ current }) => ...)`; a session's own
+   *  method, `session.edit(({ host }) => ...)`, hands its callback something else). */
   const patternIsSession = (p: ts.ObjectBindingPattern): boolean => {
     const owner = p.parent;
     if (ts.isVariableDeclaration(owner)) {
@@ -75,8 +92,9 @@ function internalReads(code: string, fileName = 'probe.ts'): number[] {
     if (ts.isParameter(owner)) {
       if (isSession(owner.initializer, owner.type)) return true;
       const call = owner.parent.parent;
-      return ts.isCallExpression(call) && ts.isPropertyAccessExpression(unwrap(call.expression))
-        && isSession((unwrap(call.expression) as ts.PropertyAccessExpression).expression);
+      const method = ts.isCallExpression(call) ? unwrap(call.expression) : undefined;
+      return method !== undefined && ts.isPropertyAccessExpression(method) && ITERATE.has(method.name.text)
+        && isSession(method.expression);
     }
     return false; // nested: off a sub-object
   };
@@ -85,6 +103,12 @@ function internalReads(code: string, fileName = 'probe.ts'): number[] {
       if (flags(node.name.text, isSession(node.expression))) hit(node.name);
     } else if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression)) {
       if (flags(node.argumentExpression.text, isSession(node.expression))) hit(node.argumentExpression);
+    } else if (ts.isQualifiedName(node)) {
+      if (flags(node.right.text, SESSION.test(entityName(node.left)))) hit(node.right);
+    } else if (ts.isIndexedAccessTypeNode(node) && ts.isLiteralTypeNode(node.indexType)
+      && ts.isStringLiteral(node.indexType.literal)) {
+      const session = SESSION.test(node.objectType.getText(file)) || isSession(undefined, node.objectType);
+      if (flags(node.indexType.literal.text, session)) hit(node.indexType);
     } else if (ts.isObjectBindingPattern(node)) {
       const session = patternIsSession(node);
       for (const el of node.elements) if (flags(keyOf(el.propertyName ?? el.name), session)) hit(el);
@@ -98,7 +122,7 @@ function internalReads(code: string, fileName = 'probe.ts'): number[] {
     ts.forEachChild(node, visit);
   };
   visit(file);
-  return lines;
+  return { lines, clean };
 }
 
 function* sources(dir: string): Generator<string> {
@@ -115,20 +139,31 @@ function* sources(dir: string): Generator<string> {
 describe('record-session erase split', () => {
   it('no file outside record-session*.ts reads an @internal field off a session', () => {
     const found: string[] = [];
+    const unparsed: string[] = [];
     let scanned = 0;
+    let parsed = 0;
     for (const dir of DIRS) {
       for (const path of sources(join(REPO, dir))) {
         const rel = relative(REPO, path);
         if (OWN.test(rel)) continue;
         scanned++;
-        for (const line of internalReads(readFileSync(path, 'utf8'), path)) found.push(`${rel}:${line}`);
+        const { lines, clean } = internalReads(readFileSync(path, 'utf8'), path);
+        if (clean) parsed++; else unparsed.push(rel);
+        for (const line of lines) found.push(`${rel}:${line}`);
       }
     }
+    expect(unparsed).toEqual([]); // a file that fails to parse is scanned only in part
+    expect(parsed).toBe(scanned);
     expect(found).toEqual([]);
     expect(scanned).toBeGreaterThan(1000); // the walk reached the clients (about 1200 files), not an empty tree
   });
 
-  const caught = (code: string) => internalReads(code).length > 0;
+  it('the read check reports a file it cannot parse, whose tree is partial', () => {
+    expect(internalReads('const { saveMode } = s;').clean).toBe(true);
+    expect(internalReads('const { saveMode = s;\nsession.current;').clean).toBe(false);
+  });
+
+  const caught = (code: string) => internalReads(code).lines.length > 0;
   it.each(['store.saveMode', "x['tryClear']", 'this.session.current', "mySession?.['host']",
     'const { saveMode } = store;', 'const {\n  revisionSeen,\n} = s;', 'const { clearedFor: c } = await open();',
     'const { current } = this.session;', 'const { sync, ctx } = session;', 'session.cloudUnreachable',
@@ -137,13 +172,22 @@ describe('record-session erase split', () => {
     '(session as unknown as Inside).dispatch(action);', '(this.session as X).current;', 'const { current } = (session as X);',
     'const { saveMode }: RecordSession = s;', 'sessions.map(({ saveMode }) => saveMode);', 'for (const { current } of sessions) {}',
     'const { a: { b }, saveMode } = s;', 'const { saveMode = {} } = s;', 'session\n  .current;',
+    // H99 review: forms the regex caught that the first syntax-tree scan missed.
+    "const { ['saveMode']: m } = s;", "const { ['current']: c } = session;", 'type T = typeof session.saveMode;',
+    'type C = typeof this.session.current;', "type T = RecordSession['saveMode'];", "type H = RecordSession['host'];",
+    'const { current } = session ?? fallback;', 'const { host } = this.session || x;',
+    'sessions.forEach(({ current }) => current);',
   ])('the read check catches %j', (code) => { expect(caught(code)).toBe(true); });
 
   it.each(['ref.current', 's.dispatch(action)', 'const { current } = ref;', 'const { dispatch } = useStore();',
     'const { host } = sessionStore;',
+    'open(host, { cloudUnreachable });', // an object literal, not a read: the regex left it alone too
     // H99: a caller's own open() options, and the names in comments and strings.
-    'const { cloudUnreachable } = opts;', 'opts.cloudUnreachable', 'open(host, { cloudUnreachable });', '// store.saveMode and session.current', "const s = 'store.saveMode';",
+    'const { cloudUnreachable } = opts;', 'opts.cloudUnreachable', '// store.saveMode and session.current', "const s = 'store.saveMode';",
     '/* const { revisionSeen } = s; */', 'const t = `this.session.current`;',
+    // H99 review: a session method's callback gets the file, not a session (ios/engine/cloud.ts:192).
+    'session.edit(({ host }) => host);', 'const { current } = ref ?? fallback;', 'type R = typeof ref.current;',
+    "type H = Store['host'];",
   ])('the read check leaves %j alone', (code) => { expect(caught(code)).toBe(false); });
 
   // No build emits declarations: package.json exports "./*" as "./src/*.ts", so
