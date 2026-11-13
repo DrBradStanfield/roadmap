@@ -9,9 +9,7 @@ extension MyDataView {
         Section {
             let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
             let buttons = HStack(spacing: 14) {
-                Button { showSettings = true } label: {
-                    Label("Settings", systemImage: "person.crop.circle")
-                }
+                settingsButton
                 recordButtons
             }
             .buttonStyle(.borderless)
@@ -73,6 +71,18 @@ extension MyDataView {
             Label("Add medical records", systemImage: "plus")
         }
         .accessibilityHint("Upload a lab report or clinic letter")
+        syncButton
+    }
+
+    /// The person button: the settings sheet. Also on the page for a record that cannot be drawn (UndrawnRecord.swift).
+    var settingsButton: some View {
+        Button { showSettings = true } label: {
+            Label("Settings", systemImage: "person.crop.circle")
+        }
+    }
+
+    /// The Sync sheet, with Disconnect. Also on the page for a record that cannot be drawn.
+    var syncButton: some View {
         Button { showSync = true } label: {
             Label("Sync", systemImage: SyncStatusText.symbol(sync.status, provider: sync.provider))
         }

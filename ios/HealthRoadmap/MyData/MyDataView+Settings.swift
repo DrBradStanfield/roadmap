@@ -16,14 +16,20 @@ extension MyDataView {
                     Text(note)
                 }
             }
-            RecordSection(store: store, sync: sync)
-            Section {
-            } footer: {
-                Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
-                    .frame(maxWidth: .infinity)
-            }
+            recordSections
         }
         .listStyle(.insetGrouped)
+    }
+
+    /// Export and Delete all my data, then where the record is kept: also when it cannot be drawn.
+    @ViewBuilder
+    var recordSections: some View {
+        RecordSection(store: store, sync: sync)
+        Section {
+        } footer: {
+            Label(SyncStatusText.myDataFooter(provider: sync.provider, earlier: sync.syncedBefore), systemImage: "lock.shield")
+                .frame(maxWidth: .infinity)
+        }
     }
 
     private func aboutYou(_ data: MyData) -> some View {

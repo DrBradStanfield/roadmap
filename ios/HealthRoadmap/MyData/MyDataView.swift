@@ -115,13 +115,16 @@ struct MyDataView: View {
             }
     }
 
-    /// The record's list, or why it cannot be shown.
+    /// The record's list, or why it cannot be shown with Settings and Sync still in reach (lead H114).
     @ViewBuilder
     private func content(@ViewBuilder _ list: (MyData) -> some View) -> some View {
         if let data = store.myData {
             list(data)
-        } else {
-            ContentUnavailableView(store.problem?.heading ?? "Your record did not load", systemImage: "exclamationmark.triangle", description: Text(store.problem?.words ?? ""))
+        } else if let text = UndrawnRecord.text(hold: store.hold, problem: store.problem) {
+            switch layout {
+            case .health: undrawnPage(text)
+            case .settings: undrawnSettings(text)
+            }
         }
     }
 
