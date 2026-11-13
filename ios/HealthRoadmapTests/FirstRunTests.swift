@@ -109,23 +109,106 @@ final class FirstRunTests: XCTestCase {
         XCTAssertFalse(Offer.offering(backUp: true).prompting, "Back up closes the prompt")
     }
 
-    /// An erase from elsewhere raises the questions only over the bare tabs: no cover, no backup
-    /// prompt or Sync sheet (Back up's step between them included), no hold from this phone's own
-    /// erase. Otherwise it waits; RootView asks again as the last sheet closes (S48).
-    func testAnEraseWaitsForTheOfferToClose_US25_AC16d() {
+    /// Every cover x offer x hold x erase x count (S48). Only over the bare tabs with no hold from
+    /// this phone's own erase: an erase from elsewhere raises the questions with no offer up, and
+    /// closes the backup prompt or Sync sheet first from every other offer state; with no erase,
+    /// a record not yet counted is counted, whatever the offer.
+    func testAnEraseClosesTheOfferFirst_US25_AC16d() {
         let covers: [Cover] = [.deciding, .welcome, .questions(.fresh), .questions(.onlyMissing), .questions(.afterErase), .none]
         let offers: [Offer] = [.idle, .offering(backUp: false), .offering(backUp: true), .sync]
         for cover in covers {
             for offer in offers {
                 for holding in [false, true] {
                     for erased in [false, true] {
-                        let want: Cover.Event? = (cover, offer, holding, erased) == (.none, .idle, false, true) ? .erased : nil
-                        let got = Cover.onRecordChange(cover: cover, offer: offer, holding: holding, erasedElsewhere: erased)
-                        XCTAssertEqual(got, want,"\(cover) x \(offer) x holding \(holding) x erased \(erased)")
+                        for uncounted in [false, true] {
+                            var want: Cover.RecordChange?
+                            if cover == .none, !holding {
+                                want = erased ? (offer == .idle ? .erase : .closeOffer) : uncounted ? .takeCount : nil
+                            }
+                            let got = Cover.onRecordChange(cover: cover, offer: offer, holding: holding, erasedElsewhere: erased, uncounted: uncounted)
+                            XCTAssertEqual(got, want, "\(cover) x \(offer) x holding \(holding) x erased \(erased) x uncounted \(uncounted)")
+                        }
                     }
                 }
             }
         }
+        // closeOffer's two events land idle from every offer state (RootView.recordChanged).
+        for offer in offers {
+            XCTAssertEqual([Offer.Event.promptClosed, .syncClosed].reduce(offer, Offer.transition), .idle, "\(offer)")
+        }
+    }
+
+    /// A local-only phone whose Sync sheet is open after the backup prompt's Back up. Moved only
+    /// as RootView moves it: `recordChanged` reads the record and the keys the way RootView's
+    /// erasedElsewhere and recordChanged do, then acts on Cover.onRecordChange; `sheetGone` is
+    /// the sheets' onDismiss.
+    private struct Phone {
+        static let full = MyData.Profile(sex: "female", birthYear: 1980, birthMonth: nil, height: "170", heightUnit: "cm", feetInches: nil)
+        static let erasedProfile = MyData.Profile(sex: nil, birthYear: nil, birthMonth: nil, height: nil, heightUnit: "cm", feetInches: nil)
+
+        var cover = Cover.none
+        var offer = [Offer.Event.due, .backUpTapped, .promptClosed].reduce(Offer.idle, Offer.transition)
+        var counted = (epoch: 0, source: "")
+        var source = "", open = true, epoch = 0, profile = full
+
+        mutating func recordChanged() {
+            let erased = source == counted.source && OnboardingSteps.erasedSince(counted.epoch, epoch: epoch, profile: profile)
+            let uncounted = source != counted.source && (source.isEmpty || open)
+            switch Cover.onRecordChange(cover: cover, offer: offer, holding: false, erasedElsewhere: erased, uncounted: uncounted) {
+            case .erase?: cover = Cover.transition(cover, .erased).0
+            case .closeOffer?: offer = [.promptClosed, .syncClosed].reduce(offer, Offer.transition)
+            case .takeCount?: counted = (epoch, source)
+            case nil: break
+            }
+        }
+
+        mutating func sheetGone() { recordChanged() }
+        /// Sync's Connect opens a cloud record whose erase count is 2.
+        mutating func connect() { (source, open, epoch) = ("dropbox", true, 2); recordChanged() }
+        /// The website erases; the next pull lands it.
+        mutating func erasedOnTheWebsite() { (epoch, profile) = (3, Self.erasedProfile); recordChanged() }
+        /// Disconnect copies the cloud record down to the phone.
+        mutating func disconnect() { (source, open) = ("", false); recordChanged() }
+        /// Sync's Done, or a swipe: the binding closes it, then onDismiss.
+        mutating func done() { offer = Offer.transition(offer, .syncClosed); sheetGone() }
+    }
+
+    /// (i) Connect, an erase from the website, Disconnect, Done: the erase closes Sync at once,
+    /// so the questions rise before a Disconnect could hide it, and stay.
+    func testConnectEraseDisconnectRaisesTheQuestions_US25_AC16d() {
+        var phone = Phone()
+        XCTAssertEqual(phone.offer, .sync)
+        phone.connect()
+        phone.erasedOnTheWebsite()
+        XCTAssertEqual(phone.offer, .idle, "the erase closes Sync")
+        phone.sheetGone()
+        XCTAssertEqual(phone.cover, .questions(.afterErase))
+        phone.disconnect()
+        phone.done()
+        XCTAssertEqual(phone.cover, .questions(.afterErase), "a later Disconnect never hides the erase")
+    }
+
+    /// (ii) A plain connect, then Done: the cloud's count is taken, so no erase is seen later:
+    /// not at Done, a later pull or a Disconnect.
+    func testAPlainConnectTakesTheCloudsCount_US25_AC16d() {
+        var phone = Phone()
+        phone.connect()
+        XCTAssertEqual(phone.counted.epoch, 2)
+        XCTAssertEqual(phone.counted.source, "dropbox")
+        phone.done()
+        phone.recordChanged()
+        phone.disconnect()
+        XCTAssertEqual(phone.cover, .none, "no false erase")
+        XCTAssertEqual(phone.offer, .idle)
+    }
+
+    /// (iii) Connect, an erase from the website, Done with no Disconnect: the questions rise.
+    func testConnectEraseDoneRaisesTheQuestions_US25_AC16d() {
+        var phone = Phone()
+        phone.connect()
+        phone.erasedOnTheWebsite()
+        phone.done()
+        XCTAssertEqual(phone.cover, .questions(.afterErase))
     }
 
     /// Not now: the binding's close, then onDismiss's, land idle once; Back up: Sync after the prompt.

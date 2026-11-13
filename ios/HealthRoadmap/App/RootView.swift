@@ -72,7 +72,7 @@ struct RootView: View {
             health?.analytics = analytics
         }
         // Back up closes the prompt by leaving `prompting`; Sync opens once it has gone (onDismiss).
-        // Each sheet's onDismiss looks at the record again: an erase that waited for it (S48).
+        // Each sheet's onDismiss looks at the record again: an erase that closed it (S48).
         .sheet(isPresented: Binding(get: { offer.prompting }, set: { if !$0 { send(.promptClosed) } }), onDismiss: { send(.promptClosed); recordChanged() }) {
             CloudPromptView { send(.backUpTapped) }
                 .onAppear {
@@ -198,13 +198,17 @@ struct RootView: View {
     /// The count for a record the phone has not counted yet (a cloud just connected or
     /// switched; the questions' own state) is taken, not compared. The phone's copy of a
     /// connected cloud never sets it: only the opened cloud record does.
-    /// An erase from elsewhere waits for the backup prompt or Sync sheet to close (S48): their
-    /// onDismiss calls this again.
+    /// An erase from elsewhere closes the backup prompt or Sync sheet first (S48): their onDismiss
+    /// calls this again, and the questions rise once the sheet has gone.
     private func recordChanged() {
-        let holding = eraser.holdsRemoteErases
-        if let event = Cover.onRecordChange(cover: cover, offer: offer, holding: holding, erasedElsewhere: erasedElsewhere) { send(event); return }
-        guard cover == .none, !holding, !erasedElsewhere else { return }
-        if source != onboardedSource, source.isEmpty || sync.recordOpen { takeCount() }
+        let uncounted = source != onboardedSource && (source.isEmpty || sync.recordOpen)
+        switch Cover.onRecordChange(cover: cover, offer: offer, holding: eraser.holdsRemoteErases, erasedElsewhere: erasedElsewhere, uncounted: uncounted) {
+        case .erase?: send(.erased)
+        // From any offer, these two land idle: the prompt closes (to Sync after Back up), then Sync.
+        case .closeOffer?: send(.promptClosed); send(.syncClosed)
+        case .takeCount?: takeCount()
+        case nil: break
+        }
     }
 
     private func takeCount() {

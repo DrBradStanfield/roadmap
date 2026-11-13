@@ -94,12 +94,24 @@ enum Cover: Equatable {
         }
     }
 
-    /// What a record change sends (S48): an erase from elsewhere raises the questions only over
-    /// the bare tabs, with no backup offer up and no hold from this phone's own erase, so the cover
-    /// never presents under the offer's sheets (My health's own sheets: S65). Otherwise it waits:
-    /// RootView asks again as the offer's last sheet closes.
-    static func onRecordChange(cover: Cover, offer: Offer, holding: Bool, erasedElsewhere: Bool) -> Event? {
-        cover == .none && offer == .idle && !holding && erasedElsewhere ? .erased : nil
+    /// What a record change asks of RootView (S48).
+    enum RecordChange: Equatable {
+        /// Raise the questions: send `.erased`.
+        case erase
+        /// Close the backup prompt or Sync sheet first; its onDismiss asks again.
+        case closeOffer
+        /// Take the count of a record not yet counted (RootView.takeCount).
+        case takeCount
+    }
+
+    /// Only over the bare tabs, with no hold from this phone's own erase. An erase from elsewhere
+    /// closes the backup offer's sheet first, so the cover never presents under it (My health's
+    /// own sheets: S65), and is acted on at once, so a later Disconnect or switch cannot hide it.
+    /// `uncounted`: the record shown is one the phone has not counted yet.
+    static func onRecordChange(cover: Cover, offer: Offer, holding: Bool, erasedElsewhere: Bool, uncounted: Bool) -> RecordChange? {
+        guard cover == .none, !holding else { return nil }
+        if erasedElsewhere { return offer == .idle ? .erase : .closeOffer }
+        return uncounted ? .takeCount : nil
     }
 }
 
