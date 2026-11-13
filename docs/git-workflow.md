@@ -94,8 +94,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    hand-typed `until gh ...` loop, which hung for hours or was refused by the sandbox (US-64 AC26). GitHub does not re-run CI when main moves, so before merging, `git fetch origin main` and
    compare what main changed since the PR's green run with what the PR changes (`git diff --name-only
    origin/main...HEAD` and `git diff --name-only HEAD...origin/main`). **Merge main in first only if** main
-   changed a file the PR changes, a file the PR's changed files import directly, an input of a generated file,
-   or a workflow file, or GitHub says the PR conflicts. Changes on main to `docs/user-stories.md`,
+   changed a file the PR changes, a file the PR's changed files import directly, a generated file's output or
+   its generator script (`tools/generated-files.json` lists them), or a workflow file, or GitHub says the PR conflicts. Changes on main to `docs/user-stories.md`,
    `docs/untangle/**`, `docs/gotchas.md` or `scripts/file-size-baseline.json` do not count when the PR merges
    without conflict. To merge main in: `git merge --no-edit origin/main` (its own command), re-review that
    part (PR 150), push, and let CI run again; otherwise merge as is. What that skips (main changed a file the
