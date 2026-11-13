@@ -169,7 +169,7 @@ final class EraseHeldUndrawnTests: XCTestCase {
         XCTAssertEqual(store.erasures, erasures + 1, "the erase is counted")
         XCTAssertEqual(store.recordJSON, filled, "session 2's record stays")
         XCTAssertEqual(store.cloudErase, "e2")
-        XCTAssertEqual(store.screenErasures, store.erasures, "read after the erase, as a stale erase's newer record is")
+        XCTAssertTrue(store.predatesErase, "not proven read after the erase: nothing is charted from it")
     }
 
     /// US-25 AC16g: the same session, still held by the store, takes the erase even after

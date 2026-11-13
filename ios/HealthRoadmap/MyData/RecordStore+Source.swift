@@ -156,11 +156,10 @@ extension RecordStore {
 
     /// An erase's record onto the screen, inside showErased's step (US-25 AC16g). Once CloudSync
     /// no longer shows its session (`stillShown` false), it lands only on that session's record:
-    /// another one shown, a newer session's or the phone's, was read since and is kept, as a stale
-    /// erase's newer record is. With no record, the one held predates the erase.
+    /// another one shown, a newer session's or the phone's, is kept, but nothing proves it was read
+    /// after the erase, so it is marked as predating it (`failed`), as one held with no record is.
     func drawErased(_ view: HealthEngine.CloudView?, stillShown: Bool) async -> DrawResult {
-        guard let view else { return .failed }
-        guard stillShown || source.session == view.session else { return .stale }
+        guard let view, stillShown || source.session == view.session else { return .failed }
         return await draw(view, in: UnitChoices(), holdUndrawn: true)
     }
 

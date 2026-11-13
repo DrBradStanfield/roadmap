@@ -547,6 +547,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.erasures, erasures + 1, "the erase reached the store")
         _ = await disconnect.value
         XCTAssertEqual(store.erasures, erasures + 1, "counted once")
+        XCTAssertNil(store.cloudErase, "the erase never put the cloud record back over the phone's")
     }
 
     // MARK: 9 · syncNow
