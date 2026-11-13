@@ -29,6 +29,7 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 
 import { HealthTool } from '../src/components/HealthTool';
 import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
+import { bootSignIn } from '../src/storage/sign-in-state';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
@@ -127,12 +128,13 @@ describe('US-01 AC5 on a phone: the alert is atop My health and atop Chat, which
 // says so atop My health too, through app.tsx's `syncAlert` (the same StorageBar, problemsOnly).
 describe('US-62 AC34 on a phone: a reconnect shows atop My health, not only in Account', () => {
   it('the reconnect button is in My health\'s header and on the page', async () => {
+    bootSignIn({ kind: 'unreachable', provider: 'dropbox' }); // the load's answer (US-09 AC48)
     const view = render(
       <HealthTool
-        storageBar={<StorageBar backend="local" reconnect="dropbox" />}
+        storageBar={<StorageBar backend="local" />}
         saveAlert={<LocalSaveAlert backend="local" />}
-        syncAlert={<StorageBar backend="local" reconnect="dropbox" problemsOnly />}
-        syncControl={({ hasData, attention }) => <SyncControl backend="local" reconnect="dropbox" hasData={hasData} attention={attention} />}
+        syncAlert={<StorageBar backend="local" problemsOnly />}
+        syncControl={({ hasData, attention }) => <SyncControl backend="local" hasData={hasData} attention={attention} />}
       />,
     );
     const retry = await waitFor(() => {

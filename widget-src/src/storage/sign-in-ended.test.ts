@@ -41,13 +41,14 @@ const posts = (url: string) => calls.filter((c) => c.url === url && c.method ===
 const apiCalls = () => calls.filter((c) => c.url !== EXCHANGE && c.url !== DROPBOX_TOKEN_URL).length;
 
 let raises: number;
+let unsubscribe: () => void;
 beforeEach(() => {
   localStorage.clear();
   resetSignIn();
   calls = [];
   answer = () => reply(500);
   raises = 0;
-  subscribeSignIn(() => { raises += 1; });
+  unsubscribe = subscribeSignIn(() => { raises += 1; });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
     calls.push({ url, method: init?.method ?? 'GET' });
@@ -56,6 +57,7 @@ beforeEach(() => {
   }));
 });
 afterEach(() => {
+  unsubscribe();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   localStorage.clear();
@@ -72,6 +74,7 @@ function chosen(provider: 'google-drive' | 'dropbox', tokens: object): void {
     localStorage.setItem(DROPBOX_TOKENS, JSON.stringify(tokens));
   }
   bootSignIn({ kind: 'signedIn', provider });
+  raises = 0; // count the raises only
 }
 const failure = (run: Promise<unknown>) => run.then(() => null, (e: unknown) => e as StorageError);
 

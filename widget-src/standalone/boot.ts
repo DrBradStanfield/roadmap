@@ -2,7 +2,8 @@ import { listenForOtherTabsLogOff } from '../src/storage/local-storage-adapter';
 import { initSentry } from '../src/lib/sentry';
 import { takeEmailFlag } from './email-landing';
 import { showLoadFailure } from './load-failure';
-import { startOnBackend, type ResolvedBackend } from './connect';
+import { signInAtBoot, startOnBackend, type ResolvedBackend } from './connect';
+import { bootSignIn } from '../src/storage/sign-in-state';
 
 /**
  * The standalone boot from its first line through the first record load
@@ -24,6 +25,8 @@ export async function boot(
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const { backend, reconnect } = await startOnBackend(resolved, initStore).catch((error) => showLoadFailure(error, refused));
-  return { backend, reconnect, refused, fromEmail };
+  const started = await startOnBackend(resolved, initStore).catch((error) => showLoadFailure(error, refused));
+  // The page's one sign-in state, for every provider (US-09 AC48): the UI reads only it.
+  bootSignIn(signInAtBoot(started));
+  return { backend: started.backend, refused, fromEmail };
 }

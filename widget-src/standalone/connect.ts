@@ -7,6 +7,7 @@
  */
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
+import { saveFailureCause } from '@roadmap/health-core/save-state';
 import {
   DriveGrantRefusedError,
   GoogleDriveAdapter,
@@ -18,6 +19,7 @@ import {
   type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
+import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
@@ -40,8 +42,22 @@ export interface ResolvedBackend {
   /** The remembered cloud is unusable this session (token gone, or the provider
    * refused the record): the session runs on-device and the UI names this
    * provider, so the user is never shown the guest "choose where to save"
-   * pitch for a record they have already placed (US-09 AC13). */
-  reconnect?: Exclude<Backend, 'local'>;
+   * pitch for a record they have already placed (US-09 AC13). Boot seeds the
+   * page's sign-in state with it (US-09 AC48); the UI reads only that state. */
+  reconnect?: LostSignIn;
+}
+
+/** The sign-in state a load ends in (US-09 AC48), for boot to seed once. */
+export function signInAtBoot({ backend, reconnect }: ResolvedBackend): SignIn {
+  return reconnect ?? (backend === 'local' ? { kind: 'none' } : { kind: 'signedIn', provider: backend });
+}
+
+/** Why the remembered cloud is unusable at load (US-09 AC48). Google Drive's panel always offers its
+ *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token (a save's 'auth'
+ *  cause). Any other failure, and every GitHub and WebDAV one, is retried by a reload (AC13). */
+function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
+  if (provider === 'google-drive' || (provider === 'dropbox' && saveFailureCause(error) === 'auth')) return { kind: 'signedOut', provider };
+  return { kind: 'unreachable', provider };
 }
 
 /** A Google grant refused at connect (US-09 AC15) is the user's move, not a
@@ -57,9 +73,9 @@ export function connectRefusal(error: unknown): string | null {
  *  next good cloud session merge this session's edits up (US-09 AC13), whether
  *  the user clicks Reconnect or the next load simply succeeds; against an
  *  erased cloud file they survive because no erase listed them (AC23). */
-function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
+function onDeviceFallback(reconnect: LostSignIn): ResolvedBackend {
   markSyncPending();
-  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend };
+  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect };
 }
 
 /**
@@ -81,7 +97,7 @@ export async function startOnBackend(
     const failure = recordFailure(error, 'Cloud record could not be loaded');
     console.warn(failure.message);
     Sentry.captureException(failure, { tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend } });
-    const fallback = onDeviceFallback(resolved.backend);
+    const fallback = onDeviceFallback(lostAtLoad(resolved.backend, error));
     await init(fallback.adapter, true);
     return fallback;
   }
@@ -92,8 +108,8 @@ export async function startOnBackend(
  *  "guest, no provider" means. */
 export type StorageState = 'reconnect' | 'cloud' | 'guest';
 
-export function storageState(backend: Backend, reconnect?: Exclude<Backend, 'local'>): StorageState {
-  if (reconnect) return 'reconnect';
+export function storageState(backend: Backend, signIn: SignIn = currentSignIn()): StorageState {
+  if (lostSignIn(signIn)) return 'reconnect';
   return backend === 'local' ? 'guest' : 'cloud';
 }
 
@@ -211,7 +227,7 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
     }
     // Endpoint unreachable or refresh token revoked. A popup can't open at
     // page load: run on-device, offer Reconnect, KEEP the remembered choice.
-    return onDeviceFallback('google-drive');
+    return onDeviceFallback({ kind: 'signedOut', provider: 'google-drive' });
   }
   if (remembered) forgetBackend(); // creds gone → fall back, will re-prompt
 

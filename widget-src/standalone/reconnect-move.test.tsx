@@ -15,7 +15,7 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 const lift = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved' }));
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved', flushRoadmapStore: async () => undefined }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', async (importOriginal) => ({ ...(await importOriginal<typeof import('./connect')>()), liftLocalInto: lift }));
@@ -24,6 +24,7 @@ import { SyncControl } from './sync-control';
 import { GoogleDriveAdapter } from '../src/storage';
 import { dispatch, getSwitchFlow, resetSwitchFlow } from './switch-flow';
 import { openBackendPicker } from '../src/lib/storage-notice';
+import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 
 const BACKEND_KEY = 'health_roadmap_backend';
 const DRIVE_TOKENS = 'health_roadmap_gdrive_tokens';
@@ -67,7 +68,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const mount = () => render(<SyncControl backend="local" reconnect="google-drive" hasData />);
+/** A load whose Drive sign-in could not be used, as boot seeds it (US-09 AC48). */
+const mount = () => {
+  resetSignIn();
+  bootSignIn({ kind: 'signedOut', provider: 'google-drive' });
+  return render(<SyncControl backend="local" hasData />);
+};
 const button = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === name);
 const reconnectButton = () => document.querySelector<HTMLButtonElement>('button.hr-sync-btn')!;
 const option = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('button.hr-opt')].find((b) => b.textContent?.startsWith(name))!;

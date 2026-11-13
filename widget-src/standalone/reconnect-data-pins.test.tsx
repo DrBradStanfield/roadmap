@@ -148,7 +148,7 @@ interface Page {
   notice: typeof import('../src/lib/storage-notice');
   switchFlow: typeof import('./switch-flow');
   backend: import('./connect').Backend;
-  reconnect?: Cloud | 'github' | 'self-host';
+  reconnect?: import('./connect').ResolvedBackend['reconnect'];
   leave: () => void;
 }
 
@@ -166,6 +166,7 @@ async function loadPage(): Promise<Page> {
   const data = await import('../src/lib/roadmap-data');
   const { registerPageDeparture } = await import('./page-departure');
   const resolved = await connect.startOnBackend(await connect.resolveRemembered(), data.initRoadmapStore);
+  (await import('../src/storage/sign-in-state')).bootSignIn(connect.signInAtBoot(resolved)); // as boot seeds it (US-09 AC48)
   const leave = registerPageDeparture(() => undefined);
   page = {
     data,
@@ -243,8 +244,8 @@ async function openReconnectPanel(cloud: Cloud): Promise<Page> {
   }
   const p = await loadPage();
   expect(p.backend).toBe('local');
-  expect(p.reconnect).toBe(cloud);
-  render(<p.sync.SyncControl backend={p.backend} reconnect={cloud} hasData />);
+  expect(p.reconnect?.provider).toBe(cloud);
+  render(<p.sync.SyncControl backend={p.backend} hasData />);
   expect(document.querySelector('.hr-sync-status')?.textContent).toMatch(cloud === 'dropbox' ? /could not be reached/ : /signed out/);
   return p;
 }
