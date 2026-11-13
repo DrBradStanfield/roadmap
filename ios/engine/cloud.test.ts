@@ -1201,6 +1201,8 @@ class FakeDrive implements Server {
   afterPatch: ((body: string) => boolean) | null = null;
   /** True: every call answers 401, the token expired. */
   expired = false;
+  /** Originals filed in Drive, by file name (US-73 AC12). */
+  documents = new Map<string, string>();
 
   put(record: RoadmapFile): void {
     this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
@@ -1209,7 +1211,7 @@ class FakeDrive implements Server {
     return JSON.parse(this.file!.text) as RoadmapFile;
   }
 
-  answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
+  answer(url: string, headers: Record<string, string>, body: string | null, method: string): ReturnType<Server['answer']> {
     const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
     if (this.expired) return { status: 401, headers: {}, body: 'expired' };
     expect(headers.authorization).toBe('Bearer token-1');
@@ -1223,6 +1225,13 @@ class FakeDrive implements Server {
       return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
     }
     if (method === 'GET' && u.pathname === '/drive/v3/files' && this.missing && q.includes(this.missing)) return ok({ files: [] });
+    const names = [...this.documents.keys()];
+    const named = names.findIndex((name) => q.includes(name));
+    if (method === 'GET' && u.pathname === '/drive/v3/files' && named >= 0) return ok({ files: [{ id: `doc-${named}` }] });
+    const doc = /^\/drive\/v3\/files\/doc-(\d+)$/.exec(u.pathname);
+    if (method === 'GET' && doc && u.searchParams.get('alt') === 'media') {
+      return { status: 200, headers: { 'Content-Type': 'application/pdf' }, body: this.documents.get(names[Number(doc[1])])! };
+    }
     if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
     if (method === 'POST' && u.pathname === '/drive/v3/files') {
       this.folderMade = true;
@@ -1413,6 +1422,24 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
     await engine.cloudClose(false);
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
+  });
+
+  it('US-73 AC12: a Google Drive original reads back through the shim\'s Response, which has no blob()', async () => {
+    const { engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    await engine.cloudClose(false);
+
+    const drive = new FakeDrive();
+    const withRow = await recordWith([], 'web');
+    withRow.documents = [row];
+    drive.put(withRow);
+    drive.folderMade = true;
+    drive.documents.set(row.fileRef.split('/').pop()!, '%PDF letter');
+    const onDrive = await phone(drive);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false, false);
+    const original = await onDrive.engine.documentOriginal(row.id);
+    expect(Buffer.from(new Uint8Array(original)).toString('utf8')).toBe('%PDF letter');
   });
 
   it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {
