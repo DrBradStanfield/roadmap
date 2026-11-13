@@ -334,6 +334,56 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(center.pending.count, 0)
     }
 
+    /// US-25 AC12b (adversary F1): the answer to an older ask is dropped through the scheduler,
+    /// whether reminders are off by then or a newer ask is out.
+    func testALateAnswerToAnOlderAskIsDropped_US25_AC12b() async {
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        // "Allow notifications" asks again while on; the user turns reminders off; the answer lands.
+        center.holdsAnswers = true
+        let reask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        await scheduler.optOut()
+        center.releaseAll()
+        _ = await reask.value
+        XCTAssertFalse(scheduler.optedIn, "off x asked: the late answer is dropped")
+        XCTAssertEqual(center.pending.count, 0)
+
+        // On again; a re-ask is out; off; on again (a newer ask); the older answer lands first.
+        center.holdsAnswers = false
+        _ = await scheduler.optIn()
+        center.holdsAnswers = true
+        let older = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        await scheduler.optOut()
+        let newer = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 2 }
+        center.releaseFirst()
+        _ = await older.value
+        XCTAssertFalse(scheduler.optedIn, "asking x an older attempt's answer: still asking")
+        XCTAssertEqual(center.pending.count, 0)
+        center.releaseFirst()
+        _ = await newer.value
+        XCTAssertTrue(scheduler.optedIn, "the newer ask's grant turns reminders on")
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b, US-11: an erase that lands while iOS is answering ends the ask. The grant
+    /// was given for the record before the erase, so reminders stay off and nothing is scheduled.
+    func testAnEraseDuringThePermissionAskLeavesRemindersOff_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let ask = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh() // the erase's refresh
+        center.releaseAll()
+        _ = await ask.value
+        XCTAssertFalse(scheduler.optedIn, "no reminders for the erased record")
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
+    }
+
     /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.
     private func until(_ done: () -> Bool) async {
         for _ in 0..<200 where !done() { await Task.yield() }

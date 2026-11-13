@@ -11,10 +11,12 @@ final class ReminderModeTests: XCTestCase {
     private static let events: [(String, ReminderEvent)] = [
         ("tappedOn", .tappedOn(attempt: 2)),
         ("tappedOff", .tappedOff),
-        ("asked granted", .asked(attempt: 1, granted: true, epoch: 7)),
-        ("asked granted, unreadable", .asked(attempt: 1, granted: true, epoch: nil)),
-        ("asked refused", .asked(attempt: 1, granted: false, epoch: nil)),
-        ("asked stale", .asked(attempt: 9, granted: true, epoch: 7)),
+        ("asked granted", .asked(attempt: 1, granted: true, epoch: 7, askedAt: 7)),
+        ("asked granted, unread at the ask", .asked(attempt: 1, granted: true, epoch: 7, askedAt: nil)),
+        ("asked granted, erased since", .asked(attempt: 1, granted: true, epoch: 7, askedAt: 6)),
+        ("asked granted, unreadable", .asked(attempt: 1, granted: true, epoch: nil, askedAt: 7)),
+        ("asked refused", .asked(attempt: 1, granted: false, epoch: nil, askedAt: 7)),
+        ("asked stale", .asked(attempt: 9, granted: true, epoch: 7, askedAt: 7)),
         ("read same", .read(epoch: 5)),
         ("read moved", .read(epoch: 6)),
         ("read failed", .read(epoch: nil)),
@@ -26,6 +28,8 @@ final class ReminderModeTests: XCTestCase {
             ("tappedOff", .off, nil),
             // A late answer after the user turned reminders off is dropped.
             ("asked granted", .off, nil),
+            ("asked granted, unread at the ask", .off, nil),
+            ("asked granted, erased since", .off, nil),
             ("asked granted, unreadable", .off, nil),
             ("asked refused", .off, nil),
             ("asked stale", .off, nil),
@@ -38,6 +42,10 @@ final class ReminderModeTests: XCTestCase {
             ("tappedOn", .asking(attempt: 1), nil),
             ("tappedOff", .off, .refresh),
             ("asked granted", .on(epoch: 7), .refresh),
+            // A failed read before the ask cannot tell an erase: the grant counts, as before.
+            ("asked granted, unread at the ask", .on(epoch: 7), .refresh),
+            // An erase while iOS answered: the grant was for the record before it (US-11).
+            ("asked granted, erased since", .off, .refresh),
             ("asked granted, unreadable", .off, .refresh),
             ("asked refused", .off, .refresh),
             ("asked stale", .asking(attempt: 1), nil),
@@ -50,6 +58,8 @@ final class ReminderModeTests: XCTestCase {
             ("tappedOn", .on(epoch: 5), .askPermission(attempt: 2)),
             ("tappedOff", .off, .refresh),
             ("asked granted", .on(epoch: 5), .refresh),
+            ("asked granted, unread at the ask", .on(epoch: 5), .refresh),
+            ("asked granted, erased since", .on(epoch: 5), .refresh),
             ("asked granted, unreadable", .on(epoch: 5), .refresh),
             ("asked refused", .on(epoch: 5), .refresh),
             ("asked stale", .on(epoch: 5), .refresh),
@@ -72,6 +82,6 @@ final class ReminderModeTests: XCTestCase {
                 rows += 1
             }
         }
-        XCTAssertEqual(rows, 27)
+        XCTAssertEqual(rows, 33)
     }
 }

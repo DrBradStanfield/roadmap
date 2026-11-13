@@ -103,9 +103,10 @@ final class ReminderScheduler {
     private func run(_ effect: ReminderEffect?) async {
         switch effect {
         case .askPermission(let attempt):
+            let askedAt = (try? await compute(firstSeen()))?.eraseEpoch
             let granted = (try? await center.requestPermission()) ?? false
             let epoch = granted ? (try? await compute(firstSeen()))?.eraseEpoch : nil
-            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch)))
+            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt)))
         case .refresh: await refresh()
         case nil: break
         }
