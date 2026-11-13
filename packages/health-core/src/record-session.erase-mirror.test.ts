@@ -264,3 +264,123 @@ describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner
     expect(mayHaveLanded(await sync.save(file).catch((e: unknown) => e))).toBe(false);
   });
 });
+
+/** A synchronous device store, as localStorage is on the web, whose writes can be made to fail. */
+class DeviceStore extends FailingStore {
+  readSync(name: string) {
+    const entry = this.cloud.files.get(name);
+    return entry ? { body: JSON.parse(entry.json), version: String(entry.version) } : { body: null, version: null };
+  }
+  writeSync(name: string, body: object, expected: string | null) {
+    if (this.failWrites) throw this.failure();
+    const entry = this.cloud.files.get(name);
+    if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
+    const version = (entry?.version ?? 0) + 1;
+    this.cloud.files.set(name, { json: JSON.stringify(body), version });
+    return { version: String(version) };
+  }
+  revision(name: string) { return this.cloud.files.has(name) ? String(this.cloud.files.get(name)!.version) : null; }
+}
+
+function deviceSetup() {
+  const store = new DeviceStore(new MemoryCloud());
+  const calls: string[] = [];
+  const host: RecordHost = {
+    tier: 'device', store, sync: store,
+    clearNamedFiles: () => { calls.push('clearNamedFiles'); }, eraseFence: () => null,
+    clearOffFileData: () => { calls.push('clearOffFileData'); },
+    clearedErase: () => null,
+    noteCleared: () => {},
+    deviceId: () => 'laptop',
+    clock: { now: () => clock },
+    timers: { set: () => ({}), clear: () => {} },
+    remoteChanged: () => {},
+    failureCause: () => 'QuotaExceededError',
+    report: () => {},
+  };
+  return { host, store, calls };
+}
+
+/** What LocalStorageAdapter.writeSync throws (widget-src local-storage-adapter.ts). */
+const quota = () => Object.assign(new Error('full'), { name: 'QuotaExceededError' });
+const FULL = 'Could not save on this device (local storage may be full).';
+const deviceFailures: Array<[string, () => Error]> = [
+  ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota())],
+  ['writes stopped by a log-off (WritesStoppedError)', () => Object.assign(new Error('stopped'), { name: 'WritesStoppedError' })],
+];
+
+describe('S69, US-11 AC4c: an erase the device tier refused outright is put back', () => {
+  it.each(deviceFailures)('%s: the copy is put back and the erase answers not erased', async (_name, failure) => {
+    const { host, store, calls } = deviceSetup();
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    const before = session.eraseIdentity;
+    const file = structuredClone(session.file);
+    store.failWrites = true;
+    store.failure = failure;
+    const result = await session.erase();
+    expect(result).toEqual({ success: false });
+    expect(session.eraseIdentity).toBe(before);
+    expect(session.file).toEqual(file);
+    expect(session.refuses(before)).toBe(false);
+    expect(ids(stored(store))).toEqual(['a']);
+    expect(stored(store).meta.eraseEpoch ?? 0).toBe(0);
+    expect(calls).toEqual([]);
+  });
+
+  it('control: a revision write that failed after the record may have stored (uncertainWrite) keeps the erased copy', async () => {
+    const { host, store } = deviceSetup();
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    const before = session.eraseIdentity;
+    store.failWrites = true;
+    store.failure = () => uncertainWrite(new StorageError(FULL, 'This change may have been stored. Read the record again before trying it a second time.', quota()));
+    const result = await session.erase();
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(session.eraseIdentity).not.toBe(before);
+    expect(session.file.measurements).toEqual([]);
+  });
+
+  // An unreadable stored record is written over directly (replaceUnreadable, US-11 AC9), not through
+  // SyncManager, so nothing marks a write that may have stored but the adapter itself.
+  const unreadable = async () => {
+    const { host, store } = deviceSetup();
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    store.cloud.files.set(ROADMAP_FILE_NAME, { json: '{not json', version: 9 });
+    return { session, store, before: session.eraseIdentity };
+  };
+
+  it.each(deviceFailures)('over an unreadable record, %s: put back too', async (_name, failure) => {
+    const { session, store, before } = await unreadable();
+    store.failWrites = true;
+    store.failure = failure;
+    expect(await session.erase()).toEqual({ success: false });
+    expect(session.eraseIdentity).toBe(before);
+    expect(ids(session.file)).toEqual(['a']);
+  });
+
+  it('control: over an unreadable record, a write that may have stored keeps the erased copy', async () => {
+    const { session, store, before } = await unreadable();
+    store.failWrites = true;
+    store.failure = () => uncertainWrite(new StorageError(FULL, 'This change may have been stored.', quota()));
+    const result = await session.erase();
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(FULL);
+    expect(session.eraseIdentity).not.toBe(before);
+    expect(session.file.measurements).toEqual([]);
+  });
+
+  it('control: over an unreadable record, a failure that is not a known refusal keeps the erased copy', async () => {
+    const { session, store, before } = await unreadable();
+    store.failWrites = true;
+    store.failure = () => new Error('something unknown');
+    const result = await session.erase();
+    expect(result.success).toBe(false);
+    expect(session.eraseIdentity).not.toBe(before);
+  });
+});
