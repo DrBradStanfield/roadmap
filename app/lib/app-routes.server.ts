@@ -117,7 +117,7 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
  * and the upload's size, extra, contexts, modules, server name) is sent. It runs in
  * a trace of its own, so no trace id links it to the request's transaction or its
  * `lab_import_v2` exception; their timestamps can still put them side by side, and
- * together they hold only page counts and a time band. A failure here never changes
+ * together they hold only the error and a time band. A failure here never changes
  * the answer.
  */
 async function reportSlowImport(res: Response, ms: number, retried: boolean): Promise<void> {

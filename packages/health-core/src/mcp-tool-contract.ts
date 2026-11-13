@@ -165,7 +165,7 @@ export const correctValueInput = z.object({
 export const PROFILE_FIELDS = ['sex', 'birthYear', 'birthMonth', 'heightCm'] as const;
 
 /**
- * Shape only — the app's own ranges are checked in `updateProfile` below,
+ * Shape only — the app's own ranges are checked in `updateProfile` (profile-edits.ts),
  * against `healthInputSchema`, so a refusal quotes the message a person would
  * see. `null` in `expected` is a claim too: "I believe the record has no value
  * for this yet", the only way to state one about a field that is unset.

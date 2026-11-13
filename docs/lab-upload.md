@@ -270,7 +270,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `lib/upload-pipeline.ts` (`MAX_FILE_SIZE`), `api.lab-import-v2.ts` |
 | Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
 | Worst-case cost | bounded by the machine cap, not the per-IP limit: about 2000 files a day per machine (`AI_DAILY_FILE_CAP`), 4x the old 500 cap and its worst-case cost, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, ten IPs can reach the cap in a day (three could reach the old 500). | |
-| Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
+| Sentry | `feature: 'lab_import_v2'` and the error's name, never values, page count or types | `api.lab-import-v2.ts` |
 
 ---
 
