@@ -2046,7 +2046,7 @@
   ],
   "G017": [
    "# prostate | Prostate",
-   "note: Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).",
+   "note: Screening usually starts at 50. The American Cancer Society recommends starting at 45 for Black men and for men whose father, brother or son has had prostate cancer. Discuss with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"prostate_discussion\",\"label\":\"Discussed prostate screening with your doctor?\",\"options\":\"SCREENING_OPTIONS.prostate_discussion\",\"value\":\"\"}"
   ],
   "G018": [
@@ -2068,7 +2068,7 @@
   ],
   "G021": [
    "# prostate | Prostate",
-   "note: Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).",
+   "note: Screening usually starts at 50. The American Cancer Society recommends starting at 45 for Black men and for men whose father, brother or son has had prostate cancer. Discuss with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"prostate_discussion\",\"label\":\"Discussed prostate screening with your doctor?\",\"options\":\"SCREENING_OPTIONS.prostate_discussion\",\"value\":\"will_screen\"}",
    "{\"kind\":\"measurement\",\"metric\":\"psa\",\"label\":\"PSA (ng/mL)\",\"hint\":\"Normal: <4.0 ng/mL\"}"
   ],

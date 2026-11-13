@@ -317,7 +317,7 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
       ? 'Annual mammograms are recommended at your age (45–54).'
       : 'Annual or biennial mammograms are recommended at your age (55+).',
   prostateByAge: (age) => age < 50
-    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
+    ? 'Screening usually starts at 50. The American Cancer Society recommends starting at 45 for Black men and for men whose father, brother or son has had prostate cancer. Discuss with your doctor.'
     : 'PSA testing is an option after an informed discussion with your doctor.',
   breastStart: (age) => ({
     title: 'Start breast cancer screening',

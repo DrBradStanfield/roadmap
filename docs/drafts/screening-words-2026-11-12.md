@@ -182,6 +182,8 @@ Item 6, evidence.ts and the page: unchanged. Both say "while it stays at 4.0 or 
 
 ## Change 5 (D4). The prostate card at 45 to 49
 
+**Superseded (draft, 2026-11-13).** The American Cancer Society revised its guideline on 2026-11-12; the words below follow the earlier one. The rewrite is in "Amendment: the rectal exam and Change 5" at the end of this file, awaiting Brad's yes.
+
 **Decided.** "I want the card from 49-49, but the card should say something like 'discuss with your doctor'", then "correct" to 45 to 49, with the card from 50 unchanged.
 
 **Start card at 45 to 49.** Title "Discuss prostate cancer screening" and priority info: unchanged.
@@ -568,3 +570,33 @@ And under Prostate-Specific: "The next PSA follows the newest usable PSA (Brad 2
 - After: "If you decide to be tested, you should get a PSA blood test with or without a rectal exam. How often you're tested depends on your PSA level. Dr Brad suggests every 2 years if your PSA is below 2.5 ng/mL, and every year at 2.5 or higher. This is his suggestion, based on earlier American Cancer Society guidance; the Society's November 2026 guideline sets the interval by age and risk instead. If your PSA is 4.0 or higher, Dr Brad suggests repeating it every 3 months while you and your doctor look for the cause, even if you chose not to have routine screening. The American Cancer Society advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later."
 - Changelog: "Prostate screening: the next PSA test now depends on your last PSA: every 2 years below 2.5 ng/mL, every year from 2.5, and every 3 months at 4.0 or higher, also for men who chose not to screen. All three intervals are Dr Stanfield's suggestion; the first two follow earlier American Cancer Society guidance."
 - New changelog entry, 13th November 2026: "Prostate screening: the American Cancer Society revised its prostate guideline on 12 November 2026, and it no longer sets the retest interval by PSA level. The page and the tool now say that every 2 years below 2.5 ng/mL and every year from 2.5 is Dr Stanfield's suggestion, based on the Society's earlier guidance. The intervals are unchanged."
+
+## Amendment: the rectal exam and Change 5 (draft 2026-11-13, needs Brad's yes)
+
+**Draft. Brad has not approved these sentences.** The American Cancer Society revised its prostate guideline on 2026-11-12. On 2026-11-13 Brad chose the direction (docs/drafts/prostate-acs-2026-revision.md, PR 1601): drop the rectal exam (Item 1B), and adopt the Society's position on ages 45 to 49 in the words only (Item 2B). The plan's logic, ages and intervals do not change. Once approved, these sentences replace the Change 5 words above and the first sentence of the page bullet in the 2026-11-14 amendment. The superseded words stay above, for the record.
+
+- Checked: the Society's recommendations page, read 2026-11-13 ("Last Revised: November 12, 2026"). Black men begin at 45, with a PSA test every year. Men who are not Black with a family history in a close relative (father, brother, or son) begin at 45: every year if a close relative was diagnosed before 65 or more than one has had prostate cancer, every 2 years if only one close relative was diagnosed, at 65 or older. Men at average risk: every 2 years from 50. It names no start at 40. It does not recommend the digital rectal exam as a screening test; the exam might be done as part of the workup, for example if the PSA is high.
+
+**Start card at 45 to 49.** Withdrawn. The card keeps its text at every age, as today: a different text at 45 to 49 needs new code, and Item 2B changes words only. The card already says to discuss testing with your doctor (D4). The risk groups go in the form note, the evidence text and the page.
+
+**Form note under 50** (`screening-rules.ts`, `prostateByAge`)
+- Before: "Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history)."
+- After: "Screening usually starts at 50. The American Cancer Society recommends starting at 45 for Black men and for men whose father, brother or son has had prostate cancer. Discuss with your doctor."
+
+**Algorithm doc** (eligibility row)
+- Before: "| Prostate | 45+ | Male | Shared decision |"
+- After: "| Prostate | 45+ | Male | Shared decision; the 45-49 note names the men the ACS advises to start at 45 (Black men; a close relative with prostate cancer); the tool asks no risk question |"
+
+**evidence.ts `screening-prostate`**, add after the first sentence: "The American Cancer Society (November 2026) recommends that men at average risk start at 50, and that Black men and men with a close relative (father, brother or son) who has had prostate cancer start at 45. It recommends a PSA test every year for Black men. For other men with a family history, it recommends every year if a close relative was diagnosed before 65 or more than one has had prostate cancer, and every 2 years if one close relative was diagnosed at 65 or older. The tool does not ask about these risks, so its suggestions are the same for every man."
+
+**Page, the 45-49 band**
+- Band heading. Before: "Age 45-50:". After: "Age 45-49:"
+- First bullet. Before: "Routine screening is not recommended for most men." After: "Most men start the discussion at 50."
+- Second bullet. Before: "Men at high risk (e.g., those with a family history of prostate cancer or African American men) should discuss the potential benefits and risks of screening with their healthcare provider." After: "The American Cancer Society recommends that Black men and men with a close relative (father, brother or son) who has had prostate cancer start PSA screening at 45. It recommends a PSA test every year for Black men. For other men with a family history, it recommends every year if a close relative was diagnosed before 65 or more than one has had prostate cancer, and every 2 years if one close relative was diagnosed at 65 or older. Discuss the potential benefits and risks of screening with your healthcare provider."
+- New third bullet: "The tool does not ask about these risks, so it shows every man the same discussion card from 45."
+
+**Page, the PSA bullet** (Item 1B). The rest of the bullet is unchanged.
+- First sentence. Before: "If you decide to be tested, you should get a PSA blood test with or without a rectal exam." After: "If you decide to be tested, the test is a PSA blood test. A rectal exam is no longer recommended as a screening test, though your doctor may use one if your PSA is high."
+- New changelog entry, 13th November 2026, first in the list: "Prostate screening: following the American Cancer Society's November 2026 guideline, the page no longer suggests a rectal exam as a screening test, and it now says that the Society recommends Black men and men with a close relative who has had prostate cancer start PSA screening at 45. The age band now reads 45-49 (was 45-50). The tool's suggestions and intervals are unchanged."
+
+**Golden.** Two note lines move (men 45 and 49) in `screening-rules.golden.json`, the `screening-prostate` reason in `blood-table.golden.json`, and the web form snapshot. No card, date or reminder moves.
