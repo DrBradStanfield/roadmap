@@ -9,9 +9,10 @@
  *   or null; it empties at each try and when the plan goes.
  * - drawing: the hidden report is drawn, inside the click, while getReportHtml copies it.
  * - building: the copy is made; the report is built and its window opened.
- * `via` is how the try started: Save as PDF ('save', its button reads Loading...)
- * or the capture's print ('capture'). `opened` (a window opened in this record)
- * goes through every phase, sticky until an erase forgets it.
+ * `at` is the button the try started from: Save as PDF ('bottom', which reads
+ * Loading... while it runs) or the capture ('capture'). Every try ends in `built`,
+ * a throw too (as a refused window), so the next press runs. `opened` (a window
+ * opened in this record) goes through every phase, sticky until an erase forgets it.
  */
 
 /** The button whose print window was refused: the note sits beside it. */
@@ -19,10 +20,10 @@ export type PdfButton = 'bottom' | 'capture';
 
 export type PrintState =
   | { phase: 'idle'; blocked: PdfButton | null; opened: boolean }
-  | { phase: 'drawing' | 'building'; at: PdfButton; via: 'save' | 'capture'; opened: boolean };
+  | { phase: 'drawing' | 'building'; at: PdfButton; opened: boolean };
 
 export type PrintEvent =
-  | { type: 'press'; at: PdfButton; via: 'save' | 'capture' }
+  | { type: 'press'; at: PdfButton }
   | { type: 'copied' }
   | { type: 'built'; opened: boolean }
   | { type: 'planGone' }
@@ -34,7 +35,7 @@ export const PRINT_START: PrintState = { phase: 'idle', blocked: null, opened: f
 export function transition(state: PrintState, event: PrintEvent): PrintState {
   switch (event.type) {
     case 'press':
-      return state.phase === 'idle' ? { phase: 'drawing', at: event.at, via: event.via, opened: state.opened } : state;
+      return state.phase === 'idle' ? { phase: 'drawing', at: event.at, opened: state.opened } : state;
     case 'copied':
       return state.phase === 'drawing' ? { ...state, phase: 'building' } : state;
     case 'built':

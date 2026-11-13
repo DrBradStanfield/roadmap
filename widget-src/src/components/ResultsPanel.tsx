@@ -117,7 +117,7 @@ interface PlanViewOptions {
 }
 
 export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUnsavedLongitudinal, onSaveLongitudinal, showEmailCapture, formStage, cardsShown, alcoholQuestion }: PlanViewOptions): PlanView {
-  const { print, printReport, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
+  const { print, handlePrint, forget } = usePlanPrint(!!results, hasUnsavedLongitudinal, onSaveLongitudinal);
 
   const capture = useEmailCaptureState();
   const planned = isValid && !!results;
@@ -189,7 +189,7 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   const report = planned && print.phase === 'drawing' && <PlanReport tiles={tiles} sections={sections} alcoholQuestion={alcoholQuestion}/>;
   const pdf = (
     <PlanPdf key={shownErase} mode={pdfMode} formStage={formStage} capture={capture}
-             print={print} onPrint={handlePrint} onCapturePrint={() => printReport('capture')}/>
+             print={print} onPrint={handlePrint} onCapturePrint={() => handlePrint('capture')}/>
   );
   const foot = <PlanFoot planned={planned}/>;
 

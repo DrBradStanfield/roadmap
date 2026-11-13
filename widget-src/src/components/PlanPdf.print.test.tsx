@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getReportHtml: vi.fn(),
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: vi.fn(),
+  markReportEmailCaptured: vi.fn(),
   trackProductEvent: vi.fn(),
   skip: { value: true },
 }));
@@ -20,7 +21,7 @@ vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: mocks.getReportHtml,
   sendGuestReport: mocks.sendGuestReport,
   getReportEmailCaptured: mocks.getReportEmailCaptured,
-  markReportEmailCaptured: vi.fn(),
+  markReportEmailCaptured: mocks.markReportEmailCaptured,
   getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: mocks.trackProductEvent }));
@@ -148,5 +149,64 @@ describe('US-18 AC6 (lead P8): the capture\'s send after a refused window', () =
     expect(box.querySelector('.hr-pdf-blocked')!.textContent).toBe('');
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
+  });
+});
+
+// Review R1 on PR 1740: a throw in the window (a restricted window's document.write) must
+// still end the try, so the next press runs at either button. The throw itself still
+// reaches the click, as on main, so these tests catch the unhandled rejection it makes.
+describe('US-18 AC6: a throw while printing ends the try', () => {
+  let caught: unknown[];
+  let restore: () => void;
+  beforeEach(() => {
+    caught = [];
+    const before = process.listeners('unhandledRejection');
+    process.removeAllListeners('unhandledRejection');
+    const mine = (e: unknown) => { caught.push(e); };
+    process.on('unhandledRejection', mine);
+    restore = () => { process.off('unhandledRejection', mine); for (const l of before) process.on('unhandledRejection', l); };
+  });
+  afterEach(() => restore());
+  const throwingWindow = () => vi.mocked(window.open).mockImplementation(() => ({
+    document: { write: () => { throw new Error('restricted window'); }, close: vi.fn() }, print: vi.fn(),
+  }) as unknown as Window);
+
+  it('Save as PDF: the button comes back with the note, and the next press opens the window', async () => {
+    throwingWindow();
+    const view = showPlan();
+    fireEvent.click(saveButton(view));
+    await waitFor(() => expect(caught).toHaveLength(1));
+    expect(saveButton(view).textContent).toBe('Save as PDF');
+    expect(saveButton(view).disabled).toBe(false);
+    expect(note(view)[0].textContent).toBe(PDF_WINDOW_BLOCKED);
+    openWindow();
+    fireEvent.click(saveButton(view));
+    await waitFor(() => expect(pulse(view)).toBe('true'));
+    expect(note(view)[0].textContent).toBe('');
+    expect(window.open).toHaveBeenCalledTimes(2);
+  });
+
+  it('capture: the send never runs and the record is not marked captured; the next press opens the window and captures', async () => {
+    mocks.skip.value = false;
+    throwingWindow();
+    const view = showPlan();
+    const input = view.container.querySelector('#guestEmail')!;
+    fireEvent.change(input, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }));
+    await waitFor(() => expect(caught).toHaveLength(1));
+    // As on main, the throw stops submit before its send: the button stays at Sending...
+    // (only Enter reaches the box now), and nothing is sent or marked.
+    expect(mocks.sendGuestReport).not.toHaveBeenCalled();
+    expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+    const box = input.closest('.email-capture')!;
+    expect(box.querySelector('button')!.textContent).toBe('Sending...');
+    expect(box.querySelector('.hr-pdf-blocked')!.textContent).toBe(PDF_WINDOW_BLOCKED);
+    openWindow();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
+    expect(window.open).toHaveBeenCalledTimes(2);
+    expect(mocks.sendGuestReport).toHaveBeenCalledOnce();
+    expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
+    expect(note(view)[0].textContent).toBe('');
   });
 });

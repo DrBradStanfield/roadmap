@@ -54,9 +54,8 @@ function openPrintWindow(html: string): boolean {
 interface PlanPrint {
   /** The print state (lib/plan-print-machine.ts). */
   print: PrintState;
-  /** Build the report and open its window; the capture's print calls this directly. */
-  printReport: (at: PdfButton) => Promise<void>;
-  /** Save as PDF: starts the pending values' save without waiting for it, one press at a time. */
+  /** Build the report and open its window, one try at a time. At 'bottom' (Save as PDF) it
+   *  also starts the pending values' save without waiting for it. */
   handlePrint: (at: PdfButton) => Promise<void>;
   /** An erase forgets the window this record opened. */
   forget: () => void;
@@ -67,25 +66,31 @@ export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean,
   const [print, send] = useReducer(transition, PRINT_START);
   if (!hasPlan && transition(print, { type: 'planGone' }) !== print) send({ type: 'planGone' });
 
-  const tryPrint = async (at: PdfButton, via: 'save' | 'capture') => {
-    const press = { type: 'press', at, via } as const;
+  const handlePrint = async (at: PdfButton) => {
+    const press = { type: 'press', at } as const;
     if (transition(print, press) === print) return;
-    // US-03 AC3: the press saves what the fields hold, but never waits for it (Brad
+    // US-03 AC3: Save as PDF saves what the fields hold, but never waits for it (Brad
     // 2026-11-10): the report copies the page as drawn, and the window must open
     // inside the click or a popup blocker refuses it.
-    if (via === 'save' && hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
+    if (at === 'bottom' && hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
     // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
     // The note empties in the same render, so a repeat refusal is announced again.
     flushSync(() => send(press));
-    const pending = getReportHtml();
-    send({ type: 'copied' });
-    const report = await pending;
-    const opened = report.success && !!report.html && openPrintWindow(report.html);
-    send({ type: 'built', opened });
+    let opened = false;
+    try {
+      const pending = getReportHtml();
+      send({ type: 'copied' });
+      const report = await pending;
+      opened = report.success && !!report.html && openPrintWindow(report.html);
+    } finally {
+      // A throw (a restricted window's document.write or print) still ends the try, as a
+      // refused window, so the next press runs; the throw itself still reaches the caller.
+      send({ type: 'built', opened });
+    }
     if (!opened) trackProductEvent('pdf_window_blocked');
   };
 
-  return { print, printReport: (at) => tryPrint(at, 'capture'), handlePrint: (at) => tryPrint(at, 'save'), forget: () => send({ type: 'forget' }) };
+  return { print, handlePrint, forget: () => send({ type: 'forget' }) };
 }
 
 /** Which email box the PDF box holds: the gate (US-18), US-44's reminders, or none once captured. */
@@ -340,7 +345,7 @@ export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePri
   print: PrintState; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
 }) {
   const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
-  const saving = print.phase !== 'idle' && print.via === 'save';
+  const saving = print.phase !== 'idle' && print.at === 'bottom';
   const pdfBlocked = print.phase === 'idle' ? print.blocked : null;
   const printLabel = saving ? 'Loading...' : 'Save as PDF';
   const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
