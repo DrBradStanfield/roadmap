@@ -6,7 +6,7 @@
  * colorectalMethod stays as the person answered it, on every method. Completed with no usable date:
  * a card asks for it, and no reminder until it is added. Breast, cervical, lung and DEXA keep the
  * shared follow-up path in suggestions.ts and reminder-schedule.ts.
- * The words are frozen: docs/drafts/screening-change-2b-words-2026-11-12.md.
+ * The words are frozen in CARDS below.
  */
 import { getPostFollowupDueDate, type ScreeningInputs, type Suggestion } from './types';
 import { chainKeys, opensFollowup, ruleOf } from './screening-rules';
@@ -15,8 +15,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** A due month as every screening card prints it: "Jul 2029". */
 export const monthLabel = (d: Date): string => `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
-/** The cards' words, frozen by the approved 2b spec; tests read them from here. */
-export const CARDS = {
+const CARDS = {
   addDate: { title: 'Add your colonoscopy date', description: "You've marked your colonoscopy as done. Add the month it was done to see when your next colonoscopy is due." },
   dueDefault: { title: 'Colorectal screening up to date', description: "Following your colonoscopy, your next colonoscopy is due {due}. Dr Brad suggests repeating it every 3 years if your report didn't give a follow-up time." },
   dueAdvised: { title: 'Colorectal screening up to date', description: 'Following your colonoscopy, your next colonoscopy is due {due}, as your report advised.' },

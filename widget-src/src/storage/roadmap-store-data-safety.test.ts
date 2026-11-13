@@ -288,7 +288,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     }
   });
 
-  it('US-09 AC20: a stale device that writes AFTER another device erased keeps that write, and only that', async () => {
+  it('US-09 AC23: a stale device that writes AFTER another device erased keeps that write, and only that', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z'));
@@ -1155,7 +1155,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const heard = vi.fn();
     vi.stubGlobal('window', new EventTarget());
     window.addEventListener(DRAFTS_CLEARED_EVENT, heard);
-    // Each step a minute apart: US-09 AC20 keeps a row by its time against the erase.
+    // Each step a minute apart. US-09 AC23 keeps a row by its id, never by clocks: one no erase listed stays.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-01T10:00:00.000Z'));
     const cloud = new MemoryCloud();
@@ -1177,7 +1177,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     vi.setSystemTime(new Date('2026-09-01T10:02:00.000Z'));
     otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
     await otherPage.flush();
-    // Typed after the erase, so it survives it (US-09 AC20); the pre-erase row does not.
+    // Typed after the erase, so it survives it (US-09 AC23); the pre-erase row does not.
     expect(otherPage.loadAllHistory().map((m) => m.value)).toEqual([81]);
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
@@ -1209,7 +1209,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     vi.setSystemTime(new Date('2026-09-18T10:02:00.000Z'));
     otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
     await otherPage.flush();
-    // Typed after the erase, so it survives it (US-09 AC20); the Lp(a) row does not.
+    // Typed after the erase, so it survives it (US-09 AC23); the Lp(a) row does not.
     expect(otherPage.loadAllHistory().map((m) => m.value)).toEqual([81]);
     expect(localStorage.getItem(KEPT_KEY)).toBeNull();
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);

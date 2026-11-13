@@ -6,7 +6,7 @@
 // so the stamped nulls win a merge. A date write never clears; the plan reads the stored answers as they are.
 import { describe, expect, it } from 'vitest';
 import { screeningForm, screeningWrites } from './input-form';
-import { CARDS, shownColorectalResult } from './colonoscopy-schedule';
+import { shownColorectalResult } from './colonoscopy-schedule';
 import { computeNextDueDates, followupKinds } from './reminder-schedule';
 import { mergeFiles } from './merge';
 import { computePlan, derivePlanInputs } from './plan';
@@ -24,8 +24,9 @@ const S = 'colorectal_followup_status';
 const D = 'colorectal_followup_date';
 const I = 'colorectal_followup_interval_years';
 
-// Card B's words, read from the product source (never reworded here).
-const B_TEXT = CARDS.dueDefault.description;
+// Card B's words, copied from CARDS.dueDefault in colonoscopy-schedule.ts (never reworded here):
+// a wording change in source fails this test.
+const B_TEXT = "Following your colonoscopy, your next colonoscopy is due {due}. Dr Brad suggests repeating it every 3 years if your report didn't give a follow-up time.";
 
 function fileWith(scr: ScreeningInputs, deviceId = 'reopen_test', now = '2026-10-01T00:00:00Z'): RoadmapFile {
   const f = createEmptyFile({ deviceId, now });
