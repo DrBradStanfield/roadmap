@@ -235,6 +235,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   const [dia, setDia] = useState(start?.dia ? String(Math.round(start.dia.value)) : '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const claim = useRef(false); // the save's claim, taken synchronously: two Adds in one render see it (US-03 AC2a)
   // Correct on a history row brings the form to that reading.
   const firstRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (start) firstRef.current?.focus(); }, []);
@@ -287,10 +288,10 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   };
 
   const add = async () => {
+    if (claim.current) return;
     const values = parse();
     if (typeof values === 'string') { setError(values); return; }
     setError(null);
-    setSaving(true);
     const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
     // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
     const unchanged = held.every((row, i) => {
@@ -302,8 +303,15 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     // Before the save, as the weight box answers as it is typed: the step is counted when the save's
     // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
     if (metric === 'weight') onWeightAnswered?.();
-    const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
-    setSaving(false);
+    claim.current = true;
+    setSaving(true);
+    let refused: Refused;
+    try {
+      refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
+    } finally {
+      claim.current = false;
+      setSaving(false);
+    }
     const [why] = refused.values();
     if (why) {
       setError(saveErrorText(why));

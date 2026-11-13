@@ -16,15 +16,7 @@ import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
-import {
-  type Grading,
-  cellFromSI,
-  cellLabel,
-  cellText,
-  cellToSI,
-  readTypedValue,
-  trendGeometry,
-} from '../lib/blood-test-cell';
+import { type Grading, cellFromSI, cellLabel, cellText, cellToSI, readTypedValue, trendGeometry } from '../lib/blood-test-cell';
 import { BackfillCell, DraftCell } from './MatrixInputCells';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
@@ -316,20 +308,28 @@ export function BloodTestTimeline({
 
   const saveDisabledByLoad = hasApiResponse === false;
 
+  // The save's claim, taken synchronously: `isSaving` is the parent's state,
+  // which a second commit in the same render cannot see (US-03 AC2a).
+  const claim = useRef(false);
   const handleSave = async () => {
-    if (ready.length === 0 || isSaving || saveDisabledByLoad) return;
-    // The cells that can be saved, each on its day with the row it expects
-    // there; the parent routes each value (matrix-save.ts) and answers slot
-    // by slot. What landed leaves the draft; what was refused stays, with why
-    // (US-03 AC4).
-    const refusedSlots = await onSaveBatch(ready.map(c => ({
-      date: c.date, values: { [c.metric]: c.si! }, expected: expected([c.column, c.metric]), unit: c.unit,
-    })));
-    settle(ready.map(c => {
-      const status = refusedSlots.get(slotOf(c.date, c.metric));
-      return [[c.column, c.metric], status && saveErrorText(status)];
-    }));
-    if (refusedSlots.size === 0) setActiveCell(null);
+    if (ready.length === 0 || claim.current || isSaving || saveDisabledByLoad) return;
+    claim.current = true;
+    try {
+      // The cells that can be saved, each on its day with the row it expects
+      // there; the parent routes each value (matrix-save.ts) and answers slot
+      // by slot. What landed leaves the draft; what was refused stays, with why
+      // (US-03 AC4).
+      const refusedSlots = await onSaveBatch(ready.map(c => ({
+        date: c.date, values: { [c.metric]: c.si! }, expected: expected([c.column, c.metric]), unit: c.unit,
+      })));
+      settle(ready.map(c => {
+        const status = refusedSlots.get(slotOf(c.date, c.metric));
+        return [[c.column, c.metric], status && saveErrorText(status)];
+      }));
+      if (refusedSlots.size === 0) setActiveCell(null);
+    } finally {
+      claim.current = false;
+    }
   };
 
   // The upload flow commits the draft before its own save (flushRef).

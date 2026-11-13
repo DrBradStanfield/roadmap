@@ -27,11 +27,7 @@ import { limitText, LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-co
 import { rowTarget } from '@roadmap/health-core/row-target';
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
-import {
-  blockBadNumericKeys,
-  readTypedValue,
-  validateTypedValue,
-} from '../lib/blood-test-cell';
+import { blockBadNumericKeys, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { buildColumns, type DateColumn } from '../lib/vitals-columns';
@@ -314,9 +310,10 @@ export function StartingInfoVitals({
   const bpTaken = taken('sys') || taken('dia');
 
   const [saving, setSaving] = useState(false);
-
+  const claim = useRef(false); // the save's claim, taken synchronously: two commits in one render see it (US-03 AC2a)
   const commit = async () => {
-    if (saving || ready.length === 0) return;
+    if (claim.current || ready.length === 0) return;
+    claim.current = true;
     setSaving(true);
     try {
       // The cells that can be saved, each on its day with the rows it
@@ -337,6 +334,7 @@ export function StartingInfoVitals({
       // A New weight saved here is at rest: Enter lands now, a decimal too (US-62 AC25b, Codex R1).
       if (ready.some(c => c.column === null && c.keys[0] === 'weight' && !refusedSlots.get(slotOf(c.date, 'weight')))) rested?.();
     } finally {
+      claim.current = false;
       setSaving(false);
     }
   };
