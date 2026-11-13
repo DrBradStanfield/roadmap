@@ -115,9 +115,11 @@ struct RootView: View {
             Text(eraser.held?.words ?? "")
         }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
-        // Another record's erase epoch never stands in for this one's (S41): the cloud's open
-        // lands before its record is drawn, so the draw moving the epoch is a switch too.
-        .onChange(of: shownRecord) { reminders.recordSourceChanged(); recordChanged() }
+        // Another record's erase epoch never stands in for this one's (S41, ShownRecord.switches).
+        .onChange(of: shownRecord) { old, new in
+            if ShownRecord.switches(from: old, to: new) { reminders.recordSourceChanged() }
+            recordChanged()
+        }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
@@ -180,10 +182,6 @@ struct RootView: View {
         case .deciding, .none: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
         }
     }
-
-    /// Which record is on screen and its erase count. The phone's copy shows until a
-    /// connected cloud opens and its record is drawn, so "open" and the epoch are part of it.
-    private struct ShownRecord: Equatable { var source: String; var open: Bool; var epoch: Int? }
 
     private var shownRecord: ShownRecord {
         ShownRecord(source: source, open: sync.recordOpen, epoch: store.myData?.eraseEpoch)

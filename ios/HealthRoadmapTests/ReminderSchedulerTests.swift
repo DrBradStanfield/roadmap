@@ -574,6 +574,24 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
     }
 
+    /// US-25 AC12b, US-11 (lead S41): RootView's trigger. Which changes to the record on screen end
+    /// the reminders' last good read. The draw's epoch is in it: PR 1608's key, (source, open) alone,
+    /// missed a refresh between the cloud's open and its draw.
+    func testWhichChangesToTheShownRecordEndTheLastGoodRead_US25_AC12b() {
+        let drawnAt5 = ShownRecord(source: "google-drive", open: true, epoch: 5)
+        let cases: [(String, ShownRecord, ShownRecord, Bool)] = [
+            ("the cloud's open flips", ShownRecord(source: "google-drive", open: false, epoch: 5), drawnAt5, true),
+            ("the draw moves the epoch 5 to 1", drawnAt5, ShownRecord(source: "google-drive", open: true, epoch: 1), true),
+            ("a record drawn where none was", ShownRecord(source: "google-drive", open: true, epoch: nil), drawnAt5, true),
+            ("the drawn record goes", drawnAt5, ShownRecord(source: "google-drive", open: true, epoch: nil), true),
+            ("a save keeps source, open and epoch", drawnAt5, drawnAt5, false),
+            ("another source", ShownRecord(source: "", open: false, epoch: 5), ShownRecord(source: "dropbox", open: false, epoch: 5), true),
+        ]
+        for (name, old, new, ends) in cases {
+            XCTAssertEqual(ShownRecord.switches(from: old, to: new), ends, name)
+        }
+    }
+
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch
     /// to record B. Its epoch is A's, so it never becomes B's fallback.
     func testARefreshInFlightAcrossASwitchNeverBecomesTheFallback_US25_AC12b() async {
