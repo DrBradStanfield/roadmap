@@ -27,7 +27,8 @@
  *   this says the device holds them. False until the write lands. `cause`:
  *   'auth' when the provider refused the sign-in (`saveFailureCause`), which
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
- *   erase's failed write included.
+ *   erase's failed write included. `landed`: the pass wrote before it failed
+ *   (SyncManager `mayHaveLanded`), so the stored copy may hold its changes.
  * - erasing: an erase, from its confirm to the end of its write, over the save
  *   state `under` it (lead A6). An edit is refused throughout;
  *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
@@ -63,14 +64,14 @@ export type SaveBase =
   | { mode: 'clean'; changes: number }
   | { mode: 'waiting'; changes: number; saved: number }
   | { mode: 'saving'; changes: number; saved: number; from: number; armed: boolean }
-  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause };
+  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause; landed?: true };
 export type SaveState = SaveBase | { mode: 'erasing'; phase: 'reading' | 'writing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
   | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback; joins a pass that runs
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
-  | { type: 'passFailed'; cause: SaveCause }
+  | { type: 'passFailed'; cause: SaveCause; landed?: true }
   | { type: 'synced' } // a synchronous write landed the whole working copy
   | { type: 'eraseBegan' } // the erase's first line: every write is refused from here
   | { type: 'eraseSwapped' } // the erased copy swapped in: one more change
@@ -129,6 +130,11 @@ export function saveFailureCause(error: unknown): SaveCause {
 /** not-saved-on-device: not saved, and the device copy holds the changes. */
 export type SaveStatus = 'saved' | 'saving' | 'not-saved' | 'not-saved-on-device';
 
+/** A failed pass that neither wrote nor reached the device copy: its changes live only in memory (lead S57). */
+export function writtenNowhere(s: SaveState): boolean {
+  return s.mode === 'failed' && !s.mirrored && !s.landed;
+}
+
 /** What a status line shows. Step (d) words it. */
 export function saveStatus(s: SaveState): SaveStatus {
   if (s.mode === 'erasing') return saveStatus(s.under);
@@ -165,8 +171,11 @@ function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect
       if (s.changes > landed) return { state: { ...s, saved: landed, from: s.changes }, effects: [{ type: 'pass', from: s.changes }] };
       return { state: settle(s.changes, landed, s.armed, 'other'), effects: [] }; // changes === landed: never failed
     }
-    case 'passFailed':
-      return s.mode === 'saving' ? { state: settle(s.changes, s.saved, s.armed, e.cause), effects: [] } : same;
+    case 'passFailed': {
+      if (s.mode !== 'saving') return same;
+      const failed = settle(s.changes, s.saved, s.armed, e.cause);
+      return { state: failed.mode === 'failed' && e.landed ? { ...failed, landed: true } : failed, effects: [] };
+    }
     case 'synced':
       return { state: s.mode === 'saving' ? { ...s, saved: s.changes, armed: false } : { mode: 'clean', changes: s.changes }, effects: cancel };
     case 'mirrored': // a write that holds fewer changes never vouches for a later failure

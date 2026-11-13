@@ -1073,7 +1073,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const phoneBefore = state.phoneText;
     dropbox.uploadsWork = false;
     state.phoneWriteError = 'The disk is full.';
@@ -1085,12 +1085,14 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(state.phoneText).toBe(phoneBefore);
     expect(days(dropbox.record)).toEqual(['2026-10-01']);
 
-    // The next good save sends the record as it was: nothing erased.
+    // The session is back at the erase the screen shows: an edit under it is taken, and the
+    // next good save sends the record as it was plus that edit, nothing erased.
     dropbox.uploadsWork = true;
     state.phoneWriteError = '';
-    await engine.cloudFlush();
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).not.toMatchObject({ reason: 'erased' });
+    expect(await engine.cloudFlush()).toBe('saved');
     expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
-    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+    expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
   });
 });
 

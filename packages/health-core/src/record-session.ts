@@ -16,9 +16,9 @@ import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
-import { SyncManager, type SyncContext } from './sync-manager';
+import { mayHaveLanded, SyncManager, type SyncContext } from './sync-manager';
 
 export { eraseIdentityOf } from './erase-identity';
 
@@ -172,6 +172,7 @@ export class RecordSession {
   /** What a status line shows of the save (lead A1). */
   get saveStatus(): SaveStatus { return saveStatus(this.mode); }
   /** @internal The mode's name, for the erase; `mode` stays private. */ get saveMode(): SaveState['mode'] { return this.mode.mode; }
+  /** @internal The last pass failed, wrote nothing and reached no device copy (lead S57). */ get writtenNowhere(): boolean { return writtenNowhere(this.mode); }
   /** A retry of a failed save would start one (US-09 AC30): a cloud's, one is owed, and the page
    *  may still save, not stopped by a log-off elsewhere (US-09 AC2c). Never on the device tier. */
   get retryDue(): boolean {
@@ -453,7 +454,7 @@ export class RecordSession {
         this.host.report(error, { op: 'after-save', repeat: false });
         return true;
       }
-      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error) });
+      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error), ...(mayHaveLanded(error) ? { landed: true } : {}) });
       this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).

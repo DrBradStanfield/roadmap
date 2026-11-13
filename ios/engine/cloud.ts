@@ -258,7 +258,9 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
  * `erased`: the working copy is now the erased record, written or not. When
  * the write failed, the session mirrored it onto the phone, marked pending,
  * and the next flush or open sends it: the screen shows it, and the app says
- * the cloud still has to take it. On success the session wiped the pre-erase
+ * the cloud still has to take it. When that mirror write failed too, the
+ * session put its copy back: `erased` is false and nothing changed but the
+ * chat step (lead S57). On success the session wiped the pre-erase
  * mirror; the erased record goes in its place, so an offline launch opens on it.
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
