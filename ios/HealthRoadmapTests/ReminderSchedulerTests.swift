@@ -676,20 +676,21 @@ final class ReminderSchedulerTests: XCTestCase {
     }
 
     /// US-25 AC12b, US-11 (lead S41, checkpoint review): the cloud's open lands before its record is
-    /// drawn (CloudSync.open sets the session, then RecordStore.draw awaits the engine). A refresh in
-    /// that gap reads the phone's copy under the open's token. The draw moves ShownRecord's epoch,
-    /// and RootView treats that as a switch too, so the phone's epoch never vouches for the cloud
-    /// record's erase during the ask. A contract test: on main RootView's key left the epoch out, so
-    /// it made no call at the draw; this test drives the scheduler as RootView now does.
+    /// drawn (CloudSync.open sets the session, then RecordStore.draw awaits the engine). The open
+    /// alone leaves ShownRecord as it was (S72: open turns true only at the draw), so a refresh in
+    /// that gap reads the phone's copy under the sign-in's token. The draw flips ShownRecord's open
+    /// and moves its epoch, and RootView treats that as a switch, so the phone's epoch never vouches
+    /// for the cloud record's erase during the ask. A contract test: this drives the scheduler as
+    /// RootView does.
     func testARefreshBetweenTheOpenAndTheDrawNeverVouchesForTheCloudRecord_US25_AC12b() async {
         engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
         let scheduler = scheduler()
         await scheduler.refresh() // the phone's record at epoch 5
         scheduler.recordSourceChanged() // signed in: the provider is set, the phone's copy still shows
-        scheduler.recordSourceChanged() // the cloud's session opens; its record is not drawn yet
-        await scheduler.refresh() // a refresh in the gap reads the phone's copy at 5, under the open's token
+        // The cloud's session opens; its record is not drawn yet, so ShownRecord is unchanged: no call.
+        await scheduler.refresh() // a refresh in the gap reads the phone's copy at 5, under the sign-in's token
         engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
-        scheduler.recordSourceChanged() // the cloud record is drawn at epoch 1: ShownRecord's epoch moves 5 to 1
+        scheduler.recordSourceChanged() // the cloud record is drawn at epoch 1: ShownRecord's open flips, its epoch moves 5 to 1
         center.holdsAnswers = true
         engineFails = true // the tap's read before the ask fails
         let ask = Task { await scheduler.optIn() }
@@ -707,6 +708,26 @@ final class ReminderSchedulerTests: XCTestCase {
     /// drawn record's erase epoch, so the draw moving it is a switch for the reminders: PR 1608's key
     /// left the epoch out and missed a refresh between the cloud's open and its draw.
     func testRootViewsKeyCarriesTheDrawnRecordsEpoch_US25_AC12b() async throws {
+        let (store, records) = try phoneStoreAtEpoch5()
+
+        let cloud = ShownRecord(source: "google-drive", shownSession: 7, store: store)
+        XCTAssertEqual(cloud.epoch, 5, "the drawn epoch is carried")
+        XCTAssertEqual(cloud.source, "google-drive")
+        let phone = ShownRecord(source: "", shownSession: nil, store: store)
+        XCTAssertEqual(phone.epoch, 5)
+        XCTAssertEqual(phone.source, "", "the phone's record: no source, not open")
+        XCTAssertFalse(phone.open)
+
+        try FileManager.default.removeItem(at: records)
+        await store.showPhone().value // the phone's file cannot be read: nothing is drawn
+        XCTAssertNil(store.myData, "fixture: no drawn record")
+        let undrawn = ShownRecord(source: "dropbox", shownSession: nil, store: store)
+        XCTAssertNil(undrawn.epoch, "no drawn record gives no epoch")
+        XCTAssertEqual(undrawn.source, "dropbox")
+    }
+
+    /// A phone RecordStore whose drawn record is at erase epoch 5, and its folder.
+    private func phoneStoreAtEpoch5() throws -> (RecordStore, URL) {
         let records = folder.appending(path: "record")
         try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
         let file = records.appending(path: "health-roadmap.json")
@@ -721,22 +742,57 @@ final class ReminderSchedulerTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: record).write(to: file)
         let store = try RecordStore(folder: records, engine: engine, deviceId: "ios-test")
         XCTAssertEqual(store.myData?.eraseEpoch, 5, "fixture: the drawn record is at epoch 5")
+        return (store, records)
+    }
 
-        let cloud = ShownRecord(source: "google-drive", open: true, store: store)
-        XCTAssertEqual(cloud.epoch, 5, "the drawn epoch is carried")
-        XCTAssertEqual(cloud.source, "google-drive")
-        XCTAssertTrue(cloud.open)
-        let phone = ShownRecord(source: "", open: false, store: store)
-        XCTAssertEqual(phone.epoch, 5)
-        XCTAssertEqual(phone.source, "", "the phone's record: no source, not open")
-        XCTAssertFalse(phone.open)
+    /// US-25 AC12b, US-54 AC7 (lead S72): "open" is the shown session's record drawn. A connected
+    /// cloud with no session open has nil on both sides, so the nil guard keeps it closed.
+    func testOpenIsTheShownSessionsRecordDrawn_S72() {
+        let rows: [(shown: Int?, drawn: Int?, want: Bool)] = [
+            (nil, nil, false), (7, nil, false), (nil, 7, false), (7, 7, true), (8, 7, false),
+        ]
+        for row in rows {
+            XCTAssertEqual(ShownRecord.open(shown: row.shown, drawn: row.drawn), row.want, "\(row)")
+        }
+    }
 
-        try FileManager.default.removeItem(at: records)
-        await store.showPhone().value // the phone's file cannot be read: nothing is drawn
-        XCTAssertNil(store.myData, "fixture: no drawn record")
-        let undrawn = ShownRecord(source: "dropbox", open: false, store: store)
-        XCTAssertNil(undrawn.epoch, "no drawn record gives no epoch")
-        XCTAssertEqual(undrawn.source, "dropbox")
+    /// US-25 AC12b, US-54 AC7 (lead S72): on a real store, a session open with the phone's copy
+    /// still drawn is not open; the session's record drawn is, with the cloud's epoch. At an equal
+    /// epoch the key still changes at the draw, so RootView's onChange runs and takes the count.
+    func testTheCloudsDrawFlipsOpenEvenAtAnEqualEpoch_S72() async throws {
+        let (store, _) = try phoneStoreAtEpoch5()
+        let before = ShownRecord(source: "dropbox", shownSession: 7, store: store)
+        XCTAssertFalse(before.open, "the session is open but the phone's copy is drawn")
+        XCTAssertEqual(before.epoch, 5)
+
+        // The cloud's record, at the same erase epoch 5.
+        await store.showCloud(HealthEngine.CloudView(record: store.recordJSON, erase: "e", session: 7)).value
+        XCTAssertEqual(store.source.session, 7, "fixture: the cloud's record is drawn")
+        let after = ShownRecord(source: "dropbox", shownSession: 7, store: store)
+        XCTAssertTrue(after.open, "the shown session's record is drawn")
+        XCTAssertEqual(after.epoch, 5, "the cloud's epoch")
+        XCTAssertNotEqual(before, after, "the draw changes the key at an equal epoch")
+        XCTAssertFalse(ShownRecord(source: "dropbox", shownSession: 8, store: store).open, "a newer session's record is not drawn yet")
+    }
+
+    /// US-25 AC12b, US-11 (lead S72): a switch whose new cloud's draw fails. Its open never flips
+    /// ShownRecord, but the source changes at the Disconnect and the connect bump the token, and the
+    /// refresh when the phone's file lands removes every reminder of ours and schedules from the
+    /// record now shown, so the old cloud record's days do not stay. A contract test of the
+    /// scheduler side, driven as RootView does; RootView's .task(id: readable json) is checked by reading.
+    func testASwitchWhoseNewCloudNeverDrawsReschedulesFromTheShownRecord_S72() async {
+        engineOutput = reminders(epoch: 0, days: ["2027-01-15", "2027-03-01"]) // Dropbox's record
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertEqual(center.pending.map(\.identifier), ["reminder.2027-01-15", "reminder.2027-03-01"])
+        scheduler.recordSourceChanged() // the Disconnect: the source goes from dropbox to ""
+        engineOutput = reminders(epoch: 0, days: ["2027-06-01"]) // the phone's file after the copy-down
+        await scheduler.refresh() // the phone's file lands: RootView's .task(id: readable json)
+        scheduler.recordSourceChanged() // the connect: "" to google-drive. Its draw fails: no more calls.
+        XCTAssertEqual(center.pending.map(\.identifier), ["reminder.2027-06-01"], "Dropbox's days are gone")
+        engineFails = true
+        await scheduler.refresh() // a later round that cannot read the shown record
+        XCTAssertEqual(center.pending.count, 0, "a failed read schedules nothing")
     }
 
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch

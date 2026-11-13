@@ -234,6 +234,81 @@ final class FirstRunTests: XCTestCase {
         }
     }
 
+    /// RootView's render path (lead S72): its key is ShownRecord's fields, and `onChange(of:
+    /// shownRecord)` runs recordChanged only when the key changes. `shown` is the connection's
+    /// session, `drawn` the store's. `.countOnly` mirrors the rejected fix: countable reads the draw,
+    /// but the key's open is still sync.recordOpen (`shown != nil`). `.old` is main before S72: both
+    /// read sync.recordOpen.
+    private struct Render {
+        enum Variant { case fixed, countOnly, old }
+        var source = "", shown: Int? = nil, drawn: Int? = nil, epoch = 0
+        var counted = (epoch: 0, source: "")
+        let variant: Variant
+        private var key: [String]
+
+        init(_ variant: Variant = .fixed) {
+            self.variant = variant
+            key = []
+            key = currentKey
+        }
+
+        private var drawnOpen: Bool { ShownRecord.open(shown: shown, drawn: drawn) }
+        private var keyOpen: Bool { variant == .fixed ? drawnOpen : shown != nil }
+        private var countOpen: Bool { variant == .old ? shown != nil : drawnOpen }
+        private var currentKey: [String] { [source, "\(keyOpen)", "\(epoch)"] }
+
+        mutating func render() {
+            guard currentKey != key else { return }
+            key = currentKey
+            if source != counted.source { finish() }
+        }
+
+        /// RootView.finished's takeCount (and recordChanged's, once uncounted).
+        mutating func finish() { if Cover.countable(source: source, open: countOpen) { counted = (epoch, source) } }
+
+        /// Signed in to Dropbox, the session opens, then its record is drawn at `cloudEpoch`;
+        /// a render after each step. The phone's copy is at epoch 0.
+        mutating func connect(cloudEpoch: Int, check: (Render) -> Void = { _ in }) {
+            source = "dropbox"; render(); check(self)
+            shown = 7; render(); check(self) // CloudSync's .opened: the draw has not landed
+            (drawn, epoch) = (7, cloudEpoch); render()
+        }
+    }
+
+    /// S72: a connect counts nothing until the cloud's record is drawn, not at a render or a finish
+    /// in the gap, then takes the cloud's count. Main before S72 counted the phone's copy there.
+    func testAConnectCountsTheCloudOnlyOnceItsRecordIsDrawn_US54_AC7() {
+        var phone = Render()
+        phone.connect(cloudEpoch: 2) { step in
+            XCTAssertEqual(step.counted.source, "", "the phone's copy is never counted under Dropbox's name")
+            XCTAssertEqual(step.counted.epoch, 0)
+            var finished = step
+            finished.finish() // the questions finish in the gap
+            XCTAssertEqual(finished.counted.source, "", "a finish before the draw takes nothing")
+        }
+        XCTAssertEqual(phone.counted.epoch, 2, "the cloud's count")
+        XCTAssertEqual(phone.counted.source, "dropbox")
+
+        var old = Render(.old)
+        old.connect(cloudEpoch: 2)
+        XCTAssertEqual(old.counted.epoch, 0, "main counted the phone's copy at the open")
+        XCTAssertEqual(old.counted.source, "dropbox")
+    }
+
+    /// S72: the cloud's epoch equals the phone copy's. The key still changes at the draw, so the
+    /// count is taken. With the countable-only fix the key changes at the open, when nothing is
+    /// countable, and not at the draw, so the draw takes nothing.
+    func testAConnectAtAnEqualEpochStillTakesTheCount_US54_AC7() {
+        var phone = Render()
+        phone.connect(cloudEpoch: 0)
+        XCTAssertEqual(phone.counted.epoch, 0)
+        XCTAssertEqual(phone.counted.source, "dropbox", "the draw takes the count")
+
+        var countOnly = Render(.countOnly)
+        countOnly.connect(cloudEpoch: 0)
+        XCTAssertEqual(countOnly.counted.source, "", "the rejected fix takes nothing at the draw")
+    }
+
     /// A phone past the welcome screen with a full record, never finished, connected to Dropbox
     /// whose record has not opened at launch: the phone's copy says erase count 0, the cloud's 2.
     private func launchedBeforeTheCloudOpens() -> Phone {

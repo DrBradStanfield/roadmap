@@ -115,9 +115,10 @@ enum Cover: Equatable {
         return uncounted ? .takeCount : nil
     }
 
-    /// The record shown is its source's own: the phone's when local-only, the opened cloud record
-    /// when connected. Only it sets the erase count; the phone's copy of a connected cloud never
-    /// does, so a finish before the cloud opens leaves the count for the opening to take (S43).
+    /// The record shown is its source's own: the phone's when local-only, the cloud record when
+    /// connected, once its session's record is drawn (`open`: ShownRecord.open, S72). Only it sets
+    /// the erase count; the phone's copy of a connected cloud never does, even after the session
+    /// opens, so a finish before the draw leaves the count for the draw to take (S43).
     static func countable(source: String, open: Bool) -> Bool { source.isEmpty || open }
 }
 
