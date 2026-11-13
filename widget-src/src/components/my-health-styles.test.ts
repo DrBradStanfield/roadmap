@@ -136,4 +136,14 @@ describe('US-62 AC10b (H78): the value page focus ring', () => {
     expect(ring[0]).toMatch(/outline-offset:\s*-2px/);
     expect(blocks(/\.md-add input:focus-visible/)).toEqual(ring);
   });
+
+  it('H89: the lab Add form\'s date box and the matrix\'s date cells draw that same ring on :focus-within', () => {
+    const ring = blocks(/\.md-add input\[type="date"\]:focus-within/);
+    // AddLabTest's Value and Date boxes, as the value page's Add form.
+    expect(blocks(/\.alr-add-form input:focus-visible/)).toEqual(ring);
+    expect(blocks(/\.alr-add-form input\[type="date"\]:focus-within/)).toEqual(ring);
+    // DraftDateCell: WebKit's Tab stops on its hidden date input, never the button, so the button takes the ring.
+    expect(blocks(/\.bt-cell-draft-date:focus-within/)).toEqual(ring);
+    expect(blocks(/\.bt-cell-movable:focus-within/)).toEqual(ring);
+  });
 });
