@@ -58,14 +58,19 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
 
   const answer = async (event: React.MouseEvent, { row, typed }: LpaCheck, index: number, unit: ReportUnit | 'keep') => {
     if (event.detail > 1) return; // the second click of a double click
+    if (answering.phase !== 'idle' || waiting) return;
     const root = event.currentTarget.closest('.bt-timeline')!;
-    const notice = (i: number) => root.querySelectorAll<HTMLElement>('.lpa-check')[i];
+    // Found by its row, taken at the click: a re-read in the answer's own
+    // render can move the notices (Codex R1).
+    const next = checks[index + 1]?.row.id;
+    const notice = (id?: string) => Array.from(root.querySelectorAll<HTMLElement>('.lpa-check'))
+      .find(n => id !== undefined && n.dataset.rowId === id);
     // After an answer the focus goes to the next notice, else to the Lp(a)
     // row's latest value, else the matrix heading; after a refusal it can retry, back to its
     // own notice (a button disabled while saving drops the focus). Never to the page.
-    const focusOn = () => {
+    const focusOn = (id?: string) => () => {
       const cells = root.querySelectorAll<HTMLElement>('[data-metric="lpa"] .bt-cell-clickable');
-      return notice(index) ?? cells[cells.length - 1] ?? root.querySelector<HTMLElement>('.bt-timeline-title');
+      return notice(id) ?? cells[cells.length - 1] ?? root.querySelector<HTMLElement>('.bt-timeline-title');
     };
     // An answer that would save what is stored writes nothing: kept.
     const kept = unit === 'keep' || saves(typed, unit) === Number(row.value.toPrecision(12));
@@ -80,8 +85,8 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
         // notice goes, so the reason is said where it outlives it (adversary
         // R8), and the focus goes to the next notice or there (adversary R5).
         say(CHECK_CHANGED);
-        focusFrom.current = () => notice(index + 1) ?? root.querySelector<HTMLElement>('.lpa-check-status');
-      } else focusFrom.current = focusOn;
+        focusFrom.current = () => notice(next) ?? root.querySelector<HTMLElement>('.lpa-check-status');
+      } else if (status !== 'ok') focusFrom.current = focusOn(row.id);
       dispatch({ type: 'settled', status });
       if (status !== 'ok') return;
     }
@@ -89,7 +94,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
     const day = formatShortDate(row.recordedAt);
     say(kept ? `Kept the result from ${day} as saved.` : `Saved the result from ${day}.`);
     trackProductEvent('lpa_check_answered', { answer: kept ? 'keep' : unit }); // after the outcome; the label, never a value
-    focusFrom.current = focusOn;
+    focusFrom.current = focusOn(next);
     setAnswered(ids => [...ids, row.id]);
   };
 
@@ -101,7 +106,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
       : unit === 'mg/dL' && over ? ` (saves ${LPA_MAX} nmol/L, the highest value this tool records)`
         : ` (saves ${saves(check.typed, unit)} nmol/L)`);
     return (
-    <div key={check.row.id} className="screening-notice lpa-check" tabIndex={-1}>
+    <div key={check.row.id} className="screening-notice lpa-check" data-row-id={check.row.id} tabIndex={-1}>
       <p>
         {`Please check this Lp(a) result from ${formatShortDate(check.row.recordedAt)}. It is saved as`
           + ` ${check.row.value.toFixed(0)} nmol/L. Between 6 September and 13 October this box was labelled mg/L,`

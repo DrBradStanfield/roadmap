@@ -643,6 +643,26 @@ describe('US-05 AC3 — the answer buttons around a slow save', () => {
     expect(allFree(m)).toBe(true);
   });
 
+  // Codex R1 on PR 1772: the re-read that takes notice A can land in the same
+  // render as the outcome, so B is then first. The focus follows the row, not the place.
+  it('P6: changed, with the re-read that takes A in the same render: the focus goes to B, never C', async () => {
+    const b = typedRow({ id: 'row1', value: 12, recordedAt: '2026-09-25T00:00:00.000Z' });
+    const c = typedRow({ id: 'row2', value: 24, recordedAt: '2026-09-28T00:00:00.000Z' });
+    const m = matrix([typedRow(), b, c]);
+    const [, noticeB, noticeC] = m.notices();
+    let land!: (status: string) => void;
+    m.onCorrectValue.mockImplementationOnce(() => new Promise((resolve) => { land = resolve; }));
+    await m.answer(/mg\/dL/, 0);
+    await act(async () => {
+      land('changed');
+      await Promise.resolve();
+      await Promise.resolve();
+      m.showHistory([typedRow({ id: 'other', value: 100, createdAt: '2026-10-13T05:00:00.000Z' }), b, c]);
+    });
+    expect(m.notices()).toEqual([noticeB, noticeC]);
+    expect(document.activeElement).toBe(noticeB);
+  });
+
   it('P5: unmounted while the buttons rest: no timer is left and nothing runs after', async () => {
     const m = matrix();
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
