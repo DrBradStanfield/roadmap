@@ -32,6 +32,7 @@ import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_RECEIPT_LENGTH, SERVER_VERSION } from '../../packages/health-core/src/mcp-tool-contract';
 import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import type { Extractor } from '../lib/mcp-import.server';
 import { MAX_CORRECTION_AGE_DAYS } from '../lib/mcp-corrections.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -72,6 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setAdapterFactory(null);
+  extractor = undefined;
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -172,6 +174,9 @@ async function redeem(form: Record<string, string>) {
   return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number; scope: string };
 }
 
+/** The model call an import case passes to the endpoint; undefined is the real one (this file's own state, reset after each case). */
+let extractor: Extractor | undefined;
+
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
   const res = await mcpEndpoint(
     new Request(`${ISSUER}/mcp`, {
@@ -180,6 +185,7 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     }),
     now,
+    { extract: extractor },
   );
   expect(res.status).toBe(200);
   return (await res.json()) as {
@@ -1416,7 +1422,6 @@ describe('OpenAI domain verification is gone (its review ended 2026-10-29; Brad 
 // US-35 — import_documents over a folder, end to end
 // ---------------------------------------------------------------------------
 import JSZip from 'jszip';
-import { setImportSeams } from '../lib/mcp-import.server';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
 import { StorageError } from '../../packages/health-core/src/adapter';
@@ -1452,16 +1457,14 @@ function stubImport(files: Record<string, Uint8Array>, answer: (name: string) =>
   const extracted: string[] = [];
   const names = Object.keys(files);
   for (const name of names) cloud.docs.set(name, new Blob([files[name] as Uint8Array<ArrayBuffer>]));
-  setImportSeams({
-    extract: async (pages) => {
-      // The extractor sees base64 bytes; find which file they were.
-      const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
-      extracted.push(name);
-      const result = answer(name);
-      if (result instanceof Error) throw result;
-      return result;
-    },
-  });
+  extractor = async (pages) => {
+    // The extractor sees base64 bytes; find which file they were.
+    const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
+    extracted.push(name);
+    const result = answer(name);
+    if (result instanceof Error) throw result;
+    return result;
+  };
   return extracted;
 }
 
@@ -1470,8 +1473,6 @@ function pendingFiles(): string[] {
 }
 
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
-  afterEach(() => setImportSeams(null));
-
   it('extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
@@ -1693,7 +1694,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       for (const [path, bytes] of Object.entries(files)) zip.file(path, bytes);
       cloud.docs.set(zipName, new Blob([await zip.generateAsync({ type: 'uint8array' })]));
     }
-    setImportSeams({ extract: async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!) });
+    extractor = async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!);
   }
 
   it('US-35 AC2/AC6, US-12 AC9 — a ZIP member is named zip/member, as the website names it: two ZIPs holding one path are two files, the same bytes in a third are its twin, and the same ZIP again is already imported by hash', async () => {
@@ -1799,7 +1800,6 @@ describe('US-07 AC6 — the hosted get_plan is built for adults', () => {
 });
 
 describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   /** A record `get_plan` can compute from; the nudge rides on a successful read. */
   const withProfile = (file: RoadmapFile): RoadmapFile => ({ ...file, profile: { ...file.profile, sex: 'male', birthYear: 1971, heightCm: 178 } });
 
@@ -1880,7 +1880,6 @@ import { type AccessPayload, connectionKey, spendWrites, WRITES_PER_HOUR as HOUR
 import { seal, unpackSealed } from '../lib/mcp-seal.server';
 
 describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   const rows = (day = LAB_DAY) => ({
     sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: day,
     values: [

@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-P4,plan view,Another device's email capture is not seen until reload,latent,not started,State is read once per mount,,no
+P4,plan view,Another device's email capture is not seen until reload,latent,not started,"State is read once per mount; widget-src/src/components/PlanPdf.tsx:188-199 useEmailCaptureState reads getReportEmailCaptured() once (startState), again only on an erase reset; nothing re-reads it on a remote change",,no

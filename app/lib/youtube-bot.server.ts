@@ -267,14 +267,14 @@ async function processFollowUps(
       outcome = await runPipeline(pseudoThread, video.entry, video.body, history);
     } catch (err) {
       logTickError(err);
-      await unclaimComment(reply.id);
+      await unclaimComment(reply.id, claimRowId);
       tally.skipped++;
       continue;
     }
 
     if (!outcome.posted) {
       await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
-      if (shouldUnclaim(outcome)) await unclaimComment(reply.id);
+      if (shouldUnclaim(outcome)) await unclaimComment(reply.id, claimRowId);
       tally.skipped++;
       continue;
     }
@@ -368,7 +368,7 @@ async function tick(): Promise<void> {
       // un-claim so the next tick can retry. Persistent failures will be visible
       // via Sentry on the underlying call.
       logTickError(err);
-      await unclaimComment(thread.topLevelCommentId);
+      await unclaimComment(thread.topLevelCommentId, claimRowId);
       tally.skipped++;
       continue;
     }
@@ -384,7 +384,7 @@ async function tick(): Promise<void> {
       // SKIP_NO_REPLY / GREETING or SPAM / unreadable classifier answer (US-15
       // AC48) / blog-missing / refusal cases leave the claim intact so we don't
       // waste LLM tokens re-evaluating the same comment.
-      if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
+      if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId, claimRowId);
       tally.skipped++;
       continue;
     }

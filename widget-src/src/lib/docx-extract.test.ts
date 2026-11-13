@@ -423,3 +423,25 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
     expect((await docxToText(await zip.generateAsync({ type: 'arraybuffer' }))).text).toBe('Ferritin 85');
   });
 });
+
+/** A signal as Safari before 15.4 has it: no `throwIfAborted`. */
+const oldSafariSignal = (stop = new AbortController()) => Object.defineProperty(stop.signal, 'throwIfAborted', { value: undefined });
+
+describe('US-12 AC7b (U15): a .docx read stopped at the upload\'s time limit', () => {
+  it('stops: a stopped read gives no text', async () => {
+    const stop = new AbortController();
+    stop.abort();
+    await expect(docxToText(await docx(p('Ferritin 85')), stop.signal)).rejects.toThrow();
+  });
+
+  it('a signal without throwIfAborted (Safari before 15.4) still reads, and still stops when aborted', async () => {
+    expect((await docxToText(await docx(p('Ferritin 85')), oldSafariSignal())).text).toBe('Ferritin 85');
+    const stop = new AbortController();
+    stop.abort();
+    await expect(docxToText(await docx(p('Ferritin 85')), oldSafariSignal(stop))).rejects.toThrow('stopped');
+  });
+
+  it('a signal that never fires changes nothing', async () => {
+    expect((await docxToText(await docx(p('Ferritin 85')), new AbortController().signal)).text).toBe('Ferritin 85');
+  });
+});

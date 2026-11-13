@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+A3-4c,S4 privacy scrub and vocabularies,Drop the key-order exception the next time the tools/list pins are re-taken,not started,"mcp-tool-catalogue.ts KEY_ORDER_EXCEPTIONS keeps file_results values' description before items so tools/list stays byte-identical; dropping it moves one key, which re-takes the mcp-freeze.test.ts pins (Brad's yes)",,packages/health-core/src/mcp-tools-list.golden.test.ts,yes
