@@ -208,6 +208,44 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
     expect(posts).toContain('cancel');
   });
 
+  it('the first mirror attempt stored the erased record and the retry stored nothing: held, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      // The first attempt's record lands; its put-back of the old record, and every write of the retry, do not fit.
+      if (key === DEVICE_KEY && ++recordWrites > 1) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(recordWrites).toBeGreaterThan(2); // the retry ran
+    expect(deviceFile().meta.eraseEpoch).toBe(1);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('a device copy whose erase epoch is not a number reads as a load reads it, so a write that stored nothing is put back', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.setItem(DEVICE_KEY, JSON.stringify({ ...deviceFile(), meta: { ...deviceFile().meta, eraseEpoch: '5' } }));
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+  });
+
   it('US-09 AC30: outside an erase, another tab moving the revision while this save stored nothing never says the changes are on this device', async () => {
     await cloudWithOptIn();
     await addMeasurement('weight', 80, '2026-09-03');

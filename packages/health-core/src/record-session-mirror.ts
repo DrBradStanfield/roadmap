@@ -11,7 +11,6 @@ import { mergeFiles } from './merge';
 import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { contentOf } from './record-session-content';
-import type { RoadmapFile } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
 
 /** The device copy's revision on a cloud whose copy has a synchronous path;
@@ -21,14 +20,16 @@ export function deviceCopyRevision(host: RecordHost): string | null | undefined 
 }
 
 /** After a failed device write past an erase's swap: whether the device copy
- *  carries this erase or a later one, read from the copy itself, so a retry
- *  that stored before it failed counts (S69 R2). False with no synchronous
- *  path (the iPhone's: its erase is put back, lead S57) or an unreadable copy. */
-export function deviceCopyHoldsErase(host: RecordHost, current: RoadmapFile): boolean {
-  if (host.tier !== 'cloud' || !host.mirror.sync) return false;
+ *  carries this erase or a later one, read from the copy itself and migrated
+ *  as a load would, so a retry that stored before it failed counts (S69 R2).
+ *  False with no synchronous path (the iPhone's: its erase is put back, lead
+ *  S57) or a copy that cannot be read or migrated. */
+export function deviceCopyHoldsErase(s: RecordSession): boolean {
+  const sync = s.host.tier === 'cloud' ? s.host.mirror.sync : undefined;
+  if (!sync) return false;
   try {
-    const { body } = host.mirror.sync.readSync(ROADMAP_FILE_NAME);
-    return ((body as { meta?: { eraseEpoch?: number } } | null)?.meta?.eraseEpoch ?? 0) >= (current.meta.eraseEpoch ?? 0);
+    const copy = ROADMAP_DOC.migrate(sync.readSync(ROADMAP_FILE_NAME).body, s.ctx());
+    return (copy.meta.eraseEpoch ?? 0) >= (s.current.meta.eraseEpoch ?? 0);
   } catch {
     return false;
   }

@@ -489,7 +489,7 @@ export class RecordSession {
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
           // Memory-only; past an erase's swap, held when the device copy already carries this erase (S69 R2).
-          if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && deviceCopyHoldsErase(this.host, this.current)) this.dispatch({ type: 'mirrored', changes: held });
+          if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && deviceCopyHoldsErase(this)) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
       reportSaveFailure(this.host, error, this.refusalsReported);
