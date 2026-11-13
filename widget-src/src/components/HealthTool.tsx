@@ -486,13 +486,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     markSaved({}); units.erased(); // the units shown stay (US-34 AC7a, Q3); held or unsaved ones go
   }, [cancelPendingSave, profileTimer, markSaved, dropListSaves, units]);
 
-  // One field's new value, from the form or the chat. A weight or waist
-  // keeps the unit its caller converted it from (typedIn). One update per
-  // field, so several made at once all land (US-16 AC1). The weight and year
-  // fields report their own answers (US-62 AC25b), and the chat's weight its own (chatWeight, AC31a).
+  // One field's new value, from the form or the chat. A weight or waist keeps the unit its caller converted it from
+  // (typedIn). One update per field, so several made at once all land (US-16 AC1). The weight and year fields report
+  // their own answers (US-62 AC25b). A chat weight answers nothing here: chatWeight (ChatEdits.tsx, AC31a) is its only
+  // reporter, box and grid alike (H54), so any new fromChat weight caller must call it.
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat = false) => {
-    // A chat weight answers nothing here: chatWeight (ChatEdits.tsx) is its only reporter, for the box and the grid
-    // alike (H54). Any new fromChat weight caller must call it.
     if (ONBOARDING_FIELDS.includes(field) && (fromChat ? field !== 'weightKg' : !LANDING_FIELDS.includes(field))) answered(null); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
@@ -519,9 +517,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [selectTab]);
   const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
     medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing: isDeleting, handleInputChange, handleMedicationChange,
-    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, fullForm,
-    // The weight step is open on the saved record and the box holds no plausible weight (H53): a typed weight's save may be pending.
-    chatWeight: () => chatWeight(weightStepOpen(previousMeasurements) && (inputsRef.current.weightKg === undefined || inputRangeFault('weightKg', inputsRef.current.weightKg) !== null)),
+    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, fullForm, chatWeight: () => chatWeight(weightStepOpen(previousMeasurements) && (inputsRef.current.weightKg === undefined || inputRangeFault('weightKg', inputsRef.current.weightKg) !== null)), // the step: open on the saved record, no plausible box weight (a typed save may be pending, H53)
   });
 
   const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server
