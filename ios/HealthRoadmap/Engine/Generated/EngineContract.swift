@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: feb576c1d7928941
+// contractHash: fa0b8b7ca709c585
 
 import Foundation
 
@@ -9,7 +9,7 @@ extension EngineRelease {
     /// ios/engine/bridge-contract.json (generated from contract.ts).
     static let bridge = "40fc97db4ca12547"
     /// The first 16 hex digits of the SHA-256 of ios/engine/contract.schema.json.
-    static let contractHash = "feb576c1d7928941"
+    static let contractHash = "fa0b8b7ca709c585"
     /// Every door the engine must have (the contract's doors), checked by the self-test.
     static let doors = [
         "applyEditJson", "chatContextJson", "chatDeleteJson", "chatEditsJson", "chatListJson", "chatMessagesJson",

@@ -18,7 +18,7 @@ import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
 import { phoneReminders } from './reminders';
 import { installShim, type Natives } from './shim';
-import { NOT_OPEN, open } from './cloud';
+import { eraseHeld, NOT_OPEN, open } from './cloud';
 import { failed } from './cloud-adapters';
 import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
@@ -233,6 +233,14 @@ export function cloudOnline(): string {
   checkArgs('cloudOnline', arguments);
   open?.live.online();
   return '{}';
+}
+
+/** Is an erase made here still unsent over a failure that may pass (S50b, US-25 AC16i)? Swift asks
+ *  before Disconnect or a switch, and holds only on 'transient' (cloud.ts eraseHeld). Optional,
+ *  like cloudOnline: an app before it never calls it. */
+export async function cloudEraseHeld(): Promise<string> {
+  checkArgs('cloudEraseHeld', arguments);
+  return eraseHeld();
 }
 
 /** A listed document's original from the person's cloud, as bytes (US-73 AC12; the web's "View

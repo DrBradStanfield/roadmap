@@ -121,4 +121,11 @@ extension HealthEngine {
     func cloudClose(copyDown: Bool) async throws -> CloudClose {
         CloudClose(rawValue: try await doorCloudClose(copyDown: copyDown)) ?? .unreachable
     }
+
+    /// True when an erase made here is still unsent over a failure that may pass (US-25 AC16i,
+    /// `cloudEraseHeld`, which flushes first). False for every other answer, a word this build
+    /// does not know, and an engine without the door (optionalCall's nil): Disconnect runs as before.
+    func eraseHeldOverAPassingFailure() async throws -> Bool {
+        try await doorCloudEraseHeld() == "transient"
+    }
 }

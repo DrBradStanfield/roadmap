@@ -68,6 +68,7 @@ enum SyncStatusText {
         case .stopped(.unreachable):
             return "\(old.label) could not be reached, so your record there could not be copied to this iPhone. Try again once it answers."
         case .stopped(.failed): return disconnectFailed(old)
+        case .stopped(.eraseUnsent): return EraseText.unsent(old)
         // Refused by the state (a second tap, a Disconnect closing): silent, as Disconnect's is.
         case .stopped, .moved: return nil
         case .failed(let error):

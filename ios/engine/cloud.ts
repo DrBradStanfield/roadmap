@@ -15,7 +15,7 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
+import { failed, PhoneCloudAdapter, PhoneFileAdapter, transientFailure, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
 import { movedBloodTests, parseEdit, type Edit } from './my-data';
@@ -49,6 +49,7 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
         // verified: the one moment the record is in sync (re-check R3), and only
         // the generation it holds.
         clear: () => {
+          if (open?.id === id) open.held = null; // a verified save carries any erase made here (S50b)
           if (__native.pending(`clear-if:${held}`) === 0) __native.notify('synced', '', id);
         },
       },
@@ -73,7 +74,10 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
     },
     failureCause: () => 'other',
     report(error, at) {
-      if (at.op === 'persist') __native.notify('failed', failed(provider, error), id);
+      if (at.op !== 'persist') return;
+      // session.flush throws a bare SAVE_FAILED: the kind is read here, from the real error.
+      if (open?.id === id && open.held) open.held.failure = transientFailure(error) ? 'transient' : 'definite';
+      __native.notify('failed', failed(provider, error), id);
     },
   };
 }
@@ -91,6 +95,9 @@ export interface Open {
    *  session's own save runs on its debounce, and its pending marker keeps
    *  anything unsaved for the next session. */
   unflushed: number;
+  /** An erase made here that no verified save has carried yet (S50b, US-25 AC16i), and how the
+   *  last save of it failed, read by cloudEraseHeld. Null once any save lands (pending.clear). */
+  held: null | { erase: string; failure?: 'transient' | 'definite' };
 }
 
 export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
@@ -157,7 +164,7 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     // Swift reads the kind from the message (CloudSync.swift).
     throw new Error(failed(provider, error));
   }
-  const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
+  const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0, held: null };
   at.live = new LiveRefresh(session, host, { reread: () => reread(at), isVisible: () => at.visible });
   if (superseded()) {
     // A newer open or a close began while this one read: this one gives way.
@@ -299,6 +306,7 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
+    at.held = { erase: at.session.eraseIdentity };
   }
   return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
 }
@@ -368,6 +376,21 @@ async function reread(at: Open): Promise<boolean> {
 export async function cloudFlush(): Promise<string> {
   checkArgs('cloudFlush', arguments);
   return open ? flush(open) : 'saved';
+}
+
+/**
+ * Is an erase made here still unsent over a failure that may pass (S50b, US-25 AC16i)? It
+ * flushes first, as a close does, so a retry that lands answers 'none'. 'transient': the last
+ * save of it failed with no answer, 408, 429, a 5xx or a rate limit (transientFailure);
+ * 'definite': any other failure; 'unknown': it failed and no report said why. The failure is
+ * cleared before the flush, so a stale one is never read.
+ */
+export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | 'unknown'> {
+  const at = open;
+  if (!at?.held) return 'none';
+  delete at.held.failure;
+  await flush(at);
+  return at.held ? at.held.failure ?? 'unknown' : 'none';
 }
 
 async function flush(at: Open): Promise<'saved' | 'failed'> {

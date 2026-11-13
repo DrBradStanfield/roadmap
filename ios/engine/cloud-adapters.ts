@@ -262,6 +262,32 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
   return 'unreachable';
 }
 
+/**
+ * A failure a retry may get past (S50b, US-25 AC16i): failureKind's 'unreachable', and the
+ * provider gave no answer (network, timeout, abort), or 408, 429, a 5xx, Drive's rate or daily
+ * limit, or a 401 whose token refresh was skipped. Everything else is definite: a refusal that
+ * may never mend must never hold a Disconnect. Not isDefiniteRefusal, which asks whether a
+ * write certainly did not land, a different question (write-refusal.ts).
+ */
+export function transientFailure(error: unknown): boolean {
+  if (failureKind(error) !== 'unreachable' || !(error instanceof StorageError) || error.reason === 'reconnect') return false;
+  const status = error.status;
+  if (status === undefined) return noAnswer(error);
+  // A 403 reads 'unreachable' only as Drive's rate or daily limit (failureKind).
+  return status === 408 || status === 429 || status >= 500 || status === 403 || (status === 401 && refreshSkipped(error));
+}
+
+/** No answer from the provider: fetchOrFail's or untilAborted's failure, or a token refresh
+ *  that could not reach it (`accessToken`), found through any rewrap (SyncManager's). */
+function noAnswer(error: unknown): boolean {
+  for (let e = error, depth = 0; e instanceof Error && depth < 8; e = e.cause, depth++) {
+    if (!(e instanceof StorageError) || e.status !== undefined) continue;
+    const cause = e.cause;
+    if (e.hint === UNREACHABLE_HINT || cause instanceof TypeError || (cause instanceof Error && (cause.name === 'AbortError' || cause.name === 'TimeoutError'))) return true;
+  }
+  return false;
+}
+
 /** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38), by its typed reason (#979). The save
  *  rewraps the error after an earlier write may have landed (sync-manager.ts), so its cause counts too. */
 function dropboxFull(error: unknown): boolean {
