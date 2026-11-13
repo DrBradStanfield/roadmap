@@ -31,6 +31,8 @@ for ZONE in UTC Pacific/Auckland; do
     -project HealthRoadmap.xcodeproj -scheme HealthRoadmap \
     -skip-testing:HealthRoadmapUITests \
     -derivedDataPath "$DERIVED" 2>&1 || echo $? > "$STATUS"; } | tee "$LOG" | grep -E "Test case|error:|TEST (SUCCEEDED|FAILED)|sim-run:" || true
+  # The last "Executed N tests" line is xcodebuild's total for the zone; the filter above drops it (lead S60).
+  grep "Executed " "$LOG" | tail -n 1
   case "$(cat "$STATUS" 2>/dev/null)" in
     75) echo "NOT RUN in $ZONE: sim-run refused or gave up; see its line above (not a test failure)"; report_failed; exit 75;;
     76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; report_failed; exit 76;;
