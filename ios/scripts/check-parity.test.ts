@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { parityFixtures } from '../engine/fixtures.mjs';
 import { bundleEngine, checkParity } from './build-engine.mjs';
@@ -94,6 +95,31 @@ var HealthEngine = {
     const today = (zone: string) => JSON.parse(JSON.parse(readFileSync(join(goldens, `sample.${zone}.golden.json`), 'utf8')).plan).today;
     expect(today('utc')).toBe('2026-10-21');
     expect(today('auckland')).toBe('2026-10-22');
+  }, 120_000);
+
+  // PR 1550 review R3: pins "one process per zone". checkParity runs in a child Node with the
+  // spawn probe (fixtures/spawn-probe.mjs); its own calls are the execFileSync lines.
+  it('starts exactly one source and one bundle process per zone, each under that zone\'s TZ', () => {
+    const log = join(work, 'parity-spawns.log');
+    writeFileSync(log, '');
+    const probe = pathToFileURL(join(__dirname, 'fixtures/spawn-probe.mjs')).href;
+    const build = pathToFileURL(join(__dirname, 'build-engine.mjs')).href;
+    // A file, not -e: build-engine.mjs reads process.argv[1] to tell whether it is the main module.
+    const script = join(work, 'probed-parity.mjs');
+    writeFileSync(script, `import { checkParity } from ${JSON.stringify(build)};
+checkParity(${JSON.stringify(real)}, ${JSON.stringify(join(work, 'goldens-probed'))});
+`);
+    execFileSync(process.execPath, [script], {
+      env: { ...process.env, NODE_OPTIONS: `--import ${probe}`, SPAWN_PROBE_LOG: log },
+    });
+    const parity = readFileSync(log, 'utf8').split('\n').filter((line) => line.startsWith('execFileSync '));
+    const tsx = join(repo, 'node_modules/.bin/tsx');
+    expect(parity).toEqual([
+      `execFileSync ${tsx} TZ=UTC`,
+      `execFileSync ${process.execPath} TZ=UTC`,
+      `execFileSync ${tsx} TZ=Pacific/Auckland`,
+      `execFileSync ${process.execPath} TZ=Pacific/Auckland`,
+    ]);
   }, 120_000);
 
   it('a wrong answer for the first fixture in one zone fails, naming that fixture and zone', () => {

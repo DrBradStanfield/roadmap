@@ -108,8 +108,10 @@ export function checkParity(bundlePath, goldenDir) {
   const answers = {};
   for (const [zoneName, tz] of Object.entries(ZONES)) {
     const env = { ...process.env, TZ: tz };
-    const fromSource = execFileSync(tsx, [join(ios, 'engine/golden.ts'), PINNED_NOW, PINNED_DEVICE, ...pairs], { env }).toString();
-    const fromBundle = execFileSync(process.execPath, ['-e', bundleGolden, bundlePath, PINNED_NOW, PINNED_DEVICE, ...pairs], { env }).toString();
+    // One zone's goldens (~273 KB, ~69 KB more per fixture) outgrow the 1 MB default; past it, ENOBUFS names no fixture.
+    const maxBuffer = 64 * 1024 * 1024;
+    const fromSource = execFileSync(tsx, [join(ios, 'engine/golden.ts'), PINNED_NOW, PINNED_DEVICE, ...pairs], { env, maxBuffer }).toString();
+    const fromBundle = execFileSync(process.execPath, ['-e', bundleGolden, bundlePath, PINNED_NOW, PINNED_DEVICE, ...pairs], { env, maxBuffer }).toString();
     answers[zoneName] = { source: JSON.parse(fromSource), bundle: JSON.parse(fromBundle) };
   }
   let count = 0;
