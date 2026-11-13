@@ -200,6 +200,7 @@ struct MyDataView: View {
         .listStyle(.insetGrouped)
         // The title where a large title sits, not under the list's top margin (Brad, round 7).
         .contentMargins(.top, 0, for: .scrollContent)
+        .contentMargins(.bottom, 12, for: .scrollContent) // The footer clears the floating tab bar (US-73).
         // The worked-out rows read their engine series once per screen drawn (US-73 AC7), then
         // the page is built from them.
         .task(id: Self.pageKey(store)) {
@@ -292,11 +293,10 @@ struct MyDataView: View {
                         .foregroundStyle(Color(.systemBackground))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
-                        .background(Color.status("urgent"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityHint("Scrolls to the card")
-                .listRowBackground(Color.clear)
+                .listRowBackground(RoundedRectangle(cornerRadius: .cardRadius, style: .continuous).fill(Color.status("urgent")).padding(.vertical, 4))
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
         }

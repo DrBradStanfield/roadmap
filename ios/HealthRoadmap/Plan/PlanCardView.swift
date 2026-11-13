@@ -80,6 +80,17 @@ private struct SuggestionRow: View {
     @State private var answer: ((MyData.Alcohol) -> Void)?
     /// "I still drink"'s line, shown in an alert once the dialog closes.
     @State private var stillDrinks: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// A quiet mark that the card cites sources (App Review 1.4.1), shown closed and open so nothing reflows.
+    @ViewBuilder
+    private var sourcesMark: some View {
+        if suggestion.hasSources {
+            Text("Sources").font(.caption2).foregroundStyle(.secondary).fixedSize()
+                .accessibilityLabel("Has sources")
+                .accessibilityIdentifier("plan.sourcesMark")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -89,9 +100,18 @@ private struct SuggestionRow: View {
                 HStack(alignment: .top, spacing: 14) {
                     if showsIcon { CategoryIcon(category: suggestion.category) }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(suggestion.title)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
+                        // Only the title shares its line with the chevron (and the Sources mark), so the summary keeps the full width.
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(suggestion.title)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            if !typeSize.isAccessibilitySize { sourcesMark }
+                            Image(systemName: "chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                                .rotationEffect(.degrees(expanded ? 180 : 0))
+                        }
                         Text(suggestion.description)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -100,13 +120,10 @@ private struct SuggestionRow: View {
                             // inside the spring drew half-wrapped lines (Brad, 2026-10-23). Scoped to
                             // `expanded`, so rows below still slide whole when another opens.
                             .transaction(value: expanded) { $0.animation = nil }
+                        // At accessibility sizes the mark goes under the summary, so the title keeps its width.
+                        if typeSize.isAccessibilitySize { sourcesMark }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(expanded ? 180 : 0))
-                        .padding(.top, 4)
                 }
                 .contentShape(Rectangle())
             }

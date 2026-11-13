@@ -67,6 +67,7 @@ Cutting build 11:
 
 Build 12:
 
+- Build 11 (0.2) was uploaded 2026-11-11. Build 12 carries the Needs-attention banner and My health footer fix and is the resubmission; the floor stays 11.
 - [ ] U14 (build 12): replace the Swift upload-rule copy (UploadRules.swift `Rules.swift`, swiftVerdict, swiftMemberVerdict, lastComponent, pathExtension, and the LabFileReader limit constants it alone reads) with a fail-closed refusal with words. No floor bump is needed: the engine bundled with build 11 and later carries uploadVerdictsJson, and an OTA engine must beat the bundled one. Its own PR, on hold for the owner.
 
 **What only an app update can change** (the app refuses these in a download): the

@@ -422,7 +422,7 @@ export function generateSuggestions(
     } else {
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
-        glp1: ['attention', 'Consider a GLP-1 medication', glp1Text],
+        glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
         'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
         'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'],
         'glp1-switch': ['attention', 'Consider switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
@@ -444,7 +444,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} indicates diabetes. This requires medical management and lifestyle intervention.`,
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.`,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
@@ -493,7 +493,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -524,7 +524,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Guidelines typically recommend statin therapy at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -767,7 +767,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Guidelines typically recommend medication at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (isBpRaised(sys, dia)) {
       suggestions.push({
@@ -1111,7 +1111,7 @@ export function generateSuggestions(
       category: 'skin',
       priority: 'info',
       title: 'Topical retinoid',
-      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
+      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.',
     },
     {
       id: 'skin-advanced',

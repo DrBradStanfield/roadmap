@@ -39,7 +39,7 @@ import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cro
 import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
-
+import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
 // conversation contents even when every identifier passed validation.
@@ -369,6 +369,7 @@ async function chatAction(request: Request, app: boolean) {
     if (process.env.CHAT_ENABLED === 'false') {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
+    if (request.method !== 'DELETE' && CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65: before auth, guest session, claim and model; DELETE still runs
 
     // 2 MB: 20 prior turns at their longest plus the plan context come to
     // well under half of it (US-09 AC25).
@@ -426,7 +427,6 @@ async function chatAction(request: Request, app: boolean) {
 
     // ----- POST — send message -----
     const { message, conversationId } = body;
-
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 

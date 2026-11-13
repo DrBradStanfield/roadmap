@@ -6,135 +6,123 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["protein powder", "whey protein", "casein", "pea protein", "soy protein", "rice protein", "collagen", "creatine", "muscle", "strength training", "resistance training", "exercise", "sarcopenia", "weight loss", "obesity", "diabetes", "insulin resistance", "blood sugar", "cardiovascular", "bone density", "aging", "longevity", "amino acids", "leucine", "bcaa", "hemp protein", "egg protein", "plant protein"]
-summary: "Reference on protein powders. Brad's view: pea protein powder can help when whole foods fall short; his own target is 1.2 g/kg of ideal body weight a day, and with resistance training extra benefit shrinks after 1.3 g/kg. Covers whey, casein, plant types. Kidney disease? Talk to your doctor first."
-reviewed: "2026-10-20"
-sources: [{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders","checked":"2026-10-20","fingerprint":"publishedAt:2025-11-04T20:37:47Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-10-20","fingerprint":"publishedAt:2024-11-19T03:13:05Z"}]
+summary: "Reference on protein powders. Brad uses pea protein powder and judges lead against FDA limits; powder complements whole foods. His target is 1.2 g/kg of ideal body weight a day, with gains tapering after 1.3 g/kg. Kidney disease, allergy or a metabolic disorder? Talk to your doctor first."
+reviewed: "2026-11-12"
+sources: [{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16571087/","checked":"2026-11-12","fingerprint":"sha256:d38df751013ad7f5143efe1bfd0d761458f231b73554250d2cfab6a083d32924"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37355689/","checked":"2026-11-12","fingerprint":"sha256:14754f1cdb1fe65acb8d1a00533a73a1326093b13c8e5dff858128be1f5cc124"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/7699352/","checked":"2026-11-12","fingerprint":"sha256:96f87021aeb6089b8ff3557ddb58518578f5ad6d3d4879c897bf4f6ea5065854"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39110456/","checked":"2026-11-12","fingerprint":"sha256:e81dd4f74025e9db6e7aafbae97b135a326c209aa3c25a79c742467c9cd69608"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24450454/","checked":"2026-11-12","fingerprint":"sha256:6fa3c5da812f3cb08ae44d29482278366fe886dd691b256f58e3ee316f2a2151"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37723909/","checked":"2026-11-12","fingerprint":"sha256:4a575510aa3636cac2da16302d2b12caaee8593a89ff6d435e327686cd5feb7e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32373372/","checked":"2026-11-12","fingerprint":"sha256:b8e73e495d74b9c0855a356ab04b7982c6688118ee2062e9d4feb3dacfb77cad"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30570999/","checked":"2026-11-12","fingerprint":"sha256:432f6b80d80f63cd1acfb2443f7fba50cd15eaff49ca8ab51bc93edf173663ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33005567/","checked":"2026-11-12","fingerprint":"sha256:d136f0d23b71f6e37ed0bdbdd5b94b0141cf6cdf1d8ce0c5d47f2f293646bab9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35565880/","checked":"2026-11-12","fingerprint":"sha256:ff4d4f6e48bf2210cbc9087b177fb1f96106b152e85f79ab29610684d2f7621b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31734121/","checked":"2026-11-12","fingerprint":"sha256:3542be1ebcb33d11b63063dd42d0f8bfa38596033fcd96c02ad9a1eb82865974"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24474098/","checked":"2026-11-12","fingerprint":"sha256:23af5b780ef2daff8f186de779c4523ea15fe8ed597eb459b5f289bd2a98457c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29532075/","checked":"2026-11-12","fingerprint":"sha256:0289329bda192cb53eaa8e82ccc25806a84dae6c3a7cac194047f93fae0563ef"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36839196/","checked":"2026-11-12","fingerprint":"sha256:215c1eba1a4862492a94beed0d9901bb706ab837f8be37c925e857f0c9aab3bf"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27422521/","checked":"2026-11-12","fingerprint":"sha256:399343ac9039cdf2d7dcc80d0f673d7881f09131fe8b90792e75a2ef6c1745fd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30932132/","checked":"2026-11-12","fingerprint":"sha256:ade5c6d00d05de67b894bd2d1f010335ccd101b944a4d4cf78b07cba0343c69e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28306154/","checked":"2026-11-12","fingerprint":"sha256:d9e5c75525239f22dbc4227f0f13192127d58978736a3f3fba9d726509ce7b26"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9405716/","checked":"2026-11-12","fingerprint":"sha256:ae79f43ad8d88ab288c6ee0fb8e696a6d58297efdedb43e40be93c721cd95e99"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30167963/","checked":"2026-11-12","fingerprint":"sha256:b4728da51638d6740cd1959628e76b6c5838e000b200f0329137a23d1d77cb9c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/20494161/","checked":"2026-11-12","fingerprint":"sha256:b07a94cf9c182ae13e86e3a16ce46a89b7676ea43e618d7d86636d604f6b69a9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42737396/","checked":"2026-11-12","fingerprint":"sha256:7d8eea49f729a084e0710a535e6d12a4ba82f32c88455f5b0a434f43dc742e92"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18382426/","checked":"2026-11-12","fingerprint":"sha256:3d3da6f918e4bc974683e1225e66dc3352325a612e2c9a7c9866db8e3f56674f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/22315365/","checked":"2026-11-12","fingerprint":"sha256:5e05f5393eee86c6a9d406cb03fad567acccc5511f0863a53810da02295a7aeb"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25237656/","checked":"2026-11-12","fingerprint":"sha256:d757fdc0a321c5ceb4cf1806e0fb26f3c54789d5462fae8cf93835092c383cd1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31919527/","checked":"2026-11-12","fingerprint":"sha256:6e04fb4b1e468925ab97f13061ce2cd7951ce06a08fe4673793163fafcdc6cb3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23375414/","checked":"2026-11-12","fingerprint":"sha256:e0b4016a18ba36b5d27cab17f8f97df9ab01353477807bd15dc42e478b2695a1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42798873/","checked":"2026-11-12","fingerprint":"sha256:7fb32d2603446c89cc16fbf425bb43050cbead5abf44244ac62988c941763c30"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30597474/","checked":"2026-11-12","fingerprint":"sha256:b38b09260ed7e65bf68918b304973ddff414b0210a05988ace36845a38c55400"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33599941/","checked":"2026-11-12","fingerprint":"sha256:1db822892a45d48036f3a8d83a83eec36ccba76c7c422dfdd643ad428dfae061"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42954267/","checked":"2026-11-12","fingerprint":"sha256:8129f39fb3cb15e42161222aab9a9a8eb2807f518c6f7beca34c0b56b024848e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25628520/","checked":"2026-11-12","fingerprint":"sha256:8992873938eeb71fb0f42776333c388ee0c9dc5238e08bbe449c590cf9222706"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30042516/","checked":"2026-11-12","fingerprint":"sha256:dbc61bec0618e505431663c9d86397cccf47a4fd7293f28269953e316ea82f5e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/27886135/","checked":"2026-11-12","fingerprint":"sha256:d4aa238baf80d2b6d4f1713c9c34493b845aa116d374aa12753744ce4c7e1da0"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30524380/","checked":"2026-11-12","fingerprint":"sha256:bc1d69a0ba434cdb1ef0a2aad07583325e3472f47c05d2cf1e1d71ada27874ac"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29114854/","checked":"2026-11-12","fingerprint":"sha256:9f8a04d0f253635ffe68e972ca766ef5872edb1f875d16dbb6eab3e0c5fda1c4"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23839751/","checked":"2026-11-12","fingerprint":"sha256:40c5e787386178e83dc0448a282bf60e84b47070c6c5d19224d8b912f3fe875f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34665230/","checked":"2026-11-12","fingerprint":"sha256:1b3f52bae93afb97cfcbd0c7d902a75867b11b58e3f5775a78b11eef603bc002"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19774556/","checked":"2026-11-12","fingerprint":"sha256:465ce0bced9975b06d4a4b3d4f7812b3c24a9b66bd0942c9b7cb2067a37a51a9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40592395/","checked":"2026-11-12","fingerprint":"sha256:10b9c7a8cf6fc833eb4c15b946328b54ecb262d0e6cc1eef5693d5994690f2ac"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31187084/","checked":"2026-11-12","fingerprint":"sha256:4946ffb08d4eea1649dcb6ea545837f952dab101fbb5770fd02e148434c9b205"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29567357/","checked":"2026-11-12","fingerprint":"sha256:8e3f67bd2613f5a21066f09a61b543b5e1ccb880427fc77b6778094be0f1247c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28698222/","checked":"2026-11-12","fingerprint":"sha256:f9887d685754a6e4e0b60846fb38854f508a87bcae55535da15f52a75a00e063"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33300582/","checked":"2026-11-12","fingerprint":"sha256:da07b1991dae50d8f66ca684543337c36b9fb8000e6542753a6aaeb98377011a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23134885/","checked":"2026-11-12","fingerprint":"sha256:22116bfc39db39bdcfd2975fe01e53633a585cef05d0f5fe60554290f77f5306"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39889852/","checked":"2026-11-12","fingerprint":"sha256:5241e54f1bae4580db0c892b1abec27afbb5bc8ec9e5244b7145d175e6cf60cb"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/30247714/","checked":"2026-11-12","fingerprint":"sha256:446e8988d64a16b60527d76ca175cbb1e0b6b703680048368a92ff31ee7c2259"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32498755/","checked":"2026-11-12","fingerprint":"sha256:924036404f9c7ce277e6ef1f0760472b9ff4ce7d75b80e55e3874e5ab9378cb1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41780731/","checked":"2026-11-12","fingerprint":"sha256:26781393c2edd87ebeb1afb6d51f1321d00fd9a82a597f53bde7a83e2de4968a"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/39232439/","checked":"2026-11-12","fingerprint":"sha256:3aef184b1b1745d95fd832b550106fc0dc1f8b4d55399dcd5710ad193a80aabd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35390727/","checked":"2026-11-12","fingerprint":"sha256:ce836533408d42356501e71445ec192916a8e54c7ecc30fc1cff3cc65b4e230d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40012045/","checked":"2026-11-12","fingerprint":"sha256:644881ea3b12823a22a5a5d2023c0deb112b9d466e979938bfcc2fb0447d6a22"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26400966/","checked":"2026-11-12","fingerprint":"sha256:0a91a5959529595776e00e4f67e1377ba94b71cd3fc864f2250cc0eb0bf1ddf9"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41931963/","checked":"2026-11-12","fingerprint":"sha256:fc4aa0a33dbf9529887b876f1bdb2742b398c58067456cc2e009632969f8db83"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/33612439/","checked":"2026-11-12","fingerprint":"sha256:3d01a4de226393f5c98d90a7aba8201b62a8b81a391167377c2ef83ea17a546c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/24814383/","checked":"2026-11-12","fingerprint":"sha256:d8914d300813423e6b88ebdc15dc88026bc7cea4c628c73624ec3984582c43c8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23867520/","checked":"2026-11-12","fingerprint":"sha256:e6f8ca1b46722383e968c9996160f443d8bf31420c180b5e48133184f5ac06a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34670754/","checked":"2026-11-12","fingerprint":"sha256:1092cc6d598be8c6f0366891458be3a5892eb55236a8b1d35eccb79e130558f8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26797412/","checked":"2026-11-12","fingerprint":"sha256:f666cfa5672326ceb635e770dbb8356cbd2c6a5f3c85e621937bbf08568a877f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16389253/","checked":"2026-11-12","fingerprint":"sha256:c4eeecd6d84cc15106ab3fac71ada937b2f4c7a02dbf6aaf6aa2bdaba8671757"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28524930/","checked":"2026-11-12","fingerprint":"sha256:8f1de3e146e04f0fd6b8d48380406e52ce2780a016b8faab8dc8bc8e3bcdc0e6"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/41553490/","checked":"2026-11-12","fingerprint":"sha256:7607db82638147df7a497e93c8503acbb87a89e566d5ac6d223b2bae864ea61e"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/26786203/","checked":"2026-11-12","fingerprint":"sha256:323e8bb82fc0389ee3e09c158f1e2fb97d8a2bb6d3f7d22edeb936e5641d42ea"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29697807/","checked":"2026-11-12","fingerprint":"sha256:089472206485289a6dc46e975c863278968a7f38529a74a16bcf031976658f49"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42117035/","checked":"2026-11-12","fingerprint":"sha256:6b5a1eeaa645a8cc4a2d752df0aa1612df91f847be38b310d059fc5b11814214"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/25005331/","checked":"2026-11-12","fingerprint":"sha256:7086fd265b52a2da052fe55f1824e4fde9ff4721429a495d57c9ee6a5db0fe31"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36734166/","checked":"2026-11-12","fingerprint":"sha256:88f06027be8f2112037c1dd54b866f39c8b41776e1beba1f6333c7eea6703544"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8114857/","checked":"2026-11-12","fingerprint":"sha256:d10faa6d6d89dd663a9e82e1f62d1338718672899d02efa113f5aca1918ed457"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/19588328/","checked":"2026-11-12","fingerprint":"sha256:37f945d223c3e3a847de08a61843aa216ec4c48fb615101555ceea068fb974a1"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/18950911/","checked":"2026-11-12","fingerprint":"sha256:8c1bb32c8e102ba365f9aeb81556f24ead3bca659733acb768377030d05fbb38"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/9153292/","checked":"2026-11-12","fingerprint":"sha256:44121178bb41f15d2d31407281d387f8dc9e50b1c6d94d9ba9f3829a719d8b02"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32699048/","checked":"2026-11-12","fingerprint":"sha256:d3dc13bcae9d2d41f982b438cdddd2741067b45ccdc55b011d139beffd802f86"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38409323/","checked":"2026-11-12","fingerprint":"sha256:f3f43a11377d0faa4fddefd461eddf0ffb7729cb35c3e57e72de443e04a1377b"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28642676/","checked":"2026-11-12","fingerprint":"sha256:ad722ca222c6a9ad7e6b7466f18d31cf9e0daaa304fb9e4102885ff9f229dddc"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34837522/","checked":"2026-11-12","fingerprint":"sha256:389043cbb8a8976e34d48a7b2e5e6cb7b41aa5a2266b805a72a5f78388bd8e5c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42549120/","checked":"2026-11-12","fingerprint":"sha256:f8f0e6bfcd93568f58dbf900c89bf2c8d4435d1d14433c35ec79e1ab918159ff"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42289790/","checked":"2026-11-12","fingerprint":"sha256:3f22998c4bccce80acc025a24ae976089d4f5bb243c0bbee70d9418d8d347185"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/16567155/","checked":"2026-11-12","fingerprint":"sha256:3bf6637fb09afe178ac4786647ee470e2c524b09b0bbafe4b5552710f431210d"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/12639078/","checked":"2026-11-12","fingerprint":"sha256:5068ffa15b16e679739c94f558faf601ff786067e6df6c5623d4c1d5756b0d2f"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42884660/","checked":"2026-11-12","fingerprint":"sha256:23159c75c920e065d12079876e25caf514ac396acaa8a52ecb3374ecb7933bf2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32829751/","checked":"2026-11-12","fingerprint":"sha256:b75968720bcc1386a63c96bedb3a8ebc9c7aecd221c644849d56ee6c466be9c3"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35690180/","checked":"2026-11-12","fingerprint":"sha256:43f3b1e80ad3424055deb54d1868daf95a6ddd2456585b179700107a023f0e63"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/40773863/","checked":"2026-11-12","fingerprint":"sha256:9e725d32941c2febbea471c28467db963912a487ebd431b0200cb80000946055"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/37630733/","checked":"2026-11-12","fingerprint":"sha256:3561e8c38f3fe3bf464c662e4ea899aa729546a39f56be9df715148f9d7e1f79"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/28326292/","checked":"2026-11-12","fingerprint":"sha256:c5eb1e4c93e9d4c28e581c95c8007e72922c1dc379a400845d293672a03390a8"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/35764960/","checked":"2026-11-12","fingerprint":"sha256:59c3d03549120d8393833b75932289533cdea7018273c4fee559d5aa7e0b509c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/34113965/","checked":"2026-11-12","fingerprint":"sha256:bc9fbd83d7cea9815fa7baa740a9886bba558fa9a6b89d74e448479cc0493f18"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29434529/","checked":"2026-11-12","fingerprint":"sha256:61929c2db7e879b79e3a0caf911d1b52da12b3d79febe9fad9f2d07e98dc1c0c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/10449011/","checked":"2026-11-12","fingerprint":"sha256:1cea840b460d0aeee7d038d5bef53c114ba1dfe4ae60999ad70ad1d1bfa5d544"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42035842/","checked":"2026-11-12","fingerprint":"sha256:3aaed89ade0a4c5149d39bd920283028f3c5594e8467e8780a9e0f0f987d929c"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/42545747/","checked":"2026-11-12","fingerprint":"sha256:5a56eb2100437aaaf6986988243f1526daf86f678ebd2d783d7193b616c043f2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/38490803/","checked":"2026-11-12","fingerprint":"sha256:c122101e919d6bb22d340281de9f73c892524315228e7e648e3a0d2acd7484b2"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/32737016/","checked":"2026-11-12","fingerprint":"sha256:0e7832b86bddb88d772e2bf060e07658065b9a1eaa9864de9a2f078481e27153"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/8366899/","checked":"2026-11-12","fingerprint":"sha256:af08829aaa73f698f2e36f94b3828bd90ebd3ed39d282e57f991f92830e7a7cd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/29221626/","checked":"2026-11-12","fingerprint":"sha256:24c52ad37bf48c75b30bc098990daf6fc19944c048a27adf218f03c13f99b451"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/23782948/","checked":"2026-11-12","fingerprint":"sha256:a643e337f58541c9fcefd99b2f8dd39c60eb3e45ec7daba61d1d3215ae256bfd"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/31568698/","checked":"2026-11-12","fingerprint":"sha256:d55abdfec054d411c8060c5783f389576345bd96f3dad52071e5f45e9edd6668"},{"name":"pubmed","url":"https://pubmed.ncbi.nlm.nih.gov/36235536/","checked":"2026-11-12","fingerprint":"sha256:e7d0b8f93e1213b86aaf07b3f87d6947162ad647c2c03dde52f18075c68c1615"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders","checked":"2026-11-12","fingerprint":"publishedAt:2025-11-04T20:37:47Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/the-protein-obsession-is-going-horribly-wrong","checked":"2026-11-12","fingerprint":"publishedAt:2025-10-02T23:36:02Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/are-we-wrong-about-the-perfect-protein-intake","checked":"2026-11-12","fingerprint":"publishedAt:2025-08-06T00:57:00Z"},{"name":"brad-video","url":"https://drstanfield.com/blogs/articles/only-supplements-work-2025","checked":"2026-11-12","fingerprint":"publishedAt:2024-11-19T03:13:05Z"}]
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects)*
 
-## Current view (reviewed 20 October 2026)
+## Current view (reviewed 12 November 2026)
 
-For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, because it is relatively low in methionine (an amino acid flagged in cancer research) and free of the saturated fat found in whey-based products (Brad's current guidance, 19 Feb 2026). Brad pays close attention to lead test results for protein powders, but he bases his decisions on FDA safety thresholds, which are already very conservative and grounded in known clinical risk ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). Protein supplementation combined with resistance exercise improves strength and lean mass, with muscle gains possible up to about 1.6 g/kg a day, but a dose-response meta-analysis found the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026). For strength in particular, protein supplementation beyond about 1.2 g/kg a day shows minimal additional benefit (Brad's current guidance, 15 Apr 2026). Brad's own daily target is 1.2 g of protein per kg of ideal body weight, and people with chronic kidney disease (stages 3 to 5) should consult their doctor about protein intake (Brad's current guidance, 31 Jul 2026). Protein powder is a supplement, meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
+Brad uses a pea protein powder himself and plans to keep doing so; he pays close attention to lead test results, but he bases his decisions on FDA safety thresholds, which are already very conservative and grounded in known clinical risk ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For people who struggle to meet their protein target from whole foods alone, Brad suggests a pea protein powder, because it is relatively low in methionine (an amino acid flagged in cancer research) and free of the saturated fat found in whey-based products (Brad's current guidance, 19 Feb 2026). Protein powder is a supplement, meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). Protein supplements combined with resistance exercise improve strength and lean mass, with muscle gains possible up to about 1.6 g/kg a day, but the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026). Trying to cram in more protein through supplements or bars rarely leads to benefits, and it will not help muscle mass without resistance training ([Brad, 2 Oct 2025](https://drstanfield.com/blogs/articles/the-protein-obsession-is-going-horribly-wrong)). Brad's daily target is 1.2 g of protein per kg of ideal body weight, and people with chronic kidney disease (stages 3 to 5) should consult their doctor about protein intake (Brad's current guidance, 31 Jul 2026).
 
 ## Key safety points
 
-- Soy protein may reduce absorption of thyroid hormone medicine, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your doctor or pharmacist about timing [33][107][108].
-- If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder; high protein intake may speed its progression [104][105].
-- People allergic to milk should avoid whey and casein, including laboratory-made whey, which still contains the milk allergen beta-lactoglobulin [10]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [122].
-- Allergic reactions to mycoprotein (Quorn) can happen. A manufacturer-authored review judged them rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
-- In people with a rare inherited urea cycle disorder, a large rise in protein intake can trigger high blood ammonia and brain dysfunction [125].
-- Protein powders can contain lead and other heavy metals; a risk assessment of published test results suggested typical servings would not harm health [119].
-- In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [123].
-- Whey protein supplements have been linked with acne in teenagers and young adults [120][121].
+- Soy may raise the thyroid hormone dose a person needs, dietary protein can reduce levodopa absorption, and dairy reduces tetracycline absorption; ask your pharmacist about timing [1][2][3].
+- Kidney disease, not on dialysis: for stages 3 to 5, KDIGO suggests about 0.8 g/kg a day and KDOQI 0.55 to 0.6 without diabetes (0.6 to 0.8 with diabetes); KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. People on dialysis usually need more protein [95][96]. Set your protein with your kidney team before adding a powder [96].
+- People allergic to milk should avoid whey and casein, including lab-made whey, which is beta-lactoglobulin, a major milk allergen [5][6]. Soy protein can also cause severe allergic reactions, and concentrated pea protein may be an allergy concern [7].
+- Allergy to mycoprotein (Quorn) appears rare but has been severe: self-reports included one fatal reaction [42][43].
+- In rare inherited disorders (urea cycle disorders, phenylketonuria), a large rise in protein can harm the brain; use a powder only with your metabolic team's approval [8][9].
+- Protein powders can carry lead and other metals, though risk assessments found typical servings within limits [11].
+- In older men, whey drinks lowered blood pressure, most clearly between 120 and 180 minutes after drinking [12].
+- Mild gut upset and acne have been reported with whey supplements [13][14].
 
 ## Brad's videos on this topic
 
-- 4 Nov 2025, [What They’re HIDING About Lead Found in Protein Powders](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders): Consumer Reports' lead threshold is over 17 times stricter than the FDA's, and typical daily lead from food is already in the same range as the worst powder it tested; plant-based powders had more lead; Brad keeps using pea protein and judges lead against FDA limits.
-- 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): protein powder is one of Brad's three supplements for muscle performance; a 49-study analysis found 1.6 g/kg a day maximized the muscle-building response; choose a powder without added sugar or salt; pea and soy suit plant-based diets, and soy does not affect testosterone or estrogen in men. Superseded on dose: Brad's current guidance says the benefit diminishes rapidly after 1.3 g/kg a day, and beyond about 1.2 g/kg adds little strength.
+- 4 Nov 2025, [What They’re HIDING About Lead Found in Protein Powders](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders): lead has been found in some protein powders; Consumer Reports' lead threshold is over 17 times stricter than the FDA's; Brad keeps using pea protein and judges lead against FDA limits.
+- 2 Oct 2025, [The Protein Obsession Is Going Horribly Wrong](https://drstanfield.com/blogs/articles/the-protein-obsession-is-going-horribly-wrong): Brad recommends 1.2 g/kg of ideal body weight a day from whole foods, warns against 2.2 g/kg, sets out the kidney disease guidelines, and says cramming in protein via supplements or bars rarely helps.
+- 6 Aug 2025, [Are We Wrong About the Perfect Protein Intake?](https://drstanfield.com/blogs/articles/are-we-wrong-about-the-perfect-protein-intake): Brad cut his own intake from 1.6 to 1.2 g/kg a day and sometimes uses a pea protein powder for convenience; powders are not necessary but can help some people hit their target.
+- 19 Nov 2024, [The Only Supplements That ACTUALLY Work (2025)](https://drstanfield.com/blogs/articles/only-supplements-work-2025): protein powder is one of Brad's three supplements for muscle performance; a 49-study analysis found 1.6 g/kg a day maximized the muscle-building response; choose a powder without added sugar or salt. Superseded on dose: Brad now targets 1.2 g/kg of ideal body weight, and says the rate of benefit diminishes rapidly after 1.3 g/kg a day (Brad's current guidance, 31 Jul 2026).
 
 ## 1. Overview
 
-Protein is an essential nutrient: the body uses it to make and repair muscle and other tissues, and to make enzymes and hormones.
+Protein is an essential nutrient. The body uses it to build and repair muscle and other tissue. A protein powder is a concentrated form of protein from milk, eggs, plants or other sources, mixed into water, milk or food.
 
-The recommended protein intake (RDA) for adults is 0.8 g/kg of body weight a day [2]. In pregnancy the RDA is 1.1 g/kg a day [114]. A 2007 position stand from the International Society of Sports Nutrition set a higher range for physically active people: about 1.4 to 2.0 g/kg a day [116].
+The US recommended dietary allowance (RDA) for adults is 0.8 g of protein per kg of body weight a day [15]. A 2023 review argued that this may be too low for several groups, including adults 65 and over and pregnant and breastfeeding women [16]. In pregnancy the RDA is 1.1 g/kg a day, and tracer studies suggest needs rise toward late pregnancy [17].
 
-Many older adults eat less protein than the RDA. In US national survey data (NHANES, 2005 to 2014) on older adults, protein intake fell with age, and up to 46% of the oldest group did not meet the recommended intake; falling short was linked with poorer diet quality and more functional limitations (Krok-Schoen, *J Nutr Health Aging*, 2019) [2]. A European expert group (ESPEN) recommended at least 1.0 to 1.2 g of protein per kg of body weight a day for healthy older people, and more for older people who are ill or malnourished (Deutz, *Clin Nutr*, 2014) [3]. In a study of 273 older adults, protein intake was highest in Hispanic Americans (0.96 g/kg a day), then European Americans (0.83 g/kg) and African Americans (0.64 g/kg), and all three groups fell below recommendations (Gropper, *J Nutr Geron Geriat*, 2019) [4].
+Many older adults eat less protein than the RDA. In US national survey data (NHANES, 2005 to 2014) on 11,680 adults aged 51 and over, up to 46% of the oldest adults did not meet the recommendation, and falling short was linked with poorer diet quality and more functional limitations [18]. In 1,998 well-functioning adults aged 70 to 79 followed for 6 years, those eating less than 1.0 g/kg a day were more likely to develop trouble walking or climbing stairs than those eating 1.0 g/kg or more; this was an observational study [19].
 
 ## 2. Forms and Bioavailability
 
-Not all protein powders are equivalent. The protein source, processing method, and form determine amino acid profile, bioavailability (how much of the protein the body absorbs and uses), digestibility, and tolerance. Understanding these differences is critical to selecting the right protein for a given purpose.
+Protein powders differ in their source, their mix of amino acids, how fast they are digested and how well people tolerate them.
 
 ### Animal-Based Proteins
 
 #### Whey Protein
 
-Whey is the most widely used protein source in commercial protein powders. It is derived from the liquid portion of milk during cheese production and is a complete protein: it supplies every essential amino acid. Whey is digested faster than casein: in a single-meal study it caused a sharp but short rise in blood amino acids [102].
+Whey is the liquid part of milk left over from cheese making, and it is the most common protein in powders. It supplies every essential amino acid. In a single-meal tracer study, whey caused a sharp but short rise in blood amino acids [20]. Among the proteins tested in one analysis, whey had the highest share of essential amino acids, at 43% [21].
 
-Whey is rich in cysteine, the amino acid that limits how much glutathione, a major antioxidant, the body can make. In a two-week trial in 30 people with HIV and low glutathione, each group took a daily dose of 45 g of a cysteine-rich whey formula: blood glutathione rose with one (Protectamin), while the rise with the other (Immunocal) was not significant (Micke, *Eur J Clin Invest*, 2001) [7].
+Milk carries tiny amounts of the hormone estradiol, which travels with the fat: about 0.4 pg/mL in skim milk and 1.1 pg/mL in whole milk. The researchers judged these amounts small next to what the human body makes itself [22].
 
-Cow's milk holds very small amounts of the hormone estradiol, which travels with the milk fat; researchers who measured it in whole milk judged the amount unlikely to pose a health risk (Pape-Zambito, *J Dairy Sci*, 2007) [8].
-
-Perfect Day sells a whey protein made without cows, by fermentation with the fungus *Trichoderma reesei*. It still contains beta-lactoglobulin, one of the main allergens in cow's milk (FDA, GRAS Notice No. 863) [10].
+Some whey is now made without cows, by fermentation. FDA had no questions about a notice for beta-lactoglobulin made this way by the fungus *Trichoderma reesei* [5]. Beta-lactoglobulin is one of the major cow's milk allergens [6]. Proteins made by fermentation are built as exact copies of the natural ones, so they are assessed as the same allergens [23].
 
 #### Casein Protein
 
-Casein is the other major milk protein, and the body digests it more slowly than whey [102].
+Casein is the other main milk protein. In the same tracer study, casein gave a slower, prolonged rise in blood amino acids, probably because it leaves the stomach slowly [20].
 
-In a single-meal tracer study in healthy adults, whey caused a sharp but short rise in blood amino acids, while casein produced a prolonged, moderate rise, probably because it leaves the stomach slowly [102].
-
-In a 10-week trial in 13 young men doing supervised resistance training, 35 g of casein daily gave similar gains in lean tissue, muscle size and strength whether it was taken earlier in the day or shortly before bed (Joy, *J Int Soc Sports Nutr*, 2018) [11].
-
-In 99 older adults who were not frail, 20 g a day of a patented whey isolate (Immunocal) or of casein for 135 days, with resistance training 3 times a week, raised strength in both groups, by about 10% more with the whey isolate; lean body mass was unchanged in both groups (Karelis, *J Nutr Health Aging*, 2015) [12].
-
-**Prostate cancer concern:** Casein makes up most of the protein in milk, and studies of dairy and prostate cancer give mixed results. In a laboratory study, casein made two types of prostate cancer cells grow faster but did not affect breast, lung, stomach or normal prostate cells (Park, *World J Mens Health*, 2014) [13]. In 142,251 European men followed for 8.7 years, those in the top fifth of dairy protein intake had a higher risk of prostate cancer than those in the bottom fifth (HR 1.22, 95% CI 1.07 to 1.41) (Allen, *Br J Cancer*, 2008) [14]. Among 3,918 men with localized prostate cancer, the highest intake of whole milk after diagnosis was linked with a higher risk of progression (HR 2.15, 95% CI 1.28 to 3.60) and the highest intake of low-fat dairy with a lower risk (HR 0.62, 95% CI 0.40 to 0.95), while total milk and dairy intake showed no link with lethal prostate cancer (Pettersson, *Cancer Epidemiol Biomarkers Prev*, 2012) [15]. Whether casein itself raises prostate cancer risk is not known.
-
-**Alpha-s1 casein hydrolysate (Lactium) for anxiety and sleep:** Early trials suggested a calming effect: it blunted rises in blood pressure and cortisol during stress tests, and in 63 women a 30-day course eased stress-related symptoms (Messaoudi, *Eur J Nutr*, 2005; Kim, *Eur J Clin Nutr*, 2007) [16][17]. Sleep trials are mixed. In a 4-week crossover trial in 48 adults with mild to moderate sleep problems, sleep questionnaires improved as much on placebo as on Lactium, though sleep diaries and wrist activity monitors favored Lactium (Kim, *Nutrients*, 2019) [18]. In a 4-week trial in 36 adults with chronic insomnia, 600 mg a day (cut to 300 mg for the last two weeks) improved sleep questionnaires, and on sleep testing the time to fall asleep fell by 7.7 minutes, against a rise of 6.1 minutes with placebo (Chang, *Clin Nutr*, 2024) [19].
+Dairy protein and prostate cancer: in 142,251 European men, those in the top fifth of dairy protein intake had a higher risk of prostate cancer than those in the bottom fifth (hazard ratio 1.22) [24]. In men already diagnosed, whole milk after diagnosis was linked with progression (hazard ratio 2.15), but total dairy was not linked with lethal prostate cancer [25]. In a laboratory study, casein made two types of prostate cancer cells grow faster but did not affect normal prostate cells [26]. These are observational and laboratory findings; whether casein itself raises risk is not known.
 
 #### Egg White Protein
 
-Egg white (albumen) protein powder is a complete protein. In 30 female college athletes, 15 g of egg white protein before training each day for 8 weeks did not change body composition or strength more than a carbohydrate drink (Hida, *Nutrients*, 2012) [20].
+Egg white protein is a complete animal protein; in one analysis egg protein held 32% essential amino acids [21]. People allergic to egg should avoid it.
 
 #### Collagen Protein
 
-In 22 healthy older women (average age 69), whey protein raised muscle protein synthesis more than collagen protein, with and without resistance exercise. The authors concluded that whey may be the more effective supplement for keeping muscle in older women (Oikawa, *Am J Clin Nutr*, 2020) [21].
+In 22 older women, whey raised muscle protein synthesis more than collagen, with and without resistance exercise [27]. Collagen has its own page on this site.
 
 #### Bone Broth Protein
 
-Bone broth protein supplements are dried broth, usually made from chicken bones. A protein extract made from chicken bone by heating it under pressure was about a quarter protein and had a good amino acid score for adults (Dong, *Food Chem*, 2014) [23]. In a laboratory study, a traditional chicken soup, and each of its vegetables and the chicken alone, inhibited neutrophil migration in the lab, which may point to a mild anti-inflammatory effect (Rennard, *Chest*, 2000) [24]. Broth can also carry lead from the bones: in a small study, organic broth made from chicken bones held 7.01 mcg of lead per liter, and broth made from skin and cartilage 9.5 mcg per liter, against 0.89 mcg per liter for tap water prepared the same way (Monro, *Med Hypotheses*, 2013) [25].
+Bone broth protein is dried broth. Bones store lead: in a small blinded study, chicken bone broth held 7.01 mcg of lead per litre, and broth from skin and cartilage cooked on the bone 9.5 mcg per litre, against 0.89 mcg per litre in tap water treated the same way [28].
 
 #### Cricket Protein
 
-Cricket powder is made from dried, ground crickets. In its opinion on one house cricket powder, a European Food Safety Authority panel could not establish that it was safe: it found mineral oil aromatic hydrocarbons, phthalates and variable microbial quality. The panel also warned that eating cricket protein may cause new allergies, and that people allergic to crustaceans, mites or molluscs may react to it through cross-reactivity [127].
+Cricket powder is made from dried, ground crickets. A European Food Safety Authority panel could not establish that one house cricket powder was safe. It raised concerns about mineral oil hydrocarbons, phthalates and microbial quality, warned that eating the powder may cause new allergies, and said people allergic to crustaceans, mites or molluscs may react to it [29]. Cricket protein cross-reacted with shrimp proteins in a laboratory study of shrimp-allergic people [30].
 
 ### Plant-Based Proteins
 
-Plant protein isolates tend to contain a smaller share of essential amino acids than animal proteins: 21% to 22% for oat, lupin and wheat protein, against 43% for whey (Gorissen, *Amino Acids*, 2018) [27]. Whey provides 10.9 g of essential amino acids in 25 g of protein. Matching that takes about 30 g of potato protein, 34 g of corn, 37 g of pea, 39 g of brown rice, 40 g of soy, 48 g of hemp, 49 g of wheat or 51 g of oat protein [27].
+Plant protein isolates tend to hold a smaller share of essential amino acids than animal proteins: 21% for oat and lupin and 22% for wheat, against 43% for whey. Leucine ranged from 5.1% for hemp to 13.5% for corn protein, and plant proteins were often lower in methionine and lysine. Blends of plant proteins, or of plant and animal proteins, came close to animal protein [21].
 
-Each plant protein has its own gaps in essential amino acids [27]:
+To get the 10.9 g of essential amino acids in 25 g of whey takes about 37 g of pea protein, 39 g of brown rice, 40 g of soy or 48 g of hemp protein [21]. Each plant protein falls short in a different place [21]:
 
-| Plant protein | Lower in |
+| Plant protein | Below adult requirements for |
 |------|------|
-| Corn | Lysine |
-| Brown rice | Lysine |
-| Hemp | Lysine; lowest leucine of the proteins tested |
-| Pea | Methionine |
-| Soy | Methionine |
-| Oat, lupin, wheat | Total essential amino acids |
+| Pea, soy | Methionine |
+| Brown rice, hemp, corn | Lysine (hemp also had the lowest leucine) |
+| Oat, lupin, wheat | Both lysine and methionine |
+| Potato | Neither |
 
-Combining a protein low in lysine (corn, hemp or brown rice) with one low in methionine (soy or pea) in equal parts gives a more complete blend [27]. Planned vegetarian and vegan diets can meet protein needs, and there is no need to combine plant proteins at every meal as long as a variety of foods is eaten over the day (Craig, *J Am Diet Assoc*, 2009; Marsh, *Med J Aust*, 2013) [28][29].
+Mixing a protein low in lysine, such as brown rice, half and half with one low in methionine, such as pea, gives a more complete blend [21].
 
-Despite these limitations, trials show that soy protein, pea protein, and mycoprotein can match animal protein for building muscle alongside resistance exercise [30][38][46].
+Several trials found plant powders matched whey for muscle gains with resistance training, though the evidence is limited [31][32][33].
 
 #### Soy Protein
 
-Soy protein suits vegetarians and vegans. Like pea protein, it has relatively little methionine (Gorissen, *Amino Acids*, 2018) [27].
+Soy suits vegetarians and vegans. In a 12-week trial, 19 young vegan men on soy protein and 19 omnivores on whey, both at 1.6 g/kg a day of protein, gained similar muscle mass and strength with supervised resistance training [31].
 
-In a 12-week trial, 19 young vegan men taking soy protein and 19 young omnivorous men taking whey did supervised resistance training twice a week, with protein intake in both groups brought to 1.6 g/kg a day. Gains in leg lean mass, muscle size and leg-press strength did not differ between the groups (Hevia-Larrain, *Sports Med*, 2021) [30].
+Soy contains isoflavones, plant compounds with weak estrogen-like effects. In 47 college-aged men training for 12 weeks, soy protein concentrate did not change estradiol or androgen signalling [34]. A 2016 review found that concerns about soy's hormone effects come mainly from animal studies, while human research supports its safety [35].
 
-Soy protein contains isoflavones, plant compounds with weak estrogen-like effects. In 47 untrained college-aged men doing 12 weeks of resistance training, soy protein concentrate, which contained isoflavones, did not change blood estradiol, and neither did whey (Haun, *Sci Rep*, 2018) [9]. A 2016 review concluded that concerns about soy's estrogen-like effects come mainly from animal studies, while human research supports its safety (Messina, *Nutrients*, 2016) [31].
+Thyroid: in 400 adults with normal thyroid function, 15 g a day of soy protein with 66 mg of isoflavones raised TSH and lowered free T4 at 3 months, compared with soy protein alone; the change had faded by 6 months [36]. Soy may raise the thyroid hormone dose that people with an underactive thyroid need, though they need not avoid soy foods [1].
 
-**Thyroid concern:** Soy isoflavones can affect thyroid hormone levels for a time. In 200 men with type 2 diabetes and 200 postmenopausal women, all with normal thyroid function, 15 g a day of soy protein with 66 mg of isoflavones raised TSH and lowered free T4 at 3 months compared with soy protein without isoflavones, and the effect had faded by 6 months (Sathyapalan, *Front Endocrinol*, 2018) [32]. Soy may also reduce absorption of thyroid hormone medicine, so people taking it may need a higher dose; a review concluded that people with an underactive thyroid need not avoid soy foods (Messina, *Thyroid*, 2006) [33].
-
-**Prostate cancer and soy:** Results are mixed. In 27,004 US men followed for a median of 11.5 years, isoflavone intake showed no link with total prostate cancer, but the top fifth of intake had a higher risk of advanced prostate cancer than the bottom fifth (HR 1.91, 95% CI 1.25 to 2.92) (Reger, *Int J Cancer*, 2018) [34]. In a trial in 177 men at high risk of recurrence after prostate cancer surgery, 20 g a day of soy protein isolate for up to 2 years did not reduce recurrence compared with a casein placebo (HR 0.96, 95% CI 0.53 to 1.72) (Bosland, *JAMA*, 2013) [35].
+Prostate cancer: in 27,004 US men, isoflavone intake was linked with advanced prostate cancer (hazard ratio 1.91) [37]. In a trial in men at high risk of recurrence after prostate cancer surgery, 20 g a day of soy protein isolate for 2 years did not change recurrence (hazard ratio 0.96) [38].
 
 #### Rice Protein
 
-In a laboratory analysis, about 36% of the amino acids in a brown rice protein isolate were essential ones, but whey protein isolate held 20%, 39% and 33% more total, essential and branched-chain amino acids (BCAAs) respectively (Kalman, *Foods*, 2014) [5]. Rice protein is relatively low in lysine (Gorissen, *Amino Acids*, 2018) [27]. Even so, in 24 resistance-trained college-aged men training 3 days a week for 8 weeks, 48 g of rice or whey protein isolate taken straight after training gave similar gains in lean mass, strength and power (Joy, *Nutr J*, 2013) [36].
+Brown rice protein is a plant isolate low in lysine [21]. In 24 resistance-trained college-aged men training 3 days a week for 8 weeks, 48 g of rice or whey protein isolate straight after training gave similar gains in lean mass, strength and power [99].
 
 #### Pea Protein
 
-Pea protein is a complete protein. In 15 healthy adults, the overall digestibility of pea protein isolate (93.6%) did not differ from that of casein (96.8%), though leucine, valine, lysine and phenylalanine were less digestible from pea. The share of protein the body used was also similar, and pea scored 1.00 on the digestible indispensable amino acid score, meaning it met all amino acid needs (Guillin, *Am J Clin Nutr*, 2022) [37]. Like soy, pea protein is low in methionine [27].
+Pea protein is the type Brad uses. In 15 healthy adults, the digestibility of pea protein isolate (93.6%) was close to that of casein (96.8%), and pea scored 1.00 on the digestible indispensable amino acid score, meaning it met all amino acid needs [39].
 
-In a placebo-controlled trial, 161 men aged 18 to 35 years took 25 g of pea protein, whey protein or placebo twice a day during 12 weeks of upper-body resistance training. Biceps thickness and strength rose in all groups. Among the men who started out weakest, thickness rose more with pea protein than with placebo, and whey did not differ from either (Babault, *J Int Soc Sports Nutr*, 2015) [38]. In 15 adults doing 8 weeks of high-intensity functional training, 24 g of whey or pea protein around training gave similar gains in strength (Banaszek, *Sports*, 2019) [39].
+In 161 men aged 18 to 35, 25 g of pea protein, whey or placebo twice a day during 12 weeks of upper-body resistance training led to similar gains in muscle thickness and strength; among the weakest men at the start, pea beat placebo for muscle thickness. One author worked for the maker of the pea protein tested [33].
 
-**Phytate concern:** Pea protein preparations can contain phytate, an antinutrient that binds iron, zinc and calcium in the gut so that less is absorbed (Naczk, *J Food Sci*, 1986; Schlemmer, *Mol Nutr Food Res*, 2009) [40][41]. Phytate content varies between foods and changes with processing and storage [41].
+Pea protein can contain phytate, which binds minerals such as iron and zinc in the gut so less is absorbed; the amount varies with processing [40].
 
-**Kidney stone risk:** In a small crossover study, nine young adults without kidney stones took 60 g of protein a day as shakes for 5 days. Compared with whey, pea protein raised urine oxalate, and pea and soy protein lowered urine calcium and raised urine pH; calcium oxalate supersaturation did not differ (Wong, *Urology*, 2026) [42]. It was short, and everyone in it was free of kidney stones [42].
+In a 5-day crossover study in 9 young adults without kidney stones, three 20 g protein shakes a day raised urine oxalate with pea compared with whey; calcium oxalate supersaturation, a stone-risk measure, did not differ [41].
 
 #### Hemp Protein
 
-Hemp protein comes from hempseed, which is related to drug varieties of *Cannabis* but has no psychotropic effects and is rich in omega-3 and omega-6 fatty acids (Rodriguez-Leyva, *Nutr Metab*, 2010) [44]. Hemp protein is low in lysine, and it had the lowest leucine content of the plant proteins in Gorissen's analysis (Gorissen, *Amino Acids*, 2018) [27]. Little research has been published on hempseed's effects on the body [44].
+Hemp protein had the lowest leucine content of the plant proteins tested, at 5.1% [21].
 
 #### Peanut Protein
 
@@ -142,498 +130,439 @@ Peanut protein powder is made from peanuts. People with a peanut allergy must av
 
 #### Mycoprotein (Quorn)
 
-Mycoprotein is protein made from the fungus *Fusarium venenatum* and sold as Quorn. It is high in protein and fiber and low in fat (Finnigan, *Curr Dev Nutr*, 2019) [47]. In 20 resistance-trained young men, a mycoprotein drink raised muscle protein synthesis more than a milk protein drink matched for leucine (Monteyne, *Am J Clin Nutr*, 2020) [45].
-
-In a 10-week trial, 22 young adults did high-volume resistance training 5 days a week on a high-protein diet that was either omnivorous or vegan and rich in mycoprotein. Lean mass rose by a similar amount (2.6 kg omnivorous, 3.1 kg vegan), as did thigh muscle volume and strength (Monteyne, *J Nutr*, 2023) [46]. Both groups ate plenty of protein, so the trial compared protein sources rather than testing extra protein.
-
-Self-reports of reactions to Quorn products, collected through an advocacy group's website, described gut symptoms such as vomiting and diarrhea, and allergic reactions including hives and anaphylaxis, one of them fatal (Jacobson, *Ann Allergy Asthma Immunol*, 2018) [117]. A symposium review written by the manufacturer's scientists, drawing on a systematic evidence review, judged allergic reactions to mycoprotein exceptionally rare (Finnigan, *Curr Dev Nutr*, 2019) [47].
+Mycoprotein is protein made from the fungus *Fusarium venenatum*, sold as Quorn. A review written by the maker's scientists judged allergy to it exceptionally rare [42]. Self-reports to an advocacy group's website included 312 allergic reactions, one of them fatal, and many more reports of vomiting and diarrhoea [43].
 
 ### Protein Purity and Essential Amino Acid Content
 
-To compare products, look at what share of each serving is protein. For independent product testing, see Labdoor.
+To compare products, look at how many grams of protein each serving gives and check the label for added sugar and salt. Choose a product that an independent lab has tested.
 
 ## 3. Evidence for Benefits
 
 ### Building and Maintaining Muscle Mass
 
-Extra protein can add to the muscle and strength gains from regular resistance exercise, though the benefit appears to shrink with age [48].
+Protein supplements add a modest amount to the gains from resistance training. A meta-analysis of 49 trials with 1,863 people found they added to strength and muscle gains; the benefit was smaller with age, and total intakes beyond 1.62 g/kg a day brought no further gain in fat-free mass [44]. A dose-response meta-analysis estimated that each extra 0.1 g/kg a day was linked with 0.39 kg more lean mass below a total of 1.3 g/kg a day, and 0.12 kg above it [45]. An earlier meta-analysis of 22 trials with 680 people found protein supplements during more than 6 weeks of training added 0.69 kg of fat-free mass and 13.5 kg to leg-press strength [46].
 
-**Meta-analyses and systematic reviews:**
+In adults aged 50 and over, a network meta-analysis of 38 trials with 2,610 people found that training plus protein gave more lean mass than protein alone, and the authors judged the combination the most effective approach [47]. For strength and physical function, though, training alone gave gains of similar size to training plus protein, so the review does not show that protein added to training for those outcomes [47].
 
-A meta-analysis of 49 trials with 1,863 participants found that protein supplements added to gains in strength and muscle size during resistance training lasting 6 weeks or more. The effect on lean mass was smaller in older people and larger in people already trained, and total protein intakes above about 1.6 g/kg a day brought no further gain (Morton, *Br J Sports Med*, 2017) [48]. A later dose-response meta-analysis pooling 105 papers on randomised trials estimated, from a statistical model, that each extra 0.1 g/kg a day of protein was associated with 0.39 kg more lean mass below a total intake of 1.3 g/kg a day, but only 0.12 kg above it (Tagawa, *Nutr Rev*, 2021) [126].
+When people already eat enough protein, extra protein adds little to training. In older men, 21 g of protein after exercise and before sleep added nothing to 12 weeks of training in 41 active men [48], and 30 g a day of whey or casein added nothing to 12 weeks of power training in 60 men already eating more than the RDA [49]. In 136 older adults, raising food protein before 8 weeks of training led to minor changes in body composition but no gain in performance [52]. In women, a high-protein diet added no clear benefit to 12 weeks of resistance training in 55 after menopause [51], and extra whey added nothing to 10 weeks of Pilates in trained women already eating ample protein [53].
 
-A 2025 network meta-analysis of 38 trials in 2,610 adults aged 50 and over found that protein plus resistance training increased lean body mass more than protein alone. Resistance training, with or without protein, improved strength compared with controls and physical function compared with protein alone, and the authors judged the combination the most effective approach (Tian, *J Nutr*, 2025) [49].
+Without exercise, extra protein has not built muscle. In older men with physical limits, 1.3 vs 0.8 g/kg a day for 6 months did not increase lean mass [15]. In 128 healthy adults aged 65 and over eating about 0.85 g/kg a day, raising intake to 1.5 g/kg a day with whey for 24 weeks, with no training program, did not improve muscle power, performance or mass [50]. In women aged 70 to 80, 30 g a day of extra whey for 2 years did not protect muscle mass or function [54].
 
-A meta-analysis of 22 trials with 680 younger and older adults found that protein supplements during resistance training of more than 6 weeks added 0.69 kg of fat-free mass and 13.5 kg to leg-press strength compared with placebo (Cermak, *Am J Clin Nutr*, 2012) [50].
-
-**When dietary protein is already adequate:**
-
-In a 12-week resistance training trial in 41 active older men (average age 70), a protein drink (21 g) taken after each session and every night before sleep added nothing to the gains in muscle size or strength seen with an energy-matched placebo (Holwerda, *J Nutr*, 2018) [51].
-
-Similarly, a 12-week trial in 55 postmenopausal women (average age 58) compared resistance training with and without a high-protein diet (2.5 g per kg of fat-free mass). Training improved muscle mass and strength in both groups, the high-protein diet added no clear benefit, and the diet without training did not change body composition (Ioannidou, *J Nutr Health Aging*, 2024) [52].
-
-In 19 women trained in Pilates (average age 31) who already ate about 1.3 g of protein per kg of body weight a day, adding 0.6 g of whey per kg daily for 10 weeks did not improve body composition, core muscle endurance or flexibility beyond what Pilates alone achieved (Karpouzi, *J Int Soc Sports Nutr*, 2025) [53].
-
-In 60 older men (average age 69) who already ate more protein than the RDA, adding 30 g of whey or casein a day (10 g per meal) to a 12-week mixed power training programme brought no extra gain in muscle mass, strength or function; all three groups improved with training (Dulac, *Br J Nutr*, 2021) [54].
-
-In 128 healthy adults aged 65 and over (average age 74) whose usual protein intake was about 0.85 g/kg a day, raising it to 1.5 g/kg a day with whey protein for 24 weeks did not improve muscle power, physical performance or muscle mass compared with placebo. Potassium bicarbonate, added to offset acid, did not help either (Ceglia, *Am J Clin Nutr*, 2026) [55].
-
-In 136 older adults (average age 73), raising protein intake through food, before and during 8 weeks of resistance training, led to minor changes in body composition but no added gains in physical performance or muscle quality (Unterberger, *Clin Nutr*, 2022) [56].
-
-Extra protein without exercise has shown little benefit. In 92 older men with physical limitations, 6 months of a higher-protein diet did not increase lean mass, strength or function compared with the RDA (Bhasin, *JAMA Int Med*, 2018) [57]. In older Japanese women, whey protein alone raised muscle mass less than resistance exercise did (Mori, *Geriatr Gerontol Int*, 2018) [58]. In Australian women aged 70 to 80, 30 g a day of extra whey protein for 2 years did not slow muscle loss or protect physical function (Zhu, *J Nutr*, 2015) [59].
-
-**Protein without exercise for maintenance:**
-
-In 123 Chinese adults aged 65 to 79 years with low lean mass, about 16 g a day of whey, soy or a whey-soy blend for 6 months maintained lean mass, gait speed and physical performance, which declined in a control group on their usual diet. Handgrip strength did not change, and results did not differ by protein type (Li, *J Acad Nutr Diet*, 2021) [60].
+Benefit may depend on starting intake. In 295 frail older adults (mean age 73.9) training for 12 weeks, 20 g a day of whey with counselling did not improve strength or muscle overall, but in an exploratory analysis people who started below 1.2 g/kg a day gained more leg-press strength (6.4 kg) [55]. In 123 Chinese adults aged 65 to 79 with low lean mass, about 16 g a day of whey, soy or a blend for 6 months kept lean mass and performance steady while they fell in controls, and protein type made no difference [56].
 
 ### Older Adults and Sarcopenia
 
-Sarcopenia, the loss of muscle mass and strength with age, has been linked with falls and fractures (Clynes, *Calcif Tissue Int*, 2015) [61]. The studies below tested protein in older adults, most of them alongside resistance training.
+Expert groups advise older adults to eat more than the RDA. ESPEN recommends at least 1.0 to 1.2 g/kg a day for healthy older people and 1.2 to 1.5 g/kg a day for those who are ill or malnourished [57]. The PROT-AGE group recommends at least 1.0 to 1.2 g/kg a day for people over 65, and notes that people with severe kidney disease (eGFR under 30) who are not on dialysis may need to limit protein instead [58].
 
-In 32 older women already used to resistance training, 35 g of whey protein after each session for 12 weeks increased lean soft tissue more than placebo (3.8% vs 2.0%), raised training volume more (45.4% vs 35.4%), and lowered the total to HDL cholesterol ratio more (-11.8% vs -2.9%) (Fernandes, *Exp Gerontol*, 2018) [62].
+In 218 people aged 75 to 96 with sarcopenia, 20 g of whey-enriched protein twice a day for 12 months, with home exercises, did not slow the decline in muscle and physical performance [13].
 
-In 70 older women, the same research group found that 35 g of whey taken before or after training improved arm and leg lean tissue and the cholesterol ratio, but whey taken after training was more effective at lowering body fat and improving an overall metabolic health score (Nabuco, *Nutr Metab Cardio Dis*, 2019) [63].
-
-In a cohort study of 108 adults aged 60 and over with knee osteoarthritis and sarcopenia, 12 weeks of resistance training with protein supplements was linked with a faster return to normal walking speed, and the authors estimated that the protein may speed recovery by about 3 months compared with training alone (Liao, *Nutrients*, 2023) [64].
-
-In a 12-month trial in 218 people aged 75 to 96 with sarcopenia (68% women), 20 g of whey-enriched protein twice a day, with home exercises and 20 mcg of vitamin D daily for everyone, did not slow the decline in muscle and physical performance compared with a placebo drink or no supplement (Björkman, *J Am Med Dir Assoc*, 2020) [65].
-
-In a 2-year cluster randomised trial in 60 Australian residential aged care homes (7,195 residents, average age 86), 30 homes added milk, yoghurt and cheese to their menus, raising daily intake to 69 g of protein and 1,142 mg of calcium, against 58 g of protein and 700 mg of calcium in the control homes. The extra dairy lowered the risk of any fracture (HR 0.67, 95% CI 0.48 to 0.93), hip fracture (HR 0.54, 95% CI 0.35 to 0.83) and falls (HR 0.89, 95% CI 0.78 to 0.98). The drop in falls first became significant at 3 months and the drop in hip fractures at 5 months, and deaths did not change. Calcium and protein rose together, so the trial cannot separate their effects (Iuliano, *BMJ*, 2021) [85].
+In 60 Australian care homes with 7,195 residents, adding milk, yoghurt and cheese to menus (69 vs 58 g of protein and 1,142 vs 700 mg of calcium a day) cut fractures by 33%, hip fractures by 46% and falls by 11% over 2 years; deaths did not change. Calcium and protein rose together, so the trial cannot separate their effects [59].
 
 ### Bed Rest and Hospitalization
 
-In 20 healthy older adults on 7 days of bed rest, a diet with part of its protein replaced by whey, at the same calories, tended to protect leg lean mass (a difference short of statistical significance) and led to more fat loss, and knee strength recovered fully during 5 days of rehabilitation. Knee strength fell by 20% during bed rest in both groups (Arentson-Lantz, *J Gerontol Biol Sci Med Sci*, 2019) [66].
+In malnourished hospital patients aged 65 and over, a high-protein supplement with HMB did not reduce the combined rate of death or readmission, but 90-day mortality was lower (4.8% vs 9.7%). The trial was run with the product's maker [60].
 
-In malnourished adults aged 65 and over in hospital for heart failure, heart attack, pneumonia or COPD, a high-protein supplement with HMB taken twice a day did not reduce the combined rate of death or readmission over the 90 days after discharge, or the length of stay. It did lower 90-day mortality (4.8% vs 9.7%; relative risk 0.49, 95% CI 0.27 to 0.90) and improved nutritional status (Deutz, *Clin Nutr*, 2016) [67].
+Broader reviews are less positive. A meta-analysis of 55 trials with 9,187 older people found that protein and energy supplements reduced complications and deaths in undernourished hospital patients, but did not support routine use at home or in well-nourished people [61]. A review of 244 trials of nutrition support in hospital patients at nutritional risk found no benefit of oral support on death or serious harm in any subgroup [62].
 
 ### Weight Loss and Body Composition
 
-**Caloric restriction with exercise:** In young men eating about 40% fewer calories than they needed and doing resistance and interval training 6 days a week for 4 weeks, a diet with twice as much protein as the control diet increased lean mass (1.2 vs 0.1 kg) and fat loss (4.8 vs 3.5 kg) more. Exercise performance improved equally in both groups (Longland, *AJCN*, 2016) [68].
+In 187 older adults on a 6-month weight-loss program, hip bone strength rose more over 6 months in the group kept at 1.2 g/kg a day of protein for the full 18 months than in the group at 0.8 g/kg a day (3.8% vs 0.5%); the group given more protein for the first 6 months only did not differ, and no group differences were significant at 18 months [63]. In 67 obese older adults with physical limits on a 6-month weight-loss diet, more than 30 g of protein at each meal led to similar weight loss but greater gains in physical function [64].
 
-A 12-week trial in 26 older women with sarcopenic obesity found that 35 g of whey protein a day with supervised resistance training 3 times a week increased arm and leg lean tissue more than placebo (6.0% vs 2.5%) and lowered total fat more (-3.3% vs -0.3%); strength improved similarly in both groups (Nabuco, *Clin Nutr ESPEN*, 2019) [69].
+A systematic review of 34 trials found that protein supplements taken with meals, rather than between meals, were more often followed by fat loss (87% vs 59% of study groups), with similar lean-mass gains (94% vs 90%) [65].
 
-In a 12-week trial in 206 adults with overweight or obesity (70% women) on a diet 500 kcal a day below their needs, a shake with 17 g of protein and 6 g of fiber taken 30 minutes before both breakfast and lunch led to more weight loss than a low-protein, lower-fiber placebo shake (-3.3 kg vs -1.8 kg). Body fat percentage fell similarly in both groups (Glynn, *J Nutr*, 2022) [70].
-
-**Without dieting or exercise:** In 10 younger and 10 older obese men, a 30 g whey protein drink slowed gastric emptying yet did not cut how much they ate at a buffet meal 3 hours later (Oberoi, *Nutr Diabetes*, 2020) [71].
-
-**Post-bariatric surgery:** In 78 adults after one-anastomosis gastric bypass, 2 scoops of whey a day (about 22.6 g of protein) for 3 months reduced the loss of fat-free mass and muscle mass compared with placebo but did not change total weight loss (Sabooni, *Clin Nutr ESPEN*, 2025) [72].
-
-**Bone health during weight loss:** In 187 older adults with overweight or obesity on a 6-month weight loss program of calorie restriction and aerobic exercise, a protein intake above the RDA, kept up for 18 months, increased hip bone strength by 3.8% over 6 months, against 0.5% on the RDA. Weight loss was similar, and group differences at 18 months were not significant (Weaver, *Osteoporos Int*, 2026) [73].
-
-**Protein distribution and weight loss:** In 36 older adults with overweight or obesity on an activity and weight loss program, a shift toward spreading protein more evenly across meals was linked with a greater fall in BMI and in fat under the skin of the abdomen (Farsijani, *J Nutr Health Aging*, 2020) [74].
+In a record review of people on GLP-1 weight-loss medicines, those prescribed oral nutrition supplements lost more body fat (8.4 lb) but still lost 5.5 lb of lean mass. It was a retrospective study with an author from a supplement maker [66].
 
 ### Blood Sugar, Insulin Response, and Diabetes
 
-In 13 centrally obese men with insulin resistance, 20 g of whey protein taken 15 minutes before breakfast lowered the post-meal glucose peak by 17.0%, and taken with breakfast by 9.2%, compared with no whey. Whey taken before the meal lowered overall glucose more than whey taken 15 minutes after it (Allerton, *Br J Nutr*, 2019) [75].
-
-In a randomised crossover trial in 15 adults with well-controlled type 2 diabetes, treated with sulfonylurea or metformin alone, a 50 g whey drink (in 250 mL of water) taken before a high-glycemic breakfast lowered glucose by 28% over the 180 minutes after the meal, compared with water alone. Insulin rose 105% more with whey, and 96% more in the early phase (Jakubowicz, *Diabetologia*, 2014) [76]. In another small study, whey taken before a meal slowed stomach emptying (Ma, *Diabetes Care*, 2009) [77].
-
-In a randomised crossover trial in 18 adults with type 2 diabetes, 15 g of whey protein drunk 10 minutes before a mixed breakfast cut the post-meal rise in glucose (area under the curve) by 16% compared with placebo. Beta-cell function was 40% greater and insulin clearance after the meal 22% lower, while insulin secretion itself did not change (Smith, *J Clin Endocrinol Metab*, 2023) [78].
-
-**Protein type matters:** In a crossover study in 9 healthy men, shakes of rice or potato protein produced a smaller insulin response than a whey shake with the same calories, and the authors concluded that the plant proteins kept glucose steadier (Lorinczova, *Nutrients*, 2021) [79].
-
-**Diabetes reversal:** In 30 people with type 2 diabetes, an 8-week very low calorie diet, with all diabetes medicines stopped at the start, followed by a gradual return to normal eating and a weight maintenance program, cut average weight from 98.0 to 83.8 kg. Of the 30, 12 (40%) reached a fasting plasma glucose of less than 7 mmol/L and stayed in remission for at least 6 months; these responders had had diabetes for a shorter time (Steven, *Diabetes Care*, 2016) [80].
+In people with type 2 diabetes, whey before a meal lowered blood sugar after it. A 50 g whey drink before breakfast cut glucose by 28% over 3 hours, and 15 g of whey before a mixed breakfast cut the post-meal glucose rise by 16% [67][68]. Both were single-day crossover trials.
 
 ### Dialysis and Kidney Disease
 
-Dialysis may decrease serum albumin, and levels below 4.0 g/dL are associated with increased mortality (Owen, *N Engl J Med*, 1993) [81]. In a US dialysis provider's program, patients with serum albumin of 3.5 g/dL or less who received oral nutritional supplements at dialysis had a lower death rate than matched controls (HR 0.31, 95% CI 0.25 to 0.39) (Benner, *J Renal Nutr*, 2018) [82].
+For adults with chronic kidney disease who are not on dialysis, guidelines differ. KDIGO (2024) suggests keeping protein at about 0.8 g/kg a day in stages 3 to 5, and avoiding more than 1.3 g/kg a day in people at risk of progression [94]. The 2020 KDOQI guideline sets 0.55 to 0.6 g/kg a day for stable people with stages 3 to 5 without diabetes, and 0.6 to 0.8 g/kg a day for those with diabetes [95]. If you have kidney disease, set your protein target with your kidney team; a powder counts toward that total [96].
+
+Dialysis changes the picture. Once dialysis starts, people usually need more protein, not less; KDOQI recommends 1.0 to 1.2 g/kg a day for stable people on haemodialysis or peritoneal dialysis [95][96]. In 13,473 people on haemodialysis, a serum albumin below 4.0 g/dL, a sign of poor nutrition, was linked with a higher risk of death [97]. In a US dialysis provider's program, people on haemodialysis with albumin of 3.5 g/dL or less who were given oral nutrition supplements at dialysis had fewer deaths than matched controls (hazard ratio 0.31); this was a retrospective review by the provider's own staff [98]. If you are on dialysis, your kidney team or renal dietitian sets your protein target, and may suggest a protein powder [96].
+
+Restriction trials show mixed results. In the MDRD trial, 585 people with moderate kidney disease on 0.58 vs 1.3 g/kg a day showed no difference in kidney decline at 3 years, though a slower decline after the first 4 months suggested a small benefit [69]. A review of 10 trials with 2,000 people found that lower protein cut kidney failure or death by 32%, but could not confirm the best level [70]. Very low intake carries its own risk: in long-term follow-up of 255 people with advanced disease, 0.28 g/kg a day with supplements did not delay kidney failure but was linked with a higher risk of death (hazard ratio 1.92) [71].
+
+In 8,543 adults aged 60 and over, higher protein was linked with lower 10-year mortality in mild or moderate kidney disease (hazard ratio 0.79 for 1.2 vs 0.8 g/kg a day); this was observational, and people with stages 4 and 5 were excluded [4]. In nephrotic syndrome, where protein is lost in the urine, a small study kept nitrogen balance with 0.8 g/kg a day plus 1 g for each gram lost in the urine [72].
 
 ### Cardiovascular Effects
 
-In 99 older adults (average age 67), 50 g a day of whey protein isolate for 12 weeks reduced aortic stiffness compared with a carbohydrate control of equal calories, with little effect on brain blood flow or cognitive function (Lefferts, *Nutrients*, 2020) [84].
+The source of protein may matter more than the amount. In a meta-analysis of 32 cohorts with 715,128 people, higher total protein intake was linked with a lower risk of death from all causes (pooled effect size 0.94), and an extra 3% of energy from plant protein a day with a 5% lower risk; total and animal protein were not linked with cardiovascular or cancer death [73]. In a mechanistic study, more than about 25 g of protein in one meal switched on mTOR, a growth signal, in human immune cells linked with artery disease [74]. These findings do not test protein powders directly.
 
 ### Cancer and Chemotherapy
 
-In a randomised trial in 166 malnourished adults with advanced cancer having chemotherapy, all given nutritional counseling, those who also took 20 g a day of whey protein isolate for 3 months did better than those given counseling alone on body composition, body weight and muscle strength, and had a lower risk of chemotherapy toxicity (risk difference -9.8%, 95% CI -16.9 to -2.6) (Cereda, *Cancer Med*, 2019) [86].
+In a randomised trial in 166 malnourished adults with advanced cancer having chemotherapy, all given nutrition counselling, those who also took 20 g a day of whey protein isolate for 3 months had better body composition, body weight and muscle strength, and a lower risk of chemotherapy toxicity (risk difference -9.8%), most clearly for severe events (-30.4%). It was a single-centre trial in mixed cancer types with no placebo, and its funders included the maker of the whey tested [100]. The prostate cancer findings for dairy and soy are under Casein Protein and Soy Protein.
 
 ### Skin and Wrinkles
 
-In a mouse study, whey peptides given twice a day during 17 weeks of UVB exposure reduced skin thickening, wrinkling and loss of skin elasticity compared with controls (Kimura, *J Nutr*, 2014) [87].
+No trial cited here tested protein powders for skin.
 
 ### HIIT Training
 
-In 47 sedentary adults (average age 31), 40 g of whey after each session of 8 weeks of low-volume high-intensity interval training (HIIT) on a stationary bike did not improve fitness (VO2max), blood pressure or other heart and metabolic markers more than a maltodextrin placebo; both groups improved (Reljic, *Nutrients*, 2022) [88].
+In 47 sedentary adults (average age 31), 40 g of whey after each session of 8 weeks of low-volume high-intensity interval training on an exercise bike did not improve fitness (VO2max) or blood pressure more than a carbohydrate placebo; both groups improved [101].
 
 ## 4. Recommended Dosing
 
 ### Daily Protein Requirements
 
-| Population | Protein (g/lb body weight) | Protein (g/kg body weight) | Example (150 lb person) |
-|------|:-:|:-:|:-:|
-| Adults (RDA) | 0.36 | 0.8 | 54 g/day |
-| Older adults (50+) | 0.45–0.55 | 1.0–1.2 | 68–82 g/day |
-| Exercising people (ISSN, 2007) | 0.64–0.91 | 1.4–2.0 | – |
-| Point beyond which a 49-study review found no added muscle benefit | 0.73 | 1.6 | 109 g/day |
+| Group | Protein (g/kg body weight a day) | Source |
+|------|:-:|------|
+| Adults (US RDA) | 0.8 | [15] |
+| Pregnancy (US RDA) | 1.1 | [17] |
+| Healthy older adults (ESPEN, PROT-AGE) | at least 1.0 to 1.2 | [57][58] |
+| Exercising people (ISSN, 2017) | 1.4 to 2.0 | [75] |
+| Total intake beyond which a 49-trial review found no added muscle gain | 1.62 | [44] |
+| Kidney disease stages 3 to 5, not on dialysis (KDIGO 2024) | about 0.8 | [94] |
+| Kidney disease stages 3 to 5, not on dialysis, without diabetes (KDOQI 2020) | 0.55 to 0.6 | [95] |
+| On dialysis, metabolically stable (KDOQI 2020) | 1.0 to 1.2 | [95] |
 
-Sources: Krok-Schoen, *J Nutr Health Aging*, 2019; Campbell, *J Int Soc Sports Nutr*, 2007; Deutz, *Clin Nutr*, 2014; Morton, *Br J Sports Med*, 2017 [2][116][3][48].
+These are trial and guideline figures. Brad's own target is in the Current view above.
 
-These are trial and guideline figures. Brad's own view on how much is useful is in the Current view above.
-
-The RDA while breastfeeding is 1.3 g/kg a day [115]. Brad's view (October 2026) is that about 1.3 to 1.6 g/kg a day is a reasonable target during this time. The range is his judgement, not a target tested in trials.
+The RDA while breastfeeding is 1.3 g/kg a day [16]. Brad's view (October 2026) is that about 1.3 to 1.6 g/kg a day is a reasonable target during this time. The range is his judgement, not a target tested in trials.
 
 ### Per-Meal Protein
 
-In one trial in older women, whey taken after exercise was more effective than whey taken before it at lowering body fat [63]. A 2009 review proposed about 25 to 30 g of high-quality protein at each meal to best stimulate muscle protein synthesis in older adults (Paddon-Jones, *Curr Opin Clin Nutr Metab Care*, 2009) [89].
-
-The International Society of Sports Nutrition's position stand suggests about 0.25 g of high-quality protein per kg of body weight per serving, or 20 to 40 g, spread evenly every 3 to 4 hours across the day [103]. It sets no strict post-workout window: protein before or after exercise helps, and the muscle-building effect of exercise lasts at least 24 hours, though it likely fades with time [103].
-
-In a study of 40 young, 40 middle-aged and 40 older adults, the older group ate less protein a day than young adults (83.4 vs 105.1 g), and all groups ate it unevenly across meals. The authors suggested that raising protein intake, especially at breakfast and lunch, could help limit muscle loss with age (Smeuninx, *Front Nutr*, 2020) [90].
+The International Society of Sports Nutrition suggests about 0.25 g of high-quality protein per kg of body weight per dose, or 20 to 40 g, every 3 to 4 hours, and says whole foods can meet these needs, with supplements as a practical option [75].
 
 ### Timing
 
-A systematic review of 34 trials found that, during resistance training, protein supplements taken with meals rather than between them were followed slightly more often by gains in lean mass (94% vs 90% of study groups) and much more often by fat loss (87% vs 59%); the authors concluded that taking them with meals may help more with weight control (Hudson, *Nutr Rev*, 2018) [91].
-
-In 24 healthy older adults, spreading protein evenly over three meals led to faster amino acid absorption and a more positive whole-body protein balance than eating most of it at dinner, though muscle protein synthesis did not differ (Agergaard, *Clin Nutr*, 2023) [92]. In 42 untrained young men (aged 18 to 24) doing 6 weeks of resistance training, 25 g of whey with vitamin D3 gave similar gains whether taken before bed or in the morning after waking (Chen, *Nutrients*, 2022) [93].
-
-For blood sugar, 20 g of whey taken with a meal or 15 minutes before it lowered the post-meal glucose peak, and the earlier dose worked better (Allerton, *Br J Nutr*, 2019) [75].
+Taking protein supplements with meals rather than between them may help more with fat loss during training [65]. For blood sugar in type 2 diabetes, whey drunk before a meal lowered the rise after it [68].
 
 ### Plant-Based Protein Adjustments
 
-Because plant proteins hold a smaller share of essential amino acids, matching whey takes a larger serving: about 37 g of pea protein supplies the 10.9 g of essential amino acids that 25 g of whey provides [27]. Pairing complementary plant proteins (for example pea with rice) helps meet each essential amino acid requirement [27].
+Because plant proteins hold a smaller share of essential amino acids, a larger serving or a blend of plant proteins helps close the gap with whey: about 37 g of pea protein gives the essential amino acids in 25 g of whey [21]. Shifting to 70% plant protein for 12 weeks lowered vitamin B12 and iodine intake and status, so people on mostly plant diets should cover these nutrients [76].
 
 ### Protein Powder as Part of MicroVitamin+ Powder
 
-Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 10 g of collagen peptides and 5 g of creatine monohydrate alongside all 25 core ingredients of the MicroVitamin capsules, plus 5 g of acacia fiber. Its larger dose of magnesium taurate gives 2.09 g of taurine. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance.
+Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 10 g of collagen peptides and 5 g of creatine monohydrate alongside all 25 core ingredients of the MicroVitamin capsules, plus 5 g of acacia fiber. Its larger dose of magnesium taurate gives 2.09 g of taurine. Combining creatine with protein supports enhanced strength gains and muscle recovery. The creatine component provides an evidence-based complement to dietary protein intake for adults seeking to maintain muscle mass and physical performance. It contains vitamin K2 (90 mcg), which can affect blood clotting, so talk to your doctor first if you take a blood thinner such as warfarin. Its collagen peptides come from cows, so it may not suit people sensitive to bovine protein. It is not intended for children under 18, and should not be used if you are pregnant or nursing.
 
 ### Mixing and Preparation
 
-Heat can unfold milk proteins and make them clump: in a laboratory study, skim milk proteins aggregated most when heated to 85 to 95°C (Li, *Front Nutr*, 2021) [95]. Heat treatment does not seem to stop the body using the protein: in 20 healthy women, ultra-high-temperature milk delivered more essential amino acids to the blood than pasteurized milk (Milan, *Am J Clin Nutr*, 2024) [94].
+Follow the label. No trial cited here tested whether the mixing method changes how well the protein works.
 
 ### Storage
 
-In sealed bags, whey protein concentrate kept for at least 18 months at lower temperatures but only 9 months at 35°C (Tunick, *J Dairy Sci*, 2016) [98]. In pea protein isolate stored for a year, light at room temperature did the most damage, raising volatile compounds and changing its smell and color (Fischer, *Molecules*, 2022) [99]. These results suggest keeping protein powder cool and out of the light.
+Keep the tub sealed, cool, dry and out of the light, and use it by its best-before date.
 
 ## 5. Safety and Side Effects
 
 ### Digestive Issues
 
-Whey protein contains lactose, which can cause bloating, gas, cramps, and diarrhea in lactose-intolerant individuals. Whey isolates may contain less lactose than concentrates, so they may be easier to tolerate. Plant-based protein powders may contain anti-nutrients like phytic acid, which can bind minerals (iron, zinc, calcium) and reduce their absorption when consumed in large amounts [40][41].
+In a 12-month trial in older people, 56% of those taking a whey-enriched supplement reported mild gut side effects, the same share as with a placebo drink of equal calories [13]. In a meta-analysis of protein and energy supplements in older people, 10 trials reported nausea, vomiting or diarrhoea [61]. Whey concentrate contains lactose, which can cause bloating and diarrhoea in people with lactose intolerance; whey isolate may contain less. Phytate in plant powders can lower mineral absorption [40].
 
 ### Kidney Strain
 
-A study of 1,324 adults (average age 64) followed for a median of 10 years, which measured kidney function directly, found no link between higher habitual protein intake and decline in kidney function (Rinde, *Clin Kidney J*, 2026) [118].
+In people with healthy kidneys, higher protein has not harmed kidney function in most studies. In 1,324 adults (average age 64) followed for a median of 10 years with measured kidney function, higher habitual protein was not linked with decline [77]. A meta-analysis of 22 trials in adults without kidney disease found high-protein diets raised eGFR without consistent signs of kidney injury, but most trials were short [78]. In 5 men eating 0.8, 1.8 and 3.6 g/kg a day for 4 weeks each, high protein raised blood urea nitrogen [79].
 
-The 2020 KDOQI nutrition guideline for chronic kidney disease, written with the Academy of Nutrition and Dietetics, gives advice on dietary protein intake and nutritional supplements; it covers people with advanced or end-stage kidney disease, people with stages 1 to 5 disease who are not on dialysis, and people with a kidney transplant [104]. A recent narrative review concluded that in adults, high protein intake may speed the progression of chronic kidney disease, and that protein advice should be personalised to age and kidney function [105]. If you have chronic kidney disease, ask your doctor how much protein suits you before using a protein powder.
+Existing kidney disease is different. In 1,624 women followed for 11 years, high protein did not speed decline with normal kidney function, but high intake, especially of non-dairy animal protein, may have sped decline in women with mild kidney impairment [80]. A 2026 review concluded that high protein may speed the progression of chronic kidney disease, and that advice should be personalised to age and kidney stage [81]. The 2020 KDOQI guideline covers protein and supplements across all stages of kidney disease [82]. If you have kidney disease, set your protein with your kidney team before using a powder [96].
 
-In adults without chronic kidney disease, a meta-analysis of 22 randomised trials found that high-protein diets (typically about 25% to 35% of energy, or 2.0 g/kg a day or more) raised estimated kidney filtration (eGFR) without consistent signs of kidney injury; most trials were short, so long-term effects remain uncertain [106]. In experimental studies, protein raised pressure inside the kidney's filters (hyperfiltration) without long-term harm to a healthy kidney [105].
+Protein and creatine can also change kidney test results. KDIGO lists high-protein diets and creatine supplements among things that change blood creatinine apart from kidney function, so a creatinine-based eGFR may be less accurate, and notes that high protein intake raises urine creatinine, which can make the urine albumin-to-creatinine ratio read falsely low [94]. Meat can briefly raise creatinine and supplements can affect test results, so tell your doctor if you take protein powder or creatine before kidney blood or urine tests [102].
 
 ### Heavy Metal Contamination
 
-A 2020 risk assessment of published heavy-metal test results for protein powders found no increased health risk from one or three servings a day, with the lowest risk in whey powders (Bandara, *Toxicol Rep*, 2020) [119]. In the Consumer Reports test that Brad discussed, plant-based protein powders tended to contain more lead, though animal-based products were also affected ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)). For independent testing of named products, see Labdoor.
+Consumer Reports sets its level of concern for lead at 0.5 mcg a day, based on California's Prop 65 limit [10]. FDA's interim reference levels for lead from food are higher: 2.2 mcg a day for children and 8.8 mcg a day for women of childbearing age [83][84].
 
-Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold; the worst powder in the Consumer Reports test, at 7.7 mcg of lead per serving, still fell within typical daily dietary exposure and just under the FDA's safety limit ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
+Risk assessments are more reassuring. An analysis of published test results found no increased health risk from 1 or 3 servings a day, with the lowest risk in whey powders and the highest in mass-gain powders; the authors work for a consulting firm [11]. In 56 European plant powders, metals at 30 g a day stayed within reference limits [85], and in 47 whey powders, up to 100 g a day for 25 years did not pose a risk [86].
+
+Brad bases his decisions on FDA safety limits, which are over 17 times higher than the Consumer Reports threshold ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
 
 ### Acne
 
-Whey protein supplements have been linked with acne on the trunk in teenage boys who used them for bodybuilding (Cengiz, *Health Promot Perspect*, 2017) [120]. In a small study in young adults, acne started or worsened in a two-month period of using protein-calorie supplements, and whey contains growth factors that may be related to acne (Pontes, *An Bras Dermatol*, 2013) [121].
+Whey supplements have been linked with acne on the trunk in six teenage bodybuilders [87], and acne started or worsened within two months in young adults using protein-calorie supplements [14]. These were case series and uncontrolled studies.
 
 ### Allergic Reactions
 
-People allergic to milk should avoid whey and casein; even laboratory-made whey contains the milk allergen beta-lactoglobulin [10]. Whey supplements may also cause allergic reactions in some people without a known milk allergy. Plant proteins can cause allergy too: in adults, most allergens behind food anaphylaxis come from plants, mainly pulses (such as soy and peas) and nuts, and concentrated plant protein isolates such as pea are of particular concern (Präger, *J Dtsch Dermatol Ges*, 2023) [122]. People allergic to egg should avoid egg white protein. People allergic to crustaceans such as shrimp, to mites or to molluscs may react to cricket protein [127]. A review written by the manufacturer's scientists judged allergy to mycoprotein (Quorn) rare [47], but self-reports sent to an advocacy group's website included anaphylaxis, one case fatal [117].
+People allergic to milk should avoid whey and casein, including lab-made whey [5][6]. Whey supplements may also cause reactions in some people without a known milk allergy. In adults, most allergens behind food anaphylaxis come from plants, mainly pulses and nuts; soy can cause severe reactions, and concentrated plant isolates such as pea protein are a particular concern [7]. People allergic to egg should avoid egg white protein, and people allergic to peanuts should avoid peanut protein. Cricket protein may cause new allergies, and people allergic to crustaceans, mites or molluscs may react to it [29]. Allergy to mycoprotein appears rare but has been severe [42][43].
 
 ### Blood Pressure in Older Adults
 
-In a small pilot study in eight older men, whey protein drinks, even at 30 g, lowered systolic blood pressure compared with a control drink, most clearly between 120 and 180 minutes after drinking. Systolic pressure fell by 20 mmHg or more in 63% of the men after 30 g of whey, against 38% after the control drink. The authors concluded that even modest protein loads may cause a fall in blood pressure after eating (postprandial hypotension) in older men (Oberoi, *Nutrients*, 2022) [123]. In their discussion, the authors suggest that older people taking beta-blockers, which limit the rise in heart rate, or with heart conditions that cause a slow heart rate (bradycardia) may be at even greater risk of this fall [123]. This is a proposed risk; the study did not test it. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
+In a pilot study in 8 older men, 30 g and 70 g whey drinks lowered systolic blood pressure compared with a control drink, mostly between 120 and 180 minutes after drinking; it fell by 20 mmHg or more in 63% of the men after 30 g of whey, against 38% after the control drink [12]. In 13 older men, the fall tracked the energy in the drink and may last at least 3 hours [88]. Older people taking beta-blockers, or with a slow heart rate, may be at greater risk of this fall; this is a proposed risk that has not been tested. If you tend to feel light-headed when you stand up, it may be wise to take care in the hours after a whey drink.
 
 ### Unexpected Ingredients
 
-Guarana, mate, coffee extract and cocoa all contain caffeine, and some powders may include them; others have added vitamins and minerals. Check the label. If you are pregnant or breastfeeding, have diabetes, or are buying for a child, it may be wise to ask your doctor first.
+Check the label for caffeine and added vitamins or minerals.
 
 ## 6. Drug Interactions
 
 ### Protein-Drug Interactions
 
-| Drug | Interaction | Recommendation |
+| Drug | Interaction | What to do |
 |------|------|------|
-| Thyroid hormone medication | Soy may reduce its absorption [33] | Ask your doctor whether your dose needs checking if you eat soy regularly [33] |
-| Stimulants | Caffeine, found in guarana, mate, coffee extract and cocoa, may add to the effects of other stimulant medicines | Check the label |
-| Tetracycline antibiotics | Milk and other dairy products reduce tetracycline absorption [107]; dairy protein powders have not been studied directly | Ask your pharmacist how to time doses around whey or casein powders |
-| Levodopa (Parkinson's disease) | Dietary protein is a major factor that can reduce levodopa absorption [108] | If you have motor fluctuations, ask your doctor or dietitian whether changing when you eat protein could help [108][109] |
+| Thyroid hormone medicine | Soy may reduce its absorption [1] | Ask your doctor whether your dose needs checking if you take soy protein regularly |
+| Levodopa (Parkinson's disease) | Dietary protein is a major factor that can reduce levodopa absorption [2] | If you have motor fluctuations, ask your doctor or dietitian about protein timing [89] |
+| Tetracycline antibiotics | Milk and other dairy products reduce tetracycline absorption [3]; dairy protein powders have not been studied directly | Ask your pharmacist how to time doses around whey or casein powders |
+| Stimulants | Caffeine added to some powders may add to the effects of stimulant medicines | Check the label |
 
 If you take prescription medicines, check with your doctor or pharmacist before starting.
 
 ### Interactions with Other Supplements
 
-- **Calcium:** It has been suggested that extra protein may harm bone mineral, but in a 6-month trial in 24 exercise-trained women, a high-protein diet had no effect on bone mineral density (Antonio, *J Int Soc Sports Nutr*, 2018) [124].
-- **Iron, zinc, calcium:** Phytate-rich plant proteins (especially pea) may reduce absorption of these minerals when consumed together [40][41].
-- **Creatine:** Kidney function was normal in healthy athletes who had taken creatine for 10 months to 5 years [110]. A meta-analysis of randomised trials found that creatine raised blood creatinine but did not change urea or eGFR, and called for trials longer than 1 year [111]. Concerns remain about creatine in people with impaired kidney function, so ask your doctor first if you have kidney disease [112].
+- **Calcium and bone:** in 24 trained women, a high-protein diet (2.8 vs 1.5 g/kg a day) for 6 months did not change bone mineral density [90].
+- **Iron, zinc, calcium:** phytate in plant powders, especially pea, may lower absorption of these minerals [40].
+- **Creatine:** kidney function was normal in healthy athletes who had taken creatine for 10 months to 5 years [91]. A meta-analysis of trials found creatine raised blood creatinine but did not change urea or eGFR, and called for trials longer than 1 year [92]. Concerns remain about creatine in people with kidney disease, so ask your doctor first [93].
 
 ### Conditions Requiring Caution
 
-- **Kidney disease:** People with chronic kidney disease may be given advice on how much protein to eat; talk with your doctor about a safe amount [104]. High protein intake may speed the progression of chronic kidney disease [105].
-- **Urea cycle disorder:** In this rare genetic disorder, a large rise in protein intake can trigger dangerously high blood ammonia and brain dysfunction (hyperammonaemic encephalopathy), even in adults who did not know they had it [125].
-- **Phenylketonuria (PKU):** In this inherited disorder the body cannot properly break down the amino acid phenylalanine, which builds up and can harm the brain if untreated; it needs lifelong dietary management [113]. Use a protein powder only if your metabolic team approves it.
-- **Thyroid disease:** Soy protein may affect thyroid hormone levels and inhibit thyroid medication absorption (Messina, *Thyroid*, 2006) [33].
-- **Milk allergy:** All whey and casein products should be avoided. Laboratory-produced whey (Perfect Day) still contains the major milk allergen beta-lactoglobulin [10].
-- **Soy allergy:** Soy protein isolates and concentrates should be avoided; soy allergy can cause severe anaphylactic reactions [122].
-- **Kidney stones:** In a short study of people without kidney stones, pea protein raised urine oxalate compared with whey [42]. If you have had kidney stones, ask your doctor which protein powder suits you.
+- **Kidney disease:** if you are not on dialysis, guidelines advise about 0.8 g/kg a day (KDIGO) or 0.55 to 0.6 g/kg a day (KDOQI, without diabetes) in stages 3 to 5, and KDIGO advises avoiding more than 1.3 g/kg a day if the disease may progress [94][95]. On dialysis, protein needs usually rise [95][96]. Set your protein with your kidney team [96]. High protein may speed the progression of kidney disease [81][80].
+- **Urea cycle disorder:** in this rare inherited disorder, a sudden rise in protein can trigger dangerously high blood ammonia and brain dysfunction, even in adults who did not know they had it [8].
+- **Phenylketonuria (PKU):** phenylalanine builds up and harms the brain if untreated, and the condition needs lifelong management [9]. Use a protein powder only if your metabolic team approves it.
+- **Thyroid disease:** soy protein may affect thyroid hormone levels and the absorption of thyroid medicine [36][1].
+- **Milk allergy:** avoid all whey and casein products, including lab-made whey [5][6].
+- **Soy allergy:** avoid soy protein isolates and concentrates; soy can cause severe reactions [7].
+- **Kidney stones:** in a short study of people without stones, pea protein raised urine oxalate compared with whey [41]. If you have had kidney stones, ask your doctor which powder suits you.
+- **Parkinson's disease on levodopa:** see the table above [2].
 
 ## 7. Dietary Sources
 
-Protein is found in a wide range of whole foods. Meeting daily requirements through diet alone is achievable for most people, and protein powders are most useful when dietary intake falls short or when rapid post-exercise absorption is prioritized.
+Most people can meet their protein needs from food. Protein powders help most when food intake falls short.
 
 ### High-Protein Foods
 
-| Food | Serving | Protein (g) | Calories |
-|------|---------|:-:|:-:|
-| Chicken breast, cooked | 3 oz (85g) | 26 | 140 |
-| Lean beef, cooked | 3 oz (85g) | 26 | 180 |
-| Salmon, cooked | 3 oz (85g) | 22 | 175 |
-| Greek yogurt, plain | 1 cup (245g) | 20 | 130 |
-| Cottage cheese, low-fat | 1 cup (226g) | 28 | 185 |
-| Eggs | 2 large | 12 | 140 |
-| Lentils, cooked | 1 cup (198g) | 18 | 230 |
-| Black beans, cooked | 1 cup (172g) | 15 | 227 |
-| Tofu, firm | 1/2 cup (126g) | 10 | 88 |
-| Almonds | 1 oz (28g) | 6 | 164 |
-| Milk, 2% | 1 cup (244g) | 8 | 122 |
+Good sources include legumes (lentils, beans, chickpeas, peas), nuts and seeds, soy foods such as tofu, fish, eggs, dairy and lean meat. Check food labels for exact amounts.
 
-Source: USDA FoodData Central.
+| Food | Protein (g per 100 g) | Calories (per 100 g) |
+|------|:-:|:-:|
+| Lentils, boiled | 9.02 | 116 |
+| Black beans, boiled | 8.86 | 132 |
+| Chickpeas, boiled | 8.86 | 164 |
+| Tofu, firm | 17.27 | 144 |
+| Tempeh | 20.29 | 192 |
+| Almonds | 21.15 | 579 |
+| Peanut butter, smooth | 22.21 | 598 |
+| Greek yoghurt, plain, nonfat | 10.19 | 59 |
+| Cottage cheese, 1% fat | 12.39 | 72 |
+| Egg, hard-boiled | 12.58 | 155 |
+| Salmon, Atlantic, farmed, cooked | 22.1 | 206 |
+| Chicken breast, roasted | 31.02 | 165 |
+| Beef patty, 90% lean, broiled | 26.11 | 217 |
+
+Source: USDA FoodData Central (SR Legacy).
 
 ### Practical Notes on Dietary Protein
 
 - **Whole foods provide nutrients beyond protein.** Protein powder is meant to complement, not replace, whole foods such as lentils, beans, chickpeas and nuts, which also provide fibre ([Brad, 4 Nov 2025](https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders)).
-- **Protein from food is sufficient for most people.** If daily intake from diet meets requirements (including during exercise), additional protein powder does not provide measurable benefit [48][51][53][54].
-- **Plant and animal proteins can both work.** Trials found that soy protein, pea protein, and a mycoprotein-rich diet supported muscle gains similar to whey or an omnivorous diet with resistance exercise [30][38][46].
-- **For plant-based diets:** Combining complementary plant proteins (e.g., pea + rice, soy + corn) ensures a complete amino acid profile [27][28].
-- **Protein distribution matters.** Distributing protein across at least 3 meals may be more effective for muscle synthesis than consuming the majority at one meal [89][92].
+- **Extra protein helps little when intake is already adequate** [48][49][50].
+- **Plant and animal proteins can both work** with resistance training [31][33][32].
+- **Plant protein is linked with lower mortality** in observational studies [73].
 
 ### Nutrient Content of Common Liquids Mixed with Protein Powder (per 1 cup / 8 fl oz)
 
-Milk adds protein and calories to a shake; water adds neither. Check the label of the milk or juice you use for its exact content.
+Milk adds protein and calories to a shake; water adds neither. Check the label of the milk or plant drink you use for its exact content.
+
+| Liquid (1 cup) | Protein (g) | Calories |
+|------|:-:|:-:|
+| Water | 0 | 0 |
+| Skim milk | 8.3 | 83 |
+| 2% milk | 8.1 | 122 |
+| Whole milk | 7.7 | 149 |
+| Soy drink, unsweetened, fortified | 7.0 | 80 |
+| Almond drink, unsweetened | 1.0 | 39 |
+
+Worked out from USDA FoodData Central (SR Legacy) values per 100 g and USDA's weight for 1 cup of each drink.
 
 ## 8. References
 
-[2] Krok-Schoen JL, Archdeacon Price A, Luo M, et al. "Low Dietary Protein Intakes and Associated Dietary Patterns and Functional Limitations in an Aging Population: A NHANES analysis." *J Nutr Health Aging*. 2019;23(4):338-347. doi: [10.1007/s12603-019-1174-1](https://doi.org/10.1007/s12603-019-1174-1) PMID: 30932132. https://pubmed.ncbi.nlm.nih.gov/30932132/
+[1] Messina M et al. Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients: a review of the relevant literature. Thyroid. 2006. PMID: 16571087. https://pubmed.ncbi.nlm.nih.gov/16571087/
 
-[3] Deutz NE, Bauer JM, Barazzoni R, et al. "Protein intake and exercise for optimal muscle function with aging: recommendations from the ESPEN Expert Group." *Clin Nutr*. 2014;33(6):929-936. doi: [10.1016/j.clnu.2014.04.007](https://doi.org/10.1016/j.clnu.2014.04.007) PMID: 24814383. https://pubmed.ncbi.nlm.nih.gov/24814383/
+[2] Rusch C et al. To restrict or not to restrict? Practical considerations for optimizing dietary protein interactions on levodopa absorption in Parkinson's disease. NPJ Parkinsons Dis. 2023. PMID: 37355689. https://pubmed.ncbi.nlm.nih.gov/37355689/
 
-[4] Gropper SS, Tappen RM, Vieira ER. "Differences In Nutritional And Physical Health Indicators Among Older African Americans, European Americans, And Hispanic Americans." *J Nutr Gerontol Geriatr*. 2019;38(3):205-217. doi: [10.1080/21551197.2019.1628159](https://doi.org/10.1080/21551197.2019.1628159) PMID: 31223069. https://pubmed.ncbi.nlm.nih.gov/31223069/
+[3] Yamreudeewong W et al. Drug-food interactions in clinical practice. J Fam Pract. 1995. PMID: 7699352. https://pubmed.ncbi.nlm.nih.gov/7699352/
 
-[5] Kalman DS. "Amino Acid Composition of an Organic Brown Rice Protein Concentrate and Isolate Compared to Soy and Whey Concentrates and Isolates." *Foods*. 2014;3(3):394-402. doi: [10.3390/foods3030394](https://doi.org/10.3390/foods3030394)
+[4] Carballo-Casla A et al. Protein Intake and Mortality in Older Adults With Chronic Kidney Disease. JAMA Netw Open. 2024. PMID: 39110456. https://pubmed.ncbi.nlm.nih.gov/39110456/
 
-[7] Micke P, et al. "Oral supplementation with whey proteins increases plasma glutathione levels of HIV-infected patients." *Eur J Clin Invest*. 2001;31(2):171-178. doi: [10.1046/j.1365-2362.2001.00781.x](https://doi.org/10.1046/j.1365-2362.2001.00781.x) PMID: 11168457. https://pubmed.ncbi.nlm.nih.gov/11168457/
+[5] US Food and Drug Administration. GRAS Notice No. 863: beta-lactoglobulin produced by Trichoderma reesei. 2020. https://www.hfpappexternal.fda.gov/scripts/fdcc/index.cfm?set=GRASNotices&id=863
 
-[8] Pape-Zambito DA, Magliaro AL, Kensinger RS. "Concentrations of 17beta-estradiol in Holstein whole milk." *J Dairy Sci*. 2007;90(7):3308-3313. doi: [10.3168/jds.2006-891](https://doi.org/10.3168/jds.2006-891) PMID: 17582116. https://pubmed.ncbi.nlm.nih.gov/17582116/
+[6] Tsabouri S et al. Cow's milk allergenicity. Endocr Metab Immune Disord Drug Targets. 2014. PMID: 24450454. https://pubmed.ncbi.nlm.nih.gov/24450454/
 
-[9] Haun CT, et al. "Soy protein supplementation is not androgenic or estrogenic in college-aged men when combined with resistance exercise training." *Sci Rep*. 2018;8:11151. doi: [10.1038/s41598-018-29591-4](https://doi.org/10.1038/s41598-018-29591-4)
+[7] Präger L et al. Food allergy - New risks through vegan diet? Overview of new allergen sources and current data on the potential risk of anaphylaxis. J Dtsch Dermatol Ges. 2023. PMID: 37723909. https://pubmed.ncbi.nlm.nih.gov/37723909/
 
-[10] FDA. GRAS Notice No. GRN 863 — Non-animal whey protein (Perfect Day). [https://www.fda.gov/food/gras-notice-inventory/gras-notices](https://www.fda.gov/food/gras-notice-inventory/gras-notices)
+[8] Barkovich E et al. Late Onset Ornithine Transcarbamylase Deficiency Triggered by an Acute Increase in Protein Intake: A Review of 10 Cases Reported in the Literature. Case Rep Genet. 2020. PMID: 32373372. https://pubmed.ncbi.nlm.nih.gov/32373372/
 
-[11] Joy JM, et al. "Daytime and nighttime casein supplements similarly increase muscle size and strength in response to resistance training earlier in the day." *J Int Soc Sports Nutr*. 2018;15:24. doi: [10.1186/s12970-018-0228-9](https://doi.org/10.1186/s12970-018-0228-9)
+[9] Daley SF et al. Phenylketonuria (PKU). StatPearls [Internet]. Treasure Island (FL): StatPearls Publishing. 2026. PMID: 30570999. https://pubmed.ncbi.nlm.nih.gov/30570999/
 
-[12] Karelis AD, Messier V, Suppère C, et al. "Effect of cysteine-rich whey protein (immunocal®) supplementation in combination with resistance training on muscle strength and lean body mass in non-frail elderly subjects: a randomized, double-blind controlled study." *J Nutr Health Aging*. 2015;19(5):531-536. doi: [10.1007/s12603-015-0442-y](https://doi.org/10.1007/s12603-015-0442-y) PMID: 25923482. https://pubmed.ncbi.nlm.nih.gov/25923482/
+[10] Consumer Reports. Protein Powders and Shakes Contain High Levels of Lead. Published 14 October 2025, updated 8 January 2026. https://www.consumerreports.org/lead/protein-powders-and-shakes-contain-high-levels-of-lead-a4206364640/
 
-[13] Park SW, Kim JY, Kim YS, et al. "A milk protein, casein, as a proliferation promoting factor in prostate cancer cells." *World J Mens Health*. 2014;32(2):76-82. doi: [10.5534/wjmh.2014.32.2.76](https://doi.org/10.5534/wjmh.2014.32.2.76) PMID: 25237656. https://pubmed.ncbi.nlm.nih.gov/25237656/
+[11] Bandara SB et al. A human health risk assessment of heavy metal ingestion among consumers of protein powder supplements. Toxicol Rep. 2020. PMID: 33005567. https://pubmed.ncbi.nlm.nih.gov/33005567/
 
-[14] Allen NE, et al. "Animal foods, protein, calcium and prostate cancer risk: the European Prospective Investigation into Cancer and Nutrition." *Br J Cancer*. 2008;98:1574-1581. doi: [10.1038/sj.bjc.6604331](https://doi.org/10.1038/sj.bjc.6604331)
+[12] Oberoi A et al. Blood Pressure and Heart Rate Responses following Dietary Protein Intake in Older Men. Nutrients. 2022. PMID: 35565880. https://pubmed.ncbi.nlm.nih.gov/35565880/
 
-[15] Pettersson A, Kasperzyk JL, Kenfield SA, et al. "Milk and dairy consumption among men with prostate cancer and risk of metastases and prostate cancer death." *Cancer Epidemiol Biomarkers Prev*. 2012;21(3):428-436. doi: [10.1158/1055-9965.EPI-11-1004](https://doi.org/10.1158/1055-9965.EPI-11-1004) PMID: 22315365. https://pubmed.ncbi.nlm.nih.gov/22315365/
+[13] Björkman MP et al. Effect of Protein Supplementation on Physical Performance in Older People With Sarcopenia-A Randomized Controlled Trial. J Am Med Dir Assoc. 2020. PMID: 31734121. https://pubmed.ncbi.nlm.nih.gov/31734121/
 
-[16] Messaoudi M, et al. "Effects of a tryptic hydrolysate from bovine milk alpha-s1-casein on hemodynamic responses in healthy human volunteers." *Eur J Nutr*. 2005;44:128-132. doi: [10.1007/s00394-004-0534-7](https://doi.org/10.1007/s00394-004-0534-7)
+[14] Pontes Tde C et al. Incidence of acne vulgaris in young adult users of protein-calorie supplements in the city of João Pessoa--PB. An Bras Dermatol. 2013. PMID: 24474098. https://pubmed.ncbi.nlm.nih.gov/24474098/
 
-[17] Kim JH, Desor D, Kim YT, et al. "Efficacy of alphas1-casein hydrolysate on stress-related symptoms in women." *Eur J Clin Nutr*. 2007;61(4):536-541. doi: [10.1038/sj.ejcn.1602553](https://doi.org/10.1038/sj.ejcn.1602553) PMID: 17136040. https://pubmed.ncbi.nlm.nih.gov/17136040/
+[15] Bhasin S et al. Effect of Protein Intake on Lean Body Mass in Functionally Limited Older Men: A Randomized Clinical Trial. JAMA Intern Med. 2018. PMID: 29532075. https://pubmed.ncbi.nlm.nih.gov/29532075/
 
-[18] Kim HJ, Kim J, Lee S, et al. "A Double-Blind, Randomized, Placebo-Controlled Crossover Clinical Study of the Effects of Alpha-s1 Casein Hydrolysate on Sleep Disturbance." *Nutrients*. 2019;11(7):1466. doi: [10.3390/nu11071466](https://doi.org/10.3390/nu11071466) PMID: 31252661. https://pubmed.ncbi.nlm.nih.gov/31252661/
+[16] Weiler M et al. Is It Time to Reconsider the U.S. Recommendations for Dietary Protein and Amino Acid Intake? Nutrients. 2023. PMID: 36839196. https://pubmed.ncbi.nlm.nih.gov/36839196/
 
-[19] Chang CM, Tsai IJ, Yang CC, et al. "The impact of Alpha-s1 Casein hydrolysate on chronic insomnia: A randomized, double-blind controlled trial." *Clin Nutr*. 2024;43(12):275-284. doi: [10.1016/j.clnu.2024.10.039](https://doi.org/10.1016/j.clnu.2024.10.039) PMID: 39541860. https://pubmed.ncbi.nlm.nih.gov/39541860/
+[17] Elango R et al. Protein and Amino Acid Requirements during Pregnancy. Adv Nutr. 2016. PMID: 27422521. https://pubmed.ncbi.nlm.nih.gov/27422521/
 
-[20] Hida A, et al. "Effects of egg white protein supplementation on muscle strength and serum free amino acid concentrations." *Nutrients*. 2012;4(10):1504-1517. doi: [10.3390/nu4101504](https://doi.org/10.3390/nu4101504)
+[18] Krok-Schoen JL et al. Low Dietary Protein Intakes and Associated Dietary Patterns and Functional Limitations in an Aging Population: A NHANES analysis. J Nutr Health Aging. 2019. PMID: 30932132. https://pubmed.ncbi.nlm.nih.gov/30932132/
 
-[21] Oikawa SY, Kamal MJ, Webb EK, et al. "Whey protein but not collagen peptides stimulate acute and longer-term muscle protein synthesis with and without resistance exercise in healthy older women: a randomized controlled trial." *Am J Clin Nutr*. 2020;111(3):708-718. doi: [10.1093/ajcn/nqz332](https://doi.org/10.1093/ajcn/nqz332) PMID: 31919527. https://pubmed.ncbi.nlm.nih.gov/31919527/
+[19] Houston DK et al. Protein Intake and Mobility Limitation in Community-Dwelling Older Adults: the Health ABC Study. J Am Geriatr Soc. 2017. PMID: 28306154. https://pubmed.ncbi.nlm.nih.gov/28306154/
 
-[23] Dong XB, Li X, Zhang CH, et al. "Development of a novel method for hot-pressure extraction of protein from chicken bone and the effect of enzymatic hydrolysis on the extracts." *Food Chem*. 2014;157:339-346. doi: [10.1016/j.foodchem.2014.02.043](https://doi.org/10.1016/j.foodchem.2014.02.043) PMID: 24679789. https://pubmed.ncbi.nlm.nih.gov/24679789/
+[20] Boirie Y et al. Slow and fast dietary proteins differently modulate postprandial protein accretion. Proc Natl Acad Sci U S A. 1997. PMID: 9405716. https://pubmed.ncbi.nlm.nih.gov/9405716/
 
-[24] Rennard BO, et al. "Chicken soup inhibits neutrophil chemotaxis in vitro." *Chest*. 2000;118(4):1150-1157. doi: [10.1378/chest.118.4.1150](https://doi.org/10.1378/chest.118.4.1150)
+[21] Gorissen SHM et al. Protein content and amino acid composition of commercially available plant-based protein isolates. Amino Acids. 2018. PMID: 30167963. https://pubmed.ncbi.nlm.nih.gov/30167963/
 
-[25] Monro JA, et al. "The risk of lead contamination in bone broth diets." *Med Hypotheses*. 2013;80(4):389-390. doi: [10.1016/j.mehy.2012.12.026](https://doi.org/10.1016/j.mehy.2012.12.026)
+[22] Pape-Zambito DA et al. Estrone and 17beta-estradiol concentrations in pasteurized-homogenized milk and commercial dairy products. J Dairy Sci. 2010. PMID: 20494161. https://pubmed.ncbi.nlm.nih.gov/20494161/
 
-[27] Gorissen SHM, et al. "Protein content and amino acid composition of commercially available plant-based protein isolates." *Amino Acids*. 2018;50:1685-1695. doi: [10.1007/s00726-018-2640-5](https://doi.org/10.1007/s00726-018-2640-5)
+[23] Ham JH et al. Allergenicity Assessment of Precision Fermentation-Derived Food Proteins. Foods. 2026. PMID: 42737396. https://pubmed.ncbi.nlm.nih.gov/42737396/
 
-[28] Craig WJ, et al. "Position of the American Dietetic Association: vegetarian diets." *J Am Diet Assoc*. 2009;109(7):1266-1282. doi: [10.1016/j.jada.2009.05.027](https://doi.org/10.1016/j.jada.2009.05.027)
+[24] Allen NE et al. Animal foods, protein, calcium and prostate cancer risk: the European Prospective Investigation into Cancer and Nutrition. Br J Cancer. 2008. PMID: 18382426. https://pubmed.ncbi.nlm.nih.gov/18382426/
 
-[29] Marsh KA, et al. "Protein and vegetarian diets." *Med J Aust*. 2013;199(S4):S7-S10. doi: [10.5694/mja11.11492](https://doi.org/10.5694/mja11.11492)
+[25] Pettersson A et al. Milk and dairy consumption among men with prostate cancer and risk of metastases and prostate cancer death. Cancer Epidemiol Biomarkers Prev. 2012. PMID: 22315365. https://pubmed.ncbi.nlm.nih.gov/22315365/
 
-[30] Hevia-Larrain V, et al. "High-protein plant-based diet versus a protein-matched omnivorous diet to support resistance training adaptations." *Sports Med*. 2021;51:1317-1330. doi: [10.1007/s40279-021-01434-9](https://doi.org/10.1007/s40279-021-01434-9)
+[26] Park SW et al. A milk protein, casein, as a proliferation promoting factor in prostate cancer cells. World J Mens Health. 2014. PMID: 25237656. https://pubmed.ncbi.nlm.nih.gov/25237656/
 
-[31] Messina M. "Soy and Health Update: Evaluation of the Clinical and Epidemiologic Literature." *Nutrients*. 2016;8(12):754. doi: [10.3390/nu8120754](https://doi.org/10.3390/nu8120754)
+[27] Oikawa SY et al. Whey protein but not collagen peptides stimulate acute and longer-term muscle protein synthesis with and without resistance exercise in healthy older women: a randomized controlled trial. Am J Clin Nutr. 2020. PMID: 31919527. https://pubmed.ncbi.nlm.nih.gov/31919527/
 
-[32] Sathyapalan T, Köhrle J, Rijntjes E, et al. "The Effect of High Dose Isoflavone Supplementation on Serum Reverse T3 in Euthyroid Men With Type 2 Diabetes and Post-menopausal Women." *Front Endocrinol*. 2018;9:698. doi: [10.3389/fendo.2018.00698](https://doi.org/10.3389/fendo.2018.00698) PMID: 30524380. https://pubmed.ncbi.nlm.nih.gov/30524380/
+[28] Monro JA et al. The risk of lead contamination in bone broth diets. Med Hypotheses. 2013. PMID: 23375414. https://pubmed.ncbi.nlm.nih.gov/23375414/
 
-[33] Messina M, Redmond G. "Effects of soy protein and soybean isoflavones on thyroid function." *Thyroid*. 2006;16(3):249-258. doi: [10.1089/thy.2006.16.249](https://doi.org/10.1089/thy.2006.16.249)
+[29] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA) et al. Safety of Acheta domesticus (house cricket) spray-dried powder as a Novel food pursuant to Regulation (EU) 2015/2283. EFSA J. 2026. PMID: 42798873. https://pubmed.ncbi.nlm.nih.gov/42798873/
 
-[34] Reger MK, et al. "Dietary intake of isoflavones and coumestrol and the risk of prostate cancer." *Int J Cancer*. 2018;142(4):719-728. doi: [10.1002/ijc.31095](https://doi.org/10.1002/ijc.31095)
+[30] Kamemura N et al. Cross-allergenicity of crustacean and the edible insect Gryllus bimaculatus in patients with shrimp allergy. Mol Immunol. 2019. PMID: 30597474. https://pubmed.ncbi.nlm.nih.gov/30597474/
 
-[35] Bosland MC, et al. "Effect of soy protein isolate supplementation on biochemical recurrence of prostate cancer after radical prostatectomy." *JAMA*. 2013;310(2):170-178. doi: [10.1001/jama.2013.7842](https://doi.org/10.1001/jama.2013.7842)
+[31] Hevia-Larraín V et al. High-Protein Plant-Based Diet Versus a Protein-Matched Omnivorous Diet to Support Resistance Training Adaptations: A Comparison Between Habitual Vegans and Omnivores. Sports Med. 2021. PMID: 33599941. https://pubmed.ncbi.nlm.nih.gov/33599941/
 
-[36] Joy JM, Lowery RP, Wilson JM, et al. "The effects of 8 weeks of whey or rice protein supplementation on body composition and exercise performance." *Nutr J*. 2013;12:86. doi: [10.1186/1475-2891-12-86](https://doi.org/10.1186/1475-2891-12-86) PMID: 23782948. https://pubmed.ncbi.nlm.nih.gov/23782948/
+[32] Callegari IOM et al. Is plant-based protein supplementation as effective as whey protein? A systematic review and meta-analysis in untrained adults undergoing resistance training. J Int Soc Sports Nutr. 2026. PMID: 42954267. https://pubmed.ncbi.nlm.nih.gov/42954267/
 
-[37] Guillin FM, Gaudichon C, Guérin-Deremaux L, et al. "Real ileal amino acid digestibility of pea protein compared to casein in healthy humans: a randomized trial." *Am J Clin Nutr*. 2022;115(2):353-363. doi: [10.1093/ajcn/nqab354](https://doi.org/10.1093/ajcn/nqab354) PMID: 34665230. https://pubmed.ncbi.nlm.nih.gov/34665230/
+[33] Babault N et al. Pea proteins oral supplementation promotes muscle thickness gains during resistance training: a double-blind, randomized, Placebo-controlled clinical trial vs. Whey protein. J Int Soc Sports Nutr. 2015. PMID: 25628520. https://pubmed.ncbi.nlm.nih.gov/25628520/
 
-[38] Babault N, et al. "Pea proteins oral supplementation promotes muscle thickness gains during resistance training." *J Int Soc Sports Nutr*. 2015;12:3. doi: [10.1186/s12970-014-0064-5](https://doi.org/10.1186/s12970-014-0064-5)
+[34] Haun CT et al. Soy protein supplementation is not androgenic or estrogenic in college-aged men when combined with resistance exercise training. Sci Rep. 2018. PMID: 30042516. https://pubmed.ncbi.nlm.nih.gov/30042516/
 
-[39] Banaszek A, et al. "The effects of whey vs. pea protein on physical adaptations following 8-weeks of high-intensity functional training." *Sports*. 2019;7(1):12. doi: [10.3390/sports7010012](https://doi.org/10.3390/sports7010012)
+[35] Messina M. Soy and Health Update: Evaluation of the Clinical and Epidemiologic Literature. Nutrients. 2016. PMID: 27886135. https://pubmed.ncbi.nlm.nih.gov/27886135/
 
-[40] Naczk M, Rubin LJ, Shahidi F. "Functional Properties and Phytate Content of Pea Protein Preparations." *J Food Sci*. 1986;51(5):1245-1247. doi: [10.1111/j.1365-2621.1986.tb13096.x](https://doi.org/10.1111/j.1365-2621.1986.tb13096.x)
+[36] Sathyapalan T et al. The Effect of High Dose Isoflavone Supplementation on Serum Reverse T(3) in Euthyroid Men With Type 2 Diabetes and Post-menopausal Women. Front Endocrinol (Lausanne). 2018. PMID: 30524380. https://pubmed.ncbi.nlm.nih.gov/30524380/
 
-[41] Schlemmer U, et al. "Phytate in foods and significance for humans." *Mol Nutr Food Res*. 2009;53(S2):S330-S375. doi: [10.1002/mnfr.200900099](https://doi.org/10.1002/mnfr.200900099)
+[37] Reger MK et al. Dietary intake of isoflavones and coumestrol and the risk of prostate cancer in the Prostate, Lung, Colorectal and Ovarian Cancer Screening Trial. Int J Cancer. 2018. PMID: 29114854. https://pubmed.ncbi.nlm.nih.gov/29114854/
 
-[42] Wong DG, McNeely B, Vetter J, et al. "Protein Isolate Supplements and Urinary Stone Risk." *Urology*. 2026;207:1-7. doi: [10.1016/j.urology.2025.06.060](https://doi.org/10.1016/j.urology.2025.06.060) PMID: 40592395. https://pubmed.ncbi.nlm.nih.gov/40592395/
+[38] Bosland MC et al. Effect of soy protein isolate supplementation on biochemical recurrence of prostate cancer after radical prostatectomy: a randomized trial. JAMA. 2013. PMID: 23839751. https://pubmed.ncbi.nlm.nih.gov/23839751/
 
-[44] Rodriguez-Leyva D, Pierce GN. "The cardiac and haemostatic effects of dietary hempseed." *Nutr Metab*. 2010;7:32. doi: [10.1186/1743-7075-7-32](https://doi.org/10.1186/1743-7075-7-32)
+[39] Guillin FM et al. Real ileal amino acid digestibility of pea protein compared to casein in healthy humans: a randomized trial. Am J Clin Nutr. 2022. PMID: 34665230. https://pubmed.ncbi.nlm.nih.gov/34665230/
 
-[45] Monteyne AJ, et al. "Mycoprotein ingestion stimulates protein synthesis rates to a greater extent than milk protein in rested and exercised skeletal muscle of healthy young men." *Am J Clin Nutr*. 2020;112(2):318-326. doi: [10.1093/ajcn/nqaa092](https://doi.org/10.1093/ajcn/nqaa092)
+[40] Schlemmer U et al. Phytate in foods and significance for humans: food sources, intake, processing, bioavailability, protective role and analysis. Mol Nutr Food Res. 2009. PMID: 19774556. https://pubmed.ncbi.nlm.nih.gov/19774556/
 
-[46] Monteyne AJ, et al. "Vegan and omnivorous high-protein diets support comparable daily myofibrillar protein synthesis rates and skeletal muscle hypertrophy in young adults." *J Nutr*. 2023;153(6):1680-1695. doi: [10.1016/j.tjnut.2023.02.023](https://doi.org/10.1016/j.tjnut.2023.02.023)
+[41] Wong DG et al. Protein Isolate Supplements and Urinary Stone Risk. Urology. 2026. PMID: 40592395. https://pubmed.ncbi.nlm.nih.gov/40592395/
 
-[47] Finnigan TJA, Wall BT, Wilde PJ, et al. "Mycoprotein: The Future of Nutritious Nonmeat Protein, a Symposium Review." *Curr Dev Nutr*. 2019;3(6):nzz021. doi: [10.1093/cdn/nzz021](https://doi.org/10.1093/cdn/nzz021) PMID: 31187084. https://pubmed.ncbi.nlm.nih.gov/31187084/
+[42] Finnigan TJA et al. Mycoprotein: The Future of Nutritious Nonmeat Protein, a Symposium Review. Curr Dev Nutr. 2019. PMID: 31187084. https://pubmed.ncbi.nlm.nih.gov/31187084/
 
-[48] Morton RW, et al. "A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults." *Br J Sports Med*. 2018;52(6):376-384. doi: [10.1136/bjsports-2017-097608](https://doi.org/10.1136/bjsports-2017-097608)
+[43] Jacobson MF et al. Self-reported adverse reactions associated with mycoprotein (Quorn-brand) containing foods. Ann Allergy Asthma Immunol. 2018. PMID: 29567357. https://pubmed.ncbi.nlm.nih.gov/29567357/
 
-[49] Tian H, Qiao W, Wen X. "Comparison of the Effectiveness of Protein Supplementation Combined with Resistance Training on Body Composition and Physical Function in Healthy Elderly Adults." *J Nutr*. 2025;155(3):764-774. doi: [10.1016/j.tjnut.2025.01.017](https://doi.org/10.1016/j.tjnut.2025.01.017) PMID: 39889852. https://pubmed.ncbi.nlm.nih.gov/39889852/
+[44] Morton RW et al. A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults. Br J Sports Med. 2018. PMID: 28698222. https://pubmed.ncbi.nlm.nih.gov/28698222/
 
-[50] Cermak NM, et al. "Protein supplementation augments the adaptive response of skeletal muscle to resistance-type exercise training." *Am J Clin Nutr*. 2012;96(6):1454-1464. doi: [10.3945/ajcn.112.037556](https://doi.org/10.3945/ajcn.112.037556)
+[45] Tagawa R et al. Dose-response relationship between protein intake and muscle mass increase: a systematic review and meta-analysis of randomized controlled trials. Nutr Rev. 2020. PMID: 33300582. https://pubmed.ncbi.nlm.nih.gov/33300582/
 
-[51] Holwerda AM, Overkamp M, Paulussen KJM, et al. "Protein Supplementation after Exercise and before Sleep Does Not Further Augment Muscle Mass and Strength Gains during Resistance Exercise Training in Active Older Men." *J Nutr*. 2018;148(11):1723-1732. doi: [10.1093/jn/nxy169](https://doi.org/10.1093/jn/nxy169) PMID: 30247714. https://pubmed.ncbi.nlm.nih.gov/30247714/
+[46] Cermak NM et al. Protein supplementation augments the adaptive response of skeletal muscle to resistance-type exercise training: a meta-analysis. Am J Clin Nutr. 2012. PMID: 23134885. https://pubmed.ncbi.nlm.nih.gov/23134885/
 
-[52] Ioannidou P, Dóró Z, Schalla J, et al. "Analysis of combinatory effects of free weight resistance training and a high-protein diet on body composition and strength capacity in postmenopausal women - A 12-week randomized controlled trial." *J Nutr Health Aging*. 2024;28(10):100349. doi: [10.1016/j.jnha.2024.100349](https://doi.org/10.1016/j.jnha.2024.100349) PMID: 39232439. https://pubmed.ncbi.nlm.nih.gov/39232439/
+[47] Tian H et al. Comparison of the Effectiveness of Protein Supplementation Combined with Resistance Training on Body Composition and Physical Function in Healthy Elderly Adults. J Nutr. 2025. PMID: 39889852. https://pubmed.ncbi.nlm.nih.gov/39889852/
 
-[53] Karpouzi C, Kypraiou A, Mougios V, et al. "Effects of protein supplementation during pilates training on body composition, core muscle endurance, and joint flexibility in trained women: a randomized controlled trial." *J Int Soc Sports Nutr*. 2025;22(1):2472891. doi: [10.1080/15502783.2025.2472891](https://doi.org/10.1080/15502783.2025.2472891) PMID: 40012045. https://pubmed.ncbi.nlm.nih.gov/40012045/
+[48] Holwerda AM et al. Protein Supplementation after Exercise and before Sleep Does Not Further Augment Muscle Mass and Strength Gains during Resistance Exercise Training in Active Older Men. J Nutr. 2018. PMID: 30247714. https://pubmed.ncbi.nlm.nih.gov/30247714/
 
-[54] Dulac MC, Pion CH, Lemieux FC, et al. "Effects of slow- v. fast-digested protein supplementation combined with mixed power training on muscle function and functional capacities in older men." *Br J Nutr*. 2021;125(9):1017-1033. doi: [10.1017/S0007114520001932](https://doi.org/10.1017/S0007114520001932) PMID: 32498755. https://pubmed.ncbi.nlm.nih.gov/32498755/
+[49] Dulac MC et al. Effects of slow- v. fast-digested protein supplementation combined with mixed power training on muscle function and functional capacities in older men. Br J Nutr. 2021. PMID: 32498755. https://pubmed.ncbi.nlm.nih.gov/32498755/
 
-[55] Ceglia L, Konieczynski E, Danico E, et al. "Independent effects of whey protein and alkali supplementation on muscle health in healthy older adults: factorial randomized controlled trial." *Am J Clin Nutr*. 2026;123(5):101257. doi: [10.1016/j.ajcnut.2026.101257](https://doi.org/10.1016/j.ajcnut.2026.101257) PMID: 41780731. https://pubmed.ncbi.nlm.nih.gov/41780731/
+[50] Ceglia L et al. Independent effects of whey protein and alkali supplementation on muscle health in healthy older adults: factorial randomized controlled trial. Am J Clin Nutr. 2026. PMID: 41780731. https://pubmed.ncbi.nlm.nih.gov/41780731/
 
-[56] Unterberger S, Aschauer R, Zöhrer PA, et al. "Effects of an increased habitual dietary protein intake followed by resistance training on fitness, muscle quality and body composition of seniors: A randomised controlled trial." *Clin Nutr*. 2022;41(5):1034-1045. doi: [10.1016/j.clnu.2022.02.017](https://doi.org/10.1016/j.clnu.2022.02.017) PMID: 35390727. https://pubmed.ncbi.nlm.nih.gov/35390727/
+[51] Ioannidou P et al. Analysis of combinatory effects of free weight resistance training and a high-protein diet on body composition and strength capacity in postmenopausal women - A 12-week randomized controlled trial. J Nutr Health Aging. 2024. PMID: 39232439. https://pubmed.ncbi.nlm.nih.gov/39232439/
 
-[57] Bhasin S, et al. "Effect of protein intake on lean body mass in functionally limited older men." *JAMA Intern Med*. 2018;178(4):530-541. doi: [10.1001/jamainternmed.2018.0008](https://doi.org/10.1001/jamainternmed.2018.0008)
+[52] Unterberger S et al. Effects of an increased habitual dietary protein intake followed by resistance training on fitness, muscle quality and body composition of seniors: A randomised controlled trial. Clin Nutr. 2022. PMID: 35390727. https://pubmed.ncbi.nlm.nih.gov/35390727/
 
-[58] Mori H, Tokuda Y. "Effect of whey protein supplementation after resistance exercise on the muscle mass and physical function of healthy older women: A randomized controlled trial." *Geriatr Gerontol Int*. 2018;18(9):1398-1404. doi: [10.1111/ggi.13499](https://doi.org/10.1111/ggi.13499) PMID: 30113122. https://pubmed.ncbi.nlm.nih.gov/30113122/
+[53] Karpouzi C et al. Effects of protein supplementation during pilates training on body composition, core muscle endurance, and joint flexibility in trained women: a randomized controlled trial. J Int Soc Sports Nutr. 2025. PMID: 40012045. https://pubmed.ncbi.nlm.nih.gov/40012045/
 
-[59] Zhu K, Kerr DA, Meng X, et al. "Two-Year Whey Protein Supplementation Did Not Enhance Muscle Mass and Physical Function in Well-Nourished Healthy Older Postmenopausal Women." *J Nutr*. 2015;145(11):2520-2526. doi: [10.3945/jn.115.218297](https://doi.org/10.3945/jn.115.218297) PMID: 26400966. https://pubmed.ncbi.nlm.nih.gov/26400966/
+[54] Zhu K et al. Two-Year Whey Protein Supplementation Did Not Enhance Muscle Mass and Physical Function in Well-Nourished Healthy Older Postmenopausal Women. J Nutr. 2015. PMID: 26400966. https://pubmed.ncbi.nlm.nih.gov/26400966/
 
-[60] Li C, Meng H, Wu S, et al. "Daily Supplementation With Whey, Soy, or Whey-Soy Blended Protein for 6 Months Maintained Lean Muscle Mass and Physical Performance in Older Adults With Low Lean Mass." *J Acad Nutr Diet*. 2021;121(6):1035-1048.e6. doi: [10.1016/j.jand.2021.01.006](https://doi.org/10.1016/j.jand.2021.01.006) PMID: 33612439. https://pubmed.ncbi.nlm.nih.gov/33612439/
+[55] Biersteker EJM et al. Effect of a protein intervention during resistance training with varying training intensities on muscle outcomes in frail community-dwelling older adults: a randomized controlled trial. J Nutr Health Aging. 2026. PMID: 41931963. https://pubmed.ncbi.nlm.nih.gov/41931963/
 
-[61] Clynes MA, Edwards MH, Buehring B, et al. "Definitions of Sarcopenia: Associations with Previous Falls and Fracture in a Population Sample." *Calcif Tissue Int*. 2015;97(5):445-452. doi: [10.1007/s00223-015-0044-z](https://doi.org/10.1007/s00223-015-0044-z) PMID: 26223791. https://pubmed.ncbi.nlm.nih.gov/26223791/
+[56] Li C et al. Daily Supplementation With Whey, Soy, or Whey-Soy Blended Protein for 6 Months Maintained Lean Muscle Mass and Physical Performance in Older Adults With Low Lean Mass. J Acad Nutr Diet. 2021. PMID: 33612439. https://pubmed.ncbi.nlm.nih.gov/33612439/
 
-[62] Fernandes RR, Nabuco HCG, Sugihara Junior P, et al. "Effect of protein intake beyond habitual intakes following resistance training on cardiometabolic risk disease parameters in pre-conditioned older women." *Exp Gerontol*. 2018;110:9-14. doi: [10.1016/j.exger.2018.05.003](https://doi.org/10.1016/j.exger.2018.05.003) PMID: 29752998. https://pubmed.ncbi.nlm.nih.gov/29752998/
+[57] Deutz NE et al. Protein intake and exercise for optimal muscle function with aging: recommendations from the ESPEN Expert Group. Clin Nutr. 2014. PMID: 24814383. https://pubmed.ncbi.nlm.nih.gov/24814383/
 
-[63] Nabuco HCG, Tomeleri CM, Sugihara Junior P, et al. "Effects of pre- or post-exercise whey protein supplementation on body fat and metabolic and inflammatory profile in pre-conditioned older women: A randomized, double-blind, placebo-controlled trial." *Nutr Metab Cardiovasc Dis*. 2019;29(3):290-300. doi: [10.1016/j.numecd.2018.11.007](https://doi.org/10.1016/j.numecd.2018.11.007) PMID: 30639252. https://pubmed.ncbi.nlm.nih.gov/30639252/
+[58] Bauer J et al. Evidence-based recommendations for optimal dietary protein intake in older people: a position paper from the PROT-AGE Study Group. J Am Med Dir Assoc. 2013. PMID: 23867520. https://pubmed.ncbi.nlm.nih.gov/23867520/
 
-[64] Liao CD, Huang SW, Chen HC, et al. "Effects of Protein Supplementation Combined with Resistance Exercise Training on Walking Speed Recovery in Older Adults with Knee Osteoarthritis and Sarcopenia." *Nutrients*. 2023;15(7):1552. doi: [10.3390/nu15071552](https://doi.org/10.3390/nu15071552) PMID: 37049391. https://pubmed.ncbi.nlm.nih.gov/37049391/
+[59] Iuliano S et al. Effect of dietary sources of calcium and protein on hip fractures and falls in older adults in residential care: cluster randomised controlled trial. BMJ. 2021. PMID: 34670754. https://pubmed.ncbi.nlm.nih.gov/34670754/
 
-[65] Björkman MP, Suominen MH, Kautiainen H, et al. "Effect of Protein Supplementation on Physical Performance in Older People With Sarcopenia-A Randomized Controlled Trial." *J Am Med Dir Assoc*. 2020;21(2):226-232.e1. doi: [10.1016/j.jamda.2019.09.006](https://doi.org/10.1016/j.jamda.2019.09.006) PMID: 31734121. https://pubmed.ncbi.nlm.nih.gov/31734121/
+[60] Deutz NE et al. Readmission and mortality in malnourished, older, hospitalized adults treated with a specialized oral nutritional supplement: A randomized clinical trial. Clin Nutr. 2016. PMID: 26797412. https://pubmed.ncbi.nlm.nih.gov/26797412/
 
-[66] Arentson-Lantz EJ, et al. "Improving dietary protein quality reduces the negative effects of physical inactivity on body composition and muscle function." *J Gerontol A Biol Sci Med Sci*. 2019;74(10):1605-1611. doi: [10.1093/gerona/glz003](https://doi.org/10.1093/gerona/glz003)
+[61] Milne AC et al. Meta-analysis: protein and energy supplementation in older people. Ann Intern Med. 2006. PMID: 16389253. https://pubmed.ncbi.nlm.nih.gov/16389253/
 
-[67] Deutz NEP, et al. "Readmission and mortality in malnourished, older, hospitalized adults treated with a specialized oral nutritional supplement." *Clin Nutr*. 2016;35(1):18-26. doi: [10.1016/j.clnu.2015.12.010](https://doi.org/10.1016/j.clnu.2015.12.010)
+[62] Feinberg J et al. Nutrition support in hospitalised adults at nutritional risk. Cochrane Database Syst Rev. 2017. PMID: 28524930. https://pubmed.ncbi.nlm.nih.gov/28524930/
 
-[68] Longland TM, et al. "Higher compared with lower dietary protein during an energy deficit combined with intense exercise promotes greater lean mass gain and fat mass loss." *Am J Clin Nutr*. 2016;103(3):738-746. doi: [10.3945/ajcn.115.119339](https://doi.org/10.3945/ajcn.115.119339)
+[63] Weaver AA et al. Effect of protein supplementation on hip bone mineral density, cortical thickness, and bone strength in older adult participants during a caloric restriction and aerobic exercise weight loss intervention: a randomized controlled trial. Osteoporos Int. 2026. PMID: 41553490. https://pubmed.ncbi.nlm.nih.gov/41553490/
 
-[69] Nabuco HCG, Tomeleri CM, Fernandes RR, et al. "Effect of whey protein supplementation combined with resistance training on body composition, muscular strength, functional capacity, and plasma-metabolism biomarkers in older women with sarcopenic obesity: A randomized, double-blind, placebo-controlled trial." *Clin Nutr ESPEN*. 2019;32:88-95. doi: [10.1016/j.clnesp.2019.04.007](https://doi.org/10.1016/j.clnesp.2019.04.007) PMID: 31221297. https://pubmed.ncbi.nlm.nih.gov/31221297/
+[64] Porter Starr KN et al. Improved Function With Enhanced Protein Intake per Meal: A Pilot Study of Weight Reduction in Frail, Obese Older Adults. J Gerontol A Biol Sci Med Sci. 2016. PMID: 26786203. https://pubmed.ncbi.nlm.nih.gov/26786203/
 
-[70] Glynn EL, Fleming SA, Edwards CG, et al. "Consuming a Protein and Fiber-Based Supplement Preload Promotes Weight Loss and Alters Metabolic Markers in Overweight Adults in a 12-Week, Randomized, Double-Blind, Placebo-Controlled Trial." *J Nutr*. 2022;152(6):1415-1425. doi: [10.1093/jn/nxac038](https://doi.org/10.1093/jn/nxac038) PMID: 35212740. https://pubmed.ncbi.nlm.nih.gov/35212740/
+[65] Hudson JL et al. Effects of protein supplements consumed with meals, versus between meals, on resistance training-induced body composition changes in adults: a systematic review. Nutr Rev. 2018. PMID: 29697807. https://pubmed.ncbi.nlm.nih.gov/29697807/
 
-[71] Oberoi A, Giezenaar C, Jensen C, et al. "Acute effects of whey protein on energy intake, appetite and gastric emptying in younger and older, obese men." *Nutr Diabetes*. 2020;10(1):37. doi: [10.1038/s41387-020-00139-8](https://doi.org/10.1038/s41387-020-00139-8) PMID: 33004790. https://pubmed.ncbi.nlm.nih.gov/33004790/
+[66] Hong K et al. Oral Nutritional Supplements and Body Composition Outcomes Among GLP-1 Receptor Agonist Users: Real-World Evidence. Diabetes Metab Syndr Obes. 2026. PMID: 42117035. https://pubmed.ncbi.nlm.nih.gov/42117035/
 
-[72] Sabooni K, Farsi F, Safari S, et al. "The role of whey protein supplementation after one-anastomosis gastric bypass: Results of a double-blind randomized controlled trial." *Clin Nutr ESPEN*. 2025;69:406-414. doi: [10.1016/j.clnesp.2025.07.1122](https://doi.org/10.1016/j.clnesp.2025.07.1122) PMID: 40744414. https://pubmed.ncbi.nlm.nih.gov/40744414/
+[67] Jakubowicz D et al. Incretin, insulinotropic and glucose-lowering effects of whey protein pre-load in type 2 diabetes: a randomised clinical trial. Diabetologia. 2014. PMID: 25005331. https://pubmed.ncbi.nlm.nih.gov/25005331/
 
-[73] Weaver AA, Greene KA, Leng X, et al. "Effect of protein supplementation on hip bone mineral density, cortical thickness, and bone strength in older adult participants during a caloric restriction and aerobic exercise weight loss intervention: a randomized controlled trial." *Osteoporos Int*. 2026;37(2):361-372. doi: [10.1007/s00198-026-07845-6](https://doi.org/10.1007/s00198-026-07845-6) PMID: 41553490. https://pubmed.ncbi.nlm.nih.gov/41553490/
+[68] Smith K et al. Pre-Meal Whey Protein Alters Postprandial Insulinemia by Enhancing β-Cell Function and Reducing Insulin Clearance in T2D. J Clin Endocrinol Metab. 2023. PMID: 36734166. https://pubmed.ncbi.nlm.nih.gov/36734166/
 
-[74] Farsijani S, Cauley JA, Santanasto AJ, et al. "Transition to a More even Distribution of Daily Protein intake Is Associated with Enhanced Fat Loss during a Hypocaloric and Physical Activity Intervention in Obese Older Adults." *J Nutr Health Aging*. 2020;24(2):210-217. doi: [10.1007/s12603-020-1313-8](https://doi.org/10.1007/s12603-020-1313-8) PMID: 32003413. https://pubmed.ncbi.nlm.nih.gov/32003413/
+[69] Klahr S et al. The effects of dietary protein restriction and blood-pressure control on the progression of chronic renal disease. Modification of Diet in Renal Disease Study Group. N Engl J Med. 1994. PMID: 8114857. https://pubmed.ncbi.nlm.nih.gov/8114857/
 
-[75] Allerton DM, Rumbold PLS, West DJ, et al. "Effect of supplemental whey protein timing on postprandial glycaemia in centrally obese males." *Br J Nutr*. 2019;121(6):637-646. doi: [10.1017/S0007114518003793](https://doi.org/10.1017/S0007114518003793) PMID: 30572966. https://pubmed.ncbi.nlm.nih.gov/30572966/
+[70] Fouque D et al. Low protein diets for chronic kidney disease in non diabetic adults. Cochrane Database Syst Rev. 2009. PMID: 19588328. https://pubmed.ncbi.nlm.nih.gov/19588328/
 
-[76] Jakubowicz D, et al. "Incretin, insulinotropic and glucose-lowering effects of whey protein pre-load in type 2 diabetes." *Diabetologia*. 2014;57(9):1807-1811. doi: [10.1007/s00125-014-3305-x](https://doi.org/10.1007/s00125-014-3305-x)
+[71] Menon V et al. Effect of a very low-protein diet on outcomes: long-term follow-up of the Modification of Diet in Renal Disease (MDRD) Study. Am J Kidney Dis. 2009. PMID: 18950911. https://pubmed.ncbi.nlm.nih.gov/18950911/
 
-[77] Ma J, et al. "Effects of a protein preload on gastric emptying, glycemia, and gut hormones after a carbohydrate meal in diet-controlled type 2 diabetes." *Diabetes Care*. 2009;32(9):1600-1602. doi: [10.2337/dc09-0723](https://doi.org/10.2337/dc09-0723)
+[72] Maroni BJ et al. Mechanisms permitting nephrotic patients to achieve nitrogen equilibrium with a protein-restricted diet. J Clin Invest. 1997. PMID: 9153292. https://pubmed.ncbi.nlm.nih.gov/9153292/
 
-[78] Smith K, Taylor GS, Walker M, et al. "Pre-Meal Whey Protein Alters Postprandial Insulinemia by Enhancing β-Cell Function and Reducing Insulin Clearance in T2D." *J Clin Endocrinol Metab*. 2023;108(8):e603-e612. doi: [10.1210/clinem/dgad069](https://doi.org/10.1210/clinem/dgad069) PMID: 36734166. https://pubmed.ncbi.nlm.nih.gov/36734166/
+[73] Naghshi S et al. Dietary intake of total, animal, and plant proteins and risk of all cause, cardiovascular, and cancer mortality: systematic review and dose-response meta-analysis of prospective cohort studies. BMJ. 2020. PMID: 32699048. https://pubmed.ncbi.nlm.nih.gov/32699048/
 
-[79] Tiekou Lorinczova H, Deb S, Begum G, et al. "Comparative Assessment of the Acute Effects of Whey, Rice and Potato Protein Isolate Intake on Markers of Glycaemic Regulation and Appetite in Healthy Males Using a Randomised Study Design." *Nutrients*. 2021;13(7). doi: [10.3390/nu13072157](https://doi.org/10.3390/nu13072157) PMID: 34201703. https://pubmed.ncbi.nlm.nih.gov/34201703/
+[74] Zhang X et al. Identification of a leucine-mediated threshold effect governing macrophage mTOR signalling and cardiovascular risk. Nat Metab. 2024. PMID: 38409323. https://pubmed.ncbi.nlm.nih.gov/38409323/
 
-[80] Steven S, Hollingsworth KG, Al-Mrabeh A, et al. "Very Low-Calorie Diet and 6 Months of Weight Stability in Type 2 Diabetes: Pathophysiological Changes in Responders and Nonresponders." *Diabetes Care*. 2016;39(5):808-815. doi: [10.2337/dc15-1942](https://doi.org/10.2337/dc15-1942) PMID: 27002059. https://pubmed.ncbi.nlm.nih.gov/27002059/
+[75] Jäger R et al. International Society of Sports Nutrition Position Stand: protein and exercise. J Int Soc Sports Nutr. 2017. PMID: 28642676. https://pubmed.ncbi.nlm.nih.gov/28642676/
 
-[81] Owen WF, et al. "The urea reduction ratio and serum albumin concentration as predictors of mortality in patients undergoing hemodialysis." *N Engl J Med*. 1993;329:1001-1006. doi: [10.1056/NEJM199309303291404](https://doi.org/10.1056/NEJM199309303291404)
+[76] Pellinen T et al. Re﻿placing dietary animal-source proteins with plant-source proteins changes dietary intake and status of vitamins and minerals in healthy adults: a 12-week randomized controlled trial. Eur J Nutr. 2022. PMID: 34837522. https://pubmed.ncbi.nlm.nih.gov/34837522/
 
-[82] Benner D, Brunelli SM, Brosch B, et al. "Effects of Oral Nutritional Supplements on Mortality, Missed Dialysis Treatments, and Nutritional Markers in Hemodialysis Patients." *J Ren Nutr*. 2018;28(3):191-196. doi: [10.1053/j.jrn.2017.10.002](https://doi.org/10.1053/j.jrn.2017.10.002) PMID: 29221626. https://pubmed.ncbi.nlm.nih.gov/29221626/
+[77] Rinde LB et al. Higher habitual protein intake is not linked to decline of iohexol-measured GFR in adults ≥40 years. Clin Kidney J. 2026. PMID: 42549120. https://pubmed.ncbi.nlm.nih.gov/42549120/
 
-[84] Lefferts WK, Augustine JA, Spartano NL, et al. "Effects of Whey Protein Supplementation on Aortic Stiffness, Cerebral Blood Flow, and Cognitive Function in Community-Dwelling Older Adults: Findings from the ANCHORS A-WHEY Clinical Trial." *Nutrients*. 2020;12(4):1054. doi: [10.3390/nu12041054](https://doi.org/10.3390/nu12041054) PMID: 32290271. https://pubmed.ncbi.nlm.nih.gov/32290271/
+[78] Teixeira Silva PR et al. Effects of High-Protein Diets on Renal Function and Body Composition in Adults Without Chronic Kidney Disease: A Systematic Review and Meta-Analysis of Randomised Trials. Diabetes Obes Metab. 2026. PMID: 42289790. https://pubmed.ncbi.nlm.nih.gov/42289790/
 
-[85] Iuliano S, Poon S, Robbins J, et al. "Effect of dietary sources of calcium and protein on hip fractures and falls in older adults in residential care: cluster randomised controlled trial." *BMJ*. 2021;375:n2364. doi: [10.1136/bmj.n2364](https://doi.org/10.1136/bmj.n2364) PMID: 34670754. https://pubmed.ncbi.nlm.nih.gov/34670754/
+[79] Martin WF et al. Effects of dietary protein intake on indexes of hydration. J Am Diet Assoc. 2006. PMID: 16567155. https://pubmed.ncbi.nlm.nih.gov/16567155/
 
-[86] Cereda E, et al. "Whey protein isolate supplementation improves body composition, muscle strength, and treatment tolerance in malnourished advanced cancer patients undergoing chemotherapy." *Cancer Med*. 2019;8(16):6923-6932. doi: [10.1002/cam4.2517](https://doi.org/10.1002/cam4.2517)
+[80] Knight EL et al. The impact of protein intake on renal function decline in women with normal renal function or mild renal insufficiency. Ann Intern Med. 2003. PMID: 12639078. https://pubmed.ncbi.nlm.nih.gov/12639078/
 
-[87] Kimura Y, Sumiyoshi M, Kobayashi T. "Whey peptides prevent chronic ultraviolet B radiation-induced skin aging in melanin-possessing male hairless mice." *J Nutr*. 2014;144(1):27-32. doi: [10.3945/jn.113.180406](https://doi.org/10.3945/jn.113.180406) PMID: 24174624. https://pubmed.ncbi.nlm.nih.gov/24174624/
+[81] Jacuńska J et al. High-Protein Intake Impact on Human and Animal Kidney Function Across the Lifespan: Clinical Evidence and Emerging Concepts. Nutrients. 2026. PMID: 42884660. https://pubmed.ncbi.nlm.nih.gov/42884660/
 
-[88] Reljic D, Zieseniss N, Herrmann HJ, et al. "Protein Supplementation Does Not Maximize Adaptations to Low-Volume High-Intensity Interval Training in Sedentary, Healthy Adults: A Placebo-Controlled Double-Blind Randomized Study." *Nutrients*. 2022;14(19). doi: [10.3390/nu14193883](https://doi.org/10.3390/nu14193883) PMID: 36235536. https://pubmed.ncbi.nlm.nih.gov/36235536/
+[82] Ikizler TA et al. KDOQI Clinical Practice Guideline for Nutrition in CKD: 2020 Update. Am J Kidney Dis. 2020. PMID: 32829751. https://pubmed.ncbi.nlm.nih.gov/32829751/
 
-[89] Paddon-Jones D, Rasmussen BB. "Dietary protein recommendations and the prevention of sarcopenia." *Curr Opin Clin Nutr Metab Care*. 2009;12(1):86-90. doi: [10.1097/MCO.0b013e32831cef8b](https://doi.org/10.1097/MCO.0b013e32831cef8b)
+[83] US Food and Drug Administration. Lead in Food and Foodwares. https://www.fda.gov/food/environmental-contaminants-food/lead-food-and-foodwares
 
-[90] Smeuninx B, Greig CA, Breen L. "Amount, Source and Pattern of Dietary Protein Intake Across the Adult Lifespan: A Cross-Sectional Study." *Front Nutr*. 2020;7:25. doi: [10.3389/fnut.2020.00025](https://doi.org/10.3389/fnut.2020.00025) PMID: 32232047. https://pubmed.ncbi.nlm.nih.gov/32232047/
+[84] Flannery BM et al. Updated interim reference levels for dietary lead to support FDA's Closer to Zero action plan. Regul Toxicol Pharmacol. 2022. PMID: 35690180. https://pubmed.ncbi.nlm.nih.gov/35690180/
 
-[91] Hudson JL, Bergia RE, Campbell WW. "Effects of protein supplements consumed with meals, versus between meals, on resistance training-induced body composition changes in adults: a systematic review." *Nutr Rev*. 2018;76(6):461-468. doi: [10.1093/nutrit/nuy012](https://doi.org/10.1093/nutrit/nuy012) PMID: 29697807. https://pubmed.ncbi.nlm.nih.gov/29697807/
+[85] Bethencourt-Barbuzano E et al. Plant-based protein supplements as emerging sources of metal exposure: A risk assessment study. J Trace Elem Med Biol. 2025. PMID: 40773863. https://pubmed.ncbi.nlm.nih.gov/40773863/
 
-[92] Agergaard J, Justesen TEH, Jespersen SE, et al. "Even or skewed dietary protein distribution is reflected in the whole-body protein net-balance in healthy older adults: A randomized controlled trial." *Clin Nutr*. 2023;42(6):899-908. doi: [10.1016/j.clnu.2023.04.004](https://doi.org/10.1016/j.clnu.2023.04.004) PMID: 37086618. https://pubmed.ncbi.nlm.nih.gov/37086618/
+[86] Bethencourt-Barbuzano E et al. Whey Protein Dietary Supplements: Metal Exposure Assessment and Risk Characterization. Nutrients. 2023. PMID: 37630733. https://pubmed.ncbi.nlm.nih.gov/37630733/
 
-[93] Chen Y, Liang Y, Guo H, et al. "Muscle-Related Effect of Whey Protein and Vitamin D3 Supplementation Provided before or after Bedtime in Males Undergoing Resistance Training." *Nutrients*. 2022;14(11). doi: [10.3390/nu14112289](https://doi.org/10.3390/nu14112289) PMID: 35684089. https://pubmed.ncbi.nlm.nih.gov/35684089/
+[87] Cengiz FP et al. Acne located on the trunk, whey protein supplementation: Is there any association? Health Promot Perspect. 2017. PMID: 28326292. https://pubmed.ncbi.nlm.nih.gov/28326292/
 
-[94] Milan AM, Barnett MP, McNabb WC, et al. "The impact of heat treatment of bovine milk on gastric emptying and nutrient appearance in peripheral circulation in healthy females: a randomized controlled trial comparing pasteurized and ultra-high temperature milk." *Am J Clin Nutr*. 2024;119(5):1200-1215. doi: [10.1016/j.ajcnut.2024.03.002](https://doi.org/10.1016/j.ajcnut.2024.03.002) PMID: 38452857. https://pubmed.ncbi.nlm.nih.gov/38452857/
+[88] Oberoi A et al. Acute effects of whey protein, alone and mixed with other macronutrients, on blood pressure and heart rate in older men. BMC Geriatr. 2022. PMID: 35764960. https://pubmed.ncbi.nlm.nih.gov/35764960/
 
-[95] Li H, Zhao T, Li H, et al. "Effect of Heat Treatment on the Property, Structure, and Aggregation of Skim Milk Proteins." *Front Nutr*. 2021;8:714869. doi: [10.3389/fnut.2021.714869](https://doi.org/10.3389/fnut.2021.714869) PMID: 34604276. https://pubmed.ncbi.nlm.nih.gov/34604276/
+[89] Boelens Keun JT et al. Dietary Approaches to Improve Efficacy and Control Side Effects of Levodopa Therapy in Parkinson's Disease: A Systematic Review. Adv Nutr. 2021. PMID: 34113965. https://pubmed.ncbi.nlm.nih.gov/34113965/
 
-[98] Tunick MH, Thomas-Gahring A, Van Hekken DL, et al. "Physical and chemical changes in whey protein concentrate stored at elevated temperature and humidity." *J Dairy Sci*. 2016;99(3):2372-2383. doi: [10.3168/jds.2015-10256](https://doi.org/10.3168/jds.2015-10256) PMID: 26778305. https://pubmed.ncbi.nlm.nih.gov/26778305/
+[90] Antonio J et al. High protein consumption in trained women: bad to the bone? J Int Soc Sports Nutr. 2018. PMID: 29434529. https://pubmed.ncbi.nlm.nih.gov/29434529/
 
-[99] Fischer E, Cachon R, Cayot N. "Impact of Ageing on Pea Protein Volatile Compounds and Correlation with Odor." *Molecules*. 2022;27(3). doi: [10.3390/molecules27030852](https://doi.org/10.3390/molecules27030852) PMID: 35164147. https://pubmed.ncbi.nlm.nih.gov/35164147/
+[91] Poortmans JR et al. Long-term oral creatine supplementation does not impair renal function in healthy athletes. Med Sci Sports Exerc. 1999. PMID: 10449011. https://pubmed.ncbi.nlm.nih.gov/10449011/
 
-[102] Boirie Y, Dangin M, Gachon P, et al. "Slow and fast dietary proteins differently modulate postprandial protein accretion." *Proc Natl Acad Sci U S A*. 1997;94(26):14930-14935. doi: [10.1073/pnas.94.26.14930](https://doi.org/10.1073/pnas.94.26.14930) PMID: 9405716. https://pubmed.ncbi.nlm.nih.gov/9405716/
+[92] Tsiaras A et al. The Effect of Creatine Supplementation on Kidney Function: A Systematic Review and Meta-Analysis of Randomized Controlled Trials. J Ren Nutr. 2026. PMID: 42035842. https://pubmed.ncbi.nlm.nih.gov/42035842/
 
-[103] Jäger R, Kerksick CM, Campbell BI, et al. "International Society of Sports Nutrition Position Stand: protein and exercise." *J Int Soc Sports Nutr*. 2017;14:20. doi: [10.1186/s12970-017-0177-8](https://doi.org/10.1186/s12970-017-0177-8) PMID: 28642676. https://pubmed.ncbi.nlm.nih.gov/28642676/
+[93] Pereira JP et al. Creatine supplementation in patients with kidney disease - harm or benefit? Nephrol Dial Transplant. 2026. PMID: 42545747. https://pubmed.ncbi.nlm.nih.gov/42545747/
 
-[104] Ikizler TA, Burrowes JD, Byham-Gray LD, et al. "KDOQI Clinical Practice Guideline for Nutrition in CKD: 2020 Update." *Am J Kidney Dis*. 2020;76(3 Suppl 1):S1-S107. doi: [10.1053/j.ajkd.2020.05.006](https://doi.org/10.1053/j.ajkd.2020.05.006) PMID: 32829751. https://pubmed.ncbi.nlm.nih.gov/32829751/
+[94] Kidney Disease: Improving Global Outcomes (KDIGO) CKD Work Group. KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of Chronic Kidney Disease. Kidney Int. 2024. PMID: 38490803. https://pubmed.ncbi.nlm.nih.gov/38490803/
 
-[105] Jacuńska J, Bruciak A, Wilk J, et al. "High-Protein Intake Impact on Human and Animal Kidney Function Across the Lifespan: Clinical Evidence and Emerging Concepts." *Nutrients*. 2026;18(19). doi: [10.3390/nu18193209](https://doi.org/10.3390/nu18193209) PMID: 42884660. https://pubmed.ncbi.nlm.nih.gov/42884660/
+[95] Kistler BM et al. The International Society of Renal Nutrition and Metabolism Commentary on the National Kidney Foundation and Academy of Nutrition and Dietetics KDOQI Clinical Practice Guideline for Nutrition in Chronic Kidney Disease. J Ren Nutr. 2021. PMID: 32737016. https://pubmed.ncbi.nlm.nih.gov/32737016/
 
-[106] Teixeira Silva PR, Santos P, de Miranda Silva Nogueira PA, et al. "Effects of High-Protein Diets on Renal Function and Body Composition in Adults Without Chronic Kidney Disease: A Systematic Review and Meta-Analysis of Randomised Trials." *Diabetes Obes Metab*. 2026;28(9):7672-7683. doi: [10.1111/dom.70996](https://doi.org/10.1111/dom.70996) PMID: 42289790. https://pubmed.ncbi.nlm.nih.gov/42289790/
+[96] MedlinePlus. Diet - chronic kidney disease. https://medlineplus.gov/ency/article/002442.htm
 
-[107] Yamreudeewong W, Henann NE, Fazio A, et al. "Drug-food interactions in clinical practice." *J Fam Pract*. 1995;40(4):376-384. PMID: 7699352. https://pubmed.ncbi.nlm.nih.gov/7699352/
+[97] Owen WF Jr et al. The urea reduction ratio and serum albumin concentration as predictors of mortality in patients undergoing hemodialysis. N Engl J Med. 1993. PMID: 8366899. https://pubmed.ncbi.nlm.nih.gov/8366899/
 
-[108] Rusch C, Flanagan R, Suh H, et al. "To restrict or not to restrict? Practical considerations for optimizing dietary protein interactions on levodopa absorption in Parkinson's disease." *NPJ Parkinsons Dis*. 2023;9(1):98. doi: [10.1038/s41531-023-00541-w](https://doi.org/10.1038/s41531-023-00541-w) PMID: 37355689. https://pubmed.ncbi.nlm.nih.gov/37355689/
+[98] Benner D et al. Effects of Oral Nutritional Supplements on Mortality, Missed Dialysis Treatments, and Nutritional Markers in Hemodialysis Patients. J Ren Nutr. 2018. PMID: 29221626. https://pubmed.ncbi.nlm.nih.gov/29221626/
 
-[109] Boelens Keun JT, Arnoldussen IA, Vriend C, et al. "Dietary Approaches to Improve Efficacy and Control Side Effects of Levodopa Therapy in Parkinson's Disease: A Systematic Review." *Adv Nutr*. 2021;12(6):2265-2287. doi: [10.1093/advances/nmab060](https://doi.org/10.1093/advances/nmab060) PMID: 34113965. https://pubmed.ncbi.nlm.nih.gov/34113965/
+[99] Joy JM et al. The effects of 8 weeks of whey or rice protein supplementation on body composition and exercise performance. Nutr J. 2013. PMID: 23782948. https://pubmed.ncbi.nlm.nih.gov/23782948/
 
-[110] Poortmans JR, Francaux M. "Long-term oral creatine supplementation does not impair renal function in healthy athletes." *Med Sci Sports Exerc*. 1999;31(8):1108-1110. doi: [10.1097/00005768-199908000-00005](https://doi.org/10.1097/00005768-199908000-00005) PMID: 10449011. https://pubmed.ncbi.nlm.nih.gov/10449011/
+[100] Cereda E et al. Whey protein isolate supplementation improves body composition, muscle strength, and treatment tolerance in malnourished advanced cancer patients undergoing chemotherapy. Cancer Med. 2019. PMID: 31568698. https://pubmed.ncbi.nlm.nih.gov/31568698/
 
-[111] Tsiaras A, Loufopoulos G, Theodoridis X, et al. "The Effect of Creatine Supplementation on Kidney Function: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *J Ren Nutr*. 2026. doi: [10.1053/j.jrn.2026.04.010](https://doi.org/10.1053/j.jrn.2026.04.010) PMID: 42035842. https://pubmed.ncbi.nlm.nih.gov/42035842/
+[101] Reljic D et al. Protein Supplementation Does Not Maximize Adaptations to Low-Volume High-Intensity Interval Training in Sedentary, Healthy Adults: A Placebo-Controlled Double-Blind Randomized Study. Nutrients. 2022. PMID: 36235536. https://pubmed.ncbi.nlm.nih.gov/36235536/
 
-[112] Pereira JP, Leal VO, Trigueira P, et al. "Creatine supplementation in patients with kidney disease - harm or benefit?" *Nephrol Dial Transplant*. 2026. doi: [10.1093/ndt/gfag169](https://doi.org/10.1093/ndt/gfag169) PMID: 42545747. https://pubmed.ncbi.nlm.nih.gov/42545747/
-
-[113] Daley SF, Corado A. "Phenylketonuria (PKU)." *StatPearls*. 2026. PMID: 30570999. https://pubmed.ncbi.nlm.nih.gov/30570999/
-
-[114] Elango R, Ball RO. "Protein and Amino Acid Requirements during Pregnancy." *Adv Nutr*. 2016;7(4):839S-844S. doi: [10.3945/an.115.011817](https://doi.org/10.3945/an.115.011817). PMID: 27422521.
-
-[115] Weiler M, Hertzler SR, Dvoretskiy S. "Is It Time to Reconsider the U.S. Recommendations for Dietary Protein and Amino Acid Intake?" *Nutrients*. 2023;15(4):838. doi: [10.3390/nu15040838](https://doi.org/10.3390/nu15040838). PMID: 36839196.
-
-[116] Campbell B, Kreider RB, Ziegenfuss T, et al. "International Society of Sports Nutrition position stand: protein and exercise." *J Int Soc Sports Nutr*. 2007;4:8. doi: [10.1186/1550-2783-4-8](https://doi.org/10.1186/1550-2783-4-8) PMID: 17908291. https://pubmed.ncbi.nlm.nih.gov/17908291/
-
-[117] Jacobson MF, DePorter J. "Self-reported adverse reactions associated with mycoprotein (Quorn-brand) containing foods." *Ann Allergy Asthma Immunol*. 2018;120(6):626-630. doi: [10.1016/j.anai.2018.03.020](https://doi.org/10.1016/j.anai.2018.03.020) PMID: 29567357. https://pubmed.ncbi.nlm.nih.gov/29567357/
-
-[118] Rinde LB, Hopstock LA, Lundblad MW, et al. "Higher habitual protein intake is not linked to decline of iohexol-measured GFR in adults ≥40 years." *Clin Kidney J*. 2026;19(8):sfag235. doi: [10.1093/ckj/sfag235](https://doi.org/10.1093/ckj/sfag235) PMID: 42549120. https://pubmed.ncbi.nlm.nih.gov/42549120/
-
-[119] Bandara SB, Towle KM, Monnot AD. "A human health risk assessment of heavy metal ingestion among consumers of protein powder supplements." *Toxicol Rep*. 2020;7:1255-1262. doi: [10.1016/j.toxrep.2020.08.001](https://doi.org/10.1016/j.toxrep.2020.08.001) PMID: 33005567. https://pubmed.ncbi.nlm.nih.gov/33005567/
-
-[120] Cengiz FP, Cevirgen Cemil B, Emiroglu N, et al. "Acne located on the trunk, whey protein supplementation: Is there any association?" *Health Promot Perspect*. 2017;7(2):106-108. doi: [10.15171/hpp.2017.19](https://doi.org/10.15171/hpp.2017.19) PMID: 28326292. https://pubmed.ncbi.nlm.nih.gov/28326292/
-
-[121] Pontes TdC, Fernandes Filho GM, Trindade AdS, Sobral Filho JF. "Incidence of acne vulgaris in young adult users of protein-calorie supplements in the city of João Pessoa--PB." *An Bras Dermatol*. 2013;88(6):907-912. doi: [10.1590/abd1806-4841.20132024](https://doi.org/10.1590/abd1806-4841.20132024) PMID: 24474098. https://pubmed.ncbi.nlm.nih.gov/24474098/
-
-[122] Präger L, Simon JC, Treudler R. "Food allergy - New risks through vegan diet? Overview of new allergen sources and current data on the potential risk of anaphylaxis." *J Dtsch Dermatol Ges*. 2023;21(11):1308-1313. doi: [10.1111/ddg.15157](https://doi.org/10.1111/ddg.15157) PMID: 37723909. https://pubmed.ncbi.nlm.nih.gov/37723909/
-
-[123] Oberoi A, Giezenaar C, Lange K, et al. "Blood Pressure and Heart Rate Responses following Dietary Protein Intake in Older Men." *Nutrients*. 2022;14(9):1913. doi: [10.3390/nu14091913](https://doi.org/10.3390/nu14091913) PMID: 35565880. https://pubmed.ncbi.nlm.nih.gov/35565880/
-
-[124] Antonio J, Ellerbroek A, Evans C, et al. "High protein consumption in trained women: bad to the bone?" *J Int Soc Sports Nutr*. 2018;15:6. doi: [10.1186/s12970-018-0210-6](https://doi.org/10.1186/s12970-018-0210-6) PMID: 29434529. https://pubmed.ncbi.nlm.nih.gov/29434529/
-
-[125] Barkovich E, Gropman AL. "Late Onset Ornithine Transcarbamylase Deficiency Triggered by an Acute Increase in Protein Intake: A Review of 10 Cases Reported in the Literature." *Case Rep Genet*. 2020;2020:7024735. doi: [10.1155/2020/7024735](https://doi.org/10.1155/2020/7024735) PMID: 32373372. https://pubmed.ncbi.nlm.nih.gov/32373372/
-
-[126] Tagawa R, Watanabe D, Ito K, et al. "Dose-response relationship between protein intake and muscle mass increase: a systematic review and meta-analysis of randomized controlled trials." *Nutr Rev*. 2021;79(1):66-75. doi: [10.1093/nutrit/nuaa104](https://doi.org/10.1093/nutrit/nuaa104) PMID: 33300582. https://pubmed.ncbi.nlm.nih.gov/33300582/
-
-[127] EFSA Panel on Nutrition, Novel Foods and Food Allergens (NDA), Turck D, Bohn T, et al. "Safety of Acheta domesticus (house cricket) spray-dried powder as a Novel food pursuant to Regulation (EU) 2015/2283." *EFSA J*. 2026;24(9):e9946. doi: [10.2903/j.efsa.2026.9946](https://doi.org/10.2903/j.efsa.2026.9946) PMID: 42798873. https://pubmed.ncbi.nlm.nih.gov/42798873/
+[102] MedlinePlus. Creatinine Test. https://medlineplus.gov/lab-tests/creatinine-test/

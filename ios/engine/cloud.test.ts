@@ -1433,7 +1433,7 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     refusing = false;
     const before = attempts;
     // Off screen, the network's return only retries: no catch-up re-read, whose flushSync
-    // would land the save even with no retry owed (lead A21). So the upload is the retry's.
+    // would land the save even with no retry owed (lead A25). So the upload is the retry's.
     engine.cloudHidden();
     engine.cloudOnline();
     await settle();
@@ -1444,6 +1444,6 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
 
   // No iPhone test of "never after a refused grant": on the iPhone the network's catch-up is a
   // re-read, and the engine's re-read retries a failed save first (cloud.ts reread's flushSync),
-  // one of the older save paths the owner left as they are (D2, lead A21). The web pins the rule:
+  // one of the older save paths the owner left as they are (D2, lead A25). The web pins the rule:
   // widget-src/standalone/storage-bar-save-retry.test.tsx.
 });

@@ -2,7 +2,7 @@
 
 Applies to ALL prose Brad's audience reads: YouTube scripts, ads, blogs, emails, X posts, product copy, thumbnails/titles. Load this file before writing or reviewing any of those; run the self-check (bottom) before delivering.
 
-Source: Wikipedia "Signs of AI writing" (Aug 2026), distilled to what matters for our surfaces. Complements — never overrides — the CLAUDE.md forbidden-words table, the doctor-endorsement rules, existing memories (show-don't-tell, 10-year-old language, once-and-done, no all caps), and the script-voice corpus (`brad-voice-patterns.md`, `reference-scripts.md`). **Script deference is scoped, not blanket**: on scripts the voice corpus governs only its own named exemplar patterns; em-dash density now has an explicit script budget (below) and every other rule in this file applies to scripts — "it's a voice device" is not a bypass.
+Source: Wikipedia "Signs of AI writing" (Aug 2026), distilled to what matters for our surfaces. Complements — never overrides — the CLAUDE.md forbidden-words table, the doctor-endorsement rules, existing memories (show-don't-tell, 10-year-old language, once-and-done, no all caps). **This file is the one source of truth for Brad's voice (Brad 2026-11-13): section 4 holds it. Cap: 150 lines, enforced by `tools/check-entropy-caps.js`; a new example replaces an old one.** Every rule here applies to scripts; "it's a voice device" is not a bypass.
 
 **Packaging exemption:** YouTube titles (Title Case per the A/B ledger), thumbnail overlay text (all-caps house style), blog SEO titles, and email subject lines follow their own conventions — the formatting/case rules below don't apply to them. The vocabulary tiers still do.
 
@@ -64,3 +64,53 @@ Source: Wikipedia "Signs of AI writing" (Aug 2026), distilled to what matters fo
 7. Then run the CLAUDE.md forbidden-words scan as usual.
 
 A draft that fails any step gets rewritten, not annotated.
+
+## 4. Brad's voice (scripts, and anything written in his name)
+
+Imitate the examples; don't sprinkle their phrases. After each video, his two or three best new lines replace the weakest examples here (the ledger of all his edits is `docs/script-pipeline/brad-edits.csv`).
+
+**His own words stay.** A line Brad dictated or typed is tidied for speech only: take out the "um"s, false starts and repeated words. Don't swap his words for better ones, tighten his sentences, or cut his "So" and "Now". If a line of his is wrong on a fact or breaks a compliance rule, it goes back to him with the source; it is never fixed silently and never left in silently. Where the writer's text repeats something Brad says, the writer's text goes. The rules above apply to the writer's text, not to his.
+
+**Dictating:**
+
+> We didn't know that this was possible. We'd hypothesized about it, but to actually see it in a clinical trial gives people so much hope that we truly are ending heart disease. So the school of thought used to be that if arterial plaque started developing in your blood vessels, that was a one-way path… But we didn't know that we could significantly reduce that existing plaque.
+
+> This may be the most shocking result in cholesterol research since the HDL drugs failed. A trial of over 8,000 people tested a simple idea. If we lower a particle in our blood called Lp(a), which is thought to be especially harmful to our blood vessels, we should see less heart disease. But it didn't. It failed. So have we got the cholesterol hypothesis wrong? … So what's going on?
+
+> Every cell in our body can produce its own cholesterol, but sometimes that cholesterol needs to be transported to different areas in the body that need temporary top-ups. And cholesterol is fatty, it doesn't mix with water, so it needs to be packaged up in a vehicle called a lipoprotein.
+
+**On camera:**
+
+> The president of the United States is playing golf in Denver when his stomach starts to hurt, and he blames the hamburger that he'd had for lunch. But shortly after midnight, the pain is unmistakable, and that isn't a stomach. Dwight Eisenhower is having a heart attack. And here's what the best medical care on Earth could provide the most powerful man alive at the time. An oxygen tent, morphine, and four other drugs. Then bed from September 24th until November the 11th, nearly 7 weeks.
+
+> We hear cancer breakthrough every year, but people keep dying. We hear this time's different, but it never is. Why then am I excited about a new cancer drug that the FDA just approved in August?
+
+> Here's what I do in the clinic. I start people on rosuvastatin 5 milligrams. If that's not enough, then we add on ezetimibe 10 milligrams.
+
+**What to hear in those:**
+
+- He talks to one person. "You'll know this already."
+- Sentences start with So, Now, But, And, Well, and run on a little, because they are spoken.
+- He says the viewer's doubt for them, in their words, then answers it. "But surely lowering cholesterol will destroy natural hormone production and our memory?" "But hang on, what are PCSK9 inhibitors?" "So why did it fail?"
+- He signposts. "Which brings us to astaxanthin." "As I mentioned earlier." "Here are 5 potential explanations for the failure." "So here's my take on Lp(a)."
+- He has opinions and labels them as his. "I'm not convinced that we need a dedicated Lp(a) drug." "So not exactly a glowing endorsement." "To me, that misses the boat." "That's the really exciting part."
+- "We" is doctors and the field. He simplifies to teach, names the real term beside the plain one, and uses one unit, not two.
+- First person from the clinic and his own life is his normal voice, within CLAUDE.md's rules: what he does with patients, the medicines he takes, what he eats; never which supplements he takes. A clinic line about a medicine is his practice and opinion, not an instruction to the viewer.
+- He is plain. No drama words, no hype, no jokes at anyone's expense.
+
+**What he deletes** (each was written for him and cut):
+
+| Written | What Brad did |
+|---|---|
+| "And this matters." | Cut: "this is AI claude-speak" |
+| "Astaxanthin, the red pigment in salmon, is sold on the same switch." | "…is also marketed as an NRF2 switch" |
+| "That's a real difference against placebo" | Rewritten plainly |
+| "By 2017, the case rested on a very potent switch, protection in rats and mice, longer lives in people who eat these vegetables, and lower blood sugar in diabetes." | Cut: a recap |
+| "That's no reason to fear broccoli. But turning the switch up didn't make these patients better." | Replaced with the viewer's next question |
+| "and at double that level, about twice the risk" | Rewritten: "clumsy" |
+| "And the lesson from this trial is how low LDL goes, not the particular pills." | "And the lesson I take from this trial is about how low LDL goes." |
+| A paragraph of trial numbers for a drug mentioned in passing | "It's a class of medication that helps your liver pull more LDL cholesterol out of the blood. They're very, very well tolerated." |
+| Three studies making one point | One, or none ("meaningless") |
+| A caveat already made, made again | Cut |
+
+The pattern: neat sentences, recaps, aphorisms, a study or number that changes nothing, and a narrator who sounds pleased with the phrasing. When a sentence the writer has produced sounds good, check it against this table, and read the passage aloud at speaking pace.
