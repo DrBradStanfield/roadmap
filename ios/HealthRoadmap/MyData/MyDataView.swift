@@ -107,7 +107,7 @@ struct MyDataView: View {
     }
 
     private var settings: some View {
-        editing(content(settingsList))
+        editing(settingsList(store.myData))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -121,10 +121,7 @@ struct MyDataView: View {
         if let data = store.myData {
             list(data)
         } else if let text = UndrawnRecord.text(hold: store.hold, problem: store.problem) {
-            switch layout {
-            case .health: undrawnPage(text)
-            case .settings: undrawnSettings(text)
-            }
+            undrawnPage(text)
         }
     }
 

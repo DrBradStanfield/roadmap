@@ -22,6 +22,12 @@ final class UndrawnRecordUITests: XCTestCase {
         let delete = app.buttons["Delete all my data"].firstMatch
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "Delete all my data in Settings")
         XCTAssertTrue(app.buttons["Export my record"].firstMatch.exists, "Export my record: the file is still held")
+        delete.tap()
+        let erasePage = app.navigationBars["Delete all my data"]
+        XCTAssertTrue(erasePage.waitForExistence(timeout: 5), "Delete opens the same erase page")
+        XCTAssertTrue(app.buttons["Delete everything"].firstMatch.exists, "its button")
+        erasePage.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "back to Settings")
         app.navigationBars["Settings"].buttons["Done"].tap()
 
         let sync = app.buttons["Sync"].firstMatch
