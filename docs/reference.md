@@ -262,7 +262,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 
 **Audit logging**: Operational writes logged to `audit_logs` via `logAudit()` (anonymized; no health values).
 
-**Account/data deletion**: **Client-side, no server endpoint.** `RoadmapStore.deleteUserData()` bumps `eraseEpoch`, stamps `erasedAt` and flushes an empty file; `mergeFiles()` then makes the erased file the winner on every device, keeping from a losing copy only the measurements, lab values and documents it created at or after `erasedAt` (US-09 AC20). The registered pre-erase hook attempts reminder cancellation before removing its capability from the file; failure is reported but does not block local erasure.
+**Account/data deletion**: **Client-side, no server endpoint.** `RoadmapStore.deleteUserData()` bumps `eraseEpoch`, stamps `erasedAt` and flushes an empty file; `mergeFiles()` then makes the erased file the winner on every device, keeping from a losing copy only the measurements, lab values and documents it created at or after `erasedAt` (US-09 AC20). The registered pre-erase hook reads the reminder capability inside the erase, before the file loses it, and sends the cancellation only once the erase stands (US-11 AC4c); failure is reported but does not block local erasure.
 
 **Data sync:** the v1 cache replay and login-sync branches were removed on 2026-09-07. Every main widget reads and writes RoadmapStore directly. A compatibility cache mirror remains for the separate storefront chat context reader.
 

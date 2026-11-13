@@ -16,7 +16,6 @@
     "packages/health-core/src/lab-catalog.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 785,
     "widget-src/src/components/StartingInfoVitals.tsx": 735,
-    "packages/health-core/src/drive-rest.ts": 730,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,
     "app/routes/api.chat.ts": 698,
@@ -38,7 +37,6 @@
     "packages/health-core/src/product-events.ts": 532,
     "packages/health-core/src/plan.ts": 518,
     "packages/health-core/src/mcp-tool-contract.ts": 515,
-    "app/lib/mcp-clients.server.ts": 508,
     "packages/health-core/src/run-roadmap.ts": 505
   }
 }

@@ -124,7 +124,9 @@ export function useErase(props: EraseDoorProps): Erase {
     });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
-    // shows that copy too (US-16 AC2a). A refused erase moved nothing.
+    // shows that copy too (US-16 AC2a). A refused erase moved nothing, and nor
+    // does one this browser could not hold either: the store puts its copy
+    // back and gives no reason, so ERASE_FAILED is said (lead S57).
     const now = getEraseIdentity();
     const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
     const message = result.success ? (result.warning ? `${done}\n\n${result.warning}` : done) : result.error || ERASE_FAILED;

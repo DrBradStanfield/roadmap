@@ -28,6 +28,7 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
+import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
@@ -137,6 +138,9 @@ export class SyncManager<T extends SyncedFile> {
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
+          // A write that threw may still have landed (a lost answer, a 5xx): only a definite
+          // refusal stored nothing. Marked, never rewrapped, so its words stay (lead S57).
+          else if (typeof error === 'object' && error !== null && !isDefiniteRefusal(error)) uncertainWrite(error);
           if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
           throw error;
         }
@@ -157,10 +161,10 @@ export class SyncManager<T extends SyncedFile> {
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
         // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined);
+        throw uncertainWrite(new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined));
       }
     }
-    throw new StorageError(
+    const storm = new StorageError(
       `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm`,
       // Any earlier attempt may have written, even if the final conflict
       // refused its upload. Track the whole save, not just the last error.
@@ -171,6 +175,7 @@ export class SyncManager<T extends SyncedFile> {
           : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
     );
+    throw mayHaveWritten ? uncertainWrite(storm) : storm;
   }
 
   /**

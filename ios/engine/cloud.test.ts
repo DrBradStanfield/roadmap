@@ -41,6 +41,8 @@ class FakeDropbox {
   delayFor?: Server['delayFor'];
   /** False: uploads fail with a 500; reads still work. */
   uploadsWork = true;
+  /** True: record uploads are refused as a full Dropbox (409 path/insufficient_space), nothing written. */
+  full = false;
   uploads = 0;
   /** Runs once, just before the next upload lands: another device writing first. */
   beforeNextUpload: (() => void) | null = null;
@@ -76,6 +78,7 @@ class FakeDropbox {
       return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
     }
     if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
+    if (this.full) return { status: 409, headers: {}, body: '{"error_summary":"path/insufficient_space/"}' };
     if (slot === 'file') {
       this.beforeNextUpload?.();
       this.beforeNextUpload = null;
@@ -127,7 +130,13 @@ interface Server {
 }
 
 async function phone(dropbox: Server, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
+  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[],
+    /** The token Swift holds, and what a forced refresh replaces it with (null: unchanged). */
+    token: 'token-1', refreshedToken: null as string | null,
+    /** True: a forced refresh is refused (sign in again), while the token held is still handed out. */
+    refreshRefused: false,
+    /** Phone writes that fail before one works (lead S54); `phoneRemoveFails`: removes that leave the file. */
+    phoneWriteFailures: 0, phoneRemoveFails: 0 };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
   const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
   let next = 1;
@@ -150,15 +159,18 @@ async function phone(dropbox: Server, phoneText: string | null = null) {
     utf8Decode: decode,
     accessToken(_provider: string, force: boolean, done: (t: string | null, e: string | null, signIn: boolean) => void) {
       if (force) state.tokenRefreshes += 1;
-      setImmediate(() => (state.signedOut ? done(null, 'Dropbox refused the sign-in.', true) : done('token-1', null, false)));
+      if (force && state.refreshedToken && !state.refreshRefused) state.token = state.refreshedToken;
+      setImmediate(() => (state.signedOut || (force && state.refreshRefused) ? done(null, 'Dropbox refused the sign-in.', true) : done(state.token, null, false)));
     },
     phoneRead: () => JSON.stringify({ text: state.phoneText }),
     phoneWrite: (text: string) => {
       if (state.phoneWriteError) return state.phoneWriteError;
+      if (state.phoneWriteFailures > 0 && state.phoneWriteFailures--) return 'The disk is full.';
       state.phoneText = text;
       return '';
     },
     phoneRemove: () => {
+      if (state.phoneRemoveFails > 0 && state.phoneRemoveFails--) return; // Swift's try? removeItem: a failure says nothing
       state.phoneText = null;
     },
     // The marker as Swift keeps it (PhoneFiles): a generation that rises at every set.
@@ -749,6 +761,51 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     drive.put({ ...drive.record, measurements: [...drive.record.measurements, ...later.measurements] });
     expect(await engine.cloudRefresh()).toBe('changed');
   });
+
+  /** Google Drive with one record, opened, whose next record PATCH lands and then the token lapses:
+   *  the verify read answers 401, and a forced refresh would hand token-2 (lead S57b). */
+  async function driveTokenLapsesAfterPatch() {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    const { erase } = JSON.parse(await engine.cloudOpen('google-drive', 'ios-1', false, false)) as { erase: string };
+    drive.afterPatch = () => {
+      drive.bearer = 'token-2';
+      state.refreshedToken = 'token-2';
+      return true;
+    };
+    return { drive, engine, state, erase };
+  }
+  const lastFailure = (events: Array<[string, string]>) => JSON.parse(events.filter(([event]) => event === 'failed').at(-1)![1]) as { kind: string };
+
+  it('S57b (a, b): a Drive save whose token lapses after its PATCH is not sent again, says it could not reach Drive, and the next save asks for a fresh token first', async () => {
+    const { drive, engine, state, erase } = await driveTokenLapsesAfterPatch();
+    engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(drive.patches).toBe(1); // the write that may have landed is never retried (S57)
+    expect(drive.unauthorized).toBe(1); // the verify read
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'unreachable' }); // not "sign in again"
+    expect(state.tokenRefreshes).toBe(0);
+
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(state.tokenRefreshes).toBe(1);
+    expect(drive.unauthorized).toBe(1); // the next call went out on token-2: no second 401
+    expect(days(drive.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('S57b (d): after that 401, a next call whose forced refresh is refused says sign in, every time', async () => {
+    const { drive, engine, state, erase } = await driveTokenLapsesAfterPatch();
+    engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'unreachable' });
+
+    state.refreshRefused = true;
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'sign-in' });
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'sign-in' });
+    expect(drive.patches).toBe(1);
+  });
   it('F1: a re-read never says synced while an edit waits on the phone', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
@@ -1068,6 +1125,143 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
     expect(days(dropbox.record)).toEqual([]);
   });
+
+  it('an erase the cloud refused and the phone could not keep is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const phoneBefore = state.phoneText;
+    dropbox.full = true;
+    state.phoneWriteError = 'The disk is full.';
+
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    // The chat step ran (it is irreversible); the record erase did not happen, so DataEraser says so.
+    expect(result).toMatchObject({ success: false, erased: false, chatErased: true, view: null });
+    expect(result.error).toBeUndefined();
+    expect(state.phoneText).toBe(phoneBefore);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+
+    // The session is back at the erase the screen shows: an edit under it is taken, and the
+    // next good save sends the record as it was plus that edit, nothing erased.
+    dropbox.full = false;
+    state.phoneWriteError = '';
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).not.toMatchObject({ reason: 'erased' });
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
+    expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('an erase that reached Google Drive, whose check then met an expired sign-in, is kept: the token retry never replaces the landed mark (lead S57)', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    // The PATCH lands the erase; then the sign-in lapses, so the verify read answers 401 and a forced refresh asks to sign in.
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      drive.expired = true;
+      state.signedOut = true;
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(result).toMatchObject({ success: false, erased: true });
+  });
+
+  it('S57b (c): an erase whose Drive token lapses after its PATCH is kept, never put back, and the next save carries it on a fresh token', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    let erasePatch = 0;
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      erasePatch = drive.patches;
+      drive.bearer = 'token-2';
+      state.refreshedToken = 'token-2';
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect((JSON.parse(result.view!.record) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(drive.patches).toBe(erasePatch); // the erase's write is never sent again
+
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(drive.unauthorized).toBe(1); // the next call went out on a fresh token
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(days(drive.record)).toEqual([]);
+  });
+
+  // Lead S54: the erase reached the cloud, so the session removed the phone's pre-erase
+  // file; the erased record then goes in its place. Each case counts the phone's failures.
+  async function erasedWithPhone(writeFailures: number, removeFailures: number) {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    await new Promise((resolve) => setTimeout(resolve, 20)); // the phone holds the pre-erase copy
+    const phoneBefore = state.phoneText;
+    expect(days(JSON.parse(phoneBefore!) as RoadmapFile)).toEqual(['2026-10-01']);
+    state.phoneWriteFailures = writeFailures;
+    state.phoneRemoveFails = removeFailures;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true });
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    return { state, phoneBefore };
+  }
+
+  it('lead S54: a phone write that fails once is retried, and the phone holds the erased record', async () => {
+    const { state } = await erasedWithPhone(1, 0);
+    const onPhone = JSON.parse(state.phoneText!) as RoadmapFile;
+    expect(onPhone.meta.eraseEpoch).toBe(1);
+    expect(days(onPhone)).toEqual([]);
+  });
+
+  it('lead S54: two failed writes remove the phone file again, so a pre-erase copy a first remove left is gone', async () => {
+    const { state } = await erasedWithPhone(2, 1);
+    expect(state.phoneText).toBeNull(); // a relaunch opens empty, never on the pre-erase copy
+  });
+
+  it('lead S54 residual (words: lead S61): two failed writes and two failed removes leave the pre-erase copy, as before', async () => {
+    const { state, phoneBefore } = await erasedWithPhone(2, 2);
+    expect(state.phoneText).toBe(phoneBefore);
+  });
+
+  it('lead S54: an erase the cloud refused is kept on the phone when the phone write fails once, then works', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    dropbox.full = true;
+    state.phoneWriteFailures = 1;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.pending).toBe(true);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+  });
+
+  it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const phoneBefore = state.phoneText;
+    dropbox.uploadsWork = false;
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.phoneText).toBe(phoneBefore); // a relaunch before the retry lands reads this
+    dropbox.uploadsWork = true;
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
 });
 
 /** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */
@@ -1080,6 +1274,16 @@ class FakeDrive implements Server {
   /** Runs at the version read that comes right before an upload. */
   beforeVersionCheck: (() => void) | null = null;
   private versionReads = 0;
+  /** Runs right after each PATCH lands, until it answers true. */
+  afterPatch: ((body: string) => boolean) | null = null;
+  /** True: every call answers 401, the token expired. */
+  expired = false;
+  /** The token Drive accepts; any other bearer answers 401, counted (lead S57b). */
+  bearer = 'token-1';
+  unauthorized = 0;
+  patches = 0;
+  /** Originals filed in Drive, by file name (US-73 AC12). */
+  documents = new Map<string, string>();
 
   put(record: RoadmapFile): void {
     this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
@@ -1088,9 +1292,13 @@ class FakeDrive implements Server {
     return JSON.parse(this.file!.text) as RoadmapFile;
   }
 
-  answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
+  answer(url: string, headers: Record<string, string>, body: string | null, method: string): ReturnType<Server['answer']> {
     const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
-    expect(headers.authorization).toBe('Bearer token-1');
+    if (this.expired) return { status: 401, headers: {}, body: 'expired' };
+    if (headers.authorization !== `Bearer ${this.bearer}`) {
+      this.unauthorized += 1;
+      return { status: 401, headers: {}, body: 'expired' };
+    }
     const u = new URL(url);
     const q = u.searchParams.get('q') ?? '';
     // EngineHTTP.swift's allow-list for a Drive search: no orderBy (US-10 AC4a).
@@ -1101,6 +1309,13 @@ class FakeDrive implements Server {
       return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
     }
     if (method === 'GET' && u.pathname === '/drive/v3/files' && this.missing && q.includes(this.missing)) return ok({ files: [] });
+    const names = [...this.documents.keys()];
+    const named = names.findIndex((name) => q.includes(name));
+    if (method === 'GET' && u.pathname === '/drive/v3/files' && named >= 0) return ok({ files: [{ id: `doc-${named}` }] });
+    const doc = /^\/drive\/v3\/files\/doc-(\d+)$/.exec(u.pathname);
+    if (method === 'GET' && doc && u.searchParams.get('alt') === 'media') {
+      return { status: 200, headers: { 'Content-Type': 'application/pdf' }, body: this.documents.get(names[Number(doc[1])])! };
+    }
     if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
     if (method === 'POST' && u.pathname === '/drive/v3/files') {
       this.folderMade = true;
@@ -1125,6 +1340,8 @@ class FakeDrive implements Server {
     }
     if (method === 'PATCH' && u.pathname === '/upload/drive/v3/files/file-1') {
       this.file = { text: body!, version: (this.file?.version ?? 0) + 1 };
+      this.patches += 1;
+      if (this.afterPatch?.(body!)) this.afterPatch = null;
       return ok({ id: 'file-1', version: String(this.file.version) });
     }
     throw new Error(`FakeDrive has no ${method} ${url}`);
@@ -1290,6 +1507,24 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
     await engine.cloudClose(false);
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
+  });
+
+  it('US-73 AC12: a Google Drive original reads back through the shim\'s Response, which has no blob()', async () => {
+    const { engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    await engine.cloudClose(false);
+
+    const drive = new FakeDrive();
+    const withRow = await recordWith([], 'web');
+    withRow.documents = [row];
+    drive.put(withRow);
+    drive.folderMade = true;
+    drive.documents.set(row.fileRef.split('/').pop()!, '%PDF letter');
+    const onDrive = await phone(drive);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false, false);
+    const original = await onDrive.engine.documentOriginal(row.id);
+    expect(Buffer.from(new Uint8Array(original)).toString('utf8')).toBe('%PDF letter');
   });
 
   it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {

@@ -357,26 +357,37 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
 }
 
 /**
- * Erase teardown, run BEFORE "Delete all my data" wipes the file (US-17 AC1b,
- * amended 2026-09-10: the row is tombstoned — deleted outright only when a
- * Google ID token proves the inbox, because a bare token's delete re-opened
- * the plan-ready email to every optin→cancel→optin cycle). Reaching the one
- * copy that isn't on the user's device needs the capability token that lives
- * in the file we're about to destroy, so this cannot run afterwards.
- * A refused cancel throws. The erase still goes ahead (deleteUserData) and
- * sends the failure to Sentry. No retry: the token is gone.
+ * Erase teardown in two phases (US-17 AC1b; US-11 AC4c, lead S59). The row is
+ * tombstoned, or deleted outright when a Google ID token proves the inbox,
+ * because a bare token's delete re-opened the plan-ready email to every
+ * optin→cancel→optin cycle (amended 2026-09-10).
+ * This prepare runs inside the erase, before the swap, because the erased
+ * file holds no token: it reads the opt-in and fetches the proof, and sends
+ * and logs nothing. The commit it returns runs only once the erased copy
+ * stands (deleteUserData), so a refused erase cancels nothing. It leaves with
+ * keepalive and the proof in hand, so it stays a delete. A refused cancel is
+ * reported by its status alone; no retry, the token is gone.
  *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
  * (where the store lives) must never import `standalone/`.
  */
-export async function cancelRemindersForErase(): Promise<void> {
-  // An erase leaves no reminder token on the device, not even a cancelled one.
-  safeRemoveItem(SWITCH_CANCELLED_KEY);
-  const optIn = getReminderOptIn();
-  if (optIn?.status !== 'active') return;
-  const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
-  if (!res.ok) throw new Error(`Reminder row delete failed (${res.status}).`);
+export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
+  let cancel: { token: string; idToken: string | null } | 'unprepared' | null = null;
+  try {
+    const optIn = getReminderOptIn();
+    if (optIn?.status === 'active') cancel = { token: optIn.token, idToken: await cancelProofFor(optIn.provider) };
+  } catch {
+    cancel = 'unprepared'; // what failed may quote the token or proof: nothing of it is kept
+  }
+  return async () => {
+    // An erase leaves no reminder token on the device, not even a cancelled one.
+    safeRemoveItem(SWITCH_CANCELLED_KEY);
+    if (!cancel) return;
+    const status = cancel === 'unprepared' ? 'unprepared' : await postCancel(cancel.token, cancel.idToken, true)
+      .then((res) => (res.ok ? null : String(res.status)), () => 'unsent');
+    if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
+  };
 }
 
 /** Turn reminders off (server row tombstoned, or deleted when Drive can prove
@@ -387,10 +398,14 @@ export async function cancelRemindersForErase(): Promise<void> {
 export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
   const optIn = getReminderOptIn();
   if (!optIn) return;
+  // The record this Turn off was asked for: an erase that lands during the
+  // cancel leaves reminders off already, and the old opt-in (its address and
+  // token) is refused, not written into the erased record (US-11 AC4b).
+  const erase = getShownErase();
   const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
-  setReminderOptIn({ ...optIn, status: 'cancelled' });
+  setReminderOptIn({ ...optIn, status: 'cancelled' }, erase);
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per

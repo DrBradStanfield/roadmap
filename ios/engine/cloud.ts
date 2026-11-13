@@ -258,8 +258,11 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
  * `erased`: the working copy is now the erased record, written or not. When
  * the write failed, the session mirrored it onto the phone, marked pending,
  * and the next flush or open sends it: the screen shows it, and the app says
- * the cloud still has to take it. On success the session wiped the pre-erase
- * mirror; the erased record goes in its place, so an offline launch opens on it.
+ * the cloud still has to take it. When the cloud refused the write outright
+ * and that mirror write failed too, the session put its copy back: `erased` is false and nothing changed but the
+ * chat step (lead S57). On success the session wiped the pre-erase
+ * mirror; the erased record goes in its place, so an offline launch opens on it
+ * (keepErasedOnPhone: when that write fails, it tries again to remove this phone's copy).
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   checkArgs('cloudErase', arguments);
@@ -292,12 +295,21 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   });
   const erased = at.session.eraseIdentity !== before;
   if (result.success) {
-    await saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now: nowIso }).catch(() => {});
+    await keepErasedOnPhone(at, nowIso);
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
   }
   return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+}
+
+/** The erased record onto the phone, in place of the mirror the session removed
+ *  (lead S54). One retry; when both writes fail, remove the phone's file again,
+ *  so a relaunch never opens on a pre-erase copy a first remove left behind.
+ *  A copy that outlives both removes is the S54 residual (its words: lead S61). */
+async function keepErasedOnPhone(at: Open, now: string): Promise<void> {
+  const write = () => saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now });
+  await write().catch(write).catch(() => __native.phoneRemove());
 }
 
 /** A file read but not understood: not JSON, or a newer schema than this engine's. */
