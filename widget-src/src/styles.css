@@ -5340,8 +5340,9 @@ input[type="number"] {
 .md-add input[inputmode] {
   width: 76px;
 }
-/* H78: focus drawn inside the box in the brand teal (5:1 on white), never the theme's dark ring over "/" and "mmHg". WebKit never matches :focus-visible on a date input (its inner fields hold focus), so it uses :focus-within (US-62 AC10b). */
-.md-add input:focus-visible, .md-add input[type="date"]:focus-within { outline: 2px solid var(--color-brand-text); outline-offset: -2px; box-shadow: none; }
+/* H78: focus drawn inside the box in the brand teal (5:1 on white), never the theme's dark ring over "/" and "mmHg". WebKit never matches :focus-visible on a date input (its inner fields hold focus), so it uses :focus-within (US-62 AC10b). The lab Add form and the matrix's date cells too (H89): a date cell's Tab stop is its hidden date input. */
+.md-add input:focus-visible, .alr-add-form input:focus-visible, .md-add input[type="date"]:focus-within, .alr-add-form input[type="date"]:focus-within,
+.bt-cell-draft-date:focus-within, .bt-cell-movable:focus-within { outline: 2px solid var(--color-brand-text); outline-offset: -2px; box-shadow: none; }
 .md-add-unit {
   font-size: 13px;
 }
