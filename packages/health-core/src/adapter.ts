@@ -135,6 +135,22 @@ export async function fetchOrFail(
 }
 
 /**
+ * Waits on `work` until the caller's `signal` aborts, then fails as a call
+ * with no answer, in `fetchOrFail`'s words. The work itself runs on under its
+ * own request bounds: it is shared and cached (Drive's document-folder lookup),
+ * so one caller's deadline must not cancel it for the others (US-09 AC51).
+ */
+export function untilAborted<T>(provider: string, work: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return work;
+  return new Promise<T>((resolve, reject) => {
+    const stop = () => reject(new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, signal.reason));
+    work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
+    if (signal.aborted) stop();
+    else signal.addEventListener('abort', stop, { once: true });
+  });
+}
+
+/**
  * A 2xx whose body is not JSON is a broken answer, not a crash: an empty object
  * drops each caller into its own "returned no id/version/rev" path. It lives
  * beside `fetchOrFail` because it answers the next question that helper raises

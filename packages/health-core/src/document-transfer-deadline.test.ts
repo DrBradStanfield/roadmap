@@ -82,6 +82,25 @@ describe('US-09 AC51: a Drive document download has the 5-minute document deadli
   });
 });
 
+describe("US-09 AC51, US-35 AC5: the caller's signal also ends the Drive folder discovery before the download (Codex R1)", () => {
+  it('with every request stalled, a fresh adapter fails at the caller\'s 1 s, not at 30 s', async () => {
+    const signals: AbortSignal[] = [];
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit = {}) => {
+      signals.push(init.signal!);
+      return new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+      });
+    }));
+    const caller = new AbortController();
+    setTimeout(() => caller.abort(new DOMException('caller deadline', 'TimeoutError')), 1_000);
+    const failure = await outcomeAt(new DriveAdapter('token', { documents: 'write' }).readDocument('Lab results/a.pdf', caller.signal), 1_000);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as Error).message).toBe('Google Drive did not answer');
+    expect((failure as StorageError).hint).not.toBe(LANDED); // a read wrote nothing
+    expect(signals).toHaveLength(1); // still in the folder lookup: the download never started
+  });
+});
+
 describe('US-09 AC51: a Dropbox document download has the 5-minute document deadline (was 30 s)', () => {
   it('a download that gets no answer is aborted at 5 minutes, not at 30 s', async () => {
     const { signals } = provider('stall');

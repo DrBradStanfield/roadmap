@@ -34,6 +34,7 @@ import {
   ROADMAP_FILE_NAME,
   jsonBody,
   StorageError,
+  untilAborted,
   type DocumentAccess,
   type ReadResult,
   type StorageAdapter,
@@ -630,7 +631,7 @@ export class DriveAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
-    const { name, parentId } = await this.docTarget(ref, 'read');
+    const { name, parentId } = await this.docTarget(ref, 'read', signal);
     return driveDownloadDocument(this.accessToken, name, parentId, signal);
   }
 
@@ -669,10 +670,10 @@ export class DriveAdapter implements StorageAdapter {
 
   /** Where a document ref lives, once the opt-in allows it. Without the
    *  opt-in this is the hosted server's refusal, word for word. */
-  private async docTarget(ref: string, verb: 'read' | 'write'): Promise<{ name: string; parentId: string }> {
+  private async docTarget(ref: string, verb: 'read' | 'write', signal?: AbortSignal): Promise<{ name: string; parentId: string }> {
     if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`);
     const { folder, name } = splitDocumentRef(ref);
-    return { name, parentId: await this.documentFolder(folder) };
+    return { name, parentId: await untilAborted(PROVIDER, this.documentFolder(folder), signal) };
   }
 
   /** Find-or-create a document's folder ('Lab results') inside the app
