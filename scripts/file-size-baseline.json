@@ -5,11 +5,11 @@
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
-    "tools/codex-review.mjs": 1699,
+    "tools/codex-review.mjs": 1683,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "packages/health-core/src/suggestions.ts": 1160,
     "packages/health-core/src/record-edits.ts": 1029,
-    "widget-src/src/components/InputPanel.tsx": 1026,
+    "widget-src/src/components/InputPanel.tsx": 1025,
     "packages/health-core/src/mcp-import.ts": 959,
     "packages/health-core/src/merge.ts": 893,
     "ios/scripts/app-store-video-compose.swift": 882,
@@ -17,13 +17,13 @@
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 786,
-    "widget-src/src/storage/drive.ts": 755,
     "packages/health-core/src/mcp-tools.ts": 747,
     "widget-src/src/components/StartingInfoVitals.tsx": 735,
     "packages/health-core/src/drive-rest.ts": 730,
     "app/routes/mcp.$.tsx": 724,
+    "widget-src/src/storage/drive.ts": 721,
     "packages/health-core/src/validation.ts": 712,
-    "app/lib/chat.server.ts": 707,
+    "app/lib/chat.server.ts": 701,
     "widget-src/src/components/BloodTestTimeline.tsx": 660,
     "packages/health-core/src/types.ts": 656,
     "ios/HealthRoadmap/MyData/MyDataView.swift": 647,
@@ -42,7 +42,6 @@
     "packages/health-core/src/mcp-tool-contract.ts": 523,
     "packages/health-core/src/plan.ts": 518,
     "app/lib/mcp-clients.server.ts": 508,
-    "packages/health-core/src/run-roadmap.ts": 505,
-    "instrument-scrub.mjs": 503
+    "packages/health-core/src/run-roadmap.ts": 505
   }
 }

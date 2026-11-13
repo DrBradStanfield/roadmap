@@ -361,9 +361,11 @@ describe('#788 review, finding 1: a Drive refresh whose 200 body cannot be read 
     expect(JSON.parse(localStorage.getItem('health_roadmap_gdrive_tokens')!).refreshToken).toBe('refresh');
   });
 
-  it.each([400, 401])('a %s (refresh token revoked) clears the tokens, and the reminder identity is null, not a retry', async (status) => {
+  // US-09 AC47: only Google's invalid_grant clears the tokens now; a bare
+  // 400/401 keeps them (refresh-single-flight.test.ts). Both are "none".
+  it.each([400, 401])('a %s invalid_grant (refresh token revoked) clears the tokens, and the reminder identity is null, not a retry', async (status) => {
     seedDrive();
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status })));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"invalid_grant"}', { status })));
 
     await expect(new GoogleDriveAdapter(DRIVE_CONFIG).tryServerRefresh()).resolves.toBe(false);
     expect(localStorage.getItem('health_roadmap_gdrive_tokens')).toBeNull();

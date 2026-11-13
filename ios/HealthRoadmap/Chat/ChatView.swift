@@ -100,6 +100,8 @@ struct ChatView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 24)
                             starters
+                            // App Review 1.4.1: the welcome screen's education line, here until the first question.
+                            Text(EducationNote.text).font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                         }
                         ForEach(transcript.shown) { ChatBubble(line: $0) }
                         ChatEditBanners(edits: edits)

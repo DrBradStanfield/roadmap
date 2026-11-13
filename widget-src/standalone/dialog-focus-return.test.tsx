@@ -39,7 +39,6 @@ vi.mock('./connect', () => ({
   connectRefusal: () => null,
   rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 // The chart panel itself is not under test: a stand-in keeps the lazy load instant.
 vi.mock('../src/components/HistoryPanel', () => ({

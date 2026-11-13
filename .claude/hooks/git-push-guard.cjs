@@ -181,7 +181,8 @@ for (const seg of segs) {
   // not a wall: a gh alias or another tool cannot be seen here.
   if (gh >= 0 && seg[gh + 1] === 'api') {
     const a = seg.slice(gh + 2);
-    const writes = a.some((t, k) => (/^(-X|--method)$/.test(a[k - 1] || '') || /^(-X|--method=)/.test(t)) && /(PATCH|POST|PUT)$/i.test(t))
+    // Any field is a write, whatever method is given: a gh flag that takes a value can swallow a GET spelling.
+    const writes = a.some((t, k) => (/^(-X|--method)$/.test(a[k - 1] || '') || /^(-X|--method=)/.test(t)) && /(PATCH|POST|PUT|DELETE)$/i.test(t))
       || a.some((t) => /^(-f|-F|--field|--raw-field|--input)(=|$)/.test(t));
     if (a.some((t) => /pulls\/[^/\s]+\/merge\b|\/merges\b|mergePullRequest|mergeBranch|updateRef/i.test(t))
         || (writes && a.some((t) => /git\/refs\/heads\/main\b/.test(t)))) {

@@ -5,7 +5,6 @@
  * (sync-control.tsx), so it lives here to avoid a circular import between those
  * two modules.
  */
-import { useState } from 'react';
 import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-transfer';
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
@@ -174,26 +173,6 @@ export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, 
  *  so a page that stops mid-lift lifts it on the next load. */
 export function rememberSignIn(saved: boolean, backend: CloudBackend, gen: LogOffId): boolean {
   return saved && rememberBackend(backend, gen);
-}
-
-/**
- * Busy/error scaffold for the sync control's connect buttons (the picker uses switch-flow.ts).
- * Success is expected to end in a navigation or reload, so busy stays true.
- */
-export function useBusyRun() {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = async (fn: () => Promise<void>): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Connection failed.');
-      setBusy(false);
-    }
-  };
-  return { busy, error, setError, run };
 }
 
 /** The adapter for a connected cloud backend (null for the on-device tier);

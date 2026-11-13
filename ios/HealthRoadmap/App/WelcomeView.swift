@@ -108,7 +108,7 @@ struct WelcomeView: View {
     }
 
     private var disclaimer: some View {
-        Text("For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
+        Text(EducationNote.text)
             .font(.footnote)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)

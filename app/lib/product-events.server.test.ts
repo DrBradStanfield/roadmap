@@ -677,6 +677,7 @@ describe('recordServerEvent — the server path validates too', () => {
       { ...call, outcome: 'refused', reason: 'malformed' },
       { ...call, outcome: 'refused', reason: 'confirm', confirmReason: 'confirm-spent' },
     ]);
+    expect(captureMessage.mock.calls.map(([, options]) => options.extra.keys)).toEqual([['confirmReason'], ['confirmReason'], ['via']]);
   });
 
   // US-62 AC1: the browser route records through this same door, so the

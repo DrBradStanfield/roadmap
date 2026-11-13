@@ -455,8 +455,8 @@ export function mcpClientLabel(clientId: string): McpClientLabel {
   return KNOWN_CLIENTS.get(clientId)?.label ?? 'other';
 }
 
-/** One counter row per tool call: which tool, which assistant, whether it
- *  worked. Why it carries nothing else: docs/mcp-architecture.md §1. */
+/** One counter row per tool call: tool, assistant, outcome, step and the
+ *  closed-list refusal reasons; why only these: docs/mcp-architecture.md §1. */
 function countToolCall(
   clientId: string,
   tool: string,

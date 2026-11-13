@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A21,web sync,"InputPanel reads the plaintext mirror key at mount, including on a page that may not write this device's files",lead,not started,"widget-src/src/components/InputPanel.tsx:198 calls loadFromLocalStorage() (health_roadmap_data) once at mount to pick the legacy or matrix vitals view. On a page that may not write this device's health files (US-09 AC2c) the read still happens; it only picks the view, and nothing from it is shown. Found 2026-11-13",,no
