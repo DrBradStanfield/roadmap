@@ -1931,6 +1931,19 @@ A new user answers sex, birth month and year, height and weight, one per screen,
   one place, `OnboardingFlow.landing(moved:)`. Any other refusal shows its words and repins. Pin and unpin are effects: begin pins as the first page shows,
   finishing gives the pin back. Lead F3: a save landing after `onDisappear` could unpin twice
   (no live path: the cover closes only through finish).
+- **The cover and the backup offer, one state each (2026-11-13, iPhone survey S9, S16).**
+  `Cover` (App/FirstRun.swift) is deciding, welcome, `questions(Run)` (fresh, onlyMissing,
+  afterErase) or none, changed only by `Cover.transition` (launched, started, connected,
+  finished, erased), which names its effect, finish or startOver. It replaced `firstRun`,
+  `decided` and three `@AppStorage` aliases. Why: finish ran from three places, so it could
+  run twice; now a second finish does nothing. The eight keys keep their names, so no
+  migration: `FirstRunKeys.persist` writes them, and finishing now clears the run's flags.
+  Welcome's Start on a full record finishes too (S34), so its saves count. `Offer` is idle,
+  `offering(backUp:)` or sync, replacing three Bools; Back up leaves `prompting`, which closes
+  the prompt, and Sync opens in its onDismiss, so two sheets never overlap. One
+  `.task(id: offerAsks)` holds the 1 s wait, so a newer ask restarts it. `FirstRunTests` holds
+  both tables. Open: a remote erase while the backup or Sync sheet is up (S9 fault 1) waits for
+  a simulator probe.
 
 ### D13 · "Do you drink alcohol?": one profile answer, the engine drops the card (Brad, 2026-10-31, US-60)
 

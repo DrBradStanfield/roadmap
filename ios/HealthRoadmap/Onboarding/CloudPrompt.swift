@@ -73,10 +73,8 @@ struct CloudPromptView: View {
                 Text("Your record is only on this iPhone. Keep a copy in your own Dropbox or Google Drive, so a lost phone does not lose it. Dr Brad's server never sees it.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
-                Button("Back up") {
-                    dismiss()
-                    backUp()
-                }
+                // The caller closes it (RootView's Offer), then opens Sync once it has gone.
+                Button("Back up", action: backUp)
                 .buttonStyle(.accent)
                 .accessibilityIdentifier("backup.backUp")
                 Button("Not now") { dismiss() }
