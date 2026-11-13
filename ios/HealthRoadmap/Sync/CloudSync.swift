@@ -194,9 +194,10 @@ final class CloudSync: CloudPort {
         }
         // "Delete all my data" takes the account's email too; the connection stays.
         if result.erased { forgetEmail() }
-        // A Disconnect or reopen during the await owns the screen now (review F7).
-        guard connection.shownSession == session else { return result }
-        let shown = result.erased ? result.view.map { store.showErased($0) } : nil
+        // Always reaches the store (AC16g). A Disconnect or reopen during the await owns the
+        // screen now (review F7): the store then lands it only on this session's record, and
+        // `eraseEnded` changes nothing for a session no longer shown.
+        let shown = result.erased ? store.showErased(result.view) { [weak self] in self?.connection.shownSession == session } : nil
         send(.eraseEnded(session: session, result.success ? .done : .failed(SyncProblem(kind: .unreachable)), at: .now))
         // Done once the screen shows the erased record.
         await shown?.value
