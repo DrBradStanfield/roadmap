@@ -38,7 +38,6 @@
     "packages/health-core/src/product-events.ts": 532,
     "packages/health-core/src/plan.ts": 518,
     "packages/health-core/src/mcp-tool-contract.ts": 515,
-    "app/lib/mcp-clients.server.ts": 508,
     "packages/health-core/src/run-roadmap.ts": 505
   }
 }
