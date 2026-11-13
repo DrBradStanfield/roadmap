@@ -231,6 +231,7 @@ describe.each([
     ['Google Drive: 403 rateLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"rateLimitExceeded"}]}}'), true],
     ['Google Drive: 403 userRateLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"userRateLimitExceeded"}]}}'), true],
     ['Google Drive: 403 dailyLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"dailyLimitExceeded"}]}}'), true],
+    ['Google Drive: 403 dailyLimitExceededUnreg (no valid credentials) is definite', status('Google Drive', 403, '{"error":{"errors":[{"reason":"dailyLimitExceededUnreg"}]}}'), false],
     ['Google Drive: 403 storageQuotaExceeded (full)', status('Google Drive', 403, '{"error":{"errors":[{"reason":"storageQuotaExceeded"}]}}'), false],
     ['Google Drive: 403 insufficientPermissions', status('Google Drive', 403, '{"error":{"errors":[{"reason":"insufficientPermissions"}]}}'), false],
     ['Google Drive: a damaged copy pauses saving', new StorageError('A copy of the record in Google Drive could not be read, so saving is paused.', 'Saving resumes once it is repaired.'), false],

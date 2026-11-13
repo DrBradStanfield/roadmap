@@ -255,7 +255,8 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
   // The reason may sit on a cause: Drive wraps a PATCH's refusal ("record update failed.").
   if (error instanceof StorageError && error.status === 403) {
     const said = messages(error);
-    if (/ratelimitexceeded|dailylimitexceeded/i.test(said)) return 'unreachable';
+    // dailyLimitExceededUnreg is a call with no valid credentials, not a passing limit.
+    if (/ratelimitexceeded|dailylimitexceeded(?!unreg)/i.test(said)) return 'unreachable';
     if (/storagequotaexceeded/i.test(said)) return 'storage-full';
     return 'sign-in';
   }
