@@ -182,11 +182,11 @@ describe('US-20 AC6: the bottom tab bar', () => {
     const panel = panelOf(view, chat);
     vi.spyOn(panel, 'getBoundingClientRect').mockImplementation(() => ({ top: 250 } as DOMRect));
     vi.spyOn(panel.querySelector('.chat-embed')!, 'getBoundingClientRect').mockImplementation(() => ({ top: 267 } as DOMRect));
-    vi.spyOn(view.container.querySelector('.hr-tabbar')!, 'getBoundingClientRect').mockImplementation(() => ({ height: 51 } as DOMRect));
+    vi.spyOn(view.container.querySelector('.hr-tabbar')!, 'getBoundingClientRect').mockImplementation(() => ({ height: 60 } as DOMRect)); // not the 51px fallback: the bar itself is measured
     fireEvent.click(chat);
     const root = view.container.querySelector<HTMLElement>('.health-tool')!;
     expect(root.style.getPropertyValue('--hr-chat-top')).toBe('17px'); // no theme header here: the card's own inset
-    expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('51px');
+    expect(root.style.getPropertyValue('--hr-tabbar-h')).toBe('60px');
     expect(cascaded(panel.querySelector('.chat-embed')!, 'height', 390)).toBe('calc(100svh - var(--hr-chat-top, 0px) - var(--hr-tabbar-h, 51px) - 12px)');
   });
 

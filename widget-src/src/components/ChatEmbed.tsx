@@ -25,9 +25,11 @@ interface ChatEmbedProps {
   guestInputs?: ChatContextSource;
   muted?: boolean;
   onProposeEdit?: ChatEditTarget;
+  /** The chat's card: a phone's tab switch sizes it from its measured top (hooks/useTabs). */
+  cardRef?: React.RefObject<HTMLDivElement>;
 }
 
-export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: ChatEmbedProps) {
+export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardRef }: ChatEmbedProps) {
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
@@ -88,7 +90,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   return (
     <div className="chat-embed-root no-print" data-clarity-mask="true" ref={rootRef}>
       <ColumnHeader title="Ask about your plan" muted={muted} />
-      <div className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
+      <div ref={cardRef} className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
 
       {drawerOpen && (
         <div className="chat-embed-drawer-overlay" onClick={() => setDrawerOpen(false)} />
