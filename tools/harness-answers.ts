@@ -1,10 +1,11 @@
 /**
- * Pure helpers for tools/test-chatbot-matching.ts: how an answer is read for the
+ * Pure helpers for tools/test-chatbot-matching.ts: how an answer is scored (scoreAnswer) and read for the
  * must_not_claim, regex and profile-edit checks, and what a run would cost before it spends
  * anything (--estimate; Brad 2026-11-10: no paid run without a cost estimate first).
  */
 import { PRICES } from '../packages/health-core/src/models';
-import type { ProposedEdit, ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
+import { toolOnlyAck, type ProposedEdit, type ProposedProfileEdit } from '../packages/health-core/src/chat-edits';
+import type { ChatContentBlock, RoadmapRoundCounts } from '../packages/health-core/src/run-roadmap';
 
 const NEGATION = /\b(no|not|never|cannot|without|nor|nothing|none|neither)\b|n't\b/;
 // A negation only excuses a phrase from inside its own clause.
@@ -43,6 +44,59 @@ export function profileEditFailures(expected: { sex?: 'male' | 'female'; heightC
     ...(expected.heightCm !== undefined && (heightCm === null || Math.abs(heightCm - expected.heightCm) > 0.1)
       ? [`proposed height ${heightCm ?? 'none'} cm, not ${expected.heightCm}`] : []),
   ];
+}
+
+/** The fixture fields an answer is scored on (TestQuery's answer checks). */
+export interface AnswerChecks {
+  must_mention?: string[];
+  must_not_mention?: string[];
+  must_not_claim?: string[];
+  must_match?: string[];
+  must_not_match?: string[];
+  max_length_chars?: number;
+  expect_roadmap_run?: boolean;
+  expect_profile_edit?: { sex?: 'male' | 'female'; heightCm?: number };
+}
+
+/** One answer turn as withRoadmapRound returns it: the final reply, the run_roadmap counts and the proposed edits. */
+export interface AnswerTurn {
+  final: { contentBlocks: ChatContentBlock[]; stopReason?: string; category?: string };
+  counts: RoadmapRoundCounts | null;
+  proposedEdits: ProposedEdit[];
+}
+
+/** How one answer scores against its fixture's checks; `response` is the text the widget would show. */
+export function scoreAnswer(q: AnswerChecks, turn: AnswerTurn): { passed: boolean; failures: string[]; response: string } {
+  const data = turn.final;
+  if (data.stopReason === 'refusal') {
+    return { passed: false, failures: [`refusal (${data.category ?? 'no category'})`], response: '' };
+  }
+  // Thinking blocks come first on Sonnet; join every text block, as production does,
+  // and a reply with only form edits shows production's toolOnlyAck line instead.
+  const text = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
+  const response = text.trim() || turn.proposedEdits.length === 0 ? text : toolOnlyAck(turn.proposedEdits);
+  const lower = response.toLowerCase();
+
+  const failures: string[] = [];
+  for (const term of q.must_mention ?? []) {
+    if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
+  }
+  for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
+  const plainText = plain(response);
+  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plainText)) failures.push(`no match: /${re}/`);
+  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plainText)) failures.push(`matched forbidden: /${re}/`);
+  for (const term of q.must_not_mention ?? []) {
+    if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
+  }
+  if (typeof q.max_length_chars === 'number' && response.length > q.max_length_chars) {
+    failures.push(`length ${response.length} chars > cap ${q.max_length_chars}`);
+  }
+  if (q.expect_roadmap_run !== undefined && q.expect_roadmap_run !== (turn.counts !== null)) {
+    failures.push(q.expect_roadmap_run ? 'did not call run_roadmap' : 'called run_roadmap');
+  }
+  if (q.expect_profile_edit) failures.push(...profileEditFailures(q.expect_profile_edit, turn.proposedEdits));
+
+  return { passed: failures.length === 0, failures, response };
 }
 
 /** Characters per token, the rough rule the weekly lint uses too. */
