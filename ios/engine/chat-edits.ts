@@ -14,7 +14,7 @@ import { FIELD_TO_METRIC, METRIC_LABELS } from '../../packages/health-core/src/m
 import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { isActive } from '../../packages/health-core/src/blood-tests';
 import { appendMeasurement, correctValue, findActiveInSlot, measurementValueFault, resolveRecordedAt } from '../../packages/health-core/src/record-edits';
-import { updateProfile } from '../../packages/health-core/src/mcp-tools';
+import { updateProfile } from '../../packages/health-core/src/profile-edits';
 import { upsertMedication } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, PRESSURE_ORDER } from '../../packages/health-core/src/validation';
 import { cmToFeetInches, getDisplayLabel, toCanonicalValue, type MetricType } from '../../packages/health-core/src/units';

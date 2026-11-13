@@ -11,7 +11,7 @@ import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
-import { updateProfile } from '../../packages/health-core/src/mcp-tools';
+import { updateProfile } from '../../packages/health-core/src/profile-edits';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
 import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
