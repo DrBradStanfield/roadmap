@@ -337,9 +337,9 @@ File: `packages/health-core/src/lab-extraction.ts` (`UNIFIED_SYSTEM_PROMPT`) · 
 
 File: `app/lib/anthropic.server.ts → resolveUnit() · ApoB SI range 0–3 (0.79 fits cleanly)`
 
-### 4 · Review table renders value as read-only text
+### 4 · Review table shows the value in an editable cell
 
-**Highlighted as a gap.**
+**Gap closed. The customer can now fix the number before Save. The next paragraph records the old read-only table.**
 
 Row shows `0.79 g/L` · high · checkbox pre-checked. The customer sees the wrong number on screen but has no input to fix it. He clicks Save anyway (or accepts the default), since the alternative is just not saving.
 
