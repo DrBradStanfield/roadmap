@@ -124,7 +124,7 @@ export interface SyncStorage {
   readSync(fileName: string): ReadResult;
   /** readSync, but a store that cannot be read throws instead of reading as
    *  no file (S69 R2). A SyncStorage without it must have a strict readSync;
-   *  the only other one, ios/engine/app-doors.ts:41, is never a mirror. */
+   *  the only other one, ios/engine/app-doors.ts:42, is never a mirror. */
   readSyncStrict?(fileName: string): ReadResult;
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult;
   /** The file's stored revision; null when there is none. */
