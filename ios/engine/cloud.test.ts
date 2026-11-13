@@ -1068,6 +1068,30 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
     expect(days(dropbox.record)).toEqual([]);
   });
+
+  it('an erase neither the cloud nor the phone takes is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const phoneBefore = state.phoneText;
+    dropbox.uploadsWork = false;
+    state.phoneWriteError = 'The disk is full.';
+
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    // The chat step ran (it is irreversible); the record erase did not happen, so DataEraser says so.
+    expect(result).toMatchObject({ success: false, erased: false, chatErased: true, view: null });
+    expect(result.error).toBeUndefined();
+    expect(state.phoneText).toBe(phoneBefore);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+
+    // The next good save sends the record as it was: nothing erased.
+    dropbox.uploadsWork = true;
+    state.phoneWriteError = '';
+    await engine.cloudFlush();
+    expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+  });
 });
 
 /** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */
