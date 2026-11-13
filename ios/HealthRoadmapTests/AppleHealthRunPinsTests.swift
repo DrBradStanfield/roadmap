@@ -95,7 +95,7 @@ final class AppleHealthRunPinsTests: XCTestCase {
     /// gate close while the run is `running`: `memory.connected` turns false only in `disconnect()`,
     /// which moves the run to `stopping` first. The table's `running` + `gateClosed` row would drop
     /// the queued reconnect (asserted last), but nothing sends that event in that state today.
-    func testAReconnectDuringTheDrainThenGateClosed_H27() async throws {
+    func testAReconnectDuringTheDrainRunsItsQueuedPass_H27() async throws {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
