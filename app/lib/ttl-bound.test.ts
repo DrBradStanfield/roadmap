@@ -82,6 +82,32 @@ describe("US-52 AC4f: a full limiter map makes room from its oldest entry ('evic
   });
 });
 
+describe('US-52 AC4i: a charge over the whole limit is refused before it takes a place', () => {
+  it('a full map: the refused new key evicts nobody and raises no warning', async () => {
+    const { createQuotaCounter } = await import('./rate-limiter');
+    const quota = createQuotaCounter(5, W, NEVER, { name: 'test quota', maxKeys: 2 });
+    expect(quota.take('a', 2)).toBe(true);
+    expect(quota.take('b', 3)).toBe(true);
+    expect(quota.take('c', 6)).toBe(false);
+    expect(quota.reserve('d', 6)).toBeNull();
+    expect(quota.remaining('a')).toBe(3);
+    expect(quota.remaining('b')).toBe(2);
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+    expect(vi.mocked(console.error)).not.toHaveBeenCalled();
+  });
+
+  it('a map with room: the refused new key holds no place, so the next key evicts nobody', async () => {
+    const { createQuotaCounter } = await import('./rate-limiter');
+    const quota = createQuotaCounter(5, W, NEVER, { name: 'test quota', maxKeys: 2 });
+    expect(quota.take('a', 4)).toBe(true);
+    expect(quota.take('b', 6)).toBe(false); // refused outright: no entry for b
+    expect(quota.take('c', 1)).toBe(true); // the second place is still free
+    expect(quota.remaining('a')).toBe(1); // a kept its place and its count
+    expect(quota.remaining('c')).toBe(4);
+    expect(vi.mocked(Sentry.captureMessage)).not.toHaveBeenCalled();
+  });
+});
+
 describe('US-52 AC4f: a full map says so, by name only, once an hour', () => {
   it('warns once per map per hour, with no key, IP or count in it', async () => {
     const { createRateLimiter } = await import('./rate-limiter');
