@@ -16,7 +16,7 @@ import { groupLabValues, savedLabText } from '@roadmap/health-core/lab-series';
 import { limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 import { limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
 import { rowTarget } from '@roadmap/health-core/row-target';
-import { blockBadNumericKeys, blockNonIntegerKeys, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
 import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
@@ -24,6 +24,7 @@ import { getShownErase } from '../lib/roadmap-data';
 import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
 import { useIsMobile } from '../lib/useIsMobile';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
@@ -237,6 +238,9 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   // Correct on a history row brings the form to that reading.
   const firstRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (start) firstRef.current?.focus(); }, []);
+  // The systolic moves on to the diastolic as the grid's pressure cell does (US-02 AC6, AC6c; Codex R2, H71).
+  const diaRef = useRef<HTMLInputElement>(null);
+  const advanceToDia = useAutoAdvance();
 
   const metrics = metric ? [metric] : ['systolic_bp', 'diastolic_bp'] as const;
   const index = activeRowIndex(history);
@@ -332,9 +336,13 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
           <span>Reading</span>
           <span className="md-add-input">
             <input ref={firstRef} type="text" inputMode="numeric" aria-label="Systolic (top number)" value={text} onKeyDown={blockNonIntegerKeys}
-                   onChange={typed(setText)}/>
+                   onChange={e => {
+                     typed(setText)(e);
+                     const adv = bpSysAdvance(e.target.value);
+                     advanceToDia(dia === '' && adv !== 'stay' ? { ambiguous: adv === 'defer', advance: () => diaRef.current?.focus() } : null);
+                   }}/>
             <span aria-hidden="true">/</span>
-            <input type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} onKeyDown={blockNonIntegerKeys}
+            <input ref={diaRef} type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} onKeyDown={blockNonIntegerKeys}
                    onChange={typed(setDia)}/>
             <span className="md-add-unit">mmHg</span>
           </span>
