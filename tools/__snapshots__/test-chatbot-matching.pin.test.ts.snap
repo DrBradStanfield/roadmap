@@ -1118,12 +1118,12 @@ exports[`test-chatbot-matching golden pins (pre-split) > invalid fixtures, no ma
   "wrongCwd": {
     "calls": [],
     "err": "YouTube bot: chat-youtube-prompt.md not found — bot will not start
+CHAT PROMPT MISSING: app/lib/chat-system-prompt.md is missing or empty; chat is off
 health_roadmap_algorithm.md not found — chat will have limited context
 docs/products.md not found — chat will not have product knowledge
 CHAT KNOWLEDGE MISSING: docs/writing-style.md not found — the chatbot answers without it
 CHAT KNOWLEDGE MISSING: docs/chatbot/answer-bank.md not found — the chatbot answers without it
 docs/blog/index.json not found at <DIR>/docs/blog/index.json — features depending on blog data will be empty
-app/lib/chat-system-prompt.md not found — chat will have no system prompt
 Chat: chat-posture-doctor.md not found — surface posture missing
 Chat: chat-posture-brand.md not found — surface posture missing
 Run from the repo root (<ROOT>): the article loader reads from the working directory.

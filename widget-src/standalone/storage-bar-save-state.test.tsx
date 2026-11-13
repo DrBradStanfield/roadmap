@@ -29,7 +29,6 @@ vi.mock('./connect', () => ({
   connectRefusal: () => null,
   rememberSignIn: vi.fn(() => true),
   forgetBackend: vi.fn(),
-  useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: (fn: () => Promise<void>) => fn() }),
 }));
 
 import { StorageBar, SyncControl } from './sync-control';

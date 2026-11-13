@@ -1,5 +1,6 @@
 /**
- * The cloud picker runs one move at a time (US-09 AC45). A move outlives the
+ * The cloud picker runs one move at a time (US-09 AC45), and the reconnect
+ * panel's Drive reconnect and "Use this browser only" are moves too. A move outlives the
  * picker's mount (closing is allowed while it runs), so its state lives here,
  * for the page's life, not in the picker. One union, one pure transition.
  * `dispatch` updates synchronously, so it is its own claim: a second start in
@@ -11,7 +12,11 @@
  * `navigating`; only then can the browser's back-forward cache show this page
  * again with nothing running (`restored`), and only then does a reopened
  * picker mean the page did not leave (`reopened`), so the move is over. A move
- * still waiting on a fetch stays claimed.
+ * still waiting on a fetch stays claimed. `cancel` is "Stop reconnecting": it
+ * ends only a reconnect whose popup answer is not yet saved, with no error text.
+ * Once the answer is saved (`saved`), the reconnect is `reconnected` and runs
+ * to its reload. A popup answer is kept only while `isCurrentRun` holds for its
+ * reconnect.
  *
  * Never holds a credential: the GitHub token and the WebDAV password stay in
  * the picker's component state and die with its mount.
@@ -28,14 +33,20 @@ export type SwitchFlow =
   | { kind: 'idle'; run: number; error: string | null }
   | { kind: 'switching'; run: number; to: Backend; step: MoveStep }
   | { kind: 'loggingOff'; run: number }
-  | { kind: 'navigating'; run: number; step: MoveStep };
+  | { kind: 'navigating'; run: number; step: MoveStep }
+  | { kind: 'reconnecting'; run: number }
+  /** The popup's grant is saved: local edits go up, then the page reloads. Nothing stops it. */
+  | { kind: 'reconnected'; run: number };
 
 export type SwitchEvent =
   | { type: 'start'; to: Backend; step: Exclude<MoveStep, 'log-off'> }
   | { type: 'logOff' }
+  | { type: 'reconnect' }
   | { type: 'navigating'; run: number }
   | { type: 'settled'; run: number }
   | { type: 'failed'; run: number; message: string }
+  | { type: 'cancel'; run: number }
+  | { type: 'saved'; run: number }
   | { type: 'clearError' }
   | { type: 'restored' }
   | { type: 'reopened' };
@@ -43,6 +54,7 @@ export type SwitchEvent =
 /** The step a running state shows on a reopened picker. */
 export function stepOf(state: SwitchFlow): MoveStep | null {
   if (state.kind === 'idle') return null;
+  if (state.kind === 'reconnecting' || state.kind === 'reconnected') return 'list';
   return state.kind === 'loggingOff' ? 'log-off' : state.step;
 }
 
@@ -52,6 +64,7 @@ export function transition(state: SwitchFlow, event: SwitchEvent): { next: Switc
   if (state.kind === 'idle') {
     if (event.type === 'start') return { next: { kind: 'switching', run: state.run + 1, to: event.to, step: event.step }, run: true };
     if (event.type === 'logOff') return { next: { kind: 'loggingOff', run: state.run + 1 }, run: true };
+    if (event.type === 'reconnect') return { next: { kind: 'reconnecting', run: state.run + 1 }, run: true };
     if (event.type === 'clearError' && state.error !== null) return { next: { kind: 'idle', run: state.run, error: null }, run: false };
     return same;
   }
@@ -61,6 +74,10 @@ export function transition(state: SwitchFlow, event: SwitchEvent): { next: Switc
   if (!('run' in event) || event.run !== state.run) return same;
   if (event.type === 'failed') return { next: { kind: 'idle', run: state.run, error: event.message }, run: false };
   if (state.kind === 'navigating') return same;
+  if (event.type === 'cancel' || event.type === 'saved') {
+    if (state.kind !== 'reconnecting') return same;
+    return { next: event.type === 'cancel' ? { kind: 'idle', run: state.run, error: null } : { kind: 'reconnected', run: state.run }, run: false };
+  }
   return { next: { kind: 'navigating', run: state.run, step: stepOf(state)! }, run: false };
 }
 
@@ -69,6 +86,13 @@ const listeners = new Set<() => void>();
 
 export function getSwitchFlow(): SwitchFlow {
   return flow;
+}
+
+/** True only while the move that claimed `run` still runs: for a reconnect,
+ *  while the flow is still `reconnecting` or `reconnected` at that run. The one
+ *  place a popup answer is refused: once the reconnect stopped, it saves nothing. */
+export function isCurrentRun(run: number, state: SwitchFlow = flow): boolean {
+  return state.run === run && state.kind !== 'idle' && state.kind !== 'navigating';
 }
 
 export function subscribeSwitchFlow(listener: () => void): () => void {
@@ -85,9 +109,10 @@ export function dispatch(event: SwitchEvent): boolean {
   return run;
 }
 
-/** What a running move is handed: the log-off id it began under (US-09
+/** What a running move is handed: its run id, the log-off id it began under (US-09
  *  AC45), and `navigating()`, to call just before it hands the page to a redirect. */
 export interface Move {
+  run: number;
   gen: LogOffId;
   navigating: () => void;
 }
@@ -98,7 +123,7 @@ export async function runMove(event: SwitchEvent, move: (m: Move) => Promise<voi
   const { run } = flow;
   const gen = logOffId();
   try {
-    await move({ gen, navigating: () => dispatch({ type: 'navigating', run }) });
+    await move({ run, gen, navigating: () => dispatch({ type: 'navigating', run }) });
     dispatch({ type: 'settled', run });
   } catch (e) {
     dispatch({ type: 'failed', run, message: e instanceof Error ? e.message : 'Connection failed.' });
@@ -112,7 +137,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function useSwitchFlow(): SwitchFlow {
-  return useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow);
+  return useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow, getSwitchFlow);
 }
 
 /** Tests only: a fresh page's idle flow without a fresh module graph. */
