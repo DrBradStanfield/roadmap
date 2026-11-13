@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S37,iPhone state,"No test covers the stale-landing guard in MetricDetailView readChart: a late answer for an older revision must change nothing",note,not started,"R4 from the review of PR 1548. ios/HealthRoadmap/MyData/MetricDetailView.swift:142-147 captures the revision before the await and lands for it (MetricRead.transition). The transition table is tested; the view wiring is not. Also from R4: Show All Data shows an empty list with no words when its re-read fails (true before PR 1548). US-58 AC4c",1548,no

@@ -28,7 +28,8 @@ describe('US-61 AC5: the product blocks never reach the GitHub Pages bundle', ()
     expect(found(shopify)).toEqual(MARKERS);
   });
 
-  it('the Pages build carries none of them, in code or sourcemaps', async () => {
+  // The build cannot depend on the time zone, so CI runs it on the UTC leg only (ci.yml ZONE_FREE_TESTS, TA-W13).
+  it.skipIf(process.env.ZONE_FREE_TESTS === 'skip')('the Pages build carries none of them, in code or sourcemaps', async () => {
     const config = standaloneFactory({ command: 'build', mode: 'production' });
     const result = await build({
       ...config,
