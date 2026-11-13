@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-U5,upload,Error-boundary Cancel does nothing during a save,latent,not started,Needs a render throw during a save,,no
+U5,upload,Error-boundary Cancel does nothing during a save,latent,not started,Needs a render throw during a save; widget-src/src/lib/upload-flow-state.ts:116 discard returns the state unchanged while saving; the fallback Cancel is widget-src/src/components/UploadModal.tsx:168,,no

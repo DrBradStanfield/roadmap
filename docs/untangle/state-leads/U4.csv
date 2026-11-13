@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-U4,upload,Connect panel could hide a read error,latent,not started,Not reachable today: the backend changes only on reload,,no
+U4,upload,Connect panel could hide a read error,latent,not started,"Not reachable today: the backend changes only on reload; widget-src/src/components/UploadModal.tsx:93-101 (the panel; its button calls onClose); the store is made once at boot (widget-src/standalone/app.tsx:33, widget-src/src/lib/roadmap-data.ts:36-37)",,no
