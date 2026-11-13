@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A1-3,S3 cloud storage and sync,Record schema facts kept in roadmap-file.ts,not started,"Inferred, unverified (the audit lane file was not available): Row-array list retyped at roadmap-doc.ts:21 beside readable-rows.ts:60",,,yes
+A1-3,S3 cloud storage and sync,Record schema facts kept in roadmap-file.ts,not started,"Checked 2026-11-13: the row-array list is retyped at roadmap-doc.ts:21 (ROW_ARRAYS literal) beside readable-rows.ts:60 (ROW_ARRAYS from ROWS). Was: Inferred, unverified (the audit lane file was not available): Row-array list retyped at roadmap-doc.ts:21 beside readable-rows.ts:60",,,yes

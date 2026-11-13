@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A2-3,S5 clinical rules,Named BMI threshold constants,not started,"Literals at suggestions.ts:187 (28) and :379-380 (30, 25)",,,yes
+A2-3,S5 clinical rules,Named BMI threshold constants,not started,"Literals at suggestions.ts:182 (25), :193 (28) and :385-386 (30, 25)",,,yes

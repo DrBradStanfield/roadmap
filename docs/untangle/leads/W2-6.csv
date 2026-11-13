@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-W2-6,"S7 web data layer, upload, standalone",ReviewTable Save hands up the store bulk inputs,not started,ReviewTable.tsx:558 still hands up its own payload shape,,,no
+W2-6,"S7 web data layer, upload, standalone",ReviewTable Save hands up the store bulk inputs,not started,ReviewTable.tsx:31 (onSave type) and :413 still hand up its own payload shape,,,no
