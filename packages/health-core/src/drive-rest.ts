@@ -41,6 +41,7 @@ import {
   type WriteResult,
 } from './adapter';
 import { splitDocumentRef } from './document-path';
+import { documentUploadMs } from './transfer-deadline';
 import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './migrate';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
@@ -190,9 +191,8 @@ export function driveCreateFile(
     body,
     // A record file is a few KB and answers inside the default bound; an
     // uploaded document is up to 10 MB, which a slow phone uplink spends
-    // minutes sending. Scale the bound with the bytes so the upload is judged
-    // on the provider's silence, not on the user's connection.
-    timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
+    // minutes sending, so the bound scales with the bytes.
+    timeoutMs: documentUploadMs(body.size),
     signal, mayHaveWritten: true, // a create with no answer may have landed (US-09 AC43)
   });
 }

@@ -13,6 +13,7 @@
  * Schema knowledge (migrate/merge/validate) lives in the SyncManager's
  * DocumentSpec, not here.
  */
+import { TRANSFER_DEADLINE_MS, timeoutDeadline } from './transfer-deadline';
 
 /** The user's primary record file. Lives here (not with its DocumentSpec)
  *  because adapters need it for legacy-slot/key back-compat mapping. Other
@@ -87,11 +88,6 @@ function unansweredHint(mayHaveWritten?: boolean): string {
   return mayHaveWritten ? LANDED_HINT : UNREACHABLE_HINT;
 }
 
-/** How long a provider gets to answer, body included, before the call is
- *  abandoned as unreachable. Long enough for a slow phone on a slow network,
- *  short enough that a hosted tool call fails rather than hangs. */
-const FETCH_TIMEOUT_MS = 30_000;
-
 /**
  * `fetch`, with the network outage it can have owned by the adapter that made
  * the call. A dead network, a DNS miss or a severed socket rejects with a bare
@@ -116,7 +112,7 @@ export async function fetchOrFail(
   // Without `AbortSignal.timeout` the bound runs on the global timer (US-09
   // AC13g). Without `AbortSignal.any`, a caller's own signal is the only bound.
   const { timeoutMs, mayHaveWritten, signal: callerSignal, ...rest } = init ?? {};
-  const timeout = timeoutDeadline(timeoutMs ?? FETCH_TIMEOUT_MS);
+  const timeout = timeoutDeadline(timeoutMs ?? TRANSFER_DEADLINE_MS.call);
   const signal = callerSignal && typeof AbortSignal.any === 'function'
     ? AbortSignal.any([callerSignal, timeout.signal])
     : callerSignal ?? timeout.signal;
@@ -291,18 +287,4 @@ export function deadlineSignal(deadline: number): AbortSignal {
   if (left <= 0) controller.abort(reason);
   else (setTimeout(() => controller.abort(reason), left) as { unref?(): void }).unref?.();
   return controller.signal;
-}
-
-/**
- * `AbortSignal.timeout(ms)` where the browser has it, else the same bound on
- * the global timer. Safari 14/15 has no `AbortSignal.timeout`, and the widget
- * ships untranspiled to it: called bare, it throws before the request is made
- * (US-09 AC13g). Call `clear` once the call and its body read are over; it
- * frees the fallback timer.
- */
-export function timeoutDeadline(ms: number): { signal: AbortSignal; clear(): void } {
-  if (typeof AbortSignal.timeout === 'function') return { signal: AbortSignal.timeout(ms), clear: () => undefined };
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new DOMException('The deadline has passed', 'TimeoutError')), ms);
-  return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
