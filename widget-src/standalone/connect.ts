@@ -27,7 +27,7 @@ import { clearLocalStorage, clearOffFileHealthData, safeGetItem, safeRemoveItem,
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
-import { copyRecordToDevice } from '../src/lib/roadmap-data';
+import { copyRecordToDevice, flushRoadmapStore } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
@@ -302,6 +302,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   if (current === 'local') return;
   const adapter = adapterFor(current);
   if (!adapter) return;
+  await flushBeforeExit();
   try {
     await copyDownOnce(adapter, current);
     // The page's live adapter keeps its token in memory, so after a failed
@@ -317,6 +318,14 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   }
   await adapter.disconnect();
   preparedFrom = current;
+}
+
+/** Every exit from the reconnect panel saves the session before it lifts or leaves (US-09 AC48, R1): an
+ *  edit still on the save debounce reaches this device's copy, which the lift or the next load reads. The
+ *  page's departure save stays as the second line. A save that fails has put the session on the device
+ *  copy (US-09 AC4), so its failure does not stop the exit. */
+export async function flushBeforeExit(): Promise<void> {
+  await flushRoadmapStore().catch(() => undefined);
 }
 
 /** The cloud this page has already copied down and signed out of. A switch

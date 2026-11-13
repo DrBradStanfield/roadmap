@@ -17,7 +17,7 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { adapterFor, connectRefusal, flushBeforeExit, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
 import { currentSignIn, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { PROVIDERS } from './providers';
@@ -139,7 +139,8 @@ export const GIS_LOADING = 'Google is loading. Tap again.';
  *  synchronously inside the click; local edits made while signed out merge up
  *  before the reload. Dropbox signs in again by its redirect, and the return
  *  merges them up (US-09 AC48). A cloud that did not answer can only try the
- *  read again. The reconnects and "Use this browser only" are moves, one at a time with the
+ *  read again. Each reconnect saves the session before its lift (R1). The
+ *  reconnects and "Use this browser only" are moves, one at a time with the
  *  picker (US-09 AC45). A reconnect's failure before it saved is said only here; a failed
  *  "Use this browser only", or a reconnect that fails after it saved, ends the
  *  move as a failure, so the picker says it too. */
@@ -163,6 +164,7 @@ function useReconnect(lost?: LostSignIn) {
     if (lost?.kind !== 'signedOut') { location.reload(); return; }
     if (lost.provider === 'dropbox') {
       move({ type: 'start', to: 'dropbox', step: 'list' }, async ({ gen, navigating }) => {
+        await flushBeforeExit();
         navigating();
         await adapterFor('dropbox', gen)!.connect(); // its return is kept only under the move's log-off id
       });
@@ -177,6 +179,7 @@ function useReconnect(lost?: LostSignIn) {
       if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
+        await flushBeforeExit();
         await liftLocalInto(new GoogleDriveAdapter(googleDriveConfig(), gen), 'google-drive');
       }
       if (!isCurrentRun(run)) return;
@@ -252,10 +255,11 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
 
   const facts = useSaveFacts(backend);
 
-  // Forget the unreachable connection (no copy-down needed — this session
-  // already runs on the device copy; the cloud file stays put). A move (AC45).
+  // Forget the unreachable connection (no copy-down needed — the session is
+  // saved onto the device copy first, US-09 AC48; the cloud file stays put). A move (AC45).
   const forgetProvider = (provider: LostSignIn['provider']): void =>
     move({ type: 'start', to: 'local', step: 'list' }, async () => {
+      await flushBeforeExit();
       await adapterFor(provider)?.disconnect();
       forgetBackend();
       location.reload();
