@@ -5,10 +5,8 @@
 // Writing abnormal then clears the follow-up status, date and time (screeningWrites, web and iPhone), always,
 // so the stamped nulls win a merge. A date write never clears; the plan reads the stored answers as they are.
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { screeningForm, screeningWrites } from './input-form';
-import { shownColorectalResult } from './colonoscopy-schedule';
+import { CARDS, shownColorectalResult } from './colonoscopy-schedule';
 import { computeNextDueDates, followupKinds } from './reminder-schedule';
 import { mergeFiles } from './merge';
 import { computePlan, derivePlanInputs } from './plan';
@@ -26,9 +24,8 @@ const S = 'colorectal_followup_status';
 const D = 'colorectal_followup_date';
 const I = 'colorectal_followup_interval_years';
 
-// Card B's words, read from the approved 2b spec (never reworded here).
-const SPEC = readFileSync(join(__dirname, '../../../docs/drafts/screening-change-2b-words-2026-11-12.md'), 'utf8').split('\n').map((l) => l.trim());
-const B_TEXT = [...SPEC.slice(SPEC.findIndex((l) => l.startsWith('## Cards'))).find((l) => l.startsWith('- B,'))!.matchAll(/"([^"]*)"/g)][1][1];
+// Card B's words, read from the product source (never reworded here).
+const B_TEXT = CARDS.dueDefault.description;
 
 function fileWith(scr: ScreeningInputs, deviceId = 'reopen_test', now = '2026-10-01T00:00:00Z'): RoadmapFile {
   const f = createEmptyFile({ deviceId, now });

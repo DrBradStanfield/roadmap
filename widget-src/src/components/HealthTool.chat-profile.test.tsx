@@ -423,7 +423,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     await refreshThisTab();
     expect(banner()).toBeNull();
     // Again, at the same epoch: an empty record erased again can differ only
-    // in its erasedAt, which the merge keeps (the later one, US-09 AC20).
+    // in its erasedAt, which the merge keeps (the later one, US-09 AC23).
     chatProposes({ sex: 'female' });
     expect(banner()).not.toBeNull();
     await wait(6000); // past the re-read throttle

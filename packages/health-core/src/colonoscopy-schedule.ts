@@ -15,7 +15,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** A due month as every screening card prints it: "Jul 2029". */
 export const monthLabel = (d: Date): string => `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
-const CARDS = {
+/** The cards' words, frozen by the approved 2b spec; tests read them from here. */
+export const CARDS = {
   addDate: { title: 'Add your colonoscopy date', description: "You've marked your colonoscopy as done. Add the month it was done to see when your next colonoscopy is due." },
   dueDefault: { title: 'Colorectal screening up to date', description: "Following your colonoscopy, your next colonoscopy is due {due}. Dr Brad suggests repeating it every 3 years if your report didn't give a follow-up time." },
   dueAdvised: { title: 'Colorectal screening up to date', description: 'Following your colonoscopy, your next colonoscopy is due {due}, as your report advised.' },

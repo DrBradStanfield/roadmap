@@ -225,7 +225,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     expect(deviceB.loadAllHistory()).toEqual([]);
   });
 
-  it('US-09 AC20: stamps meta.erasedAt 1 ms past the moment of the erase', async () => {
+  it('US-09 AC23 legacy rule: stamps meta.erasedAt 1 ms past the moment of the erase', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z'));
@@ -243,7 +243,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
   // Review fix (adversary R4): the eraser's clock runs behind the device that
   // wrote the row it erased. erasedAt is floored past the last write it read,
   // so that row cannot come back when the stale device saves again.
-  it('US-09 AC20: a slow eraser clock still drops a row the eraser had already seen', async () => {
+  it('US-09 AC23 legacy rule: a slow eraser clock still drops a row the eraser had already seen', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // device B, clock ahead
@@ -269,7 +269,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
   // Review fix (N2): a broken clock, not a slow one. A stored updatedAt years
   // ahead must not push erasedAt out past every row written after the erase.
-  it('US-09 AC20: a stored updatedAt more than a day past now does not move erasedAt', async () => {
+  it('US-09 AC23 legacy rule: a stored updatedAt more than a day past now does not move erasedAt', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2099-01-01T00:00:00.000Z')); // device B, clock broken
