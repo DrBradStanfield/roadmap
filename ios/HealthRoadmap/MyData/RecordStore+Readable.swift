@@ -18,6 +18,15 @@ extension RecordStore {
     var plan: PlanState? { readable?.drawn?.plan }
     /// The plan's cards by topic, from the same call (US-73 AC3).
     var topics: TopicLayout? { readable?.drawn?.topics }
+    /// A record held with no drawing (lead S67, US-25 AC16f): stored, its draw failed with no problem
+    /// to show, and no later erase replaced it. Most often an erase held undrawn; a load whose draw
+    /// failed reads the same. `redraw` draws it again; `applyInTurn` refuses edits while it holds.
+    var heldUndrawn: Bool {
+        Self.heldUndrawn(drawn: drawn != nil, problem: problem != nil, recordJSON: recordJSON, predatesErase: predatesErase)
+    }
+    nonisolated static func heldUndrawn(drawn: Bool, problem: Bool, recordJSON: String, predatesErase: Bool) -> Bool {
+        !drawn && !problem && !recordJSON.isEmpty && !predatesErase
+    }
     /// The rows the store holds, read or not: its own sheet pins, marks and units keep reading them.
     var heldData: MyData? { drawn?.myData }
 }
