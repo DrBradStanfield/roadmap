@@ -82,6 +82,18 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(result.current.eraseUnshown()).toBe(true);
   });
 
+  it('H37: `loaded`, the saves\' gate, opens only when the first read shows, never when it fails', () => {
+    const shown = setup();
+    expect(shown.result.current.loaded).toBe(false); // pending: saves off
+    act(() => { shown.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(shown.result.current.loaded).toBe(true);
+    const failed = setup();
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: false }); });
+    expect(failed.result.current.loaded).toBe(false); // L2: saves stay off
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(failed.result.current.loaded).toBe(false); // the first read moves once
+  });
+
   it('a refused save is said once per erase it was asked under, and re-reads the record once', () => {
     const { doors, result } = setup();
     store.identity = 'e2'; // the store moved; the screen still shows e1
@@ -106,8 +118,8 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('Q3: a news refusal while another writer\'s erase is heard re-reads exactly once, through the machine', () => {
     const { doors, result } = setup();
-    // The page wires these two (useRecordApply: its loaded effect, its REMOTE_CHANGED listener); dispatched here as it does.
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    // The page wires these two (useRecordApply: its firstReadShown, its REMOTE_CHANGED listener); dispatched here as it does.
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails: no event follows
     expect(doors.shows).toHaveBeenCalledTimes(1);
@@ -119,7 +131,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('Fable Q3 (2b-3): a refusal says WRITE_REFUSED before its re-read starts, heard erase or not', () => {
     const { result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => result.current.writeRefused('e1')); // nothing heard: the page's re-read
     expect(order).toEqual(['alert', 'reread refused']);
@@ -133,7 +145,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('Fable Q2(b) (2b-3): the machine\'s re-read for a refusal spends the answer mark, as a \'refused\' re-read does; one for a record the screen left does not', () => {
     const { doors, result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails
     order.length = 0;
@@ -146,7 +158,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('2b-3 R2: a repeat refusal (no news) while an erase is heard re-reads but leaves the answer mark unspent', () => {
     const { doors, result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails
     act(() => result.current.writeRefused('e1')); // news: said, read, spent
@@ -175,7 +187,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
       await waitFor(() => expect(commits).toEqual(['e1']));
       vi.mocked(trackProductEvent).mockClear();
       setTimeout(() => {
-        page.store.dispatch({ type: 'loaded' });
+        page.store.dispatch({ type: 'loaded', shown: true });
         page.store.dispatch({ type: 'read', identity: id(1) }); // B
         page.store.dispatch({ type: 'read', identity: id(2) }); // C overtakes it before React commits
       }, 0);

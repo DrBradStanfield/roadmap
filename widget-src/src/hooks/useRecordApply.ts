@@ -81,8 +81,8 @@ interface Later {
  *
  * The page listens from its first commit (a layout effect). A change
  * announced before the page has shown its first read waits for it, then
- * applies (`loaded`): applied at once, the first read would overwrite it
- * (survey R2).
+ * applies (`firstReadShown`): applied at once, the first read would overwrite
+ * it (survey R2).
  *
  * The apply runs through refs, not an effect: the page re-reads in the turn
  * it is told, as before this hook.
@@ -99,8 +99,6 @@ export function useRecordApply(args: {
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
   erase: Pick<EraseStore, 'getSnapshot' | 'dispatch'>;
-  /** The page has shown its first read (the load's own state, set after its writes). */
-  loaded: boolean;
   later: () => Later;
 }) {
   // The latest committed arguments, never ones from a render that did not finish.
@@ -196,12 +194,13 @@ export function useRecordApply(args: {
   // The erase machine's read door: another writer's erase, never held. It is no answer given here (US-62 AC13).
   const shows = useCallback(() => { latest.current.later().clearAnswered(); relay.shows().catch(reportReadFailure); }, [relay]);
 
+  // The page has shown its first read: called in the turn of the load's last write, after showRecord queued the form,
+  // so the saves it opens (the machine's `read`, useErase `loaded`) commit with that form or after it, never before.
   // The machine first: its read of an erase heard before this ends the relay's wait, so a change that waited too is read once.
-  const { loaded, erase: machine } = args;
-  useLayoutEffect(() => { if (loaded) { machine.dispatch({ type: 'loaded' }); relay.loaded(); } }, [loaded, machine, relay]);
-  // The first read failed part-way: the page stays as it is (not loaded, its
-  // saves off), but a change waiting on that read applies now, or never would.
-  const firstReadFailed = useCallback((error: unknown) => { reportReadFailure(error); latest.current.erase.dispatch({ type: 'loaded' }); relay.loaded(); }, [relay]);
+  const firstReadShown = useCallback(() => { latest.current.erase.dispatch({ type: 'loaded', shown: true }); relay.loaded(); }, [relay]);
+  // The first read failed part-way: the page stays as it is (its saves off:
+  // `read` failed), but a change waiting on that read applies now, or never would.
+  const firstReadFailed = useCallback((error: unknown) => { reportReadFailure(error); latest.current.erase.dispatch({ type: 'loaded', shown: false }); relay.loaded(); }, [relay]);
 
   // Something wrote to the record under us: another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged.
@@ -220,5 +219,5 @@ export function useRecordApply(args: {
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [signal, relay, dirty]);
 
-  return { showRecord, signal, ownSave, shows, saved: relay.saved, firstReadFailed };
+  return { showRecord, signal, ownSave, shows, saved: relay.saved, firstReadShown, firstReadFailed };
 }

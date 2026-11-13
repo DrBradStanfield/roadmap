@@ -46,7 +46,7 @@ function run(state: EraseState, events: EraseEvent[]): EraseState {
   for (const event of events) state = transition(state, event).state;
   return state;
 }
-const idle = (shown: string): EraseState => run(initialEraseState(shown), [{ type: 'loaded' }]);
+const idle = (shown: string): EraseState => run(initialEraseState(shown), [{ type: 'loaded', shown: true }]);
 
 describe('erase machine through the real merge: the screen ends at the store\'s identity (Codex R1)', () => {
   it('the case is real: a listing erase meeting an unlisted one at its epoch ends at the EARLIER erasedAt', () => {
@@ -73,8 +73,8 @@ describe('erase machine through the real merge: the screen ends at the store\'s 
     });
 
     it('held while loading, then loaded and its read', () => {
-      const state = run(initialEraseState(before), [{ type: 'arrived', identity: store }, { type: 'loaded' }, { type: 'read', identity: store }]);
-      expect(state.phase).toBe('idle');
+      const state = run(initialEraseState(before), [{ type: 'arrived', identity: store }, { type: 'loaded', shown: true }, { type: 'read', identity: store }]);
+      expect(state).toMatchObject({ phase: 'idle', read: 'shown' });
       expect(state.shown).toBe(store);
     });
 

@@ -14,7 +14,7 @@
     "ios/scripts/app-store-video-compose.swift": 882,
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 811,
-    "widget-src/src/components/HealthTool.tsx": 771,
+    "widget-src/src/components/HealthTool.tsx": 770,
     "app/routes/mcp.$.tsx": 724,
     "widget-src/src/components/StartingInfoVitals.tsx": 716,
     "packages/health-core/src/validation.ts": 712,

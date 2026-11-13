@@ -102,7 +102,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     applyLists, clearForErase, patchMedication, patchScreening, patchSupplement, stopSupplement, dropDocument,
   } = useRecordState(() => mountRead.current?.result?.previousMeasurements ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [hasApiResponse, setHasApiResponse] = useState(false);
 
   // Filled by each matrix with its commit, so a lab upload commits both
   // drafts before its own save (US-03 AC5).
@@ -143,13 +142,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The chat's banners (a profile proposal, a medication Undo) go when the
   // screen moves to another erase, this tab's or another device's, even with
   // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
-  const { store: eraseStore, shownErase, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
+  const { store: eraseStore, shownErase, loaded, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
     clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
     shows: () => showErase(), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadFailed } = useRecordApply({
-    setInputs, reloadValues, applyLists, units, erase: eraseStore, loaded: hasApiResponse,
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadShown, firstReadFailed } = useRecordApply({
+    setInputs, reloadValues, applyLists, units, erase: eraseStore,
     later: () => ({ markSaved, flushPendingSave, profileDirty, clearAnswered }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).
@@ -179,11 +178,11 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         // bubble and the embed must not keep sending the old copy (US-11).
         saveToLocalStorage({}, [], [], []);
       }
-      setHasApiResponse(true);
+      firstReadShown(); // the saves open (the erase machine's `read`, ledger H37)
     }
 
     void loadData().catch(firstReadFailed);
-  }, [eraseStore, firstReadFailed]);
+  }, [eraseStore, firstReadShown, firstReadFailed]);
 
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
@@ -242,7 +241,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   );
   const onboarding = useOnboarding(formStage, {
     saved: previousMeasurements, medications, screenings, supplements, documents: documentHistory, labValues: labValueHistory,
-  }, hasApiResponse, shownErase, () => landOnMyHealth()); // declared below
+  }, loaded, shownErase, () => landOnMyHealth()); // declared below
   // Stable callbacks: the record's re-reads above (useRecordApply's `later`) call them after the first commit.
   const {
     reached, epoch, fullForm, aboutYouLow, planReady,
@@ -272,7 +271,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
   const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded: hasApiResponse, onClean: profileClean, writeRefused, units,
+    inputs, inputsRef, setInputs, loaded, onClean: profileClean, writeRefused, units,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
@@ -563,7 +562,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   const plan = usePlanView({
     results, shownErase, isValid, tiles, forms, cardsShown: fullForm, // US-07 AC3: MyHealth draws the cards only then
-    hasUnsavedLongitudinal: hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
+    hasUnsavedLongitudinal: loaded && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     showEmailCapture: emailCaptureActive,
     formStage: reached,
@@ -654,7 +653,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     scheduleLongitudinalSave,
     flushLongitudinalSave,
     isSavingLongitudinal,
-    hasApiResponse,
+    hasApiResponse: loaded,
     bloodTestFlushRef,
     vitalsFlushRef,
     bloodTestPrefillRef,

@@ -13,8 +13,8 @@ import { tellChats } from './chatStore';
  *
  * One EraseStore per page holds the state; every event reaches it from one of
  * its call sites: useRecordApply `apply` and the page's first read (`read`),
- * useRecordApply's REMOTE_CHANGED listener (`arrived`), its loaded effect and
- * `firstReadFailed` (`loaded`), `eraseAll` here (`own-start`, then `own-end`
+ * useRecordApply's REMOTE_CHANGED listener (`arrived`), its `firstReadShown`
+ * and `firstReadFailed` (`loaded`), `eraseAll` here (`own-start`, then `own-end`
  * or `own-failed`), and `writeRefused` here (`refused`). Its effects run
  * through the doors below, built from the latest committed props:
  * - clearDrafts, forget: the page's;
@@ -58,6 +58,8 @@ export interface Erase {
   /** The machine: the page's first read and useRecordApply's re-reads dispatch `read` to it. */
   store: EraseStore;
   shownErase: string;
+  /** The page has shown its first read: the saves' gate (the machine's `read`, ledger H37). */
+  loaded: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
   /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
@@ -134,5 +136,5 @@ export function useErase(props: EraseDoorProps): Erase {
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
 }

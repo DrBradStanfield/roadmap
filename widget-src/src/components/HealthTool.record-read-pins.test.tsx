@@ -652,6 +652,28 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     expect(scrubbed(new Error('Synthetic test: mirror failed'))).toEqual({ tags: { area: 'cloud-sync', op: 'load' }, value: 'Health record operation failed' });
   });
 
+  // H37 (L2; a refactor guard, passes before H37 too): the saves' gate is the erase machine's first read,
+  // open only once that read shows. A read that fails part-way has shown the form, but its saves stay off.
+  it.each([
+    ['shows', false, { height: 171, ldl: [3.5] }],
+    ['fails part-way', true, { height: 170, ldl: [] }],
+  ])('H37, US-34 AC4: the first read %s: a height left and a blood-test value saved are written only when it showed', async (_case, fails, written) => {
+    await siRecord();
+    failMirror.next = fails; // the first read throws after it has shown the record
+    const view = await open();
+    await waitFor(() => expect(failMirror.threw).toBe(fails));
+    await settle(50); // About you's opened rows take the focus a frame later
+    type(q(view, '#heightCm'), '171');
+    leave(q(view, '#heightCm'));
+    await settle(600); // past the profile save's debounce
+    typeInto(await ldlDraft(view), '3.5');
+    press(q(view, '.alr-add-btn') as HTMLElement); // out of the matrix: the draft's Save
+    await settle(600);
+    if (!fails) await waitFor(async () => expect(await activeLdl()).toEqual(written.ldl), { timeout: 3000 });
+    expect((await recordOnDisk()).profile.heightCm).toBe(written.height);
+    expect(await activeLdl()).toEqual(written.ldl);
+  });
+
   it('US-34 AC4 (PR 1155 review R1): the first read fails for a lasting reason; a remote change then fails too: reported, never unhandled, and not shown', async () => {
     await completeRecord();
     failMirror.always = true; // every mirror of the record fails: the first read's, and each re-read's
