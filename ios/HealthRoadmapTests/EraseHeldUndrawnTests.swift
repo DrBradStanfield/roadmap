@@ -100,7 +100,7 @@ final class EraseHeldUndrawnTests: XCTestCase {
     func testRemindersComeFromTheErasedRecord_US25_AC16f() async throws {
         var scheduler: ReminderScheduler?
         let erased = try await erasedUndrawn { store, engine in
-            let made = ReminderScheduler(center: FakeNotificationCenter(), folder: self.folder) { firstSeen in
+            let made = ReminderScheduler(center: FakeNotificationCenter(), folder: self.folder, erasures: { store.erasures }) { firstSeen in
                 try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
             }
             await made.refresh()

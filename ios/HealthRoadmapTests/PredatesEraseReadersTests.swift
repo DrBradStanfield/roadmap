@@ -103,7 +103,7 @@ final class PredatesEraseReadersTests: XCTestCase {
 
     /// HealthRoadmapApp's reminders read, on `store`.
     private func scheduler(_ store: RecordStore, _ engine: HealthEngine, _ center: FakeNotificationCenter) -> ReminderScheduler {
-        ReminderScheduler(center: center, folder: folder) { firstSeen in
+        ReminderScheduler(center: center, folder: folder, erasures: { store.erasures }) { firstSeen in
             guard let json = store.readable?.json else { throw NoRecord() }
             return try await engine.reminders(recordJSON: json, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
@@ -147,6 +147,11 @@ final class PredatesEraseReadersTests: XCTestCase {
             await reminders.refresh()
             XCTAssertNil(reminders.reminders, "\(way): no reminder from the record the erase replaced")
             XCTAssertEqual(center.pending, [], "\(way): none pending")
+            // The erase words say reminders are deleted: the opt-in ends though nothing could be read.
+            XCTAssertFalse(reminders.optedIn, "\(way): the erase ends the opt-in")
+            for name in ["reminders-opt-in", "reminders-first-seen"] {
+                XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: name).path(percentEncoded: false)), "\(way): \(name) is gone")
+            }
             _ = w
             try FileManager.default.removeItem(at: folder)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

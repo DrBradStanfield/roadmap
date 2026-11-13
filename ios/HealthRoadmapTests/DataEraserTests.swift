@@ -56,7 +56,7 @@ final class DataEraserTests: XCTestCase {
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
         // HealthRoadmapApp's reminders read, counted.
-        let reminders = ReminderScheduler(center: center, folder: folder) { [weak self] firstSeen in
+        let reminders = ReminderScheduler(center: center, folder: folder, erasures: { store.erasures }) { [weak self] firstSeen in
             self?.reminderReads += 1
             guard let json = store.readable?.json else { throw NoRecord() }
             return try await engine.reminders(recordJSON: json, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)

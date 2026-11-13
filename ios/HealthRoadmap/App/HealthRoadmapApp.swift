@@ -178,7 +178,7 @@ struct AppParts {
         #endif
         sync = CloudSync(engine: engine, store: store, oauth: oauth)
         let (engine, store) = (engine, store)
-        reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
+        reminders = ReminderScheduler(center: center, folder: folder, erasures: { store.erasures }) { firstSeen in
             guard let json = store.readable?.json else { throw NoRecord() }
             return try await engine.reminders(recordJSON: json, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }

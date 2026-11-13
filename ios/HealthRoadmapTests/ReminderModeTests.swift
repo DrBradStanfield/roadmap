@@ -22,6 +22,7 @@ final class ReminderModeTests: XCTestCase {
         ("read same", .read(epoch: 5)),
         ("read moved", .read(epoch: 6)),
         ("read failed", .read(epoch: nil)),
+        ("erased", .erased),
     ]
 
     private static let table: [(ReminderMode, [Row])] = [
@@ -40,6 +41,7 @@ final class ReminderModeTests: XCTestCase {
             ("read same", .off, nil),
             ("read moved", .off, nil),
             ("read failed", .off, nil),
+            ("erased", .off, nil),
         ]),
         (.asking(attempt: 1), [
             // A double tap while iOS answers asks nothing more.
@@ -60,6 +62,8 @@ final class ReminderModeTests: XCTestCase {
             ("read same", .asking(attempt: 1), nil),
             ("read moved", .asking(attempt: 1), nil),
             ("read failed", .asking(attempt: 1), nil),
+            // An erase while iOS answers: the late answer then lands on off and is dropped.
+            ("erased", .off, nil),
         ]),
         (.on(epoch: 5), [
             // "Allow notifications" asks again; reminders stay on whatever iOS says.
@@ -78,6 +82,8 @@ final class ReminderModeTests: XCTestCase {
             ("read moved", .off, nil),
             // A failed read is not an erase.
             ("read failed", .on(epoch: 5), nil),
+            // An erase here, even one held with no record to read (S52).
+            ("erased", .off, nil),
         ]),
     ]
 
@@ -92,6 +98,6 @@ final class ReminderModeTests: XCTestCase {
                 rows += 1
             }
         }
-        XCTAssertEqual(rows, 39)
+        XCTAssertEqual(rows, 42)
     }
 }

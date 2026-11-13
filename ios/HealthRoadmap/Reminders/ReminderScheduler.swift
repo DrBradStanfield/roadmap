@@ -11,8 +11,9 @@ import UserNotifications
 ///
 /// The opt-in is this phone's: a small file beside the record, in the folder backups
 /// leave out (D5), holding the record's erase epoch at the time. A restored phone
-/// starts a new record, so it starts with reminders off. An erase moves the epoch,
-/// which ends the opt-in and cancels every reminder, so an erased record never
+/// starts a new record, so it starts with reminders off. An erase moves the epoch, or on
+/// this phone the store's erase count (`ReminderEvent.erased`, even when its record cannot
+/// be read, S52), which ends the opt-in and cancels every reminder, so an erased record never
 /// notifies (US-11). It is not written to the
 /// record: the record's `reminderOptIn` is the web's email enrolment, with a server
 /// token and an address, and a phone's notification permission is not one (D7).
@@ -35,6 +36,9 @@ final class ReminderScheduler {
     var optedIn: Bool { if case .on = mode { true } else { false } }
     /// Mints each ask's attempt, so a late answer to an older one is known: a token, not a mode.
     private var attempts = 0
+    /// The store's erase count at the last refresh: a move means an erase here, even one held
+    /// with no record to read (S52). A token, not a mode.
+    private var seenErasures: Int
 
     /// Our notifications, and only ours, start with this.
     nonisolated static let prefix = "reminder."
@@ -49,13 +53,18 @@ final class ReminderScheduler {
     /// Never sent anywhere; kept only while reminders are scheduled.
     private let firstSeenFile: URL
     private let compute: @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders
+    /// The store's erase count (RecordStore.erasures).
+    private let erasures: @MainActor () -> Int
     /// Refreshes run one after another, so two never interleave their removes and adds.
     private var last: Task<Void, Never>?
 
     /// `folder` is the record's (RecordStore.appFolder), left out of backups.
-    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders) {
+    init(center: NotificationScheduling, folder: URL, erasures: @escaping @MainActor () -> Int,
+         compute: @escaping @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders) {
         self.center = center
         self.compute = compute
+        self.erasures = erasures
+        seenErasures = erasures()
         optInFile = folder.appending(path: "reminders-opt-in")
         firstSeenFile = folder.appending(path: "reminders-first-seen")
         mode = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }.map { .on(epoch: $0) } ?? .off
@@ -90,6 +99,9 @@ final class ReminderScheduler {
     /// A tap while an ask is out asks nothing more (AC12b).
     func optIn() async -> Bool {
         attempts += 1
+        // Off, an erase before this tap is one the person opts in after: the next refresh must not
+        // end it. On ("Allow notifications"), an unseen erase must still end the opt-in.
+        if case .off = mode { seenErasures = erasures() }
         await run(send(.tappedOn(attempt: attempts)))
         return optedIn
     }
@@ -136,7 +148,10 @@ final class ReminderScheduler {
         // A read begun before a switch is the old record's: it never becomes the fallback (S41).
         if let next, generation == started { lastEpoch = next.eraseEpoch }
         // An erase since the opt-in ends it. A failed read is not an erase: it only
-        // cancels this round, and the next good read schedules again.
+        // cancels this round, and the next good read schedules again. An erase here ends it
+        // even when its record could not be read (S52).
+        let count = erasures()
+        if count != seenErasures { seenErasures = count; _ = send(.erased) }
         _ = send(.read(epoch: next?.eraseEpoch))
         permission = await center.permission()
         // Off, refused or erased: the first-seen days go whatever the engine answered (or if it
