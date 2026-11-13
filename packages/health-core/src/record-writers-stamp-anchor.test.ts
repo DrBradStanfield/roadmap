@@ -34,8 +34,9 @@ import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { mergeFiles } from './merge';
 import { type ImportPayload, type ImportSurface } from './mcp-import';
 import { MCP_TOOLS } from './mcp-tool-catalogue';
-import { OUTPUTS, runToolOverSync, updateProfile } from './mcp-tools';
+import { OUTPUTS, runToolOverSync } from './mcp-tools';
 import { migrateFile } from './migrate';
+import { updateProfile } from './profile-edits';
 import {
   addLabValue, appendLabValue, appendMeasurement, bulkAppendValues, correctValue, moveBloodTest, placeMeasurement, planBloodTestMove,
 } from './record-edits';
