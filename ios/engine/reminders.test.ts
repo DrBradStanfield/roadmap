@@ -290,6 +290,35 @@ describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)',
     expect(prostate(psa(3.0, 'elected_not_to'))).toBeUndefined();
   });
 
+  it('outside the prostate ages a raised or vague PSA leaves no item, notification or first-seen entry (AC21, owner\'s check)', () => {
+    // A woman of 60 and a man of 40 (below 45) fall outside; the prostate row has no upper age, so a man of 90 keeps it.
+    const people: Array<[string, Partial<RoadmapFile['profile']>, boolean]> = [
+      ['woman', { sex: 'female' }, false], ['man 40', { birthYear: 1986 }, false], ['man 90', { birthYear: 1936 }, true],
+    ];
+    for (const [who, profile, kept] of people) {
+      for (const vague of [false, true]) {
+        const file = psa(4.5, 'elected_not_to');
+        file.profile = { ...file.profile, ...profile };
+        if (vague) file.measurements = [...file.measurements, { ...file.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
+          recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
+        const name = `${who}${vague ? ', vague' : ''}`;
+        const out = phoneReminders(file, new Date(NOW), undefined, {});
+        const item = out.upcoming.find((i) => i.category === 'screening_prostate');
+        const notified = out.notifications.some((n) => n.categories.includes('screening_prostate'));
+        const seen = Object.keys(out.firstSeen!).filter((k) => k.startsWith('screening_prostate:'));
+        if (kept) {
+          expect(item, name).toMatchObject({ label: vague ? 'PSA test' : 'Repeat PSA (your last result)' });
+          expect(notified, name).toBe(true);
+          expect(seen, name).toEqual(['screening_prostate:repeat']);
+        } else {
+          expect(item, name).toBeUndefined();
+          expect(notified, name).toBe(false);
+          expect(seen, name).toEqual([]);
+        }
+      }
+    }
+  });
+
   it('pushes the plain label to the web\'s schedule', () => {
     expect(computeReminderSchedule(psa(4.5, 'elected_not_to'), new Date(NOW)).find((i) => i.category === 'screening_prostate'))
       .toEqual({ category: 'screening_prostate', group: 'screening', label: 'PSA test', dueAt: '2026-07-01' });
