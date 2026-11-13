@@ -82,7 +82,7 @@ final class FirstRunTests: XCTestCase {
 
     // MARK: Offer (US-57 AC8)
 
-    /// Every offer x every event: 12 rows. Back up opens Sync only once the prompt has closed.
+    /// Every offer x every event: 16 rows. Back up opens Sync only once the prompt has closed.
     func testEveryOfferAndEvent_US57_AC8() {
         let all: [Offer] = [.idle, .offering(backUp: false), .offering(backUp: true), .sync]
         let listed: [Offer: [Offer.Event: Offer]] = [
