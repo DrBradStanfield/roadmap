@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`test-chatbot-matching golden pins (pre-split) > --estimate prices the run, needs no key and makes no call 1`] = `
+exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > --estimate counts the router and answer calls of a routed run, with no key and no call 1`] = `
 {
   "calls": [],
   "err": "",
@@ -12,7 +12,7 @@ ESTIMATE router calls=37 $<N>; answer calls=24 up to $<N>; total up to $<N>. No 
 }
 `;
 
-exports[`test-chatbot-matching golden pins (pre-split) > --fixed-handles-only runs only the fixed-handle checks and gates on them 1`] = `
+exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > --fixed-handles-only runs only the fixed-handle checks and gates on them 1`] = `
 {
   "calls": [
     {
@@ -225,7 +225,7 @@ Fixed-handle answer checks: 3/3 ✓
 }
 `;
 
-exports[`test-chatbot-matching golden pins (pre-split) > a full router and answer-check run: report, request shapes, exit code 1`] = `
+exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > a full router and answer-check run: report, request shapes, exit code 1`] = `
 {
   "calls": [
     {
@@ -808,7 +808,7 @@ Fixed-handle answer checks: 3/3 ✓
 }
 `;
 
-exports[`test-chatbot-matching golden pins (pre-split) > a router-only run makes no answer call 1`] = `
+exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > a router-only run makes no answer call 1`] = `
 {
   "calls": [
     {
@@ -1048,18 +1048,8 @@ SUMMARY router model=claude-sonnet-5-5 arm=thinking-off pass=8/12 (66.7%) calls=
 }
 `;
 
-exports[`test-chatbot-matching golden pins (pre-split) > exports nothing (a CLI) 1`] = `[]`;
-
-exports[`test-chatbot-matching golden pins (pre-split) > invalid fixtures, no match, no key and the wrong folder each exit before any call 1`] = `
+exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > an unknown must_not_route handle, an answer handle with no file, no match, no key and the wrong folder each exit before any call 1`] = `
 {
-  "badContext": {
-    "calls": [],
-    "err": "user_context needs a surface on: badContext
-",
-    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
-",
-    "status": 1,
-  },
   "badFixed": {
     "calls": [],
     "err": "answer_handles that would not load: no-such-handle (no file)
@@ -1071,30 +1061,6 @@ exports[`test-chatbot-matching golden pins (pre-split) > invalid fixtures, no ma
   "badForbidden": {
     "calls": [],
     "err": "must_not_route names handles not in the index: nope
-",
-    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
-",
-    "status": 1,
-  },
-  "badHistory": {
-    "calls": [],
-    "err": "history must alternate user and assistant text, ending on the assistant, on: badHistory
-",
-    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
-",
-    "status": 1,
-  },
-  "badProfile": {
-    "calls": [],
-    "err": "expect_profile_edit must name sex (male or female) and/or heightCm (a number), on: badProfile
-",
-    "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
-",
-    "status": 1,
-  },
-  "badRegex": {
-    "calls": [],
-    "err": "must_match / must_not_match regexes that do not compile: (
 ",
     "out": "Using ANTHROPIC_TEST_API_KEY (test workspace)
 ",

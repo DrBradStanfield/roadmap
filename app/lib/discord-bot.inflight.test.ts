@@ -57,7 +57,7 @@ function makeMessage(id: string) {
 
 async function deliver(message: ReturnType<typeof makeMessage>) {
   edge.listeners.get('message')!(message);
-  await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+  await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
 }
 
 const completion = { content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 },
@@ -95,7 +95,7 @@ describe('US-15 AC63 — Discord: an identical message while the first is answer
     expect(second.reply).not.toHaveBeenCalled();
     expect(second.send).not.toHaveBeenCalled();
     answer();
-    await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+    await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
     expect(first.reply).toHaveBeenCalledTimes(1);
     expect(edge.inserts.filter((i) => i.table === 'chat_messages' && i.row.role === 'user')).toHaveLength(1);
     expect(edge.captureMessage).toHaveBeenCalledWith('chat: turn already running',

@@ -589,38 +589,56 @@ describe('formatGradedValue (US-07 AC5, US-06 AC5)', () => {
     return values;
   }
 
+  /** Collects a sweep's failures, keeps the first 20 with their values and
+   *  counts the rest, then asserts once: per-value expect() was ~90% of the
+   *  sweep's time. */
+  function failureLog() {
+    const kept: string[] = [];
+    let total = 0;
+    return {
+      add: (msg: string) => { total++; if (kept.length < 20) kept.push(msg); },
+      assertNone: () => expect(total > kept.length ? [...kept, `...and ${total - kept.length} more`] : kept).toEqual([]),
+    };
+  }
+
   /** Rounded as usual; else, graded below the line, one more decimal place
    *  and at most one fine step under the true value; else, graded at or past
-   *  it, at most one display step over it. */
-  function expectClose(metric: MetricType, v: number, unit: UnitSystem, shown: string, past: boolean) {
+   *  it, at most one display step over it. Returns the checks it breaks. */
+  function closeFailures(metric: MetricType, v: number, unit: UnitSystem, shown: string, past: boolean): string[] {
     const dp = UNIT_DEFS[metric].decimalPlaces[unit];
     const off = Number(shown) - fromCanonicalValue(metric, v, unit);
     const why = `${metric} ${v} in ${unit}: ${shown}`;
-    if (shown === formatDisplayValue(metric, v, unit)) return;
+    const bad: string[] = [];
+    if (shown === formatDisplayValue(metric, v, unit)) return bad;
     if (past) {
-      expect(off, why).toBeGreaterThanOrEqual(0);
-      expect(off, why).toBeLessThanOrEqual(10 ** -dp + 1e-9);
+      if (!(off >= 0)) bad.push(`${why}: off ${off}, expected >= 0`);
+      if (!(off <= 10 ** -dp + 1e-9)) bad.push(`${why}: off ${off}, expected <= ${10 ** -dp + 1e-9}`);
     } else {
-      expect(shown.split('.')[1]?.length ?? 0, why).toBe(dp + 1);
-      expect(off, why).toBeLessThanOrEqual(1e-9);
-      expect(-off, why).toBeLessThan(10 ** -(dp + 1) + 1e-9);
+      const places = shown.split('.')[1]?.length ?? 0;
+      if (places !== dp + 1) bad.push(`${why}: ${places} decimal places, expected ${dp + 1}`);
+      if (!(off <= 1e-9)) bad.push(`${why}: off ${off}, expected <= 1e-9`);
+      if (!(-off < 10 ** -(dp + 1) + 1e-9)) bad.push(`${why}: -off ${-off}, expected < ${10 ** -(dp + 1) + 1e-9}`);
     }
+    return bad;
   }
 
   it('no displayed lipid value contradicts its grade, in either unit, around each line', () => {
+    const failures = failureLog();
     for (const [metric, line] of [['ldl', T.ldlMmol], ['ldl', T.nonHdlMmol], ['apob', T.apobGl]] as const) {
       for (const unit of ['si', 'conventional'] as UnitSystem[]) {
         const x = Number(formatTargetLine(metric, line, unit));
         for (const v of near(metric, line)) {
           const text = formatGradedValue(metric, v, unit, line);
-          expect(Number(text) >= x, `${metric} ${v} in ${unit}: ${text} beside <${x}`).toBe(v >= line);
-          expectClose(metric, v, unit, text, v >= line);
+          if ((Number(text) >= x) !== (v >= line)) failures.add(`${metric} ${v} in ${unit}: ${text} beside <${x}, expected graded ${v >= line}`);
+          closeFailures(metric, v, unit, text, v >= line).forEach(failures.add);
         }
       }
     }
+    failures.assertNone();
   });
 
   it('no displayed waist contradicts its grade, in either unit, at any height', () => {
+    const failures = failureLog();
     for (let h = 120; h <= 230; h += 0.5) {
       const graded = (cm: number) => isWaistToHeightElevated(waistToHeightRatio(cm, h));
       const line = elevatedWaistFromCm(h);
@@ -628,11 +646,12 @@ describe('formatGradedValue (US-07 AC5, US-06 AC5)', () => {
         const x = Number(formatTargetLine('waist', line, unit, graded));
         for (const v of near('waist', line)) {
           const text = formatGradedValue('waist', v, unit, line, graded);
-          expect(Number(text) >= x, `${h} cm tall, waist ${v} cm in ${unit}: ${text} beside <${x}`).toBe(graded(v));
-          expectClose('waist', v, unit, text, graded(v));
+          if ((Number(text) >= x) !== graded(v)) failures.add(`${h} cm tall, waist ${v} cm in ${unit}: ${text} beside <${x}, expected graded ${graded(v)}`);
+          closeFailures('waist', v, unit, text, graded(v)).forEach((f) => failures.add(`${h} cm tall, ${f}`));
         }
       }
     }
+    failures.assertNone();
   }, 240_000); // an exhaustive sweep: 5-43 s alone, 85 s under a loaded full run
 });
 

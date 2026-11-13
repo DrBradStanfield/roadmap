@@ -2,16 +2,22 @@
 // Shared across routes (api.measurements, api.ab, etc.)
 export const DAY_MS = 24 * 60 * 60_000;
 
+/**
+ * The one sweep for the server's in-memory TTL maps (S-5): every `everyMs`,
+ * delete each entry whose expiry has passed (`now > expiresAt`). It only bounds
+ * memory; each reader still checks expiry itself, so nothing is served past it
+ * between sweeps. Unref'd: never holds the process open just to sweep.
+ */
+export function sweepExpired<V>(map: Map<string, V>, expiresAt: (entry: V) => number, everyMs: number): void {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of map) if (now > expiresAt(entry)) map.delete(key);
+  }, everyMs).unref?.();
+}
+
 export function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  const sweep = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of map) {
-      if (now > entry.resetAt) map.delete(key);
-    }
-  }, cleanupMs);
-  // Never hold the process open just to sweep an in-memory map.
-  sweep.unref?.();
+  sweepExpired(map, (entry) => entry.resetAt, cleanupMs);
   // `reset` is a test seam: the map is process-global and would otherwise leak
   // between cases in a suite that drives a limited route many times.
   return Object.assign(
@@ -36,14 +42,7 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
  */
 export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  const sweep = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of map) {
-      if (now > entry.resetAt) map.delete(key);
-    }
-  }, cleanupMs);
-  // Never hold the process open just to sweep an in-memory map.
-  sweep.unref?.();
+  sweepExpired(map, (entry) => entry.resetAt, cleanupMs);
   const live = (key: string) => {
     const entry = map.get(key);
     return entry && Date.now() <= entry.resetAt ? entry : null;

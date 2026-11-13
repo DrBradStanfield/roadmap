@@ -1,12 +1,11 @@
-// The router harness's paid calls (tools/test-chatbot-matching.ts): the router and answer calls, the
-// answer scoring, and the run loop. apiErrorCount lives here with every call that counts an error.
+// The router harness's paid calls (tools/test-chatbot-matching.ts): the router and answer calls (scored by
+// harness-answers.ts scoreAnswer), and the run loop. apiErrorCount lives here with every call that counts an error.
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, PROMPT_CACHE, modelParams, toStat } from '../packages/health-core/src/models';
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
-import { toolOnlyAck } from '../packages/health-core/src/chat-edits';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import { preferMasters } from '../app/lib/router-view';
 import { youtubeTurn } from './chatbot-surfaces';
-import { claimed, plain, profileEditFailures } from './harness-answers';
+import { scoreAnswer } from './harness-answers';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks } from '../app/lib/chat.server';
 import {
@@ -133,9 +132,7 @@ class AnswerApiError extends Error {
 }
 
 async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise<AnswerCheckResult> {
-  const { query, surface, max_length_chars: maxLengthChars } = q;
-  const mustMention = q.must_mention ?? [];
-  const mustNotMention = q.must_not_mention ?? [];
+  const { query, surface } = q;
   const video = YOUTUBE_VIDEOS.get(q);
   const youtube = video && youtubeTurn(video, matchedHandles, query, q.history ?? [], FULL_INDEX);
   const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(matchedHandles).content;
@@ -189,36 +186,7 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
     process.stdout.write(` [api-error ${turn.label}]`);
     return { passed: false, failures: [`API error ${turn.message}`], response: '' };
   }
-  const data = turn.final;
-  if (data.stopReason === 'refusal') {
-    return { passed: false, failures: [`refusal (${data.category ?? 'no category'})`], response: '' };
-  }
-  // Thinking blocks come first on Sonnet; join every text block, as production does,
-  // and a reply with only form edits shows production's toolOnlyAck line instead.
-  const text = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
-  const response = text.trim() || turn.proposedEdits.length === 0 ? text : toolOnlyAck(turn.proposedEdits);
-  const lower = response.toLowerCase();
-
-  const failures: string[] = [];
-  for (const term of mustMention) {
-    if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
-  }
-  for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
-  const plainText = plain(response);
-  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plainText)) failures.push(`no match: /${re}/`);
-  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plainText)) failures.push(`matched forbidden: /${re}/`);
-  for (const term of mustNotMention) {
-    if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
-  }
-  if (typeof maxLengthChars === 'number' && response.length > maxLengthChars) {
-    failures.push(`length ${response.length} chars > cap ${maxLengthChars}`);
-  }
-  if (q.expect_roadmap_run !== undefined && q.expect_roadmap_run !== (turn.counts !== null)) {
-    failures.push(q.expect_roadmap_run ? 'did not call run_roadmap' : 'called run_roadmap');
-  }
-  if (q.expect_profile_edit) failures.push(...profileEditFailures(q.expect_profile_edit, turn.proposedEdits));
-
-  return { passed: failures.length === 0, failures, response };
+  return scoreAnswer(q, turn);
 }
 
 async function runOne(q: TestQuery): Promise<QueryResult> {

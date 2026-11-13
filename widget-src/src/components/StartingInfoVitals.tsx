@@ -47,7 +47,7 @@ import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
 import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
 import { BackfillCell } from './MatrixInputCells';
-import { NumericInputCell } from './NumericInputCell';
+import { NumericInputCell, ACTIVE_CELL } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
 
@@ -715,12 +715,12 @@ function BpInputCell({
   return (
     <div ref={cellRef} className={wrapperClass} onClick={focusSysFromShell}>
       <div className="bt-vitals-bp-inputs">
-        <input className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
+        <input className={`bt-input${active ? ` ${ACTIVE_CELL}` : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
                aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
         <span className="bt-vitals-bp-sep">/</span>
-        <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
+        <input ref={diaRef} className={`bt-input${active ? ` ${ACTIVE_CELL}` : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
                aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
                value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>

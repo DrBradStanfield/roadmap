@@ -102,7 +102,10 @@ describe('US-35 AC5 — a ZIP is opened under caps, by position, with a counted 
   });
 
   it('counts every importable member it opens, kept or not, so oversized members cannot keep it inflating (GHSA-c7rw-h6xq-w2r6)', async () => {
-    const big = new Uint8Array(MAX_IMPORT_FILE_BYTES + 1);
+    // Deflate the 5 MB member once: JSZip copies a loaded member's compressed
+    // bytes as they are when the method matches, so the 25 copies cost nothing.
+    const once = await JSZip.loadAsync(await zipOf({ big: new Uint8Array(MAX_IMPORT_FILE_BYTES + 1) }));
+    const big = (once.file('big') as unknown as { _data: Uint8Array })._data;
     const files: Record<string, Uint8Array> = {};
     for (let i = 0; i < MAX_IMPORT_FILES_PER_CALL + 5; i++) files[`big${String(i).padStart(2, '0')}.pdf`] = big;
     files['zz-ok.pdf'] = PDF;

@@ -17,6 +17,9 @@ export const MAX_BLOG_CHARS = 160_000;
 const SEPARATOR = '\n\n---\n\n';
 
 const articleCache = new Map<string, string | null>();
+// contentForms() per handle, beside articleCache with the same lifetime. Kept
+// only for the raw text it was built from, so changed text rebuilds.
+const formsCache = new Map<string, { raw: string; forms: readonly string[] }>();
 
 function contentDir(handle: string): string {
   const type = loadBlogIndex().find(a => a.handle === handle)?.type;
@@ -73,13 +76,16 @@ export function contentBlock(handle: string, content: string): string {
  * topic master (US-50 AC13) reducedMaster() with its dosing section and
  * without, each after the header and an internal note.
  */
-export function contentForms(handle: string, raw: string): string[] {
+export function contentForms(handle: string, raw: string): readonly string[] {
+  const hit = formsCache.get(handle);
+  if (hit?.raw === raw) return hit.forms;
   const entry = loadBlogIndex().find(a => a.handle === handle);
   const forms = [contentBlock(handle, raw)];
   if (entry && isMaster(entry)) {
     const note = `${contentHeader(entry, parseFrontmatter(raw) ?? {})}\n\n[Internal note, do not quote: this page is shortened to fit. For anything not below, say the full page covers it and give its link from the lines above.]\n\n`;
     for (const reduced of [reducedMaster(raw, true), reducedMaster(raw)]) if (reduced) forms.push(note + reduced);
   }
+  formsCache.set(handle, { raw, forms });
   return forms;
 }
 
@@ -114,8 +120,8 @@ export function loadMatchedContent(handles: string[]): { content: string | null;
     const entry = loadBlogIndex().find(a => a.handle === handle);
     return [{ handle, raw, entry, forms, master: forms.length > 1, guide: isConditionGuide(entry) }];
   }).sort((a, b) => Number(b.guide) - Number(a.guide));
-  const shortest = (forms: string[]) => forms.reduce((a, b) => (b.length < a.length ? b : a));
-  const smallest = (forms: string[]) => shortest(forms).length + SEPARATOR.length;
+  const shortest = (forms: readonly string[]) => forms.reduce((a, b) => (b.length < a.length ? b : a));
+  const smallest = (forms: readonly string[]) => shortest(forms).length + SEPARATOR.length;
   const parts: string[] = [];
   const titles: string[] = [];
   const skipped: string[] = [];
