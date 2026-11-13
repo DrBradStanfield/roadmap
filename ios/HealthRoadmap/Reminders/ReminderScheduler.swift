@@ -173,14 +173,16 @@ final class ReminderScheduler {
 }
 
 /// Which record is on screen (RootView) and its drawn erase count. The phone's copy shows until a
-/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it.
+/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. RootView
+/// bumps the reminders' token on any change to it (S41): a read between the open and the draw is
+/// the phone's copy, and the draw moving the epoch ends it.
 struct ShownRecord: Equatable {
     var source: String; var open: Bool; var epoch: Int?
+}
 
-    /// Whether the reminders' last good read stops counting (S41): another source, the cloud's
-    /// open, or the drawn epoch moving. The open lands before the record is drawn, so a read in
-    /// between is the phone's copy; the draw moving the epoch ends it too. A save keeps all three.
-    static func switches(from old: ShownRecord, to new: ShownRecord) -> Bool {
-        old.source != new.source || old.open != new.open || old.epoch != new.epoch
+extension ShownRecord {
+    /// RootView's key: the drawn record's erase epoch, nil while none is drawn.
+    @MainActor init(source: String, open: Bool, store: RecordStore) {
+        self.init(source: source, open: open, epoch: store.myData?.eraseEpoch)
     }
 }

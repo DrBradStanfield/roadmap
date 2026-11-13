@@ -1229,9 +1229,10 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   re-sign-in while open, a failed close or keep): a swap that moves the drawn epoch bumps the token,
   and one that keeps it leaves a fallback of the same value. Not covered: a swap between two records
   neither of which drew (the key's epoch stays nil while the text the scheduler reads changes); it
-  also needs the new record's epoch to be lower, with no known path. The rule is
-  `ShownRecord.switches` (Reminders/ReminderScheduler.swift), table-tested; RootView's onChange
-  calling it is checked by reading. Known lead (S39):
+  also needs the new record's epoch to be lower, with no known path. The key is built by
+  `ShownRecord(source:open:store:)` (Reminders/ReminderScheduler.swift); a test pins that it carries
+  the drawn record's epoch (nil when none is drawn), the open and the source. Only RootView's
+  onChange wiring is checked by reading. Known lead (S39):
   a refresh that read the record before an erase can land `read(old)` after a grant set
   `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
   the epoch. iOS's permission stays a value read from iOS, never a case:

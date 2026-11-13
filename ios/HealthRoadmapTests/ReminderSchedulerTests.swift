@@ -574,22 +574,35 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false)))
     }
 
-    /// US-25 AC12b, US-11 (lead S41): RootView's trigger. Which changes to the record on screen end
-    /// the reminders' last good read. The draw's epoch is in it: PR 1608's key, (source, open) alone,
-    /// missed a refresh between the cloud's open and its draw.
-    func testWhichChangesToTheShownRecordEndTheLastGoodRead_US25_AC12b() {
-        let drawnAt5 = ShownRecord(source: "google-drive", open: true, epoch: 5)
-        let cases: [(String, ShownRecord, ShownRecord, Bool)] = [
-            ("the cloud's open flips", ShownRecord(source: "google-drive", open: false, epoch: 5), drawnAt5, true),
-            ("the draw moves the epoch 5 to 1", drawnAt5, ShownRecord(source: "google-drive", open: true, epoch: 1), true),
-            ("a record drawn where none was", ShownRecord(source: "google-drive", open: true, epoch: nil), drawnAt5, true),
-            ("the drawn record goes", drawnAt5, ShownRecord(source: "google-drive", open: true, epoch: nil), true),
-            ("a save keeps source, open and epoch", drawnAt5, drawnAt5, false),
-            ("another source", ShownRecord(source: "", open: false, epoch: 5), ShownRecord(source: "dropbox", open: false, epoch: 5), true),
-        ]
-        for (name, old, new, ends) in cases {
-            XCTAssertEqual(ShownRecord.switches(from: old, to: new), ends, name)
-        }
+    /// US-25 AC12b, US-11 (lead S41): RootView's key, built from what RootView has. It carries the
+    /// drawn record's erase epoch, so the draw moving it is a switch for the reminders: PR 1608's key
+    /// left the epoch out and missed a refresh between the cloud's open and its draw.
+    func testRootViewsKeyCarriesTheDrawnRecordsEpoch_US25_AC12b() async throws {
+        let records = folder.appending(path: "record")
+        try FileManager.default.createDirectory(at: records, withIntermediateDirectories: true)
+        let file = records.appending(path: "health-roadmap.json")
+        let engine = try HealthEngine()
+        _ = try RecordStore(folder: records, engine: engine, deviceId: "ios-test") // writes an empty record
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any])
+        var meta = try XCTUnwrap(record["meta"] as? [String: Any])
+        meta["eraseEpoch"] = 5
+        meta["erasedAt"] = (meta["updatedAt"] as? String) ?? "2026-01-01T00:00:00.000Z"
+        record["meta"] = meta
+        record["erasedRows"] = ["fromEpoch": 5, "ids": [String]()]
+        try JSONSerialization.data(withJSONObject: record).write(to: file)
+        let store = try RecordStore(folder: records, engine: engine, deviceId: "ios-test")
+        XCTAssertEqual(store.myData?.eraseEpoch, 5, "fixture: the drawn record is at epoch 5")
+
+        XCTAssertEqual(ShownRecord(source: "google-drive", open: true, store: store),
+                       ShownRecord(source: "google-drive", open: true, epoch: 5), "the drawn epoch, open and source are carried")
+        XCTAssertEqual(ShownRecord(source: "", open: false, store: store),
+                       ShownRecord(source: "", open: false, epoch: 5), "the phone's record: no source, not open")
+
+        try FileManager.default.removeItem(at: records)
+        await store.showPhone().value // the phone's file cannot be read: nothing is drawn
+        XCTAssertNil(store.myData, "fixture: no drawn record")
+        XCTAssertEqual(ShownRecord(source: "dropbox", open: false, store: store),
+                       ShownRecord(source: "dropbox", open: false, epoch: nil), "no drawn record gives no epoch")
     }
 
     /// US-25 AC12b, US-11 (lead S41): a refresh that began reading record A lands after the switch

@@ -115,11 +115,9 @@ struct RootView: View {
             Text(eraser.held?.words ?? "")
         }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
-        // Another record's erase epoch never stands in for this one's (S41, ShownRecord.switches).
-        .onChange(of: shownRecord) { old, new in
-            if ShownRecord.switches(from: old, to: new) { reminders.recordSourceChanged() }
-            recordChanged()
-        }
+        // Another record's erase epoch never stands in for this one's (S41): any change to
+        // ShownRecord, the drawn epoch included, is a switch for the reminders.
+        .onChange(of: shownRecord) { reminders.recordSourceChanged(); recordChanged() }
         .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
         .task(id: store.recordJSON) { await reminders.refresh() }
@@ -184,7 +182,7 @@ struct RootView: View {
     }
 
     private var shownRecord: ShownRecord {
-        ShownRecord(source: source, open: sync.recordOpen, epoch: store.myData?.eraseEpoch)
+        ShownRecord(source: source, open: sync.recordOpen, store: store)
     }
 
     private var source: String { sync.provider?.rawValue ?? "" }
