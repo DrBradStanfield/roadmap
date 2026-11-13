@@ -75,7 +75,9 @@ final class MetricReadTests: XCTestCase {
         let page = { (read: Read, kept: ChartData?, hasReadings: Bool, problem: RecordProblem?) in
             Self.named(MetricRead.page(read, revision: 1, problem: problem, kept: kept, hasReadings: hasReadings))
         }
-        XCTAssertEqual(page(.chart(revision: 1, kept), nil, true, nil), "chart 3.1")
+        XCTAssertEqual(page(.chart(revision: 1, kept), kept, true, nil), "chart 3.1")
+        // US-25 AC21: an erase drops the kept charts, sometimes without moving the revision.
+        XCTAssertEqual(page(.chart(revision: 1, kept), nil, true, nil), "guide only", "never a chart the store dropped")
         XCTAssertEqual(page(.empty(revision: 1), nil, true, nil), "No data yet", "the read came back with no values")
         XCTAssertEqual(page(.failed(revision: 1), nil, true, nil), "failed")
         XCTAssertEqual(page(.failed(revision: 1), nil, false, nil), "failed", "even when My data has no reading")

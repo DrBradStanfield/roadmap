@@ -56,7 +56,9 @@ enum MetricRead {
     nonisolated static func page(_ read: Read, revision: Int, problem: RecordProblem?, kept: ChartData?, hasReadings: Bool) -> Page {
         if let problem { return .problem(problem) }
         switch read {
-        case .chart(revision, let chart): return .chart(chart)
+        // Only while the store still keeps a chart: an erase that drops them without moving the
+        // revision never leaves the erased values drawn (US-25 AC21, S25 adversary R2).
+        case .chart(revision, let chart) where kept != nil: return .chart(chart)
         case .empty(revision): return .noDataYet
         case .failed(revision): return .failed
         case .reading, .empty, .failed, .chart:
