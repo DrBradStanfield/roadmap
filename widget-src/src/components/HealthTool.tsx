@@ -293,10 +293,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     },
   }), [ownSave]);
 
-  // The first-time vitals fields' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
+  // The form's vitals' and the PSA's save, queued and debounced (hooks/useLongitudinalSave).
   const {
     handleSaveLongitudinal, scheduleLongitudinalSave, flushLongitudinalSave, commitPsa, stagePendingSave,
-    cancelPendingSave, flushPendingSave, isSavingLongitudinal, fieldsSaved, psaDate, setPsaDate,
+    cancelPendingSave, flushPendingSave, isSavingLongitudinal, psaDate, setPsaDate,
   } = useLongitudinalSave({
     inputs, setInputs, history, unitOverrides, unitSystem, reread: ownSave,
     flushPendingProfileSave: flushProfile, typedIn,
@@ -668,7 +668,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     scheduleLongitudinalSave,
     flushLongitudinalSave,
     isSavingLongitudinal,
-    fieldsSaved,
     hasApiResponse,
     bloodTestFlushRef,
     vitalsFlushRef,

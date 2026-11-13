@@ -46,8 +46,7 @@ export interface FormSlots {
   planReady: boolean;
   pageOpen: boolean;
   renderPage: (tiles: StatTile[]) => ReactNode;
-  rows: { ctx: RowContext; open: (s: ValueSubject, from?: Element) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; vitalsAsRows: boolean; withoutWeight: boolean };
-  legacyVitals: ReactNode;
+  rows: { ctx: RowContext; open: (s: ValueSubject, from?: Element) => void; vitals: ApiMeasurement[]; blood: ApiMeasurement[]; labs: ApiLabValue[]; withoutWeight: boolean };
   vitalsCue: ReactNode;
   bloodCue: ReactNode;
   tableShown: boolean;
@@ -124,7 +123,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   openRef.current = form.rows.open;
   const onOpen = useCallback((s: ValueSubject, from?: Element) => openRef.current(s, from), []);
 
-  const { ctx, vitals, blood, labs: labValues, vitalsAsRows, withoutWeight } = form.rows;
+  const { ctx, vitals, blood, labs: labValues, withoutWeight } = form.rows;
   // Rows (US-62 AC21), worked out only when their data changes (one long page, 40+ labs).
   const rows = useMemo(() => {
     const tileOf = (key: string) => tiles.find(t => t.key === key);
@@ -134,16 +133,16 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const creatinine = row('creatinine');
     const total = row('total_cholesterol');
     return {
-      weight: [vitalsAsRows ? whtrRow(series.whtr, tileOf('whtr')) ?? coreRow('waist', vitals, ctx) : null,
-        vitalsAsRows && !withoutWeight ? weightRow(vitals, ctx, tileOf('bmi')) : null, row('hba1c')],
-      pressure: [vitalsAsRows ? pressureRow(vitals, ctx) : null, creatinine, egfr],
+      weight: [whtrRow(series.whtr, tileOf('whtr')) ?? coreRow('waist', vitals, ctx),
+        !withoutWeight ? weightRow(vitals, ctx, tileOf('bmi')) : null, row('hba1c')],
+      pressure: [pressureRow(vitals, ctx), creatinine, egfr],
       lipids: (['apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const)
         .flatMap(m => (m === 'total_cholesterol' ? [total] : m === 'hdl' ? [row('hdl'), nonHdlRow(tileOf('nonHdl'), total)] : [row(m)])),
       // The lab's own eGFR row leaves Blood tests while the eGFR row stands for it (US-73 AC7).
       blood: [...BLOOD_ROWS.flatMap(m => (m === 'creatinine' ? [creatinine, egfr] : [row(m)])),
         ...(egfr ? labs.filter(r => !isLabEgfr(r.subject)) : labs)],
     };
-  }, [tiles, blood, vitals, labValues, ctx, series, egfrCurrent, vitalsAsRows, withoutWeight]);
+  }, [tiles, blood, vitals, labValues, ctx, series, egfrCurrent, withoutWeight]);
 
   const placedMedicines = useMemo(() => new Map(plan.layout.medicines.map(m => [m.key, m.suggestions])), [plan.layout]);
   const placedScreenings = useMemo(() => new Map(plan.layout.screenings.map(g => [g.group, g.suggestions])), [plan.layout]);
@@ -167,7 +166,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const screening = form.screening(place);
     const bone = form.boneDensity(place);
     return {
-      weight: { rows: <>{form.legacyVitals}<RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/></>, after: form.weightMedications(place) },
+      weight: { rows: <RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/>, after: form.weightMedications(place) },
       bloodPressure: { rows: <RowsCard rows={rows.pressure} onOpen={onOpen}/> },
       cholesterol: { rows: <RowsCard rows={rows.lipids} onOpen={onOpen}/>, after: form.lipidMedications(place) },
       screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
