@@ -47,6 +47,7 @@ import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './m
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
+import { uncertainWrite } from './write-refusal';
 
 /** Exported for the browser adapter's two cosmetic PATCHes (rename, re-parent). */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
@@ -317,10 +318,9 @@ const ERASE_KEPT_COPY = 'One copy of health-roadmap.json in Google Drive could n
 const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was written. Saving resumes once that health-roadmap.json in Google Drive is repaired or renamed.';
 
 /** A write that may have landed: keep the provider status, so a 401 still
- *  refreshes the token (iOS) and still reads as "reconnect" (the page). */
-function uncertain(message: string, error: unknown): StorageError {
-  return new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined);
-}
+ *  refreshes the token (iOS) and still reads as "reconnect" (the page), and
+ *  mark it, so no status on it reads as a refusal (write-refusal.ts). */
+const uncertain = (message: string, error: unknown): StorageError => uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined));
 
 /**
  * Every copy of the record, winner first. Search lags a create, so an id in

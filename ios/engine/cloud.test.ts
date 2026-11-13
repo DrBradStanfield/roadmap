@@ -41,6 +41,8 @@ class FakeDropbox {
   delayFor?: Server['delayFor'];
   /** False: uploads fail with a 500; reads still work. */
   uploadsWork = true;
+  /** True: record uploads are refused as a full Dropbox (409 path/insufficient_space), nothing written. */
+  full = false;
   uploads = 0;
   /** Runs once, just before the next upload lands: another device writing first. */
   beforeNextUpload: (() => void) | null = null;
@@ -76,6 +78,7 @@ class FakeDropbox {
       return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
     }
     if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
+    if (this.full) return { status: 409, headers: {}, body: '{"error_summary":"path/insufficient_space/"}' };
     if (slot === 'file') {
       this.beforeNextUpload?.();
       this.beforeNextUpload = null;
@@ -1068,6 +1071,67 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
     expect(days(dropbox.record)).toEqual([]);
   });
+
+  it('an erase the cloud refused and the phone could not keep is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const phoneBefore = state.phoneText;
+    dropbox.full = true;
+    state.phoneWriteError = 'The disk is full.';
+
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    // The chat step ran (it is irreversible); the record erase did not happen, so DataEraser says so.
+    expect(result).toMatchObject({ success: false, erased: false, chatErased: true, view: null });
+    expect(result.error).toBeUndefined();
+    expect(state.phoneText).toBe(phoneBefore);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+
+    // The session is back at the erase the screen shows: an edit under it is taken, and the
+    // next good save sends the record as it was plus that edit, nothing erased.
+    dropbox.full = false;
+    state.phoneWriteError = '';
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).not.toMatchObject({ reason: 'erased' });
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
+    expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('an erase that reached Google Drive, whose check then met an expired sign-in, is kept: the token retry never replaces the landed mark (lead S57)', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    // The PATCH lands the erase; then the sign-in lapses, so the verify read answers 401 and a forced refresh asks to sign in.
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      drive.expired = true;
+      state.signedOut = true;
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(result).toMatchObject({ success: false, erased: true });
+  });
+
+  it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const phoneBefore = state.phoneText;
+    dropbox.uploadsWork = false;
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.phoneText).toBe(phoneBefore); // a relaunch before the retry lands reads this
+    dropbox.uploadsWork = true;
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
 });
 
 /** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */
@@ -1080,6 +1144,10 @@ class FakeDrive implements Server {
   /** Runs at the version read that comes right before an upload. */
   beforeVersionCheck: (() => void) | null = null;
   private versionReads = 0;
+  /** Runs right after each PATCH lands, until it answers true. */
+  afterPatch: ((body: string) => boolean) | null = null;
+  /** True: every call answers 401, the token expired. */
+  expired = false;
 
   put(record: RoadmapFile): void {
     this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
@@ -1090,6 +1158,7 @@ class FakeDrive implements Server {
 
   answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
     const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
+    if (this.expired) return { status: 401, headers: {}, body: 'expired' };
     expect(headers.authorization).toBe('Bearer token-1');
     const u = new URL(url);
     const q = u.searchParams.get('q') ?? '';
@@ -1125,6 +1194,7 @@ class FakeDrive implements Server {
     }
     if (method === 'PATCH' && u.pathname === '/upload/drive/v3/files/file-1') {
       this.file = { text: body!, version: (this.file?.version ?? 0) + 1 };
+      if (this.afterPatch?.(body!)) this.afterPatch = null;
       return ok({ id: 'file-1', version: String(this.file.version) });
     }
     throw new Error(`FakeDrive has no ${method} ${url}`);
