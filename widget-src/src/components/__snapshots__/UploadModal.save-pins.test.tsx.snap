@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`US-12 / US-13 pins (W2-6) — one upload saves the same store inputs > two files, an unticked conflict, a skipped row, a unit change and a ticked Replace 1`] = `
+"{
+ "ldlShown": "120",
+ "replaceBoxes": [
+  "Replace the saved HDL Cholesterol value from 2 Sep 2025",
+  "Replace the saved Ferritin value from 2 Sep 2025"
+ ],
+ "measurements": [
+  [
+   [
+    {
+     "metricType": "ldl",
+     "value": 3.1031807602792862,
+     "recordedAt": "2025-09-02T00:00:00.000Z",
+     "source": "lab_import_edited"
+    },
+    {
+     "metricType": "triglycerides",
+     "value": 1.1,
+     "recordedAt": "2025-09-02T00:00:00.000Z",
+     "source": "lab_import"
+    }
+   ]
+  ]
+ ],
+ "labValues": [
+  [
+   [
+    {
+     "metricName": "Ferritin",
+     "value": 90,
+     "unit": "µg/L",
+     "referenceLow": 30,
+     "referenceHigh": 300,
+     "recordedAt": "2025-09-02T00:00:00.000Z",
+     "source": "lab_import",
+     "correctsId": "F"
+    }
+   ]
+  ]
+ ],
+ "documents": [
+  [
+   [
+    {
+     "documentType": "clinic_letter",
+     "title": "Synthetic letter",
+     "documentDate": "2025-08-01",
+     "contentMd": "letter text",
+     "metadata": {
+      "clinic": "synthetic"
+     },
+     "sourceFileName": "letter.pdf",
+     "file": {}
+    },
+    {
+     "documentType": "pathology_report",
+     "title": "Blood test results",
+     "documentDate": "2025-09-02",
+     "contentMd": "",
+     "metadata": {
+      "labArchive": true
+     },
+     "sourceFileName": "labs.pdf",
+     "file": {}
+    }
+   ]
+  ]
+ ],
+ "screening": []
+}"
+`;
