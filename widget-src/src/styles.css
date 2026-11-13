@@ -2267,10 +2267,6 @@ input[type="number"] {
   flex-shrink: 0;
 }
 
-.review-row-value {
-  color: var(--color-gray-dark);
-}
-
 .review-row-dup {
   font-size: 12px;
   color: var(--color-gray-dark);

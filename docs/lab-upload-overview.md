@@ -343,7 +343,7 @@ File: `app/lib/anthropic.server.ts → resolveUnit() · ApoB SI range 0–3 (0.7
 
 Row shows `0.79 g/L` · high · checkbox pre-checked. The customer sees the wrong number on screen but has no input to fix it. He clicks Save anyway (or accepts the default), since the alternative is just not saving.
 
-File: `widget-src/src/components/ReviewTable.tsx:428` — `<span className="review-row-value">`
+File: `widget-src/src/components/ReviewMatrix.tsx:308` — now a new cell renders as an editable `<NumericInputCell>` (`bt-cell-input bt-cell-review`); only a value already saved at that date stays read-only text (`bt-cell-context`, :275). `review-row-value` is gone.
 
 ### 5 · Bulk save
 
