@@ -41,6 +41,7 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', 3.6);
   });
 
+  // A guard, not an H40 pin: submit() already cleared the timer before the fix.
   it('Enter after coming back saves the current text, once', async () => {
     const { input, onCorrect } = editor();
     fireEvent.change(input, { target: { value: '3.4' } });
@@ -55,7 +56,7 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
   });
 
   it('a save waiting on a held press is cancelled by coming back too', async () => {
-    const { input, onCorrect } = editor();
+    const { view, input, onCorrect } = editor();
     fireEvent.change(input, { target: { value: '3.4' } });
     fireEvent.blur(input);
     fireEvent.pointerDown(document.body, { pointerId: 1 });
@@ -65,5 +66,11 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
     fireEvent.change(input, { target: { value: '3.6' } });
     await wait(2000);
     expect(onCorrect).not.toHaveBeenCalled();
+    expect(view.container.querySelector('.bt-cell-correcting input')).toBe(input);
+    expect(input.value).toBe('3.6');
+    fireEvent.blur(input);
+    await wait(200);
+    expect(onCorrect).toHaveBeenCalledTimes(1);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6);
   });
 });
