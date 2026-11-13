@@ -90,3 +90,42 @@ final class NumberReadingTests: XCTestCase {
         XCTAssertEqual(TypedNumber.read("1,234,567", range: 0...10), 1_234_567, "read, then the engine checks the range")
     }
 }
+
+/// Lead I-6: `TypedNumber.question` is a Swift copy of health-core's `commaQuestion`
+/// (parseNumber.ts), held to it by nothing but the hand-written cases above. Its parity
+/// test waits on an engine door, which is a production change, so only the table is here.
+///
+/// The missing door: `numberQuestionJson(text, rangeJson?)` in ios/engine/entry.ts (and
+/// bridge-contract.json), answering as JSON the question the web asks: null when
+/// `parseLocalisedNumber(ascii(text), range)` reads the text, else `commaQuestion(ascii(text))`,
+/// where `ascii` is `readNumber`'s step (Arabic-Indic digits and the Arabic decimal mark as
+/// ASCII), as `numberJson` reads. A test door beside `number(from:)` in EngineTestDoors.swift
+/// then calls it, and one test loops `texts` above plus this table, unranged and under the
+/// ranges `testSwiftReadsARangedTextAsTheEngineDoes` uses, asserting
+/// `TypedNumber.question(text, range:)` equals the door.
+///
+/// Expected, from health-core on main 67d3c4eff (unranged unless a range is named):
+///
+/// | Typed | The engine's question |
+/// |---|---|
+/// | `1,234` | Did you mean 1234 or 1.234? |
+/// | `1,050` | Did you mean 1050 or 1.05? |
+/// | `1,000` | Did you mean 1000 or 1? |
+/// | `1,500` | Did you mean 1500 or 1.5? |
+/// | `100,500` | Did you mean 100500 or 100.5? |
+/// | `999,999` | Did you mean 999999 or 999.999? |
+/// | `-1,234` | Did you mean -1234 or -1.234? |
+/// | `+1,234` | Did you mean 1234 or 1.234? (Swift today: "Did you mean +1234 or +1.234?") |
+/// | ` 12,500 ` | Did you mean 12500 or 12.5? |
+/// | `\u{00A0}1,234\u{00A0}` | Did you mean 1234 or 1.234? |
+/// | `١,٢٣٤`, `۱,۲۳۴` | Did you mean 1234 or 1.234? |
+/// | `1,234,567`, `12,345,678`, `-1,234,567`, `+1,234,567`, `١,٢٣٤,٥٦٧` | Type the number without commas. |
+/// | `3,4`, `١,٥`, `0,123`, `1234,567`, `1,2345`, `1,2`, `1,23,456`, `1234,567,890` | null |
+/// | every other text in `texts` above | null |
+/// | `1,234` in 10...2650 | null (the range reads it as 1234) |
+/// | `1,234` in 0...2000 | Did you mean 1234 or 1.234? (both readings fit) |
+/// | `2,500` in 0...2000 | Did you mean 2500 or 2.5? |
+/// | `1,234,567` in 0...10 | null (read; the engine checks the range) |
+///
+/// The `+1,234` row fails against today's Swift: health-core prints each reading as a
+/// JavaScript number, which drops a leading +; Swift keeps the typed text.
