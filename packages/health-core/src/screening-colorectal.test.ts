@@ -212,9 +212,10 @@ describe('US-07 AC1h: roadmap_text.html (spec lines 75-80)', () => {
     expect(colorectal).toContain('more common in younger adults [159].');
   });
 
-  it('the Changelog has the approved line, first', () => {
+  it('the Changelog has the approved line, first of its date', () => {
     const line = quotes(specLine('**Page**', '- Changelog:'))[0];
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
-    expect(log.match(/<li>[^\n]*/)![0]).toBe(`<li>12<sup>th</sup> November 2026: ${line}</li>`);
+    // Newer dates may sit above it (13 November, the PSA attribution, Brad 2026-11-14).
+    expect(log.match(/<li>12<sup>th<\/sup> November 2026:[^\n]*/)![0]).toBe(`<li>12<sup>th</sup> November 2026: ${line}</li>`);
   });
 });
