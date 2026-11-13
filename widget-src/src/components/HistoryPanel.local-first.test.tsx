@@ -37,3 +37,14 @@ describe('US-07 — complete local history', () => {
     expect(mocks.loadAllHistory).toHaveBeenCalledOnce();
   });
 });
+
+// US-06 AC4c: a history read that fails ends the wait. Before, the load had no
+// catch, so a rejected read left "Loading history..." on screen for good.
+describe('US-06 AC4c — a failed history read', () => {
+  it('stops showing Loading history and shows the empty state', async () => {
+    mocks.loadAllHistory.mockRejectedValue(new Error('read failed'));
+    const view = render(<HistoryPanel />);
+    await waitFor(() => expect(view.getByText('No measurements recorded yet.')).toBeTruthy());
+    expect(view.queryByText('Loading history...')).toBeNull();
+  });
+});

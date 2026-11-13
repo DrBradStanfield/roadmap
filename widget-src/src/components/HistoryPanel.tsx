@@ -275,10 +275,8 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    loadAllHistory().then(rows => {
-      setMeasurements(rows);
-      setLoading(false);
-    });
+    // A failed read shows the empty state, as the main form does (US-06 AC4c).
+    loadAllHistory().then(setMeasurements, () => {}).finally(() => setLoading(false));
     loadLabValues().then(rows => { if (rows) setLabVals(rows); });
     loadMedicationHistory().then(setMedHistory);
   }, []);
