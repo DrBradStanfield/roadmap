@@ -125,9 +125,10 @@ describe('US-11 AC4c: the reminders cancel follows a record write that stands (l
     expect(localStorage.getItem(SWITCH_KEY)).toBeNull();
   });
 
-  it('(d) a prepare that fails (no proof in hand) posts nothing, but the erase that stands still clears the switch key', async () => {
-    const { data, cloud } = await setUp('google-drive');
+  it('(d) a prepare that throws before it holds the token posts nothing, but the erase that stands still clears the switch key', async () => {
+    const { data, cloud, Sentry } = await setUp('google-drive');
     const { GoogleDriveAdapter } = await import('../src/storage');
+    // Thrown before any promise exists, so it escapes the lookup's own catch.
     vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken').mockImplementation(() => { throw new Error('proof lookup broke'); });
     const server = stubServer(cloud);
 
@@ -135,6 +136,33 @@ describe('US-11 AC4c: the reminders cancel follows a record write that stands (l
 
     expect(server.posts).toEqual([]);
     expect(localStorage.getItem(SWITCH_KEY)).toBeNull();
+    expect(vi.mocked(Sentry.captureException).mock.calls.map(([e]) => (e as Error).message)).toContain('Reminder row delete failed (unprepared).');
+  });
+
+  it('(d2) a Drive proof lookup that rejects is no proof: one cancel without it, after the write (a tombstone, as before)', async () => {
+    const { data, cloud } = await setUp('google-drive');
+    const { GoogleDriveAdapter } = await import('../src/storage');
+    vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken').mockRejectedValue(new Error('proof lookup broke'));
+    const server = stubServer(cloud);
+
+    expect((await data.deleteUserData()).success).toBe(true);
+
+    expect(server.cancels()).toEqual([{ op: 'cancel', token: TOKEN }]);
+    expect(server.epochAtCancel).toEqual([1]);
+  });
+
+  it('(f) an erase refused before the swap (the erased file cannot be built) cancels nothing', async () => {
+    const erase = await import('@roadmap/health-core/erase');
+    const { data, cloud } = await setUp();
+    vi.spyOn(erase, 'buildErasedFile').mockImplementation(() => { throw new Error('build failed'); });
+    const server = stubServer(cloud);
+    const before = data.getEraseIdentity();
+
+    expect((await data.deleteUserData()).success).toBe(false);
+
+    expect(data.getEraseIdentity()).toBe(before);
+    expect(server.cancels()).toEqual([]);
+    expect(localStorage.getItem(SWITCH_KEY)).toBe('old-switch-token');
   });
 
   it.each([
