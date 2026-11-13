@@ -109,6 +109,25 @@ final class FirstRunTests: XCTestCase {
         XCTAssertFalse(Offer.offering(backUp: true).prompting, "Back up closes the prompt")
     }
 
+    /// An erase from elsewhere raises the questions only over the bare tabs: no cover, no backup
+    /// prompt or Sync sheet (Back up's step between them included), no hold from this phone's own
+    /// erase. Otherwise it waits; RootView asks again as the last sheet closes (S48).
+    func testAnEraseWaitsForTheOfferToClose_US25_AC16d() {
+        let covers: [Cover] = [.deciding, .welcome, .questions(.fresh), .questions(.onlyMissing), .questions(.afterErase), .none]
+        let offers: [Offer] = [.idle, .offering(backUp: false), .offering(backUp: true), .sync]
+        for cover in covers {
+            for offer in offers {
+                for holding in [false, true] {
+                    for erased in [false, true] {
+                        let want: Cover.Event? = (cover, offer, holding, erased) == (.none, .idle, false, true) ? .erased : nil
+                        let got = Cover.onRecordChange(cover: cover, offer: offer, holding: holding, erasedElsewhere: erased)
+                        XCTAssertEqual(got, want,"\(cover) x \(offer) x holding \(holding) x erased \(erased)")
+                    }
+                }
+            }
+        }
+    }
+
     /// Not now: the binding's close, then onDismiss's, land idle once; Back up: Sync after the prompt.
     func testPromptClosesOnceEitherWay_US57_AC8() {
         let notNow = [Offer.Event.due, .promptClosed, .promptClosed].reduce(Offer.idle, Offer.transition)

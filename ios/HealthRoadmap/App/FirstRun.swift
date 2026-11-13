@@ -93,6 +93,14 @@ enum Cover: Equatable {
             }
         }
     }
+
+    /// What a record change sends (S48): an erase from elsewhere raises the questions only over
+    /// the bare tabs, with no backup offer up and no hold from this phone's own erase, so the cover
+    /// never presents under the offer's sheets (My health's own sheets: S65). Otherwise it waits:
+    /// RootView asks again as the offer's last sheet closes.
+    static func onRecordChange(cover: Cover, offer: Offer, holding: Bool, erasedElsewhere: Bool) -> Event? {
+        cover == .none && offer == .idle && !holding && erasedElsewhere ? .erased : nil
+    }
 }
 
 /// The backup offer after the person's third save (US-57 AC8; iPhone survey S16): idle, the
