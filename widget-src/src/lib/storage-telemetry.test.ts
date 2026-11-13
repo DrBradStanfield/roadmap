@@ -232,15 +232,17 @@ describe('cloud-storage telemetry boundary', () => {
 
     // Last on purpose: the logout latch is page-lifetime module state with no
     // reset, so no device-tier save in this file may run after it.
-    it('A15: a device write refused for logout sends no Cloud sync failed report, and the save still fails', async () => {
+    it('A15: a device save after logout never reaches the write, sends no Cloud sync failed report, and still fails', async () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const store = await RoadmapStore.create(new LocalStorageAdapter());
       store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
       await store.flush();
       stopRoadmapLocalWrites();
+      const writeSync = vi.spyOn(LocalStorageAdapter.prototype, 'writeSync');
       store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
       await expect(store.flush()).rejects.toThrow();
+      expect(writeSync).not.toHaveBeenCalled(); // the page is closed: the save stops before the write (US-09 AC2c)
       await Sentry.flush();
       expect(envelopes).toHaveLength(0);
     });

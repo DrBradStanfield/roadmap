@@ -504,10 +504,13 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     }
     expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
   });
-  it('the copy is gone even when the wrapper itself throws after the run (unwritable --out)', () => {
-    const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', '/nonexistent-dir-4471/out.json'], { cwd: repo, encoding: 'utf8', env: childEnv() });
+  it('the copy is gone even when the wrapper itself fails after the run (an --out folder made read-only during it)', () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'cr-out-ro-'));
+    const f = fake({ output: CLEAN, during: `chmod 555 ${JSON.stringify(outDir)}` });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', join(outDir, 'out.json')], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    chmodSync(outDir, 0o755);
     expect(r.status).not.toBe(0);
+    expect(r.stderr).toContain('the old file at --out may still be there');
     const argv: string[] = JSON.parse(f.read('argv.json'));
     const args = JSON.parse(argv.find((a) => a.startsWith('mcp_servers.health.args='))!.slice('mcp_servers.health.args='.length));
     const copy = args[args.indexOf('--file') + 1];
@@ -1560,7 +1563,9 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
   it('usage errors name the path: inside or holding the checkout, outside every pinned root, missing, not a folder, a control character, a shared name, a credential- or instruction-named folder, --loop', () => {
     const dir = changed();
     refused(dir, ['--include', join(dir, 'docs')], `--include ${join(dir, 'docs')}: inside (or holding) the reviewed checkout`);
-    refused(dir, ['--include', join(dir, '..')], 'inside (or holding) the reviewed checkout');
+    const outside = mkdtempSync('/tmp/cr-out-outside-'); // the suite root holds outJson, and an --out inside a reviewed input is refused first (AC18)
+    refused(dir, ['--include', join(dir, '..'), '--out', join(outside, 'out.json')], 'inside (or holding) the reviewed checkout');
+    rmSync(outside, { recursive: true, force: true });
     const loose = mkdtempSync(join(tmpdir(), 'cr-include-loose-'));
     refused(dir, ['--include', loose], `--include ${loose}: outside every root pinned in ${policy}`);
     refused(dir, ['--include', join(pinned, 'no-such-folder')], `--include ${join(pinned, 'no-such-folder')}: no such directory`);
@@ -1622,7 +1627,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
     mkdirSync(join(home, 'tools'));
-    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
+    for (const m of ['codex-review.mjs', 'codex-review-include.mjs', 'codex-review-names.mjs', 'codex-review-links.mjs', 'codex-review-out.mjs', 'codex-review-events.mjs', 'secret-rules.mjs', 'codex-review-includes.json']) writeFileSync(join(home, 'tools', m), readFileSync(resolve(__dirname, m)));
     const copy = join(home, 'tools', 'codex-review.mjs'), policyFile = join(home, 'tools', 'codex-review-includes.json');
     const dir = changed(), raw = rawDir({ 'f.md': 'x\n' });
     const go = (env: NodeJS.ProcessEnv = childEnv()) => spawnSync('node', [copy, '--codex', fake({ output: CLEAN }).bin, '--include', raw, '--out', outJson], { cwd: dir, encoding: 'utf8', env, timeout: 120_000 });
@@ -2408,5 +2413,432 @@ describe('US-40 AC7 — the review-round cap says the same thing in the contract
       expect(/fix diff/i.test(text)).toBe(true);
       expect(/two rounds unresolved/i.test(text)).toBe(false);
     }
+  });
+});
+
+describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, never a proven cause (ledger T2, 2026-11-13)', () => {
+  const STALE = { status: 'complete', target: 'old', summary: 'STALE-MARKER from a previous run', findings: [] };
+  const staleOut = () => {
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    writeFileSync(out, JSON.stringify(STALE));
+    return out;
+  };
+  const readOut = (out: string) => (existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null);
+  /** Runs the wrapper with its own --out path, pre-filled with a previous run's clean verdict. */
+  function runStale(bin: string, extra: string[], cwd = repo, env = childEnv()) {
+    const out = staleOut();
+    const r = spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', out], { cwd, encoding: 'utf8', env });
+    return { r, report: readOut(out), out };
+  }
+  const ev = (type: string, extra: object = {}) => JSON.stringify({ type, ...extra });
+  it('nothing to review: a stale --out is replaced by status "nothing", exit 0', () => {
+    const clean = mkdtempSync(join(tmpdir(), 'cr-clean-'));
+    sh(clean, 'git init -q && git config user.email t@t && git config user.name t && mkdir docs && echo contract > docs/review-format.md && git add -A && git commit -q -m base');
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], clean);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('Nothing to review');
+    expect(report.status).toBe('nothing');
+    expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+  });
+  it('an early refusal: a stale --out is replaced by an incomplete one naming the usage error, exit 1', () => {
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, ['--live', '--record']);
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toMatch(/^E_USAGE: --live is refused/);
+    expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+  });
+  it('codex exit 1 with any other event tail is E_CODEX_FAILED (not a pass), carries the last error message, and replaces a stale --out', () => {
+    writeFileSync(join(repo, 'a.txt'), 'exit-one check\n');
+    const cases: [string[], string | null][] = [
+      [[], null],
+      [[ev('thread.started'), ev('turn.started'), ev('error', { message: 'first' }), ev('error', { message: 'second failure' }), ev('turn.failed')], 'second failure'],
+      [[ev('turn.started'), ev('item.completed'), ev('error')], null],
+    ];
+    for (const [events, message] of cases) {
+      const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events }).bin, []);
+      expect([r.status, report.status]).toEqual([3, 'incomplete']);
+      expect(report.summary).toMatch(/^E_CODEX_FAILED/);
+      expect(report.codex_error).toBe(message);
+      if (message) expect(r.stdout).toContain(message);
+      expect(r.stdout).toContain('E_CODEX_FAILED');
+      expect(r.stdout).not.toContain('E_EXIT_1');
+      expect(JSON.stringify(report)).not.toContain('STALE-MARKER');
+    }
+  });
+  it('codex exit 1 whose events end turn.started -> error is E_EXIT_1 as a hint only, never "plan limit exhausted", with the message bounded to one line', () => {
+    writeFileSync(join(repo, 'a.txt'), 'exit-one tail check\n');
+    const message = `line one\nline two\u0007\u202e${'x'.repeat(300)}`;
+    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('thread.started'), ev('turn.started'), ev('error', { message })] }).bin, []);
+    expect([r.status, report.status]).toEqual([3, 'incomplete']);
+    expect(report.summary).toMatch(/^E_EXIT_1: codex exited 1; events end turn\.started -> error \(a hint only: read the error message before waiving\)/);
+    expect(`${report.summary}\n${r.stdout}`).not.toMatch(/plan limit exhausted/i);
+    expect(report.codex_error.startsWith('line one line two x')).toBe(true);
+    expect([...report.codex_error].length).toBeLessThanOrEqual(200);
+    expect(report.codex_error).not.toMatch(/[\u0000-\u001f\u007f\u202e]/);
+    expect(report.summary).toContain(report.codex_error);
+    expect(r.stdout).toContain(report.codex_error);
+  });
+  it('a read-only --out folder (the temp write or rename fails) is E_USAGE saying the old file may still be there', () => {
+    const out = staleOut();
+    chmodSync(join(out, '..'), 0o555);
+    try {
+      const f = fake({ output: CLEAN });
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain('the old file at --out may still be there');
+      expect(readOut(out)).toEqual(STALE);
+      expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    } finally { chmodSync(join(out, '..'), 0o755); }
+  });
+  it('a symlink at --out pointing at a tracked file is refused, even in a folder that denies deletes, and the target is byte-unchanged', () => {
+    const dir = freshRepo({ 'tracked.json': 'TRACKED BYTES\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const folder = mkdtempSync(join(tmpdir(), 'cr-out-link-'));
+    symlinkSync(join(dir, 'tracked.json'), join(folder, 'out.json'));
+    chmodSync(folder, 0o555);
+    try {
+      const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', join(folder, 'out.json')], { cwd: dir, encoding: 'utf8', env: childEnv() });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain('is not a regular file');
+      expect(readFileSync(join(dir, 'tracked.json'), 'utf8')).toBe('TRACKED BYTES\n');
+      expect(lstatSync(join(folder, 'out.json')).isSymbolicLink()).toBe(true);
+    } finally { chmodSync(folder, 0o755); }
+  });
+  it('a run started inside a context folder, with --out in that folder, is refused and the folder is unchanged', () => {
+    const dir = freshRepo({ '.gitignore': 'ctx/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'notes.md'), 'CONTEXT NOTES\n');
+    const r = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--context', '.', '--out', 'notes.md'], { cwd: join(dir, 'ctx'), encoding: 'utf8', env: childEnv() });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('inside a reviewed input');
+    expect(readdirSync(join(dir, 'ctx'))).toEqual(['notes.md']);
+    expect(readFileSync(join(dir, 'ctx', 'notes.md'), 'utf8')).toBe('CONTEXT NOTES\n');
+  });
+  it('the normal path ends with the final verdict over a stale one, and leaves no temp file beside it', () => {
+    writeFileSync(join(repo, 'a.txt'), 'normal path check\n');
+    const { r, report, out } = runStale(fake({ output: CLEAN }).bin, []);
+    expect(r.status).toBe(0);
+    expect([report.status, report.summary]).toEqual(['complete', 'clean']);
+    expect(report.target).not.toBe('old');
+    expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
+  });
+  it('an --out that is a directory, or tracked in the reviewed checkout, is refused (E_USAGE) and left untouched', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'cr-out-dir-'));
+    writeFileSync(join(folder, 'inside.txt'), 'kept\n');
+    const d = spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', folder], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    expect(d.status).toBe(1);
+    expect(d.stderr).toContain('codex-review: --out');
+    expect(d.stderr).toContain('is not a regular file');
+    expect(readFileSync(join(folder, 'inside.txt'), 'utf8')).toBe('kept\n');
+    const dir = freshRepo({ 'report.json': JSON.stringify(STALE) });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const f = fake({ output: CLEAN });
+    const t = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', 'report.json'], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    expect(t.status).toBe(1);
+    expect(t.stderr).toContain('tracked');
+    expect(JSON.parse(readFileSync(join(dir, 'report.json'), 'utf8'))).toEqual(STALE);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'out.json'), JSON.stringify(STALE));
+    const c = spawnSync('node', [WRAPPER, '--codex', f.bin, '--context', 'ctx', '--out', 'ctx/out.json'], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    expect([c.status, c.stderr.includes('inside a reviewed input')]).toEqual([1, true]);
+    expect(JSON.parse(readFileSync(join(dir, 'ctx', 'out.json'), 'utf8'))).toEqual(STALE);
+  });
+  it('a patch that does not apply replaces a stale --out with E_PATCH', () => {
+    const dir = freshRepo();
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const shimDir = mkdtempSync(join(tmpdir(), 'git-apply-fail-'));
+    const realGit = sh(tmpdir(), 'command -v git').trim();
+    writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" apply "*) echo "error: synthetic apply failure" >&2; exit 1 ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
+    chmodSync(join(shimDir, 'git'), 0o755);
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], dir, childEnv({ PATH: `${shimDir}:${process.env.PATH}` }));
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toMatch(/^E_PATCH/);
+  });
+  it('a throw (run outside any git repo) replaces a stale --out with E_STOPPED', () => {
+    const { r, report } = runStale(fake({ output: CLEAN }).bin, [], mkdtempSync(join(tmpdir(), 'cr-no-repo-')));
+    expect(r.status).toBe(1);
+    expect(report.status).toBe('incomplete');
+    expect(report.summary).toBe('E_STOPPED: exit 1');
+  });
+  it('SIGTERM while Codex runs replaces a stale --out with E_STOPPED', async () => {
+    writeFileSync(join(repo, 'a.txt'), 'sigterm check\n');
+    const out = staleOut();
+    const f = fake({ output: CLEAN, during: 'sleep 3' });
+    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, env: childEnv(), stdio: 'ignore' });
+    while (!existsSync(join(f.dir, 'argv.json'))) await new Promise((res) => setTimeout(res, 20));
+    child.kill('SIGTERM');
+    const code = await new Promise((res) => child.on('close', (c, sig) => res(c ?? sig)));
+    expect(code).toBe(130);
+    expect(readOut(out)).toEqual({ status: 'incomplete', summary: 'E_STOPPED: exit 130', findings: [] });
+  });
+  it('--record with --out at the default scratch record is refused (a reviewed input), and the record is untouched', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    const bytes = readFileSync(scratchFile, 'utf8');
+    writeFileSync(record, bytes);
+    writeFileSync(join(repo, 'a.txt'), 'default record check\n');
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--out', record], { cwd: repo, encoding: 'utf8', env: childEnv({ HOME: home }) });
+    expect([r.status, r.stderr.includes('inside a reviewed input')]).toEqual([1, true]);
+    expect(readFileSync(record, 'utf8')).toBe(bytes);
+    expect(readdirSync(join(home, '.codex-review'))).toEqual(['scratch-record.json']);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('inside the checkout: an untracked, not-ignored --out is refused; a gitignored one is written; a tracked one in an ignored folder is refused under another letter case', () => {
+    const dir = freshRepo({ '.gitignore': 'reports/\nign/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    const go = (out: string) => spawnSync('node', [WRAPPER, '--codex', fake({ output: CLEAN }).bin, '--out', out], { cwd: dir, encoding: 'utf8', env: childEnv() });
+    const loose = go('loose.json');
+    expect([loose.status, loose.stderr.includes('not gitignored')]).toEqual([1, true]);
+    expect(existsSync(join(dir, 'loose.json'))).toBe(false);
+    mkdirSync(join(dir, 'reports'));
+    const ignored = go('reports/out.json');
+    expect(ignored.status).toBe(0);
+    expect(JSON.parse(readFileSync(join(dir, 'reports', 'out.json'), 'utf8')).status).toBe('complete');
+    expect(readdirSync(join(dir, 'reports'))).toEqual(['out.json']);
+    mkdirSync(join(dir, 'ign'));
+    writeFileSync(join(dir, 'ign', 'Report.json'), 'TRACKED REPORT\n');
+    sh(dir, 'git add -f ign/Report.json && git commit -q -m tracked-in-ignored');
+    const cased = go('ign/report.json');
+    expect([cased.status, cased.stderr.includes('is tracked')]).toEqual([1, true]);
+    expect(readFileSync(join(dir, 'ign', 'Report.json'), 'utf8')).toBe('TRACKED REPORT\n');
+  });
+  it('a credential shape in the Codex error message is redacted before --out and stdout', () => {
+    writeFileSync(join(repo, 'a.txt'), 'redaction check\n');
+    // Built at runtime: as one literal, the wrapper's own pre-scan refuses this file (E_SECRET_PATTERN) when it is under review.
+    const hook = ['hooks', 'slack', 'com/services/TESTONLY/more'].join('.');
+    const message = `Request rejected by ${hook}; check the hook`;
+    const { r, report } = runStale(fake({ output: CLEAN, exit: 1, events: [ev('turn.started'), ev('error', { message })] }).bin, []);
+    expect(report.codex_error).toBe('Request rejected by [redacted]; check the hook');
+    expect(JSON.stringify(report) + r.stdout).not.toContain('TESTONLY');
+  });
+  // F2 (helper's ruling, 2026-11-13): --out replaces only what this tool wrote (an empty file or an earlier report), and
+  // overlap with a reviewed input is judged by (dev, ino), never by spelling. Every refusal names --out on stderr.
+  const refusedOut = (r: { status: number | null; stderr: string }, why: string) => {
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^codex-review: --out/m);
+    expect(r.stderr).toContain(why);
+  };
+  const go = (cwd: string, args: string[], env = childEnv()) => {
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...args], { cwd, encoding: 'utf8', env });
+    return { r, started: existsSync(join(f.dir, 'argv.json')) };
+  };
+  it('a tracked --out is refused: its bytes stay and the checkout stays clean', () => {
+    const dir = freshRepo({ 'report.json': JSON.stringify(STALE) });
+    const { r, started } = go(dir, ['--out', 'report.json']);
+    refusedOut(r, 'is tracked');
+    expect(readFileSync(join(dir, 'report.json'), 'utf8')).toBe(JSON.stringify(STALE));
+    expect(sh(dir, 'git status --porcelain')).toBe('');
+    expect(started).toBe(false);
+  });
+  it('an earlier report with a second hard link: --out gets the verdict, the other link keeps the old bytes', () => {
+    writeFileSync(join(repo, 'a.txt'), 'hard link check\n');
+    const out = staleOut();
+    const keep = join(mkdtempSync(join(tmpdir(), 'cr-keep-')), 'keep.json');
+    linkSync(out, keep);
+    const { r } = go(repo, ['--out', out]);
+    expect(r.status).toBe(0);
+    expect(readOut(out).summary).toBe('clean');
+    expect(readFileSync(keep, 'utf8')).toBe(JSON.stringify(STALE));
+  });
+  it('an existing file this tool did not write is refused, in a gitignored folder and outside any checkout, with nothing written', () => {
+    const dir = freshRepo({ '.gitignore': 'ign/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    mkdirSync(join(dir, 'ign'));
+    const outside = mkdtempSync(join(tmpdir(), 'cr-out-foreign-'));
+    const cases: [string, string][] = [
+      [join(dir, 'ign', 'settings.local'), 'NOT A REPORT\n'],
+      [join(outside, 'notes.md'), 'NOT A REPORT\n'],
+      [join(outside, 'data.json'), JSON.stringify({ status: 'complete', summary: 'no findings array' })],
+    ];
+    for (const [out, bytes] of cases) {
+      writeFileSync(out, bytes);
+      const before = readdirSync(join(out, '..'));
+      const { r, started } = go(dir, ['--out', out]);
+      refusedOut(r, 'holds something this tool did not write');
+      expect(readFileSync(out, 'utf8')).toBe(bytes);
+      expect(readdirSync(join(out, '..'))).toEqual(before);
+      expect(started).toBe(false);
+    }
+  });
+  it('overlap() judges by identity: an input given as an unresolved symlink alias of the --out folder, or a hard link of --out, is caught', async () => {
+    const { overlap } = await import('./codex-review-out.mjs');
+    // A fresh temp folder: on overlayfs every file here sits in the upper layer, so (dev, ino) compares like with like.
+    const base = mkdtempSync(join(tmpdir(), 'cr-overlap-'));
+    mkdirSync(join(base, 'real'));
+    mkdirSync(join(base, 'sibling'));
+    symlinkSync(join(base, 'real'), join(base, 'alias'));
+    const out = join(realpathSync(join(base, 'real')), 'out.json');
+    expect(overlap(out, [join(base, 'sibling'), join(base, 'alias')])).toBe(join(base, 'alias'));
+    expect(overlap(out, [join(base, 'sibling'), join(base, 'missing')])).toBe(null);
+    writeFileSync(out, '');
+    linkSync(out, join(base, 'sibling', 'hard.json'));
+    expect(overlap(out, [join(base, 'sibling', 'hard.json')])).toBe(join(base, 'sibling', 'hard.json'));
+  });
+  it('a temp write that fails after the temp file exists (EFBIG under a zero file-size limit) leaves the folder as it was', () => {
+    const out = staleOut();
+    const pre = join(mkdtempSync(join(tmpdir(), 'cr-xfsz-')), 'pre.cjs');
+    writeFileSync(pre, 'process.on("SIGXFSZ", () => {});\n'); // caught, so the write fails with EFBIG instead of killing node
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('/bin/sh', ['-c', 'ulimit -f 0; exec "$@"', 'sh', 'node', '-r', pre, WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    refusedOut(r, 'EFBIG');
+    expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
+    expect(readOut(out)).toEqual(STALE);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  // macOS-only spellings, each behind a probe: a case-sensitive or non-normalising disk skips them.
+  const probe = mkdtempSync(join(tmpdir(), 'cr-probe-'));
+  writeFileSync(join(probe, 'probe'), '');
+  mkdirSync(join(probe, 'café'));
+  const FOLDS_CASE = existsSync(join(probe, 'PROBE'));
+  const FOLDS_NFD = existsSync(join(probe, 'café'));
+  it.skipIf(!FOLDS_CASE)('case-folding disk: --context ctx with --out CTX/notes.md is refused and the notes are untouched (F2 repro)', () => {
+    const dir = freshRepo({ '.gitignore': 'ctx/\n' });
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'notes.md'), 'CONTEXT NOTES\n');
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', 'ctx', '--out', 'CTX/notes.md']);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(join(dir, 'ctx', 'notes.md'), 'utf8')).toBe('CONTEXT NOTES\n');
+    expect(readdirSync(join(dir, 'ctx'))).toEqual(['notes.md']);
+    expect(started).toBe(false);
+  });
+  it.skipIf(!FOLDS_NFD)('normalising disk: --context in NFC with --out through the NFD spelling is refused', () => {
+    const nfc = 'café', nfd = 'café';
+    const dir = freshRepo({ '.gitignore': `${nfc}/\n` });
+    mkdirSync(join(dir, nfc));
+    writeFileSync(join(dir, nfc, 'notes.md'), JSON.stringify(STALE)); // report-shaped, so only the identity rule can refuse it
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', nfc, '--out', `${nfd}/notes.md`]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(join(dir, nfc, 'notes.md'), 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(dir, nfc))).toEqual(['notes.md']);
+    expect(started).toBe(false);
+  });
+  it.skipIf(!FOLDS_CASE)('case-folding disk: --record with --out at ~/.CODEX-REVIEW/scratch-record.json is refused (a temp HOME)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    writeFileSync(record, JSON.stringify(STALE)); // report-shaped, so only the identity rule can refuse it
+    const { r, started } = go(repo, ['--record', '--out', join(home, '.CODEX-REVIEW', 'scratch-record.json')], childEnv({ HOME: home }));
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(record, 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(home, '.codex-review'))).toEqual(['scratch-record.json']);
+    expect(started).toBe(false);
+  });
+  // An input the run reads that does not exist yet fences off its nearest existing folder, by identity (owner's ruling
+  // 2026-11-13). Before, overlap() skipped it, so "run started" landed at the input's own path and became the input.
+  const fencedOut = (r: { status: number | null; stderr: string }, input: string) =>
+    refusedOut(r, `codex-review: --out: ${JSON.stringify(input)} does not exist yet and --out is inside the same folder; nothing written`);
+  it('a missing --subject equal to --out is refused before any write', () => {
+    const dir = freshRepo({ '.gitignore': 'codex-drafts/\n' });
+    mkdirSync(join(dir, 'codex-drafts'));
+    const { r, started } = go(dir, ['--subject', 'codex-drafts/missing.md', '--baseline', 'none', '--out', 'codex-drafts/missing.md']);
+    fencedOut(r, 'codex-drafts/missing.md');
+    expect(readdirSync(join(dir, 'codex-drafts'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('--record with no scratch record yet and --out at its path is refused (a temp HOME)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    const { r, started } = go(repo, ['--record', '--out', record], childEnv({ HOME: home }));
+    fencedOut(r, record);
+    expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('an absent gitignored --context equal to --out is refused before any write', () => {
+    const dir = freshRepo({ '.gitignore': 'notes.md\n' });
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', 'notes.md', '--out', 'notes.md']);
+    fencedOut(r, 'notes.md');
+    expect(readdirSync(dir).filter((n) => n.includes('notes.md'))).toEqual([]); // nor a temp file beside it
+    expect(started).toBe(false);
+  });
+  it('--record with no scratch record yet and --out elsewhere still runs: nothing to review ends before the record is read', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    const { r } = go(freshRepo(), ['--record', '--out', out], childEnv({ HOME: home }));
+    expect(r.status).toBe(0);
+    expect(readOut(out).status).toBe('nothing');
+    expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
+  });
+  // With HOME unset the default record is the relative .codex-review/scratch-record.json, read against the folder the
+  // run starts in, so the fence covers that folder, not / (Codex, US-40 AC18).
+  const noHome = () => { const env = childEnv(); delete env.HOME; return env; };
+  it('--record with HOME unset: an --out inside the start folder is refused by the fence and nothing is written', () => {
+    const dir = freshRepo({ '.gitignore': 'out.json\n' });
+    const { r, started } = go(dir, ['--record', '--out', join(dir, 'out.json')], noHome());
+    fencedOut(r, '.codex-review/scratch-record.json');
+    expect(existsSync(join(dir, 'out.json'))).toBe(false);
+    expect(existsSync(join(dir, '.codex-review'))).toBe(false);
+    expect(started).toBe(false);
+  });
+  it('--record with HOME unset: an --out outside the start folder is not fenced off', () => {
+    const dir = freshRepo();
+    const out = join(mkdtempSync(join(tmpdir(), 'cr-out-')), 'out.json');
+    const { r } = go(dir, ['--record', '--out', out], noHome());
+    expect(r.stderr).not.toContain('does not exist yet and --out is inside the same folder');
+    expect(existsSync(out)).toBe(true);
+  });
+  it('Codex R1: only --baseline treats "none" as nothing; a missing --subject named none with --out none is refused', () => {
+    const dir = freshRepo({ '.gitignore': 'none\n' });
+    const { r, started } = go(dir, ['--subject', 'none', '--baseline', 'none', '--out', 'none']);
+    fencedOut(r, 'none');
+    expect(existsSync(join(dir, 'none'))).toBe(false);
+    expect(readdirSync(dir).filter((n) => n.includes('none'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('F4a: an existing --subject in the same folder as --out does not fence it off: --out is claimed', () => {
+    const dir = freshRepo({ '.gitignore': 'codex-drafts/\n' });
+    mkdirSync(join(dir, 'codex-drafts'));
+    writeFileSync(join(dir, 'codex-drafts', 'draft.md'), 'DRAFT\n');
+    const { r } = go(dir, ['--subject', 'codex-drafts/draft.md', '--baseline', 'none', '--out', 'codex-drafts/out.json']);
+    expect(r.stderr).not.toContain('does not exist yet');
+    expect(readOut(join(dir, 'codex-drafts', 'out.json'))).not.toBe(null);
+    expect(readFileSync(join(dir, 'codex-drafts', 'draft.md'), 'utf8')).toBe('DRAFT\n');
+  });
+  // The checks stat the path the reader opens: resolve(given) for --subject/--baseline/--context (checkoutPath), the
+  // linked path for --include. d/link -> e/sub, so d/link/../missing.md reads d/missing.md, not e/missing.md. The
+  // spellings are built by hand: join() would fold the .. away.
+  const linkedDirs = () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'cr-lexical-')));
+    mkdirSync(join(base, 'd'));
+    mkdirSync(join(base, 'e', 'sub'), { recursive: true });
+    writeFileSync(join(base, 'e', 'missing.md'), 'ELSEWHERE\n');
+    symlinkSync(join(base, 'e', 'sub'), join(base, 'd', 'link'));
+    return base;
+  };
+  it('a --context spelled through a link and .. is fenced at the path it is read from (d/missing.md absent)', () => {
+    const base = linkedDirs();
+    const input = `${base}/d/link/../missing.md`;
+    const { r, started } = go(freshRepo(), ['--subject', 'a.txt', '--context', input, '--out', join(base, 'd', 'missing.md')]);
+    fencedOut(r, input);
+    expect(readdirSync(join(base, 'd'))).toEqual(['link']);
+    expect(started).toBe(false);
+  });
+  it('a --context spelled through a link and .. overlaps --out at the path it is read from (d/missing.md present)', () => {
+    const base = linkedDirs();
+    const out = join(base, 'd', 'missing.md');
+    writeFileSync(out, JSON.stringify(STALE)); // report-shaped, so only the overlap rule can refuse it
+    const { r, started } = go(freshRepo(), ['--subject', 'a.txt', '--context', `${base}/d/link/../missing.md`, '--out', out]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(out, 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(base, 'd')).sort()).toEqual(['link', 'missing.md']);
+    expect(started).toBe(false);
+  });
+  it('an --include spelled through a link and .. still overlaps by the linked path (e/sub), as before', () => {
+    // Read through the link, d/link/../sub is e/sub, which holds --out. Read lexically it would be d/sub, which is
+    // missing, so the fence would stop at d and this --out would pass: the pin tells the two judgements apart.
+    const base = linkedDirs();
+    const out = `${base}/e/sub/out.json`;
+    const { r, started } = go(freshRepo(), ['--include', `${base}/d/link/../sub`, '--out', out]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(existsSync(out)).toBe(false);
+    expect(started).toBe(false);
   });
 });
