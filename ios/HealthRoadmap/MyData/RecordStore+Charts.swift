@@ -14,24 +14,28 @@ extension RecordStore {
         let stamp = self.stamp(series)
         let key = Self.historyKey(metric, series)
         if let kept = histories[key], kept.stamp == stamp { return kept.chart }
+        let chart: ChartData?
         if let read = reading[key], read.stamp == stamp {
-            let chart = await read.task.value
-            return hold == .predatesErase ? nil : chart
+            chart = await read.task.value
+        } else {
+            let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
+            let task = Task {
+                (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
+            }
+            reading[key] = (stamp, task)
+            chart = await task.value
+            if reading[key]?.stamp == stamp { reading[key] = nil }
         }
-        let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
-        let task = Task {
-            (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
-        }
-        reading[key] = (stamp, task)
-        let chart = await task.value
-        if reading[key]?.stamp == stamp { reading[key] = nil }
         // The record moved on while the engine ran: a page asks again for the new one. An erase
         // whose draw failed moves no stamp, so it is checked too.
         guard hold != .predatesErase else { return nil }
-        if stamp == self.stamp(series) {
-            histories = histories.filter { $0.value.stamp.revision == stamp.revision }
-            histories[key] = chart.map { KeptHistory(stamp: stamp, chart: $0) }
+        guard stamp == self.stamp(series) else {
+            // Only the screen drawn moved (a redraw, no new revision): the page asks nothing more,
+            // so read again for the day drawn now rather than land one no longer shown (lead S31).
+            return stamp.revision == revision ? await self.chart(for: metric, series: series) : chart
         }
+        histories = histories.filter { $0.value.stamp.revision == stamp.revision }
+        histories[key] = chart.map { KeptHistory(stamp: stamp, chart: $0) }
         return chart
     }
 
