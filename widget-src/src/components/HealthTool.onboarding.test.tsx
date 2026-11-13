@@ -1298,7 +1298,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     .find((r) => r.querySelector('.md-row-label')?.textContent === label)!);
   const page = (view: RenderResult) => q(view, '.mh-page-host .md-page') as HTMLElement;
   /** A loaded CI shard runs these real saves and re-renders past waitFor's 1 s default. */
-  const slow = { timeout: 5000 };
+  const slow = { timeout: 10_000 };
   /** The page's save has settled: it says "Added." and its form is clean, so Back leaves at once. */
   const added = (view: RenderResult) => waitFor(() => expect(page(view).querySelector('.md-page-messages')?.textContent).toBe('Added.'), slow);
 
