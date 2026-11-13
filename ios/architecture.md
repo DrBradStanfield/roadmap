@@ -1540,6 +1540,8 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3",
   "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value), "Lab save all" (save all tapped on the lab-upload review, once per run), "Lab save one" (a lab report's own Save tapped; neither carries a count or a name).
   Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
+  An event fired before Clarity starts (a launch finish's "Tour started", S44) is held, the newest 20, and sent
+  just after the start's screen name; never under the tests, without an id or after a refused start.
   `AnalyticsMaskingTests` pins the list, so a new word is a test change and a D9 change.
   Views reach the one `Analytics` through the environment (`\.analytics`, set by RootView).
 - Second layer: the Clarity project's masking mode is set to **Strict** on its dashboard
