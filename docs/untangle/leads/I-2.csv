@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-I-2,S6 record edits and iPhone engine,Generate the Swift bridge side from the contract JSON,not started,ios/scripts/build-engine.mjs emits no Swift,,,no
+I-2,S6 record edits and iPhone engine,Generate the Swift bridge side from the contract JSON,partial,"ios/engine/contract.ts is the one source and generates the JSON pair (step 1); the Swift side is still hand-written (EngineRelease.swift, MyData.swift RecordEdit)",,ios/engine/contract.test.ts,no

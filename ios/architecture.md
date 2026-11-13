@@ -1693,6 +1693,9 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   `scripts/engine-signing.mjs`: signed over-the-air releases into `engine-release/` (D3).
   `engine/bridge-contract.json` is the native bridge's contract; its hash is the bridge id.
   `engine/bridge-optional.json` holds the both-way additions that keep it (D3, D14).
+  Both are generated from `engine/contract.ts`, the one source (I-2, 2026-11-13):
+  edit it, then `npx tsx ios/scripts/gen-contract.ts`; `engine/contract.test.ts` fails
+  when either file differs from what it generates.
   Tested by `scripts/release-engine.test.ts`, `scripts/signing-key-guard.test.ts` and
   `engine/bridge.test.ts`.
 - `scripts/ui-test.sh`: the UI tests, one at a time, each on a fresh install (US-54).
