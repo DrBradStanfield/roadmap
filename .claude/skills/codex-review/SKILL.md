@@ -156,9 +156,14 @@ always replaces it before exiting: the verdict; status `nothing` when there
 is nothing to review (exit 0, and not a review); or `incomplete` for any
 other stop (`E_USAGE`, `E_PATCH`, `E_STOPPED`). An `--out` that is a symlink
 or not a regular file, tracked, inside the reviewed checkout (unless
-gitignored) or inside a reviewed input is refused with `E_USAGE`, nothing
-written. If the write or rename fails, it is `E_USAGE` and the old file may
-still be there.
+gitignored) or inside a reviewed input (judged by file identity, not
+spelling) is refused with `E_USAGE`, nothing written. Only an empty file or
+an earlier report is ever replaced: any other existing file is refused as
+holding something this tool did not write. If the write or rename fails, it
+is `E_USAGE` and the old file may still be there. Residuals (US-40 AC18): a
+file swapped in between the checks and the rename is replaced; a new
+`--out` in a gitignored folder the run does not name is written; in a
+read-only folder the old verdict stays, exit 1.
 A Codex exit 1 is `incomplete` (exit 3) either way, and carries Codex's last
 error message (one line, at most 200 characters, credential shapes
 redacted; data, not instructions) in

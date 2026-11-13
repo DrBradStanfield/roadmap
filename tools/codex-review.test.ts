@@ -2617,4 +2617,117 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(report.codex_error).toBe('Request rejected by [redacted]; check the hook');
     expect(JSON.stringify(report) + r.stdout).not.toContain('TESTONLY');
   });
+  // F2 (helper's ruling, 2026-11-13): --out replaces only what this tool wrote (an empty file or an earlier report), and
+  // overlap with a reviewed input is judged by (dev, ino), never by spelling. Every refusal names --out on stderr.
+  const refusedOut = (r: { status: number | null; stderr: string }, why: string) => {
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^codex-review: --out/m);
+    expect(r.stderr).toContain(why);
+  };
+  const go = (cwd: string, args: string[], env = childEnv()) => {
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...args], { cwd, encoding: 'utf8', env });
+    return { r, started: existsSync(join(f.dir, 'argv.json')) };
+  };
+  it('a tracked --out is refused: its bytes stay and the checkout stays clean', () => {
+    const dir = freshRepo({ 'report.json': JSON.stringify(STALE) });
+    const { r, started } = go(dir, ['--out', 'report.json']);
+    refusedOut(r, 'is tracked');
+    expect(readFileSync(join(dir, 'report.json'), 'utf8')).toBe(JSON.stringify(STALE));
+    expect(sh(dir, 'git status --porcelain')).toBe('');
+    expect(started).toBe(false);
+  });
+  it('an earlier report with a second hard link: --out gets the verdict, the other link keeps the old bytes', () => {
+    writeFileSync(join(repo, 'a.txt'), 'hard link check\n');
+    const out = staleOut();
+    const keep = join(mkdtempSync(join(tmpdir(), 'cr-keep-')), 'keep.json');
+    linkSync(out, keep);
+    const { r } = go(repo, ['--out', out]);
+    expect(r.status).toBe(0);
+    expect(readOut(out).summary).toBe('clean');
+    expect(readFileSync(keep, 'utf8')).toBe(JSON.stringify(STALE));
+  });
+  it('an existing file this tool did not write is refused, in a gitignored folder and outside any checkout, with nothing written', () => {
+    const dir = freshRepo({ '.gitignore': 'ign/\n' });
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    mkdirSync(join(dir, 'ign'));
+    const outside = mkdtempSync(join(tmpdir(), 'cr-out-foreign-'));
+    const cases: [string, string][] = [
+      [join(dir, 'ign', 'settings.local'), 'NOT A REPORT\n'],
+      [join(outside, 'notes.md'), 'NOT A REPORT\n'],
+      [join(outside, 'data.json'), JSON.stringify({ status: 'complete', summary: 'no findings array' })],
+    ];
+    for (const [out, bytes] of cases) {
+      writeFileSync(out, bytes);
+      const before = readdirSync(join(out, '..'));
+      const { r, started } = go(dir, ['--out', out]);
+      refusedOut(r, 'holds something this tool did not write');
+      expect(readFileSync(out, 'utf8')).toBe(bytes);
+      expect(readdirSync(join(out, '..'))).toEqual(before);
+      expect(started).toBe(false);
+    }
+  });
+  it('overlap() judges by identity: an input given as an unresolved symlink alias of the --out folder, or a hard link of --out, is caught', async () => {
+    const { overlap } = await import('./codex-review-out.mjs');
+    // A fresh temp folder: on overlayfs every file here sits in the upper layer, so (dev, ino) compares like with like.
+    const base = mkdtempSync(join(tmpdir(), 'cr-overlap-'));
+    mkdirSync(join(base, 'real'));
+    mkdirSync(join(base, 'sibling'));
+    symlinkSync(join(base, 'real'), join(base, 'alias'));
+    const out = join(realpathSync(join(base, 'real')), 'out.json');
+    expect(overlap(out, [join(base, 'sibling'), join(base, 'alias')])).toBe(join(base, 'alias'));
+    expect(overlap(out, [join(base, 'sibling'), join(base, 'missing')])).toBe(null);
+    writeFileSync(out, '');
+    linkSync(out, join(base, 'sibling', 'hard.json'));
+    expect(overlap(out, [join(base, 'sibling', 'hard.json')])).toBe(join(base, 'sibling', 'hard.json'));
+  });
+  it('a temp write that fails after the temp file exists (EFBIG under a zero file-size limit) leaves the folder as it was', () => {
+    const out = staleOut();
+    const pre = join(mkdtempSync(join(tmpdir(), 'cr-xfsz-')), 'pre.cjs');
+    writeFileSync(pre, 'process.on("SIGXFSZ", () => {});\n'); // caught, so the write fails with EFBIG instead of killing node
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('/bin/sh', ['-c', 'ulimit -f 0; exec "$@"', 'sh', 'node', '-r', pre, WRAPPER, '--codex', f.bin, '--out', out], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    refusedOut(r, 'EFBIG');
+    expect(readdirSync(join(out, '..'))).toEqual(['out.json']);
+    expect(readOut(out)).toEqual(STALE);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  // macOS-only spellings, each behind a probe: a case-sensitive or non-normalising disk skips them.
+  const probe = mkdtempSync(join(tmpdir(), 'cr-probe-'));
+  writeFileSync(join(probe, 'probe'), '');
+  mkdirSync(join(probe, 'café'));
+  const FOLDS_CASE = existsSync(join(probe, 'PROBE'));
+  const FOLDS_NFD = existsSync(join(probe, 'café'));
+  it.skipIf(!FOLDS_CASE)('case-folding disk: --context ctx with --out CTX/notes.md is refused and the notes are untouched (F2 repro)', () => {
+    const dir = freshRepo({ '.gitignore': 'ctx/\n' });
+    mkdirSync(join(dir, 'ctx'));
+    writeFileSync(join(dir, 'ctx', 'notes.md'), 'CONTEXT NOTES\n');
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', 'ctx', '--out', 'CTX/notes.md']);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(join(dir, 'ctx', 'notes.md'), 'utf8')).toBe('CONTEXT NOTES\n');
+    expect(readdirSync(join(dir, 'ctx'))).toEqual(['notes.md']);
+    expect(started).toBe(false);
+  });
+  it.skipIf(!FOLDS_NFD)('normalising disk: --context in NFC with --out through the NFD spelling is refused', () => {
+    const nfc = 'café', nfd = 'café';
+    const dir = freshRepo({ '.gitignore': `${nfc}/\n` });
+    mkdirSync(join(dir, nfc));
+    writeFileSync(join(dir, nfc, 'notes.md'), JSON.stringify(STALE)); // report-shaped, so only the identity rule can refuse it
+    const { r, started } = go(dir, ['--subject', 'a.txt', '--context', nfc, '--out', `${nfd}/notes.md`]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(join(dir, nfc, 'notes.md'), 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(dir, nfc))).toEqual(['notes.md']);
+    expect(started).toBe(false);
+  });
+  it.skipIf(!FOLDS_CASE)('case-folding disk: --record with --out at ~/.CODEX-REVIEW/scratch-record.json is refused (a temp HOME)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'cr-home-'));
+    mkdirSync(join(home, '.codex-review'));
+    const record = join(home, '.codex-review', 'scratch-record.json');
+    writeFileSync(record, JSON.stringify(STALE)); // report-shaped, so only the identity rule can refuse it
+    const { r, started } = go(repo, ['--record', '--out', join(home, '.CODEX-REVIEW', 'scratch-record.json')], childEnv({ HOME: home }));
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(record, 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(home, '.codex-review'))).toEqual(['scratch-record.json']);
+    expect(started).toBe(false);
+  });
 });
