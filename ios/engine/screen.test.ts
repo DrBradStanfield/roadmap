@@ -25,18 +25,33 @@ const topicsMock = vi.mocked(topicSections);
 const NOW = '2026-10-21T08:00:00.000Z';
 const sample = readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8');
 const UNITS = '{"hba1c":"conventional","ldl":"conventional"}';
+/** The sample with a waist and a creatinine, so the plan gains the waist-to-height and eGFR tiles. */
+const withWaistAndCreatinine = (() => {
+  const record = JSON.parse(sample);
+  for (const [metricType, value] of [['waist', 90], ['creatinine', 70]] as const) {
+    record.measurements.push({
+      id: `test-${metricType}`, metricType, value, recordedAt: '2026-05-12', createdAt: '2026-05-12T08:00:00Z',
+      source: 'manual', status: 'active', correctsId: null, externalId: null,
+    });
+  }
+  return JSON.stringify(record);
+})();
 
 afterEach(() => computePlan.mockClear());
 
 describe('screenJson (US-25 AC2, AC22)', () => {
-  it('is My data and the plan view, as the separate doors gave them', () => {
-    const file = readRecord(sample, NOW, 'phone');
-    const choices = { hba1c: 'conventional', ldl: 'conventional' } as const;
+  it.each([
+    ['the sample', sample, UNITS],
+    ['a waist and creatinine, default units', withWaistAndCreatinine, '{}'],
+    ['a waist and creatinine, three conventional units', withWaistAndCreatinine, '{"hba1c":"conventional","ldl":"conventional","weight":"conventional"}'],
+  ])('is My data and the plan view, as the separate doors gave them: %s', (_name, record, units) => {
+    const file = readRecord(record, NOW, 'phone');
+    const choices = JSON.parse(units);
     const plan = planModule.computePlan(file, new Date(NOW), choices);
     const tiles = statTiles(plan.results, { unitSystem: plan.unitSystem, unitOverrides: choices, sex: plan.inputs.sex });
     const data = { ...myData(file, NOW, choices), documents: documentShelf(file) };
     const sections = planSections(plan.results.suggestions);
-    expect(JSON.parse(screenJson(sample, NOW, 'phone', UNITS))).toEqual({
+    expect(JSON.parse(screenJson(record, NOW, 'phone', units))).toEqual({
       myData: JSON.parse(JSON.stringify(data)),
       plan: {
         sections: JSON.parse(JSON.stringify(sections)), tiles: JSON.parse(JSON.stringify(tiles)),
