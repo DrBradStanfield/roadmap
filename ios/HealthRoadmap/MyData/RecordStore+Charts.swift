@@ -14,7 +14,10 @@ extension RecordStore {
         let stamp = self.stamp(series)
         let key = Self.historyKey(metric, series)
         if let kept = histories[key], kept.stamp == stamp { return kept.chart }
-        if let read = reading[key], read.stamp == stamp { return await read.task.value }
+        if let read = reading[key], read.stamp == stamp {
+            let chart = await read.task.value
+            return predatesErase ? nil : chart
+        }
         let (units, record, deviceId, engine) = (unitChoices.json, recordJSON, deviceId, engine)
         let task = Task {
             (try? await engine.history(recordJSON: record, metric: metric, now: .now, deviceId: deviceId, units: units, series: series)).map(ChartData.init)
@@ -47,14 +50,14 @@ extension RecordStore {
     /// The chart last read for `metric`, for a page to draw: it may trail the record by one
     /// engine call, and the page's `.task(id: revision)` brings it up to date.
     func shownChart(for metric: String, series: String? = nil) -> ChartData? {
-        problem == nil ? histories[Self.historyKey(metric, series)]?.chart : nil
+        problem == nil && !predatesErase ? histories[Self.historyKey(metric, series)]?.chart : nil
     }
 
     /// The history read for the record and units as they are now; nil while it trails them
     /// (adversary R2). Only this one may open a correction: a page keeps drawing the older
     /// one, its taps held, until the fresh one lands.
     func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
-        guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
+        guard problem == nil, !predatesErase, let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
         return kept.chart.history
     }
 

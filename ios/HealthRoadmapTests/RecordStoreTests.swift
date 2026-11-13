@@ -232,6 +232,11 @@ final class RecordStoreTests: XCTestCase {
         let read = await store.chart(for: "weight")
         XCTAssertNil(read, "a page opened now reads nothing from the erased record")
         XCTAssertNil(store.shownChart(for: "weight"), "and nothing is kept for the next page")
+        // A read that ran across the erase and was kept anyway is still never handed to a page.
+        let stale = try XCTUnwrap(MetricReadTests.chart(["80.0"]))
+        store.histories["weight"] = RecordStore.KeptHistory(stamp: RecordStore.Stamp(revision: store.revision, draws: nil), chart: stale)
+        XCTAssertNil(store.shownChart(for: "weight"), "never drawn from the erased record")
+        XCTAssertNil(store.shownHistory(for: "weight"), "never opens a correction on it")
         let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
         let page = MetricRead.page(MetricRead.transition(.reading(revision: store.revision), .landed(revision: store.revision, read)),
                                    revision: store.revision, problem: store.problem, kept: store.shownChart(for: "weight"),
