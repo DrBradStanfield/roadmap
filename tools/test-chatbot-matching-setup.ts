@@ -70,7 +70,8 @@ if (!estimateOnly) console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (
 export const ANSWER_MODEL = getArg('--answer-model', CHAT_MODEL);
 
 const ANSWER_FILES = ['app/lib/chat-system-prompt.md', 'health_roadmap_algorithm.md', ...Object.values(PRODUCTS_BLOCK_FILES)];
-if (answerCheckMode && !ANSWER_FILES.every(f => fs.existsSync(path.join(REPO_ROOT, f)))) {
+const readable = (f: string) => { try { return fs.readFileSync(path.join(REPO_ROOT, f), 'utf-8').trim() !== ''; } catch { return false; } };
+if (answerCheckMode && !ANSWER_FILES.every(readable)) {
   console.error(`Error: --answer-check requires ${ANSWER_FILES.join(', ')}`);
   process.exit(1);
 }
@@ -267,15 +268,16 @@ export function hasAnswerCheck(q: TestQuery): boolean {
 }
 
 if (estimateOnly) {
-  // Routed cases are priced as if routing passes and loads their expected handles, on production's base blocks.
-  const baseChars = buildSystemBlocks(EMPTY_CHAT_CONTEXT.userContextJson, { savedChat: '' }).reduce((n, b) => n + b.text.length, 0);
+  // Routed cases are priced as if routing passes and loads their expected handles, on production's cached base blocks.
+  const answerCachedChars = buildSystemBlocks(EMPTY_CHAT_CONTEXT.userContextJson, { savedChat: '' })
+    .reduce((n, b) => n + (b.cache_control ? b.text.length : 0), 0);
   const answerCallChars = suite.filter(hasAnswerCheck).flatMap(q => {
-    const chars = baseChars + q.query.length
+    const chars = q.query.length
       + (loadMatchedContent(Array.isArray(q.expected) ? q.expected : q.answer_handles!).content ?? '').length;
     return Array<number>(answerCheckRuns).fill(chars);
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
-  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCallChars });
+  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCachedChars, answerCallChars });
   console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCallChars.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
   process.exit(0);
 }

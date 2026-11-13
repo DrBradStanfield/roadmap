@@ -110,22 +110,25 @@ export interface RunPlan {
   routerCalls: number;
   /** Characters of the cached router prompt (instructions plus index). */
   routerPromptChars: number;
-  /** Characters of each answer call's input (system plus loaded articles plus the question). */
+  /** Characters of the answer calls' cached base blocks (buildSystemBlocks' cache_control blocks). */
+  answerCachedChars: number;
+  /** Characters of each answer call's uncached input (loaded articles plus the question). */
   answerCallChars: number[];
 }
 
 /**
  * What a run would cost, in dollars, on Sonnet 5.5 prices. The router prompt is written to the
- * cache once and read on every later call. Answer input is priced uncached, so the answer figure
- * is an upper bound; a repeat of the same context reads from the cache for less.
+ * cache once and read on every later call; so are the answer calls' cached base blocks. The rest
+ * of each answer's input is priced uncached, so the answer figure is an upper bound; a repeat of
+ * the same articles reads from the cache for less.
  */
 export function estimateRunCost(plan: RunPlan) {
   const p = PRICES.sonnet55;
-  const promptTokens = plan.routerPromptChars / CHARS_PER_TOKEN;
-  const router = plan.routerCalls === 0 ? 0 : (promptTokens * p.cacheWrite
-    + (plan.routerCalls - 1) * promptTokens * p.cacheRead
-    + plan.routerCalls * ROUTER_OUT_TOKENS * p.output) / 1e6;
-  const answer = plan.answerCallChars.reduce((t, chars) =>
+  // One cache write, then a read on each later call.
+  const cached = (calls: number, chars: number) => calls === 0 ? 0
+    : (chars / CHARS_PER_TOKEN) * (p.cacheWrite + (calls - 1) * p.cacheRead) / 1e6;
+  const router = cached(plan.routerCalls, plan.routerPromptChars) + plan.routerCalls * ROUTER_OUT_TOKENS * p.output / 1e6;
+  const answer = cached(plan.answerCallChars.length, plan.answerCachedChars) + plan.answerCallChars.reduce((t, chars) =>
     t + ((chars / CHARS_PER_TOKEN) * p.input + ANSWER_OUT_TOKENS * p.output) / 1e6, 0);
   return { router, answer, total: router + answer };
 }

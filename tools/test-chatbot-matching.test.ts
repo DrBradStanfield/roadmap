@@ -13,6 +13,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -1058,6 +1059,22 @@ describe('test-chatbot-matching answer system is buildSystemBlocks (US-15 AC24a,
       'doctor with data': buildSystemBlocks(resolveChatContext({ sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] }).userContextJson,
         { surfaceContext: posture('doctor'), savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION['question-rows']), blogArticles: articles }),
     });
+  }, 60_000);
+
+  // Codex R2 on PR 1652: production answers without a block it cannot read; a paid run must exit instead.
+  it('a context file that cannot be read exits before any API call', async () => {
+    const real = fs.readFileSync;
+    fs.readFileSync = ((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      if (String(p).endsWith('docs/products.md')) throw new Error('EACCES');
+      return (real as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync;
+    try {
+      const res = await runHarness(['--category', 't5', '--fixed-handles-only', '--answer-check-runs', '1'], { fixtures: [fixture('no surface', {})] });
+      expect(res.err).toMatch(/--answer-check requires .*docs\/products\.md/);
+      expect(res.status).toBe(1);
+    } finally {
+      fs.readFileSync = real;
+    }
   }, 60_000);
 });
 
