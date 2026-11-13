@@ -76,6 +76,7 @@ describe('bridge contract (US-25 AC18)', () => {
   const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true }> = {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
+    cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
     uploadVerdictsJson: {
       args: ['request'],
       call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],

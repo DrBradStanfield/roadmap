@@ -10,10 +10,10 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { clearOwed, eraseIdentityOf, eraseOf } from './erase-identity';
 import { CLOCK_KEYS, mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { changesOf, SAVE_START, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import { stableStringify, type RoadmapFile } from './roadmap-file';
 import { SyncManager, type SyncContext } from './sync-manager';
 
@@ -94,7 +94,7 @@ export class RecordSession {
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
-  private told: SaveStatus = saveStatus(SAVE_START); // saveStatus(mode), as last told to the host
+  private told: SaveTold = { status: saveStatus(SAVE_START), retry: false }; // as last told to the host
   private persistTimer: unknown = null;
   private running: Promise<boolean> | null = null;
   /** True when a pending mirror existed but could not be read/merged at
@@ -203,6 +203,13 @@ export class RecordSession {
   /** What a status line shows of the save (lead A1). */
   get saveStatus(): SaveStatus { return saveStatus(this.mode); }
   /** @internal The mode's name, for the erase; `mode` stays private. */ get saveMode(): SaveState['mode'] { return this.mode.mode; }
+  /** A retry of a failed save would start one (US-09 AC30): a cloud's, one is owed, and the page
+   *  may still save, not stopped by a log-off elsewhere (US-09 AC2c). Never on the device tier. */
+  get retryDue(): boolean {
+    return this.host.tier === 'cloud' && retryOwed(this.mode) && !this.host.mirror.writesStopped();
+  }
+  /** Retry a failed save (LiveRefresh's triggers): the whole save's answer, or null when none is due. */
+  retry(): Promise<boolean> | null { return this.retryDue ? this.persist() : null; }
 
   /** Device tier: the stored revision this session last took in (US-34 AC6). */
   get seenRevision(): string | null {
@@ -472,7 +479,7 @@ export class RecordSession {
       const fire = () => { this.persistTimer = null; void this.persist(); };
       this.persistTimer = effect.type === 'arm' ? this.host.timers.set(fire, PERSIST_DEBOUNCE_MS) : null;
     }
-    this.told = tellSaveStatus(this.host, this.told, saveStatus(this.mode)); // once the effects run
+    this.told = tellSaveStatus(this.host, this.told, { status: saveStatus(this.mode), retry: this.retryDue }); // once the effects run
     return pass;
   }
 
@@ -540,7 +547,7 @@ export class RecordSession {
         this.host.report(error, { op: 'after-save', repeat: false });
         return true;
       }
-      this.dispatch({ type: 'passFailed' });
+      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error) });
       this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
@@ -575,21 +582,7 @@ export class RecordSession {
           /* device storage unavailable — memory-only is the best we have */
         }
       }
-      // Only the device tier names its refusal (6M): a cloud failure's cause
-      // is the transport, which the host's report already classifies. A device
-      // refuses every retry the same way, and each hide retries a refused
-      // save, so each kind of refusal is reported once per session. The kind
-      // includes what the error wrapped: `other` pools refusals the browser
-      // did not name, and the host tells them apart by it (US-09 AC28).
-      const cause = this.host.tier === 'device' ? this.host.failureCause(error) : undefined;
-      let repeat = false;
-      if (cause) {
-        const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
-        const kind = `${error instanceof Error ? error.name : ''}/${cause}/${wrapped instanceof Error ? wrapped.name : ''}`;
-        repeat = this.refusalsReported.has(kind);
-        this.refusalsReported.add(kind);
-      }
-      this.host.report(error, { op: 'persist', cause, repeat });
+      reportSaveFailure(this.host, error, this.refusalsReported);
       return false;
     }
   }

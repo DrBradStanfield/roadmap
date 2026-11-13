@@ -30,7 +30,7 @@
     "app/lib/mcp-import.server.ts": 608,
     "app/lib/mcp.server.ts": 607,
     "widget-src/src/storage/roadmap-store.ts": 607,
-    "packages/health-core/src/record-session.ts": 596,
+    "packages/health-core/src/record-session.ts": 589,
     "packages/health-core/src/chat-edits.ts": 586,
     "packages/health-core/src/input-form.ts": 582,
     "ios/engine/my-data.ts": 578,
