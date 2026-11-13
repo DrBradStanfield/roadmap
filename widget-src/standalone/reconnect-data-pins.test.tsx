@@ -477,3 +477,59 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (c) the reconnect puts every edit 
     expect(await retryDropbox()).toEqual(PANEL_ONLY);
   });
 });
+
+// ---------------------------------------------------------------- (a) with nothing to copy
+
+describe('US-09 AC48 (owner question): exit (a) at load time when this browser holds no copy', () => {
+  const SAVED = { '2026-05-01': 80, '2026-05-02': 79 };
+  const cloudWeights = (cloud: Cloud) => (cloud === 'dropbox' ? weightsIn(dropboxFile?.body) : driveWeights());
+
+  /** A real healthy cloud session saves two weights and the page leaves; then
+   *  this browser's copy is gone (health_roadmap_file_v2 absent). */
+  async function seedFullySavedCloud(cloud: Cloud): Promise<void> {
+    localStorage.setItem(BACKEND_KEY, cloud);
+    if (cloud === 'dropbox') {
+      localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: GOOD_TOKEN, refreshToken: 'test-refresh-good', expiresAt: Date.now() + 3_600_000 }));
+    } else {
+      localStorage.setItem(DRIVE_CONFIG, JSON.stringify({}));
+      localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: GOOD_TOKEN, refreshToken: 'test-refresh-good', expiresAt: Date.now() + 3_600_000 }));
+    }
+    const healthy = await loadPage();
+    expect(healthy.backend).toBe(cloud);
+    for (const [day, value] of Object.entries(SAVED)) await edit({ day, value });
+    await advance(PERSIST_DEBOUNCE_MS);
+    await act(async () => { await healthy.data.flushRoadmapStore(); });
+    window.dispatchEvent(new Event('beforeunload'));
+    await turns();
+    expect(cloudWeights(cloud)).toEqual(SAVED);
+    localStorage.removeItem('health_roadmap_file_v2');
+  }
+
+  it.each(['google-drive', 'dropbox'] as const)(
+    '%s: TODAY (lead for Brad: load-time exit with nothing to copy) the exit leaves this browser empty and forgets the cloud; the record is only in the cloud file',
+    async (cloud) => {
+      await seedFullySavedCloud(cloud);
+      // The sign-in dies: Drive's token expired and its exchange is unreachable; Dropbox's content API refuses.
+      if (cloud === 'dropbox') dropboxDown = true;
+      else localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() - 1_000 }));
+      const p = await loadPage();
+      expect(p.backend).toBe('local');
+      expect(p.reconnect?.provider).toBe(cloud);
+      expect(p.data.loadAllHistorySync()).toEqual([]); // the cloud was never read: the tool is empty
+      render(<p.sync.SyncControl backend={p.backend} hasData={false} />);
+      fireEvent.click(button('Use this browser only')!);
+      await reloaded();
+      expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+      expect(localStorage.getItem('health_roadmap_file_v2')).toBeNull(); // the exit wrote no device copy
+      dropboxDown = false;
+      const next = await loadPage();
+      expect(next.backend).toBe('local');
+      expect(next.reconnect).toBeUndefined();
+      expect(localStorage.getItem(cloud === 'dropbox' ? DROPBOX_TOKENS : DRIVE_TOKENS)).toBeNull();
+      expect(next.data.loadAllHistorySync()).toEqual([]);
+      expect(await next.data.loadAllHistory()).toEqual([]);
+      expect(await deviceWeights()).toEqual({});
+      expect(cloudWeights(cloud)).toEqual(SAVED); // the record sits only in the cloud
+    },
+  );
+});
