@@ -90,7 +90,7 @@ interface Engine {
   newRecordJson(now: string, device: string, locale: string, zone: string): string;
   applyEditJson(record: string, edit: string, now: string, device: string): string;
   historyJson(record: string, metric: string, now: string, device: string, unitsJson?: string): string;
-  cloudOpen(provider: string, device: string, first: boolean, mergePhone?: boolean): Promise<string>;
+  cloudOpen(provider: string, device: string, first: boolean, mergePhone: boolean): Promise<string>;
   cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
   labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
@@ -201,7 +201,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine } = await phone(dropbox, JSON.stringify(await recordWith(['2026-10-02'], 'ios-1')));
-    const view = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', true)) as { record: string; erase: string };
+    const view = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', true, false)) as { record: string; erase: string };
     expect(days(JSON.parse(view.record) as RoadmapFile)).toEqual(['2026-10-01', '2026-10-02']);
     expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
   });
@@ -210,7 +210,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const web = await recordWith(['2026-10-03'], 'web');
     dropbox.beforeNextUpload = () => dropbox.put(web);
     const outcome = JSON.parse(engine.cloudEdit(add('2026-10-04'), erase, 'si', NOW)) as { ok: boolean };
@@ -229,7 +229,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const ldl = {
       resourceType: 'Observation', id: 'ldl-1', status: 'final', effectiveDateTime: '2026-10-01', meta: { versionId: '1' },
       code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
@@ -245,7 +245,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     // 180 lb on a metric record, weight switched to US: about 81.6 kg, never 180 kg.
     const typed = JSON.stringify({ kind: 'add', metric: 'weight', value: 180, day: '2026-10-05' });
     expect((JSON.parse(engine.cloudEdit(typed, erase, 'si', NOW, '{"weight":"conventional"}')) as { ok: boolean }).ok).toBe(true);
@@ -263,7 +263,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'lab_import', status: 'active', correctsId: null,
     }] });
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     // The sheet was opened in metric units.
     const lab = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'f1', value: 85 }), erase, 'si', NOW)) as { ok: boolean };
     expect(lab.ok).toBe(true);
@@ -283,7 +283,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual', status: 'active', correctsId: null,
     }] });
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     // The sheet was opened in metric units: 3.0 means mmol/L, never mg/dL.
     const out = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'correct', id: 'c1', value: 3.0 }), erase, 'si', NOW)) as { ok: boolean; reason?: string };
     expect(out).toMatchObject({ ok: false, reason: 'units-changed' });
@@ -295,7 +295,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     dropbox.put(await recordWith(['2026-10-01', '2026-10-05'], 'web'));
     expect(await engine.cloudRefresh()).toBe('changed');
     const [, payload] = state.events.filter(([event]) => event === 'changed').at(-1)!;
@@ -307,7 +307,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const before = await recordWith(['2026-10-01'], 'web');
     dropbox.put(before);
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
     expect(await engine.cloudRefresh()).toBe('changed');
     const view = JSON.parse(state.events.filter(([event]) => event === 'changed').at(-1)![1]) as { record: string; erase: string };
@@ -324,7 +324,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const before = await recordWith(['2026-10-01'], 'web');
     dropbox.put(before);
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
     expect(await engine.cloudRefresh()).toBe('changed');
     const view = JSON.parse(state.events.filter(([event]) => event === 'changed').at(-1)![1]) as { record: string; erase: string };
@@ -347,7 +347,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; record: string };
     const edits = [{ kind: 'field', field: 'weightKg', displayValue: 82, unitSystem: 'si', date: '2026-10-01' }];
     const { review } = JSON.parse(engine.chatEditsJson(record, JSON.stringify(edits), NOW, 'ios-1', '2026-10-21')) as { review: { seen: unknown; lines: Array<{ replaces: string | null }> } };
     expect(review.lines[0].replaces).toBe('80.0 kg');
@@ -369,7 +369,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; record: string };
     const broken = [{ kind: 'medication', medicationKey: 'statin', doseValue: 20, doseUnit: 'mg' }];
     const { medications } = JSON.parse(engine.chatEditsJson(record, JSON.stringify(broken), NOW, 'ios-1', '2026-10-21')) as { medications: { lines: unknown[]; undo: unknown; refusal: string } };
     expect(medications).toEqual({ lines: [], undo: null, refusal: 'The chat\'s medication change could not be read, so it was not saved.' });
@@ -381,7 +381,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const first = await phone(dropbox);
-    const { erase } = JSON.parse(await first.engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await first.engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     dropbox.online = false;
     first.engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
     expect(await first.engine.cloudFlush()).toBe('failed');
@@ -394,7 +394,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     dropbox.online = true;
     const second = await phone(dropbox, first.state.phoneText);
     second.state.pending = true;
-    await second.engine.cloudOpen('dropbox', 'ios-1', false);
+    await second.engine.cloudOpen('dropbox', 'ios-1', false, false);
     await second.engine.cloudClose(false); // the session's debounced save runs as it closes
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(days(dropbox.record)).toEqual(['2026-10-07']);
@@ -461,7 +461,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01', '2026-10-02'], 'web'));
     const { engine, state } = await phone(dropbox, JSON.stringify(await recordWith([], 'ios-1')));
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     const uploads = dropbox.uploads;
     expect(await engine.cloudClose(true)).toBe('copied');
     expect(dropbox.uploads).toBe(uploads);
@@ -475,7 +475,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     let calls = 0;
     const answer = dropbox.answer.bind(dropbox);
     dropbox.answer = (url, headers, body) => (calls++ === 0 ? { status: 401, headers: {}, body: 'expired_access_token' } : answer(url, headers, body));
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     expect(state.tokenRefreshes).toBe(1);
   });
 
@@ -483,18 +483,18 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.online = false;
     const offline = await phone(dropbox);
-    await expect(offline.engine.cloudOpen('dropbox', 'ios-1', false)).rejects.toThrow('"kind":"unreachable"');
+    await expect(offline.engine.cloudOpen('dropbox', 'ios-1', false, false)).rejects.toThrow('"kind":"unreachable"');
     dropbox.online = true;
     const signedOut = await phone(dropbox);
     signedOut.state.signedOut = true;
-    await expect(signedOut.engine.cloudOpen('dropbox', 'ios-1', false)).rejects.toThrow('"kind":"sign-in"');
+    await expect(signedOut.engine.cloudOpen('dropbox', 'ios-1', false, false)).rejects.toThrow('"kind":"sign-in"');
   });
 
   it('R2: an edit typed in the units the screen showed is refused after another device changed the units', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; record: string };
     // The web switches the record to US units.
     const us = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
     dropbox.put(JSON.parse(us.record) as RoadmapFile);
@@ -511,7 +511,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const lpa = (value: number, day: string) => JSON.stringify({ kind: 'add', metric: 'lpa', value, day });
     // The phone's menu writes the unit through the session, so it reaches the web's file.
     const chosen = JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'lpaUnit', unit: 'mg/dL' }), erase, 'si', NOW, '{}', 'nmol/L')) as { ok: boolean; record: string };
@@ -544,7 +544,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put({ ...old, profile: { ...old.profile, lpaUnit: 'mg/dL' }, measurements: [lpa] } as RoadmapFile);
     const { engine } = await phone(dropbox);
-    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; record: string };
     // The open moved it (AC2): same id, now a core lab row, which the phone's readsLpa finds through historyJson.
     expect(lpaRows(JSON.parse(record) as RoadmapFile).map((row) => row.id)).toEqual(['old-lpa']);
     expect((JSON.parse(engine.historyJson(record, 'lpa', NOW, 'ios-1')) as { rows: Array<{ id: string }> }).rows.map((row) => row.id)).toEqual(['old-lpa']);
@@ -573,7 +573,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       const dropbox = new FakeDropbox();
       dropbox.put(await oldShape());
       const first = await phone(dropbox);
-      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false, false);
       expect(await first.engine.cloudFlush()).toBe('saved');
       await settle();
       expect(dropbox.uploads).toBe(1);
@@ -586,7 +586,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       await first.engine.cloudClose(false);
 
       const second = await phone(dropbox, first.state.phoneText);
-      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      await second.engine.cloudOpen('dropbox', 'ios-1', false, false);
       await second.engine.cloudClose(false);
       await settle();
       expect(dropbox.uploads).toBe(1);
@@ -598,7 +598,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       const record = JSON.parse(web.engine.applyEditJson(web.engine.newRecordJson(NOW, 'web', 'en-NZ', 'Pacific/Auckland'), JSON.stringify({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-10-01' }), NOW, 'web')) as { record: string };
       dropbox.put(JSON.parse(record.record) as RoadmapFile);
       const { engine } = await phone(dropbox);
-      await engine.cloudOpen('dropbox', 'ios-1', false);
+      await engine.cloudOpen('dropbox', 'ios-1', false, false);
       expect(await engine.cloudFlush()).toBe('saved');
       await engine.cloudClose(false);
       await settle();
@@ -611,7 +611,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       const stored = dropbox.file!.text;
       dropbox.uploadsWork = false;
       const first = await phone(dropbox);
-      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false, false);
       expect(await first.engine.cloudFlush()).toBe('failed');
       await first.engine.cloudClose(false);
       await settle();
@@ -623,7 +623,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       dropbox.uploadsWork = true;
       const second = await phone(dropbox, first.state.phoneText);
       second.state.pending = true;
-      await second.engine.cloudOpen('dropbox', 'ios-1', false);
+      await second.engine.cloudOpen('dropbox', 'ios-1', false, false);
       expect(await second.engine.cloudFlush()).toBe('saved');
       await settle();
       expect(dropbox.uploads).toBe(1);
@@ -636,12 +636,12 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
       dropbox.put(await oldShape());
       dropbox.uploadsWork = false;
       const first = await phone(dropbox);
-      await first.engine.cloudOpen('dropbox', 'ios-1', false);
+      await first.engine.cloudOpen('dropbox', 'ios-1', false, false);
       expect(await first.engine.cloudFlush()).toBe('failed');
       await first.engine.cloudClose(false);
       dropbox.uploadsWork = true;
       const other = await phone(dropbox);
-      await other.engine.cloudOpen('dropbox', 'ios-2', false);
+      await other.engine.cloudOpen('dropbox', 'ios-2', false, false);
       expect(await other.engine.cloudFlush()).toBe('saved');
       await settle();
       expect(dropbox.uploads).toBe(1);
@@ -653,7 +653,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     state.phoneWriteError = 'The disk is full.';
     const outcome = JSON.parse(engine.cloudEdit(add('2026-10-08'), erase, 'si', NOW)) as { ok: boolean; reason: string; message: string };
     expect(outcome).toMatchObject({ ok: false, reason: 'phone-write' });
@@ -669,7 +669,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     expect((JSON.parse(engine.cloudEdit(add('2026-10-09'), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
     // Synchronously: no await between the answer and these checks.
     expect(state.pending).toBe(true);
@@ -680,7 +680,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     state.signedOut = true;
     dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
     await expect(engine.cloudRefresh()).rejects.toThrow('"kind":"sign-in"');
@@ -690,7 +690,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     state.signedOut = true;
     dropbox.answer = () => ({ status: 401, headers: {}, body: 'invalid_access_token' });
     state.events.length = 0;
@@ -705,7 +705,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     state.events.length = 0;
     await engine.cloudRefresh();
     expect(state.events.map(([event]) => event)).toContain('synced');
@@ -719,7 +719,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     dropbox.answer = () => ({ status: 403, headers: {}, body: `{"error":{"errors":[{"reason":"${reason}"}]}}` });
     await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
   });
@@ -727,7 +727,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
   it('A10: Google Drive through the shim: the first save makes the folder and file, a moved version re-merges, a web change is taken in', async () => {
     const drive = new FakeDrive();
     const { engine } = await phone(drive);
-    const { erase } = JSON.parse(await engine.cloudOpen('google-drive', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('google-drive', 'ios-1', false, false)) as { erase: string };
     expect((JSON.parse(engine.cloudEdit(add('2026-10-01'), erase, 'si', NOW)) as { ok: boolean }).ok).toBe(true);
     expect(await engine.cloudFlush()).toBe('saved');
     expect(drive.folderMade).toBe(true);
@@ -750,7 +750,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     dropbox.uploadsWork = false;
     engine.cloudEdit(add('2026-10-10'), erase, 'si', NOW);
     expect(await engine.cloudFlush()).toBe('failed');
@@ -764,12 +764,12 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const first = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const first = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     engine.cloudEdit(add('2026-10-13'), first.erase, 'si', NOW); // the old session has a save to flush
     dropbox.delay = 60;
-    const older = engine.cloudOpen('dropbox', 'ios-1', false); // waits on that flush
+    const older = engine.cloudOpen('dropbox', 'ios-1', false, false); // waits on that flush
     await new Promise((resolve) => setTimeout(resolve, 5));
-    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; session: number };
+    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; session: number };
     await expect(older).rejects.toThrow('superseded');
     await new Promise((resolve) => setTimeout(resolve, 200));
     dropbox.delay = 0;
@@ -785,10 +785,10 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
     dropbox.delay = 80;
-    const older = engine.cloudOpen('dropbox', 'ios-1', false);
+    const older = engine.cloudOpen('dropbox', 'ios-1', false, false);
     await new Promise((resolve) => setTimeout(resolve, 10));
     dropbox.delay = 0;
-    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; session: number };
+    const newer = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; session: number };
     await expect(older).rejects.toThrow('superseded');
     // The newer session is the open one: an edit goes through it and reaches the cloud.
     state.sessions.length = 0;
@@ -803,7 +803,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
     dropbox.delay = 50;
-    const opening = engine.cloudOpen('dropbox', 'ios-1', false);
+    const opening = engine.cloudOpen('dropbox', 'ios-1', false, false);
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(await engine.cloudClose(true)).toBe('none');
     await expect(opening).rejects.toThrow('superseded');
@@ -814,7 +814,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string; record: string };
+    const { erase, record } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string; record: string };
     const us = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'units', unitSystem: 'conventional' }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
     dropbox.put(JSON.parse(us.record) as RoadmapFile);
     await engine.cloudRefresh();
@@ -830,7 +830,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const before = JSON.parse(pair.record) as RoadmapFile;
     dropbox.put(before);
     const { engine } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const shown = before.measurements.map((row) => row.id);
     // The web corrects the diastolic 80 to 78; the phone takes it in while its sheet is open.
     const web = JSON.parse(maker.applyEditJson(pair.record, JSON.stringify({ kind: 'correct', id: before.measurements[1].id, value: 78 }), '2026-10-21T09:00:00.000Z', 'web')) as { record: string };
@@ -849,7 +849,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     dropbox.answer = () => ({ status: 403, headers: {}, body: `{"error":{"errors":[{"reason":"${reason}"}]}}` });
     await expect(engine.cloudRefresh()).rejects.toThrow(`"kind":"${kind}"`);
   });
@@ -864,7 +864,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const real = dropbox.answer.bind(dropbox);
     dropbox.answer = (url, headers, body) => url.endsWith('/files/upload')
       ? { status: 409, headers: {}, body: JSON.stringify({ error_summary: summary }) }
@@ -881,7 +881,7 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     dropbox.put(await recordWith([], 'web'));
     const other = await recordWith(['2026-09-01'], 'web');
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const real = dropbox.answer.bind(dropbox);
     let uploads = 0;
     // The first upload lands, then another device overwrites it before the
@@ -913,7 +913,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
     expect(state.pending).toBe(true);
 
@@ -948,7 +948,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     const result = JSON.parse(await engine.cloudErase(chat, NOW, () => 'disk full')) as Erased;
     expect(result).toMatchObject({ success: true, erased: true, chatErased: false });
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
@@ -959,7 +959,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     dropbox.chat = { text: chat.replace(/Is my LDL high\?/g, 'Website question'), rev: 1 };
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     state.events.length = 0;
     const recordUploads = dropbox.uploads;
 
@@ -1000,7 +1000,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
       dropbox.chat = { text, rev: 1 };
       dropbox.chatAnswers = problem !== 'unreachable';
       const { engine } = await phone(dropbox);
-      await engine.cloudOpen('dropbox', 'ios-1', false);
+      await engine.cloudOpen('dropbox', 'ios-1', false, false);
       const kept: string[] = [];
       const result = JSON.parse(await engine.cloudErase(chat, NOW, (t) => { kept.push(t); return ''; })) as Erased;
       expect(result).toMatchObject({ success: true, erased: true, chatErased: true, cloudChatErased: false, cloudChatProblem: problem });
@@ -1015,9 +1015,9 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const other = await phone(dropbox);
-    await other.engine.cloudOpen('dropbox', 'ios-2', false);
+    await other.engine.cloudOpen('dropbox', 'ios-2', false, false);
     const { engine } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     expect((JSON.parse(await engine.cloudErase(null, NOW)) as Erased).success).toBe(true);
 
     expect(await other.engine.cloudRefresh()).toBe('changed');
@@ -1031,7 +1031,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     await new Promise((resolve) => setTimeout(resolve, 20));
     const phoneBefore = state.phoneText;
     dropbox.online = false;
@@ -1050,7 +1050,7 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
-    await engine.cloudOpen('dropbox', 'ios-1', false);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
     dropbox.uploadsWork = false;
 
     const result = JSON.parse(await engine.cloudErase(chat, NOW)) as Erased;
@@ -1144,7 +1144,7 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
   async function opened(dropbox = new FakeDropbox()) {
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     return { dropbox, engine, state, erase };
   }
 
@@ -1332,7 +1332,7 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     drive.folderMade = true;
     drive.missing = row.fileRef.split('/').pop()!;
     const onDrive = await phone(drive);
-    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false, false);
     expect(await kindOf(onDrive.engine.documentOriginal(row.id))).toBe('no-original');
   });
 
@@ -1368,7 +1368,7 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     dropbox.online = false;
     engine.cloudEdit(add('2026-10-07'), erase, 'si', NOW);
     expect(await engine.cloudFlush()).toBe('failed');
@@ -1415,7 +1415,7 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith([], 'web'));
     const { engine, state } = await phone(dropbox);
-    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false)) as { erase: string };
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const answer = dropbox.answer.bind(dropbox);
     let refusing = true;
     let attempts = 0;

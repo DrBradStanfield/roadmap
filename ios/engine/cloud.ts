@@ -21,8 +21,9 @@ import { validDay } from '../../packages/health-core/src/record-edits';
 import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, movedBloodTests, readRecord, type Edit, type EditOutcome } from './my-data';
+import { applyEdit, movedBloodTests, parseEdit, readRecord, type Edit, type EditOutcome } from './my-data';
 import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
+import { checkArgs } from './contract';
 
 declare const __native: CloudNatives;
 
@@ -129,6 +130,7 @@ function keepPhoneCopy(at: Open): void {
  * Rejects when the cloud cannot be read; the app then stays on the phone.
  */
 export async function cloudOpen(provider: Provider, deviceId: string, firstConnect: boolean, mergePhone: boolean): Promise<string> {
+  checkArgs('cloudOpen', arguments);
   // The number is taken before any await, so the order of the calls decides
   // which open wins, never the order their awaits finish in (re-check R2).
   const id = ++latest;
@@ -228,7 +230,9 @@ function commit(at: Open, next: RoadmapFile, erase: string, nowIso: string): Ref
  * survives the app being closed (US-09 AC4).
  */
 export function cloudEdit(editJson: string, erase: string, shownUnits: string, nowIso: string, unitsJson?: string, shownLpaUnit?: string): string {
-  return JSON.stringify(editSession(JSON.parse(editJson) as Edit, erase, shownUnits, nowIso, unitsJson, shownLpaUnit));
+  checkArgs('cloudEdit', arguments);
+  const read = parseEdit(editJson);
+  return JSON.stringify(read.ok ? editSession(read.edit, erase, shownUnits, nowIso, unitsJson, shownLpaUnit) : read);
 }
 
 /** cloudEdit's work, answering an object, so cloudLabImport adds its summary without a JSON round trip of the record. */
@@ -269,6 +273,7 @@ function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: stri
  * saved. Answers cloudEdit's outcome with `summary` when it was taken.
  */
 export function cloudLabImport(extractionJson: string, refsJson: string, reportDay: string, erase: string, shownUnits: string, nowIso: string, unitsJson: string): string {
+  checkArgs('cloudLabImport', arguments);
   const at = open;
   if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
@@ -314,6 +319,7 @@ let documentQueue: Promise<unknown> = Promise.resolve();
 export function documentSave(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<string> {
+  checkArgs('documentSave', arguments);
   const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId)).then((answer) => JSON.stringify(answer));
   documentQueue = run.catch(() => {});
   return run;
@@ -405,6 +411,7 @@ function committed(file: RoadmapFile, plan: DocumentSavePlan): RoadmapFile {
  * mirror; the erased record goes in its place, so an offline launch opens on it.
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
+  checkArgs('cloudErase', arguments);
   const at = open;
   if (!at) return JSON.stringify({ success: false, error: ERASE_UNREACHABLE, chatErased: false, cloudChatErased: false, cloudChatProblem: null, chatHistory: null, erased: false, view: null });
   const before = at.session.eraseIdentity;
@@ -449,6 +456,7 @@ function unreadable(error: unknown): boolean {
 
 /** The app came to the foreground: re-read (US-34), and retry a refused save. */
 export function cloudVisible(): string {
+  checkArgs('cloudVisible', arguments);
   if (!open) return '';
   open.visible = true;
   open.live.visible();
@@ -458,6 +466,7 @@ export function cloudVisible(): string {
 
 /** The app left the screen: stop re-reading until it comes back. */
 export function cloudHidden(): string {
+  checkArgs('cloudHidden', arguments);
   if (!open) return '';
   open.visible = false;
   open.live.hidden();
@@ -467,6 +476,7 @@ export function cloudHidden(): string {
 /** Re-read now ("Sync now"): answers 'changed' or 'same'. A failure rejects
  *  with its kind, as an open does. */
 export async function cloudRefresh(): Promise<string> {
+  checkArgs('cloudRefresh', arguments);
   if (!open) return 'same';
   return (await reread(open)) ? 'changed' : 'same';
 }
@@ -493,6 +503,7 @@ async function reread(at: Open): Promise<boolean> {
 
 /** Save what is waiting, now (the app is going to the background). */
 export async function cloudFlush(): Promise<string> {
+  checkArgs('cloudFlush', arguments);
   return open ? flush(open) : 'saved';
 }
 
@@ -518,6 +529,7 @@ async function flush(at: Open): Promise<'saved' | 'failed'> {
  * made here: answers 'unreachable'. The cloud file is never written.
  */
 export async function cloudClose(copyDown: boolean): Promise<string> {
+  checkArgs('cloudClose', arguments);
   latest += 1; // an open still reading gives way (see `latest`)
   const at = open;
   if (!at) return 'none';

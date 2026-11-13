@@ -12,7 +12,7 @@ import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValu
 import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
-import { applyEdit, movedRecord, myData, newRecord, readNumber, readRecord, readView, type Edit } from './my-data';
+import { applyEdit, movedRecord, myData, newRecord, parseEdit, readNumber, readRecord, readView } from './my-data';
 import { derivedHistory, labHistory, metricHistory } from './my-data-forms';
 import { chatEditsPreview } from './chat-edits';
 import { readUnitChoices } from './unit-choices';
@@ -23,6 +23,7 @@ import { failed } from './cloud-adapters';
 import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
 import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
+import { checkArgs } from './contract';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -42,6 +43,7 @@ export const schemaVersion: number = CURRENT_SCHEMA_VERSION;
  *  downloaded engine before trusting it (rows kept, entered-in-error sticky, the
  *  higher eraseEpoch). */
 export function mergeJson(localJson: string, remoteJson: string, nowIso: string, deviceId: string): string {
+  checkArgs('mergeJson', arguments);
   const ctx = { deviceId, now: nowIso };
   return JSON.stringify(mergeFiles(readRecord(localJson, nowIso, deviceId), readRecord(remoteJson, nowIso, deviceId), ctx));
 }
@@ -56,6 +58,7 @@ export { erasePhoneJson } from './erase';
  *  (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file
  *  (`{ name }`) on one line and cut to the cap, as the connector stores one. */
 export function fileNamesJson(filesJson: string): string {
+  checkArgs('fileNamesJson', arguments);
   const files = JSON.parse(filesJson) as Array<{ name: string } | { zip: string; path: string }>;
   return JSON.stringify(files.map((f) => ('zip' in f ? zipMemberName(f.zip, f.path) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH))));
 }
@@ -64,11 +67,13 @@ export function fileNamesJson(filesJson: string): string {
  *  here and on the doors below: the phone's per-test units (unit-choices.ts); an app older
  *  than them sends nothing, and every metric shows in the record's units. */
 export function planJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
+  checkArgs('planJson', arguments);
   return JSON.stringify(computePlan(readView(recordJson, nowIso, deviceId), new Date(nowIso), readUnitChoices(unitsJson)));
 }
 
 /** A plan's on-screen layout, as JSON: the web's results panel uses the same function. */
 export function sectionsJson(planJsonText: string): string {
+  checkArgs('sectionsJson', arguments);
   const plan = JSON.parse(planJsonText) as Plan;
   return JSON.stringify(planSections(plan.results.suggestions));
 }
@@ -78,6 +83,7 @@ export function sectionsJson(planJsonText: string): string {
 
 /** A first-launch record, as JSON. */
 export function newRecordJson(nowIso: string, deviceId: string, locale: string, timeZone: string): string {
+  checkArgs('newRecordJson', arguments);
   return JSON.stringify(newRecord(nowIso, deviceId, locale, timeZone));
 }
 
@@ -100,6 +106,7 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  `plan.topics`: the same cards by topic for My health (health-core topicSections, US-73 AC3),
  *  from `usProducts` when it shows, else `sections`, placed against My data's own questions. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
+  checkArgs('screenJson', arguments);
   const file = readView(recordJson, nowIso, deviceId);
   const choices = readUnitChoices(unitsJson);
   let plan: Plan | null = null;
@@ -135,7 +142,10 @@ export function screenJson(recordJson: string, nowIso: string, deviceId: string,
 /** One edit, as JSON: `{ ok: true, record }` with the new record as text (and the
  *  outcome's other fields, such as a Health Records batch's counts), or the refusal. */
 export function applyEditJson(recordJson: string, editJson: string, nowIso: string, deviceId: string, unitsJson?: string): string {
-  const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), JSON.parse(editJson) as Edit, nowIso, readUnitChoices(unitsJson));
+  checkArgs('applyEditJson', arguments);
+  const read = parseEdit(editJson);
+  if (!read.ok) return JSON.stringify(read);
+  const outcome = applyEdit(readRecord(recordJson, nowIso, deviceId), read.edit, nowIso, readUnitChoices(unitsJson));
   if (!outcome.ok) return JSON.stringify(outcome);
   const { file, ok, ...extra } = outcome;
   return JSON.stringify({ ok, record: JSON.stringify(file), ...extra });
@@ -146,11 +156,13 @@ export function applyEditJson(recordJson: string, editJson: string, nowIso: stri
  *  chatEdits edit, so a Save refuses when the record changed since. `editsJson`: the reply's `proposedEdits` as
  *  received; `today`: the phone's day. The record is read raw, as the chatEdits edit writes it. */
 export function chatEditsJson(recordJson: string, editsJson: string, nowIso: string, deviceId: string, today: string, unitsJson?: string): string {
+  checkArgs('chatEditsJson', arguments);
   return JSON.stringify(chatEditsPreview(readRecord(recordJson, nowIso, deviceId), JSON.parse(editsJson), nowIso, today, readUnitChoices(unitsJson)));
 }
 
 /** A typed number as JSON: the number, or null when it is not a plain decimal. */
 export function numberJson(text: string): string {
+  checkArgs('numberJson', arguments);
   return JSON.stringify(readNumber(text) ?? null);
 }
 
@@ -158,6 +170,7 @@ export function numberJson(text: string): string {
  *  `value` unrounded, for an edit; `text` as the record would show it; `feetInches` for
  *  a height. Onboarding's unit switches are for entry only (US-54 AC6). */
 export function convertJson(metric: string, value: number, from: string, to: string): string {
+  checkArgs('convertJson', arguments);
   const systems = ['si', 'conventional'];
   if (!Object.prototype.hasOwnProperty.call(UNIT_DEFS, metric) || !systems.includes(from) || !systems.includes(to) || !Number.isFinite(value)) {
     throw new Error('convertJson: unknown metric, units or value');
@@ -173,6 +186,7 @@ export function convertJson(metric: string, value: number, from: string, to: str
 /** The values to write to Apple Health, as JSON (US-25 AC14, device-export.ts): the values
  *  a person entered, never the app's own imports. */
 export function healthWritesJson(recordJson: string, nowIso: string, deviceId: string): string {
+  checkArgs('healthWritesJson', arguments);
   // The raw record: a correction's chain and source run through hidden rows too, and
   // deviceWrites takes only active rows of known metrics with a valid number (US-65).
   return JSON.stringify(deviceWrites(readRecord(recordJson, nowIso, deviceId), 'apple_health'));
@@ -182,6 +196,7 @@ export function healthWritesJson(recordJson: string, nowIso: string, deviceId: s
  *  is a lab test's series key (US-25 AC25); an app before it sends none, and is answered as before.
  *  "egfr" and "whtr": the worked-out series of that name, `metric` unread (US-73 AC7). */
 export function historyJson(recordJson: string, metric: string, nowIso: string, deviceId: string, unitsJson?: string, series?: string): string {
+  checkArgs('historyJson', arguments);
   const file = readView(recordJson, nowIso, deviceId);
   if (series === 'egfr' || series === 'whtr') return JSON.stringify(derivedHistory(file, series, nowIso));
   return JSON.stringify(series === 'lab' ? labHistory(file, metric) : metricHistory(file, metric, nowIso, readUnitChoices(unitsJson)));
@@ -191,6 +206,7 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
  *  US-73 AC8): the add sheet's matches. An optional door (bridge-optional.json): not in the hashed
  *  contract, so an app reaches it only through HealthEngine.optionalCall. */
 export function labSearchJson(text: string): string {
+  checkArgs('labSearchJson', arguments);
   return JSON.stringify(labSearch(text));
 }
 
@@ -199,6 +215,7 @@ export function labSearchJson(text: string): string {
  *  zipMembers: [verdict]}, in order, each "keep", "tooLarge", "unsupported" or "hidden". An optional
  *  door: an app reaches it only through HealthEngine.optionalCall and keeps its Swift rules without it. */
 export function uploadVerdictsJson(request: string): string {
+  checkArgs('uploadVerdictsJson', arguments);
   const { files = [], zipMembers = [] } = JSON.parse(request) as { files?: Array<{ name: string; bytes: number }>; zipMembers?: string[] };
   return JSON.stringify({
     limits: UPLOAD_LIMITS.phone,
@@ -212,6 +229,7 @@ export function uploadVerdictsJson(request: string): string {
  *  catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25).
  *  Optional, like labSearchJson: an app before it never calls it. Answers '{}', nothing to read. */
 export function cloudOnline(): string {
+  checkArgs('cloudOnline', arguments);
   open?.live.online();
   return '{}';
 }
@@ -222,6 +240,7 @@ export function cloudOnline(): string {
  *  of PR 972): kind "not-open" when no cloud is open, "no-original" when the record names none for
  *  it, else the cloud's own failure, classed as a save's is (`failed`: sign-in, unreachable...). */
 export async function documentOriginal(id: string): Promise<ArrayBuffer> {
+  checkArgs('documentOriginal', arguments);
   const at = open;
   if (!at) throw new Error(JSON.stringify({ kind: 'not-open', detail: NOT_OPEN }));
   const doc = at.session.file.documents.find((d) => d.id === id && !d.deleted);
@@ -247,6 +266,7 @@ export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson
  *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
  *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */
 export function remindersJson(recordJson: string, nowIso: string, deviceId: string, firstSeenJson?: string): string {
+  checkArgs('remindersJson', arguments);
   return JSON.stringify(phoneReminders(readView(recordJson, nowIso, deviceId), new Date(nowIso), undefined,
     firstSeenJson === undefined ? undefined : readFirstSeen(firstSeenJson)));
 }
