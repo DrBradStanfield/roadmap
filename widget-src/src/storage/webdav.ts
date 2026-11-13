@@ -18,14 +18,12 @@
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { TRANSFER_DEADLINE_MS } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
 export const CONFIG_KEY = 'health_roadmap_selfhost';
-/** A document read or upload gets Drive's upload cap: a large original on a
- *  slow link must not be cut at `fetchOrFail`'s 30 s (US-09 AC13e). */
-const DOCUMENT_TIMEOUT_MS = 300_000;
 
 export interface WebDavConfig {
   /** Base WebDAV directory URL the app confines itself to (trailing slash optional). */
@@ -129,16 +127,16 @@ export class WebDavAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const url = this.urlFor(ref);
-    let res = await fetchOrFail('Self-host', url, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
+    let res = await fetchOrFail('Self-host', url, { headers: this.authHeaders(), timeoutMs: TRANSFER_DEADLINE_MS.document });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.urlFor(''), ref) : null;
-    if (legacy) res = await fetchOrFail('Self-host', legacy, { headers: this.authHeaders(), timeoutMs: DOCUMENT_TIMEOUT_MS });
+    if (legacy) res = await fetchOrFail('Self-host', legacy, { headers: this.authHeaders(), timeoutMs: TRANSFER_DEADLINE_MS.document });
     if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`, undefined, undefined, res.status);
     return res.blob();
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const put = (): Promise<Response> =>
-      fetchOrFail('Self-host', this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes, timeoutMs: DOCUMENT_TIMEOUT_MS });
+      fetchOrFail('Self-host', this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes, timeoutMs: TRANSFER_DEADLINE_MS.document });
     let res = await put();
     if (res.status === 409) {
       // Parent collection missing — create it, then retry once.
