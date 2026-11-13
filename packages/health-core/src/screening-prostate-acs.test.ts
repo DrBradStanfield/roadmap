@@ -1,4 +1,4 @@
-// US-06 (prostate screening), the American Cancer Society's 2026-11-12 revision: the rectal exam
+// US-06 AC22 (prostate screening), the American Cancer Society's 2026-11-12 revision: the rectal exam
 // leaves the page (Item 1B) and the 45-49 words name the men the Society advises to start at 45
 // (Item 2B, words only). The plan's logic does not change.
 //
@@ -32,7 +32,7 @@ const bulletsAfter = (heading: string) => {
   return [...list.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((m) => strip(m[1]));
 };
 
-describe('US-06: the form note under 50 names the ACS 2026 groups', () => {
+describe('US-06 AC22: the form note under 50 names the ACS 2026 groups', () => {
   const [before, after] = quotes(specLine('**Form note under 50**', '- Before:')).concat(quotes(specLine('**Form note under 50**', '- After:')));
   it('ages 45 and 49 show the new note; 50 keeps its own', () => {
     expect(SCREENING_REFS.prostateByAge(45)).toBe(after);
@@ -47,11 +47,14 @@ describe('US-06: the form note under 50 names the ACS 2026 groups', () => {
   });
 });
 
-describe('US-06: the evidence and algorithm files follow the amendment', () => {
+describe('US-06 AC22: the evidence and algorithm files follow the amendment', () => {
   it('evidence: the sentence follows the first sentence of screening-prostate', () => {
     const [added] = quotes(specLine('**evidence.ts `screening-prostate`**', '**evidence.ts'));
     const reason = SUGGESTION_EVIDENCE['screening-prostate'].reason;
     expect(reason).toContain(`between patient and doctor. ${added} The benefits`);
+    // Codex R1: the reason shows at every age from 45, so the ACS intervals carry the Society's upper age.
+    expect(added).toContain('from 45 to 69');
+    expect(added).toContain('Within those ages');
   });
   it('algorithm: the eligibility row', () => {
     const [before] = quotes(specLine('**Algorithm doc**', '- Before:'));
@@ -61,7 +64,7 @@ describe('US-06: the evidence and algorithm files follow the amendment', () => {
   });
 });
 
-describe('US-06: roadmap_text.html, the prostate section', () => {
+describe('US-06 AC22: roadmap_text.html, the prostate section', () => {
   it('the band reads 45-49, with the amended bullets', () => {
     const [oldHeading, heading] = quotes(specLine('**Page, the 45-49 band**', '- Band heading.'));
     expect(prostate).not.toContain(`>${oldHeading}<`);
