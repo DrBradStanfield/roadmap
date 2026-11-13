@@ -11,6 +11,8 @@ import type { SuggestionEvidence, SuggestionReference } from './evidence';
 const REFS_SCREENING_ACS: SuggestionReference[] = [
   { label: 'American Cancer Society – Screening Guidelines', url: 'https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html' },
 ];
+// What the ACS now says about PSA screening (guideline revised 2026-11-12).
+const REF_ACS_PROSTATE: SuggestionReference = { label: 'American Cancer Society – Recommendations for Prostate Cancer Early Detection', url: 'https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/acs-recommendations.html' };
 
 export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   'screening-colorectal': {
@@ -51,8 +53,9 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
     references: [
       ...REFS_SCREENING_ACS,
       { label: 'Goodman 2019 – Finasteride & prostate cancer mortality (NEJM)', url: 'https://doi.org/10.1056/NEJMc1809961' },
-      // The retest intervals (screening Change 4, Brad 2026-11-12).
-      { label: 'American Cancer Society – Recommendations for Prostate Cancer Early Detection', url: 'https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/acs-recommendations.html' },
+      // What the ACS now says: the interval by age and risk. Not the source of the 2.5 intervals,
+      // which are Dr Brad's, after earlier ACS guidance (Brad 2026-11-14).
+      REF_ACS_PROSTATE,
     ],
   },
 
@@ -61,8 +64,10 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: [],
     references: [
       ...REFS_SCREENING_ACS,
-      // The page the reason's claims were checked against (Brad 2026-11-12, PR 1358 R2).
+      // The 4.0 level and its causes (Brad 2026-11-12, PR 1358 R2).
       { label: 'American Cancer Society – Screening Tests for Prostate Cancer', url: 'https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/tests.html' },
+      // Repeating a high PSA to confirm it, 2 weeks to 3 months later (Brad 2026-11-14).
+      REF_ACS_PROSTATE,
     ],
   },
 
