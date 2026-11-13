@@ -164,10 +164,10 @@ export async function sendMessage(
     -MAX_HISTORY_MESSAGES,
   );
 
-  // The widget supplies its current context (unsaved typed values, lent
-  // drafts), as it does to the website chat (US-15 AC10), and the same
-  // builder as the website chat sanitizes it, so both chats plan from the
-  // same rows (US-15 AC11).
+  // The widget supplies its current context (the form's typed values over
+  // the record, never a grid's draft), as it does to the website chat
+  // (US-15 AC10), and the same builder as the website chat sanitizes it, so
+  // both chats plan from the same rows (US-15 AC11).
   const contextJson = buildChatContextJson(guestInputs);
   const system = contextJson
     ? `${SYSTEM_PROMPT}\n\nUser data:\n${contextJson}`

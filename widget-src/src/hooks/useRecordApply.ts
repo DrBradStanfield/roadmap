@@ -131,9 +131,8 @@ export function useRecordApply(args: {
       // would outrank that writer's value in the plan, then correct it. So
       // only the field the user is typing in rides through, since losing
       // keystrokes is worse (US-34 AC4). The journey redesign moves these
-      // fields onto the draft model. What the matrices' drafts lend is kept
-      // apart (`lent`): it rides through, and each draft is judged again
-      // against the record read (US-03 AC6).
+      // fields onto the draft model. The matrices' drafts are not in the
+      // form: they stay on screen and drive nothing until saved (US-03 AC6).
       // A value out of range is never in the record (its save refused or
       // skipped it, US-02 AC5), so it rides through too, with its error.
       // Only within one record: an erase from another device clears this

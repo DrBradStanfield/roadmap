@@ -66,8 +66,8 @@ interface InputPanelProps {
   /** My health, laid out from the form's parts (US-62 phase 5). */
   children: (form: FormSlots) => ReactNode;
   inputs: Partial<HealthInputs>;
-  /** What the plan reads: the form, the drafts that stand in over it, and
-   *  the record's latest values under both. The medication cascades follow it. */
+  /** What the plan reads: the form, and the record's latest values under it
+   *  (never a grid's draft). The medication cascades follow it. */
   effectiveInputs: Partial<HealthInputs>;
   /** One field's new value; `unit`: the unit a weight or waist was typed in. */
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
@@ -94,8 +94,6 @@ interface InputPanelProps {
   onCorrectValue?: CorrectFn;
   /** Moves a saved blood test to another day (US-04 AC5), from either blood-test matrix. */
   moveTest?: MoveTestApi;
-  /** A matrix's draft value as the plan reads it (both matrices). */
-  onDraftValue: (field: keyof HealthInputs, value: number | undefined, day?: string) => void;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
@@ -144,7 +142,7 @@ export function InputPanel({
   children, inputs, effectiveInputs, onChange: updateField, errors: allErrors, unitSystem, onUnitSwitch,
   unitOverrides, onToggleFieldUnit, startUnitOf,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
-  onCorrectValue, moveTest, onDraftValue,
+  onCorrectValue, moveTest,
   medications, onMedicationChange,
   screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit,
   supplements, onSupplementChange, onSupplementDelete,
@@ -210,7 +208,7 @@ export function InputPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
-  // read the valid part, and an upload saves it first): where the grids sit
+  // read none of it, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
   // (US-62 AC11). Each grid reports what it keeps.
   const [draftedVitals, setDraftedVitals] = useState(false);
@@ -532,7 +530,6 @@ export function InputPanel({
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
-        onDraftValue={onDraftValue}
         onHoldsText={setDraftedVitals}
         formStage={formStage}
         plan={planBasis}
@@ -559,7 +556,6 @@ export function InputPanel({
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
       move={move.headers}
-      onDraftValue={onDraftValue}
       onHoldsText={setDraftedBlood}
       isSaving={isSavingLongitudinal}
       grading={grading}

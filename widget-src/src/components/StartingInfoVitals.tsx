@@ -37,9 +37,9 @@ import {
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
-import { BP_DIA_MAX, BP_DIA_MIN, BP_SYS_MAX, BP_SYS_MIN, FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
+import { FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
 import { describedBy } from '../lib/aria';
-import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
+import { useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useRangeWait } from '../lib/useRangeWait';
@@ -67,9 +67,6 @@ interface StartingInfoVitalsProps {
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
   onCorrectValue?: CorrectFn;
-  /** The draft values the plan and the chat may read, in SI; undefined
-   *  leaves the field to the record. */
-  onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
   /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
    *  in what the plan reads, the draft's own included). */
   formStage: FormStage;
@@ -183,7 +180,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
+  formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -225,15 +222,14 @@ export function StartingInfoVitals({
     if (key === 'weight' || key === 'waist') return { [key]: col?.[`${key}Id` as const] ?? null };
     return { systolic_bp: col?.sysId ?? null, diastolic_bp: col?.diaId ?? null };
   };
-  const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
   const {
     holdsText,
-    draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key),
+    draft, backfills, type, setDate, unitOf, expected, clashes, taken, settle, refusal,
+  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, cellOf: key => (key === 'dia' ? 'sys' : key),
     legacyUnit: key => (key === 'weight' || key === 'waist' ? startUnitOf?.(FIELD_OF[key]) : undefined) });
   // No weight typed here while its row is hidden (the weight shows beside the
-  // height): a restored or earlier draft goes, so nothing unseen is lent to
-  // the plan or saved (US-62 AC13).
+  // height): a restored or earlier draft goes, so nothing unseen is saved
+  // (US-62 AC13).
   useEffect(() => {
     if (!withoutWeight) return;
     if (draft.values.weight) type([null, 'weight'], '', unitFor('weight'));
@@ -368,21 +364,6 @@ export function StartingInfoVitals({
   const refused = cells.some(c => refusal([c.column, c.keys[0]])); // on screen: one off it has nothing to fix
   const bpClashes = clashes('sys') || clashes('dia');
   const bpTaken = taken('sys') || taken('dia');
-
-  // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
-  // value it could save, clear of clashes. Each half of a blood pressure
-  // counts on its own, in range; a pair the wrong way up lends neither (US-02 AC8).
-  const bpInverted = pressureInverted(parseLocalisedNumber(draft.values.sys ?? ''), parseLocalisedNumber(draft.values.dia ?? ''));
-  const standsIn = (key: VitalsKey): number | undefined => {
-    const text = draft.values[key];
-    if (!text || !lends(key) || clashes(key) || ((key === 'sys' || key === 'dia') && bpInverted)) return undefined;
-    const n = parseLocalisedNumber(text);
-    if (key === 'sys') return n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined;
-    if (key === 'dia') return n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined;
-    const unit = typedUnit(null, key);
-    return validateTypedValue(key, text, unit).error ? undefined : toCanonicalValue(key, readTypedValue(key, text, unit)!, unit);
-  };
-  useDraftMirror((Object.keys(FIELD_OF) as VitalsKey[]).map(key => [FIELD_OF[key], standsIn(key)]), onDraftValue);
 
   const [saving, setSaving] = useState(false);
 
