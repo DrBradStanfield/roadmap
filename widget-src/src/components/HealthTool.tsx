@@ -529,7 +529,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [selectTab]);
   const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
     medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing: isDeleting, handleInputChange, handleMedicationChange,
-    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, chatWeight: () => { if (weightStepOpen(previousMeasurements)) answered(false); }, // never lands (AC25b)
+    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, fullForm, chatWeight: () => { if (weightStepOpen(previousMeasurements)) answered(false); }, // never lands (AC25b)
   });
 
   const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server

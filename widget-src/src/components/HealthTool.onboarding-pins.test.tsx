@@ -835,3 +835,34 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     });
   });
 });
+
+// R1 (owner's ruling, option a; US-16 AC1): a chat waist or pressure that came before the whole form waited
+// in the form's inputs, where nothing showed it, and a later weight blur saved it under today. When the whole
+// form opens it moves into the vitals grid, shown and flashed, unsaved until the person confirms it.
+describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form moves into the grid when it opens', () => {
+  const vitalsRow = (view: RenderResult, label: string) => Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-row'))
+    .find((r) => r.querySelector('.bt-name-label')?.textContent === label);
+  const rowsOn = async (metric: string) => (await recordOnDisk()).measurements.filter((m) => m.metricType === metric);
+
+  it.each([
+    ['a waist', [{ field: 'waistCm', displayValue: 91 }], 'Waist Circumference', ['91'], ['waist']],
+    ['a blood pressure pair', [{ field: 'systolicBp', displayValue: 120 }, { field: 'diastolicBp', displayValue: 80 }], 'Blood Pressure', ['120', '80'], ['systolic_bp', 'diastolic_bp']],
+  ])('%s from the chat at stage 2: the open form shows it in the grid, unsaved, and a weight blur saves none of it', async (_what, edits, label, shownValues, metrics) => {
+    const view = await open();
+    await measurements(view); // stage 2: the sex question
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!(edits.map((e) => ({ kind: 'field', ...e, unitSystem: 'si', date: null }) as ProposedEdit)));
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    birth(view, '5', '1975');
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const cells = () => Array.from(vitalsRow(view, label)!.querySelectorAll<HTMLInputElement>('.bt-cell-draft input'));
+    await waitFor(() => expect(cells().map((c) => c.value)).toEqual(shownValues));
+    expect(cells().some((c) => c.classList.contains('bt-input-active'))).toBe(true); // flashed, as a chat edit is
+    type(q(view, '#weightKg'), '81');
+    leave(q(view, '#weightKg'));
+    await waitFor(async () => expect(await activeWeights()).toContainEqual([81, localToday()]), { timeout: 2000 });
+    await settle(300);
+    for (const metric of metrics) expect(await rowsOn(metric)).toEqual([]);
+    expect(cells().map((c) => c.value)).toEqual(shownValues); // still waiting for the person's Save
+  });
+});
