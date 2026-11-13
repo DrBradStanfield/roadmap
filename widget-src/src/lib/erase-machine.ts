@@ -10,16 +10,23 @@
  * (lib/remote-replay.ts), and only this machine counts it.
  *
  * Phases:
- * - loading: the page has not shown its first read.
- * - idle: the page shows `shown`.
- * - erasing: this tab's erase is writing (from idle, or from loading).
+ * - idle: no erase of this tab's is writing.
+ * - erasing: this tab's erase is writing (whatever `read` is).
  *   `refused` holds the erase the first save refused during it was asked
  *   under, or null; it goes with the phase.
  *
+ * `read`, the page's first read (ledger H37; the page's only "loaded"):
+ * - pending: not shown yet. The page's saves stay off.
+ * - shown: shown (`loaded` with shown true). Saves are on (useErase `loaded`).
+ * - failed: it failed part-way (`loaded` with shown false). Saves stay off (L2).
+ * It moves once, out of pending, in either phase. "Settled" below means idle
+ * with `read` out of pending.
+ *
  * `heard`: another writer's erase that arrived and that nothing has shown
  * yet. Only an arrival proves another writer, so it is remembered, in every
- * phase, until something shows it (Fable, round 3). In loading it is read
- * once the page has loaded (US-34 AC4); in idle its arrival reads at once,
+ * phase, until something shows it (Fable, round 3). While `read` is pending
+ * it is read once the page has loaded (US-34 AC4, rule R2), even after this
+ * tab's erase ended in that window; settled, its arrival reads at once,
  * and a read of that erase, or of a higher epoch, clears it (a read below
  * it, a read of another identity at its epoch, or a read that fails leaves
  * it heard); in erasing it waits for the end: an own-end at it
@@ -45,7 +52,7 @@
  * `counted` keeps a later move to the same identity from counting again.
  *
  * `said` holds the erases whose refused save was said: one alert per erase.
- * A refused save in loading or idle while an erase is heard emits one `read`,
+ * A refused save outside erasing while an erase is heard emits one `read`,
  * with `alert-refused` before it only when its erase is not yet said (Q3);
  * in erasing it emits nothing and is recorded (`refused`): an own-end throws
  * the change away, and an own-failed re-reads as a refused save does
@@ -62,7 +69,7 @@
  *   neither record nor erase: the change that moved it brings its own read.
  *   The page's first read is the one exception: it is shown even when its
  *   identity moved (the page must show something), and dispatches no `read`;
- *   the arrival, heard in loading, is read at `loaded`. Dispatched stale, it would move
+ *   the arrival, heard while `read` is pending, is read at `loaded`. Dispatched stale, it would move
  *   `shown` back within an epoch (the overlapping-reads test), and the store
  *   would refuse every save.
  * - own-start: dispatched in the turn eraseAll reads `before`, the store's
@@ -76,8 +83,9 @@
  * - own-failed: only when the store's identity did not move. Carries `message`.
  * - arrived: REMOTE_CHANGED's `erase`, when it carries one (useRecordApply's
  *   listener reads the event's detail, never the store again).
- * - loaded: the page has shown its first read, or that read failed
- *   (useRecordApply's loaded effect and firstReadFailed).
+ * - loaded: the page has shown its first read (`shown` true), or that read
+ *   failed (false): useRecordApply firstReadShown, in the turn the load's
+ *   last write is made, and firstReadFailed.
  * - committed: the tree showing `identity` committed; dispatched by the same
  *   layout effect that moves the store's mark (useErase.ts, US-16 AC2d), so
  *   "the page now shows this" is one moment.
@@ -101,12 +109,12 @@
  *   state while a heard erase is unread, a separate design after this series
  *   (ledger H39).
  * - L2, a first read that fails. The page stays as it was mounted, its saves
- *   off (`hasApiResponse` false), as before the machine (ledger H37). A held
- *   erase IS read then: firstReadFailed dispatches `loaded`, as it calls the
+ *   off (`read` failed), as before the machine. A held erase IS read then:
+ *   firstReadFailed dispatches `loaded` (shown false), as it calls the
  *   relay's `loaded()` (useRecordApply.ts firstReadFailed). "Delete all my
- *   data" still works: own-start from loading goes to erasing, the held erase
- *   kept (Q3 ruling). Ends with: a reload. Own-end moves the machine to idle;
- *   the saves stay off until reload.
+ *   data" still works: own-start goes to erasing, the held erase kept (Q3
+ *   ruling). Ends with: a reload. Own-end moves the machine to idle; `read`
+ *   stays failed, so the saves stay off until reload.
  */
 
 import { epochOf } from '@roadmap/health-core/erase-identity';
@@ -114,7 +122,11 @@ import { epochOf } from '@roadmap/health-core/erase-identity';
 /** The store's erase identity, `[eraseEpoch, erasedAt]` as one string (record-session eraseIdentityOf). */
 export type EraseIdentity = string;
 
+/** The page's first read: not shown yet, shown, or failed part-way (the comment above). */
+export type FirstRead = 'pending' | 'shown' | 'failed';
+
 interface EraseCommon {
+  read: FirstRead;
   shown: EraseIdentity;
   /** Who moved `shown` there: a read (another writer's) or this tab's erase ending (own, unless another's overtook it).
    *  Its own field, set wherever `shown` moves; never read off `pending`, which a counted erase leaves null (PR 1359 R5). */
@@ -126,7 +138,7 @@ interface EraseCommon {
   pending: EraseIdentity | null;
 }
 type Erasing = EraseCommon & { phase: 'erasing'; refused: EraseIdentity | null };
-export type EraseState = (EraseCommon & { phase: 'loading' | 'idle' }) | Erasing;
+export type EraseState = (EraseCommon & { phase: 'idle' }) | Erasing;
 
 export type EraseEvent =
   | { type: 'own-start' }
@@ -140,8 +152,8 @@ export type EraseEvent =
   | { type: 'read'; identity: EraseIdentity }
   /** The store refused a save asked under `askedUnder`. */
   | { type: 'refused'; askedUnder: EraseIdentity }
-  /** The page has shown its first read. */
-  | { type: 'loaded' }
+  /** The page's first read: shown, or failed part-way. */
+  | { type: 'loaded'; shown: boolean }
   /** The tree showing `identity` committed (useErase's mark effect). */
   | { type: 'committed'; identity: EraseIdentity };
 
@@ -163,7 +175,7 @@ export type EraseEffect =
 export interface Step { state: EraseState; effects: EraseEffect[] }
 
 export function initialEraseState(shown: EraseIdentity): EraseState {
-  return { phase: 'loading', shown, shownBy: 'own', heard: null, said: new Set(), counted: new Set(), pending: null };
+  return { phase: 'idle', read: 'pending', shown, shownBy: 'own', heard: null, said: new Set(), counted: new Set(), pending: null };
 }
 
 /** `next` takes `prior`'s place: another identity, at the same or a higher epoch. */
@@ -176,6 +188,8 @@ const COUNT: EraseEffect = { type: 'count-remote-change' };
 const say = (message: string): EraseEffect => ({ type: 'say-outcome', message });
 /** This tab's erase is over: idle, the erasing phase's data dropped with it. */
 const ended = ({ refused: _refused, ...common }: Erasing): EraseState => ({ ...common, phase: 'idle' });
+/** Idle, the first read out of pending: an arrival reads at once. */
+const settled = (state: EraseState): boolean => state.phase === 'idle' && state.read !== 'pending';
 
 /** This tab's erase ends at `identity`: another writer's when it is the erase that overtook it.
  *  The evidence this rests on: packages/health-core/src/erase-overtaken.test.ts
@@ -212,9 +226,9 @@ export function transition(state: EraseState, event: EraseEvent): Step {
     case 'read': {
       // A read inside this tab's erase loses to it, and leaves `heard` alone.
       if (state.phase === 'erasing') return same;
-      // In idle a read shows the heard erase when it is that erase or outranks it; a same-epoch other identity does not.
+      // Settled, a read shows the heard erase when it is that erase or outranks it; a same-epoch other identity does not.
       const clears = state.heard !== null && (event.identity === state.heard || epochOf(event.identity) > epochOf(state.heard));
-      const seen = state.phase === 'idle' && clears ? { ...state, heard: null } : state;
+      const seen = settled(state) && clears ? { ...state, heard: null } : state;
       // The erase shown, or a lower epoch, shows nothing new.
       if (!replaces(event.identity, state.shown)) return seen === state ? same : { state: seen, effects: [] };
       // No erase this tab made reaches a read first: its own-end shows it.
@@ -228,12 +242,14 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       if (event.identity !== state.pending) return same;
       return { state: { ...state, pending: null, counted: add(state.counted, event.identity) }, effects: [COUNT] };
     case 'arrived':
-      // Heard until something shows it. In idle, read at once, even when shown: the change can carry another writer's rows.
-      return { state: { ...state, heard: keep(state.heard, event.identity) }, effects: state.phase === 'idle' ? [READ] : [] };
-    case 'loaded':
-      // During this tab's erase the heard erase waits for the erase's end.
-      if (state.phase !== 'loading') return same;
-      return { state: { ...state, phase: 'idle' }, effects: state.heard === null ? [] : [READ] };
+      // Heard until something shows it. Settled, read at once, even when shown: the change can carry another writer's rows.
+      return { state: { ...state, heard: keep(state.heard, event.identity) }, effects: settled(state) ? [READ] : [] };
+    case 'loaded': {
+      // Once: shown or failed. During this tab's erase the heard erase waits for the erase's end.
+      if (state.read !== 'pending') return same;
+      const next: EraseState = { ...state, read: event.shown ? 'shown' : 'failed' };
+      return { state: next, effects: state.phase === 'idle' && state.heard !== null ? [READ] : [] };
+    }
     case 'own-start':
       return state.phase === 'erasing' ? same : { state: { ...state, phase: 'erasing', refused: null }, effects: [] };
     case 'own-end':

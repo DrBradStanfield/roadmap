@@ -45,11 +45,12 @@ function setup(loaded = true) {
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
     later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
   };
-  const hook = renderHook(({ loaded }: { loaded: boolean }) => useRecordApply({
+  const hook = renderHook(() => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
     units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
-    erase: fx.erase, loaded, later: () => fx.later,
-  }), { initialProps: { loaded } });
+    erase: fx.erase, later: () => fx.later,
+  }));
+  if (loaded) act(() => { hook.result.current.firstReadShown(); }); // the page's load, as HealthTool's loadData ends
   return { fx, hook };
 }
 const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -138,7 +139,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
   it('US-34 AC4a: ownSave keeps its identity across renders, so a save built on it is not rebuilt each render', () => {
     const { hook } = setup();
     const first = hook.result.current.ownSave;
-    hook.rerender({ loaded: true });
+    hook.rerender();
     expect(hook.result.current.ownSave).toBe(first);
   });
 
@@ -190,17 +191,22 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await settle();
     expect(fx.erase.dispatch).not.toHaveBeenCalled();
     expect(fx.reloadValues).not.toHaveBeenCalled(); // loading-held, in the relay
-    hook.rerender({ loaded: true });
+    act(() => { hook.result.current.firstReadShown(); });
     await settle();
-    expect(fx.erase.dispatch.mock.calls[0]).toEqual([{ type: 'loaded' }]);
+    expect(fx.erase.dispatch.mock.calls[0]).toEqual([{ type: 'loaded', shown: true }]);
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(1);
   });
 
-  it('fix 4 2b-3 (L2): a first read that fails tells the machine the page has loaded', async () => {
+  it('fix 4 2b-3 (L2, H37): a first read that fails tells the machine it failed, and a change waiting on it applies', async () => {
     const { fx, hook } = setup(false);
+    await act(async () => { window.dispatchEvent(new CustomEvent('hr:remote-changed', { detail: { erase: null } })); });
+    await settle();
+    expect(fx.reloadValues).not.toHaveBeenCalled(); // loading-held
     act(() => { hook.result.current.firstReadFailed(new Error('first read failed (test)')); });
-    expect(fx.erase.dispatch.mock.calls).toEqual([[{ type: 'loaded' }]]);
+    await settle();
+    expect(fx.erase.dispatch.mock.calls[0]).toEqual([{ type: 'loaded', shown: false }]);
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
   });
 
   it('US-34 AC4: before the first read is shown, a reread leaves a waiting change for that read, then it applies once', async () => {
@@ -212,7 +218,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(0); // the upload's read is not the one the change waits for
-    hook.rerender({ loaded: true });
+    act(() => { hook.result.current.firstReadShown(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(2);
     expect(counted()).toBe(1);

@@ -72,7 +72,7 @@ function setup(loaded = true) {
       return RESULT;
     }),
   };
-  const hook = renderHook(({ loaded }: { loaded: boolean }) => {
+  const hook = renderHook(() => {
     // The two hooks as HealthTool builds them; its reread door drops a failed read's rejection here.
     const erase = useErase({
       clearDrafts: () => {}, forget: () => {},
@@ -83,10 +83,11 @@ function setup(loaded = true) {
     const page = useRecordApply({
       setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
       units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
-      erase: erase.store, loaded, later: () => fx.later,
+      erase: erase.store, later: () => fx.later,
     });
     return { erase, page };
-  }, { initialProps: { loaded } });
+  });
+  if (loaded) act(() => { hook.result.current.page.firstReadShown(); }); // the page's load, as HealthTool's loadData ends
   const reads = () => fx.reloadValues.mock.calls.length;
   return { fx, hook, reads, now: () => hook.result.current };
 }
@@ -113,14 +114,27 @@ const PATHS: Path[] = [
   ['loading-held, then the page shows its first read', async (p) => {
     await announced(B);
     expect(p.reads()).toBe(0); // waits for the first read
-    p.hook.rerender({ loaded: true });
+    expect(p.now().erase.loaded).toBe(false);
+    act(() => { p.now().page.firstReadShown(); });
     await settle();
+    expect(p.now().erase.loaded).toBe(true); // the saves open (H37)
   }, { counted: 1, reads: 1 }, false],
   ['loading-held, then the first read fails', async (p) => {
     await announced(B);
     expect(p.reads()).toBe(0);
     act(() => { p.now().page.firstReadFailed(new Error('first read failed (test)')); });
     await settle();
+    expect(p.now().erase.loaded).toBe(false); // the saves stay off (L2, H37)
+  }, { counted: 1, reads: 1 }, false],
+  ['H37 (rule R2): this tab\'s erase ends before the first read shows; a later arrival waits for that read', async (p) => {
+    const erase = ownErase(p, { success: true, chatErased: true });
+    await erase.finish(B); // this tab's erase
+    expect(p.now().erase.loaded).toBe(false); // the saves stay off until the first read shows
+    await announced(C); // another writer's, above it
+    expect(p.reads()).toBe(0); // held, where before H37 it read at once
+    act(() => { p.now().page.firstReadShown(); });
+    await settle();
+    expect(p.now().erase.loaded).toBe(true);
   }, { counted: 1, reads: 1 }, false],
   ['another writer\'s change held behind a dirty profile, then the erase', async (p) => {
     p.fx.later.profileDirty.mockReturnValue(true);
@@ -172,7 +186,7 @@ describe('fix 4 (2b-3): the count of another writer\'s erase', () => {
     const page = setup(false);
     await announced(null);
     await announced(B);
-    page.hook.rerender({ loaded: true });
+    act(() => { page.now().page.firstReadShown(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 1, reads: 1 });
   });
