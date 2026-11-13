@@ -10,9 +10,9 @@ import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/l
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadSurfaces } from './chatbot-surfaces';
 import { estimateRunCost } from './harness-answers';
-import { EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
+import { EMPTY_CHAT_CONTEXT, buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
-import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
+import { PRODUCTS_BLOCK_FILES } from '../app/lib/chat-products-block';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,9 +39,8 @@ export const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // When set, entries with must_mention/must_not_mention/max_length_chars also call
-// the main LLM to verify generated content. Loads blocks 1-3 (system prompt +
-// algorithm + products) AND matched blog content (block 4) so the bot has
-// the same context production does. Runs --answer-check-runs times (default = --runs,
+// the main LLM to verify generated content, with the system production's
+// buildSystemBlocks builds, matched blog content included (US-15 AC24a). Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 export const fixedHandlesOnly = args.includes('--fixed-handles-only');
 const includePending = args.includes('--include-pending');
@@ -61,37 +60,19 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 if (!estimateOnly) console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
 
 // ---------------------------------------------------------------------------
-// Answer-check context — loaded only when --answer-check is set
-// Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
-// products with writing-style.md and the answer bank, the block every surface gets,
-// US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
-// Dynamic portion (per-query, in checkAnswer): block 4 matched blog
-// content, loaded via loadMatchedContent() from the routing intersection
-// (or a fixture's answer_handles).
+// Answer-check context: production's buildSystemBlocks builds every answer call's system
+// (checkAnswer, US-15 AC24a), from the files it reads at import. Production answers with a
+// block missing; a paid run must not, so a missing file exits here.
 // User data comes only from a fixture's made-up user_context (see the header).
 // ---------------------------------------------------------------------------
 
 // --answer-model qualifies a candidate answer model; the body shape follows its family.
 export const ANSWER_MODEL = getArg('--answer-model', CHAT_MODEL);
-export let ANSWER_SYSTEM_CONTEXT = '';
 
-if (answerCheckMode) {
-  try {
-    const read = (file: string) => fs.readFileSync(path.join(REPO_ROOT, file), 'utf-8');
-    ANSWER_SYSTEM_CONTEXT =
-      read('app/lib/chat-system-prompt.md') +
-      '\n\n---\n\n' +
-      read('health_roadmap_algorithm.md') +
-      '\n\n---\n\n' +
-      productsBlockText({
-        products: read(PRODUCTS_BLOCK_FILES.products),
-        writingStyle: read(PRODUCTS_BLOCK_FILES.writingStyle),
-        answerBank: read(PRODUCTS_BLOCK_FILES.answerBank),
-      });
-  } catch {
-    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, docs/products.md, docs/writing-style.md and docs/chatbot/answer-bank.md');
-    process.exit(1);
-  }
+const ANSWER_FILES = ['app/lib/chat-system-prompt.md', 'health_roadmap_algorithm.md', ...Object.values(PRODUCTS_BLOCK_FILES)];
+if (answerCheckMode && !ANSWER_FILES.every(f => fs.existsSync(path.join(REPO_ROOT, f)))) {
+  console.error(`Error: --answer-check requires ${ANSWER_FILES.join(', ')}`);
+  process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
@@ -286,9 +267,10 @@ export function hasAnswerCheck(q: TestQuery): boolean {
 }
 
 if (estimateOnly) {
-  // Routed cases are priced as if routing passes and loads their expected handles.
+  // Routed cases are priced as if routing passes and loads their expected handles, on production's base blocks.
+  const baseChars = buildSystemBlocks(EMPTY_CHAT_CONTEXT.userContextJson, { savedChat: '' }).reduce((n, b) => n + b.text.length, 0);
   const answerCallChars = suite.filter(hasAnswerCheck).flatMap(q => {
-    const chars = ANSWER_SYSTEM_CONTEXT.length + q.query.length
+    const chars = baseChars + q.query.length
       + (loadMatchedContent(Array.isArray(q.expected) ? q.expected : q.answer_handles!).content ?? '').length;
     return Array<number>(answerCheckRuns).fill(chars);
   });

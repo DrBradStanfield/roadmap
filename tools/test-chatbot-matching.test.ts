@@ -19,9 +19,9 @@ import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { noColour, reply, runHarness, textReply } from './test-chatbot-matching-inprocess';
 import { scoreAnswer, type AnswerChecks } from './harness-answers';
-import { loadBlogArticle } from '../app/lib/matched-content';
+import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { stripFrontmatter } from '../app/lib/frontmatter';
-import { resolveChatContext } from '../app/lib/chat.server';
+import { buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { runRoadmap } from '../packages/health-core/src/run-roadmap';
 import { DISCORD_SAVED_CHAT, SAVED_CHAT_BY_RETENTION, YOUTUBE_SAVED_CHAT, savedChatBlock } from '../app/lib/chat-save-answers';
 
@@ -46,6 +46,11 @@ function spawnCli(stub: (log: string) => string, argv: string[], key = true) {
   }
 }
 
+/** A router call sends "Current query: <q>" as its first message; an answer call sends the query alone. */
+const isRouter = (body: { messages: Array<{ content: unknown }> }) => String(body.messages[0].content).startsWith('Current query: ');
+/** Every system block's text, joined as one string, for position and substring checks. */
+const texts = (body: { system: Array<{ text: string }> }) => body.system.map(b => b.text).join('\n\n---\n\n');
+
 /** The answer text the harness scores: a text-only turn, no tool call. */
 const textTurn = (text: string) => ({ final: { contentBlocks: [{ type: 'text' as const, text }] }, counts: null, proposedEdits: [] });
 
@@ -65,7 +70,7 @@ describe('test-chatbot-matching --answer-check (US-15 AC13)', () => {
   // CLI spawn 1 of 5: the apiErrors count reaches the real exit code.
   it('counts an answer-check timeout in apiErrors and exits non-zero', () => {
     const q = pickCase();
-    // Router calls send `system` as an array; answer calls send a string.
+    // Router calls send "Current query: <q>"; answer calls send the query alone.
     const { status, stderr, out } = spawnCli(() => `
       let answerCalls = 0;
       const ok = (text) => new Response(JSON.stringify({
@@ -73,7 +78,7 @@ describe('test-chatbot-matching --answer-check (US-15 AC13)', () => {
       }), { status: 200, headers: { 'content-type': 'application/json' } });
       globalThis.fetch = async (_url, init) => {
         const body = JSON.parse(init.body);
-        if (Array.isArray(body.system)) return ok(${JSON.stringify(JSON.stringify({ handles: [q.expected[0]] }))});
+        if (body.messages[0].content.startsWith('Current query: ')) return ok(${JSON.stringify(JSON.stringify({ handles: [q.expected[0]] }))});
         answerCalls++;
         if (answerCalls === 2) throw new DOMException('timed out', 'TimeoutError');
         return ok(${JSON.stringify(q.must_mention!.join(' '))});
@@ -102,12 +107,12 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
 
   /** Run the harness offline. goodAnswer: answer well when the article is in the prompt; otherwise always fail. */
   async function run(flags: string[], goodAnswer: boolean) {
-    // A router call (system as an array) throws, so it would show as an API error.
+    // A router call throws, so it would show as an API error.
     const { status, err, out } = await runHarness(['--category', q.category, '--source', q.source!, '--runs', '1', ...flags], {
       fetch: async (_url, init) => {
         const body = JSON.parse(String(init.body));
-        if (Array.isArray(body.system)) throw new Error('router called');
-        const ok = goodAnswer && body.system.includes(snippet);
+        if (isRouter(body)) throw new Error('router called');
+        const ok = goodAnswer && texts(body).includes(snippet);
         return textReply(ok ? 'answer from the article' : 'Grokipedia says');
       },
     });
@@ -174,7 +179,7 @@ describe('test-chatbot-matching --category comma list (US-15 AC13)', () => {
   /** The "Queries:" line of an offline run: router returns no handles, answers are fixed text. */
   async function queriesLine(category: string): Promise<string> {
     const res = await runHarness(['--category', category, '--answer-check', '--runs', '1'], {
-      fetch: async (_url, init) => textReply(Array.isArray(JSON.parse(String(init.body)).system) ? '{"handles":[]}' : 'stub answer'),
+      fetch: async (_url, init) => textReply(isRouter(JSON.parse(String(init.body))) ? '{"handles":[]}' : 'stub answer'),
     });
     const line = noColour(res.out).split('\n').find(l => l.startsWith('Queries:'));
     if (!line) throw new Error(`no Queries line for "${category}": ${res.err}`);
@@ -208,8 +213,8 @@ describe('test-chatbot-matching surface posture (US-45 AC6)', () => {
     const res = await runHarness(['--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1'], {
       fetch: async (_url, init) => {
         const body = JSON.parse(String(init.body));
-        if (Array.isArray(body.system)) throw new Error('router called');
-        const at = (t: string) => (body.system as string).indexOf(t);
+        if (isRouter(body)) throw new Error('router called');
+        const at = (t: string) => texts(body).indexOf(t);
         calls.push({
           query: body.messages[0].content, doctor: at(DOCTOR), brand: at(BRAND),
           products: at("## Dr Stanfield's Products"), articles: at('## Referenced Blog Articles'),
@@ -844,7 +849,7 @@ describe('test-chatbot-matching router view (US-50 AC3)', () => {
       const res = await runHarness(['--category', q.category, '--runs', '1', '--index', indexPath], {
         fetch: async (_url, init) => {
           const body = JSON.parse(String(init.body));
-          if (Array.isArray(body.system)) seen = body.system.map((b: { text: string }) => b.text);
+          if (isRouter(body)) seen = body.system.map((b: { text: string }) => b.text);
           return textReply('{"handles":[]}');
         },
       });
@@ -965,7 +970,7 @@ describe('test-chatbot-matching saved_chat (C1, US-45 AC8)', () => {
       fixtures,
       fetch: async (_url, init) => {
         const body = JSON.parse(String(init.body));
-        const system = Array.isArray(body.system) ? body.system.map((b: { text: string }) => b.text) : body.system.split('\n\n---\n\n');
+        const system = body.system.map((b: { text: string }) => b.text);
         const query = body.messages.filter((m: { role: string; content: unknown }) => m.role === 'user' && typeof m.content === 'string').at(-1)?.content;
         calls.push({ query, system });
         return textReply('stub answer');
@@ -1018,6 +1023,42 @@ describe('test-chatbot-matching saved_chat (C1, US-45 AC8)', () => {
     expect(stderr).toMatch(/saved_chat "[^"]+" is not one production sends on surface/);
     expect(calls).toEqual([]);
   }, 120_000);
+});
+
+// US-15 AC24a (T-5): every answer call's system is production's buildSystemBlocks for the same input,
+// deep-equal, blocks and cache markers included. A fixture with no user_context gets production's
+// empty context ('{}'), as /api/chat sends it; before T-5 such a call was a hand-built string.
+describe('test-chatbot-matching answer system is buildSystemBlocks (US-15 AC24a, T-5)', () => {
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ answer_handles?: string[] }>;
+  const handles = all.find(q => q.answer_handles?.length)!.answer_handles!;
+  const posture = (s: string) => readFileSync(join(REPO_ROOT, `app/lib/chat-posture-${s}.md`), 'utf-8');
+  const fixture = (query: string, extra: object) => ({ query, category: 't5', answer_handles: handles, must_mention: ['x'], ...extra });
+
+  it('no surface, doctor with no context, brand, and a doctor user_context each send exactly buildSystemBlocks', async () => {
+    const systems: Record<string, unknown> = {};
+    const res = await runHarness(['--category', 't5', '--fixed-handles-only', '--answer-check-runs', '1'], {
+      fixtures: [
+        fixture('no surface', {}),
+        fixture('doctor, no context', { surface: 'doctor' }),
+        fixture('brand', { surface: 'brand' }),
+        fixture('doctor with data', { surface: 'doctor', user_context: { sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] } }),
+      ],
+      fetch: async (_url, init) => {
+        const body = JSON.parse(String(init.body));
+        systems[body.messages.at(-1).content] = body.system;
+        return textReply('stub answer');
+      },
+    });
+    const articles = loadMatchedContent(handles).content || null;
+    expect(articles).not.toBeNull();
+    expect(systems, res.err).toEqual({
+      'no surface': buildSystemBlocks('{}', { savedChat: '', blogArticles: articles }),
+      'doctor, no context': buildSystemBlocks('{}', { surfaceContext: posture('doctor'), savedChat: '', blogArticles: articles }),
+      brand: buildSystemBlocks('{}', { surfaceContext: posture('brand'), savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript), blogArticles: articles }),
+      'doctor with data': buildSystemBlocks(resolveChatContext({ sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] }).userContextJson,
+        { surfaceContext: posture('doctor'), savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION['question-rows']), blogArticles: articles }),
+    });
+  }, 60_000);
 });
 
 // Moved from the pre-split pin file (test audit TA-T02): whole-report and request-shape snapshots of
@@ -1087,9 +1128,8 @@ describe('test-chatbot-matching report and request shapes (synthetic fixtures)',
       const base = ['--index', index, '--model', 'claude-sonnet-5-5', '--answer-model', 'claude-sonnet-5-5'];
       const seen = new Map<string, number>();
       const calls: unknown[] = [];
-      const sys = (s: string | Array<{ text: string; cache_control?: unknown }>) => typeof s === 'string'
-        ? { kind: 'string', refs: s.includes('## Referenced Blog Articles'), user: s.includes('## Current User Health Data') }
-        : { kind: 'blocks', n: s.length, cached: s.map(b => !!b.cache_control), user: s.some(b => b.text.includes('## Current User Health Data')) };
+      const sys = (s: Array<{ text: string; cache_control?: unknown }>) => ({ n: s.length, cached: s.map(b => !!b.cache_control),
+        refs: s.some(b => b.text.startsWith('## Referenced Blog Articles')), user: s.some(b => b.text.startsWith('## Current User Health Data')) });
       const res = await runHarness([...base, ...flags], {
         fixtures: opts.fixtures ?? FIXTURES, key: opts.key, cwd: opts.cwd?.(dir),
         fetch: async (url, init) => {
