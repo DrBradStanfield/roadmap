@@ -235,7 +235,7 @@
 
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, readSync, realpathSync, rmdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -244,7 +244,7 @@ import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
-import { mainOf, PATTERN_SPAN, PATTERNS, realFolder } from "./secret-rules.mjs";
+import { mainOf, PATTERNS, realFolder } from "./secret-rules.mjs";
 import { COPY_SHAPES, isEnvPath, isPathValue, isPublic, isSecretKey, MIN_SECRET_KEY_VALUE, MIN_VALUE, PATTERN_HIT, PEM_ARMOUR, PUBLIC_SHAPES, removeSecrets, searcher, secretsUnder, SKIP_BINARY_OVER, SYSTEM_ENV } from "./codex-review-scan.mjs";
 import { ALLOWED_TOOLS, isFetch, payloadOk, pick, plainHost, READ_TOOLS, schema, urlHost, validate } from "./codex-review-verdict.mjs";
 
