@@ -38,7 +38,6 @@ import { connectionKey, resetMcpMemory, type AccessPayload, type CodePayload, ty
 import { hash, unpackSealed } from '../lib/mcp-seal.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
-import { setImportSeams } from '../lib/mcp-import.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -122,7 +121,6 @@ beforeEach(() => {
 
 afterEach(() => {
   setAdapterFactory(null);
-  setImportSeams(null);
   vi.unstubAllGlobals();
   vi.useRealTimers();
   vi.resetAllMocks();
