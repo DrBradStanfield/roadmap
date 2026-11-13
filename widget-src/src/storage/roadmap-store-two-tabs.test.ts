@@ -491,7 +491,9 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     expect(rows()).toContain('ldl 3.1 active');
   });
 
-  it('an erase that failed to save is written by the next hide', async () => {
+  // S69 (US-11 AC4c): a full record write stored nothing, so the erase is put back and the next hide
+  // writes the record as it was. Before, the erased copy stayed in memory and the hide wrote it.
+  it('an erase this browser definitely refused is put back, and the next hide erases nothing', async () => {
     const [a] = await twoTabs();
     let full = true;
     const setItem = Storage.prototype.setItem;
@@ -505,8 +507,8 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     full = false;
     a.flushSync(); // the tab hides
 
-    expect(stored().meta.eraseEpoch).toBe(1);
-    expect(stored().measurements).toEqual([]);
+    expect(stored().meta.eraseEpoch ?? 0).toBe(0);
+    expect(rows()).toEqual(['weight 82 active']);
   });
 });
 

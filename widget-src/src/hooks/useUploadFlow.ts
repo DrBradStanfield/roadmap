@@ -9,13 +9,14 @@ import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
+import { withClaim } from '../lib/sync-claim';
 import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
 
 /**
@@ -290,14 +291,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
-  const save = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
-    values: ReviewedValue[];
-    documents: DocumentToSave[];
-    labValues: ReviewedLabValue[];
-    reviewed: FileResult[];
-  }) => {
-    if (savingRef.current) return;
-    savingRef.current = true;
+  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed }: ReviewDecisions) => withClaim(savingRef, async () => {
     dispatch({ type: 'saveStarted' });
     const erase = getShownErase(); // the record this save was asked for
     // This attempt's own counts; the transition adds them to what earlier attempts saved.
@@ -401,10 +395,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       }
     } catch {
       failSave('Failed to save. Please try again.');
-    } finally {
-      savingRef.current = false;
     }
-  }, [onComplete, onScreeningUpdate, history.documents]);
+  }), [onComplete, onScreeningUpdate, history.documents]);
 
   // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
   const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;

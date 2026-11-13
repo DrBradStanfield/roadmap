@@ -21,6 +21,7 @@ import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } f
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
+import { withClaim } from '../lib/sync-claim';
 import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -37,7 +38,6 @@ const UNIT_CHANGED = 'The unit changed, so your value was not saved. Type it aga
 
 const TimeSeriesChart = lazy(() => import('./HistoryPanel').then(m => ({ default: m.TimeSeriesChart })));
 const MixedUnitsNote = lazy(() => import('./HistoryPanel').then(m => ({ default: m.MixedUnitsNote })));
-
 
 interface ValuePageProps {
   subject: ValueSubject;
@@ -235,6 +235,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   const [dia, setDia] = useState(start?.dia ? String(Math.round(start.dia.value)) : '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const claim = useRef(false); // seen by a second Add in the same render, as `saving` is not
   // Correct on a history row brings the form to that reading.
   const firstRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (start) firstRef.current?.focus(); }, []);
@@ -286,24 +287,30 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     return pressureInverted(values.systolic_bp, values.diastolic_bp) ? PRESSURE_ORDER : values;
   };
 
-  const add = async () => {
+  const add = () => withClaim(claim, async () => {
     const values = parse();
     if (typeof values === 'string') { setError(values); return; }
     setError(null);
+    // From here until the save ends, a throw anywhere still gives the Add button back.
     setSaving(true);
-    const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
-    // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
-    const unchanged = held.every((row, i) => {
-      if (!row) return false;
-      const m = metrics[i];
-      return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
-        : Math.round(row.value) === values[m];
-    });
-    // Before the save, as the weight box answers as it is typed: the step is counted when the save's
-    // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
-    if (metric === 'weight') onWeightAnswered?.();
-    const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
-    setSaving(false);
+    let unchanged: boolean;
+    let refused: Refused;
+    try {
+      const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
+      // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
+      unchanged = held.every((row, i) => {
+        if (!row) return false;
+        const m = metrics[i];
+        return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
+          : Math.round(row.value) === values[m];
+      });
+      // Before the save, as the weight box answers as it is typed: the step is counted when the save's
+      // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
+      if (metric === 'weight') onWeightAnswered?.();
+      refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
+    } finally {
+      setSaving(false);
+    }
     const [why] = refused.values();
     if (why) {
       setError(saveErrorText(why));
@@ -315,7 +322,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null);
     dirtyRef.current = false;
     onDone();
-  };
+  });
 
   return (
     <form className="md-add" noValidate onSubmit={e => { e.preventDefault(); void add(); }}>

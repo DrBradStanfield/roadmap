@@ -205,6 +205,7 @@ private struct LaunchFiles: Sendable {
     static func read() async throws -> LaunchFiles {
         #if DEBUG
         let record = try DemoRecord.recordFolder()
+        try DemoRecord.writeUnreadable(in: record)
         // A demo record runs the bundled engine only: the phone's downloaded engines and their watermark stay as they are.
         let engineFolder = DemoRecord.isOn ? nil : try? EngineFolder.live()
         #else

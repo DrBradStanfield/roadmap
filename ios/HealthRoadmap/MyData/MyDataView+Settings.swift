@@ -4,17 +4,23 @@ import SwiftUI
 extension MyDataView {
     // MARK: Settings
 
-    func settingsList(_ data: MyData) -> some View {
+    /// `data` nil: the record cannot be drawn, so why, then the record's section (lead H114). One List
+    /// either way, so the erase page RecordSection pushes stays up when the erased record draws (AC16d).
+    func settingsList(_ data: MyData?) -> some View {
         List {
-            aboutYou(data)
-            RemindersSection()
-            AppleHealthSection()
-            // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
-            if let note = data.unreadableNote {
-                Section {
-                } footer: {
-                    Text(note)
+            if let data {
+                aboutYou(data)
+                RemindersSection()
+                AppleHealthSection()
+                // US-65: entries the engine could not read are kept unchanged; one calm line says how many.
+                if let note = data.unreadableNote {
+                    Section {
+                    } footer: {
+                        Text(note)
+                    }
                 }
+            } else {
+                undrawnSection
             }
             RecordSection(store: store, sync: sync)
             Section {

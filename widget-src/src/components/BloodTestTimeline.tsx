@@ -15,6 +15,7 @@ import { useBloodDraftUnits, type FieldUnitToggle, type UnitSwitchSource } from 
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
+import { withClaim } from '../lib/sync-claim';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
   type Grading,
@@ -127,7 +128,7 @@ export interface BloodTestTimelineProps {
   onCorrectValue?: CorrectFn;
   /** The page's move of a saved column's test to another day (US-04 AC5); without it the headers stay plain. */
   move?: MoveHeaders;
-  isSaving: boolean;
+  isSaving: boolean; // any save running, on any surface (useLongitudinalSave's savesRunning > 0): the matrix waits for it
   /** Whom the hints and status colours grade for; null for a known minor,
    *  whose values show with neither (US-07 AC6). */
   grading: Grading;
@@ -314,10 +315,9 @@ export function BloodTestTimeline({
 
   usePrefillRef(prefillCell, prefillRef);
 
-  const saveDisabledByLoad = hasApiResponse === false;
-
-  const handleSave = async () => {
-    if (ready.length === 0 || isSaving || saveDisabledByLoad) return;
+  const claim = useRef(false); // the same render, before `isSaving` shows this save (US-03 AC2a)
+  const handleSave = () => withClaim(claim, async () => {
+    if (ready.length === 0 || isSaving || hasApiResponse === false) return;
     // The cells that can be saved, each on its day with the row it expects
     // there; the parent routes each value (matrix-save.ts) and answers slot
     // by slot. What landed leaves the draft; what was refused stays, with why
@@ -330,7 +330,7 @@ export function BloodTestTimeline({
       return [[c.column, c.metric], status && saveErrorText(status)];
     }));
     if (refusedSlots.size === 0) setActiveCell(null);
-  };
+  });
 
   // The upload flow commits the draft before its own save (flushRef).
   usePrefillRef(handleSave, flushRef);
