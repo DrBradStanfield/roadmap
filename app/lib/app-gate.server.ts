@@ -7,6 +7,7 @@
  */
 import { isIP } from 'node:net';
 import { readCappedBytes } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 import { getClientIp } from './local-first-route.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase-client.server';
@@ -79,8 +80,8 @@ export function ipBucket(raw: string | undefined): string {
   if (zone >= 0 && isIP(ip.slice(0, zone)) === 6) ip = ip.slice(0, zone);
   const family = isIP(ip);
   if (family === 4) return hostPort?.[0].startsWith('[') ? UNKNOWN_IP : ip;
-  if (family !== 6) return UNKNOWN_IP;
-  const g = ipv6Groups(ip);
+  const g = family === 6 ? parseIpv6(ip) : null;
+  if (!g) return UNKNOWN_IP;
   if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
     return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join('.');
   }
@@ -88,19 +89,6 @@ export function ipBucket(raw: string | undefined): string {
 }
 
 const UNKNOWN_IP = 'unknown';
-
-/** The eight 16-bit groups of an address `isIP` already called IPv6. */
-function ipv6Groups(ip: string): number[] {
-  const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(ip);
-  const hex = dotted
-    ? ip.slice(0, dotted.index) + [(+dotted[1] << 8) | +dotted[2], (+dotted[3] << 8) | +dotted[4]].map((x) => x.toString(16)).join(':')
-    : ip;
-  const [head, tail] = hex.split('::');
-  const left = head ? head.split(':') : [];
-  const right = tail ? tail.split(':') : [];
-  const groups = tail === undefined ? left : [...left, ...Array(8 - left.length - right.length).fill('0'), ...right];
-  return groups.map((x) => parseInt(x, 16));
-}
 
 /** The app's routes run on the education app only: on the brand surface they answer 503 (AC2, adversary R13). */
 export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
