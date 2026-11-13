@@ -69,7 +69,7 @@ describe('an older binary never takes an engine whose chat context it would stri
     expect(contract.doors.chatContextJson.returns).toContain('labEgfrOutdated');
     expect(contract.doors.chatContextJson.returns).toContain('limits');
     expect(contract.doors.chatContextJson.returns).toContain('must not run this engine');
-    const release = readFileSync(join(__dirname, '../HealthRoadmap/EngineUpdates/EngineRelease.swift'), 'utf8');
+    const release = readFileSync(join(__dirname, '../HealthRoadmap/Engine/Generated/EngineContract.swift'), 'utf8'); // generated since I-2 step 3
     expect(release).toContain(`static let bridge = "${bridge}"`);
   });
 });

@@ -14,7 +14,7 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
 const flush = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('../src/lib/roadmap-data', () => ({
-  currentSaveStatus: () => 'saved', currentRetryDue: () => false,
+  currentSaveStatus: () => 'saved', currentRetryDue: () => false, getBackendKind: () => 'local',
   flushRoadmapStore: flush, copyRecordToDevice: vi.fn(async () => undefined),
 }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -122,5 +122,36 @@ describe('US-09 AC48: the bar and the panel change in place when the sign-in end
     mount('google-drive');
     act(() => signInEnded('dropbox', null));
     expect(stateText()).toBe('Synced to Google Drive');
+  });
+});
+
+describe('US-09 AC49 (lead A28): the question before an empty exit names where the record stays, for every provider', () => {
+  const ROWS = [
+    [{ kind: 'signedOut', provider: 'google-drive' }, 'This browser has no copy of your record yet. It stays safe in your Google Drive. Start empty in this browser?'],
+    [{ kind: 'signedOut', provider: 'dropbox' }, 'This browser has no copy of your record yet. It stays safe in your Dropbox. Start empty in this browser?'],
+    [{ kind: 'unreachable', provider: 'github' }, 'This browser has no copy of your record yet. It stays safe in your GitHub. Start empty in this browser?'],
+    [{ kind: 'unreachable', provider: 'self-host' }, 'This browser has no copy of your record yet. It stays safe on your own server. Start empty in this browser?'],
+  ] as const;
+
+  it.each(ROWS)('%o', (lost, text) => {
+    bootSignIn(lost);
+    mount('local'); // a load-time fallback: no device file, nothing unsaved
+    fireEvent.click([...document.querySelectorAll('button')].find((b) => b.textContent === 'Use this browser only')!);
+    const shown = [...document.querySelectorAll('.hr-sync-detail')].map((el) => el.textContent);
+    expect(shown).toContain(text);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  const DETAIL_ROWS = [
+    [{ kind: 'signedOut', provider: 'google-drive' }, 'Your record is safe in your Google Drive. Sign in again to keep it in step.'],
+    [{ kind: 'signedOut', provider: 'dropbox' }, 'Your record is safe in your Dropbox. Sign in again to keep it in step.'],
+    [{ kind: 'unreachable', provider: 'github' }, 'Your record is safe in your GitHub.'],
+    [{ kind: 'unreachable', provider: 'self-host' }, 'Your record is safe on your own server.'],
+  ] as const;
+
+  it.each(DETAIL_ROWS)('the panel\'s detail line, %o', (lost, start) => {
+    bootSignIn(lost);
+    mount('local');
+    expect(detail()).toMatch(new RegExp(`^${start.replace(/\./g, '\\.')}( Anything|$)`));
   });
 });

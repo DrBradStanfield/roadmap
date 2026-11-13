@@ -355,7 +355,7 @@ final class CloudConnectionPinsTests: XCTestCase, CloudFixtures {
         XCTAssertNil(text("sync-history"), "a handover that lost to Disconnect is not a sync")
         XCTAssertEqual(downloads.value, 2, "the open's read and the copy down; no second open")
         let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now, lpaUnit: "nmol/L") }
-        XCTAssertEqual(probe.reason, "not-open", "the engine holds no session behind the phone's record")
+        XCTAssertEqual(probe.outcome.reason, "not-open", "the engine holds no session behind the phone's record")
     }
 
     func testADisconnectAfterTheOpenRemovesTheCloudsFilesAndKeepsSyncedBefore() async throws {
