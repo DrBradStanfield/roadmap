@@ -397,10 +397,8 @@ final class DataEraserTests: XCTestCase {
         XCTAssertGreaterThan(reminderReads, reads, "the reminders step ran")
         XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
         // Nothing reads the record the erase replaced (S52).
-        XCTAssertNil(app.store.readable, "no reader gets the pre-erase record")
+        XCTAssertNil(app.store.readable, "no reader gets the pre-erase record: ChatView refuses its context (ContextRefused)")
         XCTAssertNil(app.store.myData, "My data shows no pre-erase rows")
-        // ChatView's read: no record, so it throws ContextRefused and sends nothing.
-        XCTAssertNil(app.store.readable?.json, "the chat is given no context")
         XCTAssertNil(app.reminders.reminders, "the reminders read nothing")
         XCTAssertEqual(center.pending, [], "no reminder is pending")
     }
