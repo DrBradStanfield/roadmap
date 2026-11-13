@@ -24,9 +24,8 @@ function chain(answer: () => Promise<unknown>): unknown {
 const noRows = async () => ({ data: [], error: null });
 
 // Chat purge's run starts with the match-events pass, so that query is its probe.
-vi.mock('./supabase.server', () => ({
-  tryAcquireCronLock: vi.fn(),
-  endCronLock: vi.fn(),
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: { from: (table: string) => db.from?.(table) ?? chain(table === 'chat_match_events' ? work : noRows) },
 }));
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn(() => work()) } }));
@@ -111,7 +110,7 @@ async function boot(c: CronCase, at: string, onlyTheTick = false) {
   const cron = await c.load();            // NODE_ENV=test: self-start is a no-op
   vi.stubEnv('NODE_ENV', 'production');
   vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-28 AC8, US-23 AC14)
-  const { tryAcquireCronLock } = await import('./supabase.server');
+  const { tryAcquireCronLock } = await import('./supabase-cron-lock.server');
   const lock = vi.mocked(tryAcquireCronLock).mockReset();
   work.mockReset().mockImplementation(c.ok);
   stop = cron.stop;
@@ -232,7 +231,7 @@ describe('trending cron lock per store', () => {
     vi.stubEnv('SHOPIFY_SHOP_DOMAIN', 'sz5utw-1r.myshopify.com');
     const m = await import('./trending-cron.server');
     vi.stubEnv('NODE_ENV', 'production');
-    const { tryAcquireCronLock } = await import('./supabase.server');
+    const { tryAcquireCronLock } = await import('./supabase-cron-lock.server');
     const lock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue('closed');
     stop = m.stopTrendingCron;
     m.startTrendingCron();

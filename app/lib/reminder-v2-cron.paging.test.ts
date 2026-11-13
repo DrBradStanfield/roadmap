@@ -27,7 +27,8 @@ const db = vi.hoisted(() => ({
   rowsAtStart: 0,
 }));
 
-vi.mock('./supabase.server', async () => {
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn() }));
+vi.mock('./supabase-client.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
   const JSONB = new Set(['schedule', 'last_sent']);
   type R = Record<string, unknown>;
@@ -116,7 +117,6 @@ vi.mock('./supabase.server', async () => {
   }
 
   return {
-    tryAcquireCronLock: vi.fn(),
     supabaseAdmin: createClient('https://abcdefghijklmnopqrst.supabase.co', 'service-role-key', {
       global: { fetch: fakeFetch },
       auth: { persistSession: false, autoRefreshToken: false },

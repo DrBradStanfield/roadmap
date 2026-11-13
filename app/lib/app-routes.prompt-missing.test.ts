@@ -13,17 +13,16 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('./chat-system-prompt.server', () => ({ get CHAT_PROMPT() { return mocks.prompt; } }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./supabase.server', () => ({
-  supabaseAdmin: null,
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(), getOrCreateGuestSession: vi.fn(),
   GuestRateLimitError: class extends Error {},
 }));
 vi.mock('./chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: 'null' }),
+  resolveChatContext: () => ({ userContextJson: 'null' }),
   buildSystemBlocks: () => [],
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
-  matchDocumentTitle: () => null,
   loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
   getChatCompletion: mocks.getChatCompletion,

@@ -7,7 +7,7 @@ const supa = vi.hoisted(() => {
 });
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: {
     from: (table: string) => {
       const ok = { data: { id: 'conv-1' }, error: null };
@@ -24,7 +24,7 @@ vi.mock('./supabase.server', () => ({
   },
 }));
 
-import { persistConversation } from './discord-bot.server';
+import { persistConversation } from './discord-bot-persist.server';
 import { ROUTER_VERSION } from './chat-router.server';
 import { CHAT_MODEL } from './chat.server';
 

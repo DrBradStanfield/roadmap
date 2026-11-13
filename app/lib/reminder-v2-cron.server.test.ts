@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // whose acquire sat OUTSIDE its try/catch — the one Sentry showed skipping
 // (JAVASCRIPT-REMIX-68, 2026-08-28 08:11Z).
 
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn(), stillHoldsLock: vi.fn(async () => true) }));
 // The day-stamp (US-23 AC15) held in memory with the real rule: a stamp on
 // today or later skips the row. It outlives a module reload, as the column does.
 const stamps = vi.hoisted(() => new Map<string, string>());
@@ -47,7 +47,7 @@ async function loadCron() {
   const cron = await import('./reminder-v2-cron.server');
   vi.stubEnv('NODE_ENV', 'production');
   vi.stubEnv('RUN_SHARED_CRONS', 'true'); // health-tool-app's flag (US-23 AC14)
-  const { tryAcquireCronLock } = await import('./supabase.server');
+  const { tryAcquireCronLock } = await import('./supabase-cron-lock.server');
   const { getOptinsBatch } = await import('./reminder-v2.server');
   const { sendReminderEmail } = await import('./email.server');
   const { recordServerEvent } = await import('./product-events.server');

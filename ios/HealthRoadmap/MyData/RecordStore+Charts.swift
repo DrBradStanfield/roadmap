@@ -5,7 +5,8 @@ import Foundation
 extension RecordStore {
     /// The history and its chart's inputs, read by the engine once per `stamp` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
-    /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped.
+    /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped. Only a
+    /// chart that landed is kept: after a failure a second ask reads again (Try again, US-58 AC4c).
     /// `series` "lab": `metric` is a lab test's series key, its own history (US-25 AC25), kept apart
     /// from a core metric of the same name.
     func chart(for metric: String, series: String? = nil) async -> ChartData? {
@@ -24,7 +25,7 @@ extension RecordStore {
         // The record moved on while the engine ran: a page asks again for the new one.
         if stamp == self.stamp(series) {
             histories = histories.filter { $0.value.stamp.revision == stamp.revision }
-            histories[key] = KeptHistory(stamp: stamp, chart: chart)
+            histories[key] = chart.map { KeptHistory(stamp: stamp, chart: $0) }
         }
         return chart
     }
@@ -52,7 +53,7 @@ extension RecordStore {
     /// one, its taps held, until the fresh one lands.
     func shownHistory(for metric: String, series: String? = nil) -> MetricHistory? {
         guard problem == nil, let kept = histories[Self.historyKey(metric, series)], kept.stamp == stamp(series) else { return nil }
-        return kept.chart?.history
+        return kept.chart.history
     }
 
     /// A correction sheet's "Now" hint: the value as a current history shows it, only from a

@@ -5,7 +5,7 @@
  * and insert the rest in one shuffled batch. Counts only, never the text.
  */
 import * as Sentry from '@sentry/react-router';
-import { supabaseAdmin } from './supabase.server';
+import { supabaseAdmin } from './supabase-client.server';
 import { scrubQuestion, SCRUB_TIMEOUT_MS } from './chat-question-scrub.server';
 import { withTimeout } from './cron-helpers.server';
 

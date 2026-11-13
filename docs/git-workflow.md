@@ -166,7 +166,7 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 2. one full simulator run on main, with the engine bundle rebuilt (`ios/scripts/sim-run.sh`);
 3. one CI Deploy (step 5 above), then engine signing;
 4. live checks on desktop and real WebKit, from the PRs' collected "Verify at batch end" lists;
-5. a report to Brad.
+5. a report to Brad. It includes `node tools/untangle-progress.mjs`'s percent done for each ledger.
 
 **One exception runs before merge:** a PR that changes how the iPhone app and the engine exchange values
 (argument checking, bridging) gets one simulator run first. CI cannot see JavaScriptCore's type bridging.

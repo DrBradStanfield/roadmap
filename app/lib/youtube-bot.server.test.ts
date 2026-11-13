@@ -3,16 +3,14 @@ import * as Sentry from '@sentry/react-router';
 import {
   assessThreadFollowUp,
   buildThreadHistory,
-  addressReply,
-  readPostingCaps,
-  PER_VIDEO_REPLY_CAP,
   completionOutcome,
   reportTickFallbacks,
   shouldUnclaim,
-  persistYouTubeTurn,
   filterThread,
-  type YouTubeReply,
 } from './youtube-bot.server';
+import { PER_VIDEO_REPLY_CAP } from './youtube-bot-config.server';
+import { addressReply, type YouTubeReply } from './youtube-bot-api.server';
+import { readPostingCaps, persistYouTubeTurn } from './youtube-bot-store.server';
 import { classifyPost } from './youtube-bot-post-result';
 import { ROUTER_VERSION } from './chat-router.server';
 import { CHAT_MODEL, FALLBACK_RESPONSE } from './chat.server';
@@ -30,7 +28,7 @@ const supa = vi.hoisted(() => {
 });
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: {
     from: (table: string) => ({
       select: (_cols: string, opts?: { head?: boolean }) => {

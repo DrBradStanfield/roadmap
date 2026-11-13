@@ -30,7 +30,7 @@ const fakes = vi.hoisted(() => {
 });
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./blog-index.server', async (orig) => {
   const real = await orig<typeof import('./blog-index.server')>();
   return { ...real, loadBlogIndex: () => [...real.loadBlogIndex(), ...fakes] };

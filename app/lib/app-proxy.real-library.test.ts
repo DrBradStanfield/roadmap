@@ -39,10 +39,8 @@ vi.mock('../shopify.server', async () => {
   });
   return { authenticate: app.authenticate };
 });
-vi.mock('./supabase.server', () => ({
-  getOrCreateSupabaseUser: vi.fn(async () => 'user-1'),
-  createUserClient: vi.fn(() => ({})),
-}));
+vi.mock('./supabase-identity.server', () => ({ getOrCreateSupabaseUser: vi.fn(async () => 'user-1') }));
+vi.mock('./supabase-client.server', () => ({ createUserClient: vi.fn(() => ({})) }));
 
 import { authenticate } from '../shopify.server';
 import { getAuthenticatedUser, getCustomerId } from './route-helpers.server';

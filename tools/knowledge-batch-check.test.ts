@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -134,9 +134,14 @@ const run = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
 };
 const fails = (r: Result) => r.evidence.filter((e) => e.startsWith("FAIL "));
 
-beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "kb-repo-"));
-  reports = mkdtempSync(join(tmpdir(), "kb-rep-"));
+// The repo is built once and copied per test: git spawns are slow, a copy is not (test audit T06).
+// The describes that never touch a repo get none.
+const PURE = new Set(["US-42 AC2 tokeniser", "US-42 AC4/AC7 sentences and products", "US-42 AC2/AC11 report schema and CLI",
+  "US-42 AC2 tokeniser units and comparators (R7)", "US-42 AC7 product counting (R9)", "US-42 AC2 references sections, unit spellings, aged N (R14)", "US-50 AC12 keySafetyErrors"]);
+const pure = (ctx: { task: { suite?: { name: string } } }) => PURE.has(ctx.task.suite?.name ?? "");
+let template: string;
+beforeAll(() => {
+  template = root = mkdtempSync(join(tmpdir(), "kb-tmpl-"));
   sh(["init", "-q"]); sh(["config", "user.email", "t@t"]); sh(["config", "user.name", "t"]);
   put("docs/blog/alpha.md", fx("alpha.base.md"));
   put("docs/guideline/beta.md", fx("beta.base.md"));
@@ -144,6 +149,14 @@ beforeEach(() => {
   sh(["add", "-A"]); sh(["commit", "-q", "-m", "base"]);
   put("docs/blog/alpha.md", fx("alpha.new.md"));
   put("docs/guideline/beta.md", fx("beta.new.md"));
+});
+afterAll(() => rmSync(template, { recursive: true, force: true }));
+
+beforeEach((ctx) => {
+  if (pure(ctx)) return;
+  root = mkdtempSync(join(tmpdir(), "kb-repo-"));
+  reports = mkdtempSync(join(tmpdir(), "kb-rep-"));
+  cpSync(template, root, { recursive: true });
   const alphaRaw = join(reports, "alpha.raw.txt"), betaRaw = join(reports, "beta.raw.txt");
   writeFileSync(alphaRaw, fx("alpha.raw.txt")); writeFileSync(betaRaw, fx("beta.raw.txt"));
   const base = { old_raw_path: null, headings_before: [], headings_after: [], proposed_summary_correction: null, notes: "" };
@@ -158,7 +171,10 @@ beforeEach(() => {
       product_mentions_before: 0, product_mentions_after: 0 },
   };
 });
-afterEach(() => { rmSync(root, { recursive: true, force: true }); rmSync(reports, { recursive: true, force: true }); });
+afterEach((ctx) => {
+  if (pure(ctx)) return;
+  rmSync(root, { recursive: true, force: true }); rmSync(reports, { recursive: true, force: true });
+});
 
 describe("US-42 AC1-AC7 clean batch", () => {
   it("passes every check", () => {

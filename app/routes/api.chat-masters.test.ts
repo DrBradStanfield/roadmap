@@ -32,9 +32,9 @@ vi.mock('../lib/supabase.server', () => ({
   GuestRateLimitError: class extends Error {},
 }));
 vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
+  resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: mocks.load,
+  loadMatchedArticlesFromHandles: mocks.load,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false, stopReason: 'end_turn' }),
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',

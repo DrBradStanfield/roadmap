@@ -63,9 +63,11 @@ describe('screenJson usProducts (US-61)', () => {
   });
 
   it('gives no overlay outside the US, or for anything but a true isUS (an older app sends none)', () => {
-    for (const isUS of [false, undefined, 'true', 1, 'USA']) {
+    for (const isUS of [false, undefined]) {
       expect(planOf(sample, isUS).usProducts, String(isUS)).toBeUndefined();
     }
+    // I-2 step 2: an isUS that is not a boolean is refused where it enters (the contract's type).
+    for (const isUS of ['true', 1, 'USA']) expect(() => planOf(sample, isUS), String(isUS)).toThrow('screenJson: isUS');
   });
 
   // D14: the old app (builds 3 and 4, bridge 2d46) calls with four arguments; the new engine

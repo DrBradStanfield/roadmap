@@ -41,7 +41,8 @@ vi.mock('../../widget-src/src/storage', () => ({
 
 // --- the route's dependencies (the database and the outside world) ---------
 const cancelByToken = vi.fn(async () => {});
-vi.mock('../lib/supabase.server', () => ({ hashClientIp: (ip: string) => `h:${ip}`, supabaseAdmin: null }));
+vi.mock('../lib/supabase-guest.server', () => ({ hashClientIp: (ip: string) => `h:${ip}` }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
 vi.mock('../lib/reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),

@@ -24,7 +24,7 @@ const sentry = vi.hoisted(() => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: sentry.captureException, captureMessage: vi.fn() }));
 // The bot starts only with an admin client; the tick never reaches it here.
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 

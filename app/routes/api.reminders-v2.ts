@@ -15,7 +15,7 @@ import {
 } from '../lib/reminder-v2.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
-import { hashClientIp } from '../lib/supabase.server';
+import { hashClientIp } from '../lib/supabase-guest.server';
 import { recordServerEvent } from '../lib/product-events.server';
 
 /**
