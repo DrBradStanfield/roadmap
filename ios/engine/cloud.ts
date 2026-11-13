@@ -15,7 +15,7 @@ import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { failed, PhoneCloudAdapter, PhoneFileAdapter, transientFailure, type CloudNatives, type Provider } from './cloud-adapters';
+import { eraseFailure, failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
 import { labRows, labSaveSummary, type Extraction } from './lab-review';
 import { movedBloodTests, parseEdit, type Edit } from './my-data';
@@ -76,7 +76,7 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
     report(error, at) {
       if (at.op !== 'persist') return;
       // session.flush throws a bare SAVE_FAILED: the kind is read here, from the real error.
-      if (open?.id === id && open.held) open.held.failure = transientFailure(error) ? 'transient' : 'definite';
+      if (open?.id === id && open.held) open.held.failure = eraseFailure(error);
       __native.notify('failed', failed(provider, error), id);
     },
   };
@@ -95,9 +95,9 @@ export interface Open {
    *  session's own save runs on its debounce, and its pending marker keeps
    *  anything unsaved for the next session. */
   unflushed: number;
-  /** An erase made here that no verified save has carried yet (S50b, US-25 AC16i), and how the
+  /** Set while an erase made here waits for a verified save (S50b, US-25 AC16i), with how the
    *  last save of it failed, read by cloudEraseHeld. Null once any save lands (pending.clear). */
-  held: null | { erase: string; failure?: 'transient' | 'definite' };
+  held: null | { failure?: 'transient' | 'definite' | 'unknown' };
 }
 
 export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
@@ -306,7 +306,7 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
-    at.held = { erase: at.session.eraseIdentity };
+    at.held = {};
   }
   return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
 }
@@ -380,9 +380,8 @@ export async function cloudFlush(): Promise<string> {
 
 /**
  * Is an erase made here still unsent over a failure that may pass (S50b, US-25 AC16i)? It
- * flushes first, as a close does, so a retry that lands answers 'none'. 'transient': the last
- * save of it failed with no answer, 408, 429, a 5xx or a rate limit (transientFailure);
- * 'definite': any other failure; 'unknown': it failed and no report said why. The failure is
+ * flushes first, as a close does, so a retry that lands answers 'none'. Otherwise how the last
+ * save of it failed (eraseFailure), or 'unknown' when no report said why. The failure is
  * cleared before the flush, so a stale one is never read. Unlike `flush`, it always waits on the
  * session, so a save already in flight (a background flush, Sync now, a first Disconnect tap) is
  * joined and its failure is the answer (review R1).

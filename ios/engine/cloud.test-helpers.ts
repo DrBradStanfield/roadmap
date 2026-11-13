@@ -30,6 +30,8 @@ export class FakeDropbox {
   /** False: the chat file's endpoints answer 500, the record's still work. */
   chatAnswers = true;
   online = true;
+  /** Set: Swift refuses every request with these words, never sending it (S50b). */
+  refusal?: string;
   delay = 0;
   delayFor?: Server['delayFor'];
   /** False: uploads fail with a 500; reads still work. */
@@ -117,6 +119,8 @@ afterEach(async () => {
 /** A provider behind the HTTP native: the fake Dropbox, or the fake Drive. */
 export interface Server {
   online: boolean;
+  /** Set: every request is answered by Swift's own refusal with these words, never sent (S50b). */
+  refusal?: string;
   answer(url: string, headers: Record<string, string>, body: string | null, method: string): { status: number; headers: Record<string, string>; body: string };
   /** Milliseconds every answer waits (an open still in flight). */
   delay?: number;
@@ -130,6 +134,8 @@ export async function phone(dropbox: Server, phoneText: string | null = null) {
     token: 'token-1', refreshedToken: null as string | null,
     /** True: a forced refresh is refused (sign in again), while the token held is still handed out. */
     refreshRefused: false,
+    /** Set: every token ask fails with these words and no sign-in, as Swift's TokenAnswer.failed (S50b). */
+    tokenError: null as string | null,
     /** Phone writes that fail before one works (lead S54); `phoneRemoveFails`: removes that leave the file. */
     phoneWriteFailures: 0, phoneRemoveFails: 0 };
   const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
@@ -139,6 +145,7 @@ export async function phone(dropbox: Server, phoneText: string | null = null) {
     http(method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
       const wait = dropbox.delayFor?.(url, JSON.parse(headers) as Record<string, string>) ?? dropbox.delay ?? 0;
       setTimeout(() => {
+        if (dropbox.refusal) return done(0, '', '{}', null, dropbox.refusal);
         if (!dropbox.online) return done(0, '', '{}', null, 'The Internet connection appears to be offline.');
         const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null, method);
         done(answer.status, '', JSON.stringify(answer.headers), encode(answer.body), null);
@@ -155,7 +162,8 @@ export async function phone(dropbox: Server, phoneText: string | null = null) {
     accessToken(_provider: string, force: boolean, done: (t: string | null, e: string | null, signIn: boolean) => void) {
       if (force) state.tokenRefreshes += 1;
       if (force && state.refreshedToken && !state.refreshRefused) state.token = state.refreshedToken;
-      setImmediate(() => (state.signedOut || (force && state.refreshRefused) ? done(null, 'Dropbox refused the sign-in.', true) : done(state.token, null, false)));
+      setImmediate(() => (state.signedOut || (force && state.refreshRefused) ? done(null, 'Dropbox refused the sign-in.', true)
+        : state.tokenError !== null ? done(null, state.tokenError, false) : done(state.token, null, false)));
     },
     phoneRead: () => JSON.stringify({ text: state.phoneText }),
     phoneWrite: (text: string) => {
