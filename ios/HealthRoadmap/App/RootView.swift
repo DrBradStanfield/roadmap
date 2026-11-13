@@ -201,7 +201,7 @@ struct RootView: View {
     /// An erase from elsewhere closes the backup prompt or Sync sheet first (S48): their onDismiss
     /// calls this again, and the questions rise once the sheet has gone.
     private func recordChanged() {
-        let uncounted = source != onboardedSource && (source.isEmpty || sync.recordOpen)
+        let uncounted = source != onboardedSource && countable
         switch Cover.onRecordChange(cover: cover, offer: offer, holding: eraser.holdsRemoteErases, erasedElsewhere: erasedElsewhere, uncounted: uncounted) {
         case .erase?: send(.erased)
         // From any offer, these two land idle: the prompt closes (to Sync after Back up), then Sync.
@@ -211,8 +211,11 @@ struct RootView: View {
         }
     }
 
+    private var countable: Bool { Cover.countable(source: source, open: sync.recordOpen) }
+
+    /// finished() calls it too: a finish before a connected cloud opens takes nothing (S43).
     private func takeCount() {
-        guard let data = store.myData else { return }
+        guard countable, let data = store.myData else { return }
         (onboardedEpoch, onboardedSource) = (data.eraseEpoch ?? 0, source)
     }
 

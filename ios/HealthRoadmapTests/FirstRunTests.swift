@@ -153,13 +153,22 @@ final class FirstRunTests: XCTestCase {
 
         mutating func recordChanged() {
             let erased = source == counted.source && OnboardingSteps.erasedSince(counted.epoch, epoch: epoch, profile: profile)
-            let uncounted = source != counted.source && (source.isEmpty || open)
+            let uncounted = source != counted.source && Cover.countable(source: source, open: open)
             switch Cover.onRecordChange(cover: cover, offer: offer, holding: false, erasedElsewhere: erased, uncounted: uncounted) {
             case .erase?: cover = Cover.transition(cover, .erased).0
             case .closeOffer?: offer = [.promptClosed, .syncClosed].reduce(offer, Offer.transition)
             case .takeCount?: counted = (epoch, source)
             case nil: break
             }
+        }
+
+        /// RootView.finished's takeCount: only the record of its own source counts (S43).
+        mutating func finish() { if Cover.countable(source: source, open: open) { counted = (epoch, source) } }
+        /// Sends `event` as RootView.send does: a finish effect runs finish().
+        mutating func send(_ event: Cover.Event) {
+            let (next, effect) = Cover.transition(cover, event)
+            cover = next
+            if effect == .finish { finish() }
         }
 
         mutating func sheetGone() { recordChanged() }
@@ -209,6 +218,86 @@ final class FirstRunTests: XCTestCase {
         phone.erasedOnTheWebsite()
         phone.done()
         XCTAssertEqual(phone.cover, .questions(.afterErase))
+    }
+
+    // MARK: The count at a finish (S43)
+
+    /// Only the record of its own source is countable: the phone's when local-only, the opened
+    /// cloud record when connected; never the phone's copy of a cloud not open yet.
+    func testOnlyTheOpenedRecordOfItsSourceIsCountable_US54_AC7() {
+        let rows: [(source: String, open: Bool, want: Bool)] = [
+            ("", false, true), ("", true, true), ("dropbox", false, false), ("dropbox", true, true),
+            ("googleDrive", false, false), ("googleDrive", true, true),
+        ]
+        for row in rows {
+            XCTAssertEqual(Cover.countable(source: row.source, open: row.open), row.want, "\(row)")
+        }
+    }
+
+    /// A phone past the welcome screen with a full record, never finished, connected to Dropbox
+    /// whose record has not opened at launch: the phone's copy says erase count 0, the cloud's 2.
+    private func launchedBeforeTheCloudOpens() -> Phone {
+        var phone = Phone()
+        phone.offer = .idle
+        phone.cover = .deciding
+        (phone.source, phone.open, phone.epoch) = ("dropbox", false, 0)
+        phone.send(.launched(.init(welcomed: true, onboarded: false, needsQuestions: false)))
+        return phone
+    }
+
+    /// S43: the launch finish leaves the count untaken; the cloud opening takes the cloud's.
+    func testALaunchFinishBeforeTheCloudOpensCountsTheCloudOnceOpen_US54_AC7() {
+        var phone = launchedBeforeTheCloudOpens()
+        XCTAssertEqual(phone.cover, .none, "the launch finished")
+        XCTAssertEqual(phone.counted.source, "", "the phone's copy is not counted under Dropbox's name")
+        XCTAssertEqual(phone.counted.epoch, 0)
+        (phone.open, phone.epoch) = (true, 2)
+        let uncounted = phone.source != phone.counted.source && Cover.countable(source: phone.source, open: phone.open)
+        XCTAssertEqual(Cover.onRecordChange(cover: phone.cover, offer: phone.offer, holding: false, erasedElsewhere: false, uncounted: uncounted),
+                       .takeCount, "the opening finds the record uncounted")
+        phone.recordChanged()
+        XCTAssertEqual(phone.counted.epoch, 2, "the cloud's count")
+        XCTAssertEqual(phone.counted.source, "dropbox")
+    }
+
+    /// The reason: with the cloud's count taken, a cloud profile lacking an answer at that same
+    /// count never brings back the after-erase questions.
+    func testALaunchFinishBeforeTheCloudOpensNeverAsksAgainAtTheSameCount_US54_AC7() {
+        var phone = launchedBeforeTheCloudOpens()
+        (phone.open, phone.epoch, phone.profile) = (true, 2, Phone.erasedProfile)
+        phone.recordChanged()
+        phone.recordChanged()
+        XCTAssertEqual(phone.cover, .none, "no false erase")
+    }
+
+    /// A local-only launch finish takes the phone's count, as before.
+    func testALocalLaunchFinishTakesThePhonesCount_US54_AC7() {
+        var phone = Phone()
+        (phone.offer, phone.cover, phone.source, phone.open, phone.epoch) = (.idle, .deciding, "", false, 1)
+        phone.counted = (0, "dropbox")
+        phone.send(.launched(.init(welcomed: true, onboarded: false, needsQuestions: false)))
+        XCTAssertEqual(phone.counted.epoch, 1)
+        XCTAssertEqual(phone.counted.source, "")
+    }
+
+    /// The questions' own finish follows the same rule: untaken before the cloud opens, the
+    /// cloud's count once open; taken at once when the cloud is already open.
+    func testTheQuestionsFinishFollowsTheSameRule_US54_AC7() {
+        var phone = Phone()
+        (phone.offer, phone.cover, phone.source, phone.open, phone.epoch) = (.idle, .questions(.fresh), "dropbox", false, 0)
+        phone.send(.finished)
+        XCTAssertEqual(phone.cover, .none)
+        XCTAssertEqual(phone.counted.source, "", "untaken before the cloud opens")
+        (phone.open, phone.epoch) = (true, 2)
+        phone.recordChanged()
+        XCTAssertEqual(phone.counted.epoch, 2)
+        XCTAssertEqual(phone.counted.source, "dropbox")
+
+        var open = Phone()
+        (open.offer, open.cover, open.source, open.open, open.epoch) = (.idle, .questions(.onlyMissing), "dropbox", true, 2)
+        open.send(.finished)
+        XCTAssertEqual(open.counted.epoch, 2, "an open cloud counts at the finish")
+        XCTAssertEqual(open.counted.source, "dropbox")
     }
 
     /// Not now: the binding's close, then onDismiss's, land idle once; Back up: Sync after the prompt.
