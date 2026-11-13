@@ -28,7 +28,7 @@
     "packages/health-core/src/mcp-tools.ts": 584,
     "packages/health-core/src/input-form.ts": 582,
     "ios/engine/my-data.ts": 558,
-    "widget-src/src/components/StartingInfoVitals.tsx": 553,
+    "widget-src/src/components/StartingInfoVitals.tsx": 555,
     "ios/HealthRoadmap/AppleHealthMetrics/LiveMetricPage.swift": 549,
     "app/lib/reminder-v2.server.ts": 536,
     "app/lib/mcp.server.ts": 533,

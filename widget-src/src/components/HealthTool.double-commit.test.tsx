@@ -82,6 +82,22 @@ const settled = () => act(async () => { for (let i = 0; i < 20; i++) await new P
 /** What a refused save shows, a cell's reason or the matrix's line under the grid: none. */
 const noRefusal = (scope: HTMLElement) =>
   expect(scope.textContent!.match(/[^.]*(changed on another device|did not save|not saved)[^.]*\./g)).toBeNull();
+/** Runs `body` with the process's unhandled rejections caught: a save that throws still escapes
+ *  its event handler, as on main (PlanPdf.print.test.tsx does the same). */
+async function catchingRejections(body: (caught: unknown[]) => Promise<void>) {
+  const caught: unknown[] = [];
+  const before = process.listeners('unhandledRejection');
+  process.removeAllListeners('unhandledRejection');
+  const mine = (e: unknown) => { caught.push(e); };
+  process.on('unhandledRejection', mine);
+  try {
+    await body(caught);
+  } finally {
+    process.off('unhandledRejection', mine);
+    for (const l of before) process.on('unhandledRejection', l);
+  }
+}
+const writeFails = () => { throw new Error('test write failed'); };
 /** The store's inserts of one metric, as the save made them. */
 const insertsOf = (inserts: Inserts, metric: string) => inserts.mock.calls.filter((c) => c[0] === metric).length;
 
@@ -126,6 +142,20 @@ describe('US-03 AC2, AC2a (double commit): a vitals New cell committed twice in 
     expect(await rowsOf('diastolic_bp')).toEqual([[82, today(), 'active']]);
     noRefusal(view.container);
   });
+
+  it('a commit whose save throws frees the claim: the next Enter saves', () => catchingRejections(async (caught) => {
+    const { view, inserts } = await withGrid();
+    inserts.mockImplementationOnce(writeFails);
+    typeInto(draftWeight(view), '84');
+    fireEvent.keyDown(draftWeight(view), { key: 'Enter' });
+    await settled();
+    expect(caught).toHaveLength(1);
+    fireEvent.keyDown(draftWeight(view), { key: 'Enter' });
+    await settled();
+    expect(insertsOf(inserts, 'weight')).toBe(2);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+    noRefusal(view.container);
+  }));
 });
 
 describe('US-03 AC2a (double commit): a blood-test New cell committed twice in one render saves once', () => {
@@ -150,6 +180,21 @@ describe('US-03 AC2a (double commit): a blood-test New cell committed twice in o
     expect(await rowsOf('ldl')).toEqual([[3.2, today(), 'active']]);
     noRefusal(view.container);
   });
+
+  it('a save that throws frees the claim: the tick then saves', () => catchingRejections(async (caught) => {
+    const { view, inserts } = await withGrid();
+    inserts.mockImplementationOnce(writeFails);
+    typeInto(draftLdl(view), '3.2');
+    const tick = () => fireEvent.click(within(blood(view)).getByRole('button', { name: 'Save typed values' }));
+    tick();
+    await settled();
+    expect(caught).toHaveLength(1);
+    tick();
+    await settled();
+    expect(insertsOf(inserts, 'ldl')).toBe(2);
+    expect(await rowsOf('ldl')).toEqual([[3.2, today(), 'active']]);
+    noRefusal(view.container);
+  }));
 });
 
 describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice in one render saves once', () => {
@@ -200,28 +245,23 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     noRefusal(page);
   });
 
-  // A save that throws (the store's write failing) still hands the button back. What the page
-  // says then is not settled (a needs_brad lead): the throw still reaches the submit, as on
-  // main, so this test catches the unhandled rejection it makes, as PlanPdf.print.test.tsx does.
-  it('a save that throws: the Add button comes back enabled', async () => {
-    const caught: unknown[] = [];
-    const before = process.listeners('unhandledRejection');
-    process.removeAllListeners('unhandledRejection');
-    const mine = (e: unknown) => { caught.push(e); };
-    process.on('unhandledRejection', mine);
-    try {
-      const { inserts, value, form, page } = await weightPage(SAVED_DAY);
-      inserts.mockImplementationOnce(() => { throw new Error('test write failed'); });
-      const add = within(page).getByRole('button', { name: 'Add' }) as HTMLButtonElement;
-      fireEvent.change(value, { target: { value: '84' } });
-      fireEvent.submit(form);
-      await settled();
-      expect(inserts).toHaveBeenCalledTimes(1);
-      expect(caught).toHaveLength(1);
-      expect(add.disabled).toBe(false);
-    } finally {
-      process.off('unhandledRejection', mine);
-      for (const l of before) process.on('unhandledRejection', l);
-    }
-  });
+  // A save that throws (the store's write failing) still hands the button back and frees the
+  // claim. What the page says then is not settled (lead H128).
+  it('a save that throws: the Add button comes back enabled, and the next Add saves', () => catchingRejections(async (caught) => {
+    const { inserts, value, form, page, said } = await weightPage(SAVED_DAY);
+    inserts.mockImplementationOnce(writeFails);
+    const add = within(page).getByRole('button', { name: 'Add' }) as HTMLButtonElement;
+    fireEvent.change(value, { target: { value: '84' } });
+    fireEvent.submit(form);
+    await settled();
+    expect(inserts).toHaveBeenCalledTimes(1);
+    expect(caught).toHaveLength(1);
+    expect(add.disabled).toBe(false);
+    expect(said).toEqual([]);
+    fireEvent.submit(form);
+    await settled();
+    expect(inserts).toHaveBeenCalledTimes(2);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+    expect(said).toEqual(['Added.']);
+  }));
 });
