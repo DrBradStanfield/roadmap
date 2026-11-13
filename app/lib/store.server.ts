@@ -42,9 +42,10 @@ export type StoreIdentity =
   | { ok: false; reason: 'mismatch'; flyAppName: string; expected: StoreKind; named: StoreKind };
 
 /** The store this process serves, from the Fly app name and the shop domain
- *  (trimmed; blank means the brand store). Pure. */
+ *  (trimmed and lower-cased, since host names ignore case; blank means the
+ *  brand store). Pure. */
 export function storeIdentity(env: { flyAppName?: string; shopDomain?: string }): StoreIdentity {
-  const shopDomain = env.shopDomain?.trim() || BRAND_SHOP_DOMAIN;
+  const shopDomain = env.shopDomain?.trim().toLowerCase() || BRAND_SHOP_DOMAIN;
   const flyAppName = env.flyAppName;
   if (!flyAppName) return { ok: true, kind: storeKind(shopDomain), shopDomain };
   const expected = FLY_APP_STORE[flyAppName];

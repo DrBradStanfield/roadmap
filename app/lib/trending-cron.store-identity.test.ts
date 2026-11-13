@@ -94,6 +94,7 @@ async function runOneTick(shopDomain: string | undefined, flyAppName?: string) {
     startLine,
     manualRun,
     errorLines,
+    lockName: cron.TRENDING_LOCK_NAME,
     sentry: vi.mocked(Sentry.captureException).mock.calls.map(([e, ctx]) => ({ message: (e as Error).message, ctx })),
   };
 }
@@ -126,6 +127,7 @@ describe('trending cron store identity (US-28, S-13)', () => {
   it('edu app on Fly, the edu shop with a trailing newline: trimmed, one shop for lock and admin', async () => {
     const r = await runOneTick('sz5utw-1r.myshopify.com\n', 'health-tool-edu');
     expect(r.lockNames).toEqual(['trending_cron_edu']);
+    expect(r.lockName).toBe('trending_cron_edu');
     expect(r.adminShops).toEqual(['sz5utw-1r.myshopify.com']);
     expect(r.writtenHandles).toEqual(['edu-handle']);
     expect(r.sentry).toEqual([]);
@@ -154,6 +156,7 @@ describe('trending cron off when the store identity check fails (S-17)', () => {
     ['an unknown Fly app', 'microvitamin.myshopify.com', 'health-tool-staging', 'unknown-app'],
   ])('%s', async (_name, shopDomain, flyAppName, reason) => {
     const r = await runOneTick(shopDomain, flyAppName);
+    expect(r.lockName).toBeNull(); // no lock name exposed to any reader
     expect(r.lockNames).toEqual([]);
     expect(r.adminShops).toEqual([]);
     expect(r.writtenHandles).toEqual([]);

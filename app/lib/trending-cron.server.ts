@@ -33,8 +33,9 @@ const TARGET_HOUR_NZ = 3;
 // supabase/rls-policies.sql. When the store identity check fails (S-17), this
 // app acts as no store: no cron, no lock, and the manual trigger refuses.
 const STORE = ownStore();
-const TRENDING_LOCK_NAME: CronLockName =
-  STORE?.kind === 'edu' ? 'trending_cron_edu' : 'trending_cron';
+// Null when the store is unknown, so no reader can name either store's lock.
+export const TRENDING_LOCK_NAME: CronLockName | null =
+  STORE && (STORE.kind === 'edu' ? 'trending_cron_edu' : 'trending_cron');
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
@@ -67,7 +68,7 @@ const QUERY_PRIOR_BASELINE =
 const METAFIELD_NAMESPACE = 'health_roadmap';
 const METAFIELD_KEY = 'trending_articles';
 
-const cron = STORE && dailyCron({
+const cron = STORE && TRENDING_LOCK_NAME && dailyCron({
   label: 'Trending cron',
   feature: 'trending_cron',
   lockName: TRENDING_LOCK_NAME,
