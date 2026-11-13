@@ -10,6 +10,9 @@ import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { ValueCell } from './MatrixSavedCells';
 import { hidePage, showPage } from '../testing/matrix-gestures';
 
+const flush = vi.hoisted(() => vi.fn());
+vi.mock('../lib/roadmap-data', () => ({ flushRoadmapStoreSync: flush }));
+
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { showPage(); cleanup(); vi.useRealTimers(); });
 
@@ -34,6 +37,21 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
     await wait(2000);
     expect(onCorrect).toHaveBeenCalledTimes(1);
+  });
+
+  // Codex R1: the page's own flush listener ran before the cell's, so the
+  // correction staged on hide must be written by a flush after it.
+  it('a hide alone (no pagehide) writes the correction, then flushes the record', async () => {
+    flush.mockClear();
+    const { onCorrect, input } = editor();
+    fireEvent.change(input, { target: { value: '3.4' } });
+    fireEvent.blur(input);
+    await wait(50);
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
+    expect(flush).toHaveBeenCalled();
+    expect(onCorrect.mock.invocationCallOrder[0]).toBeLessThan(flush.mock.invocationCallOrder[0]);
   });
 
   it('hiding the tab with the editor open saves nothing', async () => {
