@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S56,iPhone state,"The held-undrawn upload test shows the store did not refuse, not that the save landed",lead,not started,"Follows S52. ios/HealthRoadmapTests/PredatesEraseReadersTests.swift:258 testAnEraseHeldUndrawnStillTakesALabReportAndADocument_US25_AC16f checks only that the lab report and document saves were not refused. It does not show the values or the document reached the record or the cloud. Strengthen it to check the saved rows when a cloud session fixture is at hand. US-25 AC16f",,no

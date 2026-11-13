@@ -399,13 +399,16 @@ final class AppleHealthSync {
         return samples.contains { $0.metricType == "diastolic_bp" && $0.pairId.map(systolic.contains) == true }
     }
 
-    /// A typed save changes `recordJSON`; the next refresh writes it to Health.
+    /// A typed save moves the record's `revision`; the next refresh writes it to Health. An erase
+    /// whose draw failed opening or closing `predatesErase` starts one too. A redraw of the same
+    /// record (coming forward, midnight) moves neither, so it starts no HealthKit pass (F3).
     private func watchRecord() {
-        withObservationTracking { _ = store.readable?.json } onChange: { [weak self] in
+        let seen = (store.revision, store.predatesErase)
+        withObservationTracking { _ = (store.revision, store.predatesErase) } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
                 self.watchRecord()
-                await self.refresh()
+                if (self.store.revision, self.store.predatesErase) != seen { await self.refresh() }
             }
         }
     }
