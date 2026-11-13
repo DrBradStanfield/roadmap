@@ -156,6 +156,18 @@ describe('US-21 AC3c: the ticks on open do not depend on which read lands last',
     expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight', 'Zonulin']);
   });
 
+  it('vitals in, labs and medications still out: Loading history stays until both settle', async () => {
+    const view = render(<HistoryPanel />);
+    await land('vitals', VITALS);
+    expect(view.getByText('Loading history...')).toBeTruthy();
+    expect(view.queryByRole('checkbox')).toBeNull();
+    await land('labs', LABS);
+    expect(view.getByText('Loading history...')).toBeTruthy();
+    await land('meds', []);
+    expect(view.queryByText('Loading history...')).toBeNull();
+    expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight', 'Zonulin']);
+  });
+
   it('labs landing last: a lab chart is drawn on open', async () => {
     const view = render(<HistoryPanel />);
     await land('vitals', VITALS);

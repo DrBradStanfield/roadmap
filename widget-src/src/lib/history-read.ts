@@ -39,6 +39,8 @@ const toggled = (set: Set<string>, key: string) => {
 /** Every read in: tick the vital opened on if it has rows, else every vital; every lab test. */
 function settle(state: Extract<HistoryRead, { phase: 'loading' }>): HistoryRead {
   const { metric, measurements, labVals, medHistory } = state;
+  // The panel waits for all three, so each read must always settle, resolve or reject.
+  // Today all three are sync store reads. A truly async loader needs a reject or timeout path.
   if (!measurements || !labVals || !medHistory) return state;
   const types = [...new Set(measurements.map(row => row.metricType))];
   return {
