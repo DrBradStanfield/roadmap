@@ -4,7 +4,8 @@
  * learns a sign-in ended, the storage bar and the reconnect panel change on the
  * same mount, with no reload. Dropbox uses Drive's words with the name
  * swapped, and its button starts the Dropbox sign-in instead of a reload. A
- * Dropbox outage at load keeps "could not be reached" and Retry.
+ * Dropbox outage at load keeps "could not be reached" and Retry. The questions
+ * before "Use this browser only" name where the record stays (AC49, AC50).
  *
  * Real SyncControl, StorageBar, switch-flow, connect.ts, sign-in state and
  * adapters; the data layer's save facts are stubbed as saved.
@@ -153,5 +154,26 @@ describe('US-09 AC49 (lead A28): the question before an empty exit names where t
     bootSignIn(lost);
     mount('local');
     expect(detail()).toMatch(new RegExp(`^${start.replace(/\./g, '\\.')}( Anything|$)`));
+  });
+});
+
+describe('US-09 AC50 (lead A30, Brad 13 Nov 2026): the question before an exit onto a copy the cloud was never read into names where the full record stays', () => {
+  const ROWS = [
+    [{ kind: 'signedOut', provider: 'google-drive' }, 'This browser\'s copy of your record may be out of date. Your full record stays safe in your Google Drive. Continue with this browser\'s copy?'],
+    [{ kind: 'signedOut', provider: 'dropbox' }, 'This browser\'s copy of your record may be out of date. Your full record stays safe in your Dropbox. Continue with this browser\'s copy?'],
+    [{ kind: 'unreachable', provider: 'github' }, 'This browser\'s copy of your record may be out of date. Your full record stays safe in your GitHub. Continue with this browser\'s copy?'],
+    [{ kind: 'unreachable', provider: 'self-host' }, 'This browser\'s copy of your record may be out of date. Your full record stays safe on your own server. Continue with this browser\'s copy?'],
+  ] as const;
+
+  it.each(ROWS)('%o', (lost, text) => {
+    bootSignIn(lost);
+    localStorage.setItem('health_roadmap_file_v2', '{}'); // a copy an earlier visit stored here
+    mount('local');
+    fireEvent.click([...document.querySelectorAll('button')].find((b) => b.textContent === 'Use this browser only')!);
+    const shown = [...document.querySelectorAll('.hr-sync-detail')].map((el) => el.textContent);
+    expect(shown).toContain(text);
+    expect(shown.some((line) => line?.startsWith('This browser has no copy'))).toBe(false);
+    expect([...document.querySelectorAll('.hr-sync-more button')].map((b) => b.textContent)).toEqual(['Use this browser only', 'Cancel']);
+    expect(reload).not.toHaveBeenCalled();
   });
 });

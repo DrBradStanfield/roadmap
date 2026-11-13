@@ -46,6 +46,11 @@ export function noCopyQuestion(backend: CloudBackend): string {
   return `This browser has no copy of your record yet. It stays safe ${safeWhere(backend)}. Start empty in this browser?`;
 }
 
+/** US-09 AC50 (Brad, 13 Nov 2026): asked before "Use this browser only" keeps a copy the cloud was never read into. */
+export function staleCopyQuestion(backend: CloudBackend): string {
+  return `This browser's copy of your record may be out of date. Your full record stays safe ${safeWhere(backend)}. Continue with this browser's copy?`;
+}
+
 /** Every provider's stored sign-in entries, for the page-load sweep and log-off (US-09 AC45). */
 export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_CONFIG_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY] as const;
 

@@ -17,10 +17,10 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, holdsCopyHere, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
-import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
+import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type ExitQuestion, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
-import { noCopyQuestion, PROVIDERS, safeWhere } from './providers';
+import { noCopyQuestion, PROVIDERS, safeWhere, staleCopyQuestion } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -265,8 +265,15 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
       forgetBackend();
       location.reload();
     });
-  // With no copy here, the exit would start an empty record: ask first (US-09 AC49, owner ruling).
-  const chooseThisBrowserOnly = (provider: LostSignIn['provider']): void => (holdsCopyHere() ? forgetProvider(provider) : askBeforeExit());
+  // A page that never read its cloud asks first (US-09 AC49, AC50). Decided again on a yes, so the words a
+  // person agrees to are still true: an edit or another tab may have changed what this browser holds.
+  const chooseThisBrowserOnly = (provider: LostSignIn['provider'], asked?: ExitQuestion): void => {
+    const choice = exitChoice();
+    const question = choice === 'askEmpty' ? 'empty' : choice === 'askStale' ? 'stale' : undefined;
+    if (question && question !== asked) return askBeforeExit(question);
+    if (asked) exitAnswered();
+    forgetProvider(provider);
+  };
 
   const state = storageState(backend, signIn);
   const provider = backend === 'local' ? '' : PROVIDERS[backend].label;
@@ -301,8 +308,8 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
         <div className="hr-sync-more">
           {signIn.kind === 'confirmingExit' ? (
             <>
-              <span className="hr-sync-detail">{noCopyQuestion(reconnect.provider)}</span>
-              <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => { exitAnswered(); forgetProvider(reconnect.provider); }}>Use this browser only</button>
+              <span className="hr-sync-detail">{(signIn.question === 'stale' ? staleCopyQuestion : noCopyQuestion)(reconnect.provider)}</span>
+              <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => chooseThisBrowserOnly(reconnect.provider, signIn.question)}>Use this browser only</button>
               <button type="button" className="hr-sync-link" onClick={exitAnswered}>Cancel</button>
             </>
           ) : (

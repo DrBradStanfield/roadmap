@@ -4,7 +4,7 @@
  * Boot seeds it once from the load: signed in to the cloud it opened, signed
  * out of a Drive or Dropbox whose sign-in it could not use, or unreachable
  * when the remembered cloud did not answer (a reload tries again); a lost one
- * may ask before its exit and go back (US-09 AC49). A Drive or
+ * may ask before its exit and go back (US-09 AC49, AC50). A Drive or
  * Dropbox adapter raises `ended` where it names the grant dead; only a page
  * signed in to that provider moves to signed out. Nothing moves a page back:
  * the way back is a saved sign-in and the reload or redirect after it, which
@@ -28,8 +28,11 @@ export type SignIn =
   | { kind: 'signedOut'; provider: TokenProvider }
   /** The remembered cloud did not answer at load: the page runs on this browser's copy. */
   | { kind: 'unreachable'; provider: SignInProvider }
-  /** US-09 AC49: "Use this browser only" with no copy of the record here asks first; either answer goes back. */
-  | { kind: 'confirmingExit'; lost: LostSignIn };
+  /** "Use this browser only" asks first; either answer goes back. `question`: no copy of the record here
+   *  (US-09 AC49), or a copy here the cloud was never read into (AC50). */
+  | { kind: 'confirmingExit'; lost: LostSignIn; question: ExitQuestion };
+
+export type ExitQuestion = 'empty' | 'stale';
 
 /** The states that show the reconnect panel. */
 export type LostSignIn = Extract<SignIn, { kind: 'signedOut' | 'unreachable' }>;
@@ -37,12 +40,16 @@ export type LostSignIn = Extract<SignIn, { kind: 'signedOut' | 'unreachable' }>;
 export type SignInEvent =
   | { type: 'booted'; state: SignIn }
   | { type: 'ended'; provider: TokenProvider }
-  | { type: 'exitAsked' }
+  | { type: 'exitAsked'; question: ExitQuestion }
   | { type: 'exitAnswered' };
 
 export function transition(state: SignIn, event: SignInEvent): SignIn {
   if (event.type === 'booted') return state.kind === 'none' ? event.state : state;
-  if (event.type === 'exitAsked') return state.kind === 'signedOut' || state.kind === 'unreachable' ? { kind: 'confirmingExit', lost: state } : state;
+  if (event.type === 'exitAsked') {
+    // Asked again while asking: what this browser holds changed, so the words change with it (AC50).
+    const lost = lostSignIn(state);
+    return lost ? { kind: 'confirmingExit', lost, question: event.question } : state;
+  }
   if (event.type === 'exitAnswered') return state.kind === 'confirmingExit' ? state.lost : state;
   return state.kind === 'signedIn' && state.provider === event.provider ? { kind: 'signedOut', provider: event.provider } : state;
 }
@@ -78,9 +85,9 @@ export function signInEnded(provider: TokenProvider, gen: LogOffId): void {
   if (safeGetItem(BACKEND_KEY) === provider && logOffId() === gen && healthWritesAllowed()) dispatch({ type: 'ended', provider });
 }
 
-/** The panel asks before "Use this browser only" (US-09 AC49), and hears the answer. */
-export function askBeforeExit(): void {
-  dispatch({ type: 'exitAsked' });
+/** The panel asks before "Use this browser only" (US-09 AC49, AC50), and hears the answer. */
+export function askBeforeExit(question: ExitQuestion): void {
+  dispatch({ type: 'exitAsked', question });
 }
 export function exitAnswered(): void {
   dispatch({ type: 'exitAnswered' });
