@@ -174,7 +174,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.erase.dispatch.mock.calls).toEqual([[{ type: 'arrived', identity: 'erase-2' }]]); // never the relay
     expect(fx.reloadValues).not.toHaveBeenCalled();
     // The machine's read door (useErase): the record shows, the answer mark is cleared, nothing counted here.
-    await act(async () => { hook.result.current.shows(); });
+    await act(async () => { hook.result.current.shows(1); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(fx.erase.dispatch).toHaveBeenCalledWith({ type: 'read', identity: 'erase-2' });

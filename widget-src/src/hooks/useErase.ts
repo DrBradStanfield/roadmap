@@ -4,7 +4,7 @@ import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
+import { createEraseStore, refusal, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
 import { tellChats } from './chatStore';
 
 /**
@@ -18,8 +18,9 @@ import { tellChats } from './chatStore';
  * or `own-failed`), and `writeRefused` here (`refused`). Its effects run
  * through the doors below, built from the latest committed props:
  * - clearDrafts, forget: the page's;
- * - read: the page's `shows` (useRecordApply: it ends a hold, clears the
- *   answer mark, and counts nothing);
+ * - read: the page's `shows`, with the read's id (useRecordApply: it ends a
+ *   hold, clears the answer mark, counts nothing, and dispatches
+ *   `read-failed` with that id when the read fails, H39);
  * - rereadRefused: the page's `reread('refused')`, the read writeRefused asks
  *   for (an erase that refused a save, then stopped short: A6 R1);
  * - countRemoteChange: remote_change_applied, the one count of another
@@ -48,8 +49,8 @@ export interface EraseDoorProps {
   forget: () => void;
   /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard, or one made during an erase that stopped short. */
   reread: (reason: 'refused' | 'left') => void;
-  /** The machine's read: another writer's erase shows (useRecordApply `shows`). */
-  shows: () => void;
+  /** The machine's read `id`: another writer's erase shows (useRecordApply `shows`). */
+  shows: (id: number) => void;
   /** The machine read for a refusal of the record shown: the answer mark is spent, as a 'refused' re-read spends it (US-62 AC25b). */
   spend: () => void;
 }
@@ -62,6 +63,8 @@ export interface Erase {
   loaded: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
+  /** Another writer's erase is heard and its latest read failed, the first read shown (H39). Never after a failed first read (L2). */
+  unreachable: boolean;
   /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
   writeRefused: (erase?: string) => void;
   /** Ask, erase, and say how it went; true on success. */
@@ -75,7 +78,7 @@ export function useErase(props: EraseDoorProps): Erase {
   const [store] = useState(() => createEraseStore(getShownErase(), {
     clearDrafts: () => doors.current.clearDrafts(),
     forget: () => doors.current.forget(),
-    read: () => doors.current.shows(),
+    read: id => doors.current.shows(id),
     rereadRefused: () => doors.current.reread('refused'),
     countRemoteChange: () => trackProductEvent('remote_change_applied', { backend: getBackendKind() }),
     alertRefused: () => window.alert(WRITE_REFUSED),
@@ -136,5 +139,5 @@ export function useErase(props: EraseDoorProps): Erase {
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), writeRefused, eraseAll };
 }
