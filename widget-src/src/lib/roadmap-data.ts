@@ -177,6 +177,7 @@ export function isKnownMinorNow(): boolean {
 }
 
 // --- reads ---
+// Each async read below is `async () => xSync()` on purpose: a store throw becomes a rejection, which email-landing.tsx and useRecordReads.ts catch (US-09 AC16; lead W2-13 closed).
 export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
   return loadLatestMeasurementsSync();
 }
