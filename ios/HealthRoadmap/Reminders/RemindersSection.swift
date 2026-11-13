@@ -3,11 +3,11 @@ import UIKit
 
 /// The Reminders section of My data (US-25 AC12): one switch, then what is due and
 /// when. Turning it on asks iOS's permission at once, with no message of ours first
-/// (App Review 5.1.1(iv), Brad 2026-11-09). The web twin
-/// is the email-reminders control in widget-src (ResultsPanel's remindersSection);
-/// the web has no per-category switches since its v1 settings went, so neither
-/// does the app. Any per-category choice already in the record is honoured by
-/// the engine's schedule.
+/// (App Review 5.1.1(iv), Brad 2026-11-09). The web has no in-app switch: its reminders
+/// are the email box beside the plan (PlanPdf.tsx, which guards a double submit), turned
+/// off by the email's unsubscribe link. The web has no per-category switches since its
+/// v1 settings went, so neither does the app. Any per-category choice already in the
+/// record is honoured by the engine's schedule.
 struct RemindersSection: View {
     @Environment(ReminderScheduler.self) private var scheduler
     @State private var refused = false

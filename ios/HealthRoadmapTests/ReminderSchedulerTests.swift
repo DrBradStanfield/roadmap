@@ -297,6 +297,48 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertEqual(out.firstSeen, [:], "no follow-up in a new record")
     }
 
+    /// US-25 AC12b (iPhone survey S7): a second tap on the switch while iOS is still answering
+    /// the first asks nothing more. Permission already decided means no alert, so the switch,
+    /// still drawn off, takes the tap.
+    func testADoubleTapMidOptInAsksIOSOnce_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let first = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        let second = Task { await scheduler.optIn() }
+        await until { false } // the second tap runs as far as it can
+        center.releaseAll()
+        _ = await first.value
+        _ = await second.value
+        XCTAssertEqual(center.permissionAsks, 1, "one tap's worth of asking")
+        XCTAssertTrue(scheduler.optedIn)
+        XCTAssertEqual(center.pending.count, 2)
+    }
+
+    /// US-25 AC12b (iPhone survey S7): an answer that lands after the user turned reminders off
+    /// leaves them off. Before, the double tap's second answer turned them back on.
+    func testALateOptInCannotUndoALaterOptOut_US25_AC12b() async {
+        center.holdsAnswers = true
+        let scheduler = scheduler()
+        let first = Task { await scheduler.optIn() }
+        await until { self.center.held.count == 1 }
+        let second = Task { await scheduler.optIn() }
+        await until { false }
+        center.releaseFirst()
+        _ = await first.value
+        XCTAssertTrue(scheduler.optedIn, "the first answer turns reminders on")
+        await scheduler.optOut()
+        center.releaseAll()
+        _ = await second.value
+        XCTAssertFalse(scheduler.optedIn, "the user asked for off")
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// Lets queued main-actor work run until `done` holds, or a bounded number of turns pass.
+    private func until(_ done: () -> Bool) async {
+        for _ in 0..<200 where !done() { await Task.yield() }
+    }
+
     private func request(_ id: String) -> UNNotificationRequest {
         UNNotificationRequest(identifier: id, content: UNMutableNotificationContent(), trigger: nil)
     }
@@ -309,9 +351,17 @@ final class FakeNotificationCenter: NotificationScheduling {
     var grants = true
     var status = NotificationPermission.notAsked
     var permissionAsks = 0
+    /// When set, each permission answer waits for `releaseFirst` or `releaseAll`, as iOS's
+    /// answer arrives after an XPC hop.
+    var holdsAnswers = false
+    private(set) var held: [CheckedContinuation<Void, Never>] = []
+
+    func releaseFirst() { if !held.isEmpty { held.removeFirst().resume() } }
+    func releaseAll() { while !held.isEmpty { releaseFirst() } }
 
     func requestPermission() async throws -> Bool {
         permissionAsks += 1
+        if holdsAnswers { await withCheckedContinuation { held.append($0) } }
         status = grants ? .allowed : .denied
         return grants
     }
