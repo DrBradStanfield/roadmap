@@ -5166,7 +5166,7 @@ input[type="number"] {
   line-height: 1.3;
   color: var(--color-text-secondary);
 }
-.md-row-date { white-space: nowrap; }
+.md-row-date, .md-row-latest, .md-row-prev { white-space: nowrap; }
 .md-row-trend {
   display: block;
   width: 56px;
@@ -5191,7 +5191,7 @@ input[type="number"] {
   font-size: 15px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 .md-row-prev {
   font-size: 12px;
