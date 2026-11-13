@@ -124,6 +124,10 @@ describe('US-15 AC33: a run_roadmap turn keeps the tool\'s data out of every log
     await Sentry.flush();
     const timing = JSON.parse(consoleCalls().match(/\{\\"evt\\":\\"chat_timing\\".*?\}(?=")/)![0].replace(/\\"/g, '"'));
     expect(timing.roadmapRun).toBe(true);
+    // This turn sends Sentry nothing (S-16). withoutIds strips ids but not the SDK's timestamps, so a
+    // captured event could hide a value or fake a leak: if one is ever expected here, blank its clock
+    // and id fields by path first, as widget-src/src/lib/chat-edits-sentry-envelope.test.ts does.
+    expect(envelopes).toHaveLength(0);
     for (const leak of [...TOOL_INPUT, ...TOOL_OUTPUT]) {
       expect(withoutIds(consoleCalls())).not.toContain(leak);
       expect(withoutIds(JSON.stringify(envelopes))).not.toContain(leak);
