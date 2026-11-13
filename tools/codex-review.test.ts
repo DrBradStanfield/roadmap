@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { loadStories } from './stories.mjs';
@@ -603,13 +603,21 @@ describe('US-40 AC1 — file list', () => {
   });
 });
 
-/** A fresh repo with a contract and one committed file, so these tests leave the shared fixture alone. */
-function freshRepo(extra: Record<string, string> = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'cr-secret-'));
-  sh(dir, 'git init -q && git config user.email t@t && git config user.name t');
+/** The uncommitted start of every freshRepo, built once: git init (no sample hooks, which git never runs), identity, contract, a.txt. */
+let repoTemplate: string | undefined;
+function templateRepo() {
+  if (repoTemplate) return repoTemplate;
+  const dir = mkdtempSync(join(tmpdir(), 'cr-template-'));
+  sh(dir, 'git init -q --template= && git config user.email t@t && git config user.name t');
   mkdirSync(join(dir, 'docs'));
   writeFileSync(join(dir, 'docs', 'review-format.md'), 'BASE CONTRACT: review everything.\n');
   writeFileSync(join(dir, 'a.txt'), 'one\n');
+  return (repoTemplate = dir);
+}
+/** A fresh repo with a contract and one committed file, so these tests leave the shared fixture alone. Each is its own copy of the template, with its own single commit. */
+function freshRepo(extra: Record<string, string> = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'cr-secret-'));
+  cpSync(templateRepo(), dir, { recursive: true });
   for (const [path, content] of Object.entries(extra)) {
     mkdirSync(join(dir, path, '..'), { recursive: true });
     writeFileSync(join(dir, path), content);
