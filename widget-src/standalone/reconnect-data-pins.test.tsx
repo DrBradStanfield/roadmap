@@ -766,4 +766,17 @@ describe('US-09 AC52: a confirmed "Use this browser only" whose reload stalls sh
     expect(button(p.notice.PLAN_STORAGE_CTA)).toBeDefined(); // what the reload would have shown: a guest on this browser
     expect(reload).toHaveBeenCalledTimes(1);
   });
+
+  it('google-drive: a picker opened before the 15 s ends the hand-off the same way (Codex R1)', async () => {
+    const p = await openReconnectPanel('google-drive');
+    await panelEdit();
+    useThisBrowserOnlyConfirmed('google-drive');
+    await reloaded();
+    act(() => p.notice.openBackendPicker()); // the picker reopened: the page did not leave
+    expect(p.switchFlow.getSwitchFlow().kind).toBe('idle');
+    expect(shown('Google Drive is signed out')).toBe(false);
+    expect(button('Reconnect Google Drive')).toBeUndefined();
+    expect(button('Use this browser only')).toBeUndefined();
+    expect(button(p.notice.PLAN_STORAGE_CTA)).toBeDefined();
+  });
 });

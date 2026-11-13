@@ -109,7 +109,11 @@ export function subscribeSwitchFlow(listener: () => void): () => void {
 export function dispatch(event: SwitchEvent): boolean {
   const { next, run } = transition(flow, event);
   if (next !== flow) {
+    const stayed = flow.kind === 'navigating' && next.kind === 'idle';
     flow = next;
+    // However a hand-off ends with the page still here, a page on this browser's copy shows the home this
+    // browser now stores (US-09 AC52); a page on a cloud still runs on it until a reload.
+    if (stayed && getBackendKind() === 'local') rereadStoredHome();
     listeners.forEach((listener) => listener());
   }
   return run;
@@ -147,17 +151,13 @@ if (typeof window !== 'undefined') {
  *  before the move counts as over: a page that really leaves is gone by then. */
 export const HAND_OFF_MS = 15_000;
 
-/** Every surface that shows the flow frees a hand-off that never left (US-09 AC45a). A page on this
- *  browser's copy then shows the home this browser stores (AC52); a page on a cloud still runs on it. */
+/** Every surface that shows the flow frees a hand-off that never left (US-09 AC45a). */
 export function useSwitchFlow(): SwitchFlow {
   const state = useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow, getSwitchFlow);
   const handedOff = state.kind === 'navigating' ? state.run : null;
   useEffect(() => {
     if (handedOff === null) return;
-    const timer = setTimeout(() => {
-      dispatch({ type: 'stayed', run: handedOff });
-      if (getBackendKind() === 'local') rereadStoredHome();
-    }, HAND_OFF_MS);
+    const timer = setTimeout(() => dispatch({ type: 'stayed', run: handedOff }), HAND_OFF_MS);
     return () => clearTimeout(timer);
   }, [handedOff]);
   return state;
