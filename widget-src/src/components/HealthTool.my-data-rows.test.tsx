@@ -379,6 +379,33 @@ describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
   });
 });
 
+// W1-3 pin: before H71 a latch read the device's mirror (MIRROR_KEY) at mount and showed the first-time
+// vitals card unless the mirror held a vitals row. Every mirror state now opens the same rows.
+describe('US-62 AC8 (W1-3): the vitals rows show whatever the device mirror held at mount', () => {
+  const rowsOf = (view: ReturnType<typeof render>, topic: string) => [...view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`)]
+    .map(r => r.querySelector('.md-row-label')?.textContent);
+  it.each([
+    ['no mirror (a fresh browser)', false, 1],
+    ['a mirror with no vitals row', false, 2],
+    ['a mirror with vitals rows', true, 2],
+  ] as const)('%s: Waist and Blood Pressure are rows, never first-time fields', async (_, vitals, visits) => {
+    if (vitals) await seed();
+    else {
+      await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+      await addMeasurement('ldl', 3.0, '2026-09-01T00:00:00.000Z');
+      await flushRoadmapStore();
+    }
+    for (let i = 1; i < visits; i++) { await renderTool(); cleanup(); }
+    const mirror = localStorage.getItem('health_roadmap_data');
+    expect(mirror === null).toBe(visits === 1);
+    if (mirror) expect(JSON.parse(mirror).previousMeasurements.some((m: { metricType: string }) => m.metricType === 'weight')).toBe(vitals);
+    const view = await renderTool();
+    expect(rowsOf(view, 'weight')).toContain('Waist');
+    expect(rowsOf(view, 'bloodPressure')).toContain('Blood Pressure');
+    expect(view.container.querySelector('#waistCm, #systolicBp, #diastolicBp')).toBeNull();
+  });
+});
+
 describe('US-62 AC9, AC11 (Brad 2026-11-02): desktop shows the rows too, the grids one click away with the same text', () => {
   it('rows first; "All results as a table" shows the grids, whose hints and targets read exactly as before rowTarget', async () => {
     phone = false;

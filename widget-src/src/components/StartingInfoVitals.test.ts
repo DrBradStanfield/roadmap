@@ -20,10 +20,10 @@ function m(metricType: string, value: number, date: string, id = `${metricType}-
 }
 
 // A chatbot vitals edit (weight / waist / BP) must land in the matrix CELL —
-// pre-filled + flashed — when the vitals matrix is the active rendering
-// (returning users), but fall back to setting the plain form field (no flash)
-// for fresh users who still see the legacy inline inputs. The matrix only
-// registers its prefill ref while mounted, so "ref present" is the signal.
+// pre-filled + flashed — when the vitals matrix is mounted (the whole form),
+// but fall back to setting the form's inputs (no flash) before the whole form
+// shows. The matrix only registers its prefill ref while mounted, so "ref
+// present" is the signal.
 describe('routeVitalsEdit', () => {
   it('routes to the matrix cell (flash) when the matrix is mounted', () => {
     expect(routeVitalsEdit(true)).toBe('matrix');
