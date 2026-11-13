@@ -289,6 +289,15 @@ struct OnboardingView: View {
         /// moved. A wheel's starting value is never taken as an answer (AC4). Height and
         /// weight are typed: their answer is a number in the box.
         var birthAnswered = false
+
+        /// The record moved under the flow (US-54 AC5d): a sex or birth it no longer holds, an
+        /// erase elsewhere, starts again, never offered back one tap from saving (S6 re-check F1).
+        /// Typed boxes keep the person's typing; boxes left alone refill from the record.
+        mutating func forget(whatIsNotIn profile: MyData.Profile?) {
+            let fresh = Answers()
+            if profile?.sex == nil { sex = fresh.sex }
+            if profile?.birthYear == nil { (birthYear, birthMonth, birthAnswered) = (fresh.birthYear, fresh.birthMonth, false) }
+        }
     }
 
     enum Field: String { case height, feet, inches, weight }

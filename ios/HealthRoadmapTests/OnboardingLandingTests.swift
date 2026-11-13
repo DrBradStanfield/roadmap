@@ -84,4 +84,21 @@ final class OnboardingLandingTests: XCTestCase {
         XCTAssertEqual(OnboardingFlow.landing(.applied(refused("The disk is full.")), step: .height, moved: false), .words("The disk is full."))
         XCTAssertEqual(OnboardingFlow.landing(.applied(saved), step: .height, moved: true), .advance, "a save never restarts")
     }
+
+    /// S6 re-check F1 (US-54 AC5d): after the record moved under the flow (an erase on another
+    /// device), a sex or birth the record no longer holds is not offered back; one it holds stays.
+    func testARestartForgetsAnswersTheRecordNoLongerHolds_US54_AC5d() {
+        var answers = OnboardingView.Answers()
+        answers.sex = "female"
+        (answers.birthYear, answers.birthMonth, answers.birthAnswered) = (1980, 5, true)
+        var kept = answers
+        answers.forget(whatIsNotIn: MyData.Profile(sex: nil, birthYear: nil, birthMonth: nil, height: nil, heightUnit: "cm", feetInches: nil))
+        XCTAssertNil(answers.sex)
+        XCTAssertFalse(answers.birthAnswered, "Continue waits for a birth chosen again")
+        XCTAssertEqual(answers.birthYear, OnboardingView.Answers().birthYear)
+        kept.forget(whatIsNotIn: MyData.Profile(sex: "female", birthYear: 1980, birthMonth: 5, height: nil, heightUnit: "cm", feetInches: nil))
+        XCTAssertEqual(kept.sex, "female")
+        XCTAssertTrue(kept.birthAnswered)
+        XCTAssertEqual(kept.birthYear, 1980)
+    }
 }

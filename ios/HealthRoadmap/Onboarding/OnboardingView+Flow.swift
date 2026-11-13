@@ -42,6 +42,17 @@ extension OnboardingView {
     /// left alone from it, and plan the flow again, as begin does.
     private func restart() async {
         store.repinScreen()
+        answers.forget(whatIsNotIn: profile)
+        // "From Apple Health" only on an answer the record still holds.
+        fromHealth = fromHealth.filter { step in
+            switch step {
+            case .sex: profile?.sex != nil
+            case .birth: profile?.birthYear != nil
+            case .height: profile?.height != nil
+            case .weight: recordWeight != nil
+            case .health, .review: false
+            }
+        }
         await prefill(from: HealthCharacteristics.none)
         send(.replanned(firstPage()))
     }
