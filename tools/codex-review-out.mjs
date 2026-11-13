@@ -51,22 +51,25 @@ function writeStopReport(code) {
   try { replaceOut(incomplete(state.why ?? `E_STOPPED: exit ${code}`)); } catch (e) { console.error(`codex-review: ${cannot(e)}`); }
 }
 
+/** Each input as [given, the path the run reads]: `raw` through links, `lexical` at resolve(given) (codex-review.mjs checkoutPath). */
+const asRead = (raw, lexical) => [...raw.map((p) => [p, p]), ...lexical.map((p) => [p, resolve(p)])];
+
 /** The first reviewed input that IS `out` or one of the folders above it, by identity, or null. Inputs that do not stat are skipped (fenced() judges those). */
-export function overlap(out, inputs) {
+export function overlap(out, inputs, lexical = []) {
   const mine = new Set([out, ...ancestors(dirname(out))].map(identity).filter(Boolean));
-  return inputs.find((p) => mine.has(identity(p))) ?? null;
+  return asRead(inputs, lexical).find(([, at]) => mine.has(identity(at)))?.[0] ?? null;
 }
 
 /** The first of `read` that does not stat and whose nearest existing folder holds `out` at any depth, or null. No names compared. */
-export function fenced(out, read) {
+export function fenced(out, read, lexical = []) {
   const mine = new Set(ancestors(dirname(out)).map(identity).filter(Boolean));
   const isDir = (d) => { try { return statSync(d).isDirectory(); } catch { return false; } };
-  return read.find((p) => {
-    if (identity(p)) return false;
-    let d = dirname(resolve(p));
+  return asRead(read, lexical).find(([, at]) => {
+    if (identity(at)) return false;
+    let d = dirname(resolve(at));
     while (!isDir(d) && dirname(d) !== d) d = dirname(d);
     return mine.has(identity(d));
-  }) ?? null;
+  })?.[0] ?? null;
 }
 
 /** True when the regular file at `out` is empty or a report this tool wrote; read without following a link, under a cap. */
@@ -85,16 +88,16 @@ function ours(out) {
   } catch { return false; } finally { closeSync(fd); }
 }
 
-/** Why --out may not be written, or null. `out` sits in the real folder `parent`; `inputs` are the raw paths this run names, `read` those it reads. */
-function refusal(out, parent, given, inputs, read) {
+/** Why --out may not be written, or null. `out` sits in the real folder `parent`; `inputs` are the raw paths this run names, `read` those it reads through links, `lexical` those it reads at resolve(given). */
+function refusal(out, parent, given, inputs, read, lexical) {
   const said = `--out ${JSON.stringify(given)}`;
   let st = null;
   try { st = lstatSync(out); } catch (e) { if (e.code !== "ENOENT") return `${said} cannot be checked (${e.code})`; }
   if (st && !st.isFile()) return `${said} is not a regular file (a link, folder or other)`;
-  const input = overlap(out, inputs);
+  const input = overlap(out, inputs, lexical);
   if (input) return `${said} is inside a reviewed input (${JSON.stringify(input)})`;
-  const missing = fenced(out, read);
-  if (missing) return `--out: ${missing} does not exist yet and --out is inside the same folder; nothing written`;
+  const missing = fenced(out, read, lexical);
+  if (missing) return `--out: ${JSON.stringify(missing)} does not exist yet and --out is inside the same folder; nothing written`;
   const checkout = inCheckout(out, parent, said);
   if (checkout) return checkout;
   if (st && !ours(out)) return `${said} holds something this tool did not write (only an empty file or an earlier report is replaced)`;
@@ -121,12 +124,12 @@ function inCheckout(out, parent, said) {
 }
 
 /** Claims --out for this run: null when claimed, else why not (the caller stops with E_USAGE). */
-export function claimOut(given, inputs, read = inputs) {
+export function claimOut(given, inputs, read = inputs, lexical = []) {
   let parent = null;
   try { parent = realpathSync.native(dirname(resolve(given))); } catch { /* checked below */ }
   if (!parent || !statSync(parent).isDirectory()) return `--out ${JSON.stringify(given)}: its folder does not exist`;
   const out = join(parent, basename(resolve(given)));
-  const why = refusal(out, parent, given, inputs, read);
+  const why = refusal(out, parent, given, inputs, read, lexical);
   if (why) return why;
   state.path = out;
   process.on("exit", writeStopReport);

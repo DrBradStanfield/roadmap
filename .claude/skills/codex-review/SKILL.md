@@ -162,7 +162,11 @@ reads that does not exist yet fences off its nearest existing folder (by
 identity, never names): an `--out` anywhere inside it is refused. This
 over-refuses on purpose, an `--out` beside a missing input under any name;
 with `--record` and no scratch record yet, keep `--out` out of
-`~/.codex-review/`. Only an empty file or
+`~/.codex-review/`. If that folder does not exist either, the fence climbs
+to `$HOME` (or `/` when `HOME` is unset), and every `--out` under it is
+refused. Each input is judged at the path the run reads: `--subject`,
+`--baseline` and `--context` with `..` resolved before links; `--include`
+through its links. Only an empty file or
 an earlier report is ever replaced: any other existing file is refused as
 holding something this tool did not write. If the write or rename fails, it
 is `E_USAGE` and the old file may still be there. Residuals (US-40 AC18): a

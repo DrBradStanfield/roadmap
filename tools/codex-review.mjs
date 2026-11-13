@@ -254,9 +254,9 @@ const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_US
 /** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
 const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
 const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
-// What the run reads (the default scratch record too, under --record); a --record-file without --record is named, never read.
-const READ_INPUTS = ["--subject", "--baseline", "--context", "--include"].flatMap(many).concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter((p) => p && p !== "none");
-const outRefused = OUT ? claimOut(OUT, READ_INPUTS.concat(many("--record-file").filter(Boolean)), READ_INPUTS) : null;
+// What the run reads: --include and the record (the default too, under --record) through links; --subject, --context and a --baseline other than none at resolve(given), as checkoutPath reads them. A --record-file without --record is named, never read.
+const READ_INPUTS = many("--include").concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter(Boolean), LEXICAL = [...many("--subject"), ...many("--baseline").filter((p) => p !== "none"), ...many("--context")].filter(Boolean);
+const outRefused = OUT ? claimOut(OUT, READ_INPUTS.concat(many("--record-file").filter(Boolean)), READ_INPUTS, LEXICAL) : null;
 if (outRefused) usage(outRefused);
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();

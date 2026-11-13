@@ -2733,7 +2733,7 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
   // An input the run reads that does not exist yet fences off its nearest existing folder, by identity (owner's ruling
   // 2026-11-13). Before, overlap() skipped it, so "run started" landed at the input's own path and became the input.
   const fencedOut = (r: { status: number | null; stderr: string }, input: string) =>
-    refusedOut(r, `codex-review: --out: ${input} does not exist yet and --out is inside the same folder; nothing written`);
+    refusedOut(r, `codex-review: --out: ${JSON.stringify(input)} does not exist yet and --out is inside the same folder; nothing written`);
   it('a missing --subject equal to --out is refused before any write', () => {
     const dir = freshRepo({ '.gitignore': 'codex-drafts/\n' });
     mkdirSync(join(dir, 'codex-drafts'));
@@ -2766,5 +2766,59 @@ describe('US-40 AC18 — --out is always this run\'s; an exit-1 tail is a hint, 
     expect(r.status).toBe(0);
     expect(readOut(out).status).toBe('nothing');
     expect(readdirSync(join(home, '.codex-review'))).toEqual([]);
+  });
+  it('Codex R1: only --baseline treats "none" as nothing; a missing --subject named none with --out none is refused', () => {
+    const dir = freshRepo({ '.gitignore': 'none\n' });
+    const { r, started } = go(dir, ['--subject', 'none', '--baseline', 'none', '--out', 'none']);
+    fencedOut(r, 'none');
+    expect(existsSync(join(dir, 'none'))).toBe(false);
+    expect(readdirSync(dir).filter((n) => n.includes('none'))).toEqual([]);
+    expect(started).toBe(false);
+  });
+  it('F4a: an existing --subject in the same folder as --out does not fence it off: --out is claimed', () => {
+    const dir = freshRepo({ '.gitignore': 'codex-drafts/\n' });
+    mkdirSync(join(dir, 'codex-drafts'));
+    writeFileSync(join(dir, 'codex-drafts', 'draft.md'), 'DRAFT\n');
+    const { r } = go(dir, ['--subject', 'codex-drafts/draft.md', '--baseline', 'none', '--out', 'codex-drafts/out.json']);
+    expect(r.stderr).not.toContain('does not exist yet');
+    expect(readOut(join(dir, 'codex-drafts', 'out.json'))).not.toBe(null);
+    expect(readFileSync(join(dir, 'codex-drafts', 'draft.md'), 'utf8')).toBe('DRAFT\n');
+  });
+  // The checks stat the path the reader opens: resolve(given) for --subject/--baseline/--context (checkoutPath), the
+  // linked path for --include. d/link -> e/sub, so d/link/../missing.md reads d/missing.md, not e/missing.md. The
+  // spellings are built by hand: join() would fold the .. away.
+  const linkedDirs = () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'cr-lexical-')));
+    mkdirSync(join(base, 'd'));
+    mkdirSync(join(base, 'e', 'sub'), { recursive: true });
+    writeFileSync(join(base, 'e', 'missing.md'), 'ELSEWHERE\n');
+    symlinkSync(join(base, 'e', 'sub'), join(base, 'd', 'link'));
+    return base;
+  };
+  it('a --context spelled through a link and .. is fenced at the path it is read from (d/missing.md absent)', () => {
+    const base = linkedDirs();
+    const input = `${base}/d/link/../missing.md`;
+    const { r, started } = go(freshRepo(), ['--subject', 'a.txt', '--context', input, '--out', join(base, 'd', 'missing.md')]);
+    fencedOut(r, input);
+    expect(readdirSync(join(base, 'd'))).toEqual(['link']);
+    expect(started).toBe(false);
+  });
+  it('a --context spelled through a link and .. overlaps --out at the path it is read from (d/missing.md present)', () => {
+    const base = linkedDirs();
+    const out = join(base, 'd', 'missing.md');
+    writeFileSync(out, JSON.stringify(STALE)); // report-shaped, so only the overlap rule can refuse it
+    const { r, started } = go(freshRepo(), ['--subject', 'a.txt', '--context', `${base}/d/link/../missing.md`, '--out', out]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(readFileSync(out, 'utf8')).toBe(JSON.stringify(STALE));
+    expect(readdirSync(join(base, 'd')).sort()).toEqual(['link', 'missing.md']);
+    expect(started).toBe(false);
+  });
+  it('an --include spelled through a link and .. still overlaps by the linked path (e), as before', () => {
+    const base = linkedDirs();
+    const out = join(base, 'e', 'out.json');
+    const { r, started } = go(freshRepo(), ['--include', `${base}/d/link/..`, '--out', out]);
+    refusedOut(r, 'inside a reviewed input');
+    expect(existsSync(out)).toBe(false);
+    expect(started).toBe(false);
   });
 });
